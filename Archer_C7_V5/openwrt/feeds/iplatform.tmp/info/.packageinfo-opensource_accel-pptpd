@@ -1,0 +1,19 @@
+Source-Makefile: feeds/iplatform/opensource/accel-pptpd/Makefile
+Package: accel-pptpd
+Submenu: VPN
+Version: 0.8.5-1
+Depends: +libc +USE_EGLIBC:librt +USE_EGLIBC:libpthread +kmod-ppp +kmod-mppe +pppd
+Menu-Depends: 
+Provides: 
+Section: net
+Category: TP-LINK iplatform apps
+Title: ACCEL-PPTP pptp server
+Maintainer: OpenWrt Developers Team <openwrt-devel@openwrt.org>
+Source: accel-pptpd-0.8.5.tar.gz
+Type: ipkg
+Description: ACCEL-PPTP pptp server
+http://www.poptop.org/
+OpenWrt Developers Team <openwrt-devel@openwrt.org>
+@@
+
+

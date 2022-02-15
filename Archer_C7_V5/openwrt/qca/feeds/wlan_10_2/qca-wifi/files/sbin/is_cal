@@ -1,0 +1,42 @@
+#!/usr/bin/lua
+
+local read_size = 64
+local cal_2g_offset = 0x1000
+local cal_5g_offset = 0x5000
+local mtd_art = io.popen("cat /proc/mtd | grep 'ART' | grep -o 'mtd.'")
+local file = nil
+local cal_2g = 0
+local cal_5g = 0
+
+if mtd_art then
+        file = io.open("/dev/" .. string.gsub(mtd_art:read("*all"),"\n",""), "r")
+        mtd_art:close()
+end
+
+if file == nil then
+        print("nil file")
+else
+        file:seek("set", cal_2g_offset)
+        local bytes_read_2g = file:read(read_size)
+        for byte in string.gfind(bytes_read_2g, ".") do
+                if string.byte(byte) ~= 0xff then
+                        cal_2g = 1
+                        break
+                end
+        end
+	--[[
+        file:seek("set", cal_5g_offset)
+        local bytes_read_5g = file:read(read_size)
+        for byte in string.gfind(bytes_read_5g, ".") do
+                if string.byte(byte) ~= 0xff then
+                        cal_5g = 1
+                        break
+                end
+        end
+	]]--
+        if cal_2g == 1 then -- and cal_5g == 1 then
+                print("true")
+        else
+                print("false")
+        end
+end

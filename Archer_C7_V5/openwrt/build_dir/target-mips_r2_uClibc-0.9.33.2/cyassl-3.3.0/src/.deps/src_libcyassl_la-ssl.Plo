@@ -1,0 +1,324 @@
+src/src_libcyassl_la-ssl.lo: src/ssl.c config.h \
+ cyassl/ctaocrypt/settings.h cyassl/ctaocrypt/visibility.h \
+ /home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/errno.h \
+ /home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/features.h \
+ /home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/bits/uClibc_config.h \
+ /home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/sys/cdefs.h \
+ /home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/bits/errno.h \
+ /home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/linux/errno.h \
+ /home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/asm/errno.h \
+ /home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/asm-generic/errno-base.h \
+ cyassl/ssl.h cyassl/version.h \
+ /home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/stdio.h \
+ /home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/include/stddef.h \
+ /home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/bits/types.h \
+ /home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/bits/wordsize.h \
+ /home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/bits/typesizes.h \
+ /home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/bits/pthreadtypes.h \
+ /home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/endian.h \
+ /home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/bits/endian.h \
+ /home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/byteswap.h \
+ /home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/bits/byteswap.h \
+ /home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/bits/byteswap-common.h \
+ /home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/sgidefs.h \
+ /home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/bits/uClibc_stdio.h \
+ /home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/wchar.h \
+ /home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/bits/wchar.h \
+ /home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/bits/uClibc_mutex.h \
+ /home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/pthread.h \
+ /home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/sched.h \
+ /home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/time.h \
+ /home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/bits/sched.h \
+ /home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/bits/time.h \
+ /home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/bits/uClibc_clk_tck.h \
+ /home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/signal.h \
+ /home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/bits/sigset.h \
+ /home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/bits/setjmp.h \
+ /home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/bits/uClibc_pthread.h \
+ /home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/include/stdarg.h \
+ /home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/bits/stdio_lim.h \
+ /home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/sys/uio.h \
+ /home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/sys/types.h \
+ /home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/sys/select.h \
+ /home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/bits/select.h \
+ /home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/sys/sysmacros.h \
+ /home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/bits/uio.h \
+ cyassl/internal.h cyassl/ctaocrypt/types.h cyassl/ctaocrypt/wc_port.h \
+ /home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/unistd.h \
+ /home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/bits/posix_opt.h \
+ /home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/bits/confname.h \
+ /home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/bits/getopt.h \
+ cyassl/ctaocrypt/memory.h \
+ /home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/stdlib.h \
+ /home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/alloca.h \
+ /home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/string.h \
+ /home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/ctype.h \
+ /home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/bits/uClibc_touplow.h \
+ cyassl/crl.h cyassl/ctaocrypt/random.h cyassl/ctaocrypt/sha256.h \
+ cyassl/ctaocrypt/des3.h cyassl/ctaocrypt/hc128.h \
+ cyassl/ctaocrypt/rabbit.h cyassl/ctaocrypt/chacha.h \
+ cyassl/ctaocrypt/types.h cyassl/ctaocrypt/asn.h cyassl/ctaocrypt/rsa.h \
+ cyassl/ctaocrypt/integer.h \
+ /home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/include-fixed/limits.h \
+ /home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/include-fixed/syslimits.h \
+ /home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/limits.h \
+ /home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/bits/posix1_lim.h \
+ /home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/bits/local_lim.h \
+ /home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/linux/limits.h \
+ /home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/bits/uClibc_local_lim.h \
+ /home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/bits/posix2_lim.h \
+ cyassl/ctaocrypt/mpi_class.h cyassl/ctaocrypt/mpi_superclass.h \
+ cyassl/ctaocrypt/mpi_class.h cyassl/ctaocrypt/dh.h \
+ cyassl/ctaocrypt/dsa.h cyassl/ctaocrypt/sha.h cyassl/ctaocrypt/md5.h \
+ cyassl/ctaocrypt/asn_public.h cyassl/ctaocrypt/ecc.h \
+ cyassl/ctaocrypt/aes.h cyassl/ctaocrypt/poly1305.h \
+ cyassl/ctaocrypt/camellia.h cyassl/ctaocrypt/logging.h \
+ cyassl/ctaocrypt/hmac.h cyassl/ctaocrypt/arc4.h cyassl/error-ssl.h \
+ cyassl/ctaocrypt/error-crypt.h cyassl/ctaocrypt/coding.h \
+ cyassl/openssl/evp.h cyassl/openssl/md5.h cyassl/openssl/sha.h \
+ cyassl/openssl/ripemd.h cyassl/openssl/rsa.h cyassl/openssl/ssl.h \
+ cyassl/openssl/bn.h cyassl/openssl/dsa.h cyassl/openssl/hmac.h \
+ cyassl/openssl/crypto.h cyassl/openssl/des.h cyassl/openssl/dh.h \
+ cyassl/openssl/pem.h cyassl/openssl/bio.h cyassl/ctaocrypt/md4.h \
+ /home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/dirent.h \
+ /home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/bits/dirent.h \
+ /home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/sys/syscall.h \
+ /home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/bits/sysnum.h \
+ /home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/sys/stat.h \
+ /home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/bits/stat.h
+
+config.h:
+
+cyassl/ctaocrypt/settings.h:
+
+cyassl/ctaocrypt/visibility.h:
+
+/home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/errno.h:
+
+/home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/features.h:
+
+/home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/bits/uClibc_config.h:
+
+/home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/sys/cdefs.h:
+
+/home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/bits/errno.h:
+
+/home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/linux/errno.h:
+
+/home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/asm/errno.h:
+
+/home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/asm-generic/errno-base.h:
+
+cyassl/ssl.h:
+
+cyassl/version.h:
+
+/home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/stdio.h:
+
+/home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/include/stddef.h:
+
+/home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/bits/types.h:
+
+/home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/bits/wordsize.h:
+
+/home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/bits/typesizes.h:
+
+/home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/bits/pthreadtypes.h:
+
+/home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/endian.h:
+
+/home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/bits/endian.h:
+
+/home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/byteswap.h:
+
+/home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/bits/byteswap.h:
+
+/home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/bits/byteswap-common.h:
+
+/home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/sgidefs.h:
+
+/home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/bits/uClibc_stdio.h:
+
+/home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/wchar.h:
+
+/home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/bits/wchar.h:
+
+/home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/bits/uClibc_mutex.h:
+
+/home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/pthread.h:
+
+/home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/sched.h:
+
+/home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/time.h:
+
+/home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/bits/sched.h:
+
+/home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/bits/time.h:
+
+/home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/bits/uClibc_clk_tck.h:
+
+/home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/signal.h:
+
+/home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/bits/sigset.h:
+
+/home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/bits/setjmp.h:
+
+/home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/bits/uClibc_pthread.h:
+
+/home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/include/stdarg.h:
+
+/home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/bits/stdio_lim.h:
+
+/home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/sys/uio.h:
+
+/home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/sys/types.h:
+
+/home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/sys/select.h:
+
+/home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/bits/select.h:
+
+/home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/sys/sysmacros.h:
+
+/home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/bits/uio.h:
+
+cyassl/internal.h:
+
+cyassl/ctaocrypt/types.h:
+
+cyassl/ctaocrypt/wc_port.h:
+
+/home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/unistd.h:
+
+/home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/bits/posix_opt.h:
+
+/home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/bits/confname.h:
+
+/home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/bits/getopt.h:
+
+cyassl/ctaocrypt/memory.h:
+
+/home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/stdlib.h:
+
+/home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/alloca.h:
+
+/home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/string.h:
+
+/home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/ctype.h:
+
+/home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/bits/uClibc_touplow.h:
+
+cyassl/crl.h:
+
+cyassl/ctaocrypt/random.h:
+
+cyassl/ctaocrypt/sha256.h:
+
+cyassl/ctaocrypt/des3.h:
+
+cyassl/ctaocrypt/hc128.h:
+
+cyassl/ctaocrypt/rabbit.h:
+
+cyassl/ctaocrypt/chacha.h:
+
+cyassl/ctaocrypt/types.h:
+
+cyassl/ctaocrypt/asn.h:
+
+cyassl/ctaocrypt/rsa.h:
+
+cyassl/ctaocrypt/integer.h:
+
+/home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/include-fixed/limits.h:
+
+/home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/include-fixed/syslimits.h:
+
+/home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/limits.h:
+
+/home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/bits/posix1_lim.h:
+
+/home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/bits/local_lim.h:
+
+/home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/linux/limits.h:
+
+/home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/bits/uClibc_local_lim.h:
+
+/home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/bits/posix2_lim.h:
+
+cyassl/ctaocrypt/mpi_class.h:
+
+cyassl/ctaocrypt/mpi_superclass.h:
+
+cyassl/ctaocrypt/mpi_class.h:
+
+cyassl/ctaocrypt/dh.h:
+
+cyassl/ctaocrypt/dsa.h:
+
+cyassl/ctaocrypt/sha.h:
+
+cyassl/ctaocrypt/md5.h:
+
+cyassl/ctaocrypt/asn_public.h:
+
+cyassl/ctaocrypt/ecc.h:
+
+cyassl/ctaocrypt/aes.h:
+
+cyassl/ctaocrypt/poly1305.h:
+
+cyassl/ctaocrypt/camellia.h:
+
+cyassl/ctaocrypt/logging.h:
+
+cyassl/ctaocrypt/hmac.h:
+
+cyassl/ctaocrypt/arc4.h:
+
+cyassl/error-ssl.h:
+
+cyassl/ctaocrypt/error-crypt.h:
+
+cyassl/ctaocrypt/coding.h:
+
+cyassl/openssl/evp.h:
+
+cyassl/openssl/md5.h:
+
+cyassl/openssl/sha.h:
+
+cyassl/openssl/ripemd.h:
+
+cyassl/openssl/rsa.h:
+
+cyassl/openssl/ssl.h:
+
+cyassl/openssl/bn.h:
+
+cyassl/openssl/dsa.h:
+
+cyassl/openssl/hmac.h:
+
+cyassl/openssl/crypto.h:
+
+cyassl/openssl/des.h:
+
+cyassl/openssl/dh.h:
+
+cyassl/openssl/pem.h:
+
+cyassl/openssl/bio.h:
+
+cyassl/ctaocrypt/md4.h:
+
+/home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/dirent.h:
+
+/home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/bits/dirent.h:
+
+/home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/sys/syscall.h:
+
+/home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/bits/sysnum.h:
+
+/home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/sys/stat.h:
+
+/home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib/gcc/mips-openwrt-linux-uclibc/4.6.3/../../../../mips-openwrt-linux-uclibc/sys-include/bits/stat.h:

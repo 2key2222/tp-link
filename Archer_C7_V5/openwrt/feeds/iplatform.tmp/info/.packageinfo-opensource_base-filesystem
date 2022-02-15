@@ -1,0 +1,19 @@
+Source-Makefile: feeds/iplatform/opensource/base-filesystem/Makefile
+Package: base-filesystem
+Default: y
+Version: 1-unknown
+Depends: +libc +USE_EGLIBC:librt +USE_EGLIBC:libpthread +netifd
+Menu-Depends: 
+Provides: 
+Build-Depends: opkg/host
+Section: TP-LINK
+Category: TP-LINK iplatform apps
+Title: Base filesystem for TP-LINK
+Maintainer: OpenWrt Developers Team <openwrt-devel@openwrt.org>
+Source: 
+Type: ipkg
+Description:  This package contains a base filesystem and system scripts for TP-LINK.
+OpenWrt Developers Team <openwrt-devel@openwrt.org>
+@@
+
+

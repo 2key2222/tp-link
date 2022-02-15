@@ -1,0 +1,11 @@
+dir .
+dir /home/ubuntu/Archer_C7_V5/openwrt/build_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/gcc-linaro-4.6-2012.02/gcc
+dir /home/ubuntu/Archer_C7_V5/openwrt/build_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/gcc-linaro-4.6-2012.02/gcc/ada
+dir /home/ubuntu/Archer_C7_V5/openwrt/build_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/gcc-linaro-4.6-2012.02/gcc/cp
+dir /home/ubuntu/Archer_C7_V5/openwrt/build_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/gcc-linaro-4.6-2012.02/gcc/fortran
+dir /home/ubuntu/Archer_C7_V5/openwrt/build_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/gcc-linaro-4.6-2012.02/gcc/go
+dir /home/ubuntu/Archer_C7_V5/openwrt/build_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/gcc-linaro-4.6-2012.02/gcc/java
+dir /home/ubuntu/Archer_C7_V5/openwrt/build_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/gcc-linaro-4.6-2012.02/gcc/lto
+dir /home/ubuntu/Archer_C7_V5/openwrt/build_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/gcc-linaro-4.6-2012.02/gcc/objc
+dir /home/ubuntu/Archer_C7_V5/openwrt/build_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/gcc-linaro-4.6-2012.02/gcc/objcp
+source /home/ubuntu/Archer_C7_V5/openwrt/build_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/gcc-linaro-4.6-2012.02/gcc/gdbinit.in

@@ -1,0 +1,28 @@
+Source-Makefile: package/qca-ssdk-shell/Makefile
+Package: qca-ssdk-shell
+Version: g-1
+Depends: +libc +USE_EGLIBC:librt +USE_EGLIBC:libpthread 
+Menu-Depends: 
+Provides: 
+Section: QCA
+Category: Utilities
+Title: Shell application for QCA SSDK
+Maintainer: OpenWrt Developers Team <openwrt-devel@openwrt.org>
+Source: qca-ssdk-shell-g.tar.gz
+Type: ipkg
+Description: Shell application for QCA SSDK
+OpenWrt Developers Team <openwrt-devel@openwrt.org>
+@@
+Config:
+	menu "qca-ssdk-shell custom configuration"
+
+	config QCA_SSDK_SHELL_PRODUCT_CONFIG
+		string "Product configuration file name."
+		default "default"
+		help
+			All avaliable configuration files can be found under 'configs' directory of source directory.
+
+	endmenu
+@@
+
+

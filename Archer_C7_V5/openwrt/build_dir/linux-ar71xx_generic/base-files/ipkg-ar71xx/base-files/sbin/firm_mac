@@ -1,0 +1,28 @@
+#!/bin/sh
+# Copyright(c) 2011-2014 Shenzhen TP-LINK Technologies Co.Ltd.
+# file     firm_mac
+# brief    Get firmware's default mac address
+# author   Zhu Xianfeng<zhuxianfeng@tp-link.net>
+# version  1.0.0
+# date     27Oct14
+# history  arg 1.0.0, 27Oct14, Zhu Xianfeng, Create the file. 
+
+local mac=$(getfirm MAC)
+local iface=$1
+
+case "$iface" in
+	lan|2g)
+		;;
+	wan)
+		# increase mac address
+		mac=`mac_addr 1 $mac`
+		;;
+	5g)
+		# decrease mac address
+		mac=`mac_addr 2 $mac`
+		;;
+	*)
+		;;
+esac
+
+echo -n $mac

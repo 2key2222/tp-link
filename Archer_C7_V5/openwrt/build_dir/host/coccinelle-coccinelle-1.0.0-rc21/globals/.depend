@@ -1,0 +1,13 @@
+iteration.cmi :
+config.cmo :
+config.cmx :
+flag.cmo : ../commons/commands.cmo
+flag.cmx : ../commons/commands.cmx
+iteration.cmo : flag.cmo ../commons/common.cmi iteration.cmi
+iteration.cmx : flag.cmx ../commons/common.cmx iteration.cmi
+regexp.cmo : regexp_str.cmo
+regexp.cmx : regexp_str.cmx
+regexp_pcre.cmo :
+regexp_pcre.cmx :
+regexp_str.cmo :
+regexp_str.cmx :

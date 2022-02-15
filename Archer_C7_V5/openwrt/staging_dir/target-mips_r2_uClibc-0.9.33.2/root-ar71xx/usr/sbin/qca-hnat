@@ -1,0 +1,65 @@
+#!/bin/sh /etc/rc.common
+# Copyright (C) 2008-2010 OpenWrt.org
+
+decode_ip(){
+	lua -e "local s='';for w in string.gmatch('$1','%d+') do s = s..string.format('%.2x',w) end ;print(s)"
+}
+pre(){
+	local wan=$(uci get network.wan.ifname)
+	local lan=$(uci get network.lan.ifname)
+	local wan_mac=$(uci get network.wan.macaddr | sed 's/://g')
+	local vlan_prio=$(uci get iptv.iptv.internet_vprio)
+	local iptv_enable=$(uci get iptv.iptv.enable)
+	local iptv_mode=$(uci get iptv.iptv.mode)
+	local tag_vlan=$(uci get iptv.iptv.internet_tag)
+	local vlan_enable=0
+	local lan_mac=$(uci get network.@device[0].macaddr  | sed 's/://g')
+	local lan_ip=$(decode_ip $(uci get network.lan.ipaddr))
+	local lan_mask=$(decode_ip $(uci get network.lan.netmask))
+
+	config_load iptv
+	local inet_mask=0
+	local value=1
+	for i in `seq 4`;do
+		config_get port "iptv" "lan""$i"
+		[ "$port" == "Internet" ] && inet_mask=$((inet_mask + value))
+		value=$((value * 2))
+	done
+	[ "$iptv_en" != "on" ] && inet_mask=15
+
+	[ "$iptv_enable" == "on" ] && [ "$iptv_mode" != "Bridge" ] && [ "$tag_vlan" == "on" ] && vlan_enable=1;
+	echo "$wan" > /proc/qca_port_list/wan_list
+	echo "$lan" > /proc/qca_port_list/lan_list
+	echo "$wan_mac" > /proc/qca_port_list/wan_mac
+	echo "$vlan_enable" > /proc/qca_port_list/vlan
+	echo "$vlan_prio"  > /proc/qca_port_list/vlan_prio
+	echo "$lan_mac"   > /proc/qca_port_list/lan_mac
+	echo "$lan_ip"   > /proc/qca_port_list/lan_ip
+	echo "$lan_mask" > /proc/qca_port_list/lan_mask
+	echo "$inet_mask" > /proc/qca_port_list/inet_mask
+	return
+}
+
+start() {
+	local hw_on=$(uci get nat.@nat_global[0].hw_enable)
+        local nat_on=$(uci get nat.@nat_global[0].enable)
+	local wan_type=$(uci get network.wan.wan_type)
+	[ "$hw_on" == "off" ] || [ "$nat_on" == "off" ]  &&   {
+		stop
+		return
+	}
+	pre
+	[ "$wan_type" == "static" ] &&   ssdk_sh nat global set enable;
+	[ "$wan_type" == "dhcp" ]   &&   ssdk_sh nat global set enable;
+	[ "$wan_type" == "pppoe" ]  &&   ssdk_sh nat global set enable;
+}
+
+stop(){
+	ssdk_sh nat global set disable
+}
+restart() {
+	stop
+	start
+}
+
+

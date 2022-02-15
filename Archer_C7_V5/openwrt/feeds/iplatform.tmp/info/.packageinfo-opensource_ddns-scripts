@@ -1,0 +1,18 @@
+Source-Makefile: feeds/iplatform/opensource/ddns-scripts/Makefile
+Package: ddns-scripts
+Version: 1.0.0-21
+Depends: +libc +USE_EGLIBC:librt +USE_EGLIBC:libpthread +log +dnslookup
+Menu-Depends: 
+Provides: 
+Section: net
+Category: TP-LINK iplatform apps
+Title: Dynamic DNS Scripts
+Maintainer: OpenWrt Developers Team <openwrt-devel@openwrt.org>
+Source: 
+Type: ipkg
+Description: 	A highly configurable set of scripts for doing
+	dynamic dns updates
+OpenWrt Developers Team <openwrt-devel@openwrt.org>
+@@
+
+

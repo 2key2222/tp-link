@@ -1,0 +1,6 @@
+$(eval $(call PackageDir,luci,luci))
+$(eval $(call PackageDir,uhttpd,uhttpd))
+$(eval $(call PackageDir,ubus,ubus))
+$(eval $(call PackageDir,uci,uci))
+$(eval $(call PackageDir,lua,lua))
+$(eval $(call PackageDir,libubox,libubox))
