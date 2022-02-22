@@ -1,0 +1,46 @@
+From c984a281761b804619366adf6402fbdb39aeb54a Mon Sep 17 00:00:00 2001
+From: Grzegorz Jaszczyk <jaz@semihalf.com>
+Date: Thu, 16 Jun 2016 15:49:09 +0200
+Subject: [PATCH 0507/2241] ARM: mvebu: add default partition description for
+ NAND
+
+Change-Id: Ic1c07036f2b7dbfb82f099b9267da76e9df00c9e
+Signed-off-by: Grzegorz Jaszczyk <jaz@semihalf.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/30528
+Reviewed-by: Ofer Heifetz <oferh@marvell.com>
+Tested-by: Star_Automation <star@marvell.com>
+---
+ arch/arm/boot/dts/armada-385-db-ap.dts | 17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
+
+diff --git a/arch/arm/boot/dts/armada-385-db-ap.dts b/arch/arm/boot/dts/armada-385-db-ap.dts
+index 1ac4f45..c105c25 100644
+--- a/arch/arm/boot/dts/armada-385-db-ap.dts
++++ b/arch/arm/boot/dts/armada-385-db-ap.dts
+@@ -180,6 +180,23 @@
+ 				marvell,nand-keep-config;
+ 				marvell,nand-enable-arbiter;
+ 				nand-on-flash-bbt;
++
++				partition@0 {
++					label = "U-Boot";
++					reg = <0x00000000 0x00800000>;
++					read-only;
++				};
++
++				partition@800000 {
++					label = "uImage";
++					reg = <0x00800000 0x00400000>;
++					read-only;
++				};
++
++				partition@c00000 {
++					label = "Root";
++					reg = <0x00c00000 0x3f400000>;
++				};
+ 			};
+ 
+ 			usb@58000 {
+-- 
+2.7.4
+

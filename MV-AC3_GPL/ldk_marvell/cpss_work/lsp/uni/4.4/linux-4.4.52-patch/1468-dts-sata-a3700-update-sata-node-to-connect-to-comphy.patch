@@ -1,0 +1,69 @@
+From 242e7b96021618b23c9fa259d6782d040b2338cc Mon Sep 17 00:00:00 2001
+From: Evan Wang <xswang@marvell.com>
+Date: Thu, 12 Jan 2017 22:53:27 +0800
+Subject: [PATCH 1468/2241] dts: sata: a3700: update sata node to connect to
+ comphy handler
+
+- the patch involve the comphy to sata.
+- on A3700 the SATA comphy is configured indirectly via
+  the data and address register in SATA controller, so
+  there will be a register overlap between SATA driver
+  and comphy driver. After check, the registers after
+  data and address (from offset 0x178) for indirect access
+  to comphy are not used and has no effection on SATA driver,
+  so the SATA driver register space is decreased to 0x178.
+
+Change-Id: Ib784674fff43196ac0d3e77568759b6a42da1678
+Signed-off-by: Evan Wang <xswang@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/37073
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Victor Gu <xigu@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-3720-community.dts | 1 +
+ arch/arm64/boot/dts/marvell/armada-3720-db.dts        | 2 ++
+ arch/arm64/boot/dts/marvell/armada-37xx.dtsi          | 2 +-
+ 3 files changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-3720-community.dts b/arch/arm64/boot/dts/marvell/armada-3720-community.dts
+index 8e8cbf7..2b6abb2 100644
+--- a/arch/arm64/boot/dts/marvell/armada-3720-community.dts
++++ b/arch/arm64/boot/dts/marvell/armada-3720-community.dts
+@@ -127,6 +127,7 @@
+ 			};
+ 
+ 			sata@e0000 {
++				phys = <&a3700_comphy 2 COMPHY_SATA0>;
+ 				status = "okay";
+ 			};
+ 		};
+diff --git a/arch/arm64/boot/dts/marvell/armada-3720-db.dts b/arch/arm64/boot/dts/marvell/armada-3720-db.dts
+index 1c4398b..d76c341 100644
+--- a/arch/arm64/boot/dts/marvell/armada-3720-db.dts
++++ b/arch/arm64/boot/dts/marvell/armada-3720-db.dts
+@@ -193,8 +193,10 @@
+ 			/* CON3 */
+ 			sata@e0000 {
+ 				target-supply = <&reg_5v_sata>;
++				phys = <&a3700_comphy 2 COMPHY_SATA0>;
+ 				status = "okay";
+ 			};
++
+ 			vcc_sd_reg1: regulator@0 {
+ 				compatible = "regulator-gpio";
+ 				regulator-name = "vcc_sd1";
+diff --git a/arch/arm64/boot/dts/marvell/armada-37xx.dtsi b/arch/arm64/boot/dts/marvell/armada-37xx.dtsi
+index c108b1b..7420e64 100644
+--- a/arch/arm64/boot/dts/marvell/armada-37xx.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-37xx.dtsi
+@@ -398,7 +398,7 @@
+ 
+ 			sata@e0000 {
+ 				compatible = "marvell,armada-3700-ahci";
+-				reg = <0xe0000 0x2000>;
++				reg = <0xe0000 0x178>;
+ 				interrupts = <GIC_SPI 27 IRQ_TYPE_LEVEL_HIGH>;
+ 				clocks = <&ngateclk 3>;
+ 				status = "disabled";
+-- 
+2.7.4
+

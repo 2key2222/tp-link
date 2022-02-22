@@ -1,0 +1,37 @@
+From e161a407bf1d4023712a620ec6b57f02685b310d Mon Sep 17 00:00:00 2001
+From: Marcin Wojtas <mw@semihalf.com>
+Date: Tue, 27 Dec 2016 15:04:54 +0100
+Subject: [PATCH 1227/2241] telephony: mvebu: tdmmc: use frame_ts field for
+ calculating FS bit count
+
+Change-Id: Ia219ce571a4829dffb975eb9712cc6b78ed6dc66
+Signed-off-by: Marcin Wojtas <mw@semihalf.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/35150
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/telephony/mvebu_phone/tdmmc/tdmmc.c | 8 +-------
+ 1 file changed, 1 insertion(+), 7 deletions(-)
+
+diff --git a/drivers/telephony/mvebu_phone/tdmmc/tdmmc.c b/drivers/telephony/mvebu_phone/tdmmc/tdmmc.c
+index 2d4dd79..4d430bb 100644
+--- a/drivers/telephony/mvebu_phone/tdmmc/tdmmc.c
++++ b/drivers/telephony/mvebu_phone/tdmmc/tdmmc.c
+@@ -622,13 +622,7 @@ int tdmmc_init(void __iomem *base, struct device *dev,
+ 	writel(0, regs + MCSC_EXTENDED_INT_CAUSE_REG);
+ 
+ 	/* Set output sync counter bits for FS */
+-#if defined(MV_TDM_PCM_CLK_8MHZ)
+-	count = MV_FRAME_128TS * 8;
+-#elif defined(MV_TDM_PCM_CLK_4MHZ)
+-	count = MV_FRAME_64TS * 8;
+-#else /* MV_TDM_PCM_CLK_2MHZ */
+-	count = MV_FRAME_32TS * 8;
+-#endif
++	count = hal_data->frame_ts * 8;
+ 	writel(((count << TDM_SYNC_BIT_RX_OFFS) & TDM_SYNC_BIT_RX_MASK) | (count & TDM_SYNC_BIT_TX_MASK),
+ 	       regs + TDM_OUTPUT_SYNC_BIT_COUNT_REG);
+ 
+-- 
+2.7.4
+

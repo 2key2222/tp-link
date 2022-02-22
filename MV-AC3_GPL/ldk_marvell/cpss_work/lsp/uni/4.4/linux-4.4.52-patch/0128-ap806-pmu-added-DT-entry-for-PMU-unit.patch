@@ -1,0 +1,31 @@
+From 979b64586dd71f2827eba064c6929740bc27d13b Mon Sep 17 00:00:00 2001
+From: Yehuda Yitschak <yehuday@marvell.com>
+Date: Wed, 17 Feb 2016 15:41:51 +0200
+Subject: [PATCH 0128/2241] ap806: pmu: added DT entry for PMU unit
+
+Change-Id: Id6858fa512c85efec23f6df4be271f9956c90fc8
+Signed-off-by: Yehuda Yitschak <yehuday@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-ap806.dtsi | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-ap806.dtsi b/arch/arm64/boot/dts/marvell/armada-ap806.dtsi
+index c4a5109..7447181 100644
+--- a/arch/arm64/boot/dts/marvell/armada-ap806.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-ap806.dtsi
+@@ -242,6 +242,12 @@
+ 				reg = <0x6f808C 0x4>, <0x6f8084 0x4>;
+ 				status = "okay";
+ 			};
++
++			pmu {
++				compatible = "arm,armv8-pmuv3";
++				interrupt-parent = <&pic>;
++				interrupts = <17>;
++			};
+ 		};
+ 	};
+ 
+-- 
+2.7.4
+

@@ -1,0 +1,29 @@
+From 38c65e17aac73f01e107489536619b54dfa39850 Mon Sep 17 00:00:00 2001
+From: Evan Wang <xswang@marvell.com>
+Date: Mon, 16 Jan 2017 17:25:01 +0800
+Subject: [PATCH 1384/2241] dts: pcie: a3700: update pcie node to connect to
+ comphy handler
+
+Change-Id: I30b5e5c0f974a91b88cfa1187765ac51adc6b7fb
+Signed-off-by: Evan Wang <xswang@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/35606
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Victor Gu <xigu@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-3720-db.dts | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-3720-db.dts b/arch/arm64/boot/dts/marvell/armada-3720-db.dts
+index ecb0164..a7e3e83 100644
+--- a/arch/arm64/boot/dts/marvell/armada-3720-db.dts
++++ b/arch/arm64/boot/dts/marvell/armada-3720-db.dts
+@@ -251,4 +251,6 @@
+ /* CON17 (PCIe) / CON12 (mini-PCIe) */
+ &pcie0 {
+ 	status = "okay";
++	phys = <&a3700_comphy 0 COMPHY_PCIE0>;
++	phy-names = "comphy";
+ };
+-- 
+2.7.4
+

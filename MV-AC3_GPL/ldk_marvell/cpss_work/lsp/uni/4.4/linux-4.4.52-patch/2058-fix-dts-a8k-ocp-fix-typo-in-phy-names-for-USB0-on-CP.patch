@@ -1,0 +1,35 @@
+From 72e3b8b292fcf58b105ecea5d44707f40781f839 Mon Sep 17 00:00:00 2001
+From: David Sniatkiwicz <davidsn@marvell.com>
+Date: Mon, 30 Oct 2017 14:06:33 +0200
+Subject: [PATCH 2058/2241] fix: dts: a8k-ocp: fix typo in 'phy-names' for USB0
+ on CP1 for OCP board
+
+Currently, USB vBus disconnected during linux boot on OCP board.
+This patch fixes this issue by changing the USB Host0 on CP1 node
+"phy-names" to "usb" instead of "usb2".
+
+Change-Id: I9aaae7c68853b7b1fcab671f43e6513eb6077f11
+Signed-off-by: David Sniatkiwicz <davidsn@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/45679
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-8040-ocp.dts | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-8040-ocp.dts b/arch/arm64/boot/dts/marvell/armada-8040-ocp.dts
+index 5a0416b..dfa89f9 100644
+--- a/arch/arm64/boot/dts/marvell/armada-8040-ocp.dts
++++ b/arch/arm64/boot/dts/marvell/armada-8040-ocp.dts
+@@ -160,7 +160,7 @@
+ 			cps_usb3h0: usb3@500000 {
+ 				usb-phy = <&cps_usb3h0_phy>;
+ 				phys = <&cps_utmi0>;
+-				phy-names = "usb2";
++				phy-names = "usb";
+ 				status = "okay";
+ 			};
+ 			cps_usb3h0_phy: usb3_phy0 {
+-- 
+2.7.4
+

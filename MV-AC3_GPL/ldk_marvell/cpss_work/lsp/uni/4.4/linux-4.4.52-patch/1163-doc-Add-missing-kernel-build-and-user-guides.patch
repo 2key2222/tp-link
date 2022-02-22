@@ -1,0 +1,106 @@
+From e2358177fc54c1d066ae48b2f52a7245c0cfe6c7 Mon Sep 17 00:00:00 2001
+From: Nadav Haklai <nadavh@marvell.com>
+Date: Wed, 7 Dec 2016 19:16:40 +0200
+Subject: [PATCH 1163/2241] doc: Add missing kernel build and user guides
+
+Change-Id: Ieb7346fb21b037e0fbb6fa601823ce046ff91561
+Signed-off-by: Nadav Haklai <nadavh@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/34473
+Reviewed-by: Nir Erez <nerez@marvell.com>
+---
+ Documentation/mvebu/build_guide.txt | 34 ++++++++++++++++++++++++++++++
+ Documentation/mvebu/user_guide.txt  | 42 ++++++++-----------------------------
+ 2 files changed, 43 insertions(+), 33 deletions(-)
+ create mode 100644 Documentation/mvebu/build_guide.txt
+
+diff --git a/Documentation/mvebu/build_guide.txt b/Documentation/mvebu/build_guide.txt
+new file mode 100644
+index 0000000..9018a95
+--- /dev/null
++++ b/Documentation/mvebu/build_guide.txt
+@@ -0,0 +1,34 @@
++Kernel Build Instructions
++=========================
++
++ARMv8
++-----
++
++	$ export CROSS_COMPILE=<path/to/cross/compiler/>
++	  (Path to gcc compiler, without the gcc suffix. e.g. CROSS_COMPILE=/my_compilers/gcc-5.2/bin/aarch64-marvell-linux-gnu-)
++	$ export ARCH=arm64
++	$ make mvebu_v8_lsp_defconfig
++	$ make - for build kernel image and device tree images.
++
++- Linux image is under: 'arch/arm64/boot/Image'.
++- Device tree images are generated under: 'arch/arm64/boot/dts/marvell'.
++  For example (more device-trees are available in the folder):
++	- arch/arm64/boot/dts/marvell/armada-3720-community.dtb
++	- arch/arm64/boot/dts/marvell/armada-8040-mcbin.dtb
++
++ARMv7
++-----
++
++	$ export CROSS_COMPILE=<path/to/cross/compiler/>
++	  (Path to gcc compiler, without the gcc suffix. e.g. CROSS_COMPILE=/my_compilers/gcc-5.2/bin/aarch64-marvell-linux-gnu-)
++	$ export ARCH=arm
++	$ make mvebu_v7_lsp_defconfig
++	$ make - for build kernel image and device tree images.
++	$ make zImage - for build kernel image
++
++- Linux image is under: 'arch/arm/boot/zImage'.
++- Device tree images are generated under: 'arch/arm/boot/dts'.
++  For example (more device-trees are available in the folder):
++	- arch/arm/boot/dts/marvell/armada-388-clearfog.dtb
++
++
+diff --git a/Documentation/mvebu/user_guide.txt b/Documentation/mvebu/user_guide.txt
+index 9018a95..0c604d8 100644
+--- a/Documentation/mvebu/user_guide.txt
++++ b/Documentation/mvebu/user_guide.txt
+@@ -1,34 +1,10 @@
+-Kernel Build Instructions
+-=========================
+-
+-ARMv8
+------
+-
+-	$ export CROSS_COMPILE=<path/to/cross/compiler/>
+-	  (Path to gcc compiler, without the gcc suffix. e.g. CROSS_COMPILE=/my_compilers/gcc-5.2/bin/aarch64-marvell-linux-gnu-)
+-	$ export ARCH=arm64
+-	$ make mvebu_v8_lsp_defconfig
+-	$ make - for build kernel image and device tree images.
+-
+-- Linux image is under: 'arch/arm64/boot/Image'.
+-- Device tree images are generated under: 'arch/arm64/boot/dts/marvell'.
+-  For example (more device-trees are available in the folder):
+-	- arch/arm64/boot/dts/marvell/armada-3720-community.dtb
+-	- arch/arm64/boot/dts/marvell/armada-8040-mcbin.dtb
+-
+-ARMv7
+------
+-
+-	$ export CROSS_COMPILE=<path/to/cross/compiler/>
+-	  (Path to gcc compiler, without the gcc suffix. e.g. CROSS_COMPILE=/my_compilers/gcc-5.2/bin/aarch64-marvell-linux-gnu-)
+-	$ export ARCH=arm
+-	$ make mvebu_v7_lsp_defconfig
+-	$ make - for build kernel image and device tree images.
+-	$ make zImage - for build kernel image
+-
+-- Linux image is under: 'arch/arm/boot/zImage'.
+-- Device tree images are generated under: 'arch/arm/boot/dts'.
+-  For example (more device-trees are available in the folder):
+-	- arch/arm/boot/dts/marvell/armada-388-clearfog.dtb
+-
++Driver's guide for Marvell LSP
++==============================
++
++	Driver			| Kernel infrastructure		| Documentation location
++	------------------------|-------------------------------|-------------------------------------------------------
++	Comphy			| Generic PHY framework		| Documentation/phy.txt
++	mv_xor, mv_xor2		| DMA Engine			| Documentation/dmaengine/00-INDEX
++	Telephony		| Marvell proprietary		| drivers/telephony/mvebu_phone/telephony_user_guide.txt
++	cpufreq			| generic cpufreq-dt		| Documentation/cpu-freq/user-guide.txt
+ 
+-- 
+2.7.4
+

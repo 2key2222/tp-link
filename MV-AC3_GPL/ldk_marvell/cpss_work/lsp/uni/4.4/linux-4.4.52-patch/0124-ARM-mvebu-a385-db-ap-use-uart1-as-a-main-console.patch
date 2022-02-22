@@ -1,0 +1,37 @@
+From 636b7a33c68a8760fe9840a54f530cec9290df0a Mon Sep 17 00:00:00 2001
+From: Grzegorz Jaszczyk <jaz@semihalf.com>
+Date: Thu, 11 Feb 2016 12:01:48 +0100
+Subject: [PATCH 0124/2241] ARM: mvebu: a385-db-ap: use uart1 as a main console
+
+The mini-usb connector is usually used for serial console on Marvell's
+boards. In a385-db-ap board, the UART1 is exposed through a FTDI chip
+wired to mentioned mini-USB connector.
+
+Change-Id: Iaaa00bb3f3190180b10da3ac02b62c132960374b
+Signed-off-by: Grzegorz Jaszczyk <jaz@semihalf.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/27576
+Reviewed-by: Nadav Haklai <nadavh@marvell.com>
+Tested-by: Lior Amsalem <alior@marvell.com>
+---
+ arch/arm/boot/dts/armada-385-db-ap.dts | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/arch/arm/boot/dts/armada-385-db-ap.dts b/arch/arm/boot/dts/armada-385-db-ap.dts
+index b745b83..1ac4f45 100644
+--- a/arch/arm/boot/dts/armada-385-db-ap.dts
++++ b/arch/arm/boot/dts/armada-385-db-ap.dts
+@@ -48,6 +48,11 @@
+ 	model = "Marvell Armada 385 Access Point Development Board";
+ 	compatible = "marvell,a385-db-ap", "marvell,armada385", "marvell,armada380";
+ 
++	aliases {
++		serial0 = &uart1;
++		serial1 = &uart0;
++	};
++
+ 	chosen {
+ 		stdout-path = "serial1:115200n8";
+ 	};
+-- 
+2.7.4
+

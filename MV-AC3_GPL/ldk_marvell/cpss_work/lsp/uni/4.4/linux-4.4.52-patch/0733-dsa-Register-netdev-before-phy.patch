@@ -1,0 +1,53 @@
+From 5b1b653371ce5c277bf4658c04b10c584b19095d Mon Sep 17 00:00:00 2001
+From: Andrew Lunn <andrew@lunn.ch>
+Date: Wed, 6 Jan 2016 20:11:20 +0100
+Subject: [PATCH 0733/2241] dsa: Register netdev before phy
+
+Upstream-commit: 0071f56e46dadb88dc3ad1f8d9cf9c3ae014735d
+
+When the phy is connected, an info message is printed. If the netdev
+it is attached to has not been registered yet, the name
+'uninitialised' in the output. By registering the netdev first, then
+connecting they phy, we can avoid this.
+
+Signed-off-by: Andrew Lunn <andrew@lunn.ch>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+---
+ net/dsa/slave.c | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
+
+diff --git a/net/dsa/slave.c b/net/dsa/slave.c
+index 1b9e402..9c868cd 100644
+--- a/net/dsa/slave.c
++++ b/net/dsa/slave.c
+@@ -1191,13 +1191,6 @@ int dsa_slave_create(struct dsa_switch *ds, struct device *parent,
+ 	p->old_link = -1;
+ 	p->old_duplex = -1;
+ 
+-	ret = dsa_slave_phy_setup(p, slave_dev);
+-	if (ret) {
+-		netdev_err(master, "error %d setting up slave phy\n", ret);
+-		free_netdev(slave_dev);
+-		return ret;
+-	}
+-
+ 	ds->ports[port] = slave_dev;
+ 	ret = register_netdev(slave_dev);
+ 	if (ret) {
+@@ -1211,6 +1204,13 @@ int dsa_slave_create(struct dsa_switch *ds, struct device *parent,
+ 
+ 	netif_carrier_off(slave_dev);
+ 
++	ret = dsa_slave_phy_setup(p, slave_dev);
++	if (ret) {
++		netdev_err(master, "error %d setting up slave phy\n", ret);
++		free_netdev(slave_dev);
++		return ret;
++	}
++
+ 	return 0;
+ }
+ 
+-- 
+2.7.4
+

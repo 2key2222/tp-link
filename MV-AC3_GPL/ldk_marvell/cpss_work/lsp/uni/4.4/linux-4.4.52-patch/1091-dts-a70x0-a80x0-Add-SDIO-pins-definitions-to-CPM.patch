@@ -1,0 +1,83 @@
+From 690fbe4f579258fdd9d247607740aa6f3d4e6ab1 Mon Sep 17 00:00:00 2001
+From: Konstantin Porotchkin <kostap@marvell.com>
+Date: Thu, 17 Nov 2016 12:46:45 +0200
+Subject: [PATCH 1091/2241] dts: a70x0: a80x0: Add SDIO pins definitions to CPM
+
+Add SDIO pins definitions to CP-master pin controller
+DT nodes for both a70x0 and a80x0 DTSI files
+
+Change-Id: I814d14f265f0c0158ec6bc06ec3a390880eab848
+Signed-off-by: Konstantin Porotchkin <kostap@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/33879
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-7040.dtsi | 12 ++++++++++++
+ arch/arm64/boot/dts/marvell/armada-8040.dtsi | 13 +++++++++++++
+ 2 files changed, 25 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-7040.dtsi b/arch/arm64/boot/dts/marvell/armada-7040.dtsi
+index a47a362..b4f5b90 100644
+--- a/arch/arm64/boot/dts/marvell/armada-7040.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-7040.dtsi
+@@ -68,6 +68,13 @@
+ 					      <&cp_xor0 0x489>,
+ 					      <&cp_xor1 0x48a>;
+ 			};
++			pinctrl@6f4000 {
++				ap_emmc_pins: emmc-pins-0 {
++					marvell,pins = "mpp0", "mpp1", "mpp2",
++					"mpp3", "mpp4", "mpp5";
++					marvell,function = "sdio";
++				};
++			};
+ 		};
+ 	};
+ 
+@@ -80,6 +87,11 @@
+ 					marvell,pins = "mpp37", "mpp38";
+ 					marvell,function = "i2c0";
+ 				};
++				cpm_sdhci_pins: cpm-sdhi-pins {
++					marvell,pins = "mpp56", "mpp57", "mpp58",
++						       "mpp59", "mpp60", "mpp61";
++					marvell,function = "sdio";
++				};
+ 				/* following GPIO entry is not used (for reference only)
+ 				 * GPIO is not connected in default A7040-DB board
+ 				 */
+diff --git a/arch/arm64/boot/dts/marvell/armada-8040.dtsi b/arch/arm64/boot/dts/marvell/armada-8040.dtsi
+index ca3a9af..6062c43 100644
+--- a/arch/arm64/boot/dts/marvell/armada-8040.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-8040.dtsi
+@@ -114,6 +114,14 @@
+ 				mmu-masters = <&usb3h0 0x483>,
+ 					      <&usb3h1 0x484>;
+ 			};
++			pinctrl@6f4000 {
++				ap_emmc_pins: emmc-pins-0 {
++					marvell,pins = "mpp0", "mpp1", "mpp2",
++					"mpp3", "mpp4", "mpp5", "mpp6", "mpp7",
++					"mpp8", "mpp9", "mpp10";
++					marvell,function = "sdio";
++				};
++			};
+ 		};
+ 	};
+ 
+@@ -159,6 +167,11 @@
+ 					marvell,pins = "mpp62";
+ 					marvell,function = "gpio";
+ 				};
++				cpm_sdhci_pins: cpm-sdhi-pins {
++					marvell,pins = "mpp56", "mpp57", "mpp58",
++						       "mpp59", "mpp60", "mpp61";
++					marvell,function = "sdio";
++				};
+ 			};
+ 			usb3h0: usb3@500000 {
+ 				#stream-id-cells = <1>;
+-- 
+2.7.4
+

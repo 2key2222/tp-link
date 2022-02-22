@@ -1,0 +1,42 @@
+From 4ee980ff9761a1df913a58aef501013fb9c52a03 Mon Sep 17 00:00:00 2001
+From: Victor Gu <xigu@marvell.com>
+Date: Mon, 7 Aug 2017 17:19:10 +0800
+Subject: [PATCH 1942/2241] genirq: change wake_depth log from warning to info
+ level
+
+Within routine irq_set_irq_wake(), when input parameter "on" is set,
+the descriptor structure member wake_depth will be increased, but it
+will be reset to 0 if set_irq_wake_real() fail, which happen
+when irq chip does not implement the irq_set_wake callback routine.
+The irq chip used by the RTC is GIC-400, which does not implement
+the irq_set_wake callback routine.
+Thus this patch changes the log level from warning to information level
+to avoid unnecessary console printing.
+
+Change-Id: I88dce7002b157e8f72a83847ff8bb60710247ea5
+Signed-off-by: Victor Gu <xigu@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/42637
+Reviewed-by: Marcin Wojtas <mw@semihalf.com>
+Reviewed-by: Kostya Porotchkin <kostap@marvell.com>
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ kernel/irq/manage.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+index 6ead200..9aad079 100644
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -602,7 +602,7 @@ int irq_set_irq_wake(unsigned int irq, unsigned int on)
+ 		}
+ 	} else {
+ 		if (desc->wake_depth == 0) {
+-			WARN(1, "Unbalanced IRQ %d wake disable\n", irq);
++			pr_info("Unbalanced IRQ %d wake disable\n", irq);
+ 		} else if (--desc->wake_depth == 0) {
+ 			ret = set_irq_wake_real(irq, on);
+ 			if (ret)
+-- 
+2.7.4
+

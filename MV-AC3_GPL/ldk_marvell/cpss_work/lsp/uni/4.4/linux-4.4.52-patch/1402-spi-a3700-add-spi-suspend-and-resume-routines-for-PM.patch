@@ -1,0 +1,120 @@
+From daba27d17bb3e3e5474e53fab17dd6ee498a0bb8 Mon Sep 17 00:00:00 2001
+From: Evan Wang <xswang@marvell.com>
+Date: Mon, 20 Feb 2017 21:38:32 +0800
+Subject: [PATCH 1402/2241] spi: a3700: add spi suspend and resume routines for
+ PM mode
+
+- The patch assumes that gic-v3 driver already implemented the
+  irq suspend and resume, and for SPI, suspend_noirq and
+  resume_noirq routines are implemented.
+- Besides SPI suspend and resume framework, the following
+  operations are implemented:
+  (1) In suspend_noirq, value of SPI configuration register and
+      timing register are saved to DRAM, and disable SPI clock.
+  (2) In resume_noirq, enable SPI clock, then SPI configuration
+      register and timing register are restored, and mask the
+      interrupts and clear cause bits.
+
+Change-Id: I62571873c3094d583eee5080833e78c8655274ea
+Signed-off-by: Evan Wang <xswang@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/36886
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Victor Gu <xigu@marvell.com>
+---
+ drivers/spi/spi-armada-3700.c | 66 +++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 66 insertions(+)
+
+diff --git a/drivers/spi/spi-armada-3700.c b/drivers/spi/spi-armada-3700.c
+index 5f4daef..34c9030 100644
+--- a/drivers/spi/spi-armada-3700.c
++++ b/drivers/spi/spi-armada-3700.c
+@@ -149,6 +149,8 @@ struct a3700_spi {
+ 	unsigned int	input_clk_freq;
+ 	unsigned int            irq;
+ 	unsigned int            flags;
++	unsigned int		spi_cfg;
++	unsigned int		spi_timing;
+ 	enum a3700_spi_pin_mode  pin_mode;
+ 	struct a3700_max_hdr_cnt max_cnt;
+ 	struct a3700_spi_status  status;
+@@ -1191,6 +1193,69 @@ static int a3700_spi_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_PM
++static int a3700_spi_suspend_noirq(struct device *dev)
++{
++	struct platform_device *pdev = to_platform_device(dev);
++	struct spi_master *master = platform_get_drvdata(pdev);
++	struct a3700_spi *spi = spi_master_get_devdata(master);
++	int ret;
++
++	ret = spi_master_suspend(master);
++	if (ret) {
++		dev_warn(&pdev->dev, "cannot suspend spi master\n");
++		return ret;
++	}
++
++	/* Store register value for SPI cfg(0x04) and timing(0x24) */
++	spi->spi_cfg = spireg_read(spi, A3700_SPI_IF_CFG_REG);
++	spi->spi_timing = spireg_read(spi, A3700_SPI_IF_TIME_REG);
++
++	/* Disable spi clock */
++	if (!IS_ERR(spi->clk))
++		clk_disable_unprepare(spi->clk);
++
++	return 0;
++}
++
++static int a3700_spi_resume_noirq(struct device *dev)
++{
++	struct platform_device *pdev = to_platform_device(dev);
++	struct spi_master *master = platform_get_drvdata(pdev);
++	struct a3700_spi *spi = spi_master_get_devdata(master);
++	int ret;
++
++	/* Enable spi clock */
++	if (!IS_ERR(spi->clk)) {
++		ret = clk_prepare_enable(spi->clk);
++		if (ret)
++			return ret;
++	}
++
++	/* Mask the interrupts and clear cause bits */
++	spireg_write(spi, A3700_SPI_INT_MASK_REG, 0);
++	spireg_write(spi, A3700_SPI_INT_STAT_REG, ~0U);
++
++	/* Restore cfg and time register */
++	spireg_write(spi, A3700_SPI_IF_TIME_REG, spi->spi_timing);
++	spi->spi_cfg &= ~(A3700_SPI_XFER_STOP | A3700_SPI_XFER_START | A3700_SPI_SRST);
++	spireg_write(spi, A3700_SPI_IF_CFG_REG, spi->spi_cfg);
++
++	ret = spi_master_resume(master);
++
++	return ret;
++}
++
++static const struct dev_pm_ops a3700_spi_pm_ops = {
++	.suspend_noirq = a3700_spi_suspend_noirq,
++	.resume_noirq = a3700_spi_resume_noirq,
++};
++
++#define A3700_SPI_PM_OPS (&a3700_spi_pm_ops)
++#else
++#define A3700_SPI_PM_OPS NULL
++#endif /* CONFIG_PM */
++
+ MODULE_ALIAS("platform:" DRIVER_NAME);
+ 
+ 
+@@ -1198,6 +1263,7 @@ static struct platform_driver a3700_spi_driver = {
+ 	.driver = {
+ 		.name	= DRIVER_NAME,
+ 		.owner	= THIS_MODULE,
++		.pm	= A3700_SPI_PM_OPS,
+ 		.of_match_table = of_match_ptr(a3700_spi_of_match_table),
+ 	},
+ 	.probe		= a3700_spi_probe,
+-- 
+2.7.4
+

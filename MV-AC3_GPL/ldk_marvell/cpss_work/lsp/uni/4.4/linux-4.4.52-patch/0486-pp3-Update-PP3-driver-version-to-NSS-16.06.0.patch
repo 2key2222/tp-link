@@ -1,0 +1,46 @@
+From 62d7ec3d427b3400cb7caf965f8f4408f2790085 Mon Sep 17 00:00:00 2001
+From: Dmitri Epshtein <dima@marvell.com>
+Date: Tue, 31 May 2016 17:38:56 +0300
+Subject: [PATCH 0486/2241] pp3: Update PP3 driver version to NSS:16.06.0
+
+This is first version on Linux kernel 4.4.8
+Changes from previous version NSS:1.1.5 on linux 3.14.33
+- Porting to Linux kernel 4.4.8
+- Fix queue statistics support
+- Fix flow control mechanism
+- Fix sysfs commands output format
+- Increase delay after start PPCs to 10 msec
+- Fix PTP support
+- Fix channel receive message
+
+Change-Id: I1b6c6c41df9f3650ca45c2a5e51dbfac7c665b9f
+Signed-off-by: Dmitri Epshtein <dima@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/30225
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Dovrat Zifroni <dovrat@marvell.com>
+Tested-by: Dovrat Zifroni <dovrat@marvell.com>
+Reviewed-by: Lior Amsalem <alior@marvell.com>
+---
+ drivers/net/ethernet/marvell/pp3/platform/mv_pp3_version.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/pp3/platform/mv_pp3_version.c b/drivers/net/ethernet/marvell/pp3/platform/mv_pp3_version.c
+index 3405a8c..07f83ab 100644
+--- a/drivers/net/ethernet/marvell/pp3/platform/mv_pp3_version.c
++++ b/drivers/net/ethernet/marvell/pp3/platform/mv_pp3_version.c
+@@ -25,9 +25,9 @@
+ 
+ static struct mv_pp3_version mv_pp3_driver_version = {
+ 	.name = "NSS",
+-	.major_x = 1,
+-	.minor_y = 1,
+-	.local_z = 5,
++	.major_x = 16,
++	.minor_y = 6,
++	.local_z = 0,
+ 	.debug_d = 0
+ };
+ 
+-- 
+2.7.4
+

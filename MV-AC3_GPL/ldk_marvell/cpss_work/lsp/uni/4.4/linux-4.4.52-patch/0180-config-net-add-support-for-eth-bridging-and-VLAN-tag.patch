@@ -1,0 +1,28 @@
+From f7df8d9f31a13f1951e3fb4eee3f2b7729f73028 Mon Sep 17 00:00:00 2001
+From: Yehuda Yitschak <yehuday@marvell.com>
+Date: Mon, 22 Feb 2016 16:43:11 +0200
+Subject: [PATCH 0180/2241] config: net: add support for eth bridging and VLAN
+ tagging
+
+Change-Id: If4e8e3a51978e8e32dc3c04bd35c2ff5b1c732c4
+Signed-off-by: Yehuda Yitschak <yehuday@marvell.com>
+---
+ arch/arm64/configs/mvebu_v8_lsp_defconfig | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/arch/arm64/configs/mvebu_v8_lsp_defconfig b/arch/arm64/configs/mvebu_v8_lsp_defconfig
+index 968875e..1beb00b 100644
+--- a/arch/arm64/configs/mvebu_v8_lsp_defconfig
++++ b/arch/arm64/configs/mvebu_v8_lsp_defconfig
+@@ -55,6 +55,8 @@ CONFIG_IP_PNP_DHCP=y
+ CONFIG_IP_PNP_BOOTP=y
+ # CONFIG_INET_LRO is not set
+ # CONFIG_IPV6 is not set
++CONFIG_BRIDGE=y
++CONFIG_VLAN_8021Q=y
+ CONFIG_BPF_JIT=y
+ # CONFIG_WIRELESS is not set
+ CONFIG_NET_9P=y
+-- 
+2.7.4
+

@@ -1,0 +1,28 @@
+From f11a7912710d93ed740cac21dde0917a0b3aba68 Mon Sep 17 00:00:00 2001
+From: Yehuda Yitschak <yehuday@marvell.com>
+Date: Mon, 22 Feb 2016 15:10:34 +0200
+Subject: [PATCH 0174/2241] nand: pxa_3xxx: enable using pxa nand driver in
+ mvebu arm64 platforms
+
+Change-Id: If9a2422fe2f612beb2c1d9fb7ca40a2712f0fe10
+Signed-off-by: Yehuda Yitschak <yehuday@marvell.com>
+---
+ drivers/mtd/nand/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/mtd/nand/Kconfig b/drivers/mtd/nand/Kconfig
+index 8f49f8a..a84a2de 100644
+--- a/drivers/mtd/nand/Kconfig
++++ b/drivers/mtd/nand/Kconfig
+@@ -329,7 +329,7 @@ config MTD_NAND_ATMEL
+ 
+ config MTD_NAND_PXA3xx
+ 	tristate "NAND support on PXA3xx and Armada 370/XP"
+-	depends on PXA3xx || ARCH_MMP || PLAT_ORION
++	depends on PXA3xx || ARCH_MMP || PLAT_ORION || ARCH_MVEBU
+ 	help
+ 	  This enables the driver for the NAND flash device found on
+ 	  PXA3xx processors (NFCv1) and also on Armada 370/XP (NFCv2).
+-- 
+2.7.4
+

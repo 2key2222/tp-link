@@ -1,0 +1,55 @@
+From 7e7e4b95c0135087e0e9f043ed52ed5e584daab0 Mon Sep 17 00:00:00 2001
+From: Haim Boot <hayim@marvell.com>
+Date: Wed, 20 Jul 2016 11:33:11 +0300
+Subject: [PATCH 0619/2241] doc: sei: add marvell,sei dt-bindings documentation
+
+describe the sei irq chip driver and provide example for
+sei device tree node
+
+Change-Id: I15aa91622458aa1faeaa7f7be226e30b1c2e7d1e
+Signed-off-by: Haim Boot <hayim@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/31271
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Gina Tadmore <gina@marvell.com>
+Reviewed-by: Yehuda Yitschak <yehuday@marvell.com>
+---
+ .../bindings/interrupt-controller/marvell,sei.txt  | 27 ++++++++++++++++++++++
+ 1 file changed, 27 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/interrupt-controller/marvell,sei.txt
+
+diff --git a/Documentation/devicetree/bindings/interrupt-controller/marvell,sei.txt b/Documentation/devicetree/bindings/interrupt-controller/marvell,sei.txt
+new file mode 100644
+index 0000000..e2208eb
+--- /dev/null
++++ b/Documentation/devicetree/bindings/interrupt-controller/marvell,sei.txt
+@@ -0,0 +1,27 @@
++Marvell SEI Interrupt Controller
++-----------------------------------------------------
++The Marvell SEI (System Error Interrupt) controller is an interrupt aggregator.
++It receives interrupts from several sources and aggregates them to a single
++interrupt line (of SEI interrupt) on the primary interrupt controller.
++
++Required properties:
++- compatible: Should be "marvell,sei"
++- reg: Should contain SEI registers location and length.
++- #interrupt-cells: Number of cells to define interrupts. Should be 1. The cell is the IRQ number.
++- #size-cells: The size of the interrupt cell. Should be 1.
++- interrupt-controller: Identifies the node as an interrupt controller.
++- interrupt-parent : Indicates the node of the parent interrupt controller.
++- interrupts: Identifies the IRQ nunmber of the parent IRQ controller to which the SEI is connected to.
++
++Example:
++
++
++	sei: interrupt-controller@3f0200 {
++		compatible = "marvell,sei";
++		reg = <0x3f0200 0x30>;
++		#interrupt-cells = <1>;
++		#size-cells = <1>;
++		interrupt-controller;
++		interrupt-parent = <&gic>;
++		interrupts = <GIC_SPI 0 IRQ_TYPE_LEVEL_HIGH>;
++	};
+-- 
+2.7.4
+

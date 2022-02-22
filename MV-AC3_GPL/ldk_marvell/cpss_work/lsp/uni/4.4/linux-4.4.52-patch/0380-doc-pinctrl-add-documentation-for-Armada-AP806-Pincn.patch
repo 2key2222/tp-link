@@ -1,0 +1,60 @@
+From 6114c356d7210d6327bf9f526d7829b8e8833ab5 Mon Sep 17 00:00:00 2001
+From: Hanna Hawa <hannah@marvell.com>
+Date: Thu, 28 Apr 2016 10:49:49 +0300
+Subject: [PATCH 0380/2241] doc: pinctrl: add documentation for Armada-AP806
+ Pincntrl driver
+
+Change-Id: I6dbb47fb7a68fbad25388fa5a8f0afb499f358f5
+Signed-off-by: Hanna Hawa <hannah@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/29474
+Reviewed-by: Gina Tadmore <gina@marvell.com>
+Tested-by: Star_Automation <star@marvell.com>
+---
+ .../pinctrl/marvell,armada-ap806-pinctrl.txt       | 35 ++++++++++++++++++++++
+ 1 file changed, 35 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/pinctrl/marvell,armada-ap806-pinctrl.txt
+
+diff --git a/Documentation/devicetree/bindings/pinctrl/marvell,armada-ap806-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/marvell,armada-ap806-pinctrl.txt
+new file mode 100644
+index 0000000..f94f4cc
+--- /dev/null
++++ b/Documentation/devicetree/bindings/pinctrl/marvell,armada-ap806-pinctrl.txt
+@@ -0,0 +1,35 @@
++* Marvell Armada AP-806 SoC pinctrl driver for MPP
++
++Please refer to marvell,mvebu-pinctrl.txt in this directory for the common binding
++part and usage.
++
++Required properties:
++- compatible: "marvell,ap806-pinctrl"
++- reg: register specifier of MPP registers
++
++Available MPP pins/groups and functions:
++Note: Brackets (x) are not part of the MPP name for the Marvell function and are
++      included only to provide a more detailed description this document.
++
++name    pins    functions
++================================================================================
++mpp0	0	gpio, sdio(clk), spi0(clk)
++mpp1	1	gpio, sdio(cmd), spi0(miso)
++mpp2	2	gpio, sdio(d0), spi0(mosi)
++mpp3	3	gpio, sdio(d1), spi0(cs0n)
++mpp4	4	gpio, sdio(d2), i2c0(sda)
++mpp5	5	gpio, sdio(d3), i2c0(sdk)
++mpp6	6	gpio, sdio(ds)
++mpp7	7	gpio, sdio(d4), uart1(rxd)
++mpp8	8	gpio, sdio(d5), uart1(txd)
++mpp9	9	gpio, sdio(d6), spi0(cs1n)
++mpp10	10	gpio, sdio(d7)
++mpp11	11	gpio, uart0(txd)
++mpp12	12	gpio, sdio(pw_off), sdio(hw_rst)
++mpp13	13	gpio
++mpp14	14	gpio
++mpp15	15	gpio
++mpp16	16	gpio
++mpp17	17	gpio
++mpp18	18	gpio
++mpp19	19	gpio, uart0(rxd), sdio(pw_off)
+-- 
+2.7.4
+

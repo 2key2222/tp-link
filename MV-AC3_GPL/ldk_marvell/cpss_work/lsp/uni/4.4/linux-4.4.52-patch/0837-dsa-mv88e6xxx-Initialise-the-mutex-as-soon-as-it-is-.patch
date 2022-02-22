@@ -1,0 +1,41 @@
+From e8021b21b6b3613fc99c045d56c924f7ab6eb000 Mon Sep 17 00:00:00 2001
+From: Andrew Lunn <andrew@lunn.ch>
+Date: Tue, 10 May 2016 23:27:19 +0200
+Subject: [PATCH 0837/2241] dsa: mv88e6xxx: Initialise the mutex as soon as it
+ is created
+
+Upstream-commit: b681957ad439daf1ea67111463df783d3113c2da
+
+By initialising immediately it, we don't run the danger of using it
+before it is initialised.
+
+Signed-off-by: Andrew Lunn <andrew@lunn.ch>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+---
+ drivers/net/dsa/mv88e6xxx.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/drivers/net/dsa/mv88e6xxx.c b/drivers/net/dsa/mv88e6xxx.c
+index 835126e..46564f4 100644
+--- a/drivers/net/dsa/mv88e6xxx.c
++++ b/drivers/net/dsa/mv88e6xxx.c
+@@ -3132,8 +3132,6 @@ static int mv88e6xxx_setup(struct dsa_switch *ds)
+ 
+ 	ps->ds = ds;
+ 
+-	mutex_init(&ps->smi_mutex);
+-
+ 	INIT_WORK(&ps->bridge_work, mv88e6xxx_bridge_work);
+ 
+ 	if (mv88e6xxx_has(ps, MV88E6XXX_FLAG_EEPROM))
+@@ -3580,6 +3578,7 @@ static const char *mv88e6xxx_probe(struct device *dsa_dev,
+ 	ps->bus = bus;
+ 	ps->sw_addr = sw_addr;
+ 	ps->info = info;
++	mutex_init(&ps->smi_mutex);
+ 
+ 	*priv = ps;
+ 
+-- 
+2.7.4
+

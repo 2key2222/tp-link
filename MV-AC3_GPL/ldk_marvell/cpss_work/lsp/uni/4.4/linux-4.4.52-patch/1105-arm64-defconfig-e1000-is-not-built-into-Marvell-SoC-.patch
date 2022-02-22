@@ -1,0 +1,33 @@
+From aeae4ed8d2d92209584a645c708341ba78884ec1 Mon Sep 17 00:00:00 2001
+From: Neta Zur <neta@marvell.com>
+Date: Mon, 21 Nov 2016 13:30:45 +0200
+Subject: [PATCH 1105/2241] arm64: defconfig: e1000 is not built into Marvell
+ SoC, therefore disable it
+
+Only E1000E PCIe card can be used and it remains enabled
+
+Change-Id: Ia0bfaaa83210d5cb06d597c7117538641574dd62
+Signed-off-by: Grzegorz Jaszczyk <jaz@semihalf.com>
+Signed-off-by: Neta Zur <neta@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/33715
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ arch/arm64/configs/mvebu_v8_lsp_defconfig | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/arch/arm64/configs/mvebu_v8_lsp_defconfig b/arch/arm64/configs/mvebu_v8_lsp_defconfig
+index 85a0d42..70e7812 100644
+--- a/arch/arm64/configs/mvebu_v8_lsp_defconfig
++++ b/arch/arm64/configs/mvebu_v8_lsp_defconfig
+@@ -115,7 +115,6 @@ CONFIG_TUN=y
+ CONFIG_VIRTIO_NET=y
+ CONFIG_VHOST_NET=y
+ CONFIG_NET_DSA_MV88E6XXX=y
+-CONFIG_E1000=y
+ CONFIG_E1000E=y
+ CONFIG_IGB=y
+ CONFIG_IGBVF=y
+-- 
+2.7.4
+

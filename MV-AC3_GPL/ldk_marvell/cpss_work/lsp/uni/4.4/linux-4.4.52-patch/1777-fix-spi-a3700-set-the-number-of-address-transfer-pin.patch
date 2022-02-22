@@ -1,0 +1,60 @@
+From f5c5eae6b14a94216fb9948bda18c7b35de6f775 Mon Sep 17 00:00:00 2001
+From: Ken Ma <make@marvell.com>
+Date: Tue, 4 Jul 2017 15:40:43 +0800
+Subject: [PATCH 1777/2241] fix: spi: a3700: set the number of address transfer
+ pins as data pins
+
+Now Address Register is used to send none 4 byte aligned header data
+at first while Data Out/In register is used to send remain 4 byte
+aligned data, so address transfer pins number should be same as data
+pins; otherwise some commands such as spi nor/nand's commands of
+READ_FROM_CACHE_DUAL_IO(0xeb) and READ_FROM_CACHE_DUAL_IO(0xbb) will
+fail because these commands must send address bytes, dummy bytes and
+data bytes in 4(quad)/2(dual) pins.
+This patch sets the number of address transfer pins as data pins.
+
+Change-Id: I37fbecab86a5922312ca5d43af613890c27af106
+Signed-off-by: Ken Ma <make@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/41127
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Victor Gu <xigu@marvell.com>
+---
+ drivers/spi/spi-armada-3700.c | 15 ++++++++++++++-
+ 1 file changed, 14 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/spi/spi-armada-3700.c b/drivers/spi/spi-armada-3700.c
+index 32095fc..afba044 100644
+--- a/drivers/spi/spi-armada-3700.c
++++ b/drivers/spi/spi-armada-3700.c
+@@ -161,7 +161,6 @@ static int a3700_spi_pin_mode_set(struct a3700_spi *a3700_spi,
+ 	u32 val;
+ 
+ 	val = spireg_read(a3700_spi, A3700_SPI_IF_CFG_REG);
+-	val &= ~(A3700_SPI_INST_PIN | A3700_SPI_ADDR_PIN);
+ 	val &= ~(A3700_SPI_DATA_PIN0 | A3700_SPI_DATA_PIN1);
+ 
+ 	switch (pin_mode) {
+@@ -308,6 +307,20 @@ static int a3700_spi_init(struct a3700_spi *a3700_spi)
+ 	val &= ~A3700_SPI_SRST;
+ 	spireg_write(a3700_spi, A3700_SPI_IF_CFG_REG, val);
+ 
++	/*
++	* Address Register is used to send none 4 byte aligned
++	* header data at first while Data Out/In register is used to
++	* send remain 4 byte aligned data, so address transfer pins
++	* number should be same as data pins; otherwise some commands
++	* such as spi nor's commands of READ_FROM_CACHE_DUAL_IO(0xeb)
++	* and READ_FROM_CACHE_DUAL_IO(0xbb) will fail because these
++	* commands must send address bytes, dummy bytes and data bytes
++	* in 4(quad)/2(dual) pins.
++	*/
++	val = spireg_read(a3700_spi, A3700_SPI_IF_CFG_REG);
++	val |= A3700_SPI_ADDR_PIN;
++	spireg_write(a3700_spi, A3700_SPI_IF_CFG_REG, val);
++
+ 	/* Disable AUTO_CS and deactivate all chip-selects */
+ 	a3700_spi_auto_cs_unset(a3700_spi);
+ 	for (i = 0; i < master->num_chipselect; i++)
+-- 
+2.7.4
+

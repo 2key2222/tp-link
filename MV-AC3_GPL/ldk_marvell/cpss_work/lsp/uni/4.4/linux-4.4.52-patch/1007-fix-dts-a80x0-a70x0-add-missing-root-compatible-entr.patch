@@ -1,0 +1,100 @@
+From 9bbdd845af295b3d621f2e00cde6ee0d299a9ed2 Mon Sep 17 00:00:00 2001
+From: Omri Itach <omrii@marvell.com>
+Date: Mon, 26 Sep 2016 13:07:34 +0300
+Subject: [PATCH 1007/2241] fix: dts: a80x0: a70x0: add missing root compatible
+ entries
+
+Board device treess had only single root compatible entry,
+which overide all included compatible entries.
+
+This patch adds missing entries from included files.
+
+Change-Id: If13c061b0a231f4d447471424fc6819f422843c2
+Signed-off-by: Omri Itach <omrii@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/33136
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-7040-db-all-pcie.dts | 3 ++-
+ arch/arm64/boot/dts/marvell/armada-7040-db-nand.dts     | 3 ++-
+ arch/arm64/boot/dts/marvell/armada-7040-db-router.dts   | 5 +++--
+ arch/arm64/boot/dts/marvell/armada-8040-db-router.dts   | 5 +++--
+ 4 files changed, 10 insertions(+), 6 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-7040-db-all-pcie.dts b/arch/arm64/boot/dts/marvell/armada-7040-db-all-pcie.dts
+index b3c06e9..529a5c8 100644
+--- a/arch/arm64/boot/dts/marvell/armada-7040-db-all-pcie.dts
++++ b/arch/arm64/boot/dts/marvell/armada-7040-db-all-pcie.dts
+@@ -49,7 +49,8 @@
+ 
+ / {
+ 	model = "Marvell Armada-7040 development board all-pcie setup";
+-	compatible = "marvell,armada7040-db-all-pcie";
++	compatible = "marvell,armada7040-db-all-pcie", "marvell,armada7040-db", "marvell,armada7040",
++			"marvell,armada-ap806-quad", "marvell,armada-ap806";
+ 	#address-cells = <2>;
+ 	#size-cells = <2>;
+ 
+diff --git a/arch/arm64/boot/dts/marvell/armada-7040-db-nand.dts b/arch/arm64/boot/dts/marvell/armada-7040-db-nand.dts
+index d349ccc..59af84d 100644
+--- a/arch/arm64/boot/dts/marvell/armada-7040-db-nand.dts
++++ b/arch/arm64/boot/dts/marvell/armada-7040-db-nand.dts
+@@ -49,7 +49,8 @@
+ 
+ / {
+ 	model = "Marvell Armada-7040 development board NAND setup";
+-	compatible = "marvell,armada7040-db-nand";
++	compatible = "marvell,armada7040-db-nand", "marvell,armada7040-db", "marvell,armada7040",
++			"marvell,armada-ap806-quad", "marvell,armada-ap806";
+ 	#address-cells = <2>;
+ 	#size-cells = <2>;
+ 
+diff --git a/arch/arm64/boot/dts/marvell/armada-7040-db-router.dts b/arch/arm64/boot/dts/marvell/armada-7040-db-router.dts
+index cf4e378..829ed32 100644
+--- a/arch/arm64/boot/dts/marvell/armada-7040-db-router.dts
++++ b/arch/arm64/boot/dts/marvell/armada-7040-db-router.dts
+@@ -41,7 +41,7 @@
+  */
+ 
+ /*
+- * Device Tree file for Marvell Armada 7040 RZ development board
++ * Device Tree file for Marvell Armada 7040 development board
+  * This board file supports the router configuration of the board
+  */
+ 
+@@ -49,7 +49,8 @@
+ 
+ / {
+ 	model = "Marvell Armada-7040 development board router setup";
+-	compatible = "marvell,armada7040-db-router";
++	compatible = "marvell,armada7040-db-router", "marvell,armada7040-db", "marvell,armada7040",
++			"marvell,armada-ap806-quad", "marvell,armada-ap806";
+ 	#address-cells = <2>;
+ 	#size-cells = <2>;
+ 
+diff --git a/arch/arm64/boot/dts/marvell/armada-8040-db-router.dts b/arch/arm64/boot/dts/marvell/armada-8040-db-router.dts
+index bc00a55..b754a02 100644
+--- a/arch/arm64/boot/dts/marvell/armada-8040-db-router.dts
++++ b/arch/arm64/boot/dts/marvell/armada-8040-db-router.dts
+@@ -41,7 +41,7 @@
+  */
+ 
+ /*
+- * Device Tree file for Marvell Armada 8040 RZ development board
++ * Device Tree file for Marvell Armada 8040 development board
+  * This board file supports the router configuration of the board
+  */
+ 
+@@ -49,7 +49,8 @@
+ 
+ / {
+ 	model = "Marvell Armada-8040 development board router setup";
+-	compatible = "marvell,armada8040-db-router";
++	compatible = "marvell,armada8040-db-router", "marvell,armada8040-db", "marvell,armada8040",
++			"marvell,armada-ap806-quad", "marvell,armada-ap806";
+ 	#address-cells = <2>;
+ 	#size-cells = <2>;
+ 
+-- 
+2.7.4
+

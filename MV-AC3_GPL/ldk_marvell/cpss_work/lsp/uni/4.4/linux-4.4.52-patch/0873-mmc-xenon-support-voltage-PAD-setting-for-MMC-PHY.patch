@@ -1,0 +1,223 @@
+From 0b8fbbae498445ceb6e0db6ffc3afb969e8ed0b8 Mon Sep 17 00:00:00 2001
+From: Victor Gu <xigu@marvell.com>
+Date: Thu, 25 Aug 2016 00:28:42 +0800
+Subject: [PATCH 0873/2241] mmc: xenon: support voltage PAD setting for MMC PHY
+
+Some version of XENON MMC PHY need external input for MMC
+PHY voltage, either in 3.3v or 1.8v.
+Normally it is set by SoC level PAD register out of MMC.
+This patch adds support of PAD register setting.
+The PAD register address need to be added as second register
+range within SDHCI DT node.
+An DT property "xenon,fixed-1-8v-pad-ctrl" is added to indicate
+whether the PAD voltage setting will always be fixed to 1.8v,
+which is used for eMMC and some SDIO devices with fixed 1.8v
+signal voltage.
+If this property is not set, it will be treated as SD with
+initial 3.3v voltage and dynamic voltag switch.
+
+Change-Id: I8f79571524c2f529110f48cd25fd54d5b2184c6d
+Signed-off-by: Victor Gu <xigu@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/32165
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Wilson Ding <dingwei@marvell.com>
+---
+ .../bindings/mmc/marvell,xenon-sdhci.txt           |  7 +++
+ drivers/mmc/host/sdhci-xenon-phy.c                 | 56 ++++++++++++++++++++++
+ drivers/mmc/host/sdhci-xenon-phy.h                 |  4 ++
+ drivers/mmc/host/sdhci-xenon.c                     | 12 ++++-
+ drivers/mmc/host/sdhci-xenon.h                     |  2 +
+ 5 files changed, 80 insertions(+), 1 deletion(-)
+
+diff --git a/Documentation/devicetree/bindings/mmc/marvell,xenon-sdhci.txt b/Documentation/devicetree/bindings/mmc/marvell,xenon-sdhci.txt
+index 992e226..f980436 100644
+--- a/Documentation/devicetree/bindings/mmc/marvell,xenon-sdhci.txt
++++ b/Documentation/devicetree/bindings/mmc/marvell,xenon-sdhci.txt
+@@ -45,6 +45,13 @@ Optional Properties:
+   - Disable Hardware DLL tuning
+   xenon,phy-no-dll-tuning;
+ 
++  SoC specific PHY PAD voltage setting for fixed 1.8V
++  The PHY PAD setting is only available for specific SOC such as Armada 3700.
++  Always set corresponding PHY PAD as 1.8V.
++  It is used for eMMC and some SDIO devices which always work in 1.8v signal
++  voltage.
++  - xenon,fixed-1-8v-pad-ctrl;
++
+ - Re-tuning Counter
+   Xenon SDHC SOC usually doesn't provide re-tuning counter in
+   Capabilities Register 3 Bit[11:8].
+diff --git a/drivers/mmc/host/sdhci-xenon-phy.c b/drivers/mmc/host/sdhci-xenon-phy.c
+index ba672fb..842e815 100644
+--- a/drivers/mmc/host/sdhci-xenon-phy.c
++++ b/drivers/mmc/host/sdhci-xenon-phy.c
+@@ -23,6 +23,7 @@
+ #include <linux/mmc/host.h>
+ #include <linux/mmc/mmc.h>
+ #include <linux/mmc/card.h>
++#include <linux/of_address.h>
+ 
+ #include "../core/core.h"
+ #include "../core/sdio_ops.h"
+@@ -55,6 +56,12 @@ struct emmc_phy_params {
+ 	u8 znr;
+ 	u8 zpr;
+ 	bool no_dll_tuning;
++
++	/* Set SOC PHY PAD ctrl to fixed 1.8V */
++	bool fixed_1_8v_pad_ctrl;
++
++	/* MMC PAD address */
++	void __iomem *pad_ctrl_addr;
+ };
+ 
+ static void xenon_emmc_phy_strobe_delay_adj(struct sdhci_host *host,
+@@ -64,12 +71,15 @@ static int xenon_emmc_phy_fix_sampl_delay_adj(struct sdhci_host *host,
+ static void xenon_emmc_phy_set(struct sdhci_host *host,
+ 					unsigned char timing);
+ static void xenon_emmc_phy_config_tuning(struct sdhci_host *host);
++static void xenon_emmc_soc_pad_ctrl(struct sdhci_host *host,
++					unsigned char signal_voltage);
+ 
+ static const struct xenon_phy_ops emmc_phy_ops = {
+ 	.strobe_delay_adj = xenon_emmc_phy_strobe_delay_adj,
+ 	.fix_sampl_delay_adj = xenon_emmc_phy_fix_sampl_delay_adj,
+ 	.phy_set = xenon_emmc_phy_set,
+ 	.config_tuning = xenon_emmc_phy_config_tuning,
++	.soc_pad_ctrl = xenon_emmc_soc_pad_ctrl,
+ };
+ 
+ static int alloc_emmc_phy(struct sdhci_xenon_priv *priv)
+@@ -105,6 +115,15 @@ static int emmc_phy_parse_param_dt(struct device_node *np,
+ 	else
+ 		params->zpr = ZPR_DEF_VALUE;
+ 
++	if (of_property_read_bool(np, "xenon,fixed-1-8v-pad-ctrl"))
++		params->fixed_1_8v_pad_ctrl = true;
++	else
++		params->fixed_1_8v_pad_ctrl = false;
++
++	params->pad_ctrl_addr = of_iomap(np, 1);
++	if (IS_ERR(params->pad_ctrl_addr))
++		params->pad_ctrl_addr = 0;
++
+ 	return 0;
+ }
+ 
+@@ -166,6 +185,33 @@ static int xenon_emmc_phy_init(struct sdhci_host *host)
+ 	return 0;
+ }
+ 
++static inline void soc_pad_voltage_set(void __iomem *pad_ctrl,
++					unsigned char signal_voltage)
++{
++	if (!pad_ctrl)
++		return;
++
++	if (signal_voltage == MMC_SIGNAL_VOLTAGE_180)
++		writel(SOC_PAD_1_8V, pad_ctrl);
++	else if (signal_voltage == MMC_SIGNAL_VOLTAGE_330)
++		writel(SOC_PAD_3_3V, pad_ctrl);
++}
++
++static void xenon_emmc_soc_pad_ctrl(struct sdhci_host *host,
++					unsigned char signal_voltage)
++{
++	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
++	struct sdhci_xenon_priv *priv = sdhci_pltfm_priv(pltfm_host);
++	struct emmc_phy_params *params = priv->phy_params;
++
++	if (params->fixed_1_8v_pad_ctrl)
++		soc_pad_voltage_set(params->pad_ctrl_addr,
++					MMC_SIGNAL_VOLTAGE_180);
++	else
++		soc_pad_voltage_set(params->pad_ctrl_addr,
++					signal_voltage);
++}
++
+ static int xenon_emmc_phy_set_fix_sampl_delay(struct sdhci_host *host,
+ 			unsigned int delay, bool invert, bool delay_90_degree)
+ {
+@@ -778,6 +824,16 @@ static int alloc_sdh_phy(struct sdhci_xenon_priv *priv)
+ /*
+  * Common functions for all PHYs
+  */
++void xenon_soc_pad_ctrl(struct sdhci_host *host,
++			unsigned char signal_voltage)
++{
++	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
++	struct sdhci_xenon_priv *priv = sdhci_pltfm_priv(pltfm_host);
++
++	if (priv->phy_ops.soc_pad_ctrl)
++		priv->phy_ops.soc_pad_ctrl(host, signal_voltage);
++}
++
+ static int __xenon_emmc_delay_adj_test(struct mmc_card *card)
+ {
+ 	int err;
+diff --git a/drivers/mmc/host/sdhci-xenon-phy.h b/drivers/mmc/host/sdhci-xenon-phy.h
+index d84d41d..0f9009b 100644
+--- a/drivers/mmc/host/sdhci-xenon-phy.h
++++ b/drivers/mmc/host/sdhci-xenon-phy.h
+@@ -103,6 +103,9 @@
+ #define EMMC_5_0_PHY_LOGIC_TIMING_ADJUST	(EMMC_5_0_PHY_REG_BASE + 0x14)
+ #define EMMC_PHY_LOGIC_TIMING_ADJUST		(EMMC_PHY_REG_BASE + 0x18)
+ 
++#define SOC_PAD_1_8V				0x1
++#define SOC_PAD_3_3V				0x0
++
+ enum sampl_fix_delay_phase {
+ 	PHASE_0_DEGREE = 0x0,
+ 	PHASE_90_DEGREE = 0x1,
+@@ -124,5 +127,6 @@ struct xenon_phy_ops {
+ 				struct mmc_card *card);
+ 	void (*phy_set)(struct sdhci_host *host, unsigned char timing);
+ 	void (*config_tuning)(struct sdhci_host *host);
++	void (*soc_pad_ctrl)(struct sdhci_host *host, unsigned char signal_voltage);
+ };
+ #endif
+diff --git a/drivers/mmc/host/sdhci-xenon.c b/drivers/mmc/host/sdhci-xenon.c
+index d6eba5b..a55ea3c 100644
+--- a/drivers/mmc/host/sdhci-xenon.c
++++ b/drivers/mmc/host/sdhci-xenon.c
+@@ -336,8 +336,12 @@ static int xenon_start_signal_voltage_switch(struct mmc_host *mmc,
+ 	enable_xenon_internal_clk(host);
+ 
+ 	if (priv->card_candidate) {
+-		if (mmc_card_mmc(priv->card_candidate))
++		if (mmc_card_mmc(priv->card_candidate)) {
++			/* Set SoC PAD register for MMC PHY voltage */
++			xenon_soc_pad_ctrl(host, ios->signal_voltage);
++
+ 			return xenon_emmc_signal_voltage_switch(mmc, ios);
++		}
+ 	}
+ 
+ 	return sdhci_start_signal_voltage_switch(mmc, ios);
+@@ -545,6 +549,12 @@ static int sdhci_xenon_probe(struct platform_device *pdev)
+ 	/* Set tuning functionality of this slot */
+ 	xenon_slot_tuning_setup(host);
+ 
++	/* Initialize SoC PAD register for MMC PHY voltage
++	 * For eMMC, it is set to 1.8V
++	 * For SD/SDIO, it is set to 3.3V
++	 */
++	xenon_soc_pad_ctrl(host, MMC_SIGNAL_VOLTAGE_330);
++
+ 	return 0;
+ 
+ remove_slot:
+diff --git a/drivers/mmc/host/sdhci-xenon.h b/drivers/mmc/host/sdhci-xenon.h
+index f8fcabf..2415a00 100644
+--- a/drivers/mmc/host/sdhci-xenon.h
++++ b/drivers/mmc/host/sdhci-xenon.h
+@@ -143,4 +143,6 @@ static inline int enable_xenon_internal_clk(struct sdhci_host *host)
+ int xenon_phy_adj(struct sdhci_host *host, struct mmc_ios *ios);
+ int xenon_phy_parse_dt(struct device_node *np,
+ 			struct sdhci_xenon_priv *priv);
++void xenon_soc_pad_ctrl(struct sdhci_host *host,
++			unsigned char signal_voltage);
+ #endif
+-- 
+2.7.4
+

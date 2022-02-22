@@ -1,0 +1,36 @@
+From fb28400ef897d4f952b626c6dd517dcaa104fd16 Mon Sep 17 00:00:00 2001
+From: Stefan Chulski <stefanc@marvell.com>
+Date: Thu, 26 May 2016 16:36:58 +0300
+Subject: [PATCH 0449/2241] net: mvpp2x: prefetch two rx_descriptors, every
+ second packet
+
+-rx_descriptors is 32B, so prefetch is done in couples.
+-Gives better performance during tested throughput benchmarks.
+
+Change-Id: I7f27664f57ed65b014daeee47de268bdc47959db
+Reviewed-on: http://vgitil04.il.marvell.com:8080/30029
+Reviewed-by: Yuval Caduri <cyuval@marvell.com>
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.h | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.h b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.h
+index d02736a..4d2770f 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.h
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.h
+@@ -163,7 +163,9 @@ mv_pp2x_rxq_next_desc_get(struct mv_pp2x_rx_queue *rxq)
+ 	int rx_desc = rxq->next_desc_to_proc;
+ 
+ 	rxq->next_desc_to_proc = MVPP2_QUEUE_NEXT_DESC(rxq, rx_desc);
+-	prefetch(rxq->first_desc + rxq->next_desc_to_proc);
++	/* For uneven descriptors, fetch next two descriptors (2*32B) */
++	if (rx_desc & 0x1)
++		prefetch(rxq->first_desc + rxq->next_desc_to_proc);
+ 	return (rxq->first_desc + rx_desc);
+ }
+ 
+-- 
+2.7.4
+

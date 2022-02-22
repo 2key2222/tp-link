@@ -1,0 +1,36 @@
+From dbcc7c0da10262a54d406c349488ecd0f9553f2d Mon Sep 17 00:00:00 2001
+From: Victor Gu <xigu@marvell.com>
+Date: Thu, 19 May 2016 23:09:18 +0800
+Subject: [PATCH 0390/2241] fix: mmc: mvebu: reset phy when clock is changed
+
+When the mmc clock is changed, the mmc PHY should
+also be reset.
+This patch solves the issue that initialize the Xenon
+SDHC without SD card inserted.
+
+Change-Id: I7a0774226c7a3a2a69ec2686e83c16827151e300
+Signed-off-by: Victor Gu <xigu@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/29811
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Wilson Ding <dingwei@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/mmc/host/sdhci-xenon.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/mmc/host/sdhci-xenon.c b/drivers/mmc/host/sdhci-xenon.c
+index 2752822..2e1b5b7 100644
+--- a/drivers/mmc/host/sdhci-xenon.c
++++ b/drivers/mmc/host/sdhci-xenon.c
+@@ -685,7 +685,7 @@ static int sdhci_xenon_delay_adj(struct sdhci_host *host, struct mmc_ios *ios)
+ 	if (!host->clock)
+ 		return 0;
+ 
+-	if (ios->timing != priv->timing)
++	if ((ios->timing != priv->timing) || (host->clock != priv->clock))
+ 		sdhci_xenon_phy_reset(host, ios->timing);
+ 
+ 	/* Legacy mode is a special case.
+-- 
+2.7.4
+

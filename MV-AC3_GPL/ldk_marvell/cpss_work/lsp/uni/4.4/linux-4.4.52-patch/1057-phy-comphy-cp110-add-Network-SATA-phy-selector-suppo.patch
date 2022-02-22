@@ -1,0 +1,182 @@
+From 653f70c30ae793bf4cf7a956c85e36acd00b3cca Mon Sep 17 00:00:00 2001
+From: Igal Liberman <igall@marvell.com>
+Date: Tue, 1 Nov 2016 18:42:33 +0200
+Subject: [PATCH 1057/2241] phy: comphy: cp110: add Network/SATA phy selector
+ support
+
+Each comphy has phy selector which selects between SATA and
+network modes (SGMII, XFI, etc).
+This patch adds support for configuring the phy selector.
+
+Change-Id: I9d765479ff9c67ef8f57d0a26435d11f9747131f
+Signed-off-by: Igal Liberman <igall@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/33530
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Tested-by: Omri Itach <omrii@marvell.com>
+---
+ drivers/phy/phy-mvebu-comphy.c | 85 ++++++++++++++++++++++++++++++++++++++++++
+ drivers/phy/phy-mvebu-comphy.h | 19 ++++++++++
+ 2 files changed, 104 insertions(+)
+ create mode 100644 drivers/phy/phy-mvebu-comphy.h
+
+diff --git a/drivers/phy/phy-mvebu-comphy.c b/drivers/phy/phy-mvebu-comphy.c
+index c71c311..6fbbaef 100644
+--- a/drivers/phy/phy-mvebu-comphy.c
++++ b/drivers/phy/phy-mvebu-comphy.c
+@@ -19,6 +19,8 @@
+ #include <linux/platform_device.h>
+ #include <dt-bindings/phy/phy-mvebu-comphy.h>
+ 
++#include "phy-mvebu-comphy.h"
++
+ #define MVEBU_COMPHY_MAX_CNT	6
+ #define MVEBU_COMPHY_FUNC_MAX	11
+ 
+@@ -103,6 +105,77 @@ u32 __maybe_unused polling_with_timeout(void __iomem *addr, u32 val, u32 mask,
+ 	return 0;
+ }
+ 
++/* PHY selector configures SATA and Network modes */
++static void mvebu_comphy_set_phy_selector(struct mvebu_comphy_priv *priv,
++					  struct mvebu_comphy *comphy)
++{
++	u32 reg, mask;
++	u32 comphy_offset = COMMON_SELECTOR_COMPHYN_FIELD_WIDTH * comphy->index;
++	int mode;
++
++	/* Comphy mode (compound of the IO mode and id) is stored during
++	 * the execution of mvebu_comphy_of_xlate.
++	 * Here, only the IO mode is required to distinguish between SATA and
++	 * network modes.
++	 */
++	mode = COMPHY_GET_MODE(priv->lanes[comphy->index].mode);
++
++	mask = COMMON_SELECTOR_COMPHY_MASK << comphy_offset;
++	reg = readl(priv->comphy_regs + COMMON_SELECTOR_PHY_REG_OFFSET);
++	reg &= ~mask;
++
++	/* SATA port 0/1 require the same configuration */
++	if (mode == COMPHY_SATA_MODE) {
++		/* SATA selector values is always 4 */
++		reg |= COMMON_SELECTOR_COMPHYN_SATA << comphy_offset;
++	} else {
++		switch (comphy->index) {
++		case(0):
++		case(1):
++		case(2):
++			/* For comphy 0,1, and 2:
++			 *	Network selector value is always 1.
++			 */
++			reg |= COMMON_SELECTOR_COMPHY0_1_2_NETWORK << comphy_offset;
++			break;
++		case(3):
++			/* For comphy 3:
++			 * 0x1 = RXAUI_Lane1
++			 * 0x2 = SGMII/HS-SGMII Port1
++			 */
++			if (mode == COMPHY_RXAUI_MODE)
++				reg |= COMMON_SELECTOR_COMPHY3_RXAUI << comphy_offset;
++			else
++				reg |= COMMON_SELECTOR_COMPHY3_SGMII << comphy_offset;
++			break;
++		case(4):
++			 /* For comphy 4:
++			  * 0x1 = SGMII/HS-SGMII Port2
++			  * 0x2 = SGMII/HS-SGMII Port1: XFI/SFI, RXAUI_Lane0
++			  */
++			if (priv->lanes[comphy->index].mode == COMPHY_SGMII2 ||
++			    priv->lanes[comphy->index].mode == COMPHY_HS_SGMII2)
++				reg |= COMMON_SELECTOR_COMPHY4_SGMII2 << comphy_offset;
++			else
++				reg |= COMMON_SELECTOR_COMPHY4_ALL_OTHERS << comphy_offset;
++			break;
++		case(5):
++			/* For comphy 5:
++			 * 0x1 = SGMII/HS-SGMII Port2
++			 * 0x2 = RXAUI Lane1
++			 */
++			if (mode == COMPHY_RXAUI_MODE)
++				reg |= COMMON_SELECTOR_COMPHY5_RXAUI << comphy_offset;
++			else
++				reg |= COMMON_SELECTOR_COMPHY5_SGMII << comphy_offset;
++			break;
++		}
++	}
++
++	writel(reg, priv->comphy_regs + COMMON_SELECTOR_PHY_REG_OFFSET);
++
++}
++
+ static int mvebu_comphy_sata_power_on(struct mvebu_comphy_priv *priv,
+ 				      struct mvebu_comphy *comphy)
+ {
+@@ -110,6 +183,9 @@ static int mvebu_comphy_sata_power_on(struct mvebu_comphy_priv *priv,
+ 
+ 	dev_err(priv->dev, "SATA mode is not implemented\n");
+ 
++	/* configure phy selector for SATA */
++	mvebu_comphy_set_phy_selector(priv, comphy);
++
+ 	dev_dbg(priv->dev, "%s: Exit\n", __func__);
+ 
+ 	return -ENOTSUPP;
+@@ -122,6 +198,9 @@ static int mvebu_comphy_sgmii_power_on(struct mvebu_comphy_priv *priv,
+ 
+ 	dev_err(priv->dev, "SGMII mode is not implemented\n");
+ 
++	/* configure phy selector for SGMII */
++	mvebu_comphy_set_phy_selector(priv, comphy);
++
+ 	dev_dbg(priv->dev, "%s: Exit\n", __func__);
+ 
+ 	return -ENOTSUPP;
+@@ -158,6 +237,9 @@ static int mvebu_comphy_rxaui_power_on(struct mvebu_comphy_priv *priv,
+ 
+ 	dev_err(priv->dev, "RXAUI mode is not implemented\n");
+ 
++	/* configure phy selector for RXAUI */
++	mvebu_comphy_set_phy_selector(priv, comphy);
++
+ 	dev_dbg(priv->dev, "%s: Exit\n", __func__);
+ 
+ 	return -ENOTSUPP;
+@@ -170,6 +252,9 @@ static int mvebu_comphy_xfi_power_on(struct mvebu_comphy_priv *priv,
+ 
+ 	dev_err(priv->dev, "XFI/SFI mode is not implemented\n");
+ 
++	/* configure phy selector for XFI/SFI */
++	mvebu_comphy_set_phy_selector(priv, comphy);
++
+ 	dev_dbg(priv->dev, "%s: Exit\n", __func__);
+ 
+ 	return -ENOTSUPP;
+diff --git a/drivers/phy/phy-mvebu-comphy.h b/drivers/phy/phy-mvebu-comphy.h
+new file mode 100644
+index 0000000..a1f3d7a
+--- /dev/null
++++ b/drivers/phy/phy-mvebu-comphy.h
+@@ -0,0 +1,19 @@
++#ifndef _MVEBU_COMPHY_H
++#define _MVEBU_COMPHY_H
++
++/* Comphy registers */
++#define COMMON_SELECTOR_PHY_REG_OFFSET		0x140
++#define COMMON_SELECTOR_PIPE_REG_OFFSET		0x144
++#define COMMON_SELECTOR_COMPHY_MASK		0xf
++#define COMMON_SELECTOR_COMPHYN_FIELD_WIDTH	4
++#define COMMON_SELECTOR_COMPHYN_SATA		0x4
++#define COMMON_SELECTOR_COMPHY0_1_2_NETWORK	0x1
++#define COMMON_SELECTOR_COMPHY3_RXAUI		0x1
++#define COMMON_SELECTOR_COMPHY3_SGMII		0x2
++#define COMMON_SELECTOR_COMPHY4_SGMII2		0x1
++#define COMMON_SELECTOR_COMPHY4_ALL_OTHERS	0x2
++#define COMMON_SELECTOR_COMPHY5_RXAUI		0x2
++#define COMMON_SELECTOR_COMPHY5_SGMII		0x1
++
++#endif /* _MVEBU_COMPHY_H */
++
+-- 
+2.7.4
+

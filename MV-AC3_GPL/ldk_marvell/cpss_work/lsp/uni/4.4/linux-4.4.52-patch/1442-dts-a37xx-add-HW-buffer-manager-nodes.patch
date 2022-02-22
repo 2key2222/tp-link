@@ -1,0 +1,149 @@
+From 3f8aba2ee8b03429ee0f891cd8721a2212bdd4e3 Mon Sep 17 00:00:00 2001
+From: Yelena Krivosheev <yelena@marvell.com>
+Date: Wed, 15 Feb 2017 13:18:32 +0200
+Subject: [PATCH 1442/2241] dts: a37xx: add HW buffer manager nodes
+
+Use the same HW BM mechanism for Armada 380/XP/3700
+Enable HW buffer manager support on Armada 3720 boards,
+including EspressoBin board.
+
+Change-Id: I98f37359080ddbaa80d8763d111c13440c315cad
+Signed-off-by: Yelena Krivosheev <yelena@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/37193
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Dmitri Epshtein <dima@marvell.com>
+Reviewed-by: Victor Gu <xigu@marvell.com>
+---
+ .../devicetree/bindings/net/marvell-neta-bm.txt          |  2 +-
+ arch/arm64/boot/dts/marvell/armada-3720-community.dts    |  3 +++
+ arch/arm64/boot/dts/marvell/armada-3720-db-sgmii1.dts    |  3 +++
+ arch/arm64/boot/dts/marvell/armada-3720-db.dts           |  9 +++++++++
+ arch/arm64/boot/dts/marvell/armada-37xx.dtsi             | 16 ++++++++++++++++
+ drivers/net/ethernet/marvell/Kconfig                     |  8 ++++----
+ 6 files changed, 36 insertions(+), 5 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/net/marvell-neta-bm.txt b/Documentation/devicetree/bindings/net/marvell-neta-bm.txt
+index c1b1d7c3..50f8d33 100644
+--- a/Documentation/devicetree/bindings/net/marvell-neta-bm.txt
++++ b/Documentation/devicetree/bindings/net/marvell-neta-bm.txt
+@@ -1,4 +1,4 @@
+-* Marvell Armada 380/XP Buffer Manager driver (BM)
++* Marvell Armada 380/XP/3700 Buffer Manager driver (BM)
+ 
+ Required properties:
+ 
+diff --git a/arch/arm64/boot/dts/marvell/armada-3720-community.dts b/arch/arm64/boot/dts/marvell/armada-3720-community.dts
+index 4dde1d4..8e8cbf7 100644
+--- a/arch/arm64/boot/dts/marvell/armada-3720-community.dts
++++ b/arch/arm64/boot/dts/marvell/armada-3720-community.dts
+@@ -75,6 +75,9 @@
+ 			eth0: ethernet@30000 {
+ 				phy-mode = "rgmii-id";
+ 				status = "okay";
++				buffer-manager = <&bm>;
++				bm,pool-long = <1>;
++				bm,pool-short = <3>;
+ 				fixed-link {
+ 					speed = <1000>;
+ 					full-duplex;
+diff --git a/arch/arm64/boot/dts/marvell/armada-3720-db-sgmii1.dts b/arch/arm64/boot/dts/marvell/armada-3720-db-sgmii1.dts
+index 3ad6ddf..3b23d10 100644
+--- a/arch/arm64/boot/dts/marvell/armada-3720-db-sgmii1.dts
++++ b/arch/arm64/boot/dts/marvell/armada-3720-db-sgmii1.dts
+@@ -55,6 +55,9 @@
+ 				phy-mode = "sgmii";
+ 				phy = <&phy1>;
+ 				status = "okay";
++				buffer-manager = <&bm>;
++				bm,pool-long = <2>;
++				bm,pool-short = <3>;
+ 			};
+ 			usb3@58000 {
+ 				status = "disabled";
+diff --git a/arch/arm64/boot/dts/marvell/armada-3720-db.dts b/arch/arm64/boot/dts/marvell/armada-3720-db.dts
+index 4348409..47966da 100644
+--- a/arch/arm64/boot/dts/marvell/armada-3720-db.dts
++++ b/arch/arm64/boot/dts/marvell/armada-3720-db.dts
+@@ -124,6 +124,9 @@
+ 				phy-mode = "rgmii-id";
+ 				phy = <&phy0>;
+ 				status = "okay";
++				buffer-manager = <&bm>;
++				bm,pool-long = <1>;
++				bm,pool-short = <3>;
+ 			};
+ 
+ 			mdio@32004 {
+@@ -204,6 +207,12 @@
+ 
+ 				enable-active-high;
+ 			};
++			bm: bm@c0000 {
++				status = "okay";
++			};
++			bm_bppi: bm-bppi {
++				status = "okay";
++			};
+ 		};
+ 
+ 		reg_sata: pwr-sata {
+diff --git a/arch/arm64/boot/dts/marvell/armada-37xx.dtsi b/arch/arm64/boot/dts/marvell/armada-37xx.dtsi
+index 14e7364..c108b1b 100644
+--- a/arch/arm64/boot/dts/marvell/armada-37xx.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-37xx.dtsi
+@@ -423,6 +423,22 @@
+ 				#phy-cells = <2>;
+ 				status = "disabled";
+ 			};
++
++			bm: bm@c0000 {
++				compatible = "marvell,armada-380-neta-bm";
++				reg = <0xc0000 0xac>;
++				clocks = <&sgateclk 9>;
++				internal-mem = <&bm_bppi>;
++				status = "disabled";
++			};
++
++			bm_bppi: bm-bppi {
++				compatible = "mmio-sram";
++				reg = <0xc8000 0x100000>;
++				clocks = <&sgateclk 9>;
++				no-memory-wc;
++				status = "disabled";
++			};
+ 		};
+ 
+ 		pcie0: pcie@d0070000 {
+diff --git a/drivers/net/ethernet/marvell/Kconfig b/drivers/net/ethernet/marvell/Kconfig
+index 02acbd3..ea1419d 100644
+--- a/drivers/net/ethernet/marvell/Kconfig
++++ b/drivers/net/ethernet/marvell/Kconfig
+@@ -52,13 +52,13 @@ config MVXMDIO
+ 	  This driver should be used by PPv2.2 netwrork driver.
+ 
+ config MVNETA_BM
+-	tristate "Marvell Armada 38x/XP network interface BM support"
++	tristate "Marvell Armada 38x/XP/37xx network interface BM support"
+ 	depends on MVNETA
+ 	select HWBM
+ 	---help---
+ 	  This driver supports auxiliary block of the network
+-	  interface units in the Marvell ARMADA XP and ARMADA 38x SoC
+-	  family, which is called buffer manager.
++	  interface units in the Marvell ARMADA XP, ARMADA 38x and
++	  Armada 37xx SoC families, which is called buffer manager.
+ 
+ 	  This driver, when enabled, strictly cooperates with mvneta
+ 	  driver and is common for all network ports of the devices,
+@@ -66,7 +66,7 @@ config MVNETA_BM
+ 	  buffer management.
+ 
+ config MVNETA
+-	tristate "Marvell Armada 370/38x/XP/3700 network interface support"
++	tristate "Marvell Armada 370/38x/XP/37xx network interface support"
+ 	depends on ARCH_MVEBU
+ 	select MVMDIO
+ 	select FIXED_PHY
+-- 
+2.7.4
+

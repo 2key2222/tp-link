@@ -1,0 +1,264 @@
+From c1d66325dcb6295821c554788510ef48057aa36f Mon Sep 17 00:00:00 2001
+From: zachary <zhangzg@marvell.com>
+Date: Thu, 8 Sep 2016 17:16:16 +0800
+Subject: [PATCH 0957/2241] dts: ac3: reorder dts nodes according to their
+ reg_base address
+
+- currently, ac3_db's dts sequence is not aligned with their
+register base address.
+- reorder ac3 dts nodes' position by their reg base address
+
+Change-Id: Idf89f455dd3a90d15586978a0ea1f191f5a69117
+Signed-off-by: zachary <zhangzg@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/32630
+Reviewed-by: Terry Zhou <bjzhou@marvell.com>
+Reviewed-by: Wilson Ding <dingwei@marvell.com>
+Tested-by: Star_Automation <star@marvell.com>
+---
+ arch/arm/boot/dts/msys-ac3-db.dts |  54 ++++++++++---------
+ arch/arm/boot/dts/msys.dtsi       | 107 +++++++++++++++++++-------------------
+ 2 files changed, 81 insertions(+), 80 deletions(-)
+
+diff --git a/arch/arm/boot/dts/msys-ac3-db.dts b/arch/arm/boot/dts/msys-ac3-db.dts
+index 086b5f9..ddb0fb9 100644
+--- a/arch/arm/boot/dts/msys-ac3-db.dts
++++ b/arch/arm/boot/dts/msys-ac3-db.dts
+@@ -40,6 +40,29 @@
+ 			  MBUS_ID(0x08, 0x00) 0 0 0xfc000000 0x100000>;	/* dfx */
+ 
+ 		internal-regs {
++			spi0: spi@10600 {
++				status = "okay";
++
++				spi-flash@0 {
++					#address-cells = <1>;
++					#size-cells = <1>;
++					compatible = "jedec,spi-nor";
++					reg = <0>; /* Chip select 0 */
++					spi-max-frequency = <108000000>;
++				};
++			};
++
++			i2c0: i2c@11000 {
++				pinctrl-names = "default";
++				pinctrl-0 = <&i2c0_pins>;
++				eeprom@50 {
++					compatible = "atmel,24c64";
++					pagesize = <32>;
++					reg = <0x50>;
++					marvell,board_id_reg = <0x7>;
++				};
++			};
++
+ 			serial@12000 {
+ 				status = "okay";
+ 			};
+@@ -49,6 +72,11 @@
+ 				pinctrl-0 = <&uart1_pins>;
+ 				status = "okay";
+ 			};
++
++			usb@50000 {
++				status = "okay";
++			};
++
+ 			ethernet@70000 {
+ 				status = "okay";
+ 				compatible = "marvell,armada-xp-neta";
+@@ -67,32 +95,6 @@
+ 					full-duplex;
+ 				};
+ 			};
+-			spi0: spi@10600 {
+-				status = "okay";
+-
+-				spi-flash@0 {
+-					#address-cells = <1>;
+-					#size-cells = <1>;
+-					compatible = "jedec,spi-nor";
+-					reg = <0>; /* Chip select 0 */
+-					spi-max-frequency = <108000000>;
+-				};
+-			};
+-
+-			usb@50000 {
+-				status = "okay";
+-			};
+-
+-			i2c0: i2c@11000 {
+-				pinctrl-names = "default";
+-				pinctrl-0 = <&i2c0_pins>;
+-				eeprom@50 {
+-					compatible = "atmel,24c64";
+-					pagesize = <32>;
+-					reg = <0x50>;
+-					marvell,board_id_reg = <0x7>;
+-				};
+-			};
+ 		};
+ 	};
+ };
+diff --git a/arch/arm/boot/dts/msys.dtsi b/arch/arm/boot/dts/msys.dtsi
+index 180b26f..0c28927 100644
+--- a/arch/arm/boot/dts/msys.dtsi
++++ b/arch/arm/boot/dts/msys.dtsi
+@@ -61,6 +61,11 @@
+ 				#clock-cells = <1>;
+ 			};
+ 
++			soc-id@f8244 {
++				compatible = "marvell,msys-soc-id";
++				reg = <0xf8244 0x4>;
++			};
++
+ 			coredivclk: corediv-clock@f8268 {
+ 				compatible = "marvell,msys-corediv-clock";
+ 				reg = <0xf8268 0xc>;
+@@ -68,11 +73,6 @@
+ 				clocks = <&coreclk 3>;
+ 				clock-output-names = "nand";
+ 			};
+-
+-			soc-id@f8244 {
+-				compatible = "marvell,msys-soc-id";
+-				reg = <0xf8244 0x4>;
+-			};
+ 		};
+ 
+ 		ireg: internal-regs {
+@@ -99,19 +99,10 @@
+ 				pinctrl-names = "default";
+ 			};
+ 
+-			interrupt-controller@20a00 {
+-			      reg = <0x20a00 0x2d0>, <0x21070 0x58>, <0x21870 0x390>;
+-			};
+-
+-			pmsu@22000 {
+-				compatible = "marvell,msys-pmsu";
+-				reg = <0x22000 0x1000>, <0x20984 0x4>;
+-			};
+-
+-			cpurst: cpurst@20800 {
+-				compatible = "marvell,armada-370-cpu-reset";
+-				reg = <0x20800 0x10>;
+-				#reset-cells = <1>;
++			i2c0: i2c@11000 {
++				reg = <0x11000 0x20>;
++				status = "okay";
++				clock-frequency = <100000>;
+ 			};
+ 
+ 			pinctrl@18000 {
+@@ -168,10 +159,31 @@
+ 
+ 			};
+ 
+-			timer@20300 {
+-				compatible = "marvell,armada-xp-timer";
+-				clocks = <&coreclk 0>, <&refclk>;
+-				clock-names = "nbclk", "fixed";
++			gpio0: gpio@18100 {
++				compatible = "marvell,orion-gpio";
++				reg = <0x18100 0x40>;
++				ngpios = <32>;
++				gpio-controller;
++				#gpio-cells = <2>;
++				interrupt-controller;
++				#interrupt-cells = <2>;
++				interrupts = <82>, <83>, <84>, <85>;
++			};
++
++			gpio1: gpio@18180 {
++				compatible = "marvell,orion-gpio";
++				reg = <0x18180 0x40>;
++				ngpios = <1>;
++				gpio-controller;
++				#gpio-cells = <2>;
++				interrupt-controller;
++				#interrupt-cells = <2>;
++				interrupts = <87>;
++			};
++
++			system-controller@18200 {
++				compatible = "marvell,armada-370-xp-system-controller";
++				reg = <0x18200 0x500>;
+ 			};
+ 
+ 			gateclk: clock-gating-control@18220 {
+@@ -181,9 +193,25 @@
+ 				#clock-cells = <1>;
+ 			};
+ 
+-			system-controller@18200 {
+-				compatible = "marvell,armada-370-xp-system-controller";
+-				reg = <0x18200 0x500>;
++			timer@20300 {
++				compatible = "marvell,armada-xp-timer";
++				clocks = <&coreclk 0>, <&refclk>;
++				clock-names = "nbclk", "fixed";
++			};
++
++			cpurst: cpurst@20800 {
++				compatible = "marvell,armada-370-cpu-reset";
++				reg = <0x20800 0x10>;
++				#reset-cells = <1>;
++			};
++
++			interrupt-controller@20a00 {
++			      reg = <0x20a00 0x2d0>, <0x21070 0x58>, <0x21870 0x390>;
++			};
++
++			pmsu@22000 {
++				compatible = "marvell,msys-pmsu";
++				reg = <0x22000 0x1000>, <0x20984 0x4>;
+ 			};
+ 
+ 			/* Overwrite FIFO size */
+@@ -195,12 +223,6 @@
+ 				tx-csum-limit = <9800>;
+ 			};
+ 
+-			i2c0: i2c@11000 {
+-				reg = <0x11000 0x20>;
+-				status = "okay";
+-				clock-frequency = <100000>;
+-			};
+-
+ 			xor@f0800 {
+ 				compatible = "marvell,orion-xor";
+ 				reg = <0xF0800 0x100
+@@ -220,30 +242,7 @@
+ 					dmacap,memset;
+ 				};
+ 			};
+-
+-			gpio0: gpio@18100 {
+-				compatible = "marvell,orion-gpio";
+-				reg = <0x18100 0x40>;
+-				ngpios = <32>;
+-				gpio-controller;
+-				#gpio-cells = <2>;
+-				interrupt-controller;
+-				#interrupt-cells = <2>;
+-				interrupts = <82>, <83>, <84>, <85>;
+-			};
+-
+-			gpio1: gpio@18180 {
+-				compatible = "marvell,orion-gpio";
+-				reg = <0x18180 0x40>;
+-				ngpios = <1>;
+-				gpio-controller;
+-				#gpio-cells = <2>;
+-				interrupt-controller;
+-				#interrupt-cells = <2>;
+-				interrupts = <87>;
+-			};
+ 		};
+-
+ 	};
+ 
+ 	clocks {
+-- 
+2.7.4
+

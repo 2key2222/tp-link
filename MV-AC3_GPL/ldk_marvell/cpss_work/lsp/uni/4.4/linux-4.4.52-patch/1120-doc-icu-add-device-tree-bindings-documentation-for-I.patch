@@ -1,0 +1,81 @@
+From 4b875b82babdea88af779fed6e1a5687e699fed5 Mon Sep 17 00:00:00 2001
+From: Hanna Hawa <hannah@marvell.com>
+Date: Thu, 1 Sep 2016 09:46:47 +0300
+Subject: [PATCH 1120/2241] doc: icu: add device tree bindings documentation
+ for ICU driver
+
+Change-Id: Ic99a60b81f3d6ccc71e85ffb0e0fbb0e14b4d87f
+Signed-off-by: Hanna Hawa <hannah@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/32423
+Reviewed-by: Gina Tadmore <gina@marvell.com>
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+---
+ .../bindings/interrupt-controller/marvell,icu.txt  | 55 ++++++++++++++++++++++
+ 1 file changed, 55 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/interrupt-controller/marvell,icu.txt
+
+diff --git a/Documentation/devicetree/bindings/interrupt-controller/marvell,icu.txt b/Documentation/devicetree/bindings/interrupt-controller/marvell,icu.txt
+new file mode 100644
+index 0000000..041c6ce
+--- /dev/null
++++ b/Documentation/devicetree/bindings/interrupt-controller/marvell,icu.txt
+@@ -0,0 +1,55 @@
++Marvell ICU Interrupt Controller
++-----------------------------------------------------
++The Marvell ICU (Interrupt Consolidation Unit) controller is responsible for
++accumulating all wired-interrupt sources in the CP and communicating them to
++the GIC in the AP, the unit translates interrupt requests on input wires to MSG
++memory mapped transactions to the GIC.
++
++The interrupts from the ICU to the GIC can be mapped to one of the following groups:
++	- Shared Peripheral Interrupt - Non-Secured (SPI_NSR)
++	- Shared Peripheral Interrupt - Secured (SPI_SR)
++	- System Error Interrupt (SEI)
++	- RAM Error Interrupt (REI)
++
++Required properties:
++- compatible: Should be "marvell,icu"
++- reg: Should contain ICU registers location and length.
++- #interrupt-cells: Number of cells to define interrupts.
++		Should be 3:
++			Group type of the ICU interrupt (SPI_NSR, SPI_SR, SEI, and REI)
++			Index of the unit in ICU unit
++			Type of the interrupt
++- #size-cells: The size of the interrupt cell. Should be 1.
++- #address-cells: The size of unit addresses, should be 0.
++- interrupt-controller: Identifies the node as an interrupt controller.
++- interrupt-parent: Indicates the node of the parent interrupt controller.
++		Should be pointer for GIC node.
++- gicp-spi: GICP SPI assert & deassert interrupt address on remote side (AP) Must contain 4 entries:
++		- 2 entries to specify the high and low portions of the GIC
++		  register address for asserting an interrupt
++		- 2 entries to specify the high and low portions of the GIC
++		  register address for deasserting an interrupt
++		The full gicp-spi entry should be in the below order:
++		<GICP_SPI_SET_HIGH GICP_SPI_SET_LOW GICP_SPI_CLR_HIGH GICP_SPI_CLR_LOW>
++
++Example:
++
++icu: interrupt-controller@1E0000 {
++	compatible = "marvell,icu";
++	reg = <0x1E0000 0x10>;
++	#interrupt-cells = <2>;
++	#size-cells = <1>;
++	#address-cells = <0>;
++	interrupt-controller;
++	interrupt-parent = <&gic>;
++	gicp-spi = <0x0 0xF03F0040 0x0 0xF03F0048>;
++};
++
++Usage in device:
++usb3h0: usb3@500000 {
++...
++interrupt-parent = <&icu>;
++interrupts = <ICU_GRP_NSR 106 IRQ_TYPE_LEVEL_HIGH>;
++...
++};
++
+-- 
+2.7.4
+

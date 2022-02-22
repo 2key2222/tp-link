@@ -1,0 +1,53 @@
+From 41d83a1fd0e085b9b4e76b5c6996b0188d0f1d96 Mon Sep 17 00:00:00 2001
+From: Yan Markman <ymarkman@marvell.com>
+Date: Sun, 17 Sep 2017 17:51:01 +0300
+Subject: [PATCH 2036/2241] fix: net: pp2x: phy_disconnect after
+ unregister_netdev
+
+PROBLEM:
+The remove sequence: phy_disconnect -> unregister_netdev
+is unsafe and could cause the OOPS
+ Bad mode in Synchronous Abort handler detected,
+    code 0x86000006 -- IABT (current EL)
+ Internal error: Oops - bad mode: 0 [#1] PREEMPT SMP
+ LR is at tasklet_action+0x74/0x118
+
+DETAILS:
+unregister_netdev calls for ndo_stop() which has phy-off inside.
+So the phy_disconnect must be called after unregister_netdev
+
+FIX:
+Call phy_disconnect() only AFTER unregister_netdev()
+
+Change-Id: I9d679970c30621c7bed99514ba6b19079ea81972
+Signed-off-by: Yan Markman <ymarkman@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/44469
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Stefan Chulski <stefanc@marvell.com>
+Reviewed-by: Yuval Caduri <cyuval@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+index b6de615..4bab70c 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+@@ -5302,10 +5302,11 @@ static void mv_pp2x_port_remove(struct mv_pp2x_port *port)
+ 	netmap_detach(port->dev);
+ #endif /* DEV_NETMAP */
+ 
++	unregister_netdev(port->dev);
++
+ 	if (port->mac_data.phy_node)
+-		mv_pp2x_phy_disconnect(port);
++		mv_pp2x_phy_disconnect(port); /* do after unregister netdev */
+ 
+-	unregister_netdev(port->dev);
+ 	free_percpu(port->pcpu);
+ 	free_percpu(port->stats);
+ 	for (i = 0; i < port->num_tx_queues; i++)
+-- 
+2.7.4
+

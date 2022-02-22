@@ -1,0 +1,46 @@
+From 71a490bccb43683c73031185250e086efeeb0efd Mon Sep 17 00:00:00 2001
+From: Yan Markman <ymarkman@marvell.com>
+Date: Thu, 7 Jul 2016 14:54:30 +0300
+Subject: [PATCH 0588/2241] pp2: call ptp_init from port_probe
+
+Move ptp_init() from shared probe to correct port_probe
+
+Change-Id: Ifc7a86d0b204230a5cd85c67643a7d842dd5a898
+Signed-off-by: Yan Markman <ymarkman@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/31003
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+Reviewed-by: Stefan Chulski <stefanc@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c | 8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+index 12f7864..90d4d27 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+@@ -3902,6 +3902,9 @@ static int mv_pp2x_port_probe(struct platform_device *pdev,
+ #ifdef DEV_NETMAP
+ 	mv_pp2x_netmap_attach(port);
+ #endif /* DEV_NETMAP */
++#ifdef CONFIG_MV_PTP_SERVICE
++	mv_pp2x_ptp_init(pdev, port, id);
++#endif
+ 
+ 	return 0;
+ 	dev_err(&pdev->dev, "%s failed for port_id(%d)\n", __func__, id);
+@@ -4550,11 +4553,6 @@ static int mv_pp2x_probe(struct platform_device *pdev)
+ 	/* Init PP22 rxfhindir table evenly in probe */
+ 	mv_pp2x_init_rxfhindir(priv);
+ 
+-#ifdef CONFIG_MV_PTP_SERVICE
+-	mv_pp2x_ptp_init(pdev, priv, port_count);
+-	mv_pp2x_ptp_hook_init(priv, port_count);
+-#endif
+-
+ 	/* Initialize ports */
+ 	for_each_available_child_of_node(dn, port_node) {
+ 		err = mv_pp2x_port_probe(pdev, port_node, priv);
+-- 
+2.7.4
+

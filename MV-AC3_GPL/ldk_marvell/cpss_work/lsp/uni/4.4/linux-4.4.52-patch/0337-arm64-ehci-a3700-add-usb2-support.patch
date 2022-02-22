@@ -1,0 +1,109 @@
+From b62adb9af48c549d7aa66e5f999dc60a61c6b425 Mon Sep 17 00:00:00 2001
+From: jinghua <jinghua@marvell.com>
+Date: Thu, 10 Mar 2016 23:17:01 +0800
+Subject: [PATCH 0337/2241] arm64: ehci: a3700: add usb2 support
+
+- update orion usb controller driver for A3700
+- add sbuscfg support for orion usb controller driver
+  For SoC without hlock, need to program BAWR/BARD/AHBBRST
+  fields in sbuscfg reg to guarantee AHB master's burst
+  would not overrun or underrun FIFO.
+- sbuscfg reg has to be set after usb controller reset, otherwise
+  the value would be override to 0, to do this, reset routine is
+  registered to mainline ehci driver.
+
+Change-Id: I3673ddb2d9dbfbc4e31c7756a97a387b711ae499
+Signed-off-by: jinghua <jinghua@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/28158
+Reviewed-by: Wilson Ding <dingwei@marvell.com>
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Lior Amsalem <alior@marvell.com>
+---
+ .../devicetree/bindings/usb/ehci-orion.txt         |  4 ++-
+ drivers/usb/host/ehci-orion.c                      | 39 ++++++++++++++++++++++
+ 2 files changed, 42 insertions(+), 1 deletion(-)
+
+diff --git a/Documentation/devicetree/bindings/usb/ehci-orion.txt b/Documentation/devicetree/bindings/usb/ehci-orion.txt
+index 17c3bc8..b4529a3 100644
+--- a/Documentation/devicetree/bindings/usb/ehci-orion.txt
++++ b/Documentation/devicetree/bindings/usb/ehci-orion.txt
+@@ -1,7 +1,9 @@
+ * EHCI controller, Orion Marvell variants
+ 
+ Required properties:
+-- compatible: must be "marvell,orion-ehci"
++- compatible: could be one of the followings
++	"marvell,orion-ehci"
++	"marvell,armada-3700-ehci"
+ - reg: physical base address of the controller and length of memory mapped
+   region.
+ - interrupts: The EHCI interrupt
+diff --git a/drivers/usb/host/ehci-orion.c b/drivers/usb/host/ehci-orion.c
+index 70824fc..c5d6ae2 100644
+--- a/drivers/usb/host/ehci-orion.c
++++ b/drivers/usb/host/ehci-orion.c
+@@ -47,6 +47,19 @@
+ #define USB_PHY_IVREF_CTRL	0x440
+ #define USB_PHY_TST_GRP_CTRL	0x450
+ 
++#define USB_SBUSCFG		0x90
++#define USB_SBUSCFG_BAWR_OFF	0x6
++#define USB_SBUSCFG_BARD_OFF	0x3
++#define USB_SBUSCFG_AHBBRST_OFF	0x0
++
++#define USB_SBUSCFG_BAWR_ALIGN_128B	0x3
++#define USB_SBUSCFG_BARD_ALIGN_128B	0x3
++#define USB_SBUSCFG_AHBBRST_INCR16	0x3
++
++#define USB_SBUSCFG_DEF_VAL	((USB_SBUSCFG_BAWR_ALIGN_128B << USB_SBUSCFG_BAWR_OFF) \
++				| (USB_SBUSCFG_BARD_ALIGN_128B << USB_SBUSCFG_BARD_OFF) \
++				| (USB_SBUSCFG_AHBBRST_INCR16 << USB_SBUSCFG_AHBBRST_OFF))
++
+ #define DRIVER_DESC "EHCI orion driver"
+ 
+ #define hcd_to_orion_priv(h) ((struct orion_ehci_hcd *)hcd_to_ehci(h)->priv)
+@@ -154,8 +167,33 @@ ehci_orion_conf_mbus_windows(struct usb_hcd *hcd,
+ 	}
+ }
+ 
++static int ehci_orion_drv_reset(struct usb_hcd *hcd)
++{
++	struct device *dev = hcd->self.controller;
++	int retval;
++
++	retval = ehci_setup(hcd);
++	if (retval)
++		dev_err(dev, "ehci_setup failed %d\n", retval);
++
++	/* For SoC without hlock, need to program sbuscfg value to guarantee
++	 * AHB master's burst would not overrun or underrun FIFO.
++	 *
++	 * sbuscfg reg has to be set after usb controller reset, otherwise
++	 * the value would be override to 0.
++	 *
++	 * BAWR = BARD = 3 : Align read/write bursts packets larger than 128 bytes
++	 * AHBBRST = 3	   : Align AHB Burst to INCR16 (64 bytes)
++	 */
++	if (of_device_is_compatible(dev->of_node, "marvell,armada-3700-ehci"))
++		wrl(USB_SBUSCFG, USB_SBUSCFG_DEF_VAL);
++
++	return retval;
++}
++
+ static const struct ehci_driver_overrides orion_overrides __initconst = {
+ 	.extra_priv_size =	sizeof(struct orion_ehci_hcd),
++	.reset = ehci_orion_drv_reset,
+ };
+ 
+ static int ehci_orion_drv_probe(struct platform_device *pdev)
+@@ -406,6 +444,7 @@ static void ehci_orion_drv_shutdown(struct platform_device *pdev)
+ 
+ static const struct of_device_id ehci_orion_dt_ids[] = {
+ 	{ .compatible = "marvell,orion-ehci", },
++	{ .compatible = "marvell,armada-3700-ehci", },
+ 	{},
+ };
+ MODULE_DEVICE_TABLE(of, ehci_orion_dt_ids);
+-- 
+2.7.4
+

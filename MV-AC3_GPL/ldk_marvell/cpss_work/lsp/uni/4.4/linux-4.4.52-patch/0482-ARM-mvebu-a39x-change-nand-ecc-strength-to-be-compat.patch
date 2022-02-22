@@ -1,0 +1,33 @@
+From 28935312af989b10402c22d0e9901ff6ca8a3d15 Mon Sep 17 00:00:00 2001
+From: Grzegorz Jaszczyk <jaz@semihalf.com>
+Date: Wed, 1 Jun 2016 14:01:10 +0200
+Subject: [PATCH 0482/2241] ARM: mvebu: a39x: change nand ecc strength to be
+ compatible with the u-boot
+
+This commit changes the ecc strength to provide compatibility with u-boot.
+
+Change-Id: I072978d0236d68353e6eb139007ece98d1cf9638
+Signed-off-by: Grzegorz Jaszczyk <jaz@semihalf.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/30283
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Lior Amsalem <alior@marvell.com>
+---
+ arch/arm/boot/dts/armada-395-gp.dts | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/armada-395-gp.dts b/arch/arm/boot/dts/armada-395-gp.dts
+index d02e40c..e8ba968 100644
+--- a/arch/arm/boot/dts/armada-395-gp.dts
++++ b/arch/arm/boot/dts/armada-395-gp.dts
+@@ -120,7 +120,7 @@
+ 				marvell,nand-keep-config;
+ 				marvell,nand-enable-arbiter;
+ 				nand-on-flash-bbt;
+-				nand-ecc-strength = <8>;
++				nand-ecc-strength = <4>;
+ 				nand-ecc-step-size = <512>;
+ 
+ 				partition@0 {
+-- 
+2.7.4
+

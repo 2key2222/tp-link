@@ -1,0 +1,176 @@
+From 33b18f4f141a35125bb62c577563d534afb18603 Mon Sep 17 00:00:00 2001
+From: Igal Liberman <igall@marvell.com>
+Date: Mon, 20 Feb 2017 10:42:07 +0200
+Subject: [PATCH 1381/2241] ARM: dts: a38x: enable cesa driver
+
+Change-Id: Ifb0d9401b863ae04599433304ecd7e167bce1044
+Signed-off-by: Igal Liberman <igall@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/36888
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Neta Zur Hershkovits <neta@marvell.com>
+---
+ arch/arm/boot/dts/armada-380-gp.dts       | 4 ++++
+ arch/arm/boot/dts/armada-382-db.dts       | 2 +-
+ arch/arm/boot/dts/armada-385-amc.dts      | 5 +++++
+ arch/arm/boot/dts/armada-385-db-ap.dts    | 5 +++++
+ arch/arm/boot/dts/armada-385-linksys.dtsi | 5 +++++
+ arch/arm/boot/dts/armada-388-clearfog.dts | 4 ++++
+ arch/arm/boot/dts/armada-388-db.dts       | 5 +++++
+ arch/arm/boot/dts/armada-388-gp.dts       | 4 ++++
+ arch/arm/boot/dts/armada-388-rd.dts       | 5 +++++
+ arch/arm/boot/dts/armada-38x.dtsi         | 1 +
+ 10 files changed, 39 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/armada-380-gp.dts b/arch/arm/boot/dts/armada-380-gp.dts
+index b630144..6508290 100644
+--- a/arch/arm/boot/dts/armada-380-gp.dts
++++ b/arch/arm/boot/dts/armada-380-gp.dts
+@@ -195,6 +195,10 @@
+ 				vcc-supply = <&reg_usb3_vbus>;
+ 				status = "okay";
+ 			};
++
++			crypto@90000 {
++				status = "okay";
++			};
+ 		};
+ 
+ 		pcie-controller {
+diff --git a/arch/arm/boot/dts/armada-382-db.dts b/arch/arm/boot/dts/armada-382-db.dts
+index bcf2624..393cccb 100644
+--- a/arch/arm/boot/dts/armada-382-db.dts
++++ b/arch/arm/boot/dts/armada-382-db.dts
+@@ -131,7 +131,7 @@
+ 				};
+ 			};
+ 
+-			crypto@9D000 {
++			crypto@90000 {
+ 				status = "okay";
+ 			};
+ 
+diff --git a/arch/arm/boot/dts/armada-385-amc.dts b/arch/arm/boot/dts/armada-385-amc.dts
+index 4fdf324..9b845fe 100644
+--- a/arch/arm/boot/dts/armada-385-amc.dts
++++ b/arch/arm/boot/dts/armada-385-amc.dts
+@@ -139,6 +139,11 @@
+ 				};
+ 			};
+ 
++			crypto@90000 {
++				status = "okay";
++			};
++
++
+ 		};
+ 
+ 		pcie-controller {
+diff --git a/arch/arm/boot/dts/armada-385-db-ap.dts b/arch/arm/boot/dts/armada-385-db-ap.dts
+index 58e7122..279dcfe 100644
+--- a/arch/arm/boot/dts/armada-385-db-ap.dts
++++ b/arch/arm/boot/dts/armada-385-db-ap.dts
+@@ -221,6 +221,11 @@
+ 				status = "okay";
+ 				usb-phy = <&usb3_phy>;
+ 			};
++
++			crypto@90000 {
++				status = "okay";
++			};
++
+ 		};
+ 
+ 		bm-bppi {
+diff --git a/arch/arm/boot/dts/armada-385-linksys.dtsi b/arch/arm/boot/dts/armada-385-linksys.dtsi
+index 22f7a13..95a05d2 100644
+--- a/arch/arm/boot/dts/armada-385-linksys.dtsi
++++ b/arch/arm/boot/dts/armada-385-linksys.dtsi
+@@ -196,6 +196,11 @@
+ 					reg = <0x280000 0x680000>;   /* 6.5MB */
+ 				};
+ 			};
++
++			crypto@90000 {
++				status = "okay";
++			};
++
+ 		};
+ 
+ 		pcie-controller {
+diff --git a/arch/arm/boot/dts/armada-388-clearfog.dts b/arch/arm/boot/dts/armada-388-clearfog.dts
+index 21332eb..c9cd87a 100644
+--- a/arch/arm/boot/dts/armada-388-clearfog.dts
++++ b/arch/arm/boot/dts/armada-388-clearfog.dts
+@@ -387,6 +387,10 @@
+ 				/* CON7 */
+ 				status = "okay";
+ 			};
++
++			crypto@90000 {
++				status = "okay";
++			};
+ 		};
+ 
+ 		pcie-controller {
+diff --git a/arch/arm/boot/dts/armada-388-db.dts b/arch/arm/boot/dts/armada-388-db.dts
+index c684788..25670ab 100644
+--- a/arch/arm/boot/dts/armada-388-db.dts
++++ b/arch/arm/boot/dts/armada-388-db.dts
+@@ -196,6 +196,11 @@
+ 			usb3@f8000 {
+ 				status = "okay";
+ 			};
++
++			crypto@90000 {
++				status = "okay";
++			};
++
+ 		};
+ 
+ 		bm-bppi {
+diff --git a/arch/arm/boot/dts/armada-388-gp.dts b/arch/arm/boot/dts/armada-388-gp.dts
+index b7545f1..81c1a4a 100644
+--- a/arch/arm/boot/dts/armada-388-gp.dts
++++ b/arch/arm/boot/dts/armada-388-gp.dts
+@@ -258,6 +258,10 @@
+ 				usb-phy = <&usb3_phy>;
+ 				status = "okay";
+ 			};
++
++			crypto@90000 {
++				status = "okay";
++			};
+ 		};
+ 
+ 		bm-bppi {
+diff --git a/arch/arm/boot/dts/armada-388-rd.dts b/arch/arm/boot/dts/armada-388-rd.dts
+index 853f973..6d3d5ac 100644
+--- a/arch/arm/boot/dts/armada-388-rd.dts
++++ b/arch/arm/boot/dts/armada-388-rd.dts
+@@ -127,6 +127,11 @@
+ 			usb3@f0000 {
+ 				status = "okay";
+ 			};
++
++			crypto@90000 {
++				status = "okay";
++			};
++
+ 		};
+ 
+ 		pcie-controller {
+diff --git a/arch/arm/boot/dts/armada-38x.dtsi b/arch/arm/boot/dts/armada-38x.dtsi
+index 1b7cb92..97333a9 100644
+--- a/arch/arm/boot/dts/armada-38x.dtsi
++++ b/arch/arm/boot/dts/armada-38x.dtsi
+@@ -551,6 +551,7 @@
+ 				marvell,crypto-srams = <&crypto_sram0>,
+ 						       <&crypto_sram1>;
+ 				marvell,crypto-sram-size = <0x800>;
++				status = "disabled";
+ 			};
+ 
+ 			rtc@a3800 {
+-- 
+2.7.4
+

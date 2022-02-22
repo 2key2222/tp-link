@@ -1,0 +1,87 @@
+From 9c2a45c94140819848436e2ff2f0730935a711c4 Mon Sep 17 00:00:00 2001
+From: Andrew Lunn <andrew@lunn.ch>
+Date: Tue, 10 May 2016 23:27:23 +0200
+Subject: [PATCH 0841/2241] dsa: Remove master_dev from switch structure
+
+Upstream-commit: c33063d6a0d83a553faacf32f3cb834e63d8ecd7
+
+The switch drivers only use the master_dev member for dev_info()
+messages.  Now that the device is passed to the old style probe, and
+new style drivers are probed as true linux drivers, this is no longer
+needed.
+
+Signed-off-by: Andrew Lunn <andrew@lunn.ch>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+---
+ drivers/net/dsa/mv88e6xxx.c | 1 +
+ include/net/dsa.h           | 7 ++-----
+ net/dsa/dsa.c               | 2 +-
+ net/dsa/slave.c             | 2 +-
+ 4 files changed, 5 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/net/dsa/mv88e6xxx.c b/drivers/net/dsa/mv88e6xxx.c
+index e7e07eb..8659cba 100644
+--- a/drivers/net/dsa/mv88e6xxx.c
++++ b/drivers/net/dsa/mv88e6xxx.c
+@@ -3642,6 +3642,7 @@ int mv88e6xxx_probe(struct mdio_device *mdiodev)
+ 
+ 	ps = (struct mv88e6xxx_priv_state *)(ds + 1);
+ 	ds->priv = ps;
++	ds->dev = dev;
+ 	ps->dev = dev;
+ 	ps->ds = ds;
+ 	ps->bus = mdiodev->bus;
+diff --git a/include/net/dsa.h b/include/net/dsa.h
+index ecb52e2..f4c0bff 100644
+--- a/include/net/dsa.h
++++ b/include/net/dsa.h
+@@ -120,6 +120,8 @@ struct dsa_switch_tree {
+ };
+ 
+ struct dsa_switch {
++	struct device *dev;
++
+ 	/*
+ 	 * Parent switch tree, and switch index.
+ 	 */
+@@ -142,11 +144,6 @@ struct dsa_switch {
+ 	 */
+ 	struct dsa_switch_driver	*drv;
+ 
+-	/*
+-	 * Reference to host device to use.
+-	 */
+-	struct device		*master_dev;
+-
+ #ifdef CONFIG_NET_DSA_HWMON
+ 	/*
+ 	 * Hardware monitoring information
+diff --git a/net/dsa/dsa.c b/net/dsa/dsa.c
+index df16981..5db779c 100644
+--- a/net/dsa/dsa.c
++++ b/net/dsa/dsa.c
+@@ -411,7 +411,7 @@ dsa_switch_setup(struct dsa_switch_tree *dst, int index,
+ 	ds->pd = pd;
+ 	ds->drv = drv;
+ 	ds->priv = priv;
+-	ds->master_dev = host_dev;
++	ds->dev = parent;
+ 
+ 	ret = dsa_switch_setup_one(ds, parent);
+ 	if (ret)
+diff --git a/net/dsa/slave.c b/net/dsa/slave.c
+index ddfc2d6..b9391e0 100644
+--- a/net/dsa/slave.c
++++ b/net/dsa/slave.c
+@@ -51,7 +51,7 @@ void dsa_slave_mii_bus_init(struct dsa_switch *ds)
+ 	ds->slave_mii_bus->write = dsa_slave_phy_write;
+ 	snprintf(ds->slave_mii_bus->id, MII_BUS_ID_SIZE, "dsa-%d:%.2x",
+ 			ds->index, ds->pd->sw_addr);
+-	ds->slave_mii_bus->parent = ds->master_dev;
++	ds->slave_mii_bus->parent = ds->dev;
+ 	ds->slave_mii_bus->phy_mask = ~ds->phys_mii_mask;
+ }
+ 
+-- 
+2.7.4
+

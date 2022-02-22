@@ -1,0 +1,19 @@
+language: c
+
+compiler:
+  - clang
+  - gcc
+
+script:
+  - sh ./autogen.sh
+  - ./configure --prefix=/usr
+  - make
+  - make check
+
+notifications:
+  email: false
+  irc:
+    channels:
+      - "irc.freenode.org#pkgconf"
+    on_success: change
+    on_failure: always

@@ -1,0 +1,100 @@
+From 21c5ae2d84d668a94cac466cb3f3001c657390d1 Mon Sep 17 00:00:00 2001
+From: Uri Eliyahu <uriel@marvell.com>
+Date: Tue, 24 May 2016 12:39:28 +0300
+Subject: [PATCH 0454/2241] pp3: Fix queue statistics support
+
+	- fix 64 bits counters usage.
+
+Change-Id: Idecd834b3ece80a9a19171179aa22421c837a9a8
+Signed-off-by: Uri Eliyahu <uriel@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/29920
+Reviewed-by: Dmitri Epshtein <dima@marvell.com>
+Tested-by: Star_Automation <star@marvell.com>
+---
+ .../marvell/pp3/gnss/mv_pp3_gnss_stats_api.c       | 36 +++++++++++-----------
+ 1 file changed, 18 insertions(+), 18 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/pp3/gnss/mv_pp3_gnss_stats_api.c b/drivers/net/ethernet/marvell/pp3/gnss/mv_pp3_gnss_stats_api.c
+index f2c7b3c..0ec78721 100644
+--- a/drivers/net/ethernet/marvell/pp3/gnss/mv_pp3_gnss_stats_api.c
++++ b/drivers/net/ethernet/marvell/pp3/gnss/mv_pp3_gnss_stats_api.c
+@@ -207,20 +207,20 @@ static int mv_pp3_ingress_vq_stats_update(int vport, int vq, int cpu)
+ 	/* pkts calculation */
+ 	ext_stats->pkts_sum = collect_stats->swq_ext_stats_curr.pkts - collect_stats->swq_ext_stats_base.pkts;
+ 
+-	temp64 = (((uint64_t)collect_stats->fw_ext_stats_curr.hwq_pkt_high << 31)
++	temp64 = (((uint64_t)collect_stats->fw_ext_stats_curr.hwq_pkt_high << 32)
+ 			| (uint64_t)collect_stats->fw_ext_stats_curr.hwq_pkt_low);
+ 
+-	ext_stats->pkts_fill_lvl = (unsigned int)(temp64 & 0xFFFFFFFF) - collect_stats->swq_ext_stats_curr.pkts;
++	ext_stats->pkts_fill_lvl = (unsigned int)((temp64 - collect_stats->swq_ext_stats_curr.pkts) & 0xFFFFFFFF);
+ 
+ 	ext_stats->pkts_fill_lvl_sum += ext_stats->pkts_fill_lvl;
+ 	ext_stats->pkts_fill_lvl_max = MV_MAX(ext_stats->pkts_fill_lvl_max, ext_stats->pkts_fill_lvl);
+ 
+ 	ext_stats->bytes_sum = collect_stats->swq_ext_stats_curr.bytes - collect_stats->swq_ext_stats_base.bytes;
+ 
+-	temp64 = (((uint64_t)collect_stats->fw_ext_stats_curr.hwq_oct_high << 31)
++	temp64 = (((uint64_t)collect_stats->fw_ext_stats_curr.hwq_oct_high << 32)
+ 			| (uint64_t)collect_stats->fw_ext_stats_curr.hwq_oct_low);
+ 
+-	ext_stats->bytes_fill_lvl = (unsigned int)(temp64 & 0xFFFFFFFF) - collect_stats->swq_ext_stats_curr.bytes;
++	ext_stats->bytes_fill_lvl = (unsigned int)((temp64 - collect_stats->swq_ext_stats_curr.bytes) & 0xFFFFFFFF);
+ 
+ 	ext_stats->bytes_fill_lvl_sum += ext_stats->bytes_fill_lvl;
+ 	ext_stats->bytes_fill_lvl_max = MV_MAX(ext_stats->bytes_fill_lvl_max, ext_stats->bytes_fill_lvl);
+@@ -467,11 +467,11 @@ int mv_pp3_gnss_ingress_vport_stats_get(int vport, bool clean, int size, struct
+ 
+ 		for (vq = 0; vq < size; vq++) {
+ 			if (mv_pp3_vq_reset_flag_get(vport, vq, cpu)) {
+-					if (mv_pp3_ingress_vq_stats_update_after_dev_reset(vport, vq, cpu) < 0) {
+-						pr_err("%s: function failed\n", __func__);
+-						return -1;
+-					}
+-					mv_pp3_vq_reset_flag_set(vport, vq, cpu, false);
++				if (mv_pp3_ingress_vq_stats_update_after_dev_reset(vport, vq, cpu) < 0) {
++					pr_err("%s: function failed\n", __func__);
++					return -1;
++				}
++				mv_pp3_vq_reset_flag_set(vport, vq, cpu, false);
+ 			}
+ 			if (mv_pp3_ingress_hwq_stats(vport, vq, cpu, &hwq_stats) < 0) {
+ 				pr_err("%s: failed to read fw vport %d vq %d statistics\n", __func__, vport, vq);
+@@ -479,25 +479,25 @@ int mv_pp3_gnss_ingress_vport_stats_get(int vport, bool clean, int size, struct
+ 			}
+ 			hwq_stats_base  = mv_pp3_stats_hwq_base_get(vport, vq, cpu);
+ 			/* calc packets */
+-			temp64_base = (((uint64_t)hwq_stats_base->hwq_pkt_high << 31) |
++			temp64_base = (((uint64_t)hwq_stats_base->hwq_pkt_high << 32) |
+ 							(uint64_t)hwq_stats_base->hwq_pkt_low);
+-			temp64 = (((uint64_t)hwq_stats.hwq_pkt_high << 31) |
++			temp64 = (((uint64_t)hwq_stats.hwq_pkt_high << 32) |
+ 							(uint64_t)hwq_stats.hwq_pkt_low);
+-			res_stats[vq].pkts += (unsigned int)((temp64 - temp64_base) & 0xFFFFFFFF);
++			res_stats[vq].pkts += (temp64 - temp64_base);
+ 
+ 			/* octets packets */
+-			temp64_base = (((uint64_t)hwq_stats_base->hwq_oct_high << 31) |
++			temp64_base = (((uint64_t)hwq_stats_base->hwq_oct_high << 32) |
+ 							(uint64_t)hwq_stats_base->hwq_oct_low);
+-			temp64 = (((uint64_t)hwq_stats.hwq_oct_high << 31) |
++			temp64 = (((uint64_t)hwq_stats.hwq_oct_high << 32) |
+ 							(uint64_t)hwq_stats.hwq_oct_low);
+-			res_stats[vq].octets += (unsigned int)((temp64 - temp64_base) & 0xFFFFFFFF);
++			res_stats[vq].octets += (temp64 - temp64_base);
+ 
+ 			/* drops packets */
+-			temp64_base = (((uint64_t)hwq_stats_base->hwq_pkt_drop_high << 31) |
++			temp64_base = (((uint64_t)hwq_stats_base->hwq_pkt_drop_high << 32) |
+ 							(uint64_t)hwq_stats_base->hwq_pkt_drop_low);
+-			temp64 = (((uint64_t)hwq_stats.hwq_pkt_drop_high << 31) |
++			temp64 = (((uint64_t)hwq_stats.hwq_pkt_drop_high << 32) |
+ 								(uint64_t)hwq_stats.hwq_pkt_drop_low);
+-			res_stats[vq].drops += (unsigned int)((temp64 - temp64_base) & 0xFFFFFFFF);
++			res_stats[vq].drops += (temp64 - temp64_base);
+ 
+ 			/* errors packets - not supported, FW and SW do not count errors */
+ 		}
+-- 
+2.7.4
+

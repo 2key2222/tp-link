@@ -1,0 +1,41 @@
+From e0173957dc397f49dfe0dfeecae8d3fbca7a421e Mon Sep 17 00:00:00 2001
+From: Yehuda Yitschak <yehuday@marvell.com>
+Date: Thu, 21 Apr 2016 08:23:15 +0300
+Subject: [PATCH 0358/2241] pcie: armada8k: Set flag to always re-assign buses
+ and resources
+
+Linux PCI stack respects PCI bus and resource assignment performed by BIOS,
+bootloaders, or firmware. In some scenarios, The non-linux allocation
+is wrong and fails to account for extended features.
+For example when an end-point has an SR-IOV capability, The PCI stack
+must reserve additional buses behind the PCI bridge to allow the
+virtual functions to use them when needed. U-BOOT for example doesn't
+account for this.
+To resolve that, we add a flag in the host controller telling the PCI
+stack to re-assign all resources.
+
+Change-Id: Ie5e8506ff242433b58deaafdac1b855ad911790c
+Signed-off-by: Yehuda Yitschak <yehuday@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/29248
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Shadi Ammouri <shadi@marvell.com>
+---
+ drivers/pci/host/pcie-armada8k.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/pci/host/pcie-armada8k.c b/drivers/pci/host/pcie-armada8k.c
+index 0ca9b47..c526a42 100644
+--- a/drivers/pci/host/pcie-armada8k.c
++++ b/drivers/pci/host/pcie-armada8k.c
+@@ -287,6 +287,8 @@ static int armada8k_pcie_probe(struct platform_device *pdev)
+ 	}
+ 	armada8k_pcie->regs_base = pp->dbi_base + 0x8000;
+ 
++	pci_add_flags(PCI_REASSIGN_ALL_RSRC | PCI_REASSIGN_ALL_BUS);
++
+ 	ret = armada8k_add_pcie_port(pp, pdev);
+ 	if (ret < 0)
+ 		goto fail_free;
+-- 
+2.7.4
+

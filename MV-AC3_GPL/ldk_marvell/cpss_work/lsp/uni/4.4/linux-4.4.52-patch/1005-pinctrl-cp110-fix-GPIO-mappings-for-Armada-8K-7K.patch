@@ -1,0 +1,51 @@
+From 6cdadd9232cda4d526ef4d060c7ad71d3d38a005 Mon Sep 17 00:00:00 2001
+From: Grzegorz Jaszczyk <jaz@semihalf.com>
+Date: Tue, 20 Sep 2016 17:24:50 +0200
+Subject: [PATCH 1005/2241] pinctrl: cp110: fix GPIO mappings for Armada 8K/7K
+
+In Armada 8K there are 3 groups of gpios:
+AP gpio: 20 pins
+CP0 gpio: 32 pins
+CP1 gpio: 31 pins
+
+In Armada 7K it is similar:
+AP gpio: 20 pins
+CP0 gpio bank 0: 32 pins
+CP0 gpio bank 1: 31 pins
+
+Therefore appropriate _gpiobase need to be set in MPP_GPIO_RANGE macro.
+The same 'gpiobase' are already used for gpio node description in
+armada-cp110.dtsi file.
+
+Change-Id: I3117eefd88b089cd7f1307aea613e00e750c151d
+Signed-off-by: Grzegorz Jaszczyk <jaz@semihalf.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/33155
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/pinctrl/mvebu/pinctrl-armada-cp110.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/pinctrl/mvebu/pinctrl-armada-cp110.c b/drivers/pinctrl/mvebu/pinctrl-armada-cp110.c
+index 6b6c22c3..3fb2c8b 100644
+--- a/drivers/pinctrl/mvebu/pinctrl-armada-cp110.c
++++ b/drivers/pinctrl/mvebu/pinctrl-armada-cp110.c
+@@ -643,12 +643,12 @@ static struct mvebu_mpp_ctrl armada_cp110_1_mpp_controls[] = {
+ };
+ 
+ static struct pinctrl_gpio_range armada_cp110_0_mpp_gpio_ranges[] = {
+-	MPP_GPIO_RANGE(0, 0, 0, 32),
+-	MPP_GPIO_RANGE(1, 32, 32, 31),
++	MPP_GPIO_RANGE(0, 0, 20, 32),
++	MPP_GPIO_RANGE(1, 32, 52, 31),
+ };
+ 
+ static struct pinctrl_gpio_range armada_cp110_1_mpp_gpio_ranges[] = {
+-	MPP_GPIO_RANGE(0, 0, 0, 32),
++	MPP_GPIO_RANGE(0, 0, 20, 32),
+ };
+ 
+ static int armada_cp110_pinctrl_probe(struct platform_device *pdev)
+-- 
+2.7.4
+

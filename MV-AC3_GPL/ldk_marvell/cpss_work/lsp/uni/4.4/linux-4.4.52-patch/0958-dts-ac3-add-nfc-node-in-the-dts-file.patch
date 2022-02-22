@@ -1,0 +1,63 @@
+From 2806a34da4d03146524f90ec8f9fac9ada576e24 Mon Sep 17 00:00:00 2001
+From: zachary <zhangzg@marvell.com>
+Date: Thu, 1 Sep 2016 22:11:19 +0800
+Subject: [PATCH 0958/2241] dts: ac3: add nfc node in the dts file
+
+- ac3 db board needs nfc function to support nand flash
+  control in lk 4.4.8 kernel.
+- adding nfc feature dts node in msys_ac3_db.dts file to
+  implement this nfc function for ac3 db board.
+
+Change-Id: I477f6fe98cd6c58873e2a2d44161b4dfac8d2037
+Signed-off-by: zachary <zhangzg@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/32426
+Reviewed-by: Wilson Ding <dingwei@marvell.com>
+Tested-by: Star_Automation <star@marvell.com>
+---
+ arch/arm/boot/dts/msys-ac3-db.dts | 30 ++++++++++++++++++++++++++++++
+ 1 file changed, 30 insertions(+)
+
+diff --git a/arch/arm/boot/dts/msys-ac3-db.dts b/arch/arm/boot/dts/msys-ac3-db.dts
+index ddb0fb9..22275c0 100644
+--- a/arch/arm/boot/dts/msys-ac3-db.dts
++++ b/arch/arm/boot/dts/msys-ac3-db.dts
+@@ -95,6 +95,36 @@
+ 					full-duplex;
+ 				};
+ 			};
++
++			nfc: nand@d0000 {
++				status = "okay";
++				#address-cells = <1>;
++				#size-cells = <1>;
++
++				num-cs = <1>;
++				nand-ecc-strength = <4>;
++				nand-ecc-step-size = <512>;
++				marvell,nand-keep-config;
++				marvell,nand-enable-arbiter;
++				nand-on-flash-bbt;
++
++				partition@0 {
++					label = "U-Boot";
++					reg = <0x00000000 0x00800000>;
++					read-only;
++				};
++
++				partition@800000 {
++					label = "uImage";
++					reg = <0x00800000 0x00800000>;
++					read-only;
++				};
++
++				partition@1000000 {
++					label = "Root";
++					reg = <0x01000000 0x3f000000>;
++				};
++			};
+ 		};
+ 	};
+ };
+-- 
+2.7.4
+

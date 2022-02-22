@@ -1,0 +1,44 @@
+From 1a0af4cc38b78133fdd1995952ce4de2c77146a9 Mon Sep 17 00:00:00 2001
+From: Terry Zhou <bjzhou@marvell.com>
+Date: Tue, 31 May 2016 09:01:52 +0800
+Subject: [PATCH 0491/2241] dts: ac3: change eth to 1G speed mode
+
+- currently, the neta driver for sgmii can not support
+  inband auto-negotiation, we must set the speed according to
+  the network environment.
+- change both eth to 1G speed as default
+
+Change-Id: I0c80592b883ac880bfab7a6464d80dd037ab08d3
+Signed-off-by: Terry Zhou <bjzhou@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/30184
+Reviewed-by: Wilson Ding <dingwei@marvell.com>
+Tested-by: Star_Automation <star@marvell.com>
+---
+ arch/arm/boot/dts/msys-ac3-db.dts | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/boot/dts/msys-ac3-db.dts b/arch/arm/boot/dts/msys-ac3-db.dts
+index 50592ea..086b5f9 100644
+--- a/arch/arm/boot/dts/msys-ac3-db.dts
++++ b/arch/arm/boot/dts/msys-ac3-db.dts
+@@ -54,7 +54,7 @@
+ 				compatible = "marvell,armada-xp-neta";
+ 				phy-mode = "sgmii";
+ 				fixed-link {
+-					speed = <100>;
++					speed = <1000>;
+ 					full-duplex;
+ 				};
+ 			};
+@@ -63,7 +63,7 @@
+ 				compatible = "marvell,armada-xp-neta";
+ 				phy-mode = "sgmii";
+ 				fixed-link {
+-					speed = <100>;
++					speed = <1000>;
+ 					full-duplex;
+ 				};
+ 			};
+-- 
+2.7.4
+

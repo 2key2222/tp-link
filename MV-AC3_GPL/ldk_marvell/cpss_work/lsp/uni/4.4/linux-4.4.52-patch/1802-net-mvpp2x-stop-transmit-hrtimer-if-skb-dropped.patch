@@ -1,0 +1,33 @@
+From 8322f0baec02b07d2fd0407b4716e9d1070f04b8 Mon Sep 17 00:00:00 2001
+From: Stefan Chulski <stefanc@marvell.com>
+Date: Thu, 6 Jul 2017 16:25:53 +0300
+Subject: [PATCH 1802/2241] net: mvpp2x: stop transmit hrtimer if skb dropped
+
+If skb is dropped -> all descriptors will be transmitted and there
+is no need for transmit hrtimer.
+Hrtimer will start in next transmit procedure.
+
+Change-Id: I7f30008e61e4b304a4b0dc29bb426e113fabbc7f
+Signed-off-by: Stefan Chulski <stefanc@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/41276
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+index f2223a5..1294eb8 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+@@ -3349,6 +3349,7 @@ out:
+ 	} else {
+ 		/* Transmit bulked descriptors*/
+ 		if (aggr_txq->xmit_bulk > 0) {
++			mv_pp2x_tx_timer_kill(cp_pcpu);
+ 			aggr_txq->sw_count -= aggr_txq->xmit_bulk;
+ 			aggr_txq->hw_count += aggr_txq->xmit_bulk;
+ 			mv_pp2x_aggr_txq_pend_desc_add(port, aggr_txq->xmit_bulk);
+-- 
+2.7.4
+

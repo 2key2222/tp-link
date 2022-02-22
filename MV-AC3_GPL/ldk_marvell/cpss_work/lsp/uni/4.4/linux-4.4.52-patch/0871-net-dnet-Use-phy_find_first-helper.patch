@@ -1,0 +1,41 @@
+From e91913d3e17d003c3f1c3d083996e52efe5767b3 Mon Sep 17 00:00:00 2001
+From: Andrew Lunn <andrew@lunn.ch>
+Date: Wed, 6 Jan 2016 20:11:11 +0100
+Subject: [PATCH 0871/2241] net: dnet: Use phy_find_first() helper
+
+Upstream-commit: 04521bf840482af30a6ed54835cefadcecdd56da
+
+Replace the open coded search for the first phy with a call to the
+existing helper function.
+
+Signed-off-by: Andrew Lunn <andrew@lunn.ch>
+Reviewed-by: Florian Fainelli <f.fainelli@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+---
+ drivers/net/ethernet/dnet.c | 8 +-------
+ 1 file changed, 1 insertion(+), 7 deletions(-)
+
+diff --git a/drivers/net/ethernet/dnet.c b/drivers/net/ethernet/dnet.c
+index 6454a11..b69a9ea 100644
+--- a/drivers/net/ethernet/dnet.c
++++ b/drivers/net/ethernet/dnet.c
+@@ -255,15 +255,9 @@ static int dnet_mii_probe(struct net_device *dev)
+ {
+ 	struct dnet *bp = netdev_priv(dev);
+ 	struct phy_device *phydev = NULL;
+-	int phy_addr;
+ 
+ 	/* find the first phy */
+-	for (phy_addr = 0; phy_addr < PHY_MAX_ADDR; phy_addr++) {
+-		if (bp->mii_bus->phy_map[phy_addr]) {
+-			phydev = bp->mii_bus->phy_map[phy_addr];
+-			break;
+-		}
+-	}
++	phydev = phy_find_first(bp->mii_bus);
+ 
+ 	if (!phydev) {
+ 		printk(KERN_ERR "%s: no PHY found\n", dev->name);
+-- 
+2.7.4
+

@@ -1,0 +1,33 @@
+From 83f9a6f34f240d43dbb8b449d0b5f9696cacb962 Mon Sep 17 00:00:00 2001
+From: Sascha Hauer <s.hauer@pengutronix.de>
+Date: Thu, 11 Feb 2016 11:44:48 +0100
+Subject: [PATCH 0742/2241] net: dsa: mv88e6xxx: Add support for Marvell
+ 88E6240
+
+Upstream-commit: bd16a7248042dc62285fdc5598ec4888c0865819
+
+The Marvell 88E6240 has been tested successfully without further
+changes. Add entry to the table of supported devices.
+
+Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
+Reviewed-by: Andrew Lunn <andrew@lunn.ch>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+---
+ drivers/net/dsa/mv88e6352.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/net/dsa/mv88e6352.c b/drivers/net/dsa/mv88e6352.c
+index cc6c545..a47f52f 100644
+--- a/drivers/net/dsa/mv88e6352.c
++++ b/drivers/net/dsa/mv88e6352.c
+@@ -25,6 +25,7 @@
+ static const struct mv88e6xxx_switch_id mv88e6352_table[] = {
+ 	{ PORT_SWITCH_ID_6172, "Marvell 88E6172" },
+ 	{ PORT_SWITCH_ID_6176, "Marvell 88E6176" },
++	{ PORT_SWITCH_ID_6240, "Marvell 88E6240" },
+ 	{ PORT_SWITCH_ID_6320, "Marvell 88E6320" },
+ 	{ PORT_SWITCH_ID_6320_A1, "Marvell 88E6320 (A1)" },
+ 	{ PORT_SWITCH_ID_6320_A2, "Marvell 88e6320 (A2)" },
+-- 
+2.7.4
+

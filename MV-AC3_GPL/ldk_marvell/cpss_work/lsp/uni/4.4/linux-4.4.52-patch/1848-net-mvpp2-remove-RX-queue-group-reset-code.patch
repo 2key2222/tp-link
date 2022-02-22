@@ -1,0 +1,51 @@
+From 3f07f024ed872bf5f7c216109c491a303c478449 Mon Sep 17 00:00:00 2001
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Date: Thu, 3 Aug 2017 10:41:56 +0200
+Subject: [PATCH 1848/2241] net: mvpp2: remove RX queue group reset code
+
+The RX queue group allocation is anyway re-done later in
+mvpp2_port_init(), so resetting it in mvpp2_init() is not very useful,
+and will be annoying as we are going to rework the RX queue group
+allocation logic.
+
+Change-Id: I1adc7fd3e57329a10ff6b42daa705a300ce0aa21
+Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/42817
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2.c | 17 -----------------
+ 1 file changed, 17 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2.c b/drivers/net/ethernet/marvell/mvpp2.c
+index 4e99a5d..0f57ab4 100644
+--- a/drivers/net/ethernet/marvell/mvpp2.c
++++ b/drivers/net/ethernet/marvell/mvpp2.c
+@@ -6897,23 +6897,6 @@ static int mvpp2_init(struct platform_device *pdev, struct mvpp2 *priv)
+ 	/* Rx Fifo Init */
+ 	mvpp2_rx_fifo_init(priv);
+ 
+-	/* Reset Rx queue group interrupt configuration */
+-	for (i = 0; i < MVPP2_MAX_PORTS; i++) {
+-		if (priv->hw_version == MVPP21) {
+-			mvpp2_write(priv, MVPP21_ISR_RXQ_GROUP_REG(i),
+-				    rxq_number);
+-			continue;
+-		} else {
+-			u32 val;
+-
+-			val = (i << MVPP22_ISR_RXQ_GROUP_INDEX_GROUP_OFFSET);
+-			mvpp2_write(priv, MVPP22_ISR_RXQ_GROUP_INDEX_REG, val);
+-
+-			val = (rxq_number << MVPP22_ISR_RXQ_SUB_GROUP_SIZE_OFFSET);
+-			mvpp2_write(priv, MVPP22_ISR_RXQ_SUB_GROUP_CONFIG_REG, val);
+-		}
+-	}
+-
+ 	if (priv->hw_version == MVPP21)
+ 		writel(MVPP2_EXT_GLOBAL_CTRL_DEFAULT,
+ 		       priv->lms_base + MVPP2_MNG_EXTENDED_GLOBAL_CTRL_REG);
+-- 
+2.7.4
+

@@ -1,0 +1,75 @@
+From e9518d7d00ecff8e9692178bf14df5c4131715bc Mon Sep 17 00:00:00 2001
+From: Ken Ma <make@marvell.com>
+Date: Thu, 28 Dec 2017 14:15:11 +0800
+Subject: [PATCH 2160/2241] arm64: ahci: mvebu: Turn off LED when SATA link is
+ offline
+
+MVEBU AHCI has supported software activity led blinking, but if
+the led blink policy is configured as BLINK_OFF(the LED is on when
+idle, and blinks off every 10ms when activity is detected) and the
+sata disk is plugged out, the led will be still in on state.
+
+This patch overwrites the ata port postreset function which is called
+after SATA link up/down events to support SATA LED present function
+with ahci_mvebu_postreset(); besides the generic postreset operation,
+ahci_mvebu_postreset() turns off LED when SATA link is offline.
+
+Change-Id: If3b7948dece8a6b256f7d10bc1707106e182843b
+Signed-off-by: Ken Ma <make@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/48622
+Reviewed-by: Ofer Heifetz <oferh@marvell.com>
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Victor Gu <xigu@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+---
+ drivers/ata/ahci_mvebu.c | 20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
+
+diff --git a/drivers/ata/ahci_mvebu.c b/drivers/ata/ahci_mvebu.c
+index 543c685..33d946c 100644
+--- a/drivers/ata/ahci_mvebu.c
++++ b/drivers/ata/ahci_mvebu.c
+@@ -20,6 +20,7 @@
+ #include <linux/platform_device.h>
+ #include <linux/gpio.h>
+ #include <linux/of_gpio.h>
++#include <linux/libata.h>
+ #include "ahci.h"
+ #include <linux/mv_soc_info.h>
+ 
+@@ -417,6 +418,24 @@ static void ahci_mvebu_set_em_blink_policy(struct platform_device *pdev,
+ 	}
+ }
+ 
++static void ahci_mvebu_postreset(struct ata_link *link, unsigned int *class)
++{
++	/*
++	 * ahci_platform_ops does not define postreset() but inherit it
++	 * from ahci_ops.
++	 */
++	ahci_ops.postreset(link, class);
++
++	/* Turn off LED when the ata link is not on line */
++	if (!ata_link_online(link)) {
++		struct ata_port *ap = link->ap;
++		struct ahci_host_priv *hpriv =  ap->host->private_data;
++		struct ahci_mvebu_priv *priv = hpriv->plat_data;
++
++		ahci_mvebu_led_off(priv);
++	}
++}
++
+ static const struct ata_port_info ahci_mvebu_port_info = {
+ 	.flags	   = AHCI_FLAG_COMMON,
+ 	.pio_mask  = ATA_PIO4,
+@@ -431,6 +450,7 @@ static const struct ata_port_info ahci_mvebu_port_info = {
+ struct ata_port_operations ahci_mvebu_em_ops = {
+ 	.inherits		= &ahci_platform_ops,
+ 	.transmit_led_message	= ahci_mvebu_transmit_led_message,
++	.postreset		= ahci_mvebu_postreset,
+ };
+ 
+ static const struct ata_port_info ahci_mvebu_em_port_info = {
+-- 
+2.7.4
+

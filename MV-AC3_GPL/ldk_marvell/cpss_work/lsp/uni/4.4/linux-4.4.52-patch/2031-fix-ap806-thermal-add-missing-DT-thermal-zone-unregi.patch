@@ -1,0 +1,48 @@
+From 35b06508be95f3a2615b8106867552869e4b7db2 Mon Sep 17 00:00:00 2001
+From: Evan Wang <xswang@marvell.com>
+Date: Tue, 26 Sep 2017 17:35:32 +0800
+Subject: [PATCH 2031/2241] fix: ap806: thermal: add missing DT thermal zone
+ unregister
+
+AP806 thermal sensor registers as a sensor of a Device
+Tree thermal zone, it's binded differently from other
+thermal sensors supported by this driver, such as
+armada-370/380/XP and CP110.
+So AP806 should also be unbinded differently from other
+thermal sensors. The incorrect unregister for AP806 does
+not lead known functional issue yet, but it should be
+fixed.
+
+To fix the incorrect unregister issue, the patch calls
+"thermal_zone_of_sensor_unregister" for AP806 via checking
+AP806 thermal compatible string when driver exit.
+
+Change-Id: I145171d4189329e3a8d88e1dc5cf8e7ebfa7d8fd
+Signed-off-by: Evan Wang <xswang@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/44664
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+---
+ drivers/thermal/armada_thermal.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/thermal/armada_thermal.c b/drivers/thermal/armada_thermal.c
+index 96dd4bf..5511777 100644
+--- a/drivers/thermal/armada_thermal.c
++++ b/drivers/thermal/armada_thermal.c
+@@ -811,7 +811,11 @@ static int armada_thermal_exit(struct platform_device *pdev)
+ 	struct thermal_zone_device *armada_thermal =
+ 		platform_get_drvdata(pdev);
+ 
+-	thermal_zone_device_unregister(armada_thermal);
++	if (of_device_is_compatible(pdev->dev.of_node,
++				    "marvell,armada-ap806-thermal"))
++		thermal_zone_of_sensor_unregister(&pdev->dev, armada_thermal);
++	else
++		thermal_zone_device_unregister(armada_thermal);
+ 
+ 	return 0;
+ }
+-- 
+2.7.4
+

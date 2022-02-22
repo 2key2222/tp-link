@@ -1,0 +1,103 @@
+From b098ea53d89f966ac5680ee7f760f5504cea7dbb Mon Sep 17 00:00:00 2001
+From: Yehuda Yitschak <yehuday@marvell.com>
+Date: Tue, 16 Aug 2016 13:52:13 +0300
+Subject: [PATCH 0666/2241] debugfs: va2pa: factor out translation function
+
+so it can be used by other debugfs functions
+
+Change-Id: Ieffc315e4806102666a8c00985307159b95af5f8
+Signed-off-by: Yehuda Yitschak <yehuday@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/31968
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/misc/mvebu-a8k-debugfs.c | 47 +++++++++++++++++++++++++---------------
+ 1 file changed, 29 insertions(+), 18 deletions(-)
+
+diff --git a/drivers/misc/mvebu-a8k-debugfs.c b/drivers/misc/mvebu-a8k-debugfs.c
+index 3a95423..4d10f62 100644
+--- a/drivers/misc/mvebu-a8k-debugfs.c
++++ b/drivers/misc/mvebu-a8k-debugfs.c
+@@ -206,28 +206,21 @@ struct va2pa_args {
+ 	u8   mair;
+ };
+ 
+-static long mvebu_debug_va2pa(unsigned long arg)
++static long _mvebu_debug_va2pa(struct va2pa_args *va2pa)
+ {
+ 	u64 pa, par_el1;
+-	struct va2pa_args va2pa;
+-	char __user *argp = (char __user *)arg;
+ 
+-	if (copy_from_user(&va2pa, argp, sizeof(struct va2pa_args))) {
+-		pr_err("Failed to copy from user\n");
+-		return -EFAULT;
+-	}
+-
+-	switch (va2pa.type) {
++	switch (va2pa->type) {
+ 	case VA2PA_TYPE_USER:
+-		asm volatile("at s1e0r, %0" :: "r" (va2pa.va));
++		asm volatile("at s1e0r, %0" :: "r" (va2pa->va));
+ 		goto translate;
+ 
+ 	case VA2PA_TYPE_KERNEL:
+-		asm volatile("at s1e1r, %0" :: "r" (va2pa.va));
++		asm volatile("at s1e1r, %0" :: "r" (va2pa->va));
+ 		goto translate;
+ 
+ 	default:
+-		pr_err("bad translation type %d\n", va2pa.type);
++		pr_err("bad translation type %d\n", va2pa->type);
+ 		return -EINVAL;
+ 	}
+ 
+@@ -236,8 +229,8 @@ translate:
+ 
+ 	/* Check if translation was sucessfull */
+ 	if (BMVAL(par_el1, PAR_EL1_FAULT_BIT, PAR_EL1_FAULT_BIT)) {
+-		va2pa.pa = (void *)~0ULL;
+-		va2pa.esr_fault = BMVAL(par_el1, PAR_EL1_FST_START, PAR_EL1_FST_END);
++		va2pa->pa = (void *)~0ULL;
++		va2pa->esr_fault = BMVAL(par_el1, PAR_EL1_FST_START, PAR_EL1_FST_END);
+ 		return -EFAULT;
+ 	}
+ 
+@@ -245,12 +238,30 @@ translate:
+ 	 * take them from the virtual address
+ 	 */
+ 	pa = BMVAL_64(par_el1, PAR_EL1_PA_START, PAR_EL1_PA_END) << 12;
+-	va2pa.pa = (void *)(pa | BMVAL((u64)va2pa.va, 0, 11));
++	va2pa->pa = (void *)(pa | BMVAL((u64)va2pa->va, 0, 11));
+ 
+ 	/* Figure out the attributes */
+-	va2pa.sharability = BMVAL(par_el1, PAR_EL1_SHA_START, PAR_EL1_SHA_END);
+-	va2pa.non_secure = BMVAL(par_el1, PAR_EL1_NS_BIT, PAR_EL1_NS_BIT);
+-	va2pa.mair = BMVAL(par_el1, PAR_EL1_MAIR_START, PAR_EL1_MAIR_END);
++	va2pa->sharability = BMVAL(par_el1, PAR_EL1_SHA_START, PAR_EL1_SHA_END);
++	va2pa->non_secure = BMVAL(par_el1, PAR_EL1_NS_BIT, PAR_EL1_NS_BIT);
++	va2pa->mair = BMVAL(par_el1, PAR_EL1_MAIR_START, PAR_EL1_MAIR_END);
++
++	return 0;
++}
++
++static long mvebu_debug_va2pa(unsigned long arg)
++{
++	struct va2pa_args va2pa;
++	char __user *argp = (char __user *)arg;
++	int ret;
++
++	if (copy_from_user(&va2pa, argp, sizeof(struct va2pa_args))) {
++		pr_err("Failed to copy from user\n");
++		return -EFAULT;
++	}
++
++	ret = _mvebu_debug_va2pa(&va2pa);
++	if (ret)
++		return ret;
+ 
+ 	if (copy_to_user(argp, &va2pa, sizeof(struct va2pa_args))) {
+ 		pr_err("Failed to copy to user\n");
+-- 
+2.7.4
+

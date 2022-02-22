@@ -1,0 +1,42 @@
+From 4fea55c32ea6a201e8a7d293671b368e9ce42b81 Mon Sep 17 00:00:00 2001
+From: Igal Liberman <igall@marvell.com>
+Date: Sun, 30 Oct 2016 19:15:23 +0200
+Subject: [PATCH 1037/2241] ahci: remove compilation-time WA for CP-110 port
+ address
+
+The workaround was replaced by run-time routine.
+
+Change-Id: Id45ce5f0b6cd36fbd84e0a4c4cfc02d637c362c2
+Signed-off-by: Igal Liberman <igall@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/33479
+Reviewed-by: Wilson Ding <dingwei@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Tested-by: Omri Itach <omrii@marvell.com>
+---
+ drivers/ata/Kconfig | 10 ----------
+ 1 file changed, 10 deletions(-)
+
+diff --git a/drivers/ata/Kconfig b/drivers/ata/Kconfig
+index e9ff751..6aaa3f8 100644
+--- a/drivers/ata/Kconfig
++++ b/drivers/ata/Kconfig
+@@ -151,16 +151,6 @@ config AHCI_MVEBU
+ 
+ 	  If unsure, say N.
+ 
+-config CP110_SATA_ADDR_WA
+-	bool "Enable WA for CP110 port addresses"
+-	depends on AHCI_MVEBU
+-	default n
+-	help
+-	  This option adds a WA for the bad
+-	  addresses of CP-110 port registers.
+-	  Use this option when using the
+-	  CP-110-A0 AHCI ports.
+-
+ config AHCI_SUNXI
+ 	tristate "Allwinner sunxi AHCI SATA support"
+ 	depends on ARCH_SUNXI
+-- 
+2.7.4
+

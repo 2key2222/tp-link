@@ -1,0 +1,75 @@
+From 9ad200a5b5a42fafe6c239b61383d2341b7a9a3a Mon Sep 17 00:00:00 2001
+From: Hanna Hawa <hannah@marvell.com>
+Date: Wed, 19 Oct 2016 14:18:08 +0300
+Subject: [PATCH 1040/2241] dts: vbus: add example of gpio regulator for VBUS
+ usage
+
+The added GPIO entry is not used (for reference only)
+GPIO is not connected in default A7040-DB board
+
+Change-Id: If1bbf4cc7681b2a9e95697bef58167dd17d0c17e
+Signed-off-by: Hanna Hawa <hannah@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/33301
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Tested-by: Star_Automation <star@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-7040-db.dtsi | 19 +++++++++++++++++++
+ arch/arm64/boot/dts/marvell/armada-7040.dtsi    |  7 +++++++
+ 2 files changed, 26 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-7040-db.dtsi b/arch/arm64/boot/dts/marvell/armada-7040-db.dtsi
+index 92be92f..564aa20 100644
+--- a/arch/arm64/boot/dts/marvell/armada-7040-db.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-7040-db.dtsi
+@@ -146,6 +146,11 @@
+ 	};
+ 	usb3h0_phy: usb3-h0-phy {
+ 		compatible = "usb-nop-xceiv";
++		/* vcc-supply can be changed by io-expander or GPIO,
++		 * for A7040-DB we are using by default io-expander
++		 * for other board GPIO may be needed, should update
++		 * the phandle to gpio regulator
++		 */
+ 		vcc-supply = <&exp_usb3h0_vbus>;
+ 	};
+ 	usb3h1_phy: usb3-h1-phy {
+@@ -170,4 +175,18 @@
+ 		regulator-always-on;
+ 		gpio = <&expander0 1 GPIO_ACTIVE_HIGH>;
+ 	};
++	/* following GPIO entry is not used (for reference only)
++	 * GPIO is not connected in default A7040-DB board
++	 */
++	gpio_usb3_vbus: usb3-gpio-vbus {
++		compatible = "regulator-fixed";
++		pinctrl-names = "default";
++		pinctrl-0 = <&xhci0_vbus_pins>;
++		regulator-name = "xhci0-vbus";
++		regulator-min-microvolt = <5000000>;
++		regulator-max-microvolt = <5000000>;
++		enable-active-high;
++		gpio = <&gpio1 12 GPIO_ACTIVE_HIGH>;
++		status = "disabled";
++	};
+ };
+diff --git a/arch/arm64/boot/dts/marvell/armada-7040.dtsi b/arch/arm64/boot/dts/marvell/armada-7040.dtsi
+index 9b5a8bd..a47a362 100644
+--- a/arch/arm64/boot/dts/marvell/armada-7040.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-7040.dtsi
+@@ -80,6 +80,13 @@
+ 					marvell,pins = "mpp37", "mpp38";
+ 					marvell,function = "i2c0";
+ 				};
++				/* following GPIO entry is not used (for reference only)
++				 * GPIO is not connected in default A7040-DB board
++				 */
++				xhci0_vbus_pins: xhci0-vbus-pins {
++					marvell,pins = "mpp12";
++					marvell,function = "gpio";
++				};
+ 			};
+ 			gpio1: gpio@440100 {
+ 			};
+-- 
+2.7.4
+

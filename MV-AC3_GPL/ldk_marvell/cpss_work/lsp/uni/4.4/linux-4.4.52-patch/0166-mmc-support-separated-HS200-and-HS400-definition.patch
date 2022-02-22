@@ -1,0 +1,72 @@
+From 4b47a6f9ba35f574f33c012a706d0858a6cf2a10 Mon Sep 17 00:00:00 2001
+From: Victor Gu <xigu@marvell.com>
+Date: Sat, 23 Jan 2016 01:45:22 +0800
+Subject: [PATCH 0166/2241] mmc: support separated HS200 and HS400 definition
+
+eMMC standard does not define the UHS mode for HS200 and HS400
+modes, the SDHCI does not differentiate SDR104 and HS200 mode,
+nor defines non-standard HS400, #define SDHCI_CTRL_HS400 0x0005.
+However some host controller uses separated HS200 and HS400.
+For example, Xenon need to set HS200 to 5 and HS400 to 6.
+1. new quirks2 is added, SDHCI_QUIRK2_TIMING_HS200_HS400
+2. translate to proper UHS mode for host controller 2 register
+
+Change-Id: I5051caa836bcafcf3783d4e81fe7d3e14edbeaff
+Signed-off-by: Victor Gu <xigu@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/27681
+Reviewed-by: Nadav Haklai <nadavh@marvell.com>
+Tested-by: Nadav Haklai <nadavh@marvell.com>
+---
+ drivers/mmc/host/sdhci.c | 13 +++++++++++++
+ drivers/mmc/host/sdhci.h |  4 ++++
+ 2 files changed, 17 insertions(+)
+
+diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
+index 22355f8..8e2afb3 100644
+--- a/drivers/mmc/host/sdhci.c
++++ b/drivers/mmc/host/sdhci.c
+@@ -1459,6 +1459,19 @@ void sdhci_set_uhs_signaling(struct sdhci_host *host, unsigned timing)
+ 		ctrl_2 |= SDHCI_CTRL_UHS_DDR50;
+ 	else if (timing == MMC_TIMING_MMC_HS400)
+ 		ctrl_2 |= SDHCI_CTRL_HS400; /* Non-standard */
++
++	/* Some host controller separates HS200 and HS400 definitions,
++	 * and may have different defitition with the non-standard one
++	 * defined in original SDHCI.
++	 */
++	if (host->quirks2 & SDHCI_QUIRK2_TIMING_HS200_HS400) {
++		ctrl_2 &= ~SDHCI_CTRL_UHS_MASK;
++		if (timing == MMC_TIMING_MMC_HS200)
++			ctrl_2 |= SDHCI_CTRL_HS200_ONLY;
++		else if (timing == MMC_TIMING_MMC_HS400)
++			ctrl_2 |= SDHCI_CTRL_HS400_ONLY;
++	}
++
+ 	sdhci_writew(host, ctrl_2, SDHCI_HOST_CONTROL2);
+ }
+ EXPORT_SYMBOL_GPL(sdhci_set_uhs_signaling);
+diff --git a/drivers/mmc/host/sdhci.h b/drivers/mmc/host/sdhci.h
+index 78f4689..40e734e 100644
+--- a/drivers/mmc/host/sdhci.h
++++ b/drivers/mmc/host/sdhci.h
+@@ -162,6 +162,8 @@
+ #define   SDHCI_CTRL_UHS_SDR104		0x0003
+ #define   SDHCI_CTRL_UHS_DDR50		0x0004
+ #define   SDHCI_CTRL_HS400		0x0005 /* Non-standard */
++#define   SDHCI_CTRL_HS200_ONLY		0x0005 /* Non-standard */
++#define   SDHCI_CTRL_HS400_ONLY		0x0006 /* Non-standard */
+ #define  SDHCI_CTRL_VDD_180		0x0008
+ #define  SDHCI_CTRL_DRV_TYPE_MASK	0x0030
+ #define   SDHCI_CTRL_DRV_TYPE_B		0x0000
+@@ -422,6 +424,8 @@ struct sdhci_host {
+  * SD clock frequency or enabling back the internal clock.
+  */
+ #define SDHCI_QUIRK2_NEED_DELAY_AFTER_INT_CLK_RST	(1<<16)
++/* Some host controller separates HS200 and HS400 definitions */
++#define SDHCI_QUIRK2_TIMING_HS200_HS400			(1<<17)
+ 
+ 	int irq;		/* Device IRQ */
+ 	void __iomem *ioaddr;	/* Mapped address */
+-- 
+2.7.4
+

@@ -1,0 +1,95 @@
+From 221aea8c91cbec86542f712c941a8ffaa5c569a7 Mon Sep 17 00:00:00 2001
+From: Grzegorz Jaszczyk <jaz@semihalf.com>
+Date: Mon, 22 Feb 2016 18:13:24 +0100
+Subject: [PATCH 0195/2241] xhci: plat: enable the clk before calling the xhci
+ quirk init
+
+After commit: "xhci: plat: add support for registering multiple clocks"
+the kernel hangs during xhci probe on A38x boards. It was because the clk
+was disabled during the xhci_mvebu_mbus_init_quirk call, where access to
+the USB registers were made.
+
+This commit changes the order, so first clk is enabled and then the
+xhci quirk init is called.
+
+Change-Id: Ia00018204eb9070f5f30d6c0c9aa3e08927e898b
+Signed-off-by: Grzegorz Jaszczyk <jaz@semihalf.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/27788
+Reviewed-by: Ofer Heifetz <oferh@marvell.com>
+Reviewed-by: Yehuda Yitschak <yehuday@marvell.com>
+Tested-by: Star_Automation <star@marvell.com>
+---
+ drivers/usb/host/xhci-plat.c | 37 ++++++++++++-------------------------
+ 1 file changed, 12 insertions(+), 25 deletions(-)
+
+diff --git a/drivers/usb/host/xhci-plat.c b/drivers/usb/host/xhci-plat.c
+index e799bad..054ce5a 100644
+--- a/drivers/usb/host/xhci-plat.c
++++ b/drivers/usb/host/xhci-plat.c
+@@ -124,18 +124,20 @@ static int xhci_plat_probe(struct platform_device *pdev)
+ 	hcd->rsrc_start = res->start;
+ 	hcd->rsrc_len = resource_size(res);
+ 
++	xhci = hcd_to_xhci(hcd);
++
+ 	/*
+ 	 * Not all platforms have a clk so it is not an error if the
+ 	 * clock does not exists.
+ 	 */
+-	clk = devm_clk_get(&pdev->dev, NULL);
+-	if (!IS_ERR(clk)) {
+-		ret = clk_prepare_enable(clk);
+-		if (ret)
+-			goto put_hcd;
+-	} else if (PTR_ERR(clk) == -EPROBE_DEFER) {
+-		ret = -EPROBE_DEFER;
+-		goto put_hcd;
++	for (i = 0; i < MAX_XHCI_CLOCKS; i++) {
++		clk = of_clk_get(pdev->dev.of_node, i);
++		if (!IS_ERR(clk)) {
++			ret = clk_prepare_enable(clk);
++			if (ret)
++				goto disable_clk;
++			xhci->clk[i] = clk;
++		}
+ 	}
+ 
+ 	if (of_device_is_compatible(pdev->dev.of_node,
+@@ -144,32 +146,17 @@ static int xhci_plat_probe(struct platform_device *pdev)
+ 				    "marvell,armada-380-xhci")) {
+ 		ret = xhci_mvebu_mbus_init_quirk(pdev);
+ 		if (ret)
+-			goto put_hcd;
++			goto disable_clk;
+ 	}
+ 
+ 	device_wakeup_enable(hcd->self.controller);
+ 
+-	xhci = hcd_to_xhci(hcd);
+ 	xhci->main_hcd = hcd;
+ 	xhci->shared_hcd = usb_create_shared_hcd(driver, &pdev->dev,
+ 			dev_name(&pdev->dev), hcd);
+ 	if (!xhci->shared_hcd) {
+ 		ret = -ENOMEM;
+-		goto put_hcd;
+-	}
+-
+-	/*
+-	 * Not all platforms have a clk so it is not an error if the
+-	 * clock does not exists.
+-	 */
+-	for (i = 0; i < MAX_XHCI_CLOCKS; i++) {
+-		clk = of_clk_get(pdev->dev.of_node, i);
+-		if (!IS_ERR(clk)) {
+-			ret = clk_prepare_enable(clk);
+-			if (ret)
+-				goto disable_clk;
+-			xhci->clk[i] = clk;
+-		}
++		goto disable_clk;
+ 	}
+ 
+ 	if ((node && of_property_read_bool(node, "usb3-lpm-capable")) ||
+-- 
+2.7.4
+

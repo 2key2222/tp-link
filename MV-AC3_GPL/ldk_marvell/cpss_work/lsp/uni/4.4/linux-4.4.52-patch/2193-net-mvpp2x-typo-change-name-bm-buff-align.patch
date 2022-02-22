@@ -1,0 +1,42 @@
+From cd74183f915d0b7ed1cd903d21c186dcb43d2f09 Mon Sep 17 00:00:00 2001
+From: Yan Markman <ymarkman@marvell.com>
+Date: Wed, 27 Dec 2017 15:39:04 +0200
+Subject: [PATCH 2193/2241] net: mvpp2x: typo change name bm-buff-align
+
+Replace legacy name MVPP2_CPU_D_CACHE_LINE_SIZE
+with correct MVPP2_BM_BUFF_ALIGN_SIZE
+
+Change-Id: I3935c6d31a41282cc4bb568ba5da52aeb6a78bac
+Signed-off-by: Yan Markman <ymarkman@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/48178
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Tested-by: Omri Itach <omrii@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw_type.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw_type.h b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw_type.h
+index 73d9f9d..40cdbdc 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw_type.h
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw_type.h
+@@ -1186,7 +1186,7 @@
+ #define MVPP2_CACHE_LINE_SIZE		L1_CACHE_BYTES
+ #define MVPP2_CACHE_LINE_MASK		(L1_CACHE_BYTES - 1)
+ 
+-#define MVPP2_CPU_D_CACHE_LINE_SIZE	32
++#define MVPP2_BM_BUFF_ALIGN_SIZE	32
+ #define MVPP2_TX_CSUM_MAX_SIZE		9800
+ 
+ /* Timeout constants */
+@@ -1269,7 +1269,7 @@
+ 
+ #define MVPP2_RX_PKT_SIZE(mtu) \
+ 	ALIGN((mtu) + MVPP2_MH_SIZE + MVPP2_VLAN_TAG_LEN + \
+-	      ETH_HLEN + ETH_FCS_LEN, MVPP2_CPU_D_CACHE_LINE_SIZE)
++	      ETH_HLEN + ETH_FCS_LEN, MVPP2_BM_BUFF_ALIGN_SIZE)
+ 
+ #define MVPP2_RX_MTU_SIZE(pkt_size) \
+ 	(pkt_size - MVPP2_MH_SIZE - MVPP2_VLAN_TAG_LEN - \
+-- 
+2.7.4
+

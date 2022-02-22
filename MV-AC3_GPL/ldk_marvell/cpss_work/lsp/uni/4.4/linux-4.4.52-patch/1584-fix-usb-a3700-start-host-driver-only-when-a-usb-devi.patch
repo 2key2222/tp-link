@@ -1,0 +1,105 @@
+From 67e4969848a8b1550780aad16bcce43bfea3a9bc Mon Sep 17 00:00:00 2001
+From: jinghua <xigu@marvell.com>
+Date: Mon, 10 Apr 2017 14:10:06 +0800
+Subject: [PATCH 1584/2241] fix: usb: a3700: start host driver only when a usb
+ device is attached
+
+- In USB OTG mode, if A USB DOK is plugged-in before Linux start-up,
+  then OTG PHY gets interrupt and move to USB Host mode before XHCI
+  driver is registered. In this case, OTG driver has no idea how to
+  handle the USB DOK since there is no XHCI driver yet. So the USB
+  DOK could not be detected correctly.
+- To fix this detection issue, when OTG PHY driver gets XHCI driver
+  registration, it needs to check if OTG PHY has already in Host mode,
+  if yes, it means there has already been a USB DOK plugged-in, and it
+  needs to be handled.
+- With the old implementation, 'host_started' is used to track the
+  host status so that XHCI driver is deregistered only when a USB
+  device has been plugged in then out later. This flag is no longer
+  needed with the fix.
+- JIRA BUG: A3700-613
+
+Change-Id: I8dc2cec959304d64b4244a9e827d4bf70022b015
+Signed-off-by: jinghua <xigu@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/38636
+Tested-by: Hua Jing <jinghua@marvell.com>
+Signed-off-by: zachary <zhangzg@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/38748
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hua Jing <jinghua@marvell.com>
+---
+ drivers/usb/phy/phy-a3700-otg.c | 16 +++++++++++-----
+ 1 file changed, 11 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/usb/phy/phy-a3700-otg.c b/drivers/usb/phy/phy-a3700-otg.c
+index 167f354..d9f6978 100644
+--- a/drivers/usb/phy/phy-a3700-otg.c
++++ b/drivers/usb/phy/phy-a3700-otg.c
+@@ -72,7 +72,6 @@ struct a3700_otg {
+ 
+ 	enum port_status old_state;
+ 	enum port_status port_state;
+-	bool host_started;
+ };
+ 
+ #define set_bit(nr, val) (val |= 1 << (nr))
+@@ -88,7 +87,7 @@ static void a3700_otg_start_host(struct a3700_otg *mvotg, int on)
+ 	struct usb_hcd *hcd;
+ 	struct usb_otg *otg = mvotg->phy.otg;
+ 
+-	if ((!otg->host) || ((!mvotg->host_started) && (!on)))
++	if (!otg->host)
+ 		return;
+ 
+ 	dev_dbg(mvotg->dev, "%s, %s\n", __func__, on ? "on":"off");
+@@ -96,7 +95,6 @@ static void a3700_otg_start_host(struct a3700_otg *mvotg, int on)
+ 	hcd = bus_to_hcd(otg->host);
+ 
+ 	if (on) {
+-		mvotg->host_started = true;
+ 		usb_add_hcd(hcd, hcd->irq, IRQF_SHARED);
+ 		usb_add_hcd(hcd->shared_hcd, hcd->irq, IRQF_SHARED);
+ 		device_wakeup_enable(hcd->self.controller);
+@@ -108,7 +106,6 @@ static void a3700_otg_start_host(struct a3700_otg *mvotg, int on)
+ 			usb_remove_hcd(hcd);
+ 			usb_remove_hcd(hcd->shared_hcd);
+ 		}
+-		mvotg->host_started = false;
+ 	}
+ 
+ 	if (!IS_ERR(mvotg->vcc)) {
+@@ -263,6 +260,10 @@ static int a3700_otg_set_peripheral(struct usb_otg *otg, struct usb_gadget *gadg
+ 
+ static int a3700_otg_set_host(struct usb_otg *otg, struct usb_bus *host)
+ {
++	struct a3700_otg *mvotg;
++
++	mvotg = container_of(otg->usb_phy, struct a3700_otg, phy);
++
+ 	if (!otg)
+ 		return -ENODEV;
+ 
+@@ -272,6 +273,12 @@ static int a3700_otg_set_host(struct usb_otg *otg, struct usb_bus *host)
+ 	}
+ 
+ 	otg->host = host;
++
++	if (mvotg->port_state == USB_HOST_ATTACHED) {
++		/* USB DOK has already been connected */
++		a3700_otg_start_host(mvotg, 1);
++	}
++
+ 	return 0;
+ }
+ 
+@@ -348,7 +355,6 @@ static int a3700_otg_probe(struct platform_device *pdev)
+ 	platform_set_drvdata(pdev, mvotg);
+ 
+ 	mvotg->port_state = USB_PORT_IDLE;
+-	mvotg->host_started = false;
+ 
+ 	mvotg->qwork = create_singlethread_workqueue("a3700_otg_queue");
+ 	if (!mvotg->qwork) {
+-- 
+2.7.4
+

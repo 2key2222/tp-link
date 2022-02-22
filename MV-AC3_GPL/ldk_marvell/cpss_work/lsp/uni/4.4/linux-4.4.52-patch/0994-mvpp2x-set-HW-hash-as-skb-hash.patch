@@ -1,0 +1,51 @@
+From 7ed9efcabee3073bcd8f622876cae667bb185f3f Mon Sep 17 00:00:00 2001
+From: Stefan Chulski <stefanc@marvell.com>
+Date: Thu, 22 Sep 2016 15:16:22 +0300
+Subject: [PATCH 0994/2241] mvpp2x: set HW hash as skb hash
+
+- reduce CPU load and improve performance
+
+Change-Id: Iab1c5ff39af3cf9e6dc868ff182f05d4eda9be40
+Signed-off-by: Stefan Chulski <stefanc@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/33073
+Reviewed-by: Yuval Caduri <cyuval@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+Tested-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+index cd8bb63..39f7ab71 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+@@ -2213,6 +2213,18 @@ static void mv_pp2x_buff_hdr_rx(struct mv_pp2x_port *port,
+ 	} while (!MVPP2_B_HDR_INFO_IS_LAST(buff_hdr->info));
+ }
+ 
++static void mv_pp2x_set_skb_hash(struct mv_pp2x_rx_desc *rx_desc, u32 rx_status,
++				struct sk_buff *skb)
++{
++	u32 hash;
++
++	hash = (u32) (rx_desc->u.pp22.buf_phys_addr_key_hash >> 40);
++	if ((rx_status & MVPP2_RXD_L4_UDP) || (rx_status & MVPP2_RXD_L4_TCP))
++		skb_set_hash(skb, hash, PKT_HASH_TYPE_L4);
++	else
++		skb_set_hash(skb, hash, PKT_HASH_TYPE_L3);
++}
++
+ /* Main rx processing */
+ static int mv_pp2x_rx(struct mv_pp2x_port *port, struct napi_struct *napi,
+ 			int rx_todo, struct mv_pp2x_rx_queue *rxq)
+@@ -2331,6 +2343,7 @@ err_drop_frame:
+ 		skb_put(skb, rx_bytes);
+ 		skb->protocol = eth_type_trans(skb, dev);
+ 		mv_pp2x_rx_csum(port, rx_status, skb);
++		mv_pp2x_set_skb_hash(rx_desc, rx_status, skb);
+ 
+ 		napi_gro_receive(napi, skb);
+ 	}
+-- 
+2.7.4
+

@@ -1,0 +1,123 @@
+From ab12e673792b5f87fc3f65fd0dfae5a17b2af60e Mon Sep 17 00:00:00 2001
+From: Hanna Hawa <hannah@marvell.com>
+Date: Thu, 23 Jun 2016 09:49:43 +0300
+Subject: [PATCH 0556/2241] vfio: xorv2: add support for XOR V2 reset hook
+
+The VFIO reset hook is called every time a platform device is
+passed to a guest or removed from a guest.
+This initial implementation uses the VFIO reset hook to enable
+the XOR clocks on behalf of the guest.
+
+Change-Id: Ida28dfacb116b7be63ba0609cb24dc7dcd48845c
+Signed-off-by: Hanna Hawa <hannah@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/30747
+Tested-by: Star_Automation <star@marvell.com>
+---
+ drivers/vfio/platform/reset/Kconfig                |  8 +++
+ drivers/vfio/platform/reset/Makefile               |  2 +
+ drivers/vfio/platform/reset/vfio_platform_xor_v2.c | 58 ++++++++++++++++++++++
+ 3 files changed, 68 insertions(+)
+ create mode 100644 drivers/vfio/platform/reset/vfio_platform_xor_v2.c
+
+diff --git a/drivers/vfio/platform/reset/Kconfig b/drivers/vfio/platform/reset/Kconfig
+index 0010abc..5a0fd50 100644
+--- a/drivers/vfio/platform/reset/Kconfig
++++ b/drivers/vfio/platform/reset/Kconfig
+@@ -14,6 +14,14 @@ config VFIO_PLATFORM_XHCI_RESET
+ 
+ 	  If you don't know what to do here, say N.
+ 
++config VFIO_PLATFORM_XOR_V2_RESET
++	tristate "VFIO support for XOR V2 reset"
++	depends on VFIO_PLATFORM
++	help
++	  Enables the VFIO platform driver to handle reset for XOR V2 engine
++
++	  If you don't know what to do here, say N.
++
+ config VFIO_PLATFORM_AMDXGBE_RESET
+ 	tristate "VFIO support for AMD XGBE reset"
+ 	depends on VFIO_PLATFORM
+diff --git a/drivers/vfio/platform/reset/Makefile b/drivers/vfio/platform/reset/Makefile
+index 40b7f60..12484fe 100644
+--- a/drivers/vfio/platform/reset/Makefile
++++ b/drivers/vfio/platform/reset/Makefile
+@@ -1,9 +1,11 @@
+ vfio-platform-calxedaxgmac-y := vfio_platform_calxedaxgmac.o
+ vfio-platform-xhci-y := vfio_platform_xhci.o
++vfio-platform-xor-v2-y := vfio_platform_xor_v2.o
+ vfio-platform-amdxgbe-y := vfio_platform_amdxgbe.o
+ 
+ ccflags-y += -Idrivers/vfio/platform
+ 
+ obj-$(CONFIG_VFIO_PLATFORM_CALXEDAXGMAC_RESET) += vfio-platform-calxedaxgmac.o
+ obj-$(CONFIG_VFIO_PLATFORM_XHCI_RESET) += vfio-platform-xhci.o
++obj-$(CONFIG_VFIO_PLATFORM_XOR_V2_RESET) += vfio-platform-xor-v2.o
+ obj-$(CONFIG_VFIO_PLATFORM_AMDXGBE_RESET) += vfio-platform-amdxgbe.o
+diff --git a/drivers/vfio/platform/reset/vfio_platform_xor_v2.c b/drivers/vfio/platform/reset/vfio_platform_xor_v2.c
+new file mode 100644
+index 0000000..bdb3402
+--- /dev/null
++++ b/drivers/vfio/platform/reset/vfio_platform_xor_v2.c
+@@ -0,0 +1,58 @@
++/*
++ * VFIO platform driver specialized for XOR V2 reset
++ * reset code is inherited from XOR V2 native driver
++ *
++ * Copyright 2016 Marvell Semiconductors, Inc.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along with
++ * this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/init.h>
++#include <linux/io.h>
++#include <linux/device.h>
++#include <linux/of.h>
++#include <linux/clk.h>
++
++#include "vfio_platform_private.h"
++
++#define DRIVER_VERSION  "0.1"
++#define DRIVER_AUTHOR   "Hanna Hawa <hannah@marvell.com>"
++#define DRIVER_DESC     "Reset support for XOR V2 vfio platform device"
++
++/* Maximum number of XOR V2 engine gating clocks. */
++#define MAX_A8K_XOR_V2_CLOCKS      4
++
++int vfio_platform_xor_v2_reset(struct vfio_platform_device *vdev)
++{
++	struct device_node *np = vdev->device->of_node;
++	struct clk *clk;
++	int i;
++
++	for (i = 0; i < MAX_A8K_XOR_V2_CLOCKS; i++) {
++		clk = of_clk_get(np, i);
++		if (!IS_ERR(clk))
++			if (clk_prepare_enable(clk))
++				return -ENODEV;
++	}
++
++	return 0;
++}
++
++module_vfio_reset_handler("marvell,mv-xor-v2", vfio_platform_xor_v2_reset);
++
++MODULE_VERSION(DRIVER_VERSION);
++MODULE_LICENSE("GPL v2");
++MODULE_AUTHOR(DRIVER_AUTHOR);
++MODULE_DESCRIPTION(DRIVER_DESC);
+-- 
+2.7.4
+

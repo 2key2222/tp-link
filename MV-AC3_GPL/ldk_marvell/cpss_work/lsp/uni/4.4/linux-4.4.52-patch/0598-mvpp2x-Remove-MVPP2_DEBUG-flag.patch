@@ -1,0 +1,153 @@
+From 7413b710db8b1afd7361b4b606e953b3c4b59db6 Mon Sep 17 00:00:00 2001
+From: Alan Winkowski <walan@marvell.com>
+Date: Sun, 17 Jul 2016 18:30:25 +0300
+Subject: [PATCH 0598/2241] mvpp2x: Remove MVPP2_DEBUG flag
+
+Change-Id: I66abfd9e447ba4bef73808389a3d52720d0b7daf
+Signed-off-by: Alan Winkowski <walan@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/31182
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Yuval Caduri <cyuval@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h      | 12 ------
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.c   | 49 ----------------------
+ .../net/ethernet/marvell/mvpp2x/mv_pp2x_hw_type.h  | 13 ------
+ 3 files changed, 74 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h
+index af1d303..285d6ae 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h
+@@ -33,18 +33,6 @@
+ 
+ #define IRQ_NAME_SIZE (36)
+ 
+-#ifdef MVPP2_DEBUG
+-#define STAT_DBG(c) c
+-#else
+-#define STAT_DBG(c)
+-#endif
+-
+-#ifdef MV_PP22_GOP_DEBUG
+-#define GOP_DEBUG(x)	x
+-#else
+-#define GOP_DEBUG(x)
+-#endif
+-
+ #define MV_ETH_SKB_SHINFO_SIZE	SKB_DATA_ALIGN(sizeof(struct skb_shared_info))
+ 
+ /* START - Taken from mvPp2Commn.h, need to order TODO */
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.c
+index 6608d55..cc2a584 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.c
+@@ -59,28 +59,6 @@ void mv_pp2x_write(struct mv_pp2x_hw *hw, u32 offset, u32 data)
+ {
+ 	void *reg_ptr = hw->cpu_base[smp_processor_id()] + offset;
+ 
+-#if defined(MVPP2_DEBUG)
+-	static void *last_used[20] = {0};
+-	static int next_write;
+-	int i;
+-
+-	for (i = 0; i < MVPP2_REG_BUF_SIZE; i++) {
+-		if (last_used[i] == reg_ptr)
+-			break;
+-	}
+-	if (i == MVPP2_REG_BUF_SIZE) {
+-		pr_debug("NEW REG: mv_pp2x_write(%p)\n", reg_ptr);
+-		last_used[next_write] = reg_ptr;
+-		next_write++;
+-		next_write = next_write % MVPP2_REG_BUF_SIZE;
+-	} else {
+-		/*pr_info("mv_pp2x_write(%d)=%d , caller %pS\n",
+-		*	offset, data, __builtin_return_address(0));
+-		*/
+-	}
+-#endif
+-	if (debug_param)
+-		pr_info("mv_pp2x_write: 0x%p data=0x%x\n", reg_ptr, data);
+ 	writel(data, reg_ptr);
+ }
+ EXPORT_SYMBOL(mv_pp2x_write);
+@@ -97,34 +75,10 @@ EXPORT_SYMBOL(mv_pp2x_relaxed_write);
+ 
+ u32 mv_pp2x_read(struct mv_pp2x_hw *hw, u32 offset)
+ {
+-#if defined(MVPP2_DEBUG)
+-	static void *last_used[20] = {0};
+-	static int next_write;
+-	int i;
+-#endif
+ 	void *reg_ptr = hw->cpu_base[smp_processor_id()] + offset;
+ 	u32 val;
+ 
+ 	val = readl(reg_ptr);
+-#if defined(MVPP2_DEBUG)
+-	for (i = 0; i < MVPP2_REG_BUF_SIZE; i++) {
+-		if (last_used[i] == reg_ptr)
+-			break;
+-	}
+-	if (i == MVPP2_REG_BUF_SIZE) {
+-		pr_debug("NEW REG: mv_pp2x_read(%p)\n", reg_ptr);
+-		last_used[next_write] = reg_ptr;
+-		next_write++;
+-		next_write = next_write % MVPP2_REG_BUF_SIZE;
+-	} else {
+-		/*pr_info("mv_pp2x_read(%d)=%d , caller %pS\n",
+-		 *	offset, val, __builtin_return_address(0));
+-		*/
+-	}
+-
+-	if (debug_param)
+-		pr_info("mv_pp2x_read: 0x%p data=0x%x\n", reg_ptr, val);
+-#endif
+ 	return val;
+ }
+ EXPORT_SYMBOL(mv_pp2x_read);
+@@ -3836,10 +3790,7 @@ void mv_pp21_port_reset(struct mv_pp2x_port *port)
+ void mv_pp2x_pool_refill(struct mv_pp2x *priv, u32 pool,
+ 			 dma_addr_t phys_addr, u8 *cookie)
+ {
+-	STAT_DBG(struct mv_pp2x_bm_pool *bm_pool = &priv->bm_pools[pool]);
+-
+ 	mv_pp2x_bm_pool_put(&priv->hw, pool, phys_addr, cookie);
+-	STAT_DBG(bm_pool->stats.bm_put++);
+ }
+ 
+ /* Set pool buffer size */
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw_type.h b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw_type.h
+index 0909ac4..f72e6bb 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw_type.h
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw_type.h
+@@ -2192,15 +2192,6 @@ struct mv_pp2x_c2_shadow {
+ 	struct mv_pp2x_c2_rule_idx rule_idx_info[8];
+ };
+ 
+-/* BM specific defines */
+-#ifdef MVPP2_DEBUG
+-struct mv_pp2x_bm_pool_stats {
+-	u32 skb_alloc_oom;
+-	u32 skb_alloc_ok;
+-	u32 bm_put;
+-};
+-#endif
+-
+ struct mv_pp2x_bm_pool {
+ 	/* Pool number in the range 0-7 */
+ 	int id;
+@@ -2230,10 +2221,6 @@ struct mv_pp2x_bm_pool {
+ 	/* Occupied buffers indicator */
+ 	atomic_t in_use;
+ 	int in_use_thresh;
+-	/* Stats info */
+-#ifdef MVPP2_DEBUG
+-	struct mv_pp2x_bm_pool_stats stats;
+-#endif
+ #ifdef CONFIG_64BIT
+ 	u64 data_high;
+ #endif
+-- 
+2.7.4
+

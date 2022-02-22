@@ -1,0 +1,66 @@
+From d347cb72fca34aeedd97a5a6ef9e97bcc0f843c1 Mon Sep 17 00:00:00 2001
+From: Omri Itach <omrii@marvell.com>
+Date: Tue, 4 Jul 2017 17:08:03 +0300
+Subject: [PATCH 1771/2241] fix: cp110: dts: xor_v2: align CP XOR engine dts
+ nodes naming
+
+align all CP XOR engine's nodes to use same naming convention
+(e.g ap_xor0:dma_xor@XX, cp1_xor1:dma_xor@XX, etc)
+
+Change-Id: Ibd5353d93f2f41f71ddc4be78a938e4929e2204d
+Signed-off-by: Omri Itach <omrii@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/41147
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-cp110-1.dtsi | 4 ++--
+ arch/arm64/boot/dts/marvell/armada-cp110.dtsi   | 4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-cp110-1.dtsi b/arch/arm64/boot/dts/marvell/armada-cp110-1.dtsi
+index 2d5374e5..4ee201f 100644
+--- a/arch/arm64/boot/dts/marvell/armada-cp110-1.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-cp110-1.dtsi
+@@ -172,7 +172,7 @@ tdm@7a0000 {
+ 	status = "disabled";
+ };
+ 
+-dma_xor@6a0000 {
++cp1_xor0: dma_xor@6a0000 {
+ 	compatible = "marvell,mv-xor-v2";
+ 	reg = <0x6a0000 0x1000>,
+ 	      <0x6b0000 0x1000>;
+@@ -183,7 +183,7 @@ dma_xor@6a0000 {
+ 	status = "okay";
+ };
+ 
+-dma_xor@6c0000 {
++cp1_xor1: dma_xor@6c0000 {
+ 	compatible = "marvell,mv-xor-v2";
+ 	reg = <0x6c0000 0x1000>,
+ 	      <0x6d0000 0x1000>;
+diff --git a/arch/arm64/boot/dts/marvell/armada-cp110.dtsi b/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
+index 01ad82f..307161f 100644
+--- a/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
+@@ -264,7 +264,7 @@ nand@720000 {
+ 	status = "disabled";
+ };
+ 
+-dma_xor@6a0000 {
++cp0_xor0: dma_xor@6a0000 {
+ 	compatible = "marvell,mv-xor-v2";
+ 	reg = <0x6a0000 0x1000>,
+ 	      <0x6b0000 0x1000>;
+@@ -275,7 +275,7 @@ dma_xor@6a0000 {
+ 	status = "okay";
+ };
+ 
+-dma_xor@6c0000 {
++cp0_xor1: dma_xor@6c0000 {
+ 	compatible = "marvell,mv-xor-v2";
+ 	reg = <0x6c0000 0x1000>,
+ 	      <0x6d0000 0x1000>;
+-- 
+2.7.4
+

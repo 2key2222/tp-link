@@ -1,0 +1,428 @@
+From 201c9bb0c994057bb5fd3f66fa87291bd7908061 Mon Sep 17 00:00:00 2001
+From: Yehuda Yitschak <yehuday@marvell.com>
+Date: Wed, 17 Feb 2016 16:39:01 +0200
+Subject: [PATCH 0134/2241] dts: armada7040: introduce DT file per DB board
+ setup
+
+Change-Id: Ia416f6d7a04aef340c9dc0f394ab2dc515fb9086
+Signed-off-by: Yehuda Yitschak <yehuday@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/Makefile               |  4 +-
+ .../boot/dts/marvell/armada-7040-rz-db-nand.dts    | 58 ++++++++++++++
+ .../boot/dts/marvell/armada-7040-rz-db-router.dts  | 58 ++++++++++++++
+ .../boot/dts/marvell/armada-7040-rz-db-rxaui.dts   | 58 ++++++++++++++
+ arch/arm64/boot/dts/marvell/armada-7040-rz-db.dts  | 92 ----------------------
+ arch/arm64/boot/dts/marvell/armada-7040-rz-db.dtsi | 92 ++++++++++++++++++++++
+ 6 files changed, 269 insertions(+), 93 deletions(-)
+ create mode 100644 arch/arm64/boot/dts/marvell/armada-7040-rz-db-nand.dts
+ create mode 100644 arch/arm64/boot/dts/marvell/armada-7040-rz-db-router.dts
+ create mode 100644 arch/arm64/boot/dts/marvell/armada-7040-rz-db-rxaui.dts
+ delete mode 100644 arch/arm64/boot/dts/marvell/armada-7040-rz-db.dts
+ create mode 100644 arch/arm64/boot/dts/marvell/armada-7040-rz-db.dtsi
+
+diff --git a/arch/arm64/boot/dts/marvell/Makefile b/arch/arm64/boot/dts/marvell/Makefile
+index 9c07965..bbc465d 100644
+--- a/arch/arm64/boot/dts/marvell/Makefile
++++ b/arch/arm64/boot/dts/marvell/Makefile
+@@ -5,7 +5,9 @@ dtb-$(CONFIG_ARCH_BERLIN) += berlin4ct-stb.dtb
+ # Mvebu SoC Family
+ dtb-$(CONFIG_ARCH_MVEBU) += armada-3720-db.dtb
+ dtb-$(CONFIG_ARCH_MVEBU) += armada-7040-db.dtb
+-dtb-$(CONFIG_ARCH_MVEBU) += armada-7040-rz-db.dtb
++dtb-$(CONFIG_ARCH_MVEBU) += armada-7040-rz-db-router.dtb
++dtb-$(CONFIG_ARCH_MVEBU) += armada-7040-rz-db-nand.dtb
++dtb-$(CONFIG_ARCH_MVEBU) += armada-7040-rz-db-rxaui.dtb
+ 
+ always		:= $(dtb-y)
+ subdir-y	:= $(dts-dirs)
+diff --git a/arch/arm64/boot/dts/marvell/armada-7040-rz-db-nand.dts b/arch/arm64/boot/dts/marvell/armada-7040-rz-db-nand.dts
+new file mode 100644
+index 0000000..14eb472
+--- /dev/null
++++ b/arch/arm64/boot/dts/marvell/armada-7040-rz-db-nand.dts
+@@ -0,0 +1,58 @@
++/*
++ * Copyright (C) 2016 Marvell Technology Group Ltd.
++ *
++ * This file is dual-licensed: you can use it either under the terms
++ * of the GPLv2 or the X11 license, at your option. Note that this dual
++ * licensing only applies to this file, and not this project as a
++ * whole.
++ *
++ *  a) This library is free software; you can redistribute it and/or
++ *     modify it under the terms of the GNU General Public License as
++ *     published by the Free Software Foundation; either version 2 of the
++ *     License, or (at your option) any later version.
++ *
++ *     This library is distributed in the hope that it will be useful,
++ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *     GNU General Public License for more details.
++ *
++ * Or, alternatively,
++ *
++ *  b) Permission is hereby granted, free of charge, to any person
++ *     obtaining a copy of this software and associated documentation
++ *     files (the "Software"), to deal in the Software without
++ *     restriction, including without limitation the rights to use,
++ *     copy, modify, merge, publish, distribute, sublicense, and/or
++ *     sell copies of the Software, and to permit persons to whom the
++ *     Software is furnished to do so, subject to the following
++ *     conditions:
++ *
++ *     The above copyright notice and this permission notice shall be
++ *     included in all copies or substantial portions of the Software.
++ *
++ *     THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
++ *     EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
++ *     OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
++ *     NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
++ *     HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
++ *     WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++ *     FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
++ *     OTHER DEALINGS IN THE SOFTWARE.
++ */
++
++/*
++ * Device Tree file for Marvell Armada 7040 RZ development board
++ * This board file supports the NAND configuration of the board
++ */
++
++#include "armada-7040-rz-db.dtsi"
++
++/ {
++	model = "Marvell Armada-7040-RZ development board NAND setup";
++	compatible = "marvell,armada7040-rz-db-nand";
++	#address-cells = <2>;
++	#size-cells = <2>;
++
++	chosen { };
++
++};
+diff --git a/arch/arm64/boot/dts/marvell/armada-7040-rz-db-router.dts b/arch/arm64/boot/dts/marvell/armada-7040-rz-db-router.dts
+new file mode 100644
+index 0000000..0cb4922
+--- /dev/null
++++ b/arch/arm64/boot/dts/marvell/armada-7040-rz-db-router.dts
+@@ -0,0 +1,58 @@
++/*
++ * Copyright (C) 2016 Marvell Technology Group Ltd.
++ *
++ * This file is dual-licensed: you can use it either under the terms
++ * of the GPLv2 or the X11 license, at your option. Note that this dual
++ * licensing only applies to this file, and not this project as a
++ * whole.
++ *
++ *  a) This library is free software; you can redistribute it and/or
++ *     modify it under the terms of the GNU General Public License as
++ *     published by the Free Software Foundation; either version 2 of the
++ *     License, or (at your option) any later version.
++ *
++ *     This library is distributed in the hope that it will be useful,
++ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *     GNU General Public License for more details.
++ *
++ * Or, alternatively,
++ *
++ *  b) Permission is hereby granted, free of charge, to any person
++ *     obtaining a copy of this software and associated documentation
++ *     files (the "Software"), to deal in the Software without
++ *     restriction, including without limitation the rights to use,
++ *     copy, modify, merge, publish, distribute, sublicense, and/or
++ *     sell copies of the Software, and to permit persons to whom the
++ *     Software is furnished to do so, subject to the following
++ *     conditions:
++ *
++ *     The above copyright notice and this permission notice shall be
++ *     included in all copies or substantial portions of the Software.
++ *
++ *     THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
++ *     EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
++ *     OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
++ *     NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
++ *     HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
++ *     WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++ *     FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
++ *     OTHER DEALINGS IN THE SOFTWARE.
++ */
++
++/*
++ * Device Tree file for Marvell Armada 7040 RZ development board
++ * This board file supports the router configuration of the board
++ */
++
++#include "armada-7040-rz-db.dtsi"
++
++/ {
++	model = "Marvell Armada-7040-RZ development board router setup";
++	compatible = "marvell,armada7040-rz-db-router";
++	#address-cells = <2>;
++	#size-cells = <2>;
++
++	chosen { };
++
++};
+diff --git a/arch/arm64/boot/dts/marvell/armada-7040-rz-db-rxaui.dts b/arch/arm64/boot/dts/marvell/armada-7040-rz-db-rxaui.dts
+new file mode 100644
+index 0000000..3444c71
+--- /dev/null
++++ b/arch/arm64/boot/dts/marvell/armada-7040-rz-db-rxaui.dts
+@@ -0,0 +1,58 @@
++/*
++ * Copyright (C) 2016 Marvell Technology Group Ltd.
++ *
++ * This file is dual-licensed: you can use it either under the terms
++ * of the GPLv2 or the X11 license, at your option. Note that this dual
++ * licensing only applies to this file, and not this project as a
++ * whole.
++ *
++ *  a) This library is free software; you can redistribute it and/or
++ *     modify it under the terms of the GNU General Public License as
++ *     published by the Free Software Foundation; either version 2 of the
++ *     License, or (at your option) any later version.
++ *
++ *     This library is distributed in the hope that it will be useful,
++ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *     GNU General Public License for more details.
++ *
++ * Or, alternatively,
++ *
++ *  b) Permission is hereby granted, free of charge, to any person
++ *     obtaining a copy of this software and associated documentation
++ *     files (the "Software"), to deal in the Software without
++ *     restriction, including without limitation the rights to use,
++ *     copy, modify, merge, publish, distribute, sublicense, and/or
++ *     sell copies of the Software, and to permit persons to whom the
++ *     Software is furnished to do so, subject to the following
++ *     conditions:
++ *
++ *     The above copyright notice and this permission notice shall be
++ *     included in all copies or substantial portions of the Software.
++ *
++ *     THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
++ *     EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
++ *     OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
++ *     NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
++ *     HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
++ *     WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++ *     FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
++ *     OTHER DEALINGS IN THE SOFTWARE.
++ */
++
++/*
++ * Device Tree file for Marvell Armada 7040 RZ development board
++ * This board file supports the RXAUI configuration of the board
++ */
++
++#include "armada-7040-rz-db.dtsi"
++
++/ {
++	model = "Marvell Armada-7040-RZ development board RXAUI setup";
++	compatible = "marvell,armada7040-rz-db-rxaui";
++	#address-cells = <2>;
++	#size-cells = <2>;
++
++	chosen { };
++
++};
+diff --git a/arch/arm64/boot/dts/marvell/armada-7040-rz-db.dts b/arch/arm64/boot/dts/marvell/armada-7040-rz-db.dts
+deleted file mode 100644
+index 26cc818..0000000
+--- a/arch/arm64/boot/dts/marvell/armada-7040-rz-db.dts
++++ /dev/null
+@@ -1,92 +0,0 @@
+-/*
+- * Copyright (C) 2016 Marvell Technology Group Ltd.
+- *
+- * This file is dual-licensed: you can use it either under the terms
+- * of the GPLv2 or the X11 license, at your option. Note that this dual
+- * licensing only applies to this file, and not this project as a
+- * whole.
+- *
+- *  a) This library is free software; you can redistribute it and/or
+- *     modify it under the terms of the GNU General Public License as
+- *     published by the Free Software Foundation; either version 2 of the
+- *     License, or (at your option) any later version.
+- *
+- *     This library is distributed in the hope that it will be useful,
+- *     but WITHOUT ANY WARRANTY; without even the implied warranty of
+- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- *     GNU General Public License for more details.
+- *
+- * Or, alternatively,
+- *
+- *  b) Permission is hereby granted, free of charge, to any person
+- *     obtaining a copy of this software and associated documentation
+- *     files (the "Software"), to deal in the Software without
+- *     restriction, including without limitation the rights to use,
+- *     copy, modify, merge, publish, distribute, sublicense, and/or
+- *     sell copies of the Software, and to permit persons to whom the
+- *     Software is furnished to do so, subject to the following
+- *     conditions:
+- *
+- *     The above copyright notice and this permission notice shall be
+- *     included in all copies or substantial portions of the Software.
+- *
+- *     THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+- *     EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+- *     OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+- *     NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+- *     HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+- *     WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+- *     FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+- *     OTHER DEALINGS IN THE SOFTWARE.
+- */
+-
+-/*
+- * Device Tree file for Marvell Armada 7040 Development board platform
+- */
+-
+-#include "armada-7040-rz.dtsi"
+-
+-/ {
+-	model = "Marvell Armada 7040-RZ DB board";
+-	compatible = "marvell,armada7040-db", "marvell,armada7040",
+-	             "marvell,armada-ap806-quad", "marvell,armada-ap806";
+-
+-	memory@00000000 {
+-		device_type = "memory";
+-		reg = <0x0 0x0 0x0 0x80000000>;
+-	};
+-
+-	ap806 {
+-		config-space {
+-			spi@510600 {
+-				status = "okay";
+-
+-				spi-flash@0 {
+-					#address-cells = <1>;
+-					#size-cells = <1>;
+-					compatible = "n25q128a13";
+-					reg = <0>; /* Chip select 0 */
+-					spi-max-frequency = <10000000>;
+-
+-					partition@0 {
+-						label = "U-Boot";
+-						reg = <0 0x200000>;
+-					};
+-					partition@400000 {
+-						label = "Filesystem";
+-						reg = <0x200000 0xce0000>;
+-					};
+-				};
+-			};
+-
+-			i2c@511000 {
+-				status = "okay";
+-				clock-frequency = <100000>;
+-			};
+-
+-			serial@512000 {
+-				status = "okay";
+-			};
+-		};
+-	};
+-};
+diff --git a/arch/arm64/boot/dts/marvell/armada-7040-rz-db.dtsi b/arch/arm64/boot/dts/marvell/armada-7040-rz-db.dtsi
+new file mode 100644
+index 0000000..26cc818
+--- /dev/null
++++ b/arch/arm64/boot/dts/marvell/armada-7040-rz-db.dtsi
+@@ -0,0 +1,92 @@
++/*
++ * Copyright (C) 2016 Marvell Technology Group Ltd.
++ *
++ * This file is dual-licensed: you can use it either under the terms
++ * of the GPLv2 or the X11 license, at your option. Note that this dual
++ * licensing only applies to this file, and not this project as a
++ * whole.
++ *
++ *  a) This library is free software; you can redistribute it and/or
++ *     modify it under the terms of the GNU General Public License as
++ *     published by the Free Software Foundation; either version 2 of the
++ *     License, or (at your option) any later version.
++ *
++ *     This library is distributed in the hope that it will be useful,
++ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *     GNU General Public License for more details.
++ *
++ * Or, alternatively,
++ *
++ *  b) Permission is hereby granted, free of charge, to any person
++ *     obtaining a copy of this software and associated documentation
++ *     files (the "Software"), to deal in the Software without
++ *     restriction, including without limitation the rights to use,
++ *     copy, modify, merge, publish, distribute, sublicense, and/or
++ *     sell copies of the Software, and to permit persons to whom the
++ *     Software is furnished to do so, subject to the following
++ *     conditions:
++ *
++ *     The above copyright notice and this permission notice shall be
++ *     included in all copies or substantial portions of the Software.
++ *
++ *     THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
++ *     EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
++ *     OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
++ *     NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
++ *     HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
++ *     WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++ *     FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
++ *     OTHER DEALINGS IN THE SOFTWARE.
++ */
++
++/*
++ * Device Tree file for Marvell Armada 7040 Development board platform
++ */
++
++#include "armada-7040-rz.dtsi"
++
++/ {
++	model = "Marvell Armada 7040-RZ DB board";
++	compatible = "marvell,armada7040-db", "marvell,armada7040",
++	             "marvell,armada-ap806-quad", "marvell,armada-ap806";
++
++	memory@00000000 {
++		device_type = "memory";
++		reg = <0x0 0x0 0x0 0x80000000>;
++	};
++
++	ap806 {
++		config-space {
++			spi@510600 {
++				status = "okay";
++
++				spi-flash@0 {
++					#address-cells = <1>;
++					#size-cells = <1>;
++					compatible = "n25q128a13";
++					reg = <0>; /* Chip select 0 */
++					spi-max-frequency = <10000000>;
++
++					partition@0 {
++						label = "U-Boot";
++						reg = <0 0x200000>;
++					};
++					partition@400000 {
++						label = "Filesystem";
++						reg = <0x200000 0xce0000>;
++					};
++				};
++			};
++
++			i2c@511000 {
++				status = "okay";
++				clock-frequency = <100000>;
++			};
++
++			serial@512000 {
++				status = "okay";
++			};
++		};
++	};
++};
+-- 
+2.7.4
+

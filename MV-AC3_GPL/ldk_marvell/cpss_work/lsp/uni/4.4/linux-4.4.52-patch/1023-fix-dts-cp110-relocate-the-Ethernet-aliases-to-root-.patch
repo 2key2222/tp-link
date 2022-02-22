@@ -1,0 +1,93 @@
+From d72abd9684e464894b30fe137c49099e33d6d592 Mon Sep 17 00:00:00 2001
+From: Nizan Zorea <nzorea@marvell.com>
+Date: Wed, 19 Oct 2016 14:54:08 +0300
+Subject: [PATCH 1023/2241] fix: dts: cp110: relocate the Ethernet aliases to
+ root dts
+
+U-Boot is updating MAC address in Linux device tree prior to booting.
+The u-boot code expects to receive the aliases under the root path DT,
+but the aliases were placed in invalid location (under
+'cp110-master(or slave)/config-space'), so relocate them to the root path of the DT.
+
+Change-Id: I9edad129e368d6a3cee7724d0fae5746f560f9c0
+Signed-off-by: Nizan Zorea <nzorea@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/33303
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Tested-by: Omri Itach <omrii@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-7040.dtsi    | 3 +++
+ arch/arm64/boot/dts/marvell/armada-8040.dtsi    | 8 ++++++++
+ arch/arm64/boot/dts/marvell/armada-cp110-1.dtsi | 6 ------
+ arch/arm64/boot/dts/marvell/armada-cp110.dtsi   | 6 ------
+ 4 files changed, 11 insertions(+), 12 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-7040.dtsi b/arch/arm64/boot/dts/marvell/armada-7040.dtsi
+index 63616fb..9b5a8bd 100644
+--- a/arch/arm64/boot/dts/marvell/armada-7040.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-7040.dtsi
+@@ -55,6 +55,9 @@
+ 	aliases {
+ 		gpio1 = &gpio1;
+ 		gpio2 = &gpio2;
++		ethernet0 = &emac0;
++		ethernet1 = &emac2;
++		ethernet2 = &emac3;
+ 	};
+ 
+ 	ap806 {
+diff --git a/arch/arm64/boot/dts/marvell/armada-8040.dtsi b/arch/arm64/boot/dts/marvell/armada-8040.dtsi
+index 2badcbb..ca3a9af 100644
+--- a/arch/arm64/boot/dts/marvell/armada-8040.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-8040.dtsi
+@@ -53,6 +53,14 @@
+ 	model = "Marvell Armada 8040";
+ 	compatible = "marvell,armada8040", "marvell,armada-ap806-quad",
+ 	             "marvell,armada-ap806";
++	aliases {
++		ethernet0 = &emac0;
++		ethernet1 = &emac2;
++		ethernet2 = &emac3;
++		ethernet3 = &emac0_1;
++		ethernet4 = &emac2_1;
++		ethernet5 = &emac3_1;
++	};
+ 
+ 	ap806 {
+ 		config-space {
+diff --git a/arch/arm64/boot/dts/marvell/armada-cp110-1.dtsi b/arch/arm64/boot/dts/marvell/armada-cp110-1.dtsi
+index eab5777..77fd1d2 100644
+--- a/arch/arm64/boot/dts/marvell/armada-cp110-1.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-cp110-1.dtsi
+@@ -231,12 +231,6 @@ axim-hb1-wr@3c9000 {
+ 	bus-width = <40>;
+ };
+ 
+-aliases {
+-	ethernet0_1 = &emac0_1;
+-	ethernet1_1 = &emac2_1;
+-	ethernet2_1 = &emac3_1;
+-};
+-
+ gop {
+ 	emac0_1: mac0 {
+ 		interrupts = <GIC_SPI 292 IRQ_TYPE_LEVEL_HIGH>;  /* Link IRQ */
+diff --git a/arch/arm64/boot/dts/marvell/armada-cp110.dtsi b/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
+index 49e5c22..8d8de5e 100644
+--- a/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
+@@ -317,12 +317,6 @@ axim-hb1-wr@3c9000 {
+ 	bus-width = <40>;
+ };
+ 
+-aliases {
+-	ethernet0 = &emac0;
+-	ethernet1 = &emac2;
+-	ethernet2 = &emac3;
+-};
+-
+ gop {
+ 	emac0: mac0 {
+ 		interrupts = <GIC_SPI 68 IRQ_TYPE_LEVEL_HIGH>;  /* Link IRQ */
+-- 
+2.7.4
+

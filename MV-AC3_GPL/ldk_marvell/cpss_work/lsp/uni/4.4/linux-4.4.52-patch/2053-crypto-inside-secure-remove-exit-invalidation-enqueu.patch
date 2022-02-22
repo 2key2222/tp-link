@@ -1,0 +1,102 @@
+From 6d2028981049833f38e9d6df97a582969afe80a3 Mon Sep 17 00:00:00 2001
+From: Ofer Heifetz <oferh@marvell.com>
+Date: Wed, 25 Oct 2017 11:32:35 +0300
+Subject: [PATCH 2053/2241] crypto: inside-secure: remove exit invalidation
+ enqueue return code check
+
+The return code of enqueue is meaningless since the request is enqueued
+in any case, the wait_for_completion will wake only when the request
+has been handled.
+
+Change-Id: I04690c4fcf4fabac8ba7998a7d9887750d201b4b
+Signed-off-by: Ofer Heifetz <oferh@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/45576
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Igal Liberman <igall@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/crypto/inside-secure/cipher.c | 7 +++----
+ drivers/crypto/inside-secure/hash.c   | 7 +++----
+ 2 files changed, 6 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/crypto/inside-secure/cipher.c b/drivers/crypto/inside-secure/cipher.c
+index 9485b3c..d43a1b5 100644
+--- a/drivers/crypto/inside-secure/cipher.c
++++ b/drivers/crypto/inside-secure/cipher.c
+@@ -429,7 +429,6 @@ static int safexcel_cipher_exit_inv(struct crypto_tfm *tfm)
+ 	struct safexcel_cipher_req *sreq = ablkcipher_request_ctx(req);
+ 	struct safexcel_inv_result result = { 0 };
+ 	int ring = ctx->base.ring;
+-	int ret;
+ 
+ 	/* create invalidation request */
+ 	init_completion(&result.completion);
+@@ -442,7 +441,7 @@ static int safexcel_cipher_exit_inv(struct crypto_tfm *tfm)
+ 	sreq->needs_inv = true;
+ 
+ 	spin_lock_bh(&priv->ring[ring].queue_lock);
+-	ret = ablkcipher_enqueue_request(&priv->ring[ring].queue, req);
++	ablkcipher_enqueue_request(&priv->ring[ring].queue, req);
+ 	spin_unlock_bh(&priv->ring[ring].queue_lock);
+ 
+ 	queue_work(priv->ring[ring].workqueue,
+@@ -457,7 +456,7 @@ static int safexcel_cipher_exit_inv(struct crypto_tfm *tfm)
+ 		return result.error;
+ 	}
+ 
+-	return ret;
++	return 0;
+ }
+ 
+ /* Encrypt/Decrypt operation - Insert request to Crypto API queue */
+@@ -554,7 +553,7 @@ static void safexcel_ablkcipher_cra_exit(struct crypto_tfm *tfm)
+ 	 */
+ 	if (priv->eip_type == EIP197) {
+ 		ret = safexcel_cipher_exit_inv(tfm);
+-		if (ret != -EINPROGRESS)
++		if (ret)
+ 			dev_warn(priv->dev, "cipher: invalidation error %d\n",
+ 				 ret);
+ 	} else {
+diff --git a/drivers/crypto/inside-secure/hash.c b/drivers/crypto/inside-secure/hash.c
+index cc7e1a0..b5bafa0 100644
+--- a/drivers/crypto/inside-secure/hash.c
++++ b/drivers/crypto/inside-secure/hash.c
+@@ -450,7 +450,6 @@ static int safexcel_ahash_exit_inv(struct crypto_tfm *tfm)
+ 	struct safexcel_ahash_req *sreq = ahash_request_ctx(req);
+ 	struct safexcel_inv_result result = { 0 };
+ 	int ring = ctx->base.ring;
+-	int ret;
+ 
+ 	/* create invalidation request */
+ 	init_completion(&result.completion);
+@@ -463,7 +462,7 @@ static int safexcel_ahash_exit_inv(struct crypto_tfm *tfm)
+ 	sreq->needs_inv = true;
+ 
+ 	spin_lock_bh(&priv->ring[ring].queue_lock);
+-	ret = ahash_enqueue_request(&priv->ring[ring].queue, req);
++	ahash_enqueue_request(&priv->ring[ring].queue, req);
+ 	spin_unlock_bh(&priv->ring[ring].queue_lock);
+ 
+ 	queue_work(priv->ring[ring].workqueue,
+@@ -477,7 +476,7 @@ static int safexcel_ahash_exit_inv(struct crypto_tfm *tfm)
+ 		return result.error;
+ 	}
+ 
+-	return ret;
++	return 0;
+ }
+ 
+ static int safexcel_ahash_update(struct ahash_request *areq)
+@@ -726,7 +725,7 @@ static void safexcel_ahash_cra_exit(struct crypto_tfm *tfm)
+ 	 */
+ 	if (priv->eip_type == EIP197) {
+ 		ret = safexcel_ahash_exit_inv(tfm);
+-		if (ret != -EINPROGRESS)
++		if (ret)
+ 			dev_warn(priv->dev, "hash: invalidation error %d\n", ret);
+ 	} else {
+ 		dma_pool_free(priv->context_pool, ctx->base.ctxr,
+-- 
+2.7.4
+

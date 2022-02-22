@@ -1,0 +1,35 @@
+From 9b13f9c448825c2b68a5c3d6f3076963b0e89f5b Mon Sep 17 00:00:00 2001
+From: Igal Liberman <igall@marvell.com>
+Date: Sun, 30 Oct 2016 14:20:00 +0200
+Subject: [PATCH 1033/2241] ahci: cp110: Add support for cp110 SATA compatible
+
+A8k requires workaround for SATA in order to be functional on
+both A0 and A1 (due to incorrect port register offset).
+A3700 doesn't require this workaround so we need to be able to
+distinguish a8k from A3700.
+
+Change-Id: I08b4336f5462aedb1703fd3601beff30669f3f97
+Signed-off-by: Igal Liberman <igall@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/33468
+Reviewed-by: Wilson Ding <dingwei@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Tested-by: Omri Itach <omrii@marvell.com>
+---
+ drivers/ata/ahci_mvebu.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/ata/ahci_mvebu.c b/drivers/ata/ahci_mvebu.c
+index cc0cd58..b72bb03 100644
+--- a/drivers/ata/ahci_mvebu.c
++++ b/drivers/ata/ahci_mvebu.c
+@@ -142,6 +142,7 @@ disable_resources:
+ static const struct of_device_id ahci_mvebu_of_match[] = {
+ 	{ .compatible = "marvell,armada-380-ahci", },
+ 	{ .compatible = "marvell,armada-3700-ahci", },
++	{ .compatible = "marvell,armada-cp110-ahci", },
+ 	{ },
+ };
+ MODULE_DEVICE_TABLE(of, ahci_mvebu_of_match);
+-- 
+2.7.4
+

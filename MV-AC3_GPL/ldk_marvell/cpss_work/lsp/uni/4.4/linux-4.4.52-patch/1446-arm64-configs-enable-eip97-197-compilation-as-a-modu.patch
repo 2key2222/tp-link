@@ -1,0 +1,30 @@
+From a99cd784f7edf366d990783b1853e639189d19ce Mon Sep 17 00:00:00 2001
+From: Igal Liberman <igall@marvell.com>
+Date: Sun, 5 Mar 2017 14:54:16 +0200
+Subject: [PATCH 1446/2241] arm64: configs: enable eip97/197 compilation (as a
+ module)
+
+Change-Id: I92679c5f15d59996825d13648acb79b5acaa752c
+Signed-off-by: Igal Liberman <igall@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/37212
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ arch/arm64/configs/mvebu_v8_lsp_defconfig | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm64/configs/mvebu_v8_lsp_defconfig b/arch/arm64/configs/mvebu_v8_lsp_defconfig
+index 23789ad..0e575df 100644
+--- a/arch/arm64/configs/mvebu_v8_lsp_defconfig
++++ b/arch/arm64/configs/mvebu_v8_lsp_defconfig
+@@ -275,6 +275,7 @@ CONFIG_CORESIGHT_SOURCE_AXIM=y
+ CONFIG_SECURITY=y
+ CONFIG_CRYPTO_TEST=m
+ CONFIG_CRYPTO_ANSI_CPRNG=y
++CONFIG_CRYPTO_DEV_SAFEXCEL=m
+ CONFIG_ARM64_CRYPTO=y
+ CONFIG_CRYPTO_SHA1_ARM64_CE=y
+ CONFIG_CRYPTO_SHA2_ARM64_CE=y
+-- 
+2.7.4
+

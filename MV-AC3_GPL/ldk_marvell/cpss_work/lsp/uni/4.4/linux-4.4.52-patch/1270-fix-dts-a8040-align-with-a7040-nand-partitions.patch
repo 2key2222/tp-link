@@ -1,0 +1,45 @@
+From fe76cf14fcf38b2dc08d0e7034297521ec73cf13 Mon Sep 17 00:00:00 2001
+From: David Sniatkiwicz <davidsn@marvell.com>
+Date: Thu, 5 Jan 2017 12:36:32 +0200
+Subject: [PATCH 1270/2241] fix: dts: a8040: align with a7040 nand partitions
+
+Change-Id: Icd75b57c702219086ec2c35f520966cff6fafe4b
+Signed-off-by: David Sniatkiwicz <davidsn@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/35358
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-8040-db.dtsi | 17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-8040-db.dtsi b/arch/arm64/boot/dts/marvell/armada-8040-db.dtsi
+index ea4ac2e..f439090 100644
+--- a/arch/arm64/boot/dts/marvell/armada-8040-db.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-8040-db.dtsi
+@@ -172,6 +172,23 @@
+ 			usb3@500000 {
+ 				usb-phy = <&cps_usb3h0_phy>;
+ 			};
++			nand@720000 {
++				nand-ecc-strength = <4>;
++				nand-ecc-step-size = <512>;
++				status = "disabled";
++				partition@0 {
++					label = "U-Boot";
++					reg = <0 0x200000>;
++				};
++				partition@200000 {
++					label = "Linux";
++					reg = <0x200000 0xd00000>;
++				};
++				partition@1000000 {
++					label = "Filesystem";
++					reg = <0x1000000 0x3f000000>;
++				};
++			};
+ 		};
+ 
+ 		cps_usb3h0_phy: cps_usb3_phy0 {
+-- 
+2.7.4
+

@@ -1,0 +1,39 @@
+From f57968ad34ae8c447a7b05c0bb1ec6b10553b820 Mon Sep 17 00:00:00 2001
+From: Uri Eliyahu <uriel@marvell.com>
+Date: Mon, 23 May 2016 16:04:58 +0300
+Subject: [PATCH 0464/2241] pp3: enable pp3 in mvebu_v7_lsp_defconfig
+
+Change-Id: I1226a23a018f221cc14c2bb12aa08340b3e50896
+Signed-off-by: Uri Eliyahu <uriel@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/29882
+Reviewed-by: Lior Amsalem <alior@marvell.com>
+Tested-by: Star_Automation <star@marvell.com>
+---
+ arch/arm/configs/mvebu_v7_lsp_defconfig | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/configs/mvebu_v7_lsp_defconfig b/arch/arm/configs/mvebu_v7_lsp_defconfig
+index 1ac4450..3d2feeb 100644
+--- a/arch/arm/configs/mvebu_v7_lsp_defconfig
++++ b/arch/arm/configs/mvebu_v7_lsp_defconfig
+@@ -15,8 +15,8 @@ CONFIG_MACH_ARMADA_375=y
+ CONFIG_MACH_ARMADA_38X=y
+ CONFIG_MACH_ARMADA_39X=y
+ CONFIG_MACH_ARMADA_XP=y
+-CONFIG_MACH_MSYS=y
+ CONFIG_MACH_DOVE=y
++CONFIG_MACH_MSYS=y
+ CONFIG_PCI=y
+ CONFIG_PCI_MSI=y
+ CONFIG_PCI_MVEBU=y
+@@ -76,6 +76,7 @@ CONFIG_E1000E=y
+ CONFIG_MV643XX_ETH=y
+ CONFIG_MVNETA=y
+ CONFIG_MVPP2=y
++CONFIG_MVPP3=y
+ CONFIG_MARVELL_PHY=y
+ CONFIG_USB_USBNET=y
+ # CONFIG_USB_NET_CDCETHER is not set
+-- 
+2.7.4
+

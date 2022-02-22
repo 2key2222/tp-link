@@ -1,0 +1,56 @@
+From 34b0d0000de8349dc37768c33ec78a98dbda0adb Mon Sep 17 00:00:00 2001
+From: Shadi Ammouri <shadi@marvell.com>
+Date: Mon, 7 Mar 2016 14:51:43 +0200
+Subject: [PATCH 0243/2241] pd: Add HZ_20 option for timer frequency
+
+This option is only used for emulation platforms, where
+a slow rate is required. Otherwise, the system will spend
+100% of it's timer handling timer interrupts.
+
+Change-Id: I59bff11b429cbf441d263cf2084f896ed9518d3f
+Signed-off-by: Shadi Ammouri <shadi@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/28083
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Yehuda Yitschak <yehuday@marvell.com>
+---
+ kernel/Kconfig.hz | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+diff --git a/kernel/Kconfig.hz b/kernel/Kconfig.hz
+index 2a202a8..a487c99 100644
+--- a/kernel/Kconfig.hz
++++ b/kernel/Kconfig.hz
+@@ -4,6 +4,7 @@
+ 
+ choice
+ 	prompt "Timer frequency"
++	default HZ_20 if (CONFIG_ARCH_MVEBU_PD)
+ 	default HZ_250
+ 	help
+ 	 Allows the configuration of the timer frequency. It is customary
+@@ -15,6 +16,14 @@ choice
+ 	 environment leading to NR_CPUS * HZ number of timer interrupts
+ 	 per second.
+ 
++	config HZ_20
++		bool "20 HZ"
++	help
++	  200 Hz is only used for emulation platforms where a very slow
++	  clock is required in order to adapt to the emulation platform
++	  clocks configuration.
++	  A higher clock ratio will cause the system to spend 100% of
++	  it's time handling timer interrupts.
+ 
+ 	config HZ_100
+ 		bool "100 HZ"
+@@ -49,6 +58,7 @@ endchoice
+ 
+ config HZ
+ 	int
++	default 20 if HZ_20
+ 	default 100 if HZ_100
+ 	default 250 if HZ_250
+ 	default 300 if HZ_300
+-- 
+2.7.4
+

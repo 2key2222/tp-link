@@ -1,0 +1,77 @@
+From db4a6d7008ef2e50bec73911fe72cba02c73fbb8 Mon Sep 17 00:00:00 2001
+From: Hanna Hawa <hannah@marvell.com>
+Date: Thu, 17 Mar 2016 14:22:30 +0200
+Subject: [PATCH 0262/2241] dts: sdhci: 70x0: add SDHCI node for Armada-70x0-A0
+ device tree
+
+Change-Id: I680d24e87c85cf292db7120010f04946ffa5b60c
+Signed-off-by: Hanna Hawa <hannah@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/28324
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Shadi Ammouri <shadi@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-ap806-dual.dtsi |  8 +++++++-
+ arch/arm64/boot/dts/marvell/armada-ap806-quad.dtsi |  8 +++++++-
+ arch/arm64/boot/dts/marvell/armada-ap806.dtsi      | 11 +++++++++++
+ 3 files changed, 25 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-ap806-dual.dtsi b/arch/arm64/boot/dts/marvell/armada-ap806-dual.dtsi
+index f25c5c1..b1b11395 100644
+--- a/arch/arm64/boot/dts/marvell/armada-ap806-dual.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-ap806-dual.dtsi
+@@ -67,5 +67,11 @@
+ 			enable-method = "psci";
+ 		};
+ 	};
++	ap806 {
++		config-space {
++			sdhci@d8000 {
++				status = "okay";
++			};
++		};
++	};
+ };
+-
+diff --git a/arch/arm64/boot/dts/marvell/armada-ap806-quad.dtsi b/arch/arm64/boot/dts/marvell/armada-ap806-quad.dtsi
+index baa7d9a..425cdd9 100644
+--- a/arch/arm64/boot/dts/marvell/armada-ap806-quad.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-ap806-quad.dtsi
+@@ -79,6 +79,12 @@
+ 			enable-method = "psci";
+ 		};
+ 	};
+-
++	ap806 {
++		config-space {
++			sdhci@d8000 {
++				status = "okay";
++			};
++		};
++	};
+ };
+ 
+diff --git a/arch/arm64/boot/dts/marvell/armada-ap806.dtsi b/arch/arm64/boot/dts/marvell/armada-ap806.dtsi
+index 095531c..d4174fb 100644
+--- a/arch/arm64/boot/dts/marvell/armada-ap806.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-ap806.dtsi
+@@ -205,6 +205,17 @@
+ 				status = "disabled";
+ 
+ 			};
++			/* The SDIO should not be enabled in Z1 DSTI/DST */
++			sdhci@d8000 {
++				compatible = "marvell,xenon-sdhci";
++				reg = <0x6E0000 0x300>;
++				interrupts = <GIC_SPI 16 IRQ_TYPE_LEVEL_HIGH>;
++				mmc-ddr-1_8v;
++				mmc-hs200-1_8v;
++				mmc-hs400-1_8v;
++				xenon,slotno = <0>;
++				status = "disabled";
++			};
+ 
+ 			coreclk: clk@0x6F8204 {
+ 				compatible = "marvell,armada-ap806-core-clock";
+-- 
+2.7.4
+

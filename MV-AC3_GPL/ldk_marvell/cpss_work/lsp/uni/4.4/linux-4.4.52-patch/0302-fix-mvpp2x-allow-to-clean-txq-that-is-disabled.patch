@@ -1,0 +1,69 @@
+From 7c972a4e196c462ac9210d0927b1943c87f22ab8 Mon Sep 17 00:00:00 2001
+From: Yuval Caduri <cyuval@marvell.com>
+Date: Wed, 6 Apr 2016 02:43:17 +0300
+Subject: [PATCH 0302/2241] fix: mvpp2x: allow to clean txq that is disabled.
+
+- If txq is disabled, temporarily enable it, to flush it.
+- packets will be drained, not scheduled for xmit.
+
+Change-Id: I6026e7e34a5a21c4f2f5316d6c488b776639bfa3
+Signed-off-by: Yuval Caduri <cyuval@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/28811
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+Tested-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c | 23 ++++++++++++++++++++++
+ 1 file changed, 23 insertions(+)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+index 49a4db5f..a4ed8ad 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+@@ -1126,7 +1126,9 @@ static void mv_pp2x_txq_clean(struct mv_pp2x_port *port,
+ 	struct mv_pp2x_txq_pcpu *txq_pcpu;
+ 	int delay, pending, cpu;
+ 	u32 val;
++	bool egress_en = false;
+ 	struct mv_pp2x_hw *hw = &port->priv->hw;
++	int tx_port_num = mv_pp2x_egress_port(port);
+ 
+ 	mv_pp2x_write(hw, MVPP2_TXQ_NUM_REG, txq->id);
+ 	val = mv_pp2x_read(hw, MVPP2_TXQ_PREF_BUF_REG);
+@@ -1136,6 +1138,16 @@ static void mv_pp2x_txq_clean(struct mv_pp2x_port *port,
+ 	/* The napi queue has been stopped so wait for all packets
+ 	 * to be transmitted.
+ 	 */
++
++	/* Enable egress queue in order to allow releasing all packets*/
++	mv_pp2x_write(hw, MVPP2_TXP_SCHED_PORT_INDEX_REG, tx_port_num);
++	val = mv_pp2x_read(hw, MVPP2_TXP_SCHED_Q_CMD_REG);
++	if (!(val & (1 << txq->log_id))) {
++		val |= 1 << txq->log_id;
++		mv_pp2x_write(hw, MVPP2_TXP_SCHED_Q_CMD_REG, val);
++		egress_en = true;
++	}
++
+ 	delay = 0;
+ 	do {
+ 		if (delay >= MVPP2_TX_PENDING_TIMEOUT_MSEC) {
+@@ -1150,6 +1162,17 @@ static void mv_pp2x_txq_clean(struct mv_pp2x_port *port,
+ 		pending = mv_pp2x_txq_pend_desc_num_get(port, txq);
+ 	} while (pending);
+ 
++	/* Disable egress queue */
++	if (egress_en) {
++		mv_pp2x_write(hw, MVPP2_TXP_SCHED_PORT_INDEX_REG, tx_port_num);
++		val = (mv_pp2x_read(hw, MVPP2_TXP_SCHED_Q_CMD_REG)) &
++			    MVPP2_TXP_SCHED_ENQ_MASK;
++		val |= 1 << txq->log_id;
++		mv_pp2x_write(hw, MVPP2_TXP_SCHED_Q_CMD_REG,
++			      (val << MVPP2_TXP_SCHED_DISQ_OFFSET));
++		egress_en = false;
++	}
++
+ 	val &= ~MVPP2_TXQ_DRAIN_EN_MASK;
+ 	mv_pp2x_write(hw, MVPP2_TXQ_PREF_BUF_REG, val);
+ 
+-- 
+2.7.4
+

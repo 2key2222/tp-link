@@ -1,0 +1,47 @@
+From 00bd82c6c04c85164c5d96ba0eae43459675c57d Mon Sep 17 00:00:00 2001
+From: Evan Wang <xswang@marvell.com>
+Date: Mon, 16 Jan 2017 17:55:07 +0800
+Subject: [PATCH 1387/2241] dts: pcie: a3700: add property of gpio reset in
+ pcie dts node
+
+Change-Id: I51724a26cc72c63a8f7b3338abb020591c1e8f5b
+Signed-off-by: Evan Wang <xswang@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/35609
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Victor Gu <xigu@marvell.com>
+---
+ Documentation/devicetree/bindings/pci/aardvark-pci.txt | 2 ++
+ arch/arm64/boot/dts/marvell/armada-3720-db.dts         | 1 +
+ 2 files changed, 3 insertions(+)
+
+diff --git a/Documentation/devicetree/bindings/pci/aardvark-pci.txt b/Documentation/devicetree/bindings/pci/aardvark-pci.txt
+index 7ab6638..9f0ba7a 100644
+--- a/Documentation/devicetree/bindings/pci/aardvark-pci.txt
++++ b/Documentation/devicetree/bindings/pci/aardvark-pci.txt
+@@ -20,6 +20,7 @@ contain the following properties:
+    define the mapping of the PCIe interface to interrupt numbers.
+  - bus-range: PCI bus numbers covered
+  - clocks: a pointer to the PCI core clock for this device.
++ - reset-gpios: a pointer to the PCI device reset via gpio
+ 
+ In addition, the Device Tree describing an Aardvark PCIe controller
+ must include a sub-node that describes the legacy interrupt controller
+@@ -55,4 +56,5 @@ Example:
+ 			interrupt-controller;
+ 			#interrupt-cells = <1>;
+ 		};
++		reset-gpios = <&gpio_sb 3 GPIO_ACTIVE_HIGH>;
+ 	};
+diff --git a/arch/arm64/boot/dts/marvell/armada-3720-db.dts b/arch/arm64/boot/dts/marvell/armada-3720-db.dts
+index a7e3e83..d2b8bb0 100644
+--- a/arch/arm64/boot/dts/marvell/armada-3720-db.dts
++++ b/arch/arm64/boot/dts/marvell/armada-3720-db.dts
+@@ -253,4 +253,5 @@
+ 	status = "okay";
+ 	phys = <&a3700_comphy 0 COMPHY_PCIE0>;
+ 	phy-names = "comphy";
++	reset-gpios = <&gpio_sb 3 GPIO_ACTIVE_HIGH>;
+ };
+-- 
+2.7.4
+

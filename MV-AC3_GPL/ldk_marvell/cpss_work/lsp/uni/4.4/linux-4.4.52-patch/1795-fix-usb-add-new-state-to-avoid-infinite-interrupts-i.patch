@@ -1,0 +1,81 @@
+From 6064a006e6367648eefed49ab5670f5c748e7098 Mon Sep 17 00:00:00 2001
+From: Terry Zhou <bjzhou@marvell.com>
+Date: Fri, 14 Jul 2017 17:50:54 +0800
+Subject: [PATCH 1795/2241] fix: usb: add new state to avoid infinite
+ interrupts in dynamic mode
+
+When insert usb device cable but not connect to Host in USB dynamic
+mode, the state machine keeps changing from IDLE->HOST->IDLE,
+as a result, we will get interrupt loop which will keep printing log.
+In this state, the USB_ID is in Host mode and we got
+Device_mode_ACT and Device_mode_DEACT bits in USB32 interrupt
+Status register, before this patch, we did nothing and keeps the state
+in IDLE, add new state USB_BOUNCING for this scene which stops the
+state machine changing from IDLE to HOST.
+
+Change-Id: Ib66144e395dd76d5212df1c877fa11c0e9c20d76
+Signed-off-by: Terry Zhou <bjzhou@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/41661
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Victor Gu <xigu@marvell.com>
+---
+ drivers/usb/phy/phy-a3700-usb.c | 17 ++++++++++++++++-
+ 1 file changed, 16 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/usb/phy/phy-a3700-usb.c b/drivers/usb/phy/phy-a3700-usb.c
+index e44d42a..402df1a 100644
+--- a/drivers/usb/phy/phy-a3700-usb.c
++++ b/drivers/usb/phy/phy-a3700-usb.c
+@@ -53,6 +53,7 @@ enum port_status {
+ 	USB_PORT_IDLE,
+ 	USB_HOST_ATTACHED,
+ 	USB_DEVICE_ATTACHED,
++	USB_BOUNCING,
+ };
+ 
+ enum usb_mode {
+@@ -229,6 +230,10 @@ static void a3700_otg_work(struct work_struct *work)
+ 			a3700_otg_start_periphrals(mvotg, 0);
+ 		}
+ 		break;
++	case USB_BOUNCING:
++		if (mvotg->port_state == USB_PORT_IDLE)
++			dev_dbg(mvotg->dev, "moving to idle mode\n");
++		break;
+ 	default:
+ 		dev_dbg(mvotg->dev, "wrong state.\n");
+ 		break;
+@@ -353,12 +358,17 @@ static irqreturn_t a3700_usb_id_isr(int irq, void *data)
+ 	switch (mvotg->port_state) {
+ 	case USB_PORT_IDLE:
+ 		dev_dbg(mvotg->dev, "current state USB_PORT_IDLE!\n");
+-		if (test_bit(USB_HOST_MODE_ACT_OFF, reg_val) && (usb_id == USB_ID_HOST)) {
++		if (test_bit(USB_HOST_MODE_ACT_OFF, reg_val)
++			&& !test_bit(USB_HOST_MODE_DEACT_OFF, reg_val)
++			&& (usb_id == USB_ID_HOST)) {
+ 			mvotg->port_state = USB_HOST_ATTACHED;
+ 		} else if (test_bit(USB_DEVICE_MODE_ACT_OFF, reg_val)
+ 			&& !test_bit(USB_DEVICE_MODE_DEACT_OFF, reg_val)
+ 			&& usb_id == USB_ID_DEVICE) {
+ 			mvotg->port_state = USB_DEVICE_ATTACHED;
++		} else if (test_bit(USB_DEVICE_MODE_ACT_OFF, reg_val)
++			&& test_bit(USB_DEVICE_MODE_DEACT_OFF, reg_val)) {
++			mvotg->port_state = USB_BOUNCING;
+ 		}
+ 		break;
+ 	case USB_HOST_ATTACHED:
+@@ -371,6 +381,11 @@ static irqreturn_t a3700_usb_id_isr(int irq, void *data)
+ 		if (test_bit(USB_DEVICE_MODE_DEACT_OFF, reg_val))
+ 			mvotg->port_state = USB_PORT_IDLE;
+ 		break;
++	case USB_BOUNCING:
++		dev_dbg(mvotg->dev, "current state USB_BOUNCING!\n");
++		if (test_bit(USB_HOST_MODE_DEACT_OFF, reg_val))
++			mvotg->port_state = USB_PORT_IDLE;
++		break;
+ 	default:
+ 		dev_err(mvotg->dev, "Unknown state found!\n");
+ 		break;
+-- 
+2.7.4
+

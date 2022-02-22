@@ -1,0 +1,47 @@
+From 54da42d7910a463648f2fd871775c2f368b0ae51 Mon Sep 17 00:00:00 2001
+From: Stefan Chulski <stefanc@marvell.com>
+Date: Wed, 22 Mar 2017 11:03:47 +0200
+Subject: [PATCH 1507/2241] fix: phy: marvell: fix phy 88e3310 initialization
+ fail
+
+- Add soft reset callback. Soft reset required by phy during the init
+  to support clause C45 protocol.
+
+Change-Id: I810aacad3d393dad5e888a106cb003a30df2e855
+Signed-off-by: Stefan Chulski <stefanc@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/37807
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+---
+ drivers/net/phy/marvell.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/drivers/net/phy/marvell.c b/drivers/net/phy/marvell.c
+index 96c5ab8..140e4a6 100644
+--- a/drivers/net/phy/marvell.c
++++ b/drivers/net/phy/marvell.c
+@@ -1660,6 +1660,12 @@ int m88e3310_resume(struct phy_device *phydev)
+ 	return 0;
+ }
+ 
++int m88e3310_soft_reset(struct phy_device *phydev)
++{
++	/* Do nothing for now */
++	return 0;
++}
++
+ #ifndef UINT64_MAX
+ #define UINT64_MAX              (u64)(~((u64)0))
+ #endif
+@@ -1979,6 +1985,7 @@ static struct phy_driver marvell_drivers[] = {
+ 		.flags = PHY_HAS_INTERRUPT,
+ 		.probe = marvell_probe,
+ 		.config_aneg = &m88e3310_config_aneg,
++		.soft_reset = &m88e3310_soft_reset,
+ 		.config_init = &m88e3310_config_init,
+ 		.aneg_done = &m88e3310_aneg_done,
+ 		.read_status = &m88e3310_read_status,
+-- 
+2.7.4
+

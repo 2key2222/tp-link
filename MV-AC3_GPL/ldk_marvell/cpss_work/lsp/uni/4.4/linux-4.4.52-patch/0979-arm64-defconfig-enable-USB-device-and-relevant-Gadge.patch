@@ -1,0 +1,50 @@
+From abda66f5d6410e5d27c2c80a69b7d29b8083b7a1 Mon Sep 17 00:00:00 2001
+From: Omri Itach <omrii@marvell.com>
+Date: Wed, 23 Mar 2016 17:18:26 +0200
+Subject: [PATCH 0979/2241] arm64: defconfig: enable USB device and relevant
+ Gadget flags
+
+U3D: USB3.0 device driver
+UDC: USB2.0 Device driver
+
+required flags for proper gadget operation:
+CONFIG_USB_GADGET, CONFIG_CONFIGFS_FS
+
+Aadded modules:
+USB_LIBCOMPOSITE, USB_F_MASS_STORAGE, USB_MASS_STORAGE
+
+Change-Id: I52e893e0f71e267939d9a0cffd8a065432350c53
+Signed-off-by: Omri Itach <omrii@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/32811
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ arch/arm64/configs/mvebu_v8_lsp_defconfig | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/arch/arm64/configs/mvebu_v8_lsp_defconfig b/arch/arm64/configs/mvebu_v8_lsp_defconfig
+index 8ee42ab..b15d77a 100644
+--- a/arch/arm64/configs/mvebu_v8_lsp_defconfig
++++ b/arch/arm64/configs/mvebu_v8_lsp_defconfig
+@@ -181,6 +181,10 @@ CONFIG_USB_STORAGE=y
+ CONFIG_USB_ISP1760=y
+ CONFIG_NOP_USB_XCEIV=y
+ CONFIG_USB_ULPI=y
++CONFIG_USB_GADGET=y
++CONFIG_USB_MV_UDC=y
++CONFIG_USB_MVEBU_U3D=y
++CONFIG_USB_MASS_STORAGE=m
+ CONFIG_MMC=y
+ CONFIG_MMC_ARMMMCI=y
+ CONFIG_MMC_SDHCI=y
+@@ -229,6 +233,7 @@ CONFIG_CUSE=y
+ CONFIG_VFAT_FS=y
+ CONFIG_TMPFS=y
+ CONFIG_HUGETLBFS=y
++CONFIG_CONFIGFS_FS=y
+ CONFIG_EFIVAR_FS=y
+ CONFIG_JFFS2_FS=y
+ CONFIG_NFS_FS=y
+-- 
+2.7.4
+

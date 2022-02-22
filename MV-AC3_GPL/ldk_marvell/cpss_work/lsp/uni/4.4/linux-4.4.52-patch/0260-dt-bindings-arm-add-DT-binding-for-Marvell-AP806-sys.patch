@@ -1,0 +1,61 @@
+From b181c625bffa6064c535c860d86926e8f5b2734a Mon Sep 17 00:00:00 2001
+From: Hanna Hawa <hannah@marvell.com>
+Date: Sun, 20 Mar 2016 13:55:43 +0200
+Subject: [PATCH 0260/2241] dt-bindings: arm: add DT binding for Marvell AP806
+ system controller
+
+Change-Id: Idfe684d25dea62438639cc55dc01b98dc33cdb2a
+Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Signed-off-by: Hanna Hawa <hannah@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/28362
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Neta Zur Hershkovits <neta@marvell.com>
+Reviewed-by: Shadi Ammouri <shadi@marvell.com>
+---
+ .../arm/marvell/ap806-system-controller.txt        | 34 ++++++++++++++++++++++
+ 1 file changed, 34 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/arm/marvell/ap806-system-controller.txt
+
+diff --git a/Documentation/devicetree/bindings/arm/marvell/ap806-system-controller.txt b/Documentation/devicetree/bindings/arm/marvell/ap806-system-controller.txt
+new file mode 100644
+index 0000000..5086b89
+--- /dev/null
++++ b/Documentation/devicetree/bindings/arm/marvell/ap806-system-controller.txt
+@@ -0,0 +1,34 @@
++Marvell Armada AP806 System Controller
++======================================
++
++The AP806 is one of the two core HW blocks of the Marvell Armada 7K/8K
++SoCs. It contains a system controller, which provides a number
++registers giving access to numerous features: clocks, pin-muxing and
++many other SoC configuration items. This DT binding allows to describe
++this system controller.
++
++The Device Tree node representing the AP806 system controller provides
++a number of clocks:
++
++ - 0: clock of CPU cluster 0
++ - 1: clock of CPU cluster 1
++ - 2: fixed PLL at 1200 Mhz
++ - 3: MSS clock, derived from the fixed PLL
++
++Required properties:
++
++ - compatible: must be:
++     "marvell,ap806-system-controller", "syscon"
++ - reg: register area of the AP806 system controller
++ - #clock-cells: must be set to 1
++ - clock-output-names: must be defined to:
++    "cpu-cluster-0", "cpu-cluster-1", "fixed", "mss"
++
++Example:
++
++	syscon: system-controller@6f4000 {
++		compatible = "marvell,ap806-system-controller", "syscon";
++		#clock-cells = <1>;
++		clock-output-names = "cpu-cluster-0", "cpu-cluster-1", "fixed", "mss";
++		reg = <0x6f4000 0x1000>;
++	};
+-- 
+2.7.4
+

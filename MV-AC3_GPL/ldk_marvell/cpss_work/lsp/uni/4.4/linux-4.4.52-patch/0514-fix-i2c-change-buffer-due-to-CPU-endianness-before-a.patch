@@ -1,0 +1,55 @@
+From e82e856ae0d00afc59af6bd69bd36efba5067137 Mon Sep 17 00:00:00 2001
+From: Hanna Hawa <hannah@marvell.com>
+Date: Sun, 19 Jun 2016 18:04:46 +0300
+Subject: [PATCH 0514/2241] fix: i2c: change buffer due to CPU endianness
+ before/after memcpy
+
+Issue found when VBUS of USB3.0 didn't work in BE kernel.
+Found that memcpy copy the bytes from u8 array to u32 start from high byte
+{ 0xa, 0xb, 0xc, 0xd}, after memcpy to u32:
+BE: a0b0c0d
+LE: d0c0b0a
+
+The issue that the order of the messages is the same in BE, and LE.
+As wrokaroud after/before memcpy change the order of the write/read
+according to the CPU endianness.
+
+Change-Id: I23b465d44b2dae23100d9d3c3d10ed010a96a054
+Signed-off-by: Hanna Hawa <hannah@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/30536
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Nadav Haklai <nadavh@marvell.com>
+Reviewed-by: Neta Zur Hershkovits <neta@marvell.com>
+---
+ drivers/i2c/busses/i2c-mv64xxx.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/i2c/busses/i2c-mv64xxx.c b/drivers/i2c/busses/i2c-mv64xxx.c
+index ef7b35d..528dd58 100644
+--- a/drivers/i2c/busses/i2c-mv64xxx.c
++++ b/drivers/i2c/busses/i2c-mv64xxx.c
+@@ -438,6 +438,8 @@ mv64xxx_i2c_read_offload_rx_data(struct mv64xxx_i2c_data *drv_data,
+ 
+ 	buf[0] = readl(drv_data->reg_base + MV64XXX_I2C_REG_RX_DATA_LO);
+ 	buf[1] = readl(drv_data->reg_base + MV64XXX_I2C_REG_RX_DATA_HI);
++	buf[0] = le32_to_cpu(buf[0]);
++	buf[1] = le32_to_cpu(buf[1]);
+ 
+ 	memcpy(msg->buf, buf, msg->len);
+ }
+@@ -592,9 +594,11 @@ static void
+ mv64xxx_i2c_prepare_tx(struct mv64xxx_i2c_data *drv_data)
+ {
+ 	struct i2c_msg *msg = drv_data->msgs;
+-	u32 buf[2];
++	u32 buf[2] = {0};
+ 
+ 	memcpy(buf, msg->buf, msg->len);
++	buf[0] = cpu_to_le32(buf[0]);
++	buf[1] = cpu_to_le32(buf[1]);
+ 
+ 	writel(buf[0], drv_data->reg_base + MV64XXX_I2C_REG_TX_DATA_LO);
+ 	writel(buf[1], drv_data->reg_base + MV64XXX_I2C_REG_TX_DATA_HI);
+-- 
+2.7.4
+

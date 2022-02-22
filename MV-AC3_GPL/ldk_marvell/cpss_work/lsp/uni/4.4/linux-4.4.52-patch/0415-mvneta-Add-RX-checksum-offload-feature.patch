@@ -1,0 +1,53 @@
+From b0007f405acc5a735fcf05c987e1545d175b2e21 Mon Sep 17 00:00:00 2001
+From: Dmitri Epshtein <dima@marvell.com>
+Date: Wed, 18 May 2016 23:54:10 +0300
+Subject: [PATCH 0415/2241] mvneta: Add RX checksum offload feature
+
+- Enable / Disable from ethtool
+
+Change-Id: Ibc0df34390d6800d1256bf57d1a97359d3ae4aa0
+Signed-off-by: Dmitri Epshtein <dima@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/29803
+Reviewed-by: Nir Erez <nerez@marvell.com>
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Lior Amsalem <alior@marvell.com>
+Reviewed-by: Nadav Haklai <nadavh@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvneta.c | 14 ++++++++------
+ 1 file changed, 8 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvneta.c b/drivers/net/ethernet/marvell/mvneta.c
+index 2cfe0ce..11bdc13 100644
+--- a/drivers/net/ethernet/marvell/mvneta.c
++++ b/drivers/net/ethernet/marvell/mvneta.c
+@@ -1479,11 +1479,13 @@ static void mvneta_rx_error(struct mvneta_port *pp,
+ static void mvneta_rx_csum(struct mvneta_port *pp, u32 status,
+ 			   struct sk_buff *skb)
+ {
+-	if ((status & MVNETA_RXD_L3_IP4) &&
+-	    (status & MVNETA_RXD_L4_CSUM_OK)) {
+-		skb->csum = 0;
+-		skb->ip_summed = CHECKSUM_UNNECESSARY;
+-		return;
++	if (pp->dev->features & NETIF_F_RXCSUM) {
++		if ((status & MVNETA_RXD_L3_IP4) &&
++			(status & MVNETA_RXD_L4_CSUM_OK)) {
++			skb->csum = 0;
++			skb->ip_summed = CHECKSUM_UNNECESSARY;
++			return;
++		}
+ 	}
+ 
+ 	skb->ip_summed = CHECKSUM_NONE;
+@@ -3880,7 +3882,7 @@ static int mvneta_probe(struct platform_device *pdev)
+ 		}
+ 	}
+ 
+-	dev->features = NETIF_F_SG | NETIF_F_IP_CSUM | NETIF_F_TSO;
++	dev->features = NETIF_F_SG | NETIF_F_IP_CSUM | NETIF_F_RXCSUM | NETIF_F_TSO;
+ 	dev->hw_features |= dev->features;
+ 	dev->vlan_features |= dev->features;
+ 	dev->priv_flags |= IFF_UNICAST_FLT | IFF_LIVE_ADDR_CHANGE;
+-- 
+2.7.4
+

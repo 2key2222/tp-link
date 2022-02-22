@@ -1,0 +1,218 @@
+From be35e3005cabc52b0dead4c57d322792e736221d Mon Sep 17 00:00:00 2001
+From: Evan Wang <xswang@marvell.com>
+Date: Sat, 30 Sep 2017 10:38:14 +0800
+Subject: [PATCH 2107/2241] comphy: cp110: add PCIe MAC reset when power off
+ and on
+
+According to PCIe initialization sequence as below:
+1) PCIe - Power Down
+   a. PCIe MAC - Soft Reset
+   b. ComPhy Hard Reset
+2) EP Reset
+   a. EP Reset
+   b. Delay 1ms
+   c. EP Reset de-asserted
+3) PCIe - Power Up
+   a. PCIe MAC(Soft Reset de-asserted)
+   b. ComPhy init
+   c. Configure PCIE MAC.
+   d. LTSSM_En
+   e. Check Link with time out 1 Sec
+   f. wait 300ms for MAC negotiation done.
+
+As part of PCIe initialization sequency, the PCIe MAC reset
+should be implemented before PCIe hard reset, and release
+reset before PCIe comphy initialization.
+According to SoC design, PCIe port0 is connected to COMPHY
+lane0, and port1 is connected to lane4 and port2 is
+connected to lane5.
+
+The patch implements the reset as below:
+1) When COMPHY power off, the PCIe MAC will reset before
+   COMPHY hard reset via resetting corresponding COMPHY
+   lanes.
+2) At the beginning COMPHY power on, the PCIe reset release
+   is done before PIPE selector set via configuring
+   corresponding COMPHY lanes.
+
+The patch implemented part of PCIe power up sequence and
+not involve function changes.
+
+Change-Id: I73a843e20db220ec91bd0bd6f08377edd450f232
+Signed-off-by: Evan Wang <xswang@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/44892
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+---
+ .../devicetree/bindings/phy/phy-comphy-mvebu.txt   | 13 ++++--
+ drivers/phy/phy-comphy-cp110.c                     | 53 ++++++++++++++++++++++
+ drivers/phy/phy-comphy-cp110.h                     |  5 ++
+ drivers/phy/phy-comphy-mvebu.c                     |  7 +++
+ drivers/phy/phy-comphy-mvebu.h                     |  1 +
+ 5 files changed, 75 insertions(+), 4 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/phy/phy-comphy-mvebu.txt b/Documentation/devicetree/bindings/phy/phy-comphy-mvebu.txt
+index 851d1dd..374714a 100644
+--- a/Documentation/devicetree/bindings/phy/phy-comphy-mvebu.txt
++++ b/Documentation/devicetree/bindings/phy/phy-comphy-mvebu.txt
+@@ -14,6 +14,11 @@ Required properties for comphy node:
+ 				for each device in "reg-names"
+ 	- reg-names:		The names of the register addresses
+ 				corresponding to the registers filled in "reg".
++				Currently there are 3 reg names:
++				"comphy": it is mandatory and indicates the comphy register property.
++				"serdes": it is mandatory and indicates the serdes register property.
++				"mac_reset": it is optional and is needed when comphy lanes are configured
++				as PCIe function. It is only for cp110 comphy.
+ 	- #phy-cells:		Standard property (Documentation: phy-bindings.txt)
+ 				Should be 2.
+ 	- dfx-reg:		Address and length of DFX register which is needed when PCIe
+@@ -85,8 +90,8 @@ Comphy Node:
+ ============
+ 	comphy0: comphy {
+ 		compatible = "marvell,cp110-comphy";
+-		reg = <0x441000 0x100>, <0x120000 0x6000>;
+-		reg-names = "comphy", "serdes";
++		reg = <0x441000 0x100>, <0x120000 0x6000>, <0x440268 0x4>;
++		reg-names = "comphy", "serdes", "mac_reset";
+ 		dfx-reg = <0x400280 4>;
+ 		#phy-cells = <2>;
+ 		sar-data = <&cpm_sar>;
+@@ -96,8 +101,8 @@ Comphy Node:
+ 
+ 	comphy1: comphy {
+ 		compatible = "marvell,cp110-comphy";
+-		reg = <0x441000 0x100>, <0x120000 0x6000>;
+-		reg-names = "comphy", "serdes";
++		reg = <0x441000 0x100>, <0x120000 0x6000>, <0x440268 0x4>;
++		reg-names = "comphy", "serdes", "mac_reset";
+ 		dfx-reg = <0x400280 4>;
+ 		#phy-cells = <2>;
+ 		sar-data = <&cps_sar>;
+diff --git a/drivers/phy/phy-comphy-cp110.c b/drivers/phy/phy-comphy-cp110.c
+index 6eaa1a8..423778e 100644
+--- a/drivers/phy/phy-comphy-cp110.c
++++ b/drivers/phy/phy-comphy-cp110.c
+@@ -25,6 +25,13 @@
+ #include "phy-comphy-mvebu.h"
+ #include "phy-comphy-cp110.h"
+ 
++/* The same Units Soft Reset Config register are accessed in all PCIe ports
++ * initialization, so a spin lock is defined in case it may 2 CPUs reset PCIe
++ * MAC and need to access the register in the same time.
++ * The spin lock is shared by all CP110 units.
++ */
++static DEFINE_SPINLOCK(cp110_mac_reset_lock);
++
+ /* Clear PHY selector - avoid collision with prior u-boot configuration */
+ static void mvebu_cp110_comphy_clr_phy_selector(struct mvebu_comphy_priv *priv,
+ 						struct mvebu_comphy *comphy)
+@@ -759,6 +766,29 @@ static int mvebu_cp110_comphy_pcie_power_on(struct mvebu_comphy_priv *priv,
+ 
+ 	dev_dbg(priv->dev, "%s: Enter\n", __func__);
+ 
++	/* PCIe reset release */
++	if (priv->pcie_reset_reg) {
++		u32 reg;
++
++		spin_lock(&cp110_mac_reset_lock);
++
++		reg = readl(priv->pcie_reset_reg);
++		switch (comphy->index) {
++		case COMPHY_LANE0:
++			reg |= PCIE_MAC_RESET_MASK_PORT0;
++			break;
++		case COMPHY_LANE4:
++			reg |= PCIE_MAC_RESET_MASK_PORT1;
++			break;
++		case COMPHY_LANE5:
++			reg |= PCIE_MAC_RESET_MASK_PORT2;
++			break;
++		}
++
++		writel(reg, priv->pcie_reset_reg);
++		spin_unlock(&cp110_mac_reset_lock);
++	}
++
+ 	/* Configure PIPE selector for PCIE */
+ 	mvebu_cp110_comphy_set_pipe_selector(priv, comphy);
+ 
+@@ -1839,6 +1869,29 @@ static int mvebu_cp110_comphy_power_off(struct phy *phy)
+ 
+ 	comphy_ip_addr = COMPHY_ADDR(priv->comphy_regs, comphy->index);
+ 
++	/* PCIe reset */
++	if (priv->pcie_reset_reg) {
++		u32 reg;
++
++		spin_lock(&cp110_mac_reset_lock);
++
++		reg = readl(priv->pcie_reset_reg);
++		switch (comphy->index) {
++		case COMPHY_LANE0:
++			reg &= ~PCIE_MAC_RESET_MASK_PORT0;
++			break;
++		case COMPHY_LANE4:
++			reg &= ~PCIE_MAC_RESET_MASK_PORT1;
++			break;
++		case COMPHY_LANE5:
++			reg &= ~PCIE_MAC_RESET_MASK_PORT2;
++			break;
++		}
++
++		writel(reg, priv->pcie_reset_reg);
++		spin_unlock(&cp110_mac_reset_lock);
++	}
++
+ 	/* Hard reset the comphy, for PCIe and usb3 */
+ 	mask = COMMON_PHY_CFG1_PWR_ON_RESET_MASK;
+ 	data = 0x0 << COMMON_PHY_CFG1_PWR_ON_RESET_OFFSET;
+diff --git a/drivers/phy/phy-comphy-cp110.h b/drivers/phy/phy-comphy-cp110.h
+index 20b6d1e..a6d380a 100644
+--- a/drivers/phy/phy-comphy-cp110.h
++++ b/drivers/phy/phy-comphy-cp110.h
+@@ -420,6 +420,11 @@ extern const struct mvebu_comphy_soc_info cp110_comphy;
+ /* General defines */
+ #define PLL_LOCK_TIMEOUT			15000
+ 
++/* RFU_0, Units Soft Reset Config */
++#define PCIE_MAC_RESET_MASK_PORT0		BIT(13)
++#define PCIE_MAC_RESET_MASK_PORT1		BIT(11)
++#define PCIE_MAC_RESET_MASK_PORT2		BIT(12)
++
+ #include "phy-comphy-cp110-hpipe.h"
+ 
+ #endif /* _COMPHY_CP110_H */
+diff --git a/drivers/phy/phy-comphy-mvebu.c b/drivers/phy/phy-comphy-mvebu.c
+index 6ec4afd..746903c 100644
+--- a/drivers/phy/phy-comphy-mvebu.c
++++ b/drivers/phy/phy-comphy-mvebu.c
+@@ -167,6 +167,13 @@ static int mvebu_comphy_probe(struct platform_device *pdev)
+ 	if (IS_ERR(priv->comphy_pipe_regs))
+ 		return PTR_ERR(priv->comphy_pipe_regs);
+ 
++	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "mac_reset");
++	if (res) {
++		priv->pcie_reset_reg = devm_ioremap_resource(&pdev->dev, res);
++		if (IS_ERR(priv->pcie_reset_reg))
++			return PTR_ERR(priv->pcie_reset_reg);
++	}
++
+ 	/* check if skip_pcie_power_off flag exist */
+ 	skip_pcie_power_off = of_property_read_bool(pdev->dev.of_node,
+ 						    "skip_pcie_power_off");
+diff --git a/drivers/phy/phy-comphy-mvebu.h b/drivers/phy/phy-comphy-mvebu.h
+index 10570ce..848274e 100644
+--- a/drivers/phy/phy-comphy-mvebu.h
++++ b/drivers/phy/phy-comphy-mvebu.h
+@@ -26,6 +26,7 @@ struct mvebu_comphy_priv {
+ 	struct device *dev;
+ 	void __iomem *comphy_regs;
+ 	void __iomem *comphy_pipe_regs;
++	void __iomem *pcie_reset_reg;
+ 	spinlock_t lock;
+ 	const struct mvebu_comphy_soc_info *soc_info;
+ 	struct mvebu_comphy {
+-- 
+2.7.4
+

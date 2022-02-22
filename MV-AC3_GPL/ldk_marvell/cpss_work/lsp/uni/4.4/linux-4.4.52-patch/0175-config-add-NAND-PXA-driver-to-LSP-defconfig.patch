@@ -1,0 +1,27 @@
+From 567ebc55563182daee4d7b7d88f3e8759cb92215 Mon Sep 17 00:00:00 2001
+From: Yehuda Yitschak <yehuday@marvell.com>
+Date: Mon, 22 Feb 2016 15:11:14 +0200
+Subject: [PATCH 0175/2241] config: add NAND PXA driver to LSP defconfig
+
+Change-Id: I7bc26fbdbeb8666f7196d1c99e4c342eb20d3f84
+Signed-off-by: Yehuda Yitschak <yehuday@marvell.com>
+---
+ arch/arm64/configs/mvebu_v8_lsp_defconfig | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/arch/arm64/configs/mvebu_v8_lsp_defconfig b/arch/arm64/configs/mvebu_v8_lsp_defconfig
+index 3c9a417..3fede0f 100644
+--- a/arch/arm64/configs/mvebu_v8_lsp_defconfig
++++ b/arch/arm64/configs/mvebu_v8_lsp_defconfig
+@@ -66,6 +66,8 @@ CONFIG_DMA_CMA=y
+ CONFIG_VEXPRESS_CONFIG=y
+ CONFIG_MTD=y
+ CONFIG_MTD_M25P80=y
++CONFIG_MTD_NAND=y
++CONFIG_MTD_NAND_PXA3xx=y
+ CONFIG_MTD_SPI_NOR=y
+ CONFIG_BLK_DEV_LOOP=y
+ CONFIG_BLK_DEV_RAM=y
+-- 
+2.7.4
+

@@ -1,0 +1,32 @@
+From 15f3809b5092b5d647dba9f3f63ffec340bc2aca Mon Sep 17 00:00:00 2001
+From: Dmitri Epshtein <dima@marvell.com>
+Date: Mon, 18 Jul 2016 17:22:47 +0300
+Subject: [PATCH 0610/2241] arm: defconfig: enable BRIDGE support for armv7
+
+Add CONFIG_BRIDGE=y to the default kernel configuration
+- arch/arm/config/mvebu_v7_lsp_defconfig
+
+Change-Id: Iea1f435ada1a984b8ae275d0408eadbe1f7dfbe4
+Signed-off-by: Dmitri Epshtein <dima@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/31220
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Lior Amsalem <alior@marvell.com>
+---
+ arch/arm/configs/mvebu_v7_lsp_defconfig | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm/configs/mvebu_v7_lsp_defconfig b/arch/arm/configs/mvebu_v7_lsp_defconfig
+index 904a00d..5101bee 100644
+--- a/arch/arm/configs/mvebu_v7_lsp_defconfig
++++ b/arch/arm/configs/mvebu_v7_lsp_defconfig
+@@ -40,6 +40,7 @@ CONFIG_INET=y
+ CONFIG_IP_PNP=y
+ CONFIG_IP_PNP_DHCP=y
+ CONFIG_IP_PNP_BOOTP=y
++CONFIG_BRIDGE=y
+ CONFIG_BT=y
+ CONFIG_BT_MRVL=y
+ CONFIG_BT_MRVL_SDIO=y
+-- 
+2.7.4
+

@@ -1,0 +1,31 @@
+From b9dc570ec5517cc247c3f892dbb424fbf45b09d6 Mon Sep 17 00:00:00 2001
+From: jinghua <jinghua@marvell.com>
+Date: Mon, 22 Feb 2016 22:34:22 +0800
+Subject: [PATCH 0333/2241] gpio: mvebu: enable GPIO_MVEBU Kconfig option for
+ mvebu SoC
+
+Change-Id: I6a4dd048653ebe9264705c804b698fd65aaa9c84
+Signed-off-by: jinghua <jinghua@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/27840
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+---
+ drivers/gpio/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+index 469dc37..785a1bb 100644
+--- a/drivers/gpio/Kconfig
++++ b/drivers/gpio/Kconfig
+@@ -291,7 +291,7 @@ config GPIO_MPC8XXX
+ 
+ config GPIO_MVEBU
+ 	def_bool y
+-	depends on PLAT_ORION
++	depends on PLAT_ORION || ARCH_MVEBU
+ 	depends on OF
+ 	select GENERIC_IRQ_CHIP
+ 
+-- 
+2.7.4
+

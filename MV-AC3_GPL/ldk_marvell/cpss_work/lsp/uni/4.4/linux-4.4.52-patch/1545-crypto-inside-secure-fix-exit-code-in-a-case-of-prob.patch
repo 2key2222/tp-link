@@ -1,0 +1,40 @@
+From d73d971878c3ce5e66af29d1673353d5a52c7267 Mon Sep 17 00:00:00 2001
+From: Igal Liberman <igall@marvell.com>
+Date: Mon, 3 Apr 2017 11:03:23 +0300
+Subject: [PATCH 1545/2241] crypto: inside-secure: fix exit code in a case of
+ probe failure
+
+Currently, during probe we use dmam_pool_create() but during
+exit in a case of failure we use dma_pool_destroty().
+This causes a crash and doesn't exit cleanly.
+
+This patch changes dma_pool_destroty() to dmam_pool_destroy()
+and fixes the crash.
+
+Change-Id: If82aec9611d28650af2a746e8f0de5612a28e9e6
+Signed-off-by: Igal Liberman <igall@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/38374
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Ofer Heifetz <oferh@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/crypto/inside-secure/safexcel.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/crypto/inside-secure/safexcel.c b/drivers/crypto/inside-secure/safexcel.c
+index 74be7af..1e549d8 100644
+--- a/drivers/crypto/inside-secure/safexcel.c
++++ b/drivers/crypto/inside-secure/safexcel.c
+@@ -1231,7 +1231,7 @@ static int safexcel_probe(struct platform_device *pdev)
+ 	return 0;
+ 
+ err_pool:
+-	dma_pool_destroy(priv->context_pool);
++	dmam_pool_destroy(priv->context_pool);
+ err_clk:
+ 	clk_disable_unprepare(priv->clk);
+ 	return ret;
+-- 
+2.7.4
+

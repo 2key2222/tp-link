@@ -1,0 +1,105 @@
+From 81f96ea8991d2bd8ed54171b4207e3123a7ef5d1 Mon Sep 17 00:00:00 2001
+From: Omri Itach <omrii@marvell.com>
+Date: Mon, 26 Sep 2016 13:37:44 +0300
+Subject: [PATCH 1104/2241] cpufreq: ap806: add cpufreq driver for AP-806
+
+Add cpufreq driver for Marvell AP-806.
+The AP-806 has DFS (Dynamic Frequency Scaling) with coupled
+clock domain for two clusters, so this driver will directly
+use generic cpufreq-dt driver as backend.
+
+Change-Id: I38915a7cc978f6b48d3b327980c332436686cf1f
+Signed-off-by: Omri Itach <omrii@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/33139
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/cpufreq/Kconfig.arm        | 12 ++++++++++++
+ drivers/cpufreq/Makefile           |  1 +
+ drivers/cpufreq/armada8k-cpufreq.c | 39 ++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 52 insertions(+)
+ create mode 100644 drivers/cpufreq/armada8k-cpufreq.c
+
+diff --git a/drivers/cpufreq/Kconfig.arm b/drivers/cpufreq/Kconfig.arm
+index 46dfaa8..fdc9ffe 100644
+--- a/drivers/cpufreq/Kconfig.arm
++++ b/drivers/cpufreq/Kconfig.arm
+@@ -249,6 +249,18 @@ config ARM_ARMADA3700_CPUFREQ
+ 	  Armada3700 PMU supports 4 frequency and VDD levels,
+ 	  which will be preset and loaded later.
+ 
++config ARM_ARMADA_8K_CPUFREQ
++	tristate "Armada 8K CPUFreq driver"
++	depends on ARCH_MVEBU && CPUFREQ_DT
++	default y
++	help
++	  This enables the CPUFreq driver support for Marvell
++	  Armada8k SOCs.
++	  Armada8K device has the AP806 which supports scaling
++	  to any full integer divider.
++
++	  If in doubt, say N.
++
+ config ACPI_CPPC_CPUFREQ
+ 	tristate "CPUFreq driver based on the ACPI CPPC spec"
+ 	depends on ACPI
+diff --git a/drivers/cpufreq/Makefile b/drivers/cpufreq/Makefile
+index e73d8b5..0bda589 100644
+--- a/drivers/cpufreq/Makefile
++++ b/drivers/cpufreq/Makefile
+@@ -77,6 +77,7 @@ obj-$(CONFIG_ARM_TEGRA20_CPUFREQ)	+= tegra20-cpufreq.o
+ obj-$(CONFIG_ARM_TEGRA124_CPUFREQ)	+= tegra124-cpufreq.o
+ obj-$(CONFIG_ARM_VEXPRESS_SPC_CPUFREQ)	+= vexpress-spc-cpufreq.o
+ obj-$(CONFIG_ARM_ARMADA3700_CPUFREQ)	+= armada3700-cpufreq.o
++obj-$(CONFIG_ARM_ARMADA_8K_CPUFREQ)	+= armada8k-cpufreq.o
+ obj-$(CONFIG_ACPI_CPPC_CPUFREQ)		+= cppc_cpufreq.o
+ 
+ 
+diff --git a/drivers/cpufreq/armada8k-cpufreq.c b/drivers/cpufreq/armada8k-cpufreq.c
+new file mode 100644
+index 0000000..4621c3f
+--- /dev/null
++++ b/drivers/cpufreq/armada8k-cpufreq.c
+@@ -0,0 +1,39 @@
++/*
++ * CPU frequency scaling support for Armada-8K platform.
++ *
++ * Copyright (C) 2016 Marvell
++ *
++ * Omri Itach <omrii@marvell.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
++#include <linux/err.h>
++#include <linux/init.h>
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/of.h>
++#include <linux/platform_device.h>
++
++static int __init armada8k_cpufreq_driver_init(void)
++{
++	struct platform_device *pdev;
++	struct device_node *node;
++
++	node = of_find_compatible_node(NULL, NULL, "marvell,ap806-cpu-clk");
++	if (!node || !of_device_is_available(node))
++		return -ENODEV;
++
++	pdev = platform_device_register_simple("cpufreq-dt", -1, NULL, 0);
++
++	return PTR_ERR_OR_ZERO(pdev);
++}
++module_init(armada8k_cpufreq_driver_init);
++
++MODULE_AUTHOR("Omri Itach <omrii@marvell.com>");
++MODULE_DESCRIPTION("Armada 8K cpufreq driver");
++MODULE_LICENSE("GPL");
+-- 
+2.7.4
+

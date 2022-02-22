@@ -1,0 +1,44 @@
+From 60847df7de289f0cbbb8264cc19ea111aafb15b1 Mon Sep 17 00:00:00 2001
+From: Sergei Shkonda <sergeish@marvell.com>
+Date: Thu, 22 Dec 2016 16:53:51 +0200
+Subject: [PATCH 1263/2241] dts: msys: fix PCIe overlap with switch registers
+
+    This change required because existing definition
+    inherited from msys.dtsi => armada-370-xp.dtsi
+    Here pcie-mem-aperture set to 0xf8000000 .. 0xffe00000
+
+    On MSYS (AC3, BC2, BobK with Linux on internal CPU) these addresses
+    are overlapped by switching core and dfx address spaces
+    It has worked before because it was not tested in B2B configurations
+
+    B2B configuration means that OS runs on MSYS (internal CPU)
+    and a secondary Packet Processor is connected through PCI
+    The address 0xe8000000 chosen to not overlap existing addresses
+    (see msys*.dts: /soc/ranges)
+
+Change-Id: I03193809230401250bb84d7803c64d9fcc4fe16f
+Reviewed-on: http://vgitil04.il.marvell.com:8080/34940
+Tested-by: Star_Automation <star@marvell.com>
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Wilson Ding <dingwei@marvell.com>
+---
+ arch/arm/boot/dts/msys.dtsi | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/arch/arm/boot/dts/msys.dtsi b/arch/arm/boot/dts/msys.dtsi
+index 0c28927..36722a7 100644
+--- a/arch/arm/boot/dts/msys.dtsi
++++ b/arch/arm/boot/dts/msys.dtsi
+@@ -44,6 +44,9 @@
+ 	soc {
+ 		compatible = "marvell,armadaxp-mbus", "simple-bus";
+ 
++		pcie-mem-aperture = <0xe8000000 0x7e00000>;
++		pcie-io-aperture  = <0xefe00000 0x100000>;
++
+ 		bootrom {
+ 			compatible = "marvell,bootrom";
+ 			reg = <MBUS_ID(0x01, 0x1d) 0 0x100000>;
+-- 
+2.7.4
+

@@ -1,0 +1,32 @@
+From 21f9e1fde79cd325d3e9ec09df4d896746e34baf Mon Sep 17 00:00:00 2001
+From: Igal Liberman <igall@marvell.com>
+Date: Mon, 21 Nov 2016 16:58:43 +0200
+Subject: [PATCH 1126/2241] Documentation: pci: mvebu: fix path to
+ designware-pcie.txt
+
+Change-Id: I7a2a1a587a0bbaaa762ca01c9c1ba0b30dd81aaf
+Signed-off-by: Igal Liberman <igall@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/33938
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Nadav Haklai <nadavh@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+---
+ Documentation/devicetree/bindings/pci/armada8k-pcie.txt | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/Documentation/devicetree/bindings/pci/armada8k-pcie.txt b/Documentation/devicetree/bindings/pci/armada8k-pcie.txt
+index 33efca6..c9e431b 100644
+--- a/Documentation/devicetree/bindings/pci/armada8k-pcie.txt
++++ b/Documentation/devicetree/bindings/pci/armada8k-pcie.txt
+@@ -11,7 +11,7 @@ Required properties:
+ - interrupt-map-mask and interrupt-map, standard PCI properties to
+   define the mapping of the PCIe interface to interrupt numbers.
+ - All other definitions as per generic PCI bindings
+-See "documentation/devicetree/bindings/pci/designware-pcie.txt"
++See "Documentation/devicetree/bindings/pci/designware-pcie.txt"
+ 
+ Optional properties:
+ PHY support is still not supported for armada-8k, once it will, the following parameters can be used:
+-- 
+2.7.4
+

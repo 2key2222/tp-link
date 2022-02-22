@@ -1,0 +1,30 @@
+From 2032b97e99d4ca1ea4ffc84d2d2ee478471eea7b Mon Sep 17 00:00:00 2001
+From: Shadi Ammouri <shadi@marvell.com>
+Date: Mon, 22 Aug 2016 15:24:33 +0300
+Subject: [PATCH 0700/2241] doc: axim: Update index of hclk to 5
+
+Change-Id: Id4549175fe660b267ee04a0857e9623bfe36feaa
+Signed-off-by: Shadi Ammouri <shadi@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/32117
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ .../devicetree/bindings/arm/marvell/ap806-system-controller.txt         | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/Documentation/devicetree/bindings/arm/marvell/ap806-system-controller.txt b/Documentation/devicetree/bindings/arm/marvell/ap806-system-controller.txt
+index 6c71da1..9f93e9a 100644
+--- a/Documentation/devicetree/bindings/arm/marvell/ap806-system-controller.txt
++++ b/Documentation/devicetree/bindings/arm/marvell/ap806-system-controller.txt
+@@ -14,7 +14,7 @@ a number of clocks:
+  - 1: clock of CPU cluster 1
+  - 2: fixed PLL at 1200 Mhz
+  - 3: MSS clock, derived from the fixed PLL
+- - 4: AP HCLK, derived from sample-at-reset configuration.
++ - 5: AP HCLK, derived from sample-at-reset configuration.
+ 
+ Required properties:
+ 
+-- 
+2.7.4
+

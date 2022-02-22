@@ -1,0 +1,340 @@
+From 3e5d0599c2269fa09d19c510790ecae98999e883 Mon Sep 17 00:00:00 2001
+From: Evan Wang <xswang@marvell.com>
+Date: Thu, 19 Jan 2017 02:55:55 +0800
+Subject: [PATCH 1306/2241] phy: comphy: add speed and polarity parameter
+ support
+
+- This allows to add COMPHY_SPEED_XXXX and COMPHY_POLARITY_XXXX
+  parameter to each comphy handler.
+- Currently speed and invert of all modes is set to default value
+  with comphy default macros.
+
+Change-Id: Ic94082da29bde7f03fae4a3cc9fef167b28509d9
+Signed-off-by: Evan Wang <xswang@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/35790
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ .../devicetree/bindings/phy/phy-comphy-mvebu.txt   |  74 ++++++++++++-
+ .../net/ethernet/marvell/mvpp2x/mv_pp2x_ethtool.c  |   9 +-
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c |  15 ++-
+ drivers/phy/phy-comphy-mvebu.c                     |   8 +-
+ include/dt-bindings/phy/phy-comphy-mvebu.h         | 120 ++++++++++++++++-----
+ 5 files changed, 186 insertions(+), 40 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/phy/phy-comphy-mvebu.txt b/Documentation/devicetree/bindings/phy/phy-comphy-mvebu.txt
+index dc88e468..f67a8a5c 100644
+--- a/Documentation/devicetree/bindings/phy/phy-comphy-mvebu.txt
++++ b/Documentation/devicetree/bindings/phy/phy-comphy-mvebu.txt
+@@ -21,7 +21,50 @@ Required properties for comphy node:
+ Each device using Comphy should have handle with the following properties:
+ 	- Handle to the Comphy node.
+ 	- Comphy index (SerDes lane number).
+-	- Required Comphy mode (SATA/PCIE/USB/Network).
++	- Required Comphy description.
++	  There are 2 options to describe the COMPHY settings.
++	  1. Simplified description (default speed & invert settings)
++	     With this approach, comphy settings are selected by a single definition
++	     which describes the COMPHY type and the unit index. This description
++	     configures default speed and no polarity invert for COMPHY lane.
++	     Default speed is for COMPHYs with configurable speed, such as SGMII - 1Gbps/2.5Gbps
++	     - Simplified usage options:
++					COMPHY_SATA0 COMPHY_SATA1
++					COMPHY_SGMII0 COMPHY_SGMII1 COMPHY_SGMII2
++					COMPHY_HS_SGMII0 COMPHY_HS_SGMII1 COMPHY_HS_SGMII2
++					COMPHY_USB3H0 COMPHY_USB3H1
++					COMPHY_USB3D0
++					COMPHY_PCIE0 COMPHY_PCIE1 COMPHY_PCIE2 COMPHY_PCIE3
++					COMPHY_RXAUI0 COMPHY_RXAUI1
++					COMPHY_XFI
++					COMPHY_SFI
++	  2. Complex description (for specific speed and/or polarity invert settings)
++	     With this approach, comphy settings are selected by the macro COMPHY_DEF,
++	     which defines comphy mode, unit index, comphy speed, and comphy RX/TX invert settings.
++	     - COMPHY_DEF definition:
++		COMPHY_DEF(COMPHY_MODE, COMPHY_ID, COMPHY_SPEED, COMPHY_INVERT)
++			COMPHY_MODE:
++				- COMPHY_SATA_MODE
++				- COMPHY_SGMII_MODE
++				- COMPHY_USB3H_MODE
++				- COMPHY_USB3D_MODE
++				- COMPHY_PCIE_MODE
++				- COMPHY_RXAUI_MODE
++				- COMPHY_XFI_MODE
++				- COMPHY_SFI_MODE
++			COMPHY_UNIT_ID: unit index
++				- relevant to following interfaces, SATA, USB, RXAUI, SGMII and PCIE.
++				- SATA/USB/RXAUI: 0/1
++				- SGMII/PCIE: 0/1/2
++			COMPHY_SPEED:
++				- COMPHY_SPEED_DEFAULT: for COMPHY type uses fixed speed
++				- COMPHY_SPEED_1_25: for SMGII works at 1Gbps
++				- COMPHY_SPEED_3_125: for SMGII works at 2.5Gbps
++			COMPHY_INVERT: polarity invert
++				- COMPHY_POLARITY_NO_INVERT:  there is no polarity inverted
++				- COMPHY_POLARITY_TXD_INVERT: there is TX polarity inverted
++				- COMPHY_POLARITY_RXD_INVERT: there is RX polarity inverted
++				- COMPHY_POLARITY_ALL_INVERT: there are both TX and RX polarity inverted
+ 	Example will be provided in the end of this file.
+ 
+ Example:
+@@ -45,8 +88,35 @@ Comphy Node:
+ 
+ Comphy consumer:
+ =============
++	(1) The example with simplified option of comphy description:
+ 		sata@540000 {
+-				phys = <&comphy0 4 COMPHY_SATA0>;
++				phys = <&comphy0 4 COMPHY_SATA0>
+ 				status = "okay";
+ 		};
+ 
++		Explain for above sata example:
++			- phy handler is comphy0
++			- the sata interface uses lane 4 of comphy
++			- COMPHY description:
++					- the comphy works at SATA mode
++					- the unit index of the sata interface is 0
++					- the speed is default
++					- the invert is also default without polarity inverted
++
++	(2) The example with complex option of comphy description:
++		emac2: mac2 {
++				phys = <&comphy0 0 COMPHY_DEF(COMPHY_SGMII_MODE,
++							      1,
++							      COMPHY_SPEED_1_25G,
++							      COMPHY_POLARITY_RXD_INVERT)>;
++				phy-names = "comphy";
++		};
++
++		Explain for above SGMII example:
++			- phy handler is comphy0
++			- the SGMII interface uses lane 0 of comphy
++			- COMPHY description:
++					- the comphy works at SGMII mode
++					- the unit index of the sata interface is 1
++					- the speed is 1Gbps
++					- the comphy has rx polarity inverted
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_ethtool.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_ethtool.c
+index 05e79d0..71c0fcc 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_ethtool.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_ethtool.c
+@@ -544,12 +544,15 @@ void mv_pp2x_ethtool_set_gmac_config(struct mv_port_link_status status, struct g
+ int mv_pp2x_get_new_comphy_mode(struct ethtool_cmd *cmd, int port_id)
+ {
+ 	if (cmd->speed == SPEED_10000 && port_id == 0)
+-		return COMPHY_DEF(COMPHY_SFI_MODE, port_id);
++		return COMPHY_DEF(COMPHY_SFI_MODE, port_id,
++				  COMPHY_SPEED_DEFAULT, COMPHY_POLARITY_NO_INVERT);
+ 	else if (cmd->speed == SPEED_2500)
+-		return COMPHY_DEF(COMPHY_HS_SGMII_MODE, port_id);
++		return COMPHY_DEF(COMPHY_HS_SGMII_MODE, port_id,
++				  COMPHY_SPEED_DEFAULT, COMPHY_POLARITY_NO_INVERT);
+ 	else if (cmd->speed == SPEED_1000 || cmd->speed == SPEED_100 ||
+ 		 cmd->speed == SPEED_10)
+-		return COMPHY_DEF(COMPHY_SGMII_MODE, port_id);
++		return COMPHY_DEF(COMPHY_SGMII_MODE, port_id,
++				  COMPHY_SPEED_DEFAULT, COMPHY_POLARITY_NO_INVERT);
+ 	else
+ 		return -EINVAL;
+ }
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+index c640924..28599ad 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+@@ -3185,23 +3185,28 @@ static void mv_serdes_port_init(struct mv_pp2x_port *port)
+ 	case PHY_INTERFACE_MODE_SGMII:
+ 	case PHY_INTERFACE_MODE_QSGMII:
+ 		if (port->mac_data.flags & MV_EMAC_F_SGMII2_5)
+-			mode = COMPHY_DEF(COMPHY_HS_SGMII_MODE, port->id);
++			mode = COMPHY_DEF(COMPHY_HS_SGMII_MODE, port->id,
++					  COMPHY_SPEED_DEFAULT, COMPHY_POLARITY_NO_INVERT);
+ 		else
+-			mode = COMPHY_DEF(COMPHY_SGMII_MODE, port->id);
++			mode = COMPHY_DEF(COMPHY_SGMII_MODE, port->id,
++					  COMPHY_SPEED_DEFAULT, COMPHY_POLARITY_NO_INVERT);
+ 		phy_set_mode(port->comphy, mode);
+ 	break;
+ 	case PHY_INTERFACE_MODE_XAUI:
+ 	case PHY_INTERFACE_MODE_RXAUI:
+-		mode = COMPHY_DEF(COMPHY_RXAUI_MODE, port->id);
++		mode = COMPHY_DEF(COMPHY_RXAUI_MODE, port->id,
++				  COMPHY_SPEED_DEFAULT, COMPHY_POLARITY_NO_INVERT);
+ 		phy_set_mode(port->comphy, mode);
+ 	break;
+ 	case PHY_INTERFACE_MODE_KR:
+ 	case PHY_INTERFACE_MODE_SFI:
+-		mode = COMPHY_DEF(COMPHY_SFI_MODE, port->id);
++		mode = COMPHY_DEF(COMPHY_SFI_MODE, port->id,
++				  COMPHY_SPEED_DEFAULT, COMPHY_POLARITY_NO_INVERT);
+ 		phy_set_mode(port->comphy, mode);
+ 	break;
+ 	case PHY_INTERFACE_MODE_XFI:
+-		mode = COMPHY_DEF(COMPHY_XFI_MODE, port->id);
++		mode = COMPHY_DEF(COMPHY_XFI_MODE, port->id,
++				  COMPHY_SPEED_DEFAULT, COMPHY_POLARITY_NO_INVERT);
+ 		phy_set_mode(port->comphy, mode);
+ 	break;
+ 	default:
+diff --git a/drivers/phy/phy-comphy-mvebu.c b/drivers/phy/phy-comphy-mvebu.c
+index fbaa4d5..7ab99a6 100644
+--- a/drivers/phy/phy-comphy-mvebu.c
++++ b/drivers/phy/phy-comphy-mvebu.c
+@@ -103,9 +103,13 @@ static struct phy *mvebu_comphy_of_xlate(struct device *dev,
+ 		return ERR_PTR(-ENODEV);
+ 	}
+ 
+-	for (i = 0; i < MVEBU_COMPHY_FUNC_MAX; i++)
+-		if (priv->soc_info->functions[lane][i] == mode)
++	for (i = 0; i < MVEBU_COMPHY_FUNC_MAX; i++) {
++		int functions = priv->soc_info->functions[lane][i];
++		/* Only comphy mode and id are checked here */
++		if (COMPHY_GET_MODE(functions) == COMPHY_GET_MODE(mode) &&
++		    COMPHY_GET_ID(functions) == COMPHY_GET_ID(mode))
+ 			break;
++	}
+ 
+ 	if (i == MVEBU_COMPHY_FUNC_MAX) {
+ 		dev_err(dev, "Wrong mode 0x%x for COMPHY\n", mode);
+diff --git a/include/dt-bindings/phy/phy-comphy-mvebu.h b/include/dt-bindings/phy/phy-comphy-mvebu.h
+index 97385dc..c373822 100644
+--- a/include/dt-bindings/phy/phy-comphy-mvebu.h
++++ b/include/dt-bindings/phy/phy-comphy-mvebu.h
+@@ -1,36 +1,87 @@
+ #ifndef _DT_BINDINGS_PHY_COMPHY_MVEBU
+ #define _DT_BINDINGS_PHY_COMPHY_MVEBU
+ 
+-/* A lane is described by 2 fields:
+- *	- 8 lsb represent the index of the lane
+- *	- 24 msb represent the mode
++/* A lane is described by 4 fields:
++ *      - bit 1~0 represent comphy polarity invert
++ *      - bit 7~2 represent comphy speed
++ *      - bit 11~8 represent unit index
++ *      - bit 16~12 represent mode
++ *      - bit 31~13 reserved
+  */
+-#define COMPHY_DEF(x, y)	(((x) << 8) | (y))
++
++#define COMPHY_INVERT_OFFSET	0
++#define COMPHY_INVERT_LEN	2
++#define COMPHY_INVERT_MASK	COMPHY_MASK(COMPHY_INVERT_OFFSET, COMPHY_INVERT_LEN)
++#define COMPHY_SPEED_OFFSET	(COMPHY_INVERT_OFFSET + COMPHY_INVERT_LEN)
++#define COMPHY_SPEED_LEN	6
++#define COMPHY_SPEED_MASK	COMPHY_MASK(COMPHY_SPEED_OFFSET, COMPHY_SPEED_LEN)
++#define COMPHY_UNIT_ID_OFFSET	(COMPHY_SPEED_OFFSET + COMPHY_SPEED_LEN)
++#define COMPHY_UNIT_ID_LEN	4
++#define COMPHY_UNIT_ID_MASK	COMPHY_MASK(COMPHY_UNIT_ID_OFFSET, COMPHY_UNIT_ID_LEN)
++#define COMPHY_MODE_OFFSET	(COMPHY_UNIT_ID_OFFSET + COMPHY_UNIT_ID_LEN)
++#define COMPHY_MODE_LEN		5
++#define COMPHY_MODE_MASK	COMPHY_MASK(COMPHY_MODE_OFFSET, COMPHY_MODE_LEN)
++#define COMPHY_DEF(mode, id, speed, invert)	\
++	(((mode) << COMPHY_MODE_OFFSET) | ((id) << COMPHY_UNIT_ID_OFFSET) | \
++	((speed) << COMPHY_SPEED_OFFSET) | ((invert) << COMPHY_INVERT_OFFSET))
++
++#define COMPHY_MASK(offset, len)	(((1 << (len)) - 1) << (offset))
++
+ /* Macro the extract the mode from lane description */
+-#define COMPHY_GET_MODE(x)	((x & 0xFFFFFF00) >> 8)
+-/* Macro the extract the id from lane description */
+-#define COMPHY_GET_ID(x)	(x & 0xff)
+-
+-#define	COMPHY_UNUSED		COMPHY_DEF(0xff, 0xff)
+-#define COMPHY_SATA0		COMPHY_DEF(0x1,  0x0)
+-#define COMPHY_SATA1		COMPHY_DEF(0x1,  0x1)
+-#define COMPHY_SGMII0		COMPHY_DEF(0x2,  0x0)	/* SGMII 1G */
+-#define COMPHY_SGMII1		COMPHY_DEF(0x2,  0x1)	/* SGMII 1G */
+-#define COMPHY_SGMII2		COMPHY_DEF(0x2,  0x2)	/* SGMII 1G */
+-#define COMPHY_HS_SGMII0	COMPHY_DEF(0x3,  0x0)	/* SGMII 2.5G */
+-#define COMPHY_HS_SGMII1	COMPHY_DEF(0x3,  0x1)	/* SGMII 2.5G */
+-#define COMPHY_HS_SGMII2	COMPHY_DEF(0x3,  0x2)	/* SGMII 2.5G */
+-#define COMPHY_USB3H0		COMPHY_DEF(0x4,  0x0)
+-#define COMPHY_USB3H1		COMPHY_DEF(0x4,  0x1)
+-#define COMPHY_USB3D0		COMPHY_DEF(0x5,  0x0)
+-#define COMPHY_PCIE0		COMPHY_DEF(0x6,  0x0)
+-#define COMPHY_PCIE1		COMPHY_DEF(0x6,  0x1)
+-#define COMPHY_PCIE2		COMPHY_DEF(0x6,  0x2)
+-#define COMPHY_PCIE3		COMPHY_DEF(0x6,  0x3)
+-#define COMPHY_RXAUI0		COMPHY_DEF(0x7,  0x0)
+-#define COMPHY_RXAUI1		COMPHY_DEF(0x7,  0x1)
+-#define COMPHY_XFI		COMPHY_DEF(0x8,  0x0)
+-#define COMPHY_SFI		COMPHY_DEF(0x9,  0x0)
++#define COMPHY_GET_MODE(x)		(((x) & COMPHY_MODE_MASK) >> COMPHY_MODE_OFFSET)
++/* Macro the extract the unit index from lane description */
++#define COMPHY_GET_ID(x)		(((x) & COMPHY_UNIT_ID_MASK) >> COMPHY_UNIT_ID_OFFSET)
++/* Macro the extract the speed from lane description */
++#define COMPHY_GET_SPEED(x)		(((x) & COMPHY_SPEED_MASK) >> COMPHY_SPEED_OFFSET)
++/* Macro the extract the polarity invert from lane description */
++#define COMPHY_GET_POLARITY_INVERT(x)	(((x) & COMPHY_INVERT_MASK) >> COMPHY_INVERT_OFFSET)
++
++/* Comphy unit index macro */
++#define COMPHY_UNIT_ID0		0
++#define COMPHY_UNIT_ID1		1
++#define COMPHY_UNIT_ID2		2
++#define COMPHY_UNIT_ID3		3
++
++/* Comphy description macro with default speed and invert */
++#define	COMPHY_UNUSED		0xFFFFFFFF
++#define COMPHY_SATA0		COMPHY_DEF(COMPHY_SATA_MODE,  COMPHY_UNIT_ID0, \
++					COMPHY_SPEED_DEFAULT, COMPHY_POLARITY_NO_INVERT)
++#define COMPHY_SATA1		COMPHY_DEF(COMPHY_SATA_MODE,  COMPHY_UNIT_ID1, \
++					COMPHY_SPEED_DEFAULT, COMPHY_POLARITY_NO_INVERT)
++#define COMPHY_SGMII0		COMPHY_DEF(COMPHY_SGMII_MODE,  COMPHY_UNIT_ID0, \
++					COMPHY_SPEED_DEFAULT, COMPHY_POLARITY_NO_INVERT)	/* SGMII 1G */
++#define COMPHY_SGMII1		COMPHY_DEF(COMPHY_SGMII_MODE,  COMPHY_UNIT_ID1, \
++					COMPHY_SPEED_DEFAULT, COMPHY_POLARITY_NO_INVERT)	/* SGMII 1G */
++#define COMPHY_SGMII2		COMPHY_DEF(COMPHY_SGMII_MODE,  COMPHY_UNIT_ID2, \
++					COMPHY_SPEED_DEFAULT, COMPHY_POLARITY_NO_INVERT)	/* SGMII 1G */
++#define COMPHY_HS_SGMII0	COMPHY_DEF(COMPHY_HS_SGMII_MODE,  COMPHY_UNIT_ID0, \
++					COMPHY_SPEED_DEFAULT, COMPHY_POLARITY_NO_INVERT)	/* SGMII 2.5G */
++#define COMPHY_HS_SGMII1	COMPHY_DEF(COMPHY_HS_SGMII_MODE,  COMPHY_UNIT_ID1, \
++					COMPHY_SPEED_DEFAULT, COMPHY_POLARITY_NO_INVERT)	/* SGMII 2.5G */
++#define COMPHY_HS_SGMII2	COMPHY_DEF(COMPHY_HS_SGMII_MODE,  COMPHY_UNIT_ID2, \
++					COMPHY_SPEED_DEFAULT, COMPHY_POLARITY_NO_INVERT)	/* SGMII 2.5G */
++#define COMPHY_USB3H0		COMPHY_DEF(COMPHY_USB3H_MODE,  COMPHY_UNIT_ID0, \
++					COMPHY_SPEED_DEFAULT, COMPHY_POLARITY_NO_INVERT)
++#define COMPHY_USB3H1		COMPHY_DEF(COMPHY_USB3H_MODE,  COMPHY_UNIT_ID1, \
++					COMPHY_SPEED_DEFAULT, COMPHY_POLARITY_NO_INVERT)
++#define COMPHY_USB3D0		COMPHY_DEF(COMPHY_USB3D_MODE,  COMPHY_UNIT_ID0, \
++					COMPHY_SPEED_DEFAULT, COMPHY_POLARITY_NO_INVERT)
++#define COMPHY_PCIE0		COMPHY_DEF(COMPHY_PCIE_MODE,  COMPHY_UNIT_ID0, \
++					COMPHY_SPEED_DEFAULT, COMPHY_POLARITY_NO_INVERT)
++#define COMPHY_PCIE1		COMPHY_DEF(COMPHY_PCIE_MODE,  COMPHY_UNIT_ID1, \
++					COMPHY_SPEED_DEFAULT, COMPHY_POLARITY_NO_INVERT)
++#define COMPHY_PCIE2		COMPHY_DEF(COMPHY_PCIE_MODE,  COMPHY_UNIT_ID2, \
++					COMPHY_SPEED_DEFAULT, COMPHY_POLARITY_NO_INVERT)
++#define COMPHY_PCIE3		COMPHY_DEF(COMPHY_PCIE_MODE,  COMPHY_UNIT_ID3, \
++					COMPHY_SPEED_DEFAULT, COMPHY_POLARITY_NO_INVERT)
++#define COMPHY_RXAUI0		COMPHY_DEF(COMPHY_RXAUI_MODE,  COMPHY_UNIT_ID0, \
++					COMPHY_SPEED_DEFAULT, COMPHY_POLARITY_NO_INVERT)
++#define COMPHY_RXAUI1		COMPHY_DEF(COMPHY_RXAUI_MODE,  COMPHY_UNIT_ID1, \
++					COMPHY_SPEED_DEFAULT, COMPHY_POLARITY_NO_INVERT)
++#define COMPHY_XFI		COMPHY_DEF(COMPHY_XFI_MODE,  COMPHY_UNIT_ID0, \
++					COMPHY_SPEED_DEFAULT, COMPHY_POLARITY_NO_INVERT)
++#define COMPHY_SFI		COMPHY_DEF(COMPHY_SFI_MODE,  COMPHY_UNIT_ID0, \
++					COMPHY_SPEED_DEFAULT, COMPHY_POLARITY_NO_INVERT)
+ 
+ #define COMPHY_SATA_MODE	0x1
+ #define COMPHY_SGMII_MODE	0x2	/* SGMII 1G */
+@@ -42,5 +93,18 @@
+ #define COMPHY_XFI_MODE		0x8
+ #define COMPHY_SFI_MODE		0x9
+ 
++/* Polarity invert macro */
++#define COMPHY_POLARITY_NO_INVERT	0
++#define COMPHY_POLARITY_TXD_INVERT	1
++#define COMPHY_POLARITY_RXD_INVERT	2
++#define COMPHY_POLARITY_ALL_INVERT	(COMPHY_POLARITY_TXD_INVERT | COMPHY_POLARITY_RXD_INVERT)
++
++/* COMPHY speed macro */
++#define COMPHY_SPEED_1_25G		0 /* SGMII 1G */
++#define COMPHY_SPEED_3_125G		1 /* SGMII 2.5G */
++#define COMPHY_SPEED_MAX		0x3F
++/* The  default speed for IO with fixed known speed */
++#define COMPHY_SPEED_DEFAULT		COMPHY_SPEED_MAX
++
+ #endif /* _DT_BINDINGS_PHY_COMPHY_MVEBU */
+ 
+-- 
+2.7.4
+

@@ -1,0 +1,11 @@
+--- openssl-1.0.2q_old/Makefile.org	2018-11-20 21:44:48.000000000 +0800
++++ openssl-1.0.2q/Makefile.org	2019-01-24 19:40:12.491772552 +0800
+@@ -540,7 +540,7 @@
+ 	@$(MAKE) SDIRS='$(SDIRS)' clean
+ 	@$(MAKE) TAR='$(TAR)' TARFLAGS='$(TARFLAGS)' $(DISTTARVARS) tar
+ 
+-install: all install_docs install_sw
++install: all install_sw
+ 
+ install_sw:
+ 	@$(PERL) $(TOP)/util/mkdir-p.pl $(INSTALL_PREFIX)$(INSTALLTOP)/bin \

@@ -1,0 +1,42 @@
+From 33e2c3ee31d4f4b28facec4c9cc9df3fbabbe3a0 Mon Sep 17 00:00:00 2001
+From: Stefan Chulski <stefanc@marvell.com>
+Date: Thu, 26 Jan 2017 13:40:51 +0200
+Subject: [PATCH 1314/2241] fix: net: mvpp2x: if dropped skb -> transmit all
+ bulked descriptors
+
+Issue:
+- In some scenarios skb's were bulked in aggregation queue and packets
+  dropped due to lack of TXQ descriptors. This will cause traffic stuck
+  and descriptors won't be released by CPU.
+
+Fix:
+- In case of dropped skb -> transmit all bulked descriptors.
+
+Change-Id: I7c8cc961272f36fc6ca2c4a46313d555d16230d8
+Signed-off-by: Stefan Chulski <stefanc@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/36071
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+index 719ace2..123f175 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+@@ -3001,6 +3001,11 @@ out:
+ 		stats->tx_bytes += skb->len;
+ 		u64_stats_update_end(&stats->syncp);
+ 	} else {
++		/* Transmit bulked descriptors*/
++		if (aggr_txq->xmit_bulk > 0) {
++			mv_pp2x_aggr_txq_pend_desc_add(port, aggr_txq->xmit_bulk);
++			aggr_txq->xmit_bulk = 0;
++		}
+ 		dev->stats.tx_dropped++;
+ 		dev_kfree_skb_any(skb);
+ 	}
+-- 
+2.7.4
+

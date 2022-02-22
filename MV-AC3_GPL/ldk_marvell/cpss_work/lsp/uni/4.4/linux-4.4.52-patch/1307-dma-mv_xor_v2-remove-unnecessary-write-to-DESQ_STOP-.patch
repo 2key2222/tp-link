@@ -1,0 +1,47 @@
+From e31fb003048c316ac8addd2ba804b0c17f94e6fd Mon Sep 17 00:00:00 2001
+From: Hanna Hawa <hannah@marvell.com>
+Date: Wed, 11 Jan 2017 14:15:25 +0200
+Subject: [PATCH 1307/2241] dma: mv_xor_v2: remove unnecessary write to
+ DESQ_STOP register
+
+Remove unnecessary write to DESQ_STOP register, this register
+is used to enable or disable the XOR engine, and not to issue
+all pending descriptors in the queue.
+mv_xor_v2 driver already write to this register and enable
+XOR engine in mv_xor_v2_descq_init function.
+
+Change-Id: Icc116320577dab1c7520fbc6a1dbf8f4b86b6c20
+Signed-off-by: Hanna Hawa <hannah@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/35482
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+---
+ drivers/dma/mv_xor_v2.c | 9 +++------
+ 1 file changed, 3 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/dma/mv_xor_v2.c b/drivers/dma/mv_xor_v2.c
+index e8dcd1b..d5f485b 100644
+--- a/drivers/dma/mv_xor_v2.c
++++ b/drivers/dma/mv_xor_v2.c
+@@ -588,15 +588,12 @@ static enum dma_status mv_xor_v2_tx_status(struct dma_chan *chan,
+ }
+ 
+ /*
+- * push pending transactions to hardware
++ * DMA framework requires this routine, since it's not
++ * checking if device_issue_pending pointer is set or NULL
+  */
+ static void mv_xor_v2_issue_pending(struct dma_chan *chan)
+ {
+-	struct mv_xor_v2_device *xor_dev =
+-		container_of(chan, struct mv_xor_v2_device, dmachan);
+-
+-	/* Activate the channel */
+-	writel(0, xor_dev->dma_base + DMA_DESQ_STOP_OFF);
++	/* nothing to be done here */
+ }
+ 
+ static inline
+-- 
+2.7.4
+

@@ -1,0 +1,48 @@
+From d7d9dc696459689720c59b1b50a05b19bc881763 Mon Sep 17 00:00:00 2001
+From: Stefan Chulski <stefanc@marvell.com>
+Date: Wed, 29 Jun 2016 12:14:31 +0300
+Subject: [PATCH 0571/2241] net: mvpp2x: support tx_interrupts for 4 CPU's
+
+Change-Id: Ifd390b71161ecf238dc156733fa937200c8376c5
+Signed-off-by: Stefan Chulski <stefanc@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/30827
+Reviewed-by: Neta Zur Hershkovits <neta@marvell.com>
+Tested-by: Neta Zur Hershkovits <neta@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/30902
+Reviewed-by: Yuval Caduri <cyuval@marvell.com>
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h      | 2 --
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c | 2 --
+ 2 files changed, 4 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h
+index b24bc73..07c56ed 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h
+@@ -178,8 +178,6 @@ extern  u32 debug_param;
+ #define QV_THR_2_CPU(sw_thread_id)	(sw_thread_id - first_addr_space)
+ #define QV_CPU_2_THR(cpu_id)		(first_addr_space + cpu_id)
+ 
+-#define PPV2_MAX_NUM_IRQ		4
+-
+ /* TX FIFO constants */
+ #define MVPP2_TX_FIFO_DATA_SIZE_10KB		0xa
+ #define MVPP2_TX_FIFO_DATA_SIZE_3KB		0x3
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+index 926290e..12f7864 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+@@ -3797,8 +3797,6 @@ static int mv_pp2x_port_probe(struct platform_device *pdev,
+ 			sizeof(u32), GFP_KERNEL);
+ 	port->of_irqs = port_irqs;
+ 	port->num_irqs = 0;
+-	if (port_num_irq > PPV2_MAX_NUM_IRQ)
+-		port_num_irq = PPV2_MAX_NUM_IRQ;
+ 	for (i = 0; i < port_num_irq; i++) {
+ 		port_irqs[i] = irq_of_parse_and_map(port_node, i);
+ 		if (port_irqs[i] == 0) {
+-- 
+2.7.4
+

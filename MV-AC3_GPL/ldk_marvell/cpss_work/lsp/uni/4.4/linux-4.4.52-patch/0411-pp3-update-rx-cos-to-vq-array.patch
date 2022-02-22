@@ -1,0 +1,93 @@
+From 52490df7c7262aa751725b18761ac8438ceb19b0 Mon Sep 17 00:00:00 2001
+From: Uri Eliyahu <uriel@marvell.com>
+Date: Tue, 24 May 2016 12:42:05 +0300
+Subject: [PATCH 0411/2241] pp3: update rx cos to vq array
+
+	- save rx_cos_to_vq array updated according to DPAPI configurations
+	  in such way driver will support XON/XOFF according to given COS value
+	- Fix bug SYSTEMW-2392
+
+Change-Id: Ifde205cf8df3dcd7f5a8ee886c19d7dc97ff774e
+Signed-off-by: Uri Eliyahu <uriel@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/29922
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Dmitri Epshtein <dima@marvell.com>
+Tested-by: Dmitri Epshtein <dima@marvell.com>
+---
+ .../net/ethernet/marvell/pp3/net_dev/mv_dev_vq.c   |  2 +-
+ .../net/ethernet/marvell/pp3/vport/mv_pp3_vport.h  |  1 +
+ drivers/net/ethernet/marvell/pp3/vport/mv_pp3_vq.c | 24 +++++++++++++++++++++-
+ 3 files changed, 25 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/pp3/net_dev/mv_dev_vq.c b/drivers/net/ethernet/marvell/pp3/net_dev/mv_dev_vq.c
+index 019b946..134cf5b 100644
+--- a/drivers/net/ethernet/marvell/pp3/net_dev/mv_dev_vq.c
++++ b/drivers/net/ethernet/marvell/pp3/net_dev/mv_dev_vq.c
+@@ -81,7 +81,7 @@ int mv_pp3_dev_ingress_cos_show(struct net_device *netdev)
+ 	pr_cont("cos:  ");
+ 	for (cos = 0; cos < MV_PP3_PRIO_NUM; cos++)
+ 		pr_cont("%2d  ", cos);
+-
++	pr_cont("\n");
+ 	pr_cont("vq :  ");
+ 	for (cos = 0; cos < MV_PP3_PRIO_NUM; cos++)
+ 		pr_cont("%2d  ", vqs[cos]);
+diff --git a/drivers/net/ethernet/marvell/pp3/vport/mv_pp3_vport.h b/drivers/net/ethernet/marvell/pp3/vport/mv_pp3_vport.h
+index 1a9154f..af7c0a3 100644
+--- a/drivers/net/ethernet/marvell/pp3/vport/mv_pp3_vport.h
++++ b/drivers/net/ethernet/marvell/pp3/vport/mv_pp3_vport.h
+@@ -128,6 +128,7 @@ struct pp3_vport {
+ 	int			rx_vqs_num;             /* Number of ingress virtual queues */
+ 	struct pp3_vq		*rx_vqs[MV_PP3_VQ_NUM]; /* Array of ingress virtual queues */
+ 	int			tx_cos_to_vq[MV_PP3_PRIO_NUM]; /* Mapping of CoS value to egress VQ */
++	int			rx_cos_to_vq[MV_PP3_PRIO_NUM]; /* Mapping of CoS value to egress VQ */
+ 	union {
+ 		struct pp3_cpu_port  cpu;
+ 		struct pp3_emac      emac;
+diff --git a/drivers/net/ethernet/marvell/pp3/vport/mv_pp3_vq.c b/drivers/net/ethernet/marvell/pp3/vport/mv_pp3_vq.c
+index 05de182..9830f54 100644
+--- a/drivers/net/ethernet/marvell/pp3/vport/mv_pp3_vq.c
++++ b/drivers/net/ethernet/marvell/pp3/vport/mv_pp3_vq.c
+@@ -420,6 +420,9 @@ int mv_pp3_ingress_cos_to_vq_set(struct pp3_vport *vport, int cos, int vq)
+ 	if (pp3_fw_cos_to_vq_set(vport->vport, vq, MV_PP3_PPC_TO_HMAC, cos) < 0)
+ 		goto err;
+ 
++	/* Update cos_to_vq array - used for RX */
++	vport->rx_cos_to_vq[cos] = vq;
++
+ 	return 0;
+ 
+ err:
+@@ -430,9 +433,28 @@ err:
+ 
+ int mv_pp3_ingress_cos_to_vq_get(struct pp3_vport *vport, int cos, int *vq)
+ {
++
++	if (!vport) {
++		pr_err("%s: Error - VP is not initialized\n", __func__);
++		goto err;
++	}
++
++	if (!vq) {
++		pr_err("%s: Error - VQ is not initialized\n", __func__);
++		goto err;
++	}
++
++	if (mv_pp3_max_check(cos, MV_PP3_PRIO_NUM, "cos"))
++		goto err;
++
++
+ 	/* TBD - send message to FW to get cos to vq mapping */
+-	*vq = 0;
++	*vq = vport->rx_cos_to_vq[cos];
++
+ 	return 0;
++err:
++	pr_err("%s: function failed\n", __func__);
++	return -1;
+ }
+ /*---------------------------------------------------------------------------*/
+ 
+-- 
+2.7.4
+

@@ -1,0 +1,33 @@
+From c22c1b6e3f8a3d3275a709e8cbcb94b169daa6c6 Mon Sep 17 00:00:00 2001
+From: Christine Gharzuzi <chrisg@marvell.com>
+Date: Mon, 13 Mar 2017 13:37:28 +0200
+Subject: [PATCH 1466/2241] fix: dts: a70x0: enable PCIe0 (x1)
+
+Enable the PCIe0 node, according to A70x0-DB
+configuration C
+
+Change-Id: I295df72c24db2a561c88135986babd08966e2e7c
+Signed-off-by: Christine Gharzuzi <chrisg@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/37408
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-7040-db-C.dts | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-7040-db-C.dts b/arch/arm64/boot/dts/marvell/armada-7040-db-C.dts
+index 71bb1b3..231c84e 100644
+--- a/arch/arm64/boot/dts/marvell/armada-7040-db-C.dts
++++ b/arch/arm64/boot/dts/marvell/armada-7040-db-C.dts
+@@ -189,7 +189,7 @@
+ 			status = "disabled";
+ 		};
+ 		pcie@0x600000{
+-			status="disabled";
++			status="okay";
+ 		};
+ 	};
+ };
+-- 
+2.7.4
+

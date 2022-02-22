@@ -1,0 +1,67 @@
+From 41d30f388dd290c695d27ef5641d779ba563b86b Mon Sep 17 00:00:00 2001
+From: Ofer Heifetz <oferh@marvell.com>
+Date: Sun, 31 Dec 2017 14:36:17 +0200
+Subject: [PATCH 2155/2241] crypto: inside-secure: update eip197d TRC RAM size
+
+The eip197d has double the TRC data and admin RAM size compared to
+the eip197b.
+
+Change-Id: Iecdc73baf9b080214049349f3dd480c47b4bc71e
+Signed-off-by: Ofer Heifetz <oferh@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/48283
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Dmitri Epshtein <dima@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/crypto/inside-secure/safexcel.c | 10 ++++++++--
+ drivers/crypto/inside-secure/safexcel.h |  6 ++++--
+ 2 files changed, 12 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/crypto/inside-secure/safexcel.c b/drivers/crypto/inside-secure/safexcel.c
+index 6c206e5..db66633 100644
+--- a/drivers/crypto/inside-secure/safexcel.c
++++ b/drivers/crypto/inside-secure/safexcel.c
+@@ -81,7 +81,10 @@ static int eip197_trc_cache_init(struct device *dev,
+ 	/* Calculate the maximum possible record count that
+ 	 * the Record Cache Data RAM can contain
+ 	 */
+-	rc_record_cnt = EIP197_TRC_RAM_WC / rc_rec_wc;
++	if (priv->eip197_hw_ver == EIP197B)
++		rc_record_cnt = EIP197B_TRC_RAM_WC / rc_rec_wc;
++	else
++		rc_record_cnt = EIP197D_TRC_RAM_WC / rc_rec_wc;
+ 
+ 	/* rc_record_cnt is calculated using the configured RC Data RAM size. */
+ 
+@@ -90,7 +93,10 @@ static int eip197_trc_cache_init(struct device *dev,
+ 	 */
+ 
+ 	/* set the configured RC Admin RAM size */
+-	rc_admn_ram_wc = EIP197_TRC_ADMIN_RAM_WC;
++	if (priv->eip197_hw_ver == EIP197B)
++		rc_admn_ram_wc = EIP197B_TRC_ADMIN_RAM_WC;
++	else
++		rc_admn_ram_wc = EIP197D_TRC_ADMIN_RAM_WC;
+ 
+ 	/* Calculate the maximum possible record count that
+ 	 * the RC Hash Table (in Record Cache Administration RAM) can contain
+diff --git a/drivers/crypto/inside-secure/safexcel.h b/drivers/crypto/inside-secure/safexcel.h
+index 5dee660..4c66bb1 100644
+--- a/drivers/crypto/inside-secure/safexcel.h
++++ b/drivers/crypto/inside-secure/safexcel.h
+@@ -65,8 +65,10 @@
+ #define EIP197_RC_NULL					0x3FF
+ #define EIP197_RC_HASH_TABLE_MASK			(GENMASK(29, 0))
+ /* transformation */
+-#define EIP197_TRC_ADMIN_RAM_WC				320
+-#define EIP197_TRC_RAM_WC				3840
++#define EIP197B_TRC_ADMIN_RAM_WC			320
++#define EIP197B_TRC_RAM_WC				3840
++#define EIP197D_TRC_ADMIN_RAM_WC			640
++#define EIP197D_TRC_RAM_WC				7680
+ 
+ /* Record administration */
+ #define EIP197_RC_HASH_COLLISION_PREV			20
+-- 
+2.7.4
+

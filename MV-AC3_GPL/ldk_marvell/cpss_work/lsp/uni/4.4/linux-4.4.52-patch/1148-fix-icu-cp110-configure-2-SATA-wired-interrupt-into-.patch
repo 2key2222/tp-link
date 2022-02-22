@@ -1,0 +1,62 @@
+From 9c39cfe749b4163825f22a27ab2cd8b9ba2541e0 Mon Sep 17 00:00:00 2001
+From: Hanna Hawa <hannah@marvell.com>
+Date: Mon, 28 Nov 2016 16:53:56 +0200
+Subject: [PATCH 1148/2241] fix: icu: cp110: configure 2 SATA wired interrupt
+ into 1 GIC interrupt
+
+Issue found in A8040, when working with 4 SATA ports, kernel detect
+only 2 ports (OR with A7040 with 2 SATA ports enabled, detected
+only single port).
+The SATA unit has 2 ports, and a dedicated ICU entry per port.
+The aHCI SATA driver supports only one irq interrupt per SATA unit.
+to solve this conflict, we configure the 2 SATA wired interrupts in the
+south bridge into 1 GIC interrupt in the north bridge
+(Same as done with previous ICU static implementation in ATF)
+Even if only a single port is enabled, and SATA node is enabled, both
+interrupts are configured. (regardless of which port is actually in use)
+
+Change-Id: I31ebf00a2cf8f4cfae9316d99820e2e4378da15d
+Signed-off-by: Hanna Hawa <hannah@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/34147
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Tested-by: Omri Itach <omrii@marvell.com>
+---
+ drivers/irqchip/irq-mvebu-icu.c | 15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
+
+diff --git a/drivers/irqchip/irq-mvebu-icu.c b/drivers/irqchip/irq-mvebu-icu.c
+index 2840f69..0def253 100644
+--- a/drivers/irqchip/irq-mvebu-icu.c
++++ b/drivers/irqchip/irq-mvebu-icu.c
+@@ -69,6 +69,8 @@
+ 
+ #define ICU_GET_GIC_IDX(x)	(ICU_GET_IDX_BY_GIC_BASE(x))
+ 
++#define ICU_SATA0_IRQ_INT		109
++#define ICU_SATA1_IRQ_INT		107
+ 
+ struct mvebu_icu_irq_data {
+ 	void __iomem *base;	/* ICU register base */
+@@ -191,6 +193,19 @@ static int mvebu_icu_irq_domain_alloc(struct irq_domain *domain, unsigned int vi
+ 	icu_int |= icu_group << ICU_GROUP_OFFSET;
+ 	writel(icu_int, icu->base + ICU_INT_CFG(hwirq));
+ 
++	/* The SATA unit has 2 ports, and a dedicated ICU entry per port.
++	** The ahci sata driver supports only one irq interrupt per SATA unit.
++	** to solve this conflict, we configure the 2 SATA wired interrupts in the
++	** south bridge into 1 GIC interrupt in the north bridge.
++	** Even if only a single port is enabled, if sata node is enabled, both
++	** interrupts are configured. (regardless of which port is actually in use)
++	** The ICU index of SATA0 = 107, SATA1 = 109
++	*/
++	if (hwirq == ICU_SATA0_IRQ_INT || hwirq == ICU_SATA1_IRQ_INT) {
++		writel(icu_int, icu->base + ICU_INT_CFG(ICU_SATA0_IRQ_INT));
++		writel(icu_int, icu->base + ICU_INT_CFG(ICU_SATA1_IRQ_INT));
++	}
++
+ 	err = irq_domain_set_hwirq_and_chip(domain, virq, hwirq, &mvebu_icu_irq_chip, icu);
+ 	if (err) {
+ 		pr_err("ICU: failed to set the data to IRQ domain\n");
+-- 
+2.7.4
+

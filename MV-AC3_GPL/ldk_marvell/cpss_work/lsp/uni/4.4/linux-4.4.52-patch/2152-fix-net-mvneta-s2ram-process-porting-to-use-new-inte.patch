@@ -1,0 +1,130 @@
+From 2800c8a36df8a0b4eac5c29f8855f2b7a8973734 Mon Sep 17 00:00:00 2001
+From: Yelena Krivosheev <yelena@marvell.com>
+Date: Wed, 3 Jan 2018 09:28:45 +0200
+Subject: [PATCH 2152/2241] fix: net: mvneta: s2ram process porting to use new
+ interface open/stop
+
+In patch "fix: net: mvneta: prevent phy access before mac configuration"
+we moved:
+    mvneta_mdio_probe()  -> mvneta_open() instead mvneta_probe()
+    mvneta_mdio_remove() -> mvneta_stop() instead mvneta_remove()
+This change also relevant for suspend/resume process.
+
+This patch implement suspend/resume by using mvneta_stop()/mvneta_open()
+
+
+Change-Id: Idf886b34ee45b065575b0be86a49e3655166af37
+Signed-off-by: Yelena Krivosheev <yelena@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/48438
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+Tested-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvneta.c | 66 ++++++++---------------------------
+ 1 file changed, 14 insertions(+), 52 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvneta.c b/drivers/net/ethernet/marvell/mvneta.c
+index 20a6cef..226e964 100644
+--- a/drivers/net/ethernet/marvell/mvneta.c
++++ b/drivers/net/ethernet/marvell/mvneta.c
+@@ -4955,31 +4955,16 @@ static int mvneta_suspend(struct platform_device *pdev, pm_message_t state)
+ 
+ 	mvneta_ethtool_update_stats(pp);
+ 
+-	if (!netif_running(dev))
+-		goto phy_off;
+-
++	if (netif_running(dev))
++		mvneta_stop(dev);
+ 	netif_device_detach(dev);
+ 
+-	mvneta_stop_dev(pp);
+-	if (!pp->neta_armada3700)
+-		unregister_cpu_notifier(&pp->cpu_notifier);
+-	mvneta_cleanup_rxqs(pp);
+-	mvneta_cleanup_txqs(pp);
+-
+-phy_off:
+-	if (!pp->use_inband_status)
+-		mvneta_mdio_remove(pp);
+ 	/* turn off serdes */
+ 	if (pp->comphy) {
+ 		phy_power_off(pp->comphy);
+ 		phy_exit(pp->comphy);
+ 	}
+ 
+-	/* Reset link status */
+-	pp->link = 0;
+-	pp->duplex = -1;
+-	pp->speed = 0;
+-
+ 	return 0;
+ }
+ 
+@@ -5003,52 +4988,29 @@ static int mvneta_resume(struct platform_device *pdev)
+ 			return -1;
+ 		}
+ 	}
+-	if (!pp->use_inband_status) {
+-		ret = mvneta_mdio_probe(pp);
+-		if (ret < 0) {
+-			netdev_err(dev, "cannot probe MDIO bus\n");
+-			return -1;
+-		}
+-	}
+-	if (pp->bm_priv) {
+-		ret = mvneta_bm_port_init(pdev, pp);
+-		if (ret < 0) {
+-			netdev_err(dev, "Cannot resume HW BM, use SW buffer management\n");
+-			pp->bm_priv = NULL;
+-		}
+-	}
+-
+ 	mvneta_defaults_set(pp);
+ 
+ 	dram_target_info = mv_mbus_dram_info();
+ 	if (dram_target_info || pp->neta_armada3700)
+ 		mvneta_conf_mbus_windows(pp, dram_target_info);
+ 
+-	if (!netif_running(dev))
+-		return 0;
+-
+-	ret = mvneta_setup_rxqs(pp);
+-	if (ret) {
+-		netdev_err(dev, "unable to setup rxqs after resume\n");
+-		return ret;
+-	}
+-
+-	ret = mvneta_setup_txqs(pp);
+-	if (ret) {
+-		netdev_err(dev, "unable to setup txqs after resume\n");
+-		return ret;
+-	}
+-
+-	mvneta_set_rx_mode(dev);
+-	if (!pp->neta_armada3700) {
+-		mvneta_percpu_elect(pp);
+-		register_cpu_notifier(&pp->cpu_notifier);
++	if (pp->bm_priv) {
++		ret = mvneta_bm_port_init(pdev, pp);
++		if (ret < 0) {
++			netdev_err(dev, "Cannot resume HW BM, use SW buffer management\n");
++			pp->bm_priv = NULL;
++		}
+ 	}
+ 
+-	mvneta_start_dev(pp);
+ 	mvneta_port_power_up(pp, pp->phy_interface);
++	if (pp->use_inband_status)
++		mvneta_fixed_link_update(pp, dev->phydev);
+ 
+ 	netif_device_attach(dev);
++	if (netif_running(dev)) {
++		mvneta_open(dev);
++		mvneta_set_rx_mode(dev);
++	}
+ 
+ 	return 0;
+ }
+-- 
+2.7.4
+

@@ -1,0 +1,44 @@
+From 8c51a32f2975b542272d1842bbca01c5c385c98f Mon Sep 17 00:00:00 2001
+From: Marcin Wojtas <mw@semihalf.com>
+Date: Sat, 24 Dec 2016 08:41:45 +0100
+Subject: [PATCH 1215/2241] telephony: mvebu: issue SW reset in tdm2c stop IRQ
+
+Until now, when tdm2c received stop channel indication from low-level
+interrupt, tdm2c_if_pcm_start was called directly. It resulted in
+possible executing code with siginficant delays in it from top-half
+interrupt context.
+
+In order to avoid this situation, controller reset tasklet is scheduled
+and same routine will be executed in soft-irq context.
+
+Change-Id: Ifdab56ee4ae6b7ad9b0d9589feee87a6182b3ffa
+Signed-off-by: Marcin Wojtas <mw@semihalf.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/35048
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/telephony/mvebu_phone/mv_phone_dev.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/telephony/mvebu_phone/mv_phone_dev.c b/drivers/telephony/mvebu_phone/mv_phone_dev.c
+index 0f867f4..49e0317 100644
+--- a/drivers/telephony/mvebu_phone/mv_phone_dev.c
++++ b/drivers/telephony/mvebu_phone/mv_phone_dev.c
+@@ -648,10 +648,10 @@ static irqreturn_t tdm_if_isr(int irq, void *dev_id)
+ 			__func__);
+ 		priv->pcm_is_stopping = false;
+ 		if (priv->pcm_start_stop_state) {
+-			dev_dbg(priv->dev, "%s: calling to tdm2c_if_pcm_start()\n",
+-				__func__);
++			dev_dbg(priv->dev, "%s: Resetting controller\n", __func__);
+ 			priv->pcm_enable = false;
+-			tdm2c_if_pcm_start();
++			/* Issue SW reset */
++			tasklet_hi_schedule(&tdm2c_if_reset_tasklet);
+ 		}
+ 	}
+ 
+-- 
+2.7.4
+

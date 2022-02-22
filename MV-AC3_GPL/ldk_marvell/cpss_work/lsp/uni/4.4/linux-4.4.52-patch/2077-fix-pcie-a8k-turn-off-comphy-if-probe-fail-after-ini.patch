@@ -1,0 +1,82 @@
+From 5d29de4a2fd1844bdddcc93558b8e5c0d32894e8 Mon Sep 17 00:00:00 2001
+From: Evan Wang <xswang@marvell.com>
+Date: Thu, 28 Sep 2017 10:52:03 +0800
+Subject: [PATCH 2077/2241] fix: pcie: a8k: turn off comphy if probe fail after
+ init it
+
+If pcie driver load fail, such as armada8k_add_pcie_port()
+fails, the comphy should be powered off.
+In such case, there is potential risk to cause kernel
+crash to power off comphy because the initial count
+of comphy already init done is random and make array
+bound if the comphy initialization depends on uboot.
+
+The patch power off comphy if probe failed and set the
+initial count of comphy already initialized to 0.
+
+Change-Id: Ia0776b0694a332169a53e93dd46375ef516cc00f
+Signed-off-by: Evan Wang <xswang@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/44855
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Marcin Wojtas <mw@semihalf.com>
+Reviewed-by: Igal Liberman <igall@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/pci/host/pcie-armada8k.c | 11 +++++------
+ 1 file changed, 5 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/pci/host/pcie-armada8k.c b/drivers/pci/host/pcie-armada8k.c
+index 85c065e2..f7d97d2 100644
+--- a/drivers/pci/host/pcie-armada8k.c
++++ b/drivers/pci/host/pcie-armada8k.c
+@@ -257,7 +257,7 @@ static int armada8k_pcie_probe(struct platform_device *pdev)
+ 	struct phy **phys = NULL;
+ 	struct device *dev = &pdev->dev;
+ 	struct resource *base;
+-	int i, reset_gpio, phy_count = 0;
++	int reset_gpio, phy_count = 0, i = 0;
+ 	u32 command;
+ 	char phy_name[16];
+ 	int ret = 0;
+@@ -283,7 +283,7 @@ static int armada8k_pcie_probe(struct platform_device *pdev)
+ 			snprintf(phy_name, sizeof(phy_name), "pcie-phy%d", i);
+ 			phys[i] = devm_phy_get(dev, phy_name);
+ 			if (IS_ERR(phys[i]))
+-				goto err_phy;
++				goto fail_free;
+ 
+ 			/* Tell COMPHY the PCIE width based on phy command,
+ 			 * and in PHY command callback, the width will be
+@@ -306,12 +306,12 @@ static int armada8k_pcie_probe(struct platform_device *pdev)
+ 
+ 			ret = phy_init(phys[i]);
+ 			if (ret < 0)
+-				goto err_phy;
++				goto fail_free;
+ 
+ 			ret = phy_power_on(phys[i]);
+ 			if (ret < 0) {
+ 				phy_exit(phys[i]);
+-				goto err_phy;
++				goto fail_free;
+ 			}
+ 		}
+ 	}
+@@ -348,13 +348,12 @@ static int armada8k_pcie_probe(struct platform_device *pdev)
+ 		goto fail_free;
+ 	return 0;
+ 
+-err_phy:
++fail_free:
+ 	while (--i >= 0) {
+ 		phy_power_off(phys[i]);
+ 		phy_exit(phys[i]);
+ 	}
+ 
+-fail_free:
+ 	if (!IS_ERR(armada8k_pcie->clk))
+ 		clk_disable_unprepare(armada8k_pcie->clk);
+ 
+-- 
+2.7.4
+

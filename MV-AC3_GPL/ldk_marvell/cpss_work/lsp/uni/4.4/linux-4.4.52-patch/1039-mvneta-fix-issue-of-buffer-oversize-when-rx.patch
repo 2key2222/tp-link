@@ -1,0 +1,48 @@
+From 3e8f2667326972aeb19bc443f7573da2bf97f283 Mon Sep 17 00:00:00 2001
+From: Evan Wang <xswang@marvell.com>
+Date: Mon, 26 Sep 2016 16:55:52 +0800
+Subject: [PATCH 1039/2241] mvneta: fix issue of buffer oversize when rx
+
+- issue description: when run ethtool command, such as
+  ethtool -X eth0 weight 0 0 0 1, following print appear:
+  eth0: bad rx status 00000000 (buffer oversize), size=0
+- root reason: both CPUs are attached to same rxq
+- the patch fix the issue by attaching one CPU to one rxq
+
+Change-Id: Id45be42797a5078375e39611d1facf417ed04371
+Signed-off-by: Evan Wang <xswang@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/33128
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Dmitri Epshtein <dima@marvell.com>
+Reviewed-by: Yelena Krivosheev <yelena@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvneta.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvneta.c b/drivers/net/ethernet/marvell/mvneta.c
+index 84f2757..239e47d 100644
+--- a/drivers/net/ethernet/marvell/mvneta.c
++++ b/drivers/net/ethernet/marvell/mvneta.c
+@@ -1547,7 +1547,6 @@ static u32 mvneta_txq_desc_csum(int l3_offs, int l3_proto,
+ 	return command;
+ }
+ 
+-
+ /* Display more error info */
+ static void mvneta_rx_error(struct mvneta_port *pp,
+ 			    struct mvneta_rx_desc *rx_desc)
+@@ -3191,6 +3190,11 @@ static void mvneta_percpu_elect(struct mvneta_port *pp)
+ 			 * elected CPU
+ 			 */
+ 			rxq_map |= MVNETA_CPU_RXQ_ACCESS(pp->rxq_def);
++		else
++			/* Unmap the default receive queue queue to the
++			 * unelected CPU
++			 */
++			rxq_map &= ~MVNETA_CPU_RXQ_ACCESS(pp->rxq_def);
+ 
+ 		/* We update the TX queue map only if we have one
+ 		 * queue. In this case we associate the TX queue to
+-- 
+2.7.4
+

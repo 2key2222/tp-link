@@ -1,0 +1,2 @@
+#!/bin/sh
+PKG_CONFIG_LIBDIR=${PKG_CONFIG_LIBDIR:-/project/trunk/MV-AC3_GPL/tplink/buildroot-marvell/build/mv-ac3/host/usr/arm-buildroot-linux-gnueabi/sysroot/usr/lib/pkgconfig:/project/trunk/MV-AC3_GPL/tplink/buildroot-marvell/build/mv-ac3/host/usr/arm-buildroot-linux-gnueabi/sysroot/usr/share/pkgconfig} PKG_CONFIG_SYSROOT_DIR=${PKG_CONFIG_SYSROOT_DIR:-/project/trunk/MV-AC3_GPL/tplink/buildroot-marvell/build/mv-ac3/host/usr/arm-buildroot-linux-gnueabi/sysroot} $(dirname $0)/pkgconf  $@

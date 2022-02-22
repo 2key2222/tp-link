@@ -1,0 +1,41 @@
+From 7fc3c6f828c24e63b5357b67af7e40c1ae85295d Mon Sep 17 00:00:00 2001
+From: Dmitri Epshtein <dima@marvell.com>
+Date: Sun, 23 Jul 2017 17:26:50 +0300
+Subject: [PATCH 1952/2241] neta: Add buffer prefetch for HWBM
+
+prefetch first cache line of packet data (header)
+
+Change-Id: Iab16acda347eb23697c3c4d475cb5ae6ecb2942d
+Signed-off-by: Dmitri Epshtein <dima@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/42049
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Neta Zur Hershkovits <neta@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvneta.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvneta.c b/drivers/net/ethernet/marvell/mvneta.c
+index 61aa653..8fe4747 100644
+--- a/drivers/net/ethernet/marvell/mvneta.c
++++ b/drivers/net/ethernet/marvell/mvneta.c
+@@ -2324,6 +2324,9 @@ err_drop_frame:
+ 			continue;
+ 		}
+ 
++		/* Prefetch header */
++		prefetch(data);
++
+ 		if (rx_bytes <= rx_copybreak) {
+ 			/* better copy a small frame and not unmap the DMA region */
+ 			skb = napi_alloc_skb(napi, rx_bytes);
+@@ -4923,7 +4926,6 @@ static int mvneta_probe(struct platform_device *pdev)
+ 			goto err_netdev;
+ 		}
+ 	}
+-
+ 	return 0;
+ 
+ err_netdev:
+-- 
+2.7.4
+

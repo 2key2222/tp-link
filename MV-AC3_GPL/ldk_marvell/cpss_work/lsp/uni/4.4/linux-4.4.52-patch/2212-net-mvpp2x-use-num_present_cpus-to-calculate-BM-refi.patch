@@ -1,0 +1,49 @@
+From 191f0709aee6f6bf1113348a3c9dc4ebcb96b3dd Mon Sep 17 00:00:00 2001
+From: Stefan Chulski <stefanc@marvell.com>
+Date: Thu, 1 Feb 2018 19:58:30 +0200
+Subject: [PATCH 2212/2241] net: mvpp2x: use num_present_cpus() to calculate BM
+ refill threshold
+
+Patch is part of A8KP support series.
+A8KP has 8 or 16 CPU's, we cannot use hardcoded define for number of
+present CPU's used for BM refill threshold calculation.
+
+Change-Id: Ibc4e9cc544a8327eea7ea6afa2274962b7c589ca
+Signed-off-by: Stefan Chulski <stefanc@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/49974
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h      | 2 +-
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h
+index 3b88032..540266e 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h
+@@ -176,7 +176,7 @@
+ #define MVPP2_BM_SHORT_BUF_NUM		2048
+ #define MVPP2_BM_LONG_BUF_NUM		1024
+ #define MVPP2_BM_JUMBO_BUF_NUM		512
+-#define MVPP2_BM_PER_CPU_THRESHOLD	(MVPP2_MAX_CPUS * 2)
++#define MVPP2_BM_PER_CPU_THRESHOLD(num_of_cpus)	(num_of_cpus * 2)
+ 
+ #define MVPP2_ALL_BUFS			0
+ 
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+index 45e752d..078ab9a 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+@@ -602,7 +602,7 @@ int mv_pp2x_bm_bufs_add(struct mv_pp2x_port *port,
+ 
+ 	/* Update BM driver with number of buffers added to pool */
+ 	bm_pool->buf_num += i;
+-	bm_pool->in_use_thresh = bm_pool->buf_num / MVPP2_BM_PER_CPU_THRESHOLD;
++	bm_pool->in_use_thresh = bm_pool->buf_num / MVPP2_BM_PER_CPU_THRESHOLD(num_present_cpus());
+ 
+ 	netdev_dbg(port->dev,
+ 		   "%s pool %d: pkt_size=%4d, buf_size=%4d, total_size=%4d\n",
+-- 
+2.7.4
+

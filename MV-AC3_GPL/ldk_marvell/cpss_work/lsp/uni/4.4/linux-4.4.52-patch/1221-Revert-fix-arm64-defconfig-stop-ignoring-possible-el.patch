@@ -1,0 +1,39 @@
+From 1be0531fc8e2f1783c89a98454f486edc4b82181 Mon Sep 17 00:00:00 2001
+From: Omri Itach <omrii@marvell.com>
+Date: Wed, 28 Dec 2016 10:47:59 +0200
+Subject: [PATCH 1221/2241] Revert "fix: arm64: defconfig: stop ignoring
+ possible el1 async abort errors"
+
+This reverts commit 4050ea0f805b ("fix: arm64: defconfig: stop ignoring
+possible el1 async abort errors")
+
+The EL1 asynchronous external abort occurs on A7040-DB A0 revision, hence
+currently must be ignored on A0.
+This patch re-enable the workaround which ignores this async abort.
+(Need to be removed once A0 will not be supported)
+
+Change-Id: Ieac6f018ee9ef0e3dad730e6911e6cb7aebaede0
+Signed-off-by: Omri Itach <omrii@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/35108
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Wilson Ding <dingwei@marvell.com>
+---
+ arch/arm64/configs/mvebu_v8_lsp_defconfig | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm64/configs/mvebu_v8_lsp_defconfig b/arch/arm64/configs/mvebu_v8_lsp_defconfig
+index 4a6d8a7..f54a549 100644
+--- a/arch/arm64/configs/mvebu_v8_lsp_defconfig
++++ b/arch/arm64/configs/mvebu_v8_lsp_defconfig
+@@ -34,6 +34,7 @@ CONFIG_ARCH_MVEBU=y
+ CONFIG_PCI=y
+ CONFIG_PCI_MSI=y
+ CONFIG_PCI_IOV=y
++CONFIG_IGNORE_ASYNC_ABORT=y
+ CONFIG_PCI_HOST_GENERIC=y
+ CONFIG_PCIE_IPROC=y
+ CONFIG_PCIE_ARMADA_8K=y
+-- 
+2.7.4
+

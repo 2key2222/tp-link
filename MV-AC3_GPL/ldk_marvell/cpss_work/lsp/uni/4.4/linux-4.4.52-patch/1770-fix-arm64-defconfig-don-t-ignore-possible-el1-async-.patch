@@ -1,0 +1,33 @@
+From dfd7db1d77cb08708a8e6aa89caaa741b4251af8 Mon Sep 17 00:00:00 2001
+From: Igal Liberman <igall@marvell.com>
+Date: Thu, 2 Feb 2017 10:05:08 +0200
+Subject: [PATCH 1770/2241] fix: arm64: defconfig: don't ignore possible el1
+ async abort errors
+
+el1 async abort errors were noticed on Armada8040 A0. Due to the fact that
+Aramda8040/7040 A0 is not supported anymore, this workaround can be
+removed.
+
+Change-Id: I57082c7896b95fc78a638ca7812e5cae6238b882
+Reviewed-on: http://vgitil04.il.marvell.com:8080/38843
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+---
+ arch/arm64/configs/mvebu_v8_lsp_defconfig | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/arch/arm64/configs/mvebu_v8_lsp_defconfig b/arch/arm64/configs/mvebu_v8_lsp_defconfig
+index 15235cd..7fe59ef 100644
+--- a/arch/arm64/configs/mvebu_v8_lsp_defconfig
++++ b/arch/arm64/configs/mvebu_v8_lsp_defconfig
+@@ -34,7 +34,6 @@ CONFIG_ARCH_MVEBU=y
+ CONFIG_PCI=y
+ CONFIG_PCI_MSI=y
+ CONFIG_PCI_IOV=y
+-CONFIG_IGNORE_ASYNC_ABORT=y
+ CONFIG_PCI_HOST_GENERIC=y
+ CONFIG_PCIE_IPROC=y
+ CONFIG_PCIE_ARMADA_8K=y
+-- 
+2.7.4
+

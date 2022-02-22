@@ -1,0 +1,33 @@
+From 75f1f796582e74b4c0d07d99d5a2f2b54ae55b43 Mon Sep 17 00:00:00 2001
+From: Stefan Chulski <stefanc@marvell.com>
+Date: Sun, 8 Jan 2017 17:40:40 +0200
+Subject: [PATCH 1267/2241] fix: net: mvpp2x: get data size from txq_put_index
+ for rollback descriptors
+
+- Data size was wrongly taken from txq_get_index
+
+Change-Id: I0684bdf3219fabe2dd066254c777fcc2037545e2
+Signed-off-by: Stefan Chulski <stefanc@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/35385
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+index 0d80fb5..cdf001d 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+@@ -2853,7 +2853,7 @@ out_no_tx_desc:
+ 
+ 		shadow_skb = txq_pcpu->tx_skb[txq_pcpu->txq_put_index];
+ 		shadow_buf = txq_pcpu->tx_buffs[txq_pcpu->txq_put_index];
+-		data_size = txq_pcpu->data_size[txq_pcpu->txq_get_index];
++		data_size = txq_pcpu->data_size[txq_pcpu->txq_put_index];
+ 
+ 		mv_pp2x_txq_buf_free(port, (uintptr_t)shadow_skb, shadow_buf,
+ 				     data_size, cpu);
+-- 
+2.7.4
+

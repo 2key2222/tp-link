@@ -1,0 +1,42 @@
+From 302ee6f8c0e320cda24cb7682db7dadb171a004e Mon Sep 17 00:00:00 2001
+From: Nadav Haklai <nadavh@marvell.com>
+Date: Wed, 18 Feb 2015 15:46:12 +0200
+Subject: [PATCH 0123/2241] ARM: mvebu: fix flash operation on Armada 385 DB
+
+	After updating spi-orion driver to Armada flavor it occurred that CPHA
+	clock mode was wrongly set in DT.
+
+Signed-off-by: Marcin Wojtas <mw@semihalf.com>
+Signed-off-by: Nadav Haklai <nadavh@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/16820
+Tested-by: Star_Automation <star@marvell.com>
+
+Conflicts:
+	arch/arm/boot/dts/armada-385-db.dts
+
+Fix applied for armada-388-db.dts
+
+Change-Id: I3e7939ca9789e3336c4cfef752547a2584cf03a0
+Signed-off-by: Grzegorz Jaszczyk <jaz@semihalf.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/27578
+Reviewed-by: Nadav Haklai <nadavh@marvell.com>
+Tested-by: Lior Amsalem <alior@marvell.com>
+---
+ arch/arm/boot/dts/armada-388-db.dts | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm/boot/dts/armada-388-db.dts b/arch/arm/boot/dts/armada-388-db.dts
+index 23b3385..938e678 100644
+--- a/arch/arm/boot/dts/armada-388-db.dts
++++ b/arch/arm/boot/dts/armada-388-db.dts
+@@ -78,6 +78,7 @@
+ 					compatible = "w25q32", "jedec,spi-nor";
+ 					reg = <0>; /* Chip select 0 */
+ 					spi-max-frequency = <108000000>;
++					spi-cpha;
+ 				};
+ 			};
+ 
+-- 
+2.7.4
+

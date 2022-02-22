@@ -1,0 +1,114 @@
+From 99e6a3e3ba967642d903e0f22cb245a7bfadfdac Mon Sep 17 00:00:00 2001
+From: Igal Liberman <igall@marvell.com>
+Date: Wed, 1 Feb 2017 11:10:39 +0200
+Subject: [PATCH 1351/2241] achi: cp110: remove port address workaround for A0
+ revision
+
+The port address workaround was required for A8040/7040
+revision A0.
+
+A8040/7040 A0 is no longer supported, so this workaround can
+be removed.
+
+In addition, remove port_base and port_offset entries from
+the device-tree.
+
+Change-Id: I31aa009c1d60101bb88f338024e229379daf43d1
+Signed-off-by: Igal Liberman <igall@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/36313
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-cp110-1.dtsi |  2 --
+ arch/arm64/boot/dts/marvell/armada-cp110.dtsi   |  2 --
+ drivers/ata/ahci.h                              | 13 -------------
+ drivers/ata/ahci_mvebu.c                        | 16 ----------------
+ 4 files changed, 33 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-cp110-1.dtsi b/arch/arm64/boot/dts/marvell/armada-cp110-1.dtsi
+index 3eff70e..be4d8df 100644
+--- a/arch/arm64/boot/dts/marvell/armada-cp110-1.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-cp110-1.dtsi
+@@ -70,8 +70,6 @@ sata@540000 {
+ 	interrupts = <ICU_GRP_NSR 107 IRQ_TYPE_LEVEL_HIGH>;
+ 	clocks = <&cps_syscon0 1 15>;
+ 	status = "disabled";
+-	port_base = <0x10000>;
+-	port_offset = <0x10000>;
+ 	#address-cells = <1>;
+ 	#size-cells = <0>;
+ 
+diff --git a/arch/arm64/boot/dts/marvell/armada-cp110.dtsi b/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
+index dbc4ee6..5137c50 100644
+--- a/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
+@@ -141,8 +141,6 @@ sata: sata@540000 {
+ 	interrupts = <ICU_GRP_NSR 107 IRQ_TYPE_LEVEL_HIGH>;
+ 	clocks = <&cpm_syscon0 1 15>;
+ 	status = "disabled";
+-	port_base = <0x10000>;
+-	port_offset = <0x10000>;
+ 	#address-cells = <1>;
+ 	#size-cells = <0>;
+ 
+diff --git a/drivers/ata/ahci.h b/drivers/ata/ahci.h
+index 0746a13..45586c1 100644
+--- a/drivers/ata/ahci.h
++++ b/drivers/ata/ahci.h
+@@ -352,16 +352,6 @@ struct ahci_host_priv {
+ 	 * be overridden anytime before the host is activated.
+ 	 */
+ 	void			(*start_engine)(struct ata_port *ap);
+-
+-	/* In A8k A0 AHCI unit the port register offsets are not
+-	 * according to AHCI specification. We determine at runtime the revision
+-	 * and set the correct offsets from device-tree.
+-	 */
+-	u32			port_base;	/* Offset of ports registers */
+-	u32			port_offset;	/* Offset between port registers */
+-	int			a8k_a0_wa;	/* Boolean to determine if A0
+-						 * WA should be applied
+-						 */
+ };
+ 
+ extern int ahci_ignore_sss;
+@@ -417,9 +407,6 @@ static inline void __iomem *__ahci_port_base(struct ata_host *host,
+ 	struct ahci_host_priv *hpriv = host->private_data;
+ 	void __iomem *mmio = hpriv->mmio;
+ 
+-	if (hpriv->a8k_a0_wa && hpriv->port_base && hpriv->port_offset)
+-		return mmio + hpriv->port_base + (port_no * hpriv->port_offset);
+-
+ 	return mmio + 0x100 + (port_no * 0x80);
+ }
+ 
+diff --git a/drivers/ata/ahci_mvebu.c b/drivers/ata/ahci_mvebu.c
+index f9af4da..c799529 100644
+--- a/drivers/ata/ahci_mvebu.c
++++ b/drivers/ata/ahci_mvebu.c
+@@ -263,22 +263,6 @@ static int ahci_mvebu_probe(struct platform_device *pdev)
+ 			return rc;
+ 	}
+ 
+-	/* Armada-8k revision A0, port register offsets of the aHCI unit are not
+-	 * according to aHCI specification, so we need a WA for A8k rev A0 (CP110).
+-	 */
+-	if (of_device_is_compatible(pdev->dev.of_node, "marvell,armada-cp110-ahci")
+-		&& mv_soc_info_get_revision() == APN806_REV_ID_A0) {
+-		pr_debug("setting aHCI port offset WA for A8k revision A0");
+-		/* Read the correct port base and offset from the
+-		 * device tree and set hpriv->a8k_a0_wa for future use.
+-		 */
+-		hpriv->a8k_a0_wa = 1;
+-		of_property_read_u32(pdev->dev.of_node, "port_base",
+-				     &hpriv->port_base);
+-		of_property_read_u32(pdev->dev.of_node, "port_offset",
+-				     &hpriv->port_offset);
+-	}
+-
+ 	rc = ahci_platform_init_host(pdev, hpriv, &ahci_mvebu_port_info,
+ 				     &ahci_platform_sht);
+ 	if (rc)
+-- 
+2.7.4
+

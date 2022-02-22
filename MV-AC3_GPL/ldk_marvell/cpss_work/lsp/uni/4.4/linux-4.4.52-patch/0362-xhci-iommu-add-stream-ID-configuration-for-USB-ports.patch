@@ -1,0 +1,54 @@
+From 2329627a1302ea7b1e3c1c2bcb7e73e50a971efb Mon Sep 17 00:00:00 2001
+From: Yehuda Yitschak <yehuday@marvell.com>
+Date: Mon, 18 Apr 2016 14:31:57 +0300
+Subject: [PATCH 0362/2241] xhci: iommu: add stream ID configuration for USB
+ ports
+
+A stream ID is a unique number that identifies the device
+when it requires translation on the SMMU (MMU-500).
+The stream IDs for the units in CP-110 are configured in firmware
+and are added to DT to be used by the SMMU driver.
+
+Change-Id: Ifd87535a936b680db733e0e80ff6c752e2179cac
+Signed-off-by: Yehuda Yitschak <yehuday@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/29161
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+Tested-by: Star_Automation <star@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-7040.dtsi | 15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-7040.dtsi b/arch/arm64/boot/dts/marvell/armada-7040.dtsi
+index 993b4b2..4e21882 100644
+--- a/arch/arm64/boot/dts/marvell/armada-7040.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-7040.dtsi
+@@ -53,11 +53,26 @@
+ 	compatible = "marvell,armada7040", "marvell,armada-ap806-quad",
+ 	             "marvell,armada-ap806";
+ 
++	ap806 {
++		config-space {
++			smmu: iommu@5000000 {
++				mmu-masters = <&usb3h0 0x483>,
++					      <&usb3h1 0x484>;
++			};
++		};
++	};
++
+ 	cpn-110-master {
+ 		config-space {
+ 			ppv22@000000 {
+ 				dma-coherent;
+ 			};
++			usb3h0: usb3@500000 {
++				#stream-id-cells = <1>;
++			};
++			usb3h1: usb3@510000 {
++				#stream-id-cells = <1>;
++			};
+ 		};
+ 		pcie@0x600000 {
+ 			msi-parent = <&gic_v2m0>;
+-- 
+2.7.4
+

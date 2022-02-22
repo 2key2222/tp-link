@@ -1,0 +1,145 @@
+From 60ddebe1dfce6cd18707b9d0eefccde31f93e3c3 Mon Sep 17 00:00:00 2001
+From: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+Date: Wed, 6 Apr 2016 11:55:04 -0400
+Subject: [PATCH 0786/2241] net: dsa: make the FDB add function return void
+
+Upstream-commit: 8497aa618dd605b084fae86e676ea23ca85558b5
+
+The switchdev design implies that a software error should not happen in
+the commit phase since it must have been previously reported in the
+prepare phase. If an hardware error occurs during the commit phase,
+there is nothing switchdev can do about it.
+
+The DSA layer separates port_fdb_prepare and port_fdb_add for simplicity
+and convenience. If an hardware error occurs during the commit phase,
+there is no need to report it outside the DSA driver itself.
+
+Make the DSA port_fdb_add routine return void for explicitness.
+
+Signed-off-by: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+---
+ drivers/net/dsa/bcm_sf2.c   |  9 +++++----
+ drivers/net/dsa/mv88e6xxx.c | 12 +++++-------
+ drivers/net/dsa/mv88e6xxx.h |  6 +++---
+ include/net/dsa.h           |  2 +-
+ net/dsa/slave.c             | 16 ++++++++--------
+ 5 files changed, 22 insertions(+), 23 deletions(-)
+
+diff --git a/drivers/net/dsa/bcm_sf2.c b/drivers/net/dsa/bcm_sf2.c
+index 8c99717..6160420 100644
+--- a/drivers/net/dsa/bcm_sf2.c
++++ b/drivers/net/dsa/bcm_sf2.c
+@@ -724,13 +724,14 @@ static int bcm_sf2_sw_fdb_prepare(struct dsa_switch *ds, int port,
+ 	return 0;
+ }
+ 
+-static int bcm_sf2_sw_fdb_add(struct dsa_switch *ds, int port,
+-			      const struct switchdev_obj_port_fdb *fdb,
+-			      struct switchdev_trans *trans)
++static void bcm_sf2_sw_fdb_add(struct dsa_switch *ds, int port,
++			       const struct switchdev_obj_port_fdb *fdb,
++			       struct switchdev_trans *trans)
+ {
+ 	struct bcm_sf2_priv *priv = ds_to_priv(ds);
+ 
+-	return bcm_sf2_arl_op(priv, 0, port, fdb->addr, fdb->vid, true);
++	if (bcm_sf2_arl_op(priv, 0, port, fdb->addr, fdb->vid, true))
++		pr_err("%s: failed to add MAC address\n", __func__);
+ }
+ 
+ static int bcm_sf2_sw_fdb_del(struct dsa_switch *ds, int port,
+diff --git a/drivers/net/dsa/mv88e6xxx.c b/drivers/net/dsa/mv88e6xxx.c
+index 53c545c..ef36bf6 100644
+--- a/drivers/net/dsa/mv88e6xxx.c
++++ b/drivers/net/dsa/mv88e6xxx.c
+@@ -2090,21 +2090,19 @@ int mv88e6xxx_port_fdb_prepare(struct dsa_switch *ds, int port,
+ 	return 0;
+ }
+ 
+-int mv88e6xxx_port_fdb_add(struct dsa_switch *ds, int port,
+-			   const struct switchdev_obj_port_fdb *fdb,
+-			   struct switchdev_trans *trans)
++void mv88e6xxx_port_fdb_add(struct dsa_switch *ds, int port,
++			    const struct switchdev_obj_port_fdb *fdb,
++			    struct switchdev_trans *trans)
+ {
+ 	int state = is_multicast_ether_addr(fdb->addr) ?
+ 		GLOBAL_ATU_DATA_STATE_MC_STATIC :
+ 		GLOBAL_ATU_DATA_STATE_UC_STATIC;
+ 	struct mv88e6xxx_priv_state *ps = ds_to_priv(ds);
+-	int ret;
+ 
+ 	mutex_lock(&ps->smi_mutex);
+-	ret = _mv88e6xxx_port_fdb_load(ds, port, fdb->addr, fdb->vid, state);
++	if (_mv88e6xxx_port_fdb_load(ds, port, fdb->addr, fdb->vid, state))
++		netdev_err(ds->ports[port], "failed to load MAC address\n");
+ 	mutex_unlock(&ps->smi_mutex);
+-
+-	return ret;
+ }
+ 
+ int mv88e6xxx_port_fdb_del(struct dsa_switch *ds, int port,
+diff --git a/drivers/net/dsa/mv88e6xxx.h b/drivers/net/dsa/mv88e6xxx.h
+index 4944855..a7dccbe 100644
+--- a/drivers/net/dsa/mv88e6xxx.h
++++ b/drivers/net/dsa/mv88e6xxx.h
+@@ -514,9 +514,9 @@ int mv88e6xxx_port_vlan_dump(struct dsa_switch *ds, int port,
+ int mv88e6xxx_port_fdb_prepare(struct dsa_switch *ds, int port,
+ 			       const struct switchdev_obj_port_fdb *fdb,
+ 			       struct switchdev_trans *trans);
+-int mv88e6xxx_port_fdb_add(struct dsa_switch *ds, int port,
+-			   const struct switchdev_obj_port_fdb *fdb,
+-			   struct switchdev_trans *trans);
++void mv88e6xxx_port_fdb_add(struct dsa_switch *ds, int port,
++			    const struct switchdev_obj_port_fdb *fdb,
++			    struct switchdev_trans *trans);
+ int mv88e6xxx_port_fdb_del(struct dsa_switch *ds, int port,
+ 			   const struct switchdev_obj_port_fdb *fdb);
+ int mv88e6xxx_port_fdb_dump(struct dsa_switch *ds, int port,
+diff --git a/include/net/dsa.h b/include/net/dsa.h
+index 2123981..f1670a4 100644
+--- a/include/net/dsa.h
++++ b/include/net/dsa.h
+@@ -325,7 +325,7 @@ struct dsa_switch_driver {
+ 	int	(*port_fdb_prepare)(struct dsa_switch *ds, int port,
+ 				    const struct switchdev_obj_port_fdb *fdb,
+ 				    struct switchdev_trans *trans);
+-	int	(*port_fdb_add)(struct dsa_switch *ds, int port,
++	void	(*port_fdb_add)(struct dsa_switch *ds, int port,
+ 				const struct switchdev_obj_port_fdb *fdb,
+ 				struct switchdev_trans *trans);
+ 	int	(*port_fdb_del)(struct dsa_switch *ds, int port,
+diff --git a/net/dsa/slave.c b/net/dsa/slave.c
+index 81d36f8..90a685b 100644
+--- a/net/dsa/slave.c
++++ b/net/dsa/slave.c
+@@ -256,17 +256,17 @@ static int dsa_slave_port_fdb_add(struct net_device *dev,
+ {
+ 	struct dsa_slave_priv *p = netdev_priv(dev);
+ 	struct dsa_switch *ds = p->parent;
+-	int ret;
+ 
+-	if (!ds->drv->port_fdb_prepare || !ds->drv->port_fdb_add)
+-		return -EOPNOTSUPP;
++	if (switchdev_trans_ph_prepare(trans)) {
++		if (!ds->drv->port_fdb_prepare || !ds->drv->port_fdb_add)
++			return -EOPNOTSUPP;
+ 
+-	if (switchdev_trans_ph_prepare(trans))
+-		ret = ds->drv->port_fdb_prepare(ds, p->port, fdb, trans);
+-	else
+-		ret = ds->drv->port_fdb_add(ds, p->port, fdb, trans);
++		return ds->drv->port_fdb_prepare(ds, p->port, fdb, trans);
++	}
+ 
+-	return ret;
++	ds->drv->port_fdb_add(ds, p->port, fdb, trans);
++
++	return 0;
+ }
+ 
+ static int dsa_slave_port_fdb_del(struct net_device *dev,
+-- 
+2.7.4
+

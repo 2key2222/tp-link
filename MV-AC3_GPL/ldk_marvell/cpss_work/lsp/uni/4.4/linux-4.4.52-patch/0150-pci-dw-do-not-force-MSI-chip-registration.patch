@@ -1,0 +1,59 @@
+From 16d3985828f610b21ee21de42dccd5bd06365bf5 Mon Sep 17 00:00:00 2001
+From: Yehuda Yitschak <yehuday@marvell.com>
+Date: Sun, 21 Feb 2016 16:32:20 +0200
+Subject: [PATCH 0150/2241] pci: dw: do not force MSI chip registration
+
+Some DW based PCIe controllers, like Armada-8k can only
+detect in runtime if they have support for MSI or not.
+
+Do not fail the host init in case a DW based driver refuses
+to register an MSI chip. instead, continue and register the
+PCI host without an MSI chip.
+
+Change-Id: I4ece91d1c5b525616f25490490f9481951ee7cf8
+Signed-off-by: Yehuda Yitschak <yehuday@marvell.com>
+---
+ drivers/pci/host/pcie-designware.c | 9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/pci/host/pcie-designware.c b/drivers/pci/host/pcie-designware.c
+index 02a7452..66275dd 100644
+--- a/drivers/pci/host/pcie-designware.c
++++ b/drivers/pci/host/pcie-designware.c
+@@ -408,7 +408,7 @@ int dw_pcie_host_init(struct pcie_port *pp)
+ 	struct pci_bus *bus, *child;
+ 	struct resource *cfg_res;
+ 	u32 val;
+-	int i, ret;
++	int i, ret, has_msi = 0;
+ 	LIST_HEAD(res);
+ 	struct resource_entry *win;
+ 
+@@ -504,13 +504,12 @@ int dw_pcie_host_init(struct pcie_port *pp)
+ 				dev_err(pp->dev, "irq domain init failed\n");
+ 				return -ENXIO;
+ 			}
++			has_msi = 1;
+ 
+ 			for (i = 0; i < MAX_MSI_IRQS; i++)
+ 				irq_create_mapping(pp->irq_domain, i);
+ 		} else {
+-			ret = pp->ops->msi_host_init(pp, &dw_pcie_msi_chip);
+-			if (ret < 0)
+-				return ret;
++			has_msi = (pp->ops->msi_host_init(pp, &dw_pcie_msi_chip) == 0);
+ 		}
+ 	}
+ 
+@@ -532,7 +531,7 @@ int dw_pcie_host_init(struct pcie_port *pp)
+ 	dw_pcie_wr_own_conf(pp, PCIE_LINK_WIDTH_SPEED_CONTROL, 4, val);
+ 
+ 	pp->root_bus_nr = pp->busn->start;
+-	if (IS_ENABLED(CONFIG_PCI_MSI)) {
++	if (IS_ENABLED(CONFIG_PCI_MSI) && has_msi) {
+ 		bus = pci_scan_root_bus_msi(pp->dev, pp->root_bus_nr,
+ 					    &dw_pcie_ops, pp, &res,
+ 					    &dw_pcie_msi_chip);
+-- 
+2.7.4
+

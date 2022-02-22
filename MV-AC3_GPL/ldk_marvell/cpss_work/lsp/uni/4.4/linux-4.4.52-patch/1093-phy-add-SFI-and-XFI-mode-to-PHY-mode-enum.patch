@@ -1,0 +1,46 @@
+From 236428f449ffa18051d48ad12572a8003b255321 Mon Sep 17 00:00:00 2001
+From: Stefan Chulski <stefanc@marvell.com>
+Date: Mon, 14 Nov 2016 16:34:12 +0200
+Subject: [PATCH 1093/2241] phy: add SFI and XFI mode to PHY mode enum
+
+Add SFI and XFI to 'enum phy_interface_t', in include/linux/phy.h
+into the device tree  binding of 'phy-mode', so that
+Ethernet device driver can get phy interface from device tree.
+
+Change-Id: I29bcc70006715bb21830b6ae0e52abf30f8b3eb8
+Signed-off-by: Stefan Chulski <stefanc@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/33853
+Reviewed-by: Yuval Caduri <cyuval@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+Tested-by: Hanna Hawa <hannah@marvell.com>
+---
+ include/linux/phy.h | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/include/linux/phy.h b/include/linux/phy.h
+index 3f13e3e..07d5fff 100644
+--- a/include/linux/phy.h
++++ b/include/linux/phy.h
+@@ -82,6 +82,8 @@ typedef enum {
+ 	PHY_INTERFACE_MODE_QSGMII,
+ 	PHY_INTERFACE_MODE_XAUI,
+ 	PHY_INTERFACE_MODE_RXAUI,
++	PHY_INTERFACE_MODE_SFI,
++	PHY_INTERFACE_MODE_XFI,
+ 	PHY_INTERFACE_MODE_KR,
+ 	PHY_INTERFACE_MODE_MAX,
+ } phy_interface_t;
+@@ -130,6 +132,10 @@ static inline const char *phy_modes(phy_interface_t interface)
+ 		return "xaui";
+ 	case PHY_INTERFACE_MODE_RXAUI:
+ 		return "rxaui";
++	case PHY_INTERFACE_MODE_SFI:
++		return "sfi";
++	case PHY_INTERFACE_MODE_XFI:
++		return "xfi";
+ 	case PHY_INTERFACE_MODE_KR:
+ 		return "kr";
+ 	default:
+-- 
+2.7.4
+

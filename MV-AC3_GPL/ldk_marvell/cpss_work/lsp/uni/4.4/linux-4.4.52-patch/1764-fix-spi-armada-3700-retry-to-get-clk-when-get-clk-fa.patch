@@ -1,0 +1,38 @@
+From f5450e00bd35d0a5b173aab4b920854a83629cae Mon Sep 17 00:00:00 2001
+From: zachary <zhangzg@marvell.com>
+Date: Tue, 27 Jun 2017 18:46:22 +0800
+Subject: [PATCH 1764/2241] fix: spi: armada-3700: retry to get clk when get
+ clk fail in spi probe
+
+Currently, the spi probe function wont't retry to get clock if
+get clock fail.
+This patch fixes this issue to probe again to get spi clock if failed
+in the last time.
+
+Change-Id: I430e17a83e0f25d9f9e0871596b45910fb0b8763
+Signed-off-by: zachary <zhangzg@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/40890
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Victor Gu <xigu@marvell.com>
+---
+ drivers/spi/spi-armada-3700.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/spi/spi-armada-3700.c b/drivers/spi/spi-armada-3700.c
+index 6c7d7a4..24f7fbc 100644
+--- a/drivers/spi/spi-armada-3700.c
++++ b/drivers/spi/spi-armada-3700.c
+@@ -858,8 +858,8 @@ static int a3700_spi_probe(struct platform_device *pdev)
+ 
+ 	spi->clk = devm_clk_get(dev, NULL);
+ 	if (IS_ERR(spi->clk)) {
+-		dev_err(dev, "could not find clk: %ld\n", PTR_ERR(spi->clk));
+-		goto error;
++		ret = -EPROBE_DEFER;
++		goto out;
+ 	}
+ 
+ 	ret = clk_prepare(spi->clk);
+-- 
+2.7.4
+

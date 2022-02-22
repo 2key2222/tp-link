@@ -1,0 +1,38 @@
+From 368ee3a5ca044422480afd616448202ebb9959e8 Mon Sep 17 00:00:00 2001
+From: Wei Yongjun <weiyongjun1@huawei.com>
+Date: Sun, 5 Feb 2017 15:49:40 +0000
+Subject: [PATCH 1763/2241] spi: armada-3700: Remove spi_master_put in
+ a3700_spi_remove()
+
+The call to spi_master_put() in a3700_spi_remove() is redundant since
+the master is registered using devm_spi_register_master() and no
+reference hold by using spi_master_get() in a3700_spi_remove().
+
+This is detected by Coccinelle semantic patch.
+
+Change-Id: I44f2fa42d9ae88d3aa643315568b1ced143ba43b
+Fixes: 5762ab71eb24 ("spi: Add support for Armada 3700 SPI Controller")
+Signed-off-by: Wei Yongjun <weiyongjun1@huawei.com>
+Signed-off-by: Mark Brown <broonie@kernel.org>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/40889
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Victor Gu <xigu@marvell.com>
+---
+ drivers/spi/spi-armada-3700.c | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/drivers/spi/spi-armada-3700.c b/drivers/spi/spi-armada-3700.c
+index d45eeb2..6c7d7a4 100644
+--- a/drivers/spi/spi-armada-3700.c
++++ b/drivers/spi/spi-armada-3700.c
+@@ -901,7 +901,6 @@ static int a3700_spi_remove(struct platform_device *pdev)
+ 	struct a3700_spi *spi = spi_master_get_devdata(master);
+ 
+ 	clk_unprepare(spi->clk);
+-	spi_master_put(master);
+ 
+ 	return 0;
+ }
+-- 
+2.7.4
+

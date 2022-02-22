@@ -1,0 +1,50 @@
+From 91cf894d41f2be3eb4bc96ee87c2228d6de9f558 Mon Sep 17 00:00:00 2001
+From: Dmitri Epshtein <dima@marvell.com>
+Date: Tue, 12 Apr 2016 09:38:39 +0300
+Subject: [PATCH 0326/2241] dts: eip197: Add dma-coherent to eip197 entry
+
+Change-Id: Ia3cf90d6ccd8b75510f109d66e9dca5c42c76d7c
+Signed-off-by: Dmitri Epshtein <dima@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/28946
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+Tested-by: Star_Automation <star@marvell.com>
+---
+ Documentation/devicetree/bindings/crypto/mv_eip197.txt | 4 ++++
+ arch/arm64/boot/dts/marvell/armada-cp110.dtsi          | 1 +
+ 2 files changed, 5 insertions(+)
+
+diff --git a/Documentation/devicetree/bindings/crypto/mv_eip197.txt b/Documentation/devicetree/bindings/crypto/mv_eip197.txt
+index d28f208..b9557e5 100644
+--- a/Documentation/devicetree/bindings/crypto/mv_eip197.txt
++++ b/Documentation/devicetree/bindings/crypto/mv_eip197.txt
+@@ -7,11 +7,15 @@ Required properties:
+ - interrupts: interrupt number
+ - clocks: One ore more clock gating clocks to be used to enable EIP197 unit in the SoC.
+ 
++Optional properties:
++- dma-coherent: Present if dma operations are coherent
++
+ Examples:
+ 
+ eip197: eip197@800000 {
+ 	compatible = "marvell,eip197";
+ 	reg = <0x800000 0x200000>;
++	dma-coherent;
+ 	interrupts = <GIC_SPI 54 IRQ_TYPE_LEVEL_HIGH>;
+ 	clocks = <&gateclk 26>;
+ 	status = "disabled";
+diff --git a/arch/arm64/boot/dts/marvell/armada-cp110.dtsi b/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
+index 4736c85..38e54d6 100644
+--- a/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
+@@ -224,6 +224,7 @@ ppv22@000000 {
+ eip197: eip197@800000 {
+ 	compatible = "marvell,eip197";
+ 	reg = <0x800000 0x200000>;
++	dma-coherent;
+ 	interrupts = <GIC_SPI 54 IRQ_TYPE_LEVEL_HIGH>;
+ 	clocks = <&gateclk 26>;
+ 	status = "disabled";
+-- 
+2.7.4
+

@@ -1,0 +1,38 @@
+From 4fbfd85d62244c1db5ac6805f66d8a8534d7d8c0 Mon Sep 17 00:00:00 2001
+From: Dmitri Epshtein <dima@marvell.com>
+Date: Sun, 22 May 2016 08:48:39 +0300
+Subject: [PATCH 0413/2241] mvneta: Change interrupt name from MVNETA to
+ dev->name
+
+Most network drivers set interrupt name such way.
+It enable us to understand how many interrupts
+occurs on each network device
+
+Change-Id: I2869cdcffe70c868d5a72fb548f65c1ebab02ea7
+Signed-off-by: Dmitri Epshtein <dima@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/29839
+Reviewed-by: Lior Amsalem <alior@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvneta.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvneta.c b/drivers/net/ethernet/marvell/mvneta.c
+index 456458b..b5b69ea 100644
+--- a/drivers/net/ethernet/marvell/mvneta.c
++++ b/drivers/net/ethernet/marvell/mvneta.c
+@@ -3130,10 +3130,10 @@ static int mvneta_open(struct net_device *dev)
+ 	/* Connect to port interrupt line */
+ 	if (pp->neta_armada3700)
+ 		ret = request_irq(pp->dev->irq, mvneta_isr, 0,
+-				  MVNETA_DRIVER_NAME, pp);
++				  dev->name, pp);
+ 	else
+ 		ret = request_percpu_irq(pp->dev->irq, mvneta_percpu_isr,
+-					 MVNETA_DRIVER_NAME, pp->ports);
++					 dev->name, pp->ports);
+ 	if (ret) {
+ 		netdev_err(pp->dev, "cannot request irq %d\n", pp->dev->irq);
+ 		goto err_cleanup_txqs;
+-- 
+2.7.4
+

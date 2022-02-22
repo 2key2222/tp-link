@@ -1,0 +1,54 @@
+From 906aab8f27dbcfb1f7f9f1584d365ae489bd8707 Mon Sep 17 00:00:00 2001
+From: Yuval Caduri <cyuval@marvell.com>
+Date: Tue, 6 Feb 2018 10:19:08 +0200
+Subject: [PATCH 2226/2241] net: mvpp2x: Keep interface down after uio_release
+
+Commit ensures that kernel does not open the interface in kernel_mode,
+while user_space shutdown is still ongoing.
+
+Change-Id: I0a717057f680a169172ed56262a92efa57d7cb78
+Signed-off-by: Yuval Caduri <cyuval@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/50069
+Reviewed-by: Stefan Chulski <stefanc@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c | 8 +-------
+ 1 file changed, 1 insertion(+), 7 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+index 5ca8380..cc4bf370 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+@@ -5585,7 +5585,6 @@ EXPORT_SYMBOL(mv_pp2x_port_musdk_set);
+ int mv_pp2x_port_musdk_clear(void *netdev_priv)
+ {
+ 	struct mv_pp2x_port *port = netdev_priv;
+-	bool was_running = false;
+ 
+ 	if (!(port->flags & MVPP2_F_IF_MUSDK))
+ 		return 0;
+@@ -5596,7 +5595,7 @@ int mv_pp2x_port_musdk_clear(void *netdev_priv)
+ 	if (netif_running(port->dev)) {
+ 		rtnl_lock();
+ 		dev_close(port->dev);
+-		was_running = true;
++		rtnl_unlock();
+ 	}
+ 
+ 	/* Set num configured entities back to configured values */
+@@ -5605,11 +5604,6 @@ int mv_pp2x_port_musdk_clear(void *netdev_priv)
+ 	port->num_tx_queues = port->cfg_num_tx_queues;
+ 
+ 	port->flags &= ~MVPP2_F_IF_MUSDK;
+-
+-	if (was_running) {
+-		dev_open(port->dev);
+-		rtnl_unlock();
+-	}
+ 	return 0;
+ }
+ EXPORT_SYMBOL(mv_pp2x_port_musdk_clear);
+-- 
+2.7.4
+

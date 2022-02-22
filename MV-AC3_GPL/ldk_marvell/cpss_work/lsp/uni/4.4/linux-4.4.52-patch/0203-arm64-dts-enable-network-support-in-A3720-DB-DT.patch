@@ -1,0 +1,49 @@
+From 6350b8739834e9ff8387ec01d998206fc7444bf4 Mon Sep 17 00:00:00 2001
+From: Marcin Wojtas <mw@semihalf.com>
+Date: Tue, 16 Feb 2016 10:19:28 +0100
+Subject: [PATCH 0203/2241] arm64: dts: enable network support in A3720-DB DT
+
+Change-Id: I35b0ec5d5d10c5ec02ab0f22429a5185d305d339
+Signed-off-by: Marcin Wojtas <mw@semihalf.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/27824
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Nadav Haklai <nadavh@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-3720-db.dts | 21 +++++++++++++++++++++
+ 1 file changed, 21 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-3720-db.dts b/arch/arm64/boot/dts/marvell/armada-3720-db.dts
+index 52f5e5e..0ec1fb63 100644
+--- a/arch/arm64/boot/dts/marvell/armada-3720-db.dts
++++ b/arch/arm64/boot/dts/marvell/armada-3720-db.dts
+@@ -92,6 +92,27 @@
+ 				status = "okay";
+ 			};
+ 
++			eth0: ethernet@30000 {
++				phy-mode = "rgmii-id";
++				phy = <&phy0>;
++				status = "okay";
++			};
++
++			mdio@32004 {
++				phy0: ethernet-phy@0 {
++					reg = <0>;
++				};
++				phy1: ethernet-phy@1 {
++					reg = <1>;
++				};
++			};
++
++			eth1: ethernet@40000 {
++				phy-mode = "sgmii";
++				phy = <&phy1>;
++				status = "okay";
++			};
++
+ 			/* CON31 */
+ 			usb3@58000 {
+ 				status = "okay";
+-- 
+2.7.4
+

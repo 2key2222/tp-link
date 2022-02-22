@@ -1,0 +1,41 @@
+From 01f7f595a8903b1f68baf0bd0a8f46c3c5ffa5a3 Mon Sep 17 00:00:00 2001
+From: Stefan Chulski <stefanc@marvell.com>
+Date: Wed, 16 Aug 2017 15:49:13 +0300
+Subject: [PATCH 1891/2241] net: mvpp2: enable NETIF_F_RXCSUM flag
+
+Mvpp2 support receive checksumming offload.
+
+Change-Id: Ie1e9799b1dc673204d6407db44e6c1496cbef354
+Signed-off-by: Stefan Chulski <stefanc@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/43112
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2.c b/drivers/net/ethernet/marvell/mvpp2.c
+index c64d852..c33beac1 100644
+--- a/drivers/net/ethernet/marvell/mvpp2.c
++++ b/drivers/net/ethernet/marvell/mvpp2.c
+@@ -7552,7 +7552,7 @@ static int mvpp2_port_probe(struct platform_device *pdev,
+ 	unsigned int ntxqs, nrxqs;
+ 	bool has_tx_irqs;
+ 	u32 id;
+-	int features;
++	u64 features;
+ 	int phy_mode;
+ 	int err, i, cpu;
+ 
+@@ -7708,7 +7708,7 @@ static int mvpp2_port_probe(struct platform_device *pdev,
+ 		}
+ 	}
+ 
+-	features = NETIF_F_SG | NETIF_F_IP_CSUM | NETIF_F_TSO;
++	features = NETIF_F_SG | NETIF_F_IP_CSUM | NETIF_F_TSO | NETIF_F_RXCSUM;
+ 	dev->features = features;
+ 	dev->hw_features |= features | NETIF_F_GRO;
+ 
+-- 
+2.7.4
+

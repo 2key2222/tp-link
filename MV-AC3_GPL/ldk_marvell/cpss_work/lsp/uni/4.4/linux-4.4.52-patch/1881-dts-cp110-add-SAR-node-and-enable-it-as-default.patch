@@ -1,0 +1,46 @@
+From ecc01b38d22221f39ceb1087887696d66f60f955 Mon Sep 17 00:00:00 2001
+From: Evan Wang <xswang@marvell.com>
+Date: Tue, 20 Jun 2017 12:39:03 +0800
+Subject: [PATCH 1881/2241] dts: cp110: add SAR node and enable it as default
+
+Change-Id: Iee72b4eddc67a940543f13e47bb26a6c32255041
+Signed-off-by: Evan Wang <xswang@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/40615
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-cp110-1.dtsi | 6 ++++++
+ arch/arm64/boot/dts/marvell/armada-cp110.dtsi   | 6 ++++++
+ 2 files changed, 12 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-cp110-1.dtsi b/arch/arm64/boot/dts/marvell/armada-cp110-1.dtsi
+index 4ee201f..a652861 100644
+--- a/arch/arm64/boot/dts/marvell/armada-cp110-1.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-cp110-1.dtsi
+@@ -378,3 +378,9 @@ comphy1: comphy {
+ 	#phy-cells = <2>;
+ 	status = "disabled";
+ };
++
++cps_sar: sar@400200 {
++	compatible = "marvell,sample-at-reset-cp110";
++	reg = <0x400200 0x8>;
++	status = "okay";
++};
+diff --git a/arch/arm64/boot/dts/marvell/armada-cp110.dtsi b/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
+index 307161f..69c35c4 100644
+--- a/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
+@@ -476,3 +476,9 @@ comphy0: comphy {
+ 	#phy-cells = <2>;
+ 	status = "disabled";
+ };
++
++cpm_sar: sar@400200 {
++	compatible = "marvell,sample-at-reset-cp110";
++	reg = <0x400200 0x8>;
++	status = "okay";
++};
+-- 
+2.7.4
+

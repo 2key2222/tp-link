@@ -1,0 +1,75 @@
+From 94f249c65a760a2bc20a3e9fa82f5cc300432e5e Mon Sep 17 00:00:00 2001
+From: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+Date: Sun, 17 Apr 2016 13:23:56 -0400
+Subject: [PATCH 0800/2241] net: dsa: mv88e6xxx: drop double ds assignment
+
+Upstream-commit: b346204737fafce585f62543ed7691fb4a72789d
+
+Every driver assigns ps->ds even though it gets assigned in the shared
+mv88e6xxx_setup_common function. Kill redundancy.
+
+Signed-off-by: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+Reviewed-by: Andrew Lunn <andrew@lunn.ch>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+---
+ drivers/net/dsa/mv88e6123.c | 2 --
+ drivers/net/dsa/mv88e6131.c | 2 --
+ drivers/net/dsa/mv88e6171.c | 2 --
+ drivers/net/dsa/mv88e6352.c | 2 --
+ 4 files changed, 8 deletions(-)
+
+diff --git a/drivers/net/dsa/mv88e6123.c b/drivers/net/dsa/mv88e6123.c
+index 9701c0f..85537eb 100644
+--- a/drivers/net/dsa/mv88e6123.c
++++ b/drivers/net/dsa/mv88e6123.c
+@@ -79,8 +79,6 @@ static int mv88e6123_setup(struct dsa_switch *ds)
+ 	struct mv88e6xxx_priv_state *ps = ds_to_priv(ds);
+ 	int ret;
+ 
+-	ps->ds = ds;
+-
+ 	ret = mv88e6xxx_setup_common(ds);
+ 	if (ret < 0)
+ 		return ret;
+diff --git a/drivers/net/dsa/mv88e6131.c b/drivers/net/dsa/mv88e6131.c
+index fa3a354..4117c9b 100644
+--- a/drivers/net/dsa/mv88e6131.c
++++ b/drivers/net/dsa/mv88e6131.c
+@@ -101,8 +101,6 @@ static int mv88e6131_setup(struct dsa_switch *ds)
+ 	struct mv88e6xxx_priv_state *ps = ds_to_priv(ds);
+ 	int ret;
+ 
+-	ps->ds = ds;
+-
+ 	ret = mv88e6xxx_setup_common(ds);
+ 	if (ret < 0)
+ 		return ret;
+diff --git a/drivers/net/dsa/mv88e6171.c b/drivers/net/dsa/mv88e6171.c
+index 8d86c9e..ae32875 100644
+--- a/drivers/net/dsa/mv88e6171.c
++++ b/drivers/net/dsa/mv88e6171.c
+@@ -76,8 +76,6 @@ static int mv88e6171_setup(struct dsa_switch *ds)
+ 	struct mv88e6xxx_priv_state *ps = ds_to_priv(ds);
+ 	int ret;
+ 
+-	ps->ds = ds;
+-
+ 	ret = mv88e6xxx_setup_common(ds);
+ 	if (ret < 0)
+ 		return ret;
+diff --git a/drivers/net/dsa/mv88e6352.c b/drivers/net/dsa/mv88e6352.c
+index c7fa69c..10c36ab 100644
+--- a/drivers/net/dsa/mv88e6352.c
++++ b/drivers/net/dsa/mv88e6352.c
+@@ -87,8 +87,6 @@ static int mv88e6352_setup(struct dsa_switch *ds)
+ 	struct mv88e6xxx_priv_state *ps = ds_to_priv(ds);
+ 	int ret;
+ 
+-	ps->ds = ds;
+-
+ 	ret = mv88e6xxx_setup_common(ds);
+ 	if (ret < 0)
+ 		return ret;
+-- 
+2.7.4
+

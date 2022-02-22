@@ -1,0 +1,44 @@
+From a623339a2613751e965fd8a3aaa94daef8da75ac Mon Sep 17 00:00:00 2001
+From: Konstantin Porotchkin <kostap@marvell.com>
+Date: Mon, 17 Jul 2017 11:12:02 +0300
+Subject: [PATCH 1806/2241] arm64: mvebu: dts: Add pin controls to SDHC entries
+
+Extend the A7K DB DTS by adding pin control nodes to SDHC
+controller entries.
+This change ensures that the pin configuration for CPM SDHC controller
+is done by the Linux driver regardless the configuration that is done
+by the boot loader.
+
+Change-Id: Iae46522c426075e2b9443762f2c4a02ab9ad392c
+Signed-off-by: Konstantin Porotchkin <kostap@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/41858
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-7040-db.dtsi | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-7040-db.dtsi b/arch/arm64/boot/dts/marvell/armada-7040-db.dtsi
+index fbdc862..d7b4001 100644
+--- a/arch/arm64/boot/dts/marvell/armada-7040-db.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-7040-db.dtsi
+@@ -70,6 +70,8 @@
+ 				bus-width = <4>;
+ 				no-1-8-v;
+ 				non-removable; /* For now, need to configure the GPIO for card detect */
++				pinctrl-names = "default";
++				pinctrl-0 = <&ap_emmc_pins>;
+ 			};
+ 		};
+ 	};
+@@ -105,6 +107,7 @@
+ 			};
+ 			sdhci@780000 {
+ 				pinctrl-names = "default";
++				pinctrl-0 = <&cpm_sdhci_pins>;
+ 				bus-width = <4>;
+ 			};
+ 			spi@700680 {
+-- 
+2.7.4
+

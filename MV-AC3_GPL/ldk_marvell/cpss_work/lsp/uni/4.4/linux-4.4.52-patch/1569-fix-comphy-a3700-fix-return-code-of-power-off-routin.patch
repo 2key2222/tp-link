@@ -1,0 +1,44 @@
+From 04e72a2c5cd1d4ef0838dc6bddc6c5edfb43a166 Mon Sep 17 00:00:00 2001
+From: Evan Wang <xswang@marvell.com>
+Date: Tue, 11 Apr 2017 17:03:34 +0800
+Subject: [PATCH 1569/2241] fix: comphy: a3700: fix return code of power off
+ routine
+
+- Currently for comphy without power off routine
+  implemented the return code is error, which would cause:
+  1) error message when kernel boot up
+  2) comphy power on fail for IO without implementation of
+     comphy power off in IO PM resume.
+- The patch corrects the return code in comphy power off
+  routine and gives a debug message to indicate the mode
+  without power off routine implemented.
+
+Change-Id: Id4f47eb719086f6a6a9990117c94f9643b4726e4
+Signed-off-by: Evan Wang <xswang@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/38650
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Victor Gu <xigu@marvell.com>
+---
+ drivers/phy/phy-comphy-a3700.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/phy/phy-comphy-a3700.c b/drivers/phy/phy-comphy-a3700.c
+index 00a591a..61b8fb8 100644
+--- a/drivers/phy/phy-comphy-a3700.c
++++ b/drivers/phy/phy-comphy-a3700.c
+@@ -900,9 +900,9 @@ static int mvebu_a3700_comphy_power_off(struct phy *phy)
+ 		break;
+ 
+ 	default:
+-		dev_err(priv->dev, "comphy%d: unsupported comphy mode\n",
+-			comphy->index);
+-		err = -EINVAL;
++		dev_dbg(priv->dev,
++			"comphy%d: power off is not implemented for mode %d\n",
++			comphy->index, mode);
+ 		break;
+ 	}
+ 
+-- 
+2.7.4
+

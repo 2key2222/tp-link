@@ -1,0 +1,40 @@
+From bc97ae3ab0aad5d7bda760b9a57e4ab1dacb5a01 Mon Sep 17 00:00:00 2001
+From: allen yan <yanwei@marvell.com>
+Date: Fri, 10 Feb 2017 23:51:09 +0800
+Subject: [PATCH 1430/2241] mtd: spi-nand: add ERASE2 command for giga device
+ driver
+
+- The original giga device driver doesn't support the ERASE2
+  command.
+- The MTD driver needs ERASE1 and ERASE2 to accomplish the whole
+  erase operation. But in the original giga driver, the ERASE1
+  has done the entire erase operation.
+- This path add the ERASE2 command, it needs do nothing but bypass
+  the ERASE2 command.
+
+Change-Id: If6274def50dedeb9df192ac96b50f74db7305c11
+Signed-off-by: allen yan <yanwei@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/37182
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hua Jing <jinghua@marvell.com>
+---
+ drivers/staging/gd5f_spinand/gd5f_spinand.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/drivers/staging/gd5f_spinand/gd5f_spinand.c b/drivers/staging/gd5f_spinand/gd5f_spinand.c
+index 93fe5e8..eb40c4b 100644
+--- a/drivers/staging/gd5f_spinand/gd5f_spinand.c
++++ b/drivers/staging/gd5f_spinand/gd5f_spinand.c
+@@ -843,6 +843,9 @@ static void spinand_cmdfunc(struct mtd_info *mtd, unsigned int command,
+ 	case NAND_CMD_ERASE1:
+ 		spinand_erase_block(info->spi, page);
+ 		break;
++	/* ERASE2 do nothing because ERASE1 has done the entire erase operation */
++	case NAND_CMD_ERASE2:
++		break;
+ 	/* SEQIN sets up the addr buffer and all registers except the length */
+ 	case NAND_CMD_SEQIN:
+ 		state->col = column;
+-- 
+2.7.4
+

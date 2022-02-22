@@ -1,0 +1,53 @@
+From 80595273da6aad19752629fad207bed6ade5e0c4 Mon Sep 17 00:00:00 2001
+From: Grzegorz Jaszczyk <jaz@semihalf.com>
+Date: Tue, 16 Aug 2016 17:52:34 +0200
+Subject: [PATCH 0898/2241] arm64: dts: marvell: add pinctrl description for
+ I2C0 in AP806 dtsi
+
+The AP806's MPP4 and MPP5 can be used as I2C0 - add appropriate description
+and use it for Armada 8K.
+
+Change-Id: Ibb5dbd7322a59bf49b3e5c6559f70dd5fbb98676
+Signed-off-by: Grzegorz Jaszczyk <jaz@semihalf.com>
+Signed-off-by: Igal Liberman <igall@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/32377
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+Tested-by: Star_Automation <star@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-8040-db.dtsi | 2 ++
+ arch/arm64/boot/dts/marvell/armada-ap806.dtsi   | 5 +++++
+ 2 files changed, 7 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-8040-db.dtsi b/arch/arm64/boot/dts/marvell/armada-8040-db.dtsi
+index a465b3c..8759918 100644
+--- a/arch/arm64/boot/dts/marvell/armada-8040-db.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-8040-db.dtsi
+@@ -64,6 +64,8 @@
+ 			i2c@511000 {
+ 				status = "okay";
+ 				clock-frequency = <100000>;
++				pinctrl-names = "default";
++				pinctrl-0 = <&ap_i2c0_pins>;
+ 				eeprom@57 {
+ 					compatible = "at24,24c64";
+ 					reg = <0x57>;
+diff --git a/arch/arm64/boot/dts/marvell/armada-ap806.dtsi b/arch/arm64/boot/dts/marvell/armada-ap806.dtsi
+index ab16e65..6f473d6 100644
+--- a/arch/arm64/boot/dts/marvell/armada-ap806.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-ap806.dtsi
+@@ -236,6 +236,11 @@
+ 			pinctrl@6f4000 {
+ 				compatible = "marvell,ap806-pinctrl";
+ 				reg = <0x6f4000 0x10>;
++
++				ap_i2c0_pins: i2c-pins-0 {
++					marvell,pins = "mpp4", "mpp5";
++					marvell,function = "i2c0";
++				};
+ 			};
+ 
+ 			gpio0: gpio@6F5040 {
+-- 
+2.7.4
+

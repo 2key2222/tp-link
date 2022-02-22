@@ -1,0 +1,64 @@
+From fc8795b17344a393961bffc11ad94e1a31f6db81 Mon Sep 17 00:00:00 2001
+From: Hanna Hawa <hannah@marvell.com>
+Date: Tue, 22 Nov 2016 11:07:15 +0200
+Subject: [PATCH 1116/2241] dts: u3d: a70x0: add VBUS-IN via GPIO for USB
+ device
+
+The GPIO response to toggle the PHY power connect when
+connect/disconnect USB device, the added GPIO entry is
+not used by default A7040-DB board (added for reference only)
+
+Change-Id: I143f686b06d912586911f6744eedb33e2166341e
+Signed-off-by: Hanna Hawa <hannah@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/33953
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Tested-by: Star_Automation <star@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-7040-db.dtsi | 5 +++++
+ arch/arm64/boot/dts/marvell/armada-7040.dtsi    | 9 +++++++--
+ 2 files changed, 12 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-7040-db.dtsi b/arch/arm64/boot/dts/marvell/armada-7040-db.dtsi
+index f2d6e55b..ce56f2f 100644
+--- a/arch/arm64/boot/dts/marvell/armada-7040-db.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-7040-db.dtsi
+@@ -97,6 +97,11 @@
+ 					reg = <0x21>;
+ 				};
+ 			};
++			u3d@520000 {
++				pinctrl-0 = <&u3d_vbus_pins>;
++				pinctrl-names = "default";
++				vbus-gpio = <&gpio2 30 GPIO_ACTIVE_HIGH>;
++			};
+ 			usb3h0: usb3@500000 {
+ 				usb-phy = <&usb3h0_phy>;
+ 			};
+diff --git a/arch/arm64/boot/dts/marvell/armada-7040.dtsi b/arch/arm64/boot/dts/marvell/armada-7040.dtsi
+index b4f5b90..f1df28a 100644
+--- a/arch/arm64/boot/dts/marvell/armada-7040.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-7040.dtsi
+@@ -92,13 +92,18 @@
+ 						       "mpp59", "mpp60", "mpp61";
+ 					marvell,function = "sdio";
+ 				};
+-				/* following GPIO entry is not used (for reference only)
+-				 * GPIO is not connected in default A7040-DB board
++				/* following VBUS IN/OUT GPIO entries is not used
++				 * (for reference only) GPIO is not connected
++				 * in default A7040-DB board
+ 				 */
+ 				xhci0_vbus_pins: xhci0-vbus-pins {
+ 					marvell,pins = "mpp12";
+ 					marvell,function = "gpio";
+ 				};
++				u3d_vbus_pins: u3d-vbus-pins {
++					marvell,pins = "mpp62";
++					marvell,function = "gpio";
++				};
+ 			};
+ 			gpio1: gpio@440100 {
+ 			};
+-- 
+2.7.4
+

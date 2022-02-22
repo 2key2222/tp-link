@@ -1,0 +1,54 @@
+From 69f97bdd4bea7b88d160043688563dd3747f0b31 Mon Sep 17 00:00:00 2001
+From: Ken Ma <make@marvell.com>
+Date: Mon, 21 Aug 2017 07:37:58 +0300
+Subject: [PATCH 1928/2241] Revert "ARM64: pinctrl: marvell: armada-37xx:
+ correct south brigdge mpp23's group configuration"
+
+This reverts commit 174471025098a149decedae850e8aabc3eff9a1e.
+
+Change-Id: I5b9992f2c138b01bee0ce3e547f4eae251627c5d
+Reviewed-on: http://vgitil04.il.marvell.com:8080/43231
+Reviewed-by: Victor Gu <xigu@marvell.com>
+Tested-by: Victor Gu <xigu@marvell.com>
+---
+ .../devicetree/bindings/pinctrl/marvell,armada-37xx-pinctrl.txt     | 6 +-----
+ drivers/pinctrl/mvebu/pinctrl-armada-37xx.c                         | 4 ++--
+ 2 files changed, 3 insertions(+), 7 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/pinctrl/marvell,armada-37xx-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/marvell,armada-37xx-pinctrl.txt
+index df7c4ad..e146985 100644
+--- a/Documentation/devicetree/bindings/pinctrl/marvell,armada-37xx-pinctrl.txt
++++ b/Documentation/devicetree/bindings/pinctrl/marvell,armada-37xx-pinctrl.txt
+@@ -139,13 +139,9 @@ group ptp_trig
+  - pin 58
+  - functions ptp, mii
+ 
+-group mii
+- - pin 59
+- - functions mii, gpio
+-
+ group mii_col
+  - pin 59
+- - functions mii_col, mii_err
++ - functions mii, mii_err
+ 
+ GPIO subnode:
+ 
+diff --git a/drivers/pinctrl/mvebu/pinctrl-armada-37xx.c b/drivers/pinctrl/mvebu/pinctrl-armada-37xx.c
+index 6a19095..b429a7e 100644
+--- a/drivers/pinctrl/mvebu/pinctrl-armada-37xx.c
++++ b/drivers/pinctrl/mvebu/pinctrl-armada-37xx.c
+@@ -202,8 +202,8 @@ static struct armada_37xx_pin_group armada_37xx_sb_groups[] = {
+ 	PIN_GRP_GPIO("ptp", 20, 3, BIT(11) | BIT(12) | BIT(13), "ptp"),
+ 	PIN_GRP("ptp_clk", 21, 1, BIT(6), "ptp", "mii"),
+ 	PIN_GRP("ptp_trig", 22, 1, BIT(7), "ptp", "mii"),
+-	PIN_GRP_GPIO("mii", 23, 1, BIT(14), "mii"),
+-	PIN_GRP("mii_col", 23, 1, BIT(8), "mii_col", "mii_err"),
++	PIN_GRP_GPIO_3("mii_col", 23, 1, BIT(8) | BIT(14), 0, BIT(8), BIT(14),
++		       "mii", "mii_err"),
+ };
+ 
+ const struct armada_37xx_pin_data armada_37xx_pin_nb = {
+-- 
+2.7.4
+

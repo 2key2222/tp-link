@@ -1,0 +1,32 @@
+From f2d614c1c1d48b95024fcd534e2cc67d62a2ba9c Mon Sep 17 00:00:00 2001
+From: Yuval Caduri <cyuval@marvell.com>
+Date: Wed, 6 Apr 2016 02:40:00 +0300
+Subject: [PATCH 0301/2241] mvpp2x: Update default cos parameters.
+
+Change-Id: Id05675e67a43c03d52f40fdcf06ce9e1a9f49d8b
+Signed-off-by: Yuval Caduri <cyuval@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/28810
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+index 28723a2..49a4db5f 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+@@ -69,8 +69,8 @@ static u8 mv_pp2x_queue_mode = MVPP2_QDIST_SINGLE_MODE;
+ static u8 rss_mode;
+ static u8 default_cpu;
+ static u8 cos_classifer;
+-static u32 pri_map;
+-static u8 default_cos;
++static u32 pri_map = 0x3210; /* As default, cos0--rxq0, cos1--rxq1, cos2--rxq2, cos3--rxq3 */
++static u8 default_cos = 3; /* As default, non-IP packet has the highest CoS value */
+ static bool jumbo_pool;
+ static u16 rx_queue_size = MVPP2_MAX_RXD;
+ static u16 tx_queue_size = MVPP2_MAX_TXD;
+-- 
+2.7.4
+

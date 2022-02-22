@@ -1,0 +1,32 @@
+From 8366d876aef12291f63298027b3750c62bde2386 Mon Sep 17 00:00:00 2001
+From: Sergei Shkonda <sergeish@marvell.com>
+Date: Thu, 16 Mar 2017 15:46:45 +0200
+Subject: [PATCH 1767/2241] dts: msys: ac3-db: Add Dragonite MBUS mapping
+
+    A mapping for Dragonite unit(POE) has been added
+
+Change-Id: I7af25d8a8f3f41f9bda05bf9f7fe7380af51ceec
+Reviewed-on: http://vgitil04.il.marvell.com:8080/39579
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Wilson Ding <dingwei@marvell.com>
+---
+ arch/arm/boot/dts/msys-ac3-db.dts | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/msys-ac3-db.dts b/arch/arm/boot/dts/msys-ac3-db.dts
+index 22275c0..0e4450d 100644
+--- a/arch/arm/boot/dts/msys-ac3-db.dts
++++ b/arch/arm/boot/dts/msys-ac3-db.dts
+@@ -37,7 +37,8 @@
+ 			  MBUS_ID(0x01, 0x1d) 0 0 0xfff00000 0x100000
+ 			  MBUS_ID(0x01, 0x2f) 0 0 0xf0000000 0x1000000
+ 			  MBUS_ID(0x03, 0x00) 0 0 0xf8000000 0x4000000	/* switch */
+-			  MBUS_ID(0x08, 0x00) 0 0 0xfc000000 0x100000>;	/* dfx */
++			  MBUS_ID(0x08, 0x00) 0 0 0xfc000000 0x100000	/* dfx */
++			  MBUS_ID(0x0a, 0x00) 0 0 0x80000000 0x8000000>;	/* dragonite */
+ 
+ 		internal-regs {
+ 			spi0: spi@10600 {
+-- 
+2.7.4
+

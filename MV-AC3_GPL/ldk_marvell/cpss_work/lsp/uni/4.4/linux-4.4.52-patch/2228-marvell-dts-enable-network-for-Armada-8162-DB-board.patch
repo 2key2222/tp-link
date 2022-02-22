@@ -1,0 +1,100 @@
+From 0a23df65d7bdef72e7598c5904c125053d91d569 Mon Sep 17 00:00:00 2001
+From: Stefan Chulski <stefanc@marvell.com>
+Date: Tue, 6 Feb 2018 17:56:30 +0200
+Subject: [PATCH 2228/2241] marvell: dts: enable network for Armada 8162 DB
+ board
+
+Change-Id: Iedae3d0a92484b07a03e7e44d152a188aedc5ec2
+Signed-off-by: Stefan Chulski <stefanc@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/50142
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Tested-by: Omri Itach <omrii@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-8162-db.dts | 61 ++++++++++++++++++++++++++
+ 1 file changed, 61 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-8162-db.dts b/arch/arm64/boot/dts/marvell/armada-8162-db.dts
+index f6535ee..935f453 100644
+--- a/arch/arm64/boot/dts/marvell/armada-8162-db.dts
++++ b/arch/arm64/boot/dts/marvell/armada-8162-db.dts
+@@ -55,12 +55,60 @@
+ 		stdout-path = "serial0:115200n8";
+ 	};
+ 
++	aliases {
++		ethernet0 = &cp0_emac0;
++		ethernet1 = &cp0_emac2;
++		ethernet2 = &cp0_emac3;
++		ethernet3 = &cp4_emac0;
++	};
++
+ 	memory@00000000 {
+ 		device_type = "memory";
+ 		reg = <0x0 0x0 0x0 0x80000000>;
+ 	};
+ };
+ 
++&cp0_mdio0 {
++	status = "okay";
++	mdio0_phy0: ethernet-phy@0 {
++		reg = <0>;
++	};
++	mdio0_phy1: ethernet-phy@1 {
++		reg = <1>;
++	};
++};
++
++&cp0_emac2 {
++	phy-mode = "rgmii"; /* rgmii-0 */
++	phy = <&mdio0_phy0>;
++};
++
++&cp0_emac3 {
++	phy-mode = "rgmii"; /* rgmii-1 */
++	phy = <&mdio0_phy1>;
++};
++
++&cp0_emac0 {
++	phy-mode = "sfi"; /* lane-2 */
++};
++
++&cp0_ppv22 {
++	l4_chksum_jumbo_port = <0>;
++	pinctrl-names = "default";
++};
++
++&cp0_eth0 {
++	status = "okay";
++};
++
++&cp0_eth1 {
++	status = "okay";
++};
++
++&cp0_eth2 {
++	status = "okay";
++};
++
+ &cp0_sata {
+ 	status = "okay";
+ 	sata-port@1 {
+@@ -86,3 +134,16 @@
+ 	num-lanes = <4>;
+ 	status = "okay";
+ };
++
++&cp4_emac0 {
++	phy-mode = "sfi"; /* lane-2 */
++};
++
++&cp4_ppv22 {
++	l4_chksum_jumbo_port = <0>;
++	pinctrl-names = "default";
++};
++
++&cp4_eth0 {
++	status = "okay";
++};
+-- 
+2.7.4
+

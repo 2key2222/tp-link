@@ -1,0 +1,77 @@
+From 169f01bcdb0e5bc80cfe40ae9aba725e55164500 Mon Sep 17 00:00:00 2001
+From: Stefan Chulski <stefanc@marvell.com>
+Date: Sun, 25 Sep 2016 19:13:49 +0300
+Subject: [PATCH 1002/2241] Revert "mvpp2x: add testing if MVPP2_CPU_DESC_CHUNK
+ greater than MAX_SKB_FRAGS"
+
+- revert: add testing if MVPP2_CPU_DESC_CHUNK greater than MAX_SKB_FRAGS
+
+Change-Id: Id2ccc1b22692d2f45b9bf4187a65a4ef31400907
+Reviewed-on: http://vgitil04.il.marvell.com:8080/33116
+Reviewed-by: Yuval Caduri <cyuval@marvell.com>
+Tested-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c | 36 +++++++++-------------
+ 1 file changed, 15 insertions(+), 21 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+index a85e17a..ad395ff 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+@@ -856,7 +856,7 @@ int mv_pp2x_txq_reserved_desc_num_proc(
+ 					struct mv_pp2x_txq_pcpu *txq_pcpu,
+ 					int num, int cpu)
+ {
+-	int req;
++	int req, cpu_desc, desc_count;
+ 
+ 	if (txq_pcpu->reserved_num >= num)
+ 		return 0;
+@@ -872,30 +872,24 @@ int mv_pp2x_txq_reserved_desc_num_proc(
+ 
+ 	req = MVPP2_CPU_DESC_CHUNK;
+ 
+-#if (MVPP2_CPU_DESC_CHUNK < MAX_SKB_FRAGS)
+-	{
+-		int cpu_desc, desc_count;
+-
+-		if ((num - txq_pcpu->reserved_num) > req) {
+-			req = num - txq_pcpu->reserved_num;
+-			desc_count = 0;
+-			/* Compute total of used descriptors */
+-			for_each_online_cpu(cpu_desc) {
+-				int txq_count;
+-				struct mv_pp2x_txq_pcpu *txq_pcpu_aux;
++	if ((num - txq_pcpu->reserved_num) > req) {
++		req = num - txq_pcpu->reserved_num;
++		desc_count = 0;
++		/* Compute total of used descriptors */
++		for_each_online_cpu(cpu_desc) {
++			int txq_count;
++			struct mv_pp2x_txq_pcpu *txq_pcpu_aux;
+ 
+-				txq_pcpu_aux = per_cpu_ptr(txq->pcpu, cpu_desc);
+-				txq_count = mv_pp2x_txq_count(txq_pcpu_aux);
+-				desc_count += txq_count;
+-
+-			}
+-			desc_count += req;
++			txq_pcpu_aux = per_cpu_ptr(txq->pcpu, cpu_desc);
++			txq_count = mv_pp2x_txq_count(txq_pcpu_aux);
++			desc_count += txq_count;
+ 
+-			if (desc_count > txq->size)
+-				return -ENOMEM;
+ 		}
++		desc_count += req;
++
++		if (desc_count > txq->size)
++			return -ENOMEM;
+ 	}
+-#endif
+ 
+ 	txq_pcpu->reserved_num += mv_pp2x_txq_alloc_reserved_desc(priv, txq,
+ 							req, cpu);
+-- 
+2.7.4
+

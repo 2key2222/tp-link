@@ -1,0 +1,634 @@
+From add26c408a892741934edebe40273199f3a1d434 Mon Sep 17 00:00:00 2001
+From: Dmitri Epshtein <dima@marvell.com>
+Date: Tue, 31 May 2016 16:14:58 +0300
+Subject: [PATCH 0479/2241] pp3: fix sysfs commands output format
+
+- Add check for network device validity
+
+Change-Id: I15f29c226bc6612c8f93032ba3c3ebc984de7b26
+Signed-off-by: Dmitri Epshtein <dima@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/30219
+Reviewed-by: Yan Markman <ymarkman@marvell.com>
+Tested-by: Star_Automation <star@marvell.com>
+---
+ .../net/ethernet/marvell/pp3/net_dev/mv_dev_dbg.c  | 132 +++++++++++----------
+ .../marvell/pp3/net_dev/mv_dev_debug_sysfs.c       |  43 ++++---
+ .../marvell/pp3/net_dev/mv_dev_init_sysfs.c        |   7 +-
+ .../ethernet/marvell/pp3/net_dev/mv_dev_sysfs.c    |  15 +--
+ .../ethernet/marvell/pp3/net_dev/mv_dev_vq_sysfs.c |  10 +-
+ .../net/ethernet/marvell/pp3/net_dev/mv_netdev.c   |  47 +++++++-
+ .../net/ethernet/marvell/pp3/net_dev/mv_netdev.h   |   3 +
+ 7 files changed, 148 insertions(+), 109 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/pp3/net_dev/mv_dev_dbg.c b/drivers/net/ethernet/marvell/pp3/net_dev/mv_dev_dbg.c
+index 9e4c303..8abbbf5 100644
+--- a/drivers/net/ethernet/marvell/pp3/net_dev/mv_dev_dbg.c
++++ b/drivers/net/ethernet/marvell/pp3/net_dev/mv_dev_dbg.c
+@@ -72,16 +72,10 @@ void pp3_dbg_ingress_vqs_show(struct net_device *dev)
+ 	struct mv_nss_drop drop;
+ 	struct mv_nss_sched sched;
+ 
+-	if (!dev) {
+-		pr_info("%s: Error - Input pointer is NULL\n", __func__);
++	dev_priv = mv_pp3_dev_priv_ready_get(dev);
++	if (!dev_priv)
+ 		return;
+-	}
+ 
+-	dev_priv = MV_PP3_PRIV(dev);
+-	if (!(dev_priv->flags & MV_PP3_F_INIT)) {
+-		pr_err("Error - Can't show ingress virtual queues map, %s is not initialized\n", dev->name);
+-		return;
+-	}
+ 	if (mv_pp3_dev_ingress_vqs_num_get(dev, &vqs_num)) {
+ 		pr_err("%s: Error - Can't get number of ingress virtual queues\n", dev->name);
+ 		return;
+@@ -116,16 +110,9 @@ void pp3_dbg_ingress_vqs_print(struct net_device *dev)
+ 	struct	pp3_dev_priv *dev_priv;
+ 	struct pp3_vq *vq_priv;
+ 
+-	if (!dev) {
+-		pr_info("%s: Error - Input pointer is NULL\n", __func__);
++	dev_priv = mv_pp3_dev_priv_ready_get(dev);
++	if (!dev_priv)
+ 		return;
+-	}
+-
+-	dev_priv = MV_PP3_PRIV(dev);
+-	if (!(dev_priv->flags & MV_PP3_F_INIT)) {
+-		pr_err("Error - Can't show ingress virtual queues map, %s is not initialized\n", dev->name);
+-		return;
+-	}
+ 
+ 	pr_cont("\n");
+ 
+@@ -190,16 +177,10 @@ void pp3_dbg_egress_vqs_show(struct net_device *dev)
+ 	struct mv_nss_sched sched;
+ 	struct mv_nss_drop drop;
+ 
+-	if (!dev) {
+-		pr_info("%s: Error - Input pointer is NULL\n", __func__);
++	dev_priv = mv_pp3_dev_priv_ready_get(dev);
++	if (!dev_priv)
+ 		return;
+-	}
+ 
+-	dev_priv = MV_PP3_PRIV(dev);
+-	if (!(dev_priv->flags & MV_PP3_F_INIT)) {
+-		pr_err("Error - Can't show egress virtual queues configuration, %s in not initialized\n", dev->name);
+-		return;
+-	}
+ 	if (mv_pp3_dev_egress_vqs_num_get(dev, &vqs_num)) {
+ 		pr_err("%s: Error - Can't get number of egress virtual queues\n", dev->name);
+ 		return;
+@@ -241,16 +222,10 @@ void pp3_dbg_egress_vqs_print(struct net_device *dev)
+ 	struct pp3_vport *vp, *emac_vp = NULL;
+ 	struct pp3_vq *vq_priv;
+ 
+-	if (!dev) {
+-		pr_info("%s: Error - Input pointer is NULL\n", __func__);
++	dev_priv = mv_pp3_dev_priv_ready_get(dev);
++	if (!dev_priv)
+ 		return;
+-	}
+ 
+-	dev_priv = MV_PP3_PRIV(dev);
+-	if (!(dev_priv->flags & MV_PP3_F_INIT)) {
+-		pr_err("Error - Can't show egress virtual queues map, %s is not initialized\n", dev->name);
+-		return;
+-	}
+ 	if (mv_pp3_dev_egress_vqs_num_get(dev, &vqs_num)) {
+ 		pr_err("%s: Error - Can't get number of ingress virtual queues\n", dev->name);
+ 		return;
+@@ -321,10 +296,11 @@ static void pp3_dbg_dev_emacs_resources_line_dump(struct pp3_vport *emac_vp)
+ {
+ 	int i;
+ 
+-	pr_info("\nemac%d:  TX%-35s", emac_vp->vport, "");
++	pr_info("\n");
++	pr_info("emac%d:  TX%-35s", emac_vp->vport, "");
+ 
++	/* emac not initialized */
+ 	if (!(emac_vp->port.emac.flags & BIT(MV_PP3_EMAC_F_INIT_BIT)))
+-		/* emac not initialized */
+ 		return;
+ 
+ 	for (i = 0; i < emac_vp->tx_vqs_num; i++) {
+@@ -333,7 +309,6 @@ static void pp3_dbg_dev_emacs_resources_line_dump(struct pp3_vport *emac_vp)
+ 
+ 		pr_cont("%-3d ", emac_vp->tx_vqs[i]->hwq);
+ 	}
+-
+ 	pr_info("        RX%-35s", "");
+ 
+ 	for (i = 0; i < emac_vp->rx_vqs_num; i++) {
+@@ -341,7 +316,6 @@ static void pp3_dbg_dev_emacs_resources_line_dump(struct pp3_vport *emac_vp)
+ 			continue;
+ 
+ 		pr_cont("%-3d ", emac_vp->rx_vqs[i]->hwq);
+-
+ 	}
+ }
+ 
+@@ -385,7 +359,8 @@ static void pp3_dbg_dev_channel_resources_dump(void)
+ 		chan_ctrl = mv_pp3_chan_get(i);
+ 
+ 		mv_pp3_cfg_hmac_tx_anode_get(chan_ctrl->hmac_hw_txq, &node);
+-		pr_info("\nchan%d:  TX   ", i);
++		pr_info("\n");
++		pr_info("chan%d:  TX   ", i);
+ 		pr_cont("%-4s %-5s %-6d %-6s %-6d %-32d %-28d %2d (ppc0)   %-4s", "NA", "NA", chan_ctrl->frame, "NA",
+ 				chan_ctrl->hmac_sw_txq, chan_ctrl->hmac_hw_txq, node,
+ 				mv_pp3_cfg_hmac_pnode_get(PP3_PPC0_DP), "NA");
+@@ -418,21 +393,35 @@ static void pp3_dbg_dev_bm_resources_dump(void)
+ {
+ 	struct pp3_cpu *cpu_ctrl;
+ 	int cpu;
++	bool first;
+ 
+-	pr_info("\nbm_put: TX   ");
++	pr_info("\n");
++
++	first = true;
+ 	for_each_possible_cpu(cpu) {
++		if (first) {
++			pr_info("bm_put: TX   ");
++			first = false;
++		} else {
++			pr_info("%-13s", "");
++		}
+ 
+ 		cpu_ctrl = pp3_cpus[cpu];
+ 		pr_cont("%-4d %-5s %-6d %-6s %-6d", cpu, "NA", cpu_ctrl->bm_frame, "NA", cpu_ctrl->bm_swq);
+-		pr_info("%-13s", "");
+ 	}
+-	pr_info("\nbm_get: RX   ");
++	pr_info("\n");
++	first = true;
+ 	for_each_possible_cpu(cpu) {
+ 		struct pp3_cpu *cpu_ctrl;
+ 
+ 		cpu_ctrl = pp3_cpus[cpu];
++		if (first) {
++			pr_info("bm_get: RX   ");
++			first = false;
++		} else {
++			pr_info("%-13s", "");
++		}
+ 		pr_cont("%-4d %-5s %-6d %-6s %-6d", cpu, "NA", cpu_ctrl->bm_frame, "NA", cpu_ctrl->bm_swq);
+-		pr_info("%-13s", "");
+ 	}
+ 	pr_cont("\n");
+ }
+@@ -441,12 +430,14 @@ static void pp3_dbg_dev_bm_resources_dump(void)
+ static void pp3_dbg_dev_rx_resources_line_dump(struct pp3_dev_priv *dev_priv)
+ {
+ 	int cpu, q, node;
++	bool first;
+ 	struct pp3_vport *cpu_vp;
+ 	char queues[64];
+ 	char anodes[64];
+ 	char tmp[16];
+ 
+-	pr_info("\n        RX   ");
++	pr_info("\n");
++	first = true;
+ 	for_each_possible_cpu(cpu) {
+ 		memset(queues, 0, sizeof(queues));
+ 		memset(anodes, 0, sizeof(anodes));
+@@ -455,6 +446,12 @@ static void pp3_dbg_dev_rx_resources_line_dump(struct pp3_dev_priv *dev_priv)
+ 		if (!cpu_vp || !cpumask_test_cpu(cpu, &dev_priv->rx_cpus))
+ 			continue;
+ 
++		if (first) {
++			pr_info("        RX   ");
++			first = false;
++		} else {
++			pr_info("%-13s", "");
++		}
+ 		pr_cont("%-4d %-5d %-6d", cpu, cpu_vp->port.cpu.irq_num, cpu_vp->rx_vqs[0]->swq->frame_num);
+ 		pr_cont(" %-6d", cpu_vp->rx_vqs[0]->swq->queue.rx.irq_group);
+ 
+@@ -491,7 +488,6 @@ static void pp3_dbg_dev_rx_resources_line_dump(struct pp3_dev_priv *dev_priv)
+ 			}
+ 			pr_cont("%-32s %-28s ", queues, anodes);
+ 		}
+-		pr_info("%-13s", "");
+ 	}
+ }
+ /*---------------------------------------------------------------------------*/
+@@ -501,11 +497,13 @@ static void pp3_dbg_dev_tx_resources_line_dump(struct pp3_dev_priv *dev_priv)
+ 	int cpu, q, node;
+ 	struct pp3_vport *cpu_vp;
+ 	struct pp3_pool *ppool;
++	bool first;
+ 	char queues[64];
+ 	char anodes[64];
+ 	char tmp[16];
+ 
+-	pr_info("\n%-5s:  TX   ", dev_priv->dev->name);
++	pr_info("\n");
++	first = true;
+ 	for_each_possible_cpu(cpu) {
+ 		memset(queues, 0, sizeof(queues));
+ 		memset(anodes, 0, sizeof(anodes));
+@@ -514,6 +512,12 @@ static void pp3_dbg_dev_tx_resources_line_dump(struct pp3_dev_priv *dev_priv)
+ 		if (!cpu_vp)
+ 			continue;
+ 
++		if (first) {
++			pr_info("%-5s:  TX   ", dev_priv->dev->name);
++			first = false;
++		} else {
++			pr_info("%-13s", "");
++		}
+ 		pr_cont("%-4d %-5s %-6d %-6s", cpu, "NA", cpu_vp->tx_vqs[0]->swq->frame_num, "NA");
+ 
+ 		pr_cont("%2d:%-2d ", cpu_vp->tx_vqs[0]->swq->swq, cpu_vp->tx_vqs[cpu_vp->tx_vqs_num-1]->swq->swq);
+@@ -549,7 +553,6 @@ static void pp3_dbg_dev_tx_resources_line_dump(struct pp3_dev_priv *dev_priv)
+ 			}
+ 			pr_cont("%-32s %-28s ", queues, anodes);
+ 		}
+-		pr_info("%-13s", "");
+ 	}
+ }
+ 
+@@ -568,11 +571,13 @@ void pp3_dbg_dev_resources_dump(void)
+ 		return;
+ 	}
+ 
+-	pr_info("\n------Linux----------");
++	pr_info("\n");
++	pr_info("------Linux----------");
+ 	pr_cont("   ------HMAC--------");
+ 	pr_cont("   -------------------QM--------------------------------------------------");
+ 	pr_cont("   -----BM------");
+-	pr_info("\nName    Dir  CPU  IRQ");
++	pr_info("\n");
++	pr_info("Name    Dir  CPU  IRQ");
+ 	pr_cont("   Frame  ISR   SWQs");
+ 	pr_cont("    HWQs                             A node                        P node ");
+ 	pr_cont("    BM Pool");
+@@ -585,7 +590,6 @@ void pp3_dbg_dev_resources_dump(void)
+ 		pp3_dbg_dev_tx_resources_line_dump(dev_priv);
+ 		pp3_dbg_dev_rx_resources_line_dump(dev_priv);
+ 	}
+-	pr_info("\n");
+ 	pr_info("-----------------------------------------------------------------------------------------------");
+ 	pr_cont("-------------------------------------\n");
+ 	pp3_dbg_dev_channel_resources_dump();
+@@ -595,6 +599,8 @@ void pp3_dbg_dev_resources_dump(void)
+ 	pr_info("-----------------------------------------------------------------------------------------------");
+ 	pr_cont("-------------------------------------\n");
+ 	pp3_dbg_dev_bm_resources_dump();
++	pr_info("-----------------------------------------------------------------------------------------------");
++	pr_cont("-------------------------------------\n");
+ }
+ 
+ /*---------------------------------------------------------------------------*/
+@@ -987,6 +993,7 @@ static void pp3_dbg_dev_timers_stats_dump(struct net_device *dev)
+ 	int cpu;
+ 	struct pp3_vport *cpu_vp;
+ 	struct pp3_dev_priv *dev_priv = MV_PP3_PRIV(dev);
++
+ 	/* print CPU statistics */
+ 	pr_cont("\n%-24s", "timers stats:");
+ 
+@@ -1063,7 +1070,10 @@ void pp3_dbg_dev_pools_stats_dump(struct net_device *dev)
+ /* Print all Host software collected statistics relevant for network interface */
+ void pp3_dbg_dev_stats_dump(struct net_device *dev)
+ {
+-	struct pp3_dev_priv *dev_priv = MV_PP3_PRIV(dev);
++	struct pp3_dev_priv *dev_priv = mv_pp3_dev_priv_ready_get(dev);
++
++	if (!dev_priv)
++		return;
+ 
+ 	/*Print timers statistics */
+ 	pp3_dbg_dev_timers_stats_dump(dev);
+@@ -1073,10 +1083,6 @@ void pp3_dbg_dev_stats_dump(struct net_device *dev)
+ 
+ 	pr_cont("\n");
+ 
+-	if (!(dev_priv->flags & MV_PP3_F_INIT)) {
+-		pr_err("Error: Can't show statistics, %s in not initialized\n", dev->name);
+-		return;
+-	}
+ 	/* print BM pool statistics */
+ 	pp3_dbg_dev_rx_pools_stats_dump(dev_priv);
+ 	pp3_dbg_dev_lnx_pools_stats_dump(dev_priv);
+@@ -1089,7 +1095,10 @@ void pp3_dbg_dev_stats_dump(struct net_device *dev)
+ /* Print all Host software queues collected statistics relevant for network interface */
+ void pp3_dbg_dev_queues_stats_dump(struct net_device *dev)
+ {
+-	struct pp3_dev_priv *dev_priv = MV_PP3_PRIV(dev);
++	struct pp3_dev_priv *dev_priv = mv_pp3_dev_priv_ready_get(dev);
++
++	if (!dev_priv)
++		return;
+ 
+ 	pr_cont("\n");
+ 
+@@ -1101,17 +1110,20 @@ void pp3_dbg_dev_queues_stats_dump(struct net_device *dev)
+ 
+ void pp3_dbg_dev_status_print(struct net_device *dev)
+ {
+-	struct pp3_dev_priv *dev_priv = MV_PP3_PRIV(dev);
++	struct pp3_dev_priv *dev_priv = mv_pp3_dev_priv_ready_get(dev);
+ 	int cpu;
+ 	char cpus_str[16];
+ 
++	if (!dev_priv)
++		return;
++
+ 	scnprintf(cpus_str, sizeof(cpus_str), "%*pb", cpumask_pr_args(&dev_priv->rx_cpus));
+ 
+ 	pr_info("\n");
+ 	pr_info("Interface %s:\n", dev->name);
+ 
+ #ifdef CONFIG_MV_PP3_DEBUG_CODE
+-	pr_info("Flags                       : 0x%x\n", dev_priv->flags);
++	pr_info("Flags                       : 0x%x\n", (unsigned)dev_priv->flags);
+ 	pr_info("GNSS ops                    : %p\n", dev_priv->cpu_shared->gnss_ops);
+ #endif
+ #ifdef CONFIG_MV_PP3_SKB_RECYCLE
+@@ -1162,12 +1174,10 @@ void pp3_dbg_dev_status_print(struct net_device *dev)
+ 
+ void pp3_dbg_dev_pools_status_print(struct net_device *dev)
+ {
+-	struct pp3_dev_priv *dev_priv = MV_PP3_PRIV(dev);
++	struct pp3_dev_priv *dev_priv = mv_pp3_dev_priv_ready_get(dev);
+ 
+-	if (!dev_priv || !(dev_priv->flags & MV_PP3_F_INIT)) {
+-		pr_err("%s in not initialized yet\n", dev->name);
++	if (!dev_priv)
+ 		return;
+-	}
+ 
+ 	if (dev_priv->cpu_shared->long_pool)
+ 		pp3_dbg_pool_status_print(dev_priv->cpu_shared->long_pool->pool);
+diff --git a/drivers/net/ethernet/marvell/pp3/net_dev/mv_dev_debug_sysfs.c b/drivers/net/ethernet/marvell/pp3/net_dev/mv_dev_debug_sysfs.c
+index 88f5057..f74c28f 100644
+--- a/drivers/net/ethernet/marvell/pp3/net_dev/mv_dev_debug_sysfs.c
++++ b/drivers/net/ethernet/marvell/pp3/net_dev/mv_dev_debug_sysfs.c
+@@ -123,7 +123,6 @@ static ssize_t pp3_dev_debug_store(struct device *dev,
+ 	unsigned long   flags;
+ 	char		if_name[10];
+ 	struct net_device *netdev;
+-	struct	pp3_dev_priv *dev_priv;
+ 
+ 	if (!capable(CAP_NET_ADMIN))
+ 		return -EPERM;
+@@ -133,17 +132,30 @@ static ssize_t pp3_dev_debug_store(struct device *dev,
+ 
+ 	fields = sscanf(buf, "%s %d %d %d %d", if_name, &a, &b, &c, &d);
+ 
++	/* Create external network interface (without EMAC connectivity) */
++	if (!strcmp(name, "create")) {
++		if (fields == 3) {
++			local_irq_save(flags);
++			if (mv_pp3_netdev_init(if_name, a, b))
++				err = 0;
++
++			local_irq_restore(flags);
++		}
++		return err ? -EINVAL : len;
++	}
++
++	netdev = dev_get_by_name(&init_net, if_name);
++	if (!mv_pp3_dev_is_valid(netdev)) {
++		pr_err("%s in not pp3 device\n", if_name);
++		if (netdev)
++			dev_put(netdev);
++		return -EINVAL;
++	}
++
+ 	local_irq_save(flags);
+ 
+ 	if (!strcmp(name, "debug")) {
+ 		if (fields == 2) {
+-			netdev = dev_get_by_name(&init_net, if_name);
+-			if (!netdev) {
+-				pr_err("%s: illegal interface <%s>\n", __func__, if_name);
+-				return -EINVAL;
+-			}
+-
+-			dev_priv = MV_PP3_PRIV(netdev);
+ 			pp3_dbg_dev_flags(netdev, MV_PP3_F_DBG_RX, a & 0x1);
+ 			pp3_dbg_dev_flags(netdev, MV_PP3_F_DBG_TX, a & 0x2);
+ 			pp3_dbg_dev_flags(netdev, MV_PP3_F_DBG_ISR, a & 0x4);
+@@ -154,11 +166,6 @@ static ssize_t pp3_dev_debug_store(struct device *dev,
+ 		}
+ 	} else if (!strcmp(name, "mac_show")) {
+ 		if (fields == 1) {
+-			netdev = dev_get_by_name(&init_net, if_name);
+-			if (!netdev) {
+-				pr_err("%s: illegal interface <%s>\n", __func__, if_name);
+-				return -EINVAL;
+-			}
+ 			pp3_dbg_dev_mac_show(netdev);
+ 			dev_put(netdev);
+ 			err = 0;
+@@ -167,11 +174,6 @@ static ssize_t pp3_dev_debug_store(struct device *dev,
+ 		if (fields == 5) {
+ 			struct mv_nss_meter meter;
+ 
+-			netdev = dev_get_by_name(&init_net, if_name);
+-			if (!netdev) {
+-				pr_err("%s: illegal interface <%s>\n", __func__, if_name);
+-				return -EINVAL;
+-			}
+ 			meter.cir = a;
+ 			meter.eir = b;
+ 			meter.cbs = c;
+@@ -180,11 +182,6 @@ static ssize_t pp3_dev_debug_store(struct device *dev,
+ 			err = mv_pp3_dev_egress_vport_shaper_set(netdev, &meter);
+ 			dev_put(netdev);
+ 		}
+-	} else if (!strcmp(name, "create")) {
+-		if (fields == 3) {
+-			if (mv_pp3_netdev_init(if_name, a, b) != NULL)
+-				err = 0;
+-		}
+ 	} else {
+ 		pr_err("%s: illegal operation <%s>\n", __func__, attr->attr.name);
+ 	}
+diff --git a/drivers/net/ethernet/marvell/pp3/net_dev/mv_dev_init_sysfs.c b/drivers/net/ethernet/marvell/pp3/net_dev/mv_dev_init_sysfs.c
+index 7adcb4d..7f9ba68 100644
+--- a/drivers/net/ethernet/marvell/pp3/net_dev/mv_dev_init_sysfs.c
++++ b/drivers/net/ethernet/marvell/pp3/net_dev/mv_dev_init_sysfs.c
+@@ -88,8 +88,11 @@ static ssize_t pp3_dev_init_netdev_store(struct device *dev,
+ 
+ 	if (strcmp(if_name, "nss")) {
+ 		netdev = dev_get_by_name(&init_net, if_name);
+-		if (!netdev) {
+-			pr_err("%s: illegal interface <%s>\n", __func__, if_name);
++		if (!mv_pp3_dev_is_valid(netdev)) {
++			pr_err("%s in not pp3 device\n", if_name);
++			if (netdev)
++				dev_put(netdev);
++
+ 			return -EINVAL;
+ 		}
+ 	}
+diff --git a/drivers/net/ethernet/marvell/pp3/net_dev/mv_dev_sysfs.c b/drivers/net/ethernet/marvell/pp3/net_dev/mv_dev_sysfs.c
+index b9f5605..ed20b39 100644
+--- a/drivers/net/ethernet/marvell/pp3/net_dev/mv_dev_sysfs.c
++++ b/drivers/net/ethernet/marvell/pp3/net_dev/mv_dev_sysfs.c
+@@ -77,10 +77,6 @@ static ssize_t pp3_dev_show(struct device *dev,
+ 		off = pp3_dev_help(buf);
+ 	else if (!strcmp(name, "sys_conf"))
+ 		pp3_dbg_dev_resources_dump();
+-/*
+-	else if (!strcmp(name, "cpu_status"))
+-		pp3_dbg_cpu_status_print();
+-*/
+ 	else {
+ 		err = 1;
+ 		pr_err("%s: illegal operation <%s>\n", __func__, attr->attr.name);
+@@ -98,7 +94,6 @@ static ssize_t pp3_dev_store(struct device *dev,
+ 	unsigned long   flags;
+ 	char		if_name[10];
+ 	struct net_device *netdev;
+-	struct	pp3_dev_priv *dev_priv;
+ 
+ 	if (!capable(CAP_NET_ADMIN))
+ 		return -EPERM;
+@@ -108,16 +103,14 @@ static ssize_t pp3_dev_store(struct device *dev,
+ 
+ 	sscanf(buf, "%s %d %d", if_name, &b, &c);
+ 
+-
+ 	netdev = dev_get_by_name(&init_net, if_name);
+-
+-	if (!netdev) {
+-		pr_err("%s: illegal interface <%s>\n", __func__, if_name);
++	if (!mv_pp3_dev_is_valid(netdev)) {
++		pr_err("%s in not pp3 device\n", if_name);
++		if (netdev)
++			dev_put(netdev);
+ 		return -EINVAL;
+ 	}
+ 
+-	dev_priv = MV_PP3_PRIV(netdev);
+-
+ 	local_irq_save(flags);
+ 
+ 	if (!strcmp(name, "status")) {
+diff --git a/drivers/net/ethernet/marvell/pp3/net_dev/mv_dev_vq_sysfs.c b/drivers/net/ethernet/marvell/pp3/net_dev/mv_dev_vq_sysfs.c
+index 02b5a11..fe78fdc 100644
+--- a/drivers/net/ethernet/marvell/pp3/net_dev/mv_dev_vq_sysfs.c
++++ b/drivers/net/ethernet/marvell/pp3/net_dev/mv_dev_vq_sysfs.c
+@@ -92,7 +92,6 @@ static ssize_t pp3_dev_vq_store(struct device *dev,
+ 	unsigned long   flags;
+ 	char		if_name[10];
+ 	struct net_device *netdev;
+-	struct	pp3_dev_priv *dev_priv;
+ 
+ 	if (!capable(CAP_NET_ADMIN))
+ 		return -EPERM;
+@@ -106,14 +105,13 @@ static ssize_t pp3_dev_vq_store(struct device *dev,
+ 	}
+ 
+ 	netdev = dev_get_by_name(&init_net, if_name);
+-
+-	if (!netdev) {
+-		pr_err("%s: illegal interface <%s>\n", __func__, if_name);
++	if (!mv_pp3_dev_is_valid(netdev)) {
++		pr_err("%s in not pp3 device\n", if_name);
++		if (netdev)
++			dev_put(netdev);
+ 		return -EINVAL;
+ 	}
+ 
+-	dev_priv = MV_PP3_PRIV(netdev);
+-
+ 	local_irq_save(flags);
+ 
+ 	if (!strcmp(name, "rx_vq_show")) {
+diff --git a/drivers/net/ethernet/marvell/pp3/net_dev/mv_netdev.c b/drivers/net/ethernet/marvell/pp3/net_dev/mv_netdev.c
+index 02530e8..dcf32e4 100644
+--- a/drivers/net/ethernet/marvell/pp3/net_dev/mv_netdev.c
++++ b/drivers/net/ethernet/marvell/pp3/net_dev/mv_netdev.c
+@@ -120,8 +120,6 @@ int mv_pp3_ctrl_internal_debug_set(int en)
+ static int pp3_ports_num;
+ static struct pp3_dev_priv **pp3_netdev;
+ static int pp3_netdev_next;
+-/* sysfs related */
+-static struct platform_device *pp3_sysfs;
+ 
+ /* ISR related */
+ static bool mv_pp3_run_hmac_interrupts;
+@@ -217,14 +215,51 @@ struct net_device *mv_pp3_vport_dev_get(int vport)
+ {
+ 	int i;
+ 
+-	for (i = 0; i < pp3_netdev_next; i++)
+-
++	for (i = 0; i < pp3_netdev_next; i++) {
+ 		if (pp3_netdev[i] && pp3_netdev[i]->vport &&
+-			(pp3_netdev[i]->vport->vport == vport))
+-				return pp3_netdev[i]->dev;
++		    (pp3_netdev[i]->vport->vport == vport))
++			return pp3_netdev[i]->dev;
++	}
+ 	return NULL;
+ }
+ 
++bool mv_pp3_dev_is_valid(struct net_device *dev)
++{
++	int i;
++
++	if (!dev)
++		return false;
++
++	for (i = 0; i < pp3_netdev_next; i++) {
++		if (pp3_netdev[i] == MV_PP3_PRIV(dev))
++			return true;
++	}
++	return false;
++}
++
++struct pp3_dev_priv *mv_pp3_dev_priv_exist_get(struct net_device *dev)
++{
++	if (mv_pp3_dev_is_valid(dev))
++		return MV_PP3_PRIV(dev);
++
++	pr_err("%s in not pp3 device\n", dev->name);
++	return NULL;
++}
++
++struct pp3_dev_priv *mv_pp3_dev_priv_ready_get(struct net_device *dev)
++{
++	struct pp3_dev_priv *dev_priv = mv_pp3_dev_priv_exist_get(dev);
++
++	if (!dev_priv)
++		return NULL;
++
++	if (!(dev_priv->flags & MV_PP3_F_INIT)) {
++		pr_err("%s in not initialized yet\n", dev->name);
++		return NULL;
++	}
++	return dev_priv;
++}
++
+ static inline struct pp3_dev_priv *mv_pp3_emac_dev_priv_get(int emac_num)
+ {
+ 	struct pp3_dev_priv *p;
+diff --git a/drivers/net/ethernet/marvell/pp3/net_dev/mv_netdev.h b/drivers/net/ethernet/marvell/pp3/net_dev/mv_netdev.h
+index 4a22644..84d22ce 100644
+--- a/drivers/net/ethernet/marvell/pp3/net_dev/mv_netdev.h
++++ b/drivers/net/ethernet/marvell/pp3/net_dev/mv_netdev.h
+@@ -103,6 +103,9 @@ int mv_pp3_dev_rx_cpus_set(struct net_device *dev, int cpus_mask);
+ int mv_pp3_dev_cpu_inuse(struct net_device *dev, int cpu);
+ void mv_pp3_dev_rx_pause(struct net_device *dev, int cos);
+ void mv_pp3_dev_rx_resume(struct net_device *dev, int cos);
++bool mv_pp3_dev_is_valid(struct net_device *dev);
++struct pp3_dev_priv *mv_pp3_dev_priv_exist_get(struct net_device *dev);
++struct pp3_dev_priv *mv_pp3_dev_priv_ready_get(struct net_device *dev);
+ 
+ #ifdef CONFIG_MV_PP3_SKB_RECYCLE
+ int mv_pp3_ctrl_nic_skb_recycle(int en);
+-- 
+2.7.4
+

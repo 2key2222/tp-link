@@ -1,0 +1,54 @@
+From ded6defafb6de6a90b63227e362f78edda2904be Mon Sep 17 00:00:00 2001
+From: Yehuda Yitschak <yehuday@marvell.com>
+Date: Thu, 14 Apr 2016 14:21:26 +0300
+Subject: [PATCH 0350/2241] smmu: workaround 64-bit register access limitation
+
+The SMMU driver assumes 64-bit systems are capable of
+accessing register of 64-bit size (i.e 8 byte long registers)
+This is not true for Armada7k/8k.
+
+This patch introduces a new CONFIG value to differentiate
+between 64-bit system and 64-bit register access. The
+SMMU driver uses this CONFIG to fallback to 32-bit accesses
+
+Change-Id: I2f83a1c1b48d18f12080db9a89d8730292bea34a
+Signed-off-by: Yehuda Yitschak <yehuday@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/29047
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ arch/arm64/Kconfig       | 3 +++
+ drivers/iommu/arm-smmu.c | 3 +--
+ 2 files changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
+index 14cdc6d..e4e57a3 100644
+--- a/arch/arm64/Kconfig
++++ b/arch/arm64/Kconfig
+@@ -98,6 +98,9 @@ config ARM64
+ config 64BIT
+ 	def_bool y
+ 
++config MMIO_64BIT
++	def_bool n
++
+ config ARCH_PHYS_ADDR_T_64BIT
+ 	def_bool y
+ 
+diff --git a/drivers/iommu/arm-smmu.c b/drivers/iommu/arm-smmu.c
+index 47dc7a7..04bf77b 100644
+--- a/drivers/iommu/arm-smmu.c
++++ b/drivers/iommu/arm-smmu.c
+@@ -69,8 +69,7 @@
+ 	((smmu)->base +							\
+ 		((smmu->options & ARM_SMMU_OPT_SECURE_CFG_ACCESS)	\
+ 			? 0x400 : 0))
+-
+-#ifdef CONFIG_64BIT
++#ifdef CONFIG_MMIO_64BIT
+ #define smmu_writeq	writeq_relaxed
+ #else
+ #define smmu_writeq(reg64, addr)				\
+-- 
+2.7.4
+

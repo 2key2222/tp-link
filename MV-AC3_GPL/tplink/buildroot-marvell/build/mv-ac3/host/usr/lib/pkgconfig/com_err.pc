@@ -1,0 +1,12 @@
+prefix=/project/trunk/MV-AC3_GPL/tplink/buildroot-marvell/build/mv-ac3/host/usr
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: com_err
+Description: Common error description library
+Version: 1.42.13
+Requires:
+Cflags: -I${includedir}/et -I${includedir}
+Libs: -L${libdir} -lcom_err
+Libs.private: -lpthread

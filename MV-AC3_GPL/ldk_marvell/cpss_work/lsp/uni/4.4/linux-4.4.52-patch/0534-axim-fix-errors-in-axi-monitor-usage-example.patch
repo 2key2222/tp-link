@@ -1,0 +1,45 @@
+From 2486bbad613d2fa5d3271b1134ea070b83c0cae4 Mon Sep 17 00:00:00 2001
+From: Yehuda Yitschak <yehuday@marvell.com>
+Date: Sun, 26 Jun 2016 14:20:41 +0300
+Subject: [PATCH 0534/2241] axim: fix errors in axi monitor usage example
+
+Change-Id: Ic0e7db38baf9f56cd94ad7705e4a3f3cebe88286
+Signed-off-by: Yehuda Yitschak <yehuday@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/30720
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ Documentation/trace/axi-monitor.txt | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/Documentation/trace/axi-monitor.txt b/Documentation/trace/axi-monitor.txt
+index a891ef9..dbb5750 100644
+--- a/Documentation/trace/axi-monitor.txt
++++ b/Documentation/trace/axi-monitor.txt
+@@ -79,9 +79,9 @@ For example to detect transaction between physical address 0x0 and 0x1000
+     root:/# echo 0x1 > sys/bus/coresight/devices/f0840000.axim/channel/mon_enable
+ 
+     /* read the channel counter */
+-    root:/# echo 0x1 > sys/bus/coresight/devices/f0840000.axim/channel/counter
++    root:/# cat sys/bus/coresight/devices/f0840000.axim/channel/counter
+     /* or read all channel counter */
+-    root:/# echo 0x1 > sys/bus/coresight/devices/f0840000.axim/counters
++    root:/# cat sys/bus/coresight/devices/f0840000.axim/counters
+ 
+ Another example is detecting all non secure shareable device accesses:
+ 
+@@ -99,9 +99,9 @@ Another example is detecting all non secure shareable device accesses:
+     root:/# echo 0x1 > sys/bus/coresight/devices/f0850000.axim/channel/mon_enable
+ 
+     /* read the channel counter */
+-    root:/# echo 0x1 > sys/bus/coresight/devices/f0850000.axim/channel/counter
++    root:/# cat sys/bus/coresight/devices/f0850000.axim/channel/counter
+     /* or read all channel counter */
+-    root:/# echo 0x1 > sys/bus/coresight/devices/f0850000.axim/counters
++    root:/# cat sys/bus/coresight/devices/f0850000.axim/counters
+ 
+ The specific sysfs files and their functions are documented under:
+ Documentation/ABI/testing/sysfs-bus-coresight-devices-axim
+-- 
+2.7.4
+

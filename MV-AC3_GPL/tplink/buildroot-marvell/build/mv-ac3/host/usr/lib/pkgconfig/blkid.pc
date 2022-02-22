@@ -1,0 +1,11 @@
+prefix=/project/trunk/MV-AC3_GPL/tplink/buildroot-marvell/build/mv-ac3/host/usr
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: blkid
+Description: Block device id library
+Version: 1.42.13
+Requires.private: uuid
+Cflags: -I${includedir}/blkid -I${includedir}
+Libs: -L${libdir} -lblkid

@@ -1,0 +1,35 @@
+From 0b24e43d9b890a48d3f6329196c7a468385ddd01 Mon Sep 17 00:00:00 2001
+From: Igal Liberman <igall@marvell.com>
+Date: Wed, 1 Feb 2017 11:22:01 +0200
+Subject: [PATCH 1352/2241] [1/2]: arm64: configs: disable Marvell SoC
+ information driver
+
+The SoC information driver was used to distinguish between
+A8040/7040 A0 and A1. A0 is no longer supported, so the
+driver can be disabled.
+
+Change-Id: Iea53570b6be7f87bb50c921c4c00e5f3299b1bd3
+Signed-off-by: Igal Liberman <igall@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/36314
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/misc/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
+index ab34a6c..55cf70a 100644
+--- a/drivers/misc/Kconfig
++++ b/drivers/misc/Kconfig
+@@ -537,7 +537,7 @@ config MVEBU_A8K_DEBUGFS
+ config MVEBU_SOC_INFO
+ 	bool "Marvell Aramda-8K AP806 SoC information driver"
+ 	depends on ARCH_MVEBU
+-	default y
++	default n
+ 	help
+ 	  Marvell AP806 SoC information driver for AP806
+ 
+-- 
+2.7.4
+

@@ -1,0 +1,545 @@
+From 3db12ac828f07b23086628a04308562ab53ddb5e Mon Sep 17 00:00:00 2001
+From: Yehuda Yitschak <yehuday@marvell.com>
+Date: Wed, 17 May 2017 08:26:48 +0300
+Subject: [PATCH 1994/2241] a8k: pci-ep: Add a driver for DW PCI-EP
+
+This is a temporary driver that will be replaced by a proper
+PCI end-point stack that will be supported in linux-4.12
+
+Change-Id: I6784ec61b2f68d03942b94041aad5fb693eb7ddd
+Signed-off-by: Yehuda Yitschak <yehuday@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/43625
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+---
+ .../devicetree/bindings/pci/armada8k-pcie-ep.txt   |  19 ++
+ drivers/pci/Kconfig                                |   1 +
+ drivers/pci/Makefile                               |   1 +
+ drivers/pci/ep/Kconfig                             |  12 +
+ drivers/pci/ep/Makefile                            |   2 +
+ drivers/pci/ep/pcie-a8k-dw-ep.c                    | 377 +++++++++++++++++++++
+ include/linux/pcie-ep.h                            |  56 +++
+ 7 files changed, 468 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/pci/armada8k-pcie-ep.txt
+ create mode 100644 drivers/pci/ep/Kconfig
+ create mode 100644 drivers/pci/ep/Makefile
+ create mode 100644 drivers/pci/ep/pcie-a8k-dw-ep.c
+ create mode 100644 include/linux/pcie-ep.h
+
+diff --git a/Documentation/devicetree/bindings/pci/armada8k-pcie-ep.txt b/Documentation/devicetree/bindings/pci/armada8k-pcie-ep.txt
+new file mode 100644
+index 0000000..9920de2
+--- /dev/null
++++ b/Documentation/devicetree/bindings/pci/armada8k-pcie-ep.txt
+@@ -0,0 +1,19 @@
++Armada-8K PCIe End-point DT details:
++====================================
++
++Armada-8k uses synopsis designware PCIe controller.
++
++Required properties:
++- compatible : should be "marvell,armada8k-pcie-ep", "snps,dw-pcie".
++- reg: base addresses and lengths of the pcie core, link management and shadow registers.
++- All other definitions as per generic PCI bindings
++See "Documentation/devicetree/bindings/pci/designware-pcie.txt"
++
++Example of PCIE EP X1:
++pcie-ep@0x600000 {
++	compatible = "marvell,armada8k-pcie-ep", "snps,dw-pcie";
++	reg = <0 0xf2600000 0 0x4000>, <0 0xf2608000 0 0x80000>, <0 0xf2604000 0 0x1000>;
++	reg-names = "core", "lm", "shadow_core";
++	clocks = <&cpm_syscon0 1 13>;
++	status = "disabled";
++};
+diff --git a/drivers/pci/Kconfig b/drivers/pci/Kconfig
+index 73de4ef..63df58b 100644
+--- a/drivers/pci/Kconfig
++++ b/drivers/pci/Kconfig
+@@ -119,3 +119,4 @@ config PCI_LABEL
+ 	select NLS
+ 
+ source "drivers/pci/host/Kconfig"
++source "drivers/pci/ep/Kconfig"
+diff --git a/drivers/pci/Makefile b/drivers/pci/Makefile
+index be3f631..37cf356 100644
+--- a/drivers/pci/Makefile
++++ b/drivers/pci/Makefile
+@@ -62,3 +62,4 @@ ccflags-$(CONFIG_PCI_DEBUG) := -DDEBUG
+ 
+ # PCI host controller drivers
+ obj-y += host/
++obj-y += ep/
+diff --git a/drivers/pci/ep/Kconfig b/drivers/pci/ep/Kconfig
+new file mode 100644
+index 0000000..71d9f13
+--- /dev/null
++++ b/drivers/pci/ep/Kconfig
+@@ -0,0 +1,12 @@
++menu "PCI End-point controller drivers"
++	depends on PCI
++
++config PCIE_A8K_DW_EP
++	bool "Armada-8K DesignWare PCI End-point driver "
++	depends on OF && HAS_IOMEM
++	help
++	 Enables support for the Armada-8k DesignWare PCIe end-point controller.
++	 The driver enables to configure the end-point BARs and respective
++	 address space.
++
++endmenu
+diff --git a/drivers/pci/ep/Makefile b/drivers/pci/ep/Makefile
+new file mode 100644
+index 0000000..1fbc630
+--- /dev/null
++++ b/drivers/pci/ep/Makefile
+@@ -0,0 +1,2 @@
++obj-$(CONFIG_PCIE_A8K_DW_EP) += pcie-a8k-dw-ep.o
++
+diff --git a/drivers/pci/ep/pcie-a8k-dw-ep.c b/drivers/pci/ep/pcie-a8k-dw-ep.c
+new file mode 100644
+index 0000000..60fd82f
+--- /dev/null
++++ b/drivers/pci/ep/pcie-a8k-dw-ep.c
+@@ -0,0 +1,377 @@
++/*
++ * PCIe end point controller driver for Marvell Armada-8K
++ *
++ * Armada-8k PCIe Glue Layer Source Code
++ *
++ * Based on Armada-SP2 PCIe end-point driver
++ *
++ * This file is licensed under the terms of the GNU General Public
++ * License version 2. This program is licensed "as is" without any
++ * warranty of any kind, whether express or implied.
++ */
++#define MODULE_NAME "armada-a8k-pcie-ep"
++
++#include <linux/clk.h>
++#include <linux/delay.h>
++#include <linux/interrupt.h>
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/of.h>
++#include <linux/pci.h>
++#include <linux/phy/phy.h>
++#include <linux/platform_device.h>
++#include <linux/of_platform.h>
++#include <linux/resource.h>
++#include <linux/of_pci.h>
++#include <linux/of_irq.h>
++#include <linux/pcie-ep.h>
++#include <uapi/linux/pci_regs.h>
++#include <linux/memory.h>
++
++#define PCIE_GLOBAL_CTRL		0x0
++#define  PCIE_GLOBAL_CTRL_CRS_EN	(1 << 9)
++#define  PCIE_GLOBAL_CTRL_TYPE_OFF	4
++#define  PCIE_GLOBAL_CTRL_TYPE_MASK	0xF
++#define  PCIE_GLOBAL_CTRL_TYPE_RC	(0x4)
++
++#define PCIE_ATU_VIEWPORT		0x900
++#define  PCIE_ATU_REGION_INBOUND	(0x1 << 31)
++#define  PCIE_ATU_REGION_OUTBOUND	(0x0 << 31)
++#define  PCIE_ATU_REGION_INDEX1		(0x1 << 0)
++#define  PCIE_ATU_REGION_INDEX0		(0x0 << 0)
++#define PCIE_ATU_CR1			0x904
++#define  PCIE_ATU_CR1_FUNC_OFF		20
++#define  PCIE_ATU_CR1_FUNC_MASK		0x1F
++#define PCIE_ATU_TYPE_MEM		(0x0 << 0)
++#define PCIE_ATU_TYPE_IO		(0x2 << 0)
++#define PCIE_ATU_TYPE_CFG0		(0x4 << 0)
++#define PCIE_ATU_TYPE_CFG1		(0x5 << 0)
++#define PCIE_ATU_CR2			0x908
++#define  PCIE_ATU_CR2_REGION_EN		(0x1 << 31)
++#define  PCIE_ATU_CR2_BAR_EN		(0x1 << 30)
++#define  PCIE_ATU_CR2_FUNC_EN		(0x1 << 19)
++#define  PCIE_ATU_CR2_BAR_OFF		8
++#define PCIE_ATU_LOWER_BASE		0x90C
++#define PCIE_ATU_UPPER_BASE		0x910
++#define PCIE_ATU_LIMIT			0x914
++#define PCIE_ATU_LOWER_TARGET		0x918
++#define PCIE_ATU_BUS(x)			(((x) & 0xff) << 24)
++#define PCIE_ATU_DEV(x)			(((x) & 0x1f) << 19)
++#define PCIE_ATU_FUNC(x)		(((x) & 0x7) << 16)
++#define PCIE_ATU_UPPER_TARGET		0x91C
++
++#define PCIE_CAP_MSI_OFFSET		0x50
++#define PCIE_MSI_MSG_CTL		0x2
++#define PCIE_MSI_MSG_ADDR_L		0x4
++#define PCIE_MSI_MSG_ADDR_H		0x8
++#define PCI_MSI_FLAGS_QSIZE_OFF		4
++#define PCIE_MSI_MSG_DATA(is_64)	(is_64 ? 0xC : 0x8)
++
++#define MAX_ATU_REGIONS	16
++#define MAX_ATU_SIZE	(4ul * SZ_1G)
++
++#define  BAR_ENABLE_OFFSET	0
++#define  BAR_ENABLE_MASK		(1 << BAR_ENABLE_OFFSET)
++
++struct a8k_pcie_ep {
++	void __iomem	*regs;
++	void __iomem	*shadow_regs;
++	void __iomem	*lm_regs;
++	void __iomem	*pl_regs;	/*port logical register only PF0*/
++	struct device	*dev;
++	struct clk	*clk;
++};
++
++#define cfg_space_addr(func_id)   (0x1000 * (func_id))
++
++#define cfg_func_base(ep, func_id, off)		\
++	((ep)->regs + cfg_space_addr(func_id) + (off))
++
++#define cfg_shadow_func_base(ep, func_id, off)		\
++	((ep)->shadow_regs + cfg_space_addr(func_id) + (off))
++
++
++#define get_out_region_idx(func_id, id)  (func_id + id)
++#define get_in_region_idx(func_id, bar)  (func_id + bar)
++
++struct a8k_pcie_ep *a8k_ep;
++
++void a8k_pcie_ep_setup_bar(void *ep_hdl, int func_id, u32 bar_num, u32 props, u64 sz)
++{
++	struct a8k_pcie_ep *ep = (struct a8k_pcie_ep *)ep_hdl;
++	u32 space_type = props & PCI_BASE_ADDRESS_SPACE;
++	u32 sz_type	= (props & PCI_BASE_ADDRESS_MEM_TYPE_MASK);
++	u32 v = 0;
++	void __iomem *bar = cfg_func_base(ep, func_id,
++				PCI_BASE_ADDRESS_0 + (bar_num * 4));
++	void __iomem *bar_mask = cfg_shadow_func_base(ep, func_id,
++				PCI_BASE_ADDRESS_0 + (bar_num * 4));
++
++	if (space_type == PCI_BASE_ADDRESS_SPACE_IO) {
++		v = props & (~PCI_BASE_ADDRESS_IO_MASK);
++		writel_relaxed(v, bar);
++	} else {
++		/* clear the top 32 bits of the size */
++		if (sz_type == PCI_BASE_ADDRESS_MEM_TYPE_64) {
++			writel_relaxed((sz - 1) >> 32, bar_mask + 4);
++			writel_relaxed(0, bar + 4);
++		}
++		v = props & (~PCI_BASE_ADDRESS_MEM_MASK);
++		writel_relaxed(v, bar);
++	}
++
++	/* Set size and enable bar */
++	v = ((sz - 1) & U32_MAX) | BAR_ENABLE_MASK;
++	writel_relaxed(v, bar_mask);
++}
++EXPORT_SYMBOL(a8k_pcie_ep_setup_bar);
++
++void a8k_pcie_ep_disable_bars(void *ep_hdl, int func_id, u16 mask)
++{
++	struct a8k_pcie_ep *ep = (struct a8k_pcie_ep *)ep_hdl;
++	void __iomem *bar_mask = cfg_shadow_func_base(ep, func_id, PCI_BASE_ADDRESS_0);
++	int bar;
++
++	mask &= PCIE_EP_ALL_BARS;
++	for (bar = 0; mask; mask >>= 1, bar++) {
++		if (mask & 1)
++			writel_relaxed(0, bar_mask + bar * 4);
++	}
++}
++EXPORT_SYMBOL(a8k_pcie_ep_disable_bars);
++
++int a8k_pcie_ep_get_msi(void *ep_hdl, int func_id, int vec_id, struct msi_msg *msg)
++{
++	struct a8k_pcie_ep *ep = (struct a8k_pcie_ep *)ep_hdl;
++	void __iomem  *p = cfg_func_base(ep, func_id, PCIE_CAP_MSI_OFFSET);
++	u16 flags, vec_cnt;
++
++	/* check if MSI is enabled and there are enough vectors
++	 * QSIZE field indicates log2 of the amount of MSI vectors
++	 */
++	flags = readw(p + PCI_MSI_FLAGS);
++	vec_cnt = 1 << ((flags & PCI_MSI_FLAGS_QSIZE) >> PCI_MSI_FLAGS_QSIZE_OFF);
++	if (!(flags & PCI_MSI_FLAGS_ENABLE) || (vec_id > vec_cnt))
++		return -EINVAL;
++
++	msg->address_lo = readl(p + PCI_MSI_ADDRESS_LO);
++	if (flags & PCI_MSI_FLAGS_64BIT) {
++		msg->address_hi = readl(p + PCI_MSI_ADDRESS_HI);
++		msg->data = readl(p + PCI_MSI_DATA_64) + vec_id;
++	} else {
++		msg->address_hi = 0;
++		msg->data = readl(p + PCI_MSI_DATA_32) + vec_id;
++	}
++
++	return 0;
++}
++EXPORT_SYMBOL(a8k_pcie_ep_get_msi);
++
++void a8k_pcie_ep_cfg_enable(void *ep_hdl, int func_id)
++{
++	struct a8k_pcie_ep *ep = (struct a8k_pcie_ep *)ep_hdl;
++	u32 v;
++
++	v = readl_relaxed(ep->lm_regs + PCIE_GLOBAL_CTRL);
++	v &= ~PCIE_GLOBAL_CTRL_CRS_EN;
++	writel_relaxed(v, ep->lm_regs + PCIE_GLOBAL_CTRL);
++}
++EXPORT_SYMBOL(a8k_pcie_ep_cfg_enable);
++
++/*
++ * Remap the host memory space to the local memory space.
++ * By default the memory spaces conflict so we must offset the
++ * host memory space in our local memory space
++ */
++int a8k_pcie_ep_remap_host(void *ep_hdl, u32 func_id, u64 local_base, u64 host_base, u64 size)
++{
++	struct a8k_pcie_ep *ep = (struct a8k_pcie_ep *)ep_hdl;
++	void __iomem *pl_regs = ep->pl_regs;
++	u32   v, region = 0;
++	int remain_size = size;
++
++	/* ATU window size must be power of 2 */
++	if (!is_power_of_2(size))
++		return -EINVAL;
++
++	while (remain_size > 0) {
++		if (region > MAX_ATU_REGIONS) {
++			dev_err(ep->dev, "Error: Insufficient ATU regions to map hosts\n");
++			return -1;
++		}
++
++		v = PCIE_ATU_REGION_OUTBOUND | get_out_region_idx(func_id, region);
++		writel_relaxed(v, pl_regs + PCIE_ATU_VIEWPORT);
++
++		writel_relaxed(local_base & U32_MAX, pl_regs + PCIE_ATU_LOWER_BASE);
++		writel_relaxed(local_base >> 32, pl_regs + PCIE_ATU_UPPER_BASE);
++		writel_relaxed(host_base & U32_MAX, pl_regs + PCIE_ATU_LOWER_TARGET);
++		writel_relaxed(host_base >> 32, pl_regs + PCIE_ATU_UPPER_TARGET);
++
++		v = (remain_size > MAX_ATU_SIZE ? MAX_ATU_SIZE - 1 : remain_size - 1);
++		writel_relaxed(v, pl_regs + PCIE_ATU_LIMIT);
++
++		v = (func_id & PCIE_ATU_CR1_FUNC_MASK) << PCIE_ATU_CR1_FUNC_OFF;
++		writel_relaxed(v, pl_regs + PCIE_ATU_CR1);
++
++		v = PCIE_ATU_CR2_REGION_EN;
++		writel_relaxed(v, pl_regs + PCIE_ATU_CR2);
++
++		region++;
++		local_base += MAX_ATU_SIZE;
++		host_base += MAX_ATU_SIZE;
++		remain_size -= MAX_ATU_SIZE;
++	}
++
++	return 0;
++}
++EXPORT_SYMBOL(a8k_pcie_ep_remap_host);
++
++/* setup the internal target for the BAR. When the PCIe host accesses the bar it will
++ * reach the space defined by "addr" and "size"
++ */
++void a8k_pcie_ep_bar_map(void *ep_hdl, u32 func_id, int bar, phys_addr_t addr, u64 size)
++{
++	struct a8k_pcie_ep *ep = (struct a8k_pcie_ep *)ep_hdl;
++	void __iomem *pl_regs = ep->pl_regs;
++	u32   region_indx = get_in_region_idx(func_id, bar);
++	u32   v;
++
++	v = PCIE_ATU_REGION_INBOUND | region_indx;
++	writel_relaxed(v, pl_regs + PCIE_ATU_VIEWPORT);
++
++	addr = addr & ~(size - 1);
++	v = lower_32_bits(addr);
++	writel_relaxed(v, pl_regs + PCIE_ATU_LOWER_TARGET);
++
++	v = upper_32_bits(addr);
++	writel_relaxed(v, pl_regs + PCIE_ATU_UPPER_TARGET);
++
++	v = (func_id & PCIE_ATU_CR1_FUNC_MASK) << PCIE_ATU_CR1_FUNC_OFF;
++	writel_relaxed(v, pl_regs + PCIE_ATU_CR1);
++
++	v = PCIE_ATU_CR2_REGION_EN |
++	    PCIE_ATU_CR2_BAR_EN |
++	    (bar << PCIE_ATU_CR2_BAR_OFF);
++	writel_relaxed(v, pl_regs + PCIE_ATU_CR2);
++}
++EXPORT_SYMBOL(a8k_pcie_ep_bar_map);
++
++/* setup the PCIe configuration header */
++void a8k_pcie_ep_write_header(void *ep_hdl, int func_id, struct pci_epf_header *hdr)
++{
++	struct a8k_pcie_ep *ep = (struct a8k_pcie_ep *)ep_hdl;
++	void __iomem *cfg_addr = cfg_func_base(ep, func_id, 0);
++	u32 v;
++
++	writew_relaxed(hdr->vendor_id, cfg_addr + PCI_VENDOR_ID);
++	writew_relaxed(hdr->device_id, cfg_addr + PCI_DEVICE_ID);
++
++	writeb_relaxed(hdr->rev_id,  cfg_addr + PCI_REVISION_ID);
++	writeb_relaxed(hdr->progif_code,  cfg_addr + PCI_CLASS_PROG);
++	writew_relaxed((hdr->baseclass_code << 8) | hdr->subclass_code,  cfg_addr + PCI_CLASS_DEVICE);
++
++	writew_relaxed(hdr->subsys_id,  cfg_addr + PCI_SUBSYSTEM_ID);
++	writew_relaxed(hdr->subsys_vendor_id,  cfg_addr + PCI_SUBSYSTEM_VENDOR_ID);
++
++	v = readw_relaxed(cfg_addr + PCI_COMMAND);
++	if (hdr->io_en)
++		v |= PCI_COMMAND_IO;
++	if (hdr->mem_en)
++		v |= PCI_COMMAND_MEMORY;
++	writew_relaxed(v, cfg_addr + PCI_COMMAND);
++}
++EXPORT_SYMBOL(a8k_pcie_ep_write_header);
++
++void *a8k_pcie_ep_get(void)
++{
++	return (void *)a8k_ep;
++}
++EXPORT_SYMBOL(a8k_pcie_ep_get);
++
++static int a8k_pcie_ep_probe(struct platform_device *pdev)
++{
++	struct a8k_pcie_ep *ep;
++	struct device *dev = &pdev->dev;
++	struct resource *base;
++	void __iomem *p;
++	int ret = 0;
++
++	ep = devm_kzalloc(dev, sizeof(*ep), GFP_KERNEL);
++	if (!ep)
++		return -ENOMEM;
++
++	ep->clk = devm_clk_get(dev, NULL);
++	if (PTR_ERR(ep->clk) == -EPROBE_DEFER)
++		return -EPROBE_DEFER;
++
++	if (IS_ERR(ep->clk)) {
++		dev_err(dev, "can't find clock node\n");
++		return -ENODEV;
++	}
++
++	ret = clk_prepare_enable(ep->clk);
++	if (ret) {
++		dev_err(dev, "couldn't enable clock\n");
++		return ret;
++	}
++
++	ep->dev = dev;
++	platform_set_drvdata(pdev, ep);
++
++	/* Get registers bases and remap */
++	base = platform_get_resource_byname(pdev, IORESOURCE_MEM, "lm");
++	p = devm_ioremap_resource(dev, base);
++	if (IS_ERR(p)) {
++		dev_err(dev, "couldn't remap lm regs base %pR\n", base);
++		return PTR_ERR(p);
++	}
++	ep->lm_regs = p;
++
++	base = platform_get_resource_byname(pdev, IORESOURCE_MEM, "core");
++	p = devm_ioremap_resource(dev, base);
++	if (IS_ERR(p)) {
++		dev_err(dev, "couldn't remap core regs base %pR\n", base);
++		return PTR_ERR(p);
++	}
++	ep->regs = p;
++	ep->pl_regs = p;
++
++	base = platform_get_resource_byname(pdev, IORESOURCE_MEM, "shadow_core");
++	p = devm_ioremap_resource(dev, base);
++	if (IS_ERR(p)) {
++		dev_err(dev, "couldn't remap shadow regs base %pR\n", base);
++		return PTR_ERR(p);
++	}
++	ep->shadow_regs = p;
++
++	/* Disable Function 0. Set the vendor ID to 0xFFFFFFFF to avoid detection
++	 * until the EP is fully configured
++	 */
++	writel_relaxed(0xffffffff, cfg_func_base(ep, 0, PCI_VENDOR_ID));
++
++	a8k_ep = ep;
++
++	return 0;
++}
++
++static const struct of_device_id a8k_pcie_ep_of_match[] = {
++	{ .compatible = "marvell,armada8k-pcie-ep", },
++	{},
++};
++MODULE_DEVICE_TABLE(of, a8k_pcie_ep_of_match);
++
++static struct platform_driver a8k_pcie_ep_driver = {
++	.probe		= a8k_pcie_ep_probe,
++	.driver = {
++		.name	= "armada8k-pcie-ep",
++		.of_match_table = of_match_ptr(a8k_pcie_ep_of_match),
++	},
++};
++
++module_platform_driver(a8k_pcie_ep_driver);
++
++MODULE_DESCRIPTION("Armada 8K PCIe EP controller driver");
++MODULE_AUTHOR("Gang Chen <gangc@marvell.com>");
++MODULE_AUTHOR("Yehuda Yitshcak <yehuday@marvell.com>");
++
+diff --git a/include/linux/pcie-ep.h b/include/linux/pcie-ep.h
+new file mode 100644
+index 0000000..b1aa557
+--- /dev/null
++++ b/include/linux/pcie-ep.h
+@@ -0,0 +1,56 @@
++/*
++ * Armada 8K PCIe EP
++ * Copyright (c) 2016, Marvell Semiconductor.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ */
++#ifndef _PCIE_EP_
++#define _PCIE_EP_
++
++#include <linux/msi.h>
++
++struct pci_epf_header {
++	u16	vendor_id;
++	u16	device_id;
++	u16	subsys_vendor_id;
++	u16	subsys_id;
++	u8	rev_id;
++	u8	progif_code;
++	u8	subclass_code;
++	u8	baseclass_code;
++	u8	cache_line_size;
++	u8	io_en;
++	u8	mem_en;
++};
++
++
++/* BAR bitmaps for use with a8k_pcie_ep_disable_bars */
++#define PCIE_EP_BAR0		BIT(0)
++#define PCIE_EP_BAR1		BIT(1)
++#define PCIE_EP_BAR0_64		(PCIE_EP_BAR0 | PCIE_EP_BAR1)
++#define PCIE_EP_BAR2		BIT(2)
++#define PCIE_EP_BAR3		BIT(3)
++#define PCIE_EP_BAR2_64		(PCIE_EP_BAR3 | PCIE_EP_BAR2)
++#define PCIE_EP_BAR4		BIT(4)
++#define PCIE_EP_BAR5		BIT(5)
++#define PCIE_EP_BAR4_64		(PCIE_EP_BAR4 | PCIE_EP_BAR5)
++#define PCIE_EP_BAR_ROM		BIT(8) /* matches the offset, see pci.c */
++#define PCIE_EP_ALL_BARS	((BIT(9) - 1) & ~(BIT(6) || BIT(7)))
++
++void a8k_pcie_ep_bar_map(void *ep, u32 func_id, int bar, phys_addr_t addr, u64 size);
++void a8k_pcie_ep_setup_bar(void *ep, int func_id, u32 bar_num, u32 props, u64 sz);
++void a8k_pcie_ep_disable_bars(void *ep, int func_id, u16 mask);
++void a8k_pcie_ep_cfg_enable(void *ep, int func_id);
++int  a8k_pcie_ep_get_msi(void *ep, int func_id, int vec_id, struct msi_msg *msg);
++int  a8k_pcie_ep_remap_host(void *ep, u32 func_id, u64 local_base, u64 host_base, u64 size);
++void a8k_pcie_ep_write_header(void *ep, int func_id, struct pci_epf_header *hdr);
++void *a8k_pcie_ep_get(void);
++
++#endif
+-- 
+2.7.4
+

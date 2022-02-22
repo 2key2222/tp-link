@@ -1,0 +1,35 @@
+From d0d114322432c8649b3d558765e60389b273f74e Mon Sep 17 00:00:00 2001
+From: David Sniatkiwicz <davidsn@marvell.com>
+Date: Wed, 1 Nov 2017 17:28:20 +0200
+Subject: [PATCH 2063/2241] fix: dts: pcac: add comphy handles to sata node
+
+This patch adds comphy handle to SATA node, this allows to
+configure comphy into SATA mode in Linux Kernel
+(using the comphy driver - no need to rely on u-boot configuration).
+
+Change-Id: I65310f12ff227cf21c32f58fa45e25346e8cbe2d
+Signed-off-by: David Sniatkiwicz <davidsn@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/45771
+Reviewed-by: Igal Liberman <igall@marvell.com>
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-7040-pcac.dts | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-7040-pcac.dts b/arch/arm64/boot/dts/marvell/armada-7040-pcac.dts
+index feccefc..ffd7bda 100644
+--- a/arch/arm64/boot/dts/marvell/armada-7040-pcac.dts
++++ b/arch/arm64/boot/dts/marvell/armada-7040-pcac.dts
+@@ -101,6 +101,8 @@
+ 					status = "disabled";
+ 				};
+ 				sata-port@1 {
++					phys = <&cpm_comphy 5 COMPHY_SATA1>;
++					phy-names = "comphy";
+ 					status = "okay";
+ 				};
+ 			};
+-- 
+2.7.4
+

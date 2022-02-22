@@ -1,0 +1,103 @@
+From 70ce6346c23913c3272895ed5f7cb88eacbfd44f Mon Sep 17 00:00:00 2001
+From: Konstantin Porotchkin <kostap@marvell.com>
+Date: Thu, 11 Aug 2016 16:24:48 +0300
+Subject: [PATCH 0679/2241] mmc: a3700: add DTS and deconfig support for XENON
+ SDHC
+
+This patch also disables MMC_SPI, MMC_DW for compilation
+issue.
+
+Change-Id: I058cab8b83dcc22b9bda1a0c8f792ae220d5b56e
+Signed-off-by: Victor Gu <xigu@marvell.com>
+Signed-off-by: Konstantin Porotchkin <kostap@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/31899
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+Tested-by: Hanna Hawa <hannah@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-3720-db.dts | 21 +++++++++++++++++++++
+ arch/arm64/boot/dts/marvell/armada-37xx.dtsi   | 20 ++++++++++++++++++++
+ arch/arm64/configs/mvebu_v8_lsp_defconfig      |  4 +---
+ 3 files changed, 42 insertions(+), 3 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-3720-db.dts b/arch/arm64/boot/dts/marvell/armada-3720-db.dts
+index 2abba39..cb7378b 100644
+--- a/arch/arm64/boot/dts/marvell/armada-3720-db.dts
++++ b/arch/arm64/boot/dts/marvell/armada-3720-db.dts
+@@ -142,6 +142,27 @@
+ 				status = "okay";
+ 			};
+ 
++			sdhci1: sdhci@d0000 {
++				wp-inverted;
++				bus-width = <4>;
++				cd-gpios = <&gpio_sb 2 GPIO_ACTIVE_LOW>;
++				vqmmc-supply = <&vcc_sd_reg1>;
++				status = "okay";
++
++				pinctrl-names = "default";
++				pinctrl-0 = <&sdio_pins &cd_pins>;
++			};
++
++			sdhci0: sdhci@d8000 {
++				non-removable;
++				bus-width = <8>;
++				tuning-count = <9>;
++				status = "okay";
++
++				pinctrl-names = "default";
++				pinctrl-0 = <&mmc_pins>;
++			};
++
+ 			/* CON3 */
+ 			sata@e0000 {
+ 				target-supply = <&reg_5v_sata>;
+diff --git a/arch/arm64/boot/dts/marvell/armada-37xx.dtsi b/arch/arm64/boot/dts/marvell/armada-37xx.dtsi
+index 1e942b1..f6335ac 100644
+--- a/arch/arm64/boot/dts/marvell/armada-37xx.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-37xx.dtsi
+@@ -321,6 +321,26 @@
+ 				status = "disabled";
+ 			};
+ 
++			sdhci1: sdhci@d0000 {
++				compatible = "marvell,xenon-sdhci";
++				reg = <0xd0000 0x300>;
++				interrupts = <GIC_SPI 25 IRQ_TYPE_LEVEL_HIGH>;
++				xenon,slotno = <0>;
++				clock-names = "core";
++				clocks = <&core_clk 7>;
++				status = "disabled";
++			};
++
++			sdhci0: sdhci@d8000 {
++				compatible = "marvell,xenon-sdhci";
++				reg = <0xd8000 0x300>;
++				interrupts = <GIC_SPI 26 IRQ_TYPE_LEVEL_HIGH>;
++				xenon,slotno = <0>;
++				clock-names = "core";
++				clocks = <&core_clk 7>;
++				status = "disabled";
++			};
++
+ 			sata@e0000 {
+ 				compatible = "marvell,armada-3700-ahci";
+ 				reg = <0xe0000 0x2000>;
+diff --git a/arch/arm64/configs/mvebu_v8_lsp_defconfig b/arch/arm64/configs/mvebu_v8_lsp_defconfig
+index c7da21e..980410e 100644
+--- a/arch/arm64/configs/mvebu_v8_lsp_defconfig
++++ b/arch/arm64/configs/mvebu_v8_lsp_defconfig
+@@ -185,9 +185,7 @@ CONFIG_MMC=y
+ CONFIG_MMC_ARMMMCI=y
+ CONFIG_MMC_SDHCI=y
+ CONFIG_MMC_SDHCI_PLTFM=y
+-CONFIG_MMC_SPI=y
+-CONFIG_MMC_DW=y
+-CONFIG_MMC_DW_EXYNOS=y
++CONFIG_MMC_SDHCI_XENON=y
+ CONFIG_NEW_LEDS=y
+ CONFIG_LEDS_CLASS=y
+ CONFIG_LEDS_SYSCON=y
+-- 
+2.7.4
+

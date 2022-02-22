@@ -1,0 +1,131 @@
+From 11eac26fb2a07d12e3d6919abbfed0a1aead68fc Mon Sep 17 00:00:00 2001
+From: David Sniatkiwicz <davidsn@marvell.com>
+Date: Wed, 1 Nov 2017 10:01:59 +0200
+Subject: [PATCH 2101/2241] arm64: dts: marvell: add current-limiter regulator
+ to USB3 in a7k/a8k DB
+
+Before this patch, the current-limiter regulator relied on U-Boot proper
+setting for 900mA. this patch removed this dependency by fixing the
+regulator settings to properly use 900mA when needed.
+
+- The USB Host should be linked to current-limiter through
+"current-limiter-supply" DTS property.
+- This patch adds the "regulator-fixed" node for the USB current limiter.
+- This patch adds handling for "current-limiter-supply" property inside
+the USB3 node in armada-70x0/80x0-db device trees for turning on
+the current limiter.
+
+Change-Id: Idbb09745d992b8de082a5b3f1ae4a78b13ecd1ea
+Signed-off-by: David Sniatkiwicz <davidsn@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/44223
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-7040-db.dtsi | 14 ++++++++++++++
+ arch/arm64/boot/dts/marvell/armada-8040-db.dtsi | 24 ++++++++++++++++++++++++
+ 2 files changed, 38 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-7040-db.dtsi b/arch/arm64/boot/dts/marvell/armada-7040-db.dtsi
+index 5f4fe91..1f294c8 100644
+--- a/arch/arm64/boot/dts/marvell/armada-7040-db.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-7040-db.dtsi
+@@ -160,10 +160,12 @@
+ 		 * the phandle to gpio regulator
+ 		 */
+ 		vcc-supply = <&exp_usb3h0_vbus>;
++		current-limiter-supply = <&exp_usb3h0_current_limiter>;
+ 	};
+ 	usb3h1_phy: usb3-h1-phy {
+ 		compatible = "usb-nop-xceiv";
+ 		vcc-supply = <&exp_usb3h1_vbus>;
++		current-limiter-supply = <&exp_usb3h1_current_limiter>;
+ 	};
+ 	exp_usb3h0_vbus: usb3-0-vbus {
+ 		compatible = "regulator-fixed";
+@@ -183,6 +185,18 @@
+ 		regulator-always-on;
+ 		gpio = <&expander0 1 GPIO_ACTIVE_HIGH>;
+ 	};
++	exp_usb3h0_current_limiter: usb3-0-current-limiter {
++		compatible = "regulator-fixed";
++		regulator-name = "usb3-0-current-limiter";
++		enable-active-high;
++		gpio = <&expander0 4 GPIO_ACTIVE_HIGH>;
++	};
++	exp_usb3h1_current_limiter: usb3-1-current-limiter {
++		compatible = "regulator-fixed";
++		regulator-name = "usb3-1-current-limiter";
++		enable-active-high;
++		gpio = <&expander0 5 GPIO_ACTIVE_HIGH>;
++	};
+ 	/* following GPIO entry is not used (for reference only)
+ 	 * GPIO is not connected in default A7040-DB board
+ 	 */
+diff --git a/arch/arm64/boot/dts/marvell/armada-8040-db.dtsi b/arch/arm64/boot/dts/marvell/armada-8040-db.dtsi
+index d9de2e0..eb8a760 100644
+--- a/arch/arm64/boot/dts/marvell/armada-8040-db.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-8040-db.dtsi
+@@ -181,6 +181,7 @@
+ 		cp0_usb3h0_phy: cp0_usb3_phy0 {
+ 			compatible = "usb-nop-xceiv";
+ 			vcc-supply = <&cp0_reg_usb3h0_vbus>;
++			current-limiter-supply = <&cp0_reg_usb3h0_current_limiter>;
+ 		};
+ 
+ 		cp0_reg_usb3h0_vbus: cp0_usb3-vbus0 {
+@@ -192,9 +193,17 @@
+ 			gpio = <&expander0 0 GPIO_ACTIVE_HIGH>;
+ 		};
+ 
++		cp0_reg_usb3h0_current_limiter: cp0_usb3-current-limiter0 {
++			compatible = "regulator-fixed";
++			regulator-name = "cp0-usb3-current-limiter-h0";
++			enable-active-high;
++			gpio = <&expander0 4 GPIO_ACTIVE_HIGH>;
++		};
++
+ 		cp0_usb3h1_phy: cp0_usb3_phy1 {
+ 			compatible = "usb-nop-xceiv";
+ 			vcc-supply = <&cp0_reg_usb3h1_vbus>;
++			current-limiter-supply = <&cp0_reg_usb3h1_current_limiter>;
+ 		};
+ 
+ 		cp0_reg_usb3h1_vbus: cp0_usb3-vbus1 {
+@@ -205,6 +214,13 @@
+ 			enable-active-high;
+ 			gpio = <&expander0 1 GPIO_ACTIVE_HIGH>;
+ 		};
++
++		cp0_reg_usb3h1_current_limiter: cp0_usb3-current-limiter1 {
++			compatible = "regulator-fixed";
++			regulator-name = "cp0-usb3-current-limiter-h1";
++			enable-active-high;
++			gpio = <&expander0 5 GPIO_ACTIVE_HIGH>;
++		};
+ 	};
+ 
+ 	cp1 {
+@@ -271,6 +287,7 @@
+ 		cp1_usb3h0_phy: cp1_usb3_phy0 {
+ 			compatible = "usb-nop-xceiv";
+ 			vcc-supply = <&cp1_reg_usb3h0_vbus>;
++			current-limiter-supply = <&cp1_reg_usb3h0_current_limiter>;
+ 		};
+ 
+ 		cp1_reg_usb3h0_vbus: cp1_usb3-vbus0 {
+@@ -281,5 +298,12 @@
+ 			enable-active-high;
+ 			gpio = <&expander1 0 GPIO_ACTIVE_HIGH>;
+ 		};
++
++		cp1_reg_usb3h0_current_limiter: cp1_usb3-current-limiter0 {
++			compatible = "regulator-fixed";
++			regulator-name = "cp1-usb3-current-limiter-h0";
++			enable-active-high;
++			gpio = <&expander1 4 GPIO_ACTIVE_HIGH>;
++		};
+ 	};
+ };
+-- 
+2.7.4
+

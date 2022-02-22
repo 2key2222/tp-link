@@ -1,0 +1,34 @@
+From 6e6d39ad6f2c4e3a56c6e96b3489b521d944eed0 Mon Sep 17 00:00:00 2001
+From: David Sniatkiwicz <davidsn@marvell.com>
+Date: Mon, 16 Jan 2017 14:19:17 +0200
+Subject: [PATCH 1276/2241] fix: doc: dts: a80x0: fix network documentation for
+ setup D
+
+Change-Id: I173ea745bbdceabd48eee1226a2663da5186af2e
+Signed-off-by: David Sniatkiwicz <davidsn@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/35645
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Tested-by: Omri Itach <omrii@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/35637
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ Documentation/mvebu/a7k-a8k/armada8040-db-setup.txt | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/Documentation/mvebu/a7k-a8k/armada8040-db-setup.txt b/Documentation/mvebu/a7k-a8k/armada8040-db-setup.txt
+index ace0d01..b998934 100644
+--- a/Documentation/mvebu/a7k-a8k/armada8040-db-setup.txt
++++ b/Documentation/mvebu/a7k-a8k/armada8040-db-setup.txt
+@@ -132,7 +132,7 @@ Network configuration
+ 5: D:
+  Interface	| CPN#	| PPv2 Port	| GMAC Port	| Board Interface		|
+  ---------------|-------|---------------|---------------|-------------------------------|
+- eth0		| 0	| 0		| 0		| SGMII				|
++ eth0		| 0	| 0		| 0		| 10G (Lane 2 connected to SFP)	|
+  eth1		| 0	| 2		| 3		| RGMII1			|
+  eth2		| 1	| 0		| 0		| 10G (Lane 2 connected to SFP)	|
+ 
+-- 
+2.7.4
+

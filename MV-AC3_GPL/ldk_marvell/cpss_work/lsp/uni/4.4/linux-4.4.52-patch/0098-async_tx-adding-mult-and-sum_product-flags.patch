@@ -1,0 +1,73 @@
+From 7b9facf810d93981fafc825d2caba46193fce6f6 Mon Sep 17 00:00:00 2001
+From: Neta Zur <neta@marvell.com>
+Date: Sun, 31 May 2015 11:26:45 +0300
+Subject: [PATCH 0098/2241] async_tx: adding mult and sum_product flags
+
+	Some engines (like Marvell mv_xor) do not support mult and
+	sum_product operations as part of the pq support.
+	This patch adds new flags: DMA_PREP_PQ_MULT & DMA_PREP_PQ_SUM_PRODUCT
+	these flags helps the driver identify such operations.
+Cherry pick from linux-3.10.70-15t1
+Signed-off-by: Lior Amsalem <alior@marvell.com>
+Signed-off-by: Neta Zur <neta@marvell.com>
+
+Change-Id: Id22fc0b386a1fdc8a15a06e101bbda86ef59257d
+Reviewed-on: http://vgitil04.il.marvell.com:8080/19603
+Reviewed-by: Yehuda Yitschak <yehuday@marvell.com>
+Reviewed-by: Lior Amsalem <alior@marvell.com>
+Tested-by: Star_Automation <star@marvell.com>
+---
+ crypto/async_tx/async_raid6_recov.c | 6 ++++--
+ include/linux/dmaengine.h           | 5 +++++
+ 2 files changed, 9 insertions(+), 2 deletions(-)
+
+diff --git a/crypto/async_tx/async_raid6_recov.c b/crypto/async_tx/async_raid6_recov.c
+index 8fab627..ee1d790 100644
+--- a/crypto/async_tx/async_raid6_recov.c
++++ b/crypto/async_tx/async_raid6_recov.c
+@@ -47,7 +47,8 @@ async_sum_product(struct page *dest, struct page **srcs, unsigned char *coef,
+ 		struct device *dev = dma->dev;
+ 		dma_addr_t pq[2];
+ 		struct dma_async_tx_descriptor *tx;
+-		enum dma_ctrl_flags dma_flags = DMA_PREP_PQ_DISABLE_P;
++		enum dma_ctrl_flags dma_flags = DMA_PREP_PQ_DISABLE_P |
++			DMA_PREP_PQ_SUM_PRODUCT;
+ 
+ 		if (submit->flags & ASYNC_TX_FENCE)
+ 			dma_flags |= DMA_PREP_FENCE;
+@@ -111,7 +112,8 @@ async_mult(struct page *dest, struct page *src, u8 coef, size_t len,
+ 		dma_addr_t dma_dest[2];
+ 		struct device *dev = dma->dev;
+ 		struct dma_async_tx_descriptor *tx;
+-		enum dma_ctrl_flags dma_flags = DMA_PREP_PQ_DISABLE_P;
++		enum dma_ctrl_flags dma_flags = DMA_PREP_PQ_DISABLE_P |
++			DMA_PREP_PQ_MULT;
+ 
+ 		if (submit->flags & ASYNC_TX_FENCE)
+ 			dma_flags |= DMA_PREP_FENCE;
+diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
+index c47c68e..abbc639 100644
+--- a/include/linux/dmaengine.h
++++ b/include/linux/dmaengine.h
+@@ -186,6 +186,9 @@ struct dma_interleaved_template {
+  *  on the result of this operation
+  * @DMA_CTRL_REUSE: client can reuse the descriptor and submit again till
+  *  cleared or freed
++ * @DMA_PREP_PQ_MULT - tell the driver that this is a mult
++ *						request
++ * @DMA_PREP_PQ_SUM_PRODUCT - tell the driver that this is a sum product request
+  */
+ enum dma_ctrl_flags {
+ 	DMA_PREP_INTERRUPT = (1 << 0),
+@@ -195,6 +198,8 @@ enum dma_ctrl_flags {
+ 	DMA_PREP_CONTINUE = (1 << 4),
+ 	DMA_PREP_FENCE = (1 << 5),
+ 	DMA_CTRL_REUSE = (1 << 6),
++	DMA_PREP_PQ_MULT = (1 << 10),
++	DMA_PREP_PQ_SUM_PRODUCT = (1 << 11),
+ };
+ 
+ /**
+-- 
+2.7.4
+

@@ -1,0 +1,52 @@
+From d8e007315a9c8589fa6848451933de6b523d4c18 Mon Sep 17 00:00:00 2001
+From: Grzegorz Jaszczyk <jaz@semihalf.com>
+Date: Tue, 17 Jan 2017 11:00:54 +0100
+Subject: [PATCH 1558/2241] arm64: dts: marvell: add interrupt description for
+ pca io-expander
+
+The MPP62 have to be configured as an GPIO and it is used as an interrupt
+source for the whole io-expander and not only for u3d vbus-gpio. Therefore
+remove wrong description of u3d_vbus_pins, it references and use pca0_pins
+as pinctrl of io-expander.
+
+Change-Id: I8d5d47c764ab98a1584b82b56c3926b4cd487fd5
+Signed-off-by: Grzegorz Jaszczyk <jaz@semihalf.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/38541
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-7040-db.dtsi | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-7040-db.dtsi b/arch/arm64/boot/dts/marvell/armada-7040-db.dtsi
+index 15d5a0c..d288c67 100644
+--- a/arch/arm64/boot/dts/marvell/armada-7040-db.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-7040-db.dtsi
+@@ -78,7 +78,7 @@
+ 		config-space {
+ 			pinctrl@440000 {
+ 			compatible = "marvell,a70x0-pinctrl";
+-				u3d_vbus_pins: u3d-vbus-pins {
++				pca0_pins: pca0_pins {
+ 					marvell,pins = "mpp62";
+ 					marvell,function = "gpio";
+ 				};
+@@ -99,8 +99,14 @@
+ 				expander0: pca9555@21 {
+ 					compatible = "nxp,pca9555";
+ 					pinctrl-names = "default";
++					pinctrl-0 = <&pca0_pins>;
++					interrupt-parent = <&cpm_gpio1>;
++					/* GPIO 62 is defined as GPIO 30 of cpm_gpio1 */
++					interrupts = <30 IRQ_TYPE_EDGE_FALLING>;
+ 					gpio-controller;
+ 					#gpio-cells = <2>;
++					interrupt-controller;
++					#interrupt-cells = <2>;
+ 					reg = <0x21>;
+ 				};
+ 			};
+-- 
+2.7.4
+

@@ -1,0 +1,30 @@
+From 5b90442aa3e8a26aa02b1812447f933989e1c2bf Mon Sep 17 00:00:00 2001
+From: Alan Winkowski <walan@marvell.com>
+Date: Thu, 7 Apr 2016 11:59:23 +0300
+Subject: [PATCH 0320/2241] mvpp2x: Enable dma-coherent in DT
+
+Change-Id: I753a868c31aa082d6188c3b5710f59c8db0deed1
+Signed-off-by: Alan Winkowski <walan@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/28864
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-7040.dtsi | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-7040.dtsi b/arch/arm64/boot/dts/marvell/armada-7040.dtsi
+index 3d0d720..7fc7282 100644
+--- a/arch/arm64/boot/dts/marvell/armada-7040.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-7040.dtsi
+@@ -63,5 +63,8 @@
+ 		pcie@0x640000 {
+ 			msi-parent = <&gic_v2m0>;
+ 		};
++		ppv22@000000 {
++			dma-coherent;
++		};
+ 	};
+ };
+-- 
+2.7.4
+

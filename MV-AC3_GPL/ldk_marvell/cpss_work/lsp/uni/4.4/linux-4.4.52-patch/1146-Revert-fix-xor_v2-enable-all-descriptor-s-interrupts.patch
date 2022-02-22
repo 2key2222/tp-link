@@ -1,0 +1,54 @@
+From e83f3b7ec49aa2c8500c3d5e683380d9e7f1be00 Mon Sep 17 00:00:00 2001
+From: Hanna Hawa <hannah@marvell.com>
+Date: Thu, 24 Nov 2016 17:43:23 +0200
+Subject: [PATCH 1146/2241] Revert "fix: xor_v2: enable all descriptor's
+ interrupts to fix RAID5 kernel panic"
+
+This fix wrongly enabled the interrupts for all descriptors,
+with coalescing feature, but without configuring the timeout threshold.
+
+enable/disable the coalescing without configure the timeout
+threshold cause that part of descriptors didn't get
+the interrupt and caused kernel panic.
+
+This reverts commit af80d57f1c82 ("fix: xor_v2: enable all descriptor's
+interrupts to fix RAID5 kernel panic")
+
+Change-Id: I31f5950f48736523722532a59ec19d935777749e
+Signed-off-by: Hanna Hawa <hannah@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/34065
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Tested-by: Omri Itach <omrii@marvell.com>
+---
+ drivers/dma/mv_xor_v2.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/dma/mv_xor_v2.c b/drivers/dma/mv_xor_v2.c
+index 77a3084..876160e 100644
+--- a/drivers/dma/mv_xor_v2.c
++++ b/drivers/dma/mv_xor_v2.c
+@@ -437,8 +437,8 @@ mv_xor_v2_prep_dma_memcpy(struct dma_chan *chan, dma_addr_t dest, dma_addr_t src
+ 	hw_descriptor->desc_ctrl =
+ 		DESC_OP_MODE_MEMCPY << DESC_OP_MODE_SHIFT;
+ 
+-	/* Enable interrupt for all descriptions, as preparation for coalescing feature */
+-	hw_descriptor->desc_ctrl |= DESC_IOD;
++	if (flags & DMA_PREP_INTERRUPT)
++		hw_descriptor->desc_ctrl |= DESC_IOD;
+ 
+ 	/* Set source address */
+ 	hw_descriptor->fill_pattern_src_addr[0] = lower_32_bits(src);
+@@ -506,8 +506,8 @@ mv_xor_v2_prep_dma_xor(struct dma_chan *chan, dma_addr_t dest, dma_addr_t *src,
+ 		DESC_OP_MODE_XOR << DESC_OP_MODE_SHIFT;
+ 	hw_descriptor->desc_ctrl |= DESC_P_BUFFER_ENABLE;
+ 
+-	/* Enable interrupt for all descriptions, as preparation for coalescing feature */
+-	hw_descriptor->desc_ctrl |= DESC_IOD;
++	if (flags & DMA_PREP_INTERRUPT)
++		hw_descriptor->desc_ctrl |= DESC_IOD;
+ 
+ 	/* Set the data buffers */
+ 	for (i = 0; i < src_cnt; i++)
+-- 
+2.7.4
+

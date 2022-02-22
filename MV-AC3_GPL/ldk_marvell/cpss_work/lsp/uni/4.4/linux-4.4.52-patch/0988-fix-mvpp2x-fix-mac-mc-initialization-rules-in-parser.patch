@@ -1,0 +1,36 @@
+From 44ad6e80681f8fd480259ee54ef535e71dfa1a80 Mon Sep 17 00:00:00 2001
+From: Stefan Chulski <stefanc@marvell.com>
+Date: Wed, 21 Sep 2016 13:09:53 +0300
+Subject: [PATCH 0988/2241] fix: mvpp2x: fix mac mc initialization rules in
+ parser
+
+- wrong mac mc initialization rules entry
+
+Change-Id: Ic8577c62a640c0c930c1e8726b97fadd404dc721
+Signed-off-by: Stefan Chulski <stefanc@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/32939
+Reviewed-by: Yuval Caduri <cyuval@marvell.com>
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Nir Erez <nerez@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.c
+index b45fc86..51fe0a6 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.c
+@@ -1704,8 +1704,8 @@ static void mv_pp2x_prs_mac_init(struct mv_pp2x_hw *hw)
+ 	mv_pp2x_prs_mac_drop_all_set(hw, 0, false);
+ 	mv_pp2x_prs_mac_promisc_set(hw, 0, false);
+ 
+-	mv_pp2x_prs_mac_multi_set(hw, MVPP2_PE_MAC_MC_ALL, 0, false);
+-	mv_pp2x_prs_mac_multi_set(hw, MVPP2_PE_MAC_MC_IP6, 0, false);
++	mv_pp2x_prs_mac_multi_set(hw, 0, MVPP2_PE_MAC_MC_ALL, false);
++	mv_pp2x_prs_mac_multi_set(hw, 0, MVPP2_PE_MAC_MC_IP6, false);
+ }
+ 
+ /* Set default entries for various types of dsa packets */
+-- 
+2.7.4
+

@@ -1,0 +1,38 @@
+From f5f92cd5461fd0f8127b1ba89f374a31e41560fe Mon Sep 17 00:00:00 2001
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Date: Tue, 7 Mar 2017 16:53:02 +0100
+Subject: [PATCH 1669/2241] net: mvpp2: remove unused register definition
+ MVPP2_TXQ_THRESH_REG
+
+This register is no longer used since commit edc660fa09e2 ("net: mvpp2:
+replace TX coalescing interrupts with hrtimer").
+
+Patch cherry-picked from mainline 4.12_rc5
+
+Change-Id: Ia996a3032add6ad07d36ff1af2b51b0a492332db
+Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/40400
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2.c | 3 ---
+ 1 file changed, 3 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2.c b/drivers/net/ethernet/marvell/mvpp2.c
+index b91a9c8..ff6e6dd 100644
+--- a/drivers/net/ethernet/marvell/mvpp2.c
++++ b/drivers/net/ethernet/marvell/mvpp2.c
+@@ -117,9 +117,6 @@
+ #define MVPP2_TXQ_DESC_SIZE_REG			0x2088
+ #define     MVPP2_TXQ_DESC_SIZE_MASK		0x3ff0
+ #define MVPP2_AGGR_TXQ_UPDATE_REG		0x2090
+-#define MVPP2_TXQ_THRESH_REG			0x2094
+-#define     MVPP2_TRANSMITTED_THRESH_OFFSET	16
+-#define     MVPP2_TRANSMITTED_THRESH_MASK	0x3fff0000
+ #define MVPP2_TXQ_INDEX_REG			0x2098
+ #define MVPP2_TXQ_PREF_BUF_REG			0x209c
+ #define     MVPP2_PREF_BUF_PTR(desc)		((desc) & 0xfff)
+-- 
+2.7.4
+

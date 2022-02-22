@@ -1,0 +1,39 @@
+From ad77375455d4b4df948837c9728616fd65203e6f Mon Sep 17 00:00:00 2001
+From: Victor Gu <xigu@marvell.com>
+Date: Mon, 14 Mar 2016 17:27:45 +0800
+Subject: [PATCH 0462/2241] arm64: dts: armada3700: add cpufreq DT node
+
+This patch add DT node for Armada-3700 cpufreq.
+
+Change-Id: I4cbc07733846e3589549ba4ca22b2b795816cc8c
+Signed-off-by: Victor Gu <xigu@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/29665
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Oren Ben Hayune <orenbh@marvell.com>
+Reviewed-by: Nadav Haklai <nadavh@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-37xx.dtsi | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-37xx.dtsi b/arch/arm64/boot/dts/marvell/armada-37xx.dtsi
+index a58e7c8..61a932f 100644
+--- a/arch/arm64/boot/dts/marvell/armada-37xx.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-37xx.dtsi
+@@ -184,6 +184,14 @@
+ 				};
+ 			};
+ 
++			cpufreq@14000 {
++				compatible = "marvell,armada-3700-cpufreq";
++				reg = <0x14000 0x1000>;
++				interrupts = <GIC_SPI 128 IRQ_TYPE_LEVEL_HIGH>;
++				clock-latency = <1000>;
++				clocks = <&core_clk 0>;
++			};
++
+ 			eth0: ethernet@30000 {
+ 				   compatible = "marvell,armada3700-neta";
+ 				   reg = <0x30000 0x4000>;
+-- 
+2.7.4
+

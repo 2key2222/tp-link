@@ -1,0 +1,214 @@
+From 3fc1e79ef8563fc4c0143dd45201d0acda5e3e14 Mon Sep 17 00:00:00 2001
+From: Stefan Chulski <stefanc@marvell.com>
+Date: Wed, 28 Sep 2016 16:15:45 +0300
+Subject: [PATCH 1011/2241] mvpp2x: remove SerDes configuration from PPv2x
+ driver
+
+- remove SerDes remap
+- remove related SerDes functions
+
+Change-Id: If130a0d864d32b30c058b730aa8c14a7cb9a3bbb
+Signed-off-by: Stefan Chulski <stefanc@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/33185
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2x/mv_gop110_hw.c | 79 ----------------------
+ drivers/net/ethernet/marvell/mvpp2x/mv_gop110_hw.h | 29 --------
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h      |  1 -
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c |  9 ---
+ 4 files changed, 118 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_gop110_hw.c b/drivers/net/ethernet/marvell/mvpp2x/mv_gop110_hw.c
+index f35ff10..c3d85d8 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_gop110_hw.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_gop110_hw.c
+@@ -33,7 +33,6 @@ void mv_gop110_register_bases_dump(struct gop_hw *gop)
+ {
+ 	pr_info("  %-32s: 0x%p\n", "GMAC", gop->gop_110.gmac.base);
+ 	pr_info("  %-32s: 0x%p\n", "XLG_MAC", gop->gop_110.xlg_mac.base);
+-	pr_info("  %-32s: 0x%p\n", "SERDES", gop->gop_110.serdes.base);
+ 	pr_info("  %-32s: 0x%p\n", "XMIB", gop->gop_110.xmib.base);
+ 	pr_info("  %-32s: 0x%p\n", "SMI", gop->gop_110.smi_base);
+ 	pr_info("  %-32s: 0x%p\n", "XSMI", gop->gop_110.xsmi_base);
+@@ -924,7 +923,6 @@ int mv_gop110_port_init(struct gop_hw *gop, struct mv_mac_data *mac)
+ 	break;
+ 	case PHY_INTERFACE_MODE_SGMII:
+ 	case PHY_INTERFACE_MODE_QSGMII:
+-		num_of_act_lanes = 1;
+ 		mv_gop110_force_link_mode_set(gop, mac, false, true);
+ 		mv_gop110_gmac_reset(gop, mac_num, RESET);
+ 		/* configure PCS */
+@@ -956,11 +954,6 @@ int mv_gop110_port_init(struct gop_hw *gop, struct mv_mac_data *mac)
+ 	break;
+ 	case PHY_INTERFACE_MODE_RXAUI:
+ 		num_of_act_lanes = 2;
+-		/* mapped to serdes 6 */
+-		mv_gop110_serdes_init(gop, 0, MV_RXAUI);
+-		/* mapped to serdes 5 */
+-		mv_gop110_serdes_init(gop, 1, MV_RXAUI);
+-
+ 		mac_num = 0;
+ 		/* configure PCS */
+ 		mv_gop110_xpcs_mode(gop, num_of_act_lanes);
+@@ -972,12 +965,6 @@ int mv_gop110_port_init(struct gop_hw *gop, struct mv_mac_data *mac)
+ 
+ 		/* mac unreset */
+ 		mv_gop110_xlg_mac_reset(gop, mac_num, UNRESET);
+-
+-		/* run digital reset / unreset */
+-		mv_gop110_serdes_reset(gop, 0, false, false, true);
+-		mv_gop110_serdes_reset(gop, 1, false, false, true);
+-		mv_gop110_serdes_reset(gop, 0, false, false, false);
+-		mv_gop110_serdes_reset(gop, 1, false, false, false);
+ 	break;
+ 	case PHY_INTERFACE_MODE_KR:
+ 
+@@ -1674,72 +1661,6 @@ int  mv_gop110_gpcs_reset(struct gop_hw *gop, int pcs_num, enum mv_reset act)
+ 	return 0;
+ }
+ 
+-/* print value of unit registers */
+-void mv_gop110_serdes_lane_regs_dump(struct gop_hw *gop, int lane)
+-{
+-	pr_info("\nSerdes Lane #%d registers]\n", lane);
+-	mv_gop110_serdes_print(gop, "MV_SERDES_CFG_0_REG", lane,
+-			       MV_SERDES_CFG_0_REG);
+-	mv_gop110_serdes_print(gop, "MV_SERDES_CFG_1_REG", lane,
+-			       MV_SERDES_CFG_1_REG);
+-	mv_gop110_serdes_print(gop, "MV_SERDES_CFG_2_REG", lane,
+-			       MV_SERDES_CFG_2_REG);
+-	mv_gop110_serdes_print(gop, "MV_SERDES_CFG_3_REG", lane,
+-			       MV_SERDES_CFG_3_REG);
+-	mv_gop110_serdes_print(gop, "MV_SERDES_MISC_REG", lane,
+-			       MV_SERDES_MISC_REG);
+-}
+-EXPORT_SYMBOL(mv_gop110_serdes_lane_regs_dump);
+-
+-void mv_gop110_serdes_init(struct gop_hw *gop, int lane,
+-			   enum sd_media_mode mode)
+-{
+-	u32 reg_val;
+-
+-	/* Media Interface Mode */
+-	reg_val = mv_gop110_serdes_read(gop, lane, MV_SERDES_CFG_0_REG);
+-	if (mode == MV_RXAUI)
+-		reg_val |= MV_SERDES_CFG_0_MEDIA_MODE_MASK;
+-	else
+-		reg_val &= ~MV_SERDES_CFG_0_MEDIA_MODE_MASK;
+-
+-	/* Pull-Up PLL to StandAlone mode */
+-	reg_val |= MV_SERDES_CFG_0_PU_PLL_MASK;
+-	/* powers up the SD Rx/Tx PLL */
+-	reg_val |= MV_SERDES_CFG_0_RX_PLL_MASK;
+-	reg_val |= MV_SERDES_CFG_0_TX_PLL_MASK;
+-	mv_gop110_serdes_write(gop, lane, MV_SERDES_CFG_0_REG, reg_val);
+-
+-	mv_gop110_serdes_reset(gop, lane, false, false, false);
+-
+-	reg_val = 0x17f;
+-	mv_gop110_serdes_write(gop, lane, MV_SERDES_MISC_REG, reg_val);
+-}
+-
+-void mv_gop110_serdes_reset(struct gop_hw *gop, int lane, bool analog_reset,
+-			    bool core_reset, bool digital_reset)
+-{
+-	u32 reg_val;
+-
+-	reg_val = mv_gop110_serdes_read(gop, lane, MV_SERDES_CFG_1_REG);
+-	if (analog_reset)
+-		reg_val &= ~MV_SERDES_CFG_1_ANALOG_RESET_MASK;
+-	else
+-		reg_val |= MV_SERDES_CFG_1_ANALOG_RESET_MASK;
+-
+-	if (core_reset)
+-		reg_val &= ~MV_SERDES_CFG_1_CORE_RESET_MASK;
+-	else
+-		reg_val |= MV_SERDES_CFG_1_CORE_RESET_MASK;
+-
+-	if (digital_reset)
+-		reg_val &= ~MV_SERDES_CFG_1_DIGITAL_RESET_MASK;
+-	else
+-		reg_val |= MV_SERDES_CFG_1_DIGITAL_RESET_MASK;
+-
+-	mv_gop110_serdes_write(gop, lane, MV_SERDES_CFG_1_REG, reg_val);
+-}
+-
+ /**************************************************************************
+ * mv_gop110_smi_init
+ **************************************************************************/
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_gop110_hw.h b/drivers/net/ethernet/marvell/mvpp2x/mv_gop110_hw.h
+index 5549011..f360a56 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_gop110_hw.h
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_gop110_hw.h
+@@ -173,35 +173,6 @@ void mv_gop_reg_print(char *reg_name, u32 reg);
+ int mv_gop110_gpcs_mode_cfg(struct gop_hw *gop, int pcs_num, bool en);
+ int mv_gop110_gpcs_reset(struct gop_hw *gop, int pcs_num, enum mv_reset act);
+ 
+-/* Serdes Functions */
+-static inline u32 mv_gop110_serdes_read(struct gop_hw *gop, int lane_num,
+-					u32 offset)
+-{
+-	return(mv_gop_gen_read(gop->gop_110.serdes.base,
+-		lane_num * gop->gop_110.serdes.obj_size + offset));
+-}
+-
+-static inline void mv_gop110_serdes_write(struct gop_hw *gop, int lane_num,
+-					  u32 offset, u32 data)
+-{
+-	mv_gop_gen_write(gop->gop_110.serdes.base,
+-			 lane_num * gop->gop_110.serdes.obj_size +
+-			 offset, data);
+-}
+-
+-static inline void mv_gop110_serdes_print(struct gop_hw *gop, char *reg_name,
+-					  int lane_num, u32 reg)
+-{
+-	pr_info("  %-32s: 0x%x = 0x%08x\n", reg_name, reg,
+-		mv_gop110_serdes_read(gop, lane_num, reg));
+-}
+-
+-void mv_gop110_serdes_lane_regs_dump(struct gop_hw *gop, int lane);
+-void mv_gop110_serdes_init(struct gop_hw *gop, int lane,
+-			   enum sd_media_mode mode);
+-void mv_gop110_serdes_reset(struct gop_hw *gop, int lane, bool analog_reset,
+-			    bool core_reset, bool digital_reset);
+-
+ /* MPCS Functions */
+ 
+ static inline u32 mv_gop110_mpcs_global_read(struct gop_hw *gop, u32 offset)
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h
+index 9b49d56..14f226e 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h
+@@ -412,7 +412,6 @@ struct mv_mac_unit_desc {
+ struct cpn110_gop_hw {
+ 	struct mv_mac_unit_desc gmac;
+ 	struct mv_mac_unit_desc xlg_mac;
+-	struct mv_mac_unit_desc serdes;
+ 	struct mv_mac_unit_desc xmib;
+ 	struct mv_mac_unit_desc tai;
+ 	struct mv_mac_unit_desc ptp;
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+index ea6435d..36baeef 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+@@ -4797,15 +4797,6 @@ static int mv_pp2x_platform_data_get(struct platform_device *pdev,
+ 		if (IS_ERR(hw->lms_base))
+ 			return PTR_ERR(hw->lms_base);
+ 	} else {
+-		/* serdes */
+-		res = platform_get_resource_byname(pdev,
+-			IORESOURCE_MEM, "serdes");
+-		hw->gop.gop_110.serdes.base =
+-			devm_ioremap_resource(&pdev->dev, res);
+-		if (IS_ERR(hw->gop.gop_110.serdes.base))
+-			return PTR_ERR(hw->gop.gop_110.serdes.base);
+-		hw->gop.gop_110.serdes.obj_size = 0x1000;
+-
+ 		/* xmib */
+ 		res = platform_get_resource_byname(pdev,
+ 			IORESOURCE_MEM, "xmib");
+-- 
+2.7.4
+

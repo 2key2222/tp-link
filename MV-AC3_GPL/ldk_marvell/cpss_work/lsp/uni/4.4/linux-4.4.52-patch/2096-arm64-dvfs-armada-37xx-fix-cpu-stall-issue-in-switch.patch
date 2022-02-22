@@ -1,0 +1,75 @@
+From c01a7f3b2112998970483041c8709d2935bf1d53 Mon Sep 17 00:00:00 2001
+From: Ken Ma <make@marvell.com>
+Date: Mon, 20 Nov 2017 15:18:41 +0800
+Subject: [PATCH 2096/2241] arm64: dvfs: armada-37xx: fix cpu stall issue in
+ switching from L2/L3 to L0 of 1200MHZ
+
+Now for CPU L0 frequency @ 1.2GHz, the switching from L2/L3 to it
+causes CPU stall. The reason is that VDD voltage has a big step in
+switching from L2/L3(200/300MHz) to L0(1.2GHZ), , which requires
+the time for stabling VDD voltage, but the VDD change latency
+can not be covered by the relevant HW countdown register.
+
+This patch provides a WA as below:
+1. First switch from L2/L3(200/300MHz) to L1(600MHZ);
+2. Sleep 20ms for stabling VDD voltage;
+3. Then switch from L1(600MHZ) to L0(1200Mhz).
+
+Change-Id: I1e782849ece278ea4d2ab86d95419d9bfc43b808
+Signed-off-by: Ken Ma <make@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/46516
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Victor Gu <xigu@marvell.com>
+---
+ drivers/clk/mvebu/armada-37xx-pm-clk.c | 28 +++++++++++++++++++++++++++-
+ 1 file changed, 27 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/clk/mvebu/armada-37xx-pm-clk.c b/drivers/clk/mvebu/armada-37xx-pm-clk.c
+index c29e1f4..fc8d618 100644
+--- a/drivers/clk/mvebu/armada-37xx-pm-clk.c
++++ b/drivers/clk/mvebu/armada-37xx-pm-clk.c
+@@ -284,7 +284,7 @@ static int armada3700_clk_set_rate(struct clk_hw *hw, unsigned long rate,
+ 	struct armada_a3700_clk_pm_info *clk_pm_info = NULL;
+ 	struct armada_3700_clk_pm *clk = to_clk(hw);
+ 	unsigned int new_rate = rate / KHZ_TO_HZ;  /* KHz */
+-	int divider, load_level;
++	int divider, load_level, cur_level;
+ 	u32 reg_val;
+ 
+ 	/* Calculate the clock divider */
+@@ -303,6 +303,32 @@ static int armada3700_clk_set_rate(struct clk_hw *hw, unsigned long rate,
+ 			dev_err(clk->dev, "invalid CPU new rate %d kHz\n", new_rate);
+ 			return -1;
+ 		}
++
++		/*
++		 * For CPU L0 frequency @ 1.2GHz, VDD voltage has a big step
++		 * in switching from L2/L3(200/300MHz) to it, which requires
++		 * the time for stabling VDD voltage. The VDD change latency
++		 * can not be covered by the relevant HW countdown register.
++		 * As a WA, the following procedure is suggested:
++		 * 1. First switch from L2/L3(200/300MHz) to L1(600MHZ);
++		 * 2. Sleep 20ms for stabling VDD voltage;
++		 * 3. Then switch from L1(600MHZ) to L0(1200Mhz).
++		 */
++		if (new_rate == 1200000) {
++			reg_val = readl(clk->reg + A3700_PM_NB_CPU_LOAD_REG);
++			cur_level = (reg_val & A3700_PM_NB_CPU_LOAD_MASK)
++				    >> A3700_PM_NB_CPU_LOAD_OFF;
++			if (cur_level > DVFS_LOAD_1) {
++				reg_val &= ~(A3700_PM_NB_CPU_LOAD_MASK
++					     << A3700_PM_NB_CPU_LOAD_OFF);
++				reg_val |= ((DVFS_LOAD_1
++					     & A3700_PM_NB_CPU_LOAD_MASK)
++					    << A3700_PM_NB_CPU_LOAD_OFF);
++				writel(reg_val,
++				       clk->reg + A3700_PM_NB_CPU_LOAD_REG);
++				msleep(20);
++			}
++		}
+ 	} else {
+ 		load_level = DVFS_LOAD_0;
+ 	}
+-- 
+2.7.4
+

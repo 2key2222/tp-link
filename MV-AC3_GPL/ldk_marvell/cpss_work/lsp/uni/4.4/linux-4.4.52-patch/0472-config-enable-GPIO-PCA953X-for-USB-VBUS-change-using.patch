@@ -1,0 +1,45 @@
+From c5a686516681cecb779adf677b34ee1d1db21428 Mon Sep 17 00:00:00 2001
+From: Hanna Hawa <hannah@marvell.com>
+Date: Tue, 17 May 2016 09:18:42 +0300
+Subject: [PATCH 0472/2241] config: enable GPIO PCA953X for USB VBUS change
+ using regulator
+
+Change-Id: I8ad39bc4c058f145365f894c62308cbd6824715c
+Signed-off-by: Hanna Hawa <hannah@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/30105
+Reviewed-by: Nadav Haklai <nadavh@marvell.com>
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Neta Zur Hershkovits <neta@marvell.com>
+Reviewed-by: Wilson Ding <dingwei@marvell.com>
+---
+ arch/arm64/configs/mvebu_v8_lsp_defconfig | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm64/configs/mvebu_v8_lsp_defconfig b/arch/arm64/configs/mvebu_v8_lsp_defconfig
+index 4586834..ec877f7 100644
+--- a/arch/arm64/configs/mvebu_v8_lsp_defconfig
++++ b/arch/arm64/configs/mvebu_v8_lsp_defconfig
+@@ -150,6 +150,7 @@ CONFIG_SPI_ARMADA_3700=y
+ CONFIG_GPIOLIB=y
+ CONFIG_GPIO_PL061=y
+ CONFIG_GPIO_XGENE=y
++CONFIG_GPIO_PCA953X=y
+ CONFIG_POWER_RESET_VEXPRESS=y
+ CONFIG_POWER_RESET_XGENE=y
+ CONFIG_POWER_RESET_SYSCON=y
+@@ -245,11 +246,11 @@ CONFIG_LOCKUP_DETECTOR=y
+ # CONFIG_DEBUG_PREEMPT is not set
+ # CONFIG_FTRACE is not set
+ CONFIG_MEMTEST=y
++CONFIG_ARM64_PTDUMP=y
+ CONFIG_CORESIGHT=y
+ CONFIG_CORESIGHT_LINK_AND_SINK_TMC=y
+ CONFIG_CORESIGHT_SOURCE_ETM4X=y
+ CONFIG_CORESIGHT_SOURCE_AXIM=y
+-CONFIG_ARM64_PTDUMP=y
+ CONFIG_SECURITY=y
+ CONFIG_CRYPTO_ANSI_CPRNG=y
+ CONFIG_ARM64_CRYPTO=y
+-- 
+2.7.4
+

@@ -1,0 +1,45 @@
+From 8cc53eb39987e344ea94e5a0d0ea34da6b5c8e02 Mon Sep 17 00:00:00 2001
+From: Christine Gharzuzi <chrisg@marvell.com>
+Date: Thu, 23 Feb 2017 20:54:38 +0200
+Subject: [PATCH 1443/2241] fix: dts: a70x0: correct SATA node configuration.
+
+SATA disks is not detected on kernel
+issue found when no SATA disks detected in kernel,
+the SATA nodes wasn't configured correctly, missing inner nodes.
+This patch added the missing inner SATA nodes according to
+configuration C.
+
+Change-Id: I04fb5a3e1e3a9cf9f7429e9319211d203773619b
+Signed-off-by: Christine Gharzuzi <chrisg@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/36981
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/37342
+---
+ arch/arm64/boot/dts/marvell/armada-7040-db-C.dts | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-7040-db-C.dts b/arch/arm64/boot/dts/marvell/armada-7040-db-C.dts
+index c33662b..71bb1b3 100644
+--- a/arch/arm64/boot/dts/marvell/armada-7040-db-C.dts
++++ b/arch/arm64/boot/dts/marvell/armada-7040-db-C.dts
+@@ -87,6 +87,15 @@
+ 			};
+ 			sata: sata@540000 {
+ 				status = "okay";
++
++				sata-port@0 {
++					status = "disabled";
++				};
++				sata-port@1 {
++					phys = <&comphy0 3 COMPHY_SATA1>;
++					phy-names = "comphy";
++					status = "okay";
++				};
+ 			};
+ 			usb3h0: usb3@500000 {
+ 				status = "okay";
+-- 
+2.7.4
+

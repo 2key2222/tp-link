@@ -1,0 +1,29 @@
+From 78e389820c95b867314eb81acfdbc24405958d4b Mon Sep 17 00:00:00 2001
+From: Yehuda Yitschak <yehuday@marvell.com>
+Date: Tue, 23 Feb 2016 14:00:50 +0200
+Subject: [PATCH 0192/2241] config: enabled PPv2.2 ethernet driver for marvell
+ arm64 platforms
+
+Change-Id: Icf46b6670cb63908c82f273fca11cf7f9665bbab
+Signed-off-by: Yehuda Yitschak <yehuday@marvell.com>
+---
+ arch/arm64/configs/mvebu_v8_lsp_defconfig | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/arch/arm64/configs/mvebu_v8_lsp_defconfig b/arch/arm64/configs/mvebu_v8_lsp_defconfig
+index d3e0665..dd34c86 100644
+--- a/arch/arm64/configs/mvebu_v8_lsp_defconfig
++++ b/arch/arm64/configs/mvebu_v8_lsp_defconfig
+@@ -102,8 +102,7 @@ CONFIG_VIRTIO_NET=y
+ CONFIG_E1000=y
+ CONFIG_E1000E=y
+ CONFIG_IGB=y
+-CONFIG_MVMDIO=y
+-CONFIG_MVXMDIO=y
++CONFIG_MVPP2X=y
+ CONFIG_SKY2=y
+ CONFIG_SMC91X=y
+ CONFIG_SMSC911X=y
+-- 
+2.7.4
+

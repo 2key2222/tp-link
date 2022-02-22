@@ -1,0 +1,28 @@
+From c99ba7e53ee4ed487de99a4237d5acabf62ec528 Mon Sep 17 00:00:00 2001
+From: Yehuda Yitschak <yehuday@marvell.com>
+Date: Sun, 21 Feb 2016 15:23:04 +0200
+Subject: [PATCH 0146/2241] config: i2c: add support for marvell I2C driver and
+ i2c char device
+
+Change-Id: Iccbd94f4525657ac06f9f4d0f3096fb028d1acdd
+Signed-off-by: Yehuda Yitschak <yehuday@marvell.com>
+---
+ arch/arm64/configs/mvebu_v8_lsp_defconfig | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/arch/arm64/configs/mvebu_v8_lsp_defconfig b/arch/arm64/configs/mvebu_v8_lsp_defconfig
+index ef32da3..312b371 100644
+--- a/arch/arm64/configs/mvebu_v8_lsp_defconfig
++++ b/arch/arm64/configs/mvebu_v8_lsp_defconfig
+@@ -109,6 +109,8 @@ CONFIG_SERIAL_XILINX_PS_UART=y
+ CONFIG_SERIAL_XILINX_PS_UART_CONSOLE=y
+ CONFIG_VIRTIO_CONSOLE=y
+ # CONFIG_HW_RANDOM is not set
++CONFIG_I2C_CHARDEV=y
++CONFIG_I2C_MV64XXX=y
+ CONFIG_SPI=y
+ CONFIG_SPI_ORION=y
+ CONFIG_SPI_PL022=y
+-- 
+2.7.4
+

@@ -1,0 +1,78 @@
+From 5cb600f45503ba4eb8332a10d3b950aa1255d5b5 Mon Sep 17 00:00:00 2001
+From: Victor Gu <xigu@marvell.com>
+Date: Fri, 1 Dec 2017 12:06:42 +0800
+Subject: [PATCH 2100/2241] fix: clk: mvebu: cp110: always enable gate MG clock
+ 5
+
+Gate clock 5 together with gate clock 6 feed XSMI and CM3 for
+KR-AP in CP110. If ppv2 ports on CP0 connected to XSMI on CP1
+and there are no enabled ppv2 ports on CP1. XSMI won't be enabled.
+This will cause system stuck during access to XSMI address space.
+Also the CM3 clock should be enabled, otherwise it will cause
+system stuck when CM3 starts the execution.
+
+This is a workaround, the complete solution should be nesting all
+clock providers and consumers in the CP110 driver.
+
+Change-Id: I032a8d18d705fa3e1402e330f4d11b90e56c2ae6
+Signed-off-by: Victor Gu <xigu@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/47119
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Tested-by: Omri Itach <omrii@marvell.com>
+---
+ drivers/clk/mvebu/cp110-system-controller.c | 20 +++++++++++++++-----
+ 1 file changed, 15 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/clk/mvebu/cp110-system-controller.c b/drivers/clk/mvebu/cp110-system-controller.c
+index 78ac741..6e970d9 100644
+--- a/drivers/clk/mvebu/cp110-system-controller.c
++++ b/drivers/clk/mvebu/cp110-system-controller.c
+@@ -67,7 +67,8 @@ enum {
+ #define CP110_GATE_NAND			2
+ #define CP110_GATE_PPV2			3
+ #define CP110_GATE_SDIO			4
+-#define CP110_GATE_MG			6
++#define CP110_GATE_MG_DOMAIN		5
++#define CP110_GATE_MG_CORE		6
+ #define CP110_GATE_XOR1			7
+ #define CP110_GATE_XOR0			8
+ #define CP110_GATE_PCIE_X1_0		11
+@@ -362,12 +363,14 @@ static int cp110_syscon_clk_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	/*
+-	 * Gated clocks 18 and 6 feeds many core clocks in CP110.
++	 * Gated clocks 18, 6 and 5 feed many core clocks in CP110.
+ 	 * Clock 18 feeds eMMC clock. eMMC driver supports only one clock - the core
+ 	 * clock of eMMC) so we need to enable clock 18 in CP110 clock level
+ 	 * and not the eMMC driver itself.
+-	 * Gated clock 6 feeds XSMI clock. If ppv2 ports on CP0 connected
++	 * Gated clock 6 and 5 feed XSMI clock and CM3 for KR-AP. If ppv2 ports on CP0 connected
+ 	 * to XSMI on CP1 and there are no enabled ppv2 ports on CP1. XSMI won't be enabled.
++	 * The CM3 clock should also be enabled, otherwise it will lead to stuck when CM3
++	 * is executing application.
+ 	 * TODO:
+ 	 * This is a workaround, the complete solution should be nesting all
+ 	 * clock providers and consumers in the CP110 driver. One possible
+@@ -381,9 +384,16 @@ static int cp110_syscon_clk_probe(struct platform_device *pdev)
+ 			goto fail_clk_add;
+ 	}
+ 
+-	if (cp110_clks[CP110_MAX_CORE_CLOCKS + CP110_GATE_MG]) {
++	if (cp110_clks[CP110_MAX_CORE_CLOCKS + CP110_GATE_MG_CORE]) {
+ 		ret = clk_prepare_enable(cp110_clks[CP110_MAX_CORE_CLOCKS +
+-						    CP110_GATE_MG]);
++						    CP110_GATE_MG_CORE]);
++		if (ret)
++			goto fail_clk_add;
++	}
++
++	if (cp110_clks[CP110_MAX_CORE_CLOCKS + CP110_GATE_MG_DOMAIN]) {
++		ret = clk_prepare_enable(cp110_clks[CP110_MAX_CORE_CLOCKS +
++						    CP110_GATE_MG_DOMAIN]);
+ 		if (ret)
+ 			goto fail_clk_add;
+ 	}
+-- 
+2.7.4
+

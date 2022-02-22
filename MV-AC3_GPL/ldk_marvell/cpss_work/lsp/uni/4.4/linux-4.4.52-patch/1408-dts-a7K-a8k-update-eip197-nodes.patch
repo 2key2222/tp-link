@@ -1,0 +1,70 @@
+From 49e9103306647b6681a0fdd10820bc515a02450f Mon Sep 17 00:00:00 2001
+From: Dmitri Epshtein <dima@marvell.com>
+Date: Wed, 22 Feb 2017 18:16:57 +0200
+Subject: [PATCH 1408/2241] dts: a7K: a8k: update eip197 nodes
+
+- add registers base per ring
+- enable EIP197 engine on cp-1
+
+Change-Id: Ib6875f376c1667056728ff192ba3e742359151df
+Signed-off-by: Dmitri Epshtein <dima@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/36949
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+(cherry picked from commit 334344abcc2ff97ba85e5beb8d7b88995b381d82)
+Reviewed-on: http://vgitil04.il.marvell.com:8080/37149
+---
+ arch/arm64/boot/dts/marvell/armada-8040-db-A.dts | 2 +-
+ arch/arm64/boot/dts/marvell/armada-cp110-1.dtsi  | 5 +++--
+ arch/arm64/boot/dts/marvell/armada-cp110.dtsi    | 5 +++--
+ 3 files changed, 7 insertions(+), 5 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-8040-db-A.dts b/arch/arm64/boot/dts/marvell/armada-8040-db-A.dts
+index 0e3ad39..b825e2d 100644
+--- a/arch/arm64/boot/dts/marvell/armada-8040-db-A.dts
++++ b/arch/arm64/boot/dts/marvell/armada-8040-db-A.dts
+@@ -214,7 +214,7 @@
+ 				};
+ 			};
+ 			eip197@800000 {
+-				status = "disabled";
++				status = "okay";
+ 			};
+ 			comphy {
+ 				status = "okay";
+diff --git a/arch/arm64/boot/dts/marvell/armada-cp110-1.dtsi b/arch/arm64/boot/dts/marvell/armada-cp110-1.dtsi
+index be4d8df..e68c416 100644
+--- a/arch/arm64/boot/dts/marvell/armada-cp110-1.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-cp110-1.dtsi
+@@ -349,9 +349,10 @@ cps_trng: trng@760000 {
+ 	status = "okay";
+ };
+ 
+-eip197@800000 {
++cps_eip197: eip197@800000 {
+ 	compatible = "marvell,eip197";
+-	reg = <0x800000 0x200000>;
++	reg = <0x800000 0x100000 0x880000 0x1000 0x881000 0x1000 0x882000 0x1000 0x883000 0x1000>;
++	reg-names = "global", "ring0", "ring1", "ring2", "ring3";
+ 	dma-coherent;
+ 	interrupts = <ICU_GRP_NSR 88 IRQ_TYPE_LEVEL_HIGH>,
+ 			<ICU_GRP_NSR 89 IRQ_TYPE_LEVEL_HIGH>,
+diff --git a/arch/arm64/boot/dts/marvell/armada-cp110.dtsi b/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
+index e7bb831..eb53aa7 100644
+--- a/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
+@@ -447,9 +447,10 @@ cpm_trng: trng@760000 {
+ 	status = "okay";
+ };
+ 
+-eip197: eip197@800000 {
++cpm_eip197: eip197@800000 {
+ 	compatible = "marvell,eip197";
+-	reg = <0x800000 0x200000>;
++	reg = <0x800000 0x100000 0x880000 0x1000 0x881000 0x1000 0x882000 0x1000 0x883000 0x1000>;
++	reg-names = "global", "ring0", "ring1", "ring2", "ring3";
+ 	dma-coherent;
+ 	interrupts = <ICU_GRP_NSR 88 IRQ_TYPE_LEVEL_HIGH>,
+ 			<ICU_GRP_NSR 89 IRQ_TYPE_LEVEL_HIGH>,
+-- 
+2.7.4
+

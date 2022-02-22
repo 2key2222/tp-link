@@ -1,0 +1,38 @@
+From bacb6ae3e482999c641402eeb924fb5c3a8da7ad Mon Sep 17 00:00:00 2001
+From: Jisheng Zhang <jszhang@marvell.com>
+Date: Fri, 1 Apr 2016 17:11:05 +0800
+Subject: [PATCH 1652/2241] net: mvpp2: use cache_line_size() to get cacheline
+ size
+
+L1_CACHE_BYTES may not be the real cacheline size, use cache_line_size
+to determine the cacheline size in runtime.
+
+Patch cherry-picked from mainline 4.12_rc5
+
+Change-Id: Iad1f4f6f87130064b302ffc53e9f485dcb89cc24
+Signed-off-by: Jisheng Zhang <jszhang@marvell.com>
+Suggested-by: Marcin Wojtas <mw@semihalf.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/40356
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2.c b/drivers/net/ethernet/marvell/mvpp2.c
+index 13576f5..6c7915a 100644
+--- a/drivers/net/ethernet/marvell/mvpp2.c
++++ b/drivers/net/ethernet/marvell/mvpp2.c
+@@ -376,7 +376,7 @@
+ 
+ #define MVPP2_RX_PKT_SIZE(mtu) \
+ 	ALIGN((mtu) + MVPP2_MH_SIZE + MVPP2_VLAN_TAG_LEN + \
+-	      ETH_HLEN + ETH_FCS_LEN, L1_CACHE_BYTES)
++	      ETH_HLEN + ETH_FCS_LEN, cache_line_size())
+ 
+ #define MVPP2_RX_BUF_SIZE(pkt_size)	((pkt_size) + NET_SKB_PAD)
+ #define MVPP2_RX_TOTAL_SIZE(buf_size)	((buf_size) + MVPP2_SKB_SHINFO_SIZE)
+-- 
+2.7.4
+

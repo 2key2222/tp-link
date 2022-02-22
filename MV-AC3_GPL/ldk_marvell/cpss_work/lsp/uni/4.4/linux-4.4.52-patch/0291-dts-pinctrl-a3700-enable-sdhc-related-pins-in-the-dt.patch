@@ -1,0 +1,74 @@
+From d3efbb8812a6bd45ca47889c6298e33bc38763d2 Mon Sep 17 00:00:00 2001
+From: Terry Zhou <bjzhou@marvell.com>
+Date: Tue, 1 Mar 2016 09:23:38 +0800
+Subject: [PATCH 0291/2241] dts: pinctrl: a3700: enable sdhc related pins in
+ the dts nodes
+
+set sdhci0 to mmc mode
+set sdhci1 to sdio mode
+
+Change-Id: Ief71d0e5451e8455e6281528ef9a3484e9a4c7dd
+Signed-off-by: Terry Zhou <bjzhou@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/27952
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Wilson Ding <dingwei@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-3720-db.dts |  6 ++++++
+ arch/arm64/boot/dts/marvell/armada-37xx.dtsi   | 10 ++++++++++
+ 2 files changed, 16 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-3720-db.dts b/arch/arm64/boot/dts/marvell/armada-3720-db.dts
+index c4710e9..97d03af 100644
+--- a/arch/arm64/boot/dts/marvell/armada-3720-db.dts
++++ b/arch/arm64/boot/dts/marvell/armada-3720-db.dts
+@@ -127,6 +127,9 @@
+ 				broken-cd;
+ 				bus-width = <4>;
+ 				status = "okay";
++
++				pinctrl-names = "default";
++				pinctrl-0 = <&sdio_pins>;
+ 			};
+ 
+ 			sdhci0: sdhci@d8000 {
+@@ -135,6 +138,9 @@
+ 				bus-width = <8>;
+ 				tuning-count = <6>;
+ 				status = "okay";
++
++				pinctrl-names = "default";
++				pinctrl-0 = <&mmc_pins>;
+ 			};
+ 
+ 			/* CON3 */
+diff --git a/arch/arm64/boot/dts/marvell/armada-37xx.dtsi b/arch/arm64/boot/dts/marvell/armada-37xx.dtsi
+index 7073d6d..702df38 100644
+--- a/arch/arm64/boot/dts/marvell/armada-37xx.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-37xx.dtsi
+@@ -152,6 +152,11 @@
+ 					marvell,pins = "mpp15", "mpp18";
+ 					marvell,function = "spi";
+ 				};
++
++				mmc_pins: mmc-pins {
++					marvell,pins = "mpp2";
++					marvell,function = "mmc";
++				};
+ 			};
+ 
+ 			sgateclk: south-bridge-gate-clk@18014 {
+@@ -163,6 +168,11 @@
+ 			spinctrl: south-bridge-pinctrl@18830 {
+ 				compatible = "marvell,armada-3700-sb-pinctrl";
+ 				reg = <0x18830 0x4>;
++
++				sdio_pins: sdio-pins {
++					marvell,pins = "mpp2";
++					marvell,function = "sdio";
++				};
+ 			};
+ 
+ 			eth0: ethernet@30000 {
+-- 
+2.7.4
+

@@ -1,0 +1,68 @@
+From e48bf31b73fad98d9bbf8ae9121f70e79f911119 Mon Sep 17 00:00:00 2001
+From: jinghua <xigu@marvell.com>
+Date: Tue, 21 Mar 2017 16:21:50 +0800
+Subject: [PATCH 1573/2241] usb: otg: a3700: add s2ram support to otg driver
+
+- This patch adds s2ram support to A3700 OTG driver.
+- There is no clock for OTG PHY, and the USB3 COMMON
+  PHY and USB2 dedicate PHY are suspend/resumed by
+  USB Host/Device controller driver. So the only
+  thing need to be resumed is the interrupt.
+
+Change-Id: I85c5e8f74f4fe28587930abc015fc0e02ac8c472
+Signed-off-by: jinghua <xigu@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/38579
+Reviewed-by: Hua Jing <jinghua@marvell.com>
+Tested-by: Hua Jing <jinghua@marvell.com>
+(cherry picked from commit 8da52657154745141d140d97a00392256cdb28e4)
+Reviewed-on: http://vgitil04.il.marvell.com:8080/38652
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+---
+ drivers/usb/phy/phy-a3700-otg.c | 24 ++++++++++++++++++++++++
+ 1 file changed, 24 insertions(+)
+
+diff --git a/drivers/usb/phy/phy-a3700-otg.c b/drivers/usb/phy/phy-a3700-otg.c
+index 5736881..167f354 100644
+--- a/drivers/usb/phy/phy-a3700-otg.c
++++ b/drivers/usb/phy/phy-a3700-otg.c
+@@ -389,6 +389,27 @@ static int a3700_otg_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_PM
++static int a3700_otg_suspend(struct device *dev)
++{
++	return 0;
++}
++
++static int a3700_otg_resume(struct device *dev)
++{
++	struct a3700_otg *mvotg = dev_get_drvdata(dev);
++
++	a3700_otg_enable_irq(mvotg);
++
++	return 0;
++}
++
++static const struct dev_pm_ops a3700_otg_pm_ops = {
++	.suspend	= a3700_otg_suspend,
++	.resume		= a3700_otg_resume,
++};
++#endif
++
+ static const struct of_device_id a3700_otg_dt_ids[] = {
+ 	{ .compatible = "marvell,armada-3700-otg" },
+ 	{ }
+@@ -402,6 +423,9 @@ static struct platform_driver a3700_otg_driver = {
+ 	.driver		= {
+ 		.name	= "a3700_otg_phy",
+ 		.of_match_table = a3700_otg_dt_ids,
++#ifdef CONFIG_PM
++		.pm     = &a3700_otg_pm_ops,
++#endif
+ 	},
+ };
+ 
+-- 
+2.7.4
+

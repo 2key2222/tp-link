@@ -1,0 +1,81 @@
+From 9eb37ec87932c8d53ce20cf00245c02ea6c18cdc Mon Sep 17 00:00:00 2001
+From: Igal Liberman <igall@marvell.com>
+Date: Wed, 14 Jun 2017 18:54:14 +0300
+Subject: [PATCH 1710/2241] fix: clk: mvebu: cp110: always enable gate clock 18
+ (eMMC & GOP)
+
+Gate clock 18 feeds many core clocks in CP110, one of this clocks
+is the eMMC clock. eMMC driver supports only one clock - the core
+clock of eMMC) so we need to enable clock 18 in CP110 clock level
+and not the eMMC driver itself.
+
+This is a workaround, the complete solution should be nesting all
+clock providers and consumers in the CP110 driver.
+
+One possible issue with this patch might be the fact that if
+we boot without IOs which use this clock, this clock will be
+still enabled.
+
+This patch prevents a stall when the Kernel is booted without
+ppv2 driver (Clock 18 is shared between eMMC and GOP so currently,
+eMMC "relys" on ppv2 for enabling this clock and this is a bug).
+
+Change-Id: Iab49fd670f075c1c5d32b3edf30c6f27637ae117
+Signed-off-by: Igal Liberman <igall@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/40500
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/40641
+---
+ drivers/clk/mvebu/cp110-system-controller.c | 27 +++++++++++++++++++++++++++
+ 1 file changed, 27 insertions(+)
+
+diff --git a/drivers/clk/mvebu/cp110-system-controller.c b/drivers/clk/mvebu/cp110-system-controller.c
+index 6e2a838..d7c9038 100644
+--- a/drivers/clk/mvebu/cp110-system-controller.c
++++ b/drivers/clk/mvebu/cp110-system-controller.c
+@@ -360,6 +360,25 @@ static int cp110_syscon_clk_probe(struct platform_device *pdev)
+ 		cp110_clks[CP110_MAX_CORE_CLOCKS + i] = clk;
+ 	}
+ 
++	/*
++	 * Gated clock 18 feeds many core clocks in CP110, one of this clocks
++	 * is the eMMC clock. eMMC driver supports only one clock - the core
++	 * clock of eMMC) so we need to enable clock 18 in CP110 clock level
++	 * and not the eMMC driver itself.
++	 * TODO:
++	 * This is a workaround, the complete solution should be nesting all
++	 * clock providers and consumers in the CP110 driver. One possible
++	 * drawback of this WA is the fact that if we boot without IOs which
++	 * use this clock, this clock will be still enabled.
++	 */
++	if (cp110_clks[CP110_MAX_CORE_CLOCKS + CP110_GATE_SDMMC]) {
++		ret = clk_prepare_enable(cp110_clks[CP110_MAX_CORE_CLOCKS +
++						    CP110_GATE_SDMMC]);
++		if (ret)
++			goto fail_clk_add;
++
++	}
++
+ 	ret = of_clk_add_provider(np, cp110_of_clk_get, cp110_clk_data);
+ 	if (ret)
+ 		goto fail_clk_add;
+@@ -400,6 +419,14 @@ static int cp110_syscon_clk_remove(struct platform_device *pdev)
+ 
+ 	of_clk_del_provider(pdev->dev.of_node);
+ 
++	/*
++	 * Disable gated clock 18 if it exists.
++	 * (We enabled it in cp110_syscon_clk_probe).
++	 */
++	if (cp110_clks[CP110_MAX_CORE_CLOCKS + CP110_GATE_SDMMC])
++		clk_disable_unprepare(cp110_clks[CP110_MAX_CORE_CLOCKS +
++						 CP110_GATE_SDMMC]);
++
+ 	for (i = 0; i < CP110_MAX_GATABLE_CLOCKS; i++) {
+ 		struct clk *clk = cp110_clks[CP110_MAX_CORE_CLOCKS + i];
+ 
+-- 
+2.7.4
+

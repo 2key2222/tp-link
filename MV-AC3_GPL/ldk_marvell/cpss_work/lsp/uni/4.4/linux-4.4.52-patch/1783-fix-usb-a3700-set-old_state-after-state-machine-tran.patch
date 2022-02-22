@@ -1,0 +1,95 @@
+From 1035c5ecbf2959ae11773e0d8001ecbf29fb4ed0 Mon Sep 17 00:00:00 2001
+From: Leo Liang <lliang@marvell.com>
+Date: Sat, 24 Jun 2017 13:35:35 +0800
+Subject: [PATCH 1783/2241] fix: usb: a3700: set old_state after state machine
+ transferred
+
+DoK may be pluged/unpluged quickly and will oops as below.
+
+Call trace:
+[<ffffffc00028c248>] sysfs_remove_group+0x20/0xa0
+[<ffffffc000752090>] usb_remove_hcd+0x60/0x1e0
+[<ffffffc000766454>] a3700_otg_start_host+0x19c/0x1c8
+[<ffffffc00076684c>] a3700_otg_work+0x11c/0x1a0
+[<ffffffc0000de0d8>] process_one_work+0x148/0x4b0
+[<ffffffc0000de56c>] worker_thread+0x12c/0x4a0
+[<ffffffc0000e4bfc>] kthread+0xe4/0xf8
+[<ffffffc000083dd0>] ret_from_fork+0x10/0x40
+
+Root cause:
+ If twice interrupts occurs for connecting and disconnecting, then otg
+ worker starts running. The otg worker will transfer state from
+ USB_HOST_ATTACHED to USB_PORT_IDLE at first time. In fact, we still in
+ idle mode. In this time, the otg worker will try to remove hcd for both
+ USB2 and USB3. But the hcd driver still not running at all.
+
+Fix:
+ Now using old_state variable to check this case and to avoid the state
+ machine transferred from wrong state to other. Also could be only
+ transferred from idle to host, from idle to device, from host back to
+ idle, and from device back to idle.
+
+Change-Id: Ibe6394b5e551f3015f6b38c422940e4acff84d09
+Signed-off-by: Leo Liang <lliang@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/40855
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Victor Gu <xigu@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/41575
+---
+ drivers/usb/phy/phy-a3700-usb.c | 14 ++++++++++++--
+ 1 file changed, 12 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/usb/phy/phy-a3700-usb.c b/drivers/usb/phy/phy-a3700-usb.c
+index 34ed386..8b4d700 100644
+--- a/drivers/usb/phy/phy-a3700-usb.c
++++ b/drivers/usb/phy/phy-a3700-usb.c
+@@ -213,8 +213,10 @@ static void a3700_otg_work(struct work_struct *work)
+ 		}
+ 		break;
+ 	default:
++		dev_dbg(mvotg->dev, "wrong state.\n");
+ 		break;
+ 	}
++	mvotg->old_state = mvotg->port_state;
+ }
+ 
+ static void a3700_static_host_work(struct work_struct *work)
+@@ -245,9 +247,19 @@ static void a3700_static_host_work(struct work_struct *work)
+ 		if (vbus_on) {
+ 			if (regulator_enable(mvotg->vcc))
+ 				dev_err(mvotg->dev, "Failed to enable power\n");
++			else
++				/* done for moving to host mode and need to
++				 * store state after regulator enabled.
++				 */
++				mvotg->old_state = USB_HOST_ATTACHED;
+ 		} else {
+ 			if (regulator_disable(mvotg->vcc))
+ 				dev_err(mvotg->dev, "Failed to disable power\n");
++			else
++				/* done for moving to idle mode and need to
++				 * store state after regulator disabled.
++				 */
++				mvotg->old_state = USB_PORT_IDLE;
+ 		}
+ 	}
+ }
+@@ -293,7 +305,6 @@ static irqreturn_t a3700_usb_id_isr_static_host(int irq, void *data)
+ 	}
+ 
+ 	if (port_state_original != mvotg->port_state) {
+-		mvotg->old_state = port_state_original;
+ 		a3700_otg_run_state_machine(mvotg, 0);
+ 	}
+ 
+@@ -346,7 +357,6 @@ static irqreturn_t a3700_usb_id_isr(int irq, void *data)
+ 	}
+ 
+ 	if (port_state_original != mvotg->port_state) {
+-		mvotg->old_state = port_state_original;
+ 		a3700_otg_run_state_machine(mvotg, 0);
+ 	}
+ 
+-- 
+2.7.4
+

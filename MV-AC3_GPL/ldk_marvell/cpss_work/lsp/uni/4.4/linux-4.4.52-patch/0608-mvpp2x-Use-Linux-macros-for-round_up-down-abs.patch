@@ -1,0 +1,102 @@
+From 3c692e68dba52f0a11da09b8071618d802763452 Mon Sep 17 00:00:00 2001
+From: Alan Winkowski <walan@marvell.com>
+Date: Tue, 19 Jul 2016 19:00:28 +0300
+Subject: [PATCH 0608/2241] mvpp2x: Use Linux macros for round_up/down, abs()
+
+Change-Id: I8b636f4b62c2e286b8ef6117b4c6442603c73bef
+Signed-off-by: Alan Winkowski <walan@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/31245
+Reviewed-by: Yuval Caduri <cyuval@marvell.com>
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ .../net/ethernet/marvell/mvpp2x/mv_pp2x_debug.c    | 15 ++++++------
+ .../net/ethernet/marvell/mvpp2x/mv_pp2x_debug.h    | 27 ----------------------
+ 2 files changed, 7 insertions(+), 35 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_debug.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_debug.c
+index c4c633a..e4b5151 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_debug.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_debug.c
+@@ -57,9 +57,10 @@ void mv_pp2x_skb_dump(struct sk_buff *skb, int size, int access)
+ 				access);
+ 		return;
+ 	}
+-	mem_addr = MV_ALIGN_DOWN((uintptr_t)addr, 4);
+-	size = MV_ALIGN_UP(size, 4);
+-	addr = (void *)MV_ALIGN_DOWN((uintptr_t)addr, access);
++	mem_addr = round_down((uintptr_t)addr, 4);
++	size = round_up(size, 4);
++	addr = (void *)round_down((uintptr_t)addr, access);
++
+ 	while (size > 0) {
+ 		DBG_MSG("%08lx: ", mem_addr);
+ 		i = 0;
+@@ -69,17 +70,17 @@ void mv_pp2x_skb_dump(struct sk_buff *skb, int size, int access)
+ 				switch (access) {
+ 				case 1:
+ 					DBG_MSG("%02x ",
+-						MV_MEMIO8_READ(mem_addr));
++						ioread8((void *)mem_addr));
+ 					break;
+ 
+ 				case 2:
+ 					DBG_MSG("%04x ",
+-						MV_MEMIO16_READ(mem_addr));
++						ioread16((void *)mem_addr));
+ 					break;
+ 
+ 				case 4:
+ 					DBG_MSG("%08x ",
+-						MV_MEMIO32_READ(mem_addr));
++						ioread32((void *)mem_addr));
+ 					break;
+ 				}
+ 			} else {
+@@ -96,5 +97,3 @@ void mv_pp2x_skb_dump(struct sk_buff *skb, int size, int access)
+ 	}
+ }
+ 
+-
+-
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_debug.h b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_debug.h
+index 3f7f379..8717b01 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_debug.h
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_debug.h
+@@ -24,33 +24,6 @@
+ 
+ #define DBG_MSG(fmt, args...)	printk(fmt, ## args)
+ 
+-/* Macro for alignment up. For example, MV_ALIGN_UP(0x0330, 0x20) = 0x0340   */
+-#define MV_ALIGN_UP(number, align) (((number) & ((align) - 1)) ? \
+-				    (((number) + (align)) & ~((align) - 1)) : \
+-				    (number))
+-
+-/* Macro for alignment down. For example, MV_ALIGN_UP(0x0330, 0x20) = 0x0320 */
+-#define MV_ALIGN_DOWN(number, align) ((number) & ~((align) - 1))
+-
+-/* CPU architecture dependent 32, 16, 8 bit read/write IO addresses */
+-#define MV_MEMIO32_WRITE(addr, data)    \
+-	((*((unsigned int *)(addr))) = ((unsigned int)(data)))
+-
+-#define MV_MEMIO32_READ(addr)           \
+-	((*((unsigned int *)(addr))))
+-
+-#define MV_MEMIO16_WRITE(addr, data)    \
+-	((*((unsigned short *)(addr))) = ((unsigned short)(data)))
+-
+-#define MV_MEMIO16_READ(addr)           \
+-	((*((unsigned short *)(addr))))
+-
+-#define MV_MEMIO8_WRITE(addr, data)     \
+-	((*((unsigned char *)(addr))) = ((unsigned char)(data)))
+-
+-#define MV_MEMIO8_READ(addr)            \
+-	((*((unsigned char *)(addr))))
+-
+ void mv_pp2x_skb_dump(struct sk_buff *skb, int size, int access);
+ 
+ int mv_pp2x_debug_param_set(u32 param);
+-- 
+2.7.4
+

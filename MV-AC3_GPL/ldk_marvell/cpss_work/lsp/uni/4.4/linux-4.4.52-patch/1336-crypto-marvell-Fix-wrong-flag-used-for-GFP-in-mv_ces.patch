@@ -1,0 +1,40 @@
+From 058ed69ef80ace38b82c4a4bbf871d159c9e9250 Mon Sep 17 00:00:00 2001
+From: Romain Perier <romain.perier@free-electrons.com>
+Date: Mon, 18 Jul 2016 11:32:24 +0200
+Subject: [PATCH 1336/2241] crypto: marvell - Fix wrong flag used for GFP in
+ mv_cesa_dma_add_iv_op
+
+Use the parameter 'gfp_flags' instead of 'flag' as second argument of
+dma_pool_alloc(). The parameter 'flag' is for the TDMA descriptor, its
+content has no sense for the allocator.
+
+This patch was back-ported from Linux 4.9.7.
+
+Change-Id: I8441a6dcda63dced8882b6e4d7529999ffd948f6
+Fixes: bac8e805a30d ("crypto: marvell - Copy IV vectors by DMA...")
+Signed-off-by: Romain Perier <romain.perier@free-electrons.com>
+Acked-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/36371
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Neta Zur Hershkovits <neta@marvell.com>
+---
+ drivers/crypto/marvell/tdma.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/crypto/marvell/tdma.c b/drivers/crypto/marvell/tdma.c
+index b0f9f50..86a065b 100644
+--- a/drivers/crypto/marvell/tdma.c
++++ b/drivers/crypto/marvell/tdma.c
+@@ -221,7 +221,7 @@ int mv_cesa_dma_add_iv_op(struct mv_cesa_tdma_chain *chain, dma_addr_t src,
+ 	if (IS_ERR(tdma))
+ 		return PTR_ERR(tdma);
+ 
+-	iv = dma_pool_alloc(cesa_dev->dma->iv_pool, flags, &dma_handle);
++	iv = dma_pool_alloc(cesa_dev->dma->iv_pool, gfp_flags, &dma_handle);
+ 	if (!iv)
+ 		return -ENOMEM;
+ 
+-- 
+2.7.4
+

@@ -1,0 +1,46 @@
+From 697f8dc5e89526527b2af43d3c7ca30a161a90a4 Mon Sep 17 00:00:00 2001
+From: Dmitri Epshtein <dima@marvell.com>
+Date: Sun, 4 Sep 2016 16:30:17 +0300
+Subject: [PATCH 0960/2241] pp3: Free skb on TX if debug_stop_rx_tx was set
+
+Change-Id: I2f32f3c78cdd340fde6475970d3abe8c629da984
+Signed-off-by: Dmitri Epshtein <dima@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/32512
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Neta Zur Hershkovits <neta@marvell.com>
+---
+ drivers/net/ethernet/marvell/pp3/net_dev/mv_netdev.c | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/pp3/net_dev/mv_netdev.c b/drivers/net/ethernet/marvell/pp3/net_dev/mv_netdev.c
+index e8023f0..e42f528 100644
+--- a/drivers/net/ethernet/marvell/pp3/net_dev/mv_netdev.c
++++ b/drivers/net/ethernet/marvell/pp3/net_dev/mv_netdev.c
+@@ -1270,7 +1270,8 @@ static inline int pp3_pool_bufs_free_internal(int buf_num, struct net_device *de
+ 	int buffs_req, buffs_free, total_free = 0;
+ 	u32  ph_addr[MV_PP3_BUF_REQUEST_SIZE], vr_addr[MV_PP3_BUF_REQUEST_SIZE], pool_id[MV_PP3_BUF_REQUEST_SIZE];
+ 	int time_out = 0, occ, i;
+-	struct pp3_cpu	*cpu_ctrl = pp3_cpus[smp_processor_id()];
++	int cpu = smp_processor_id();
++	struct pp3_cpu	*cpu_ctrl = pp3_cpus[cpu];
+ 	int frame = cpu_ctrl->bm_frame;
+ 	int queue = cpu_ctrl->bm_swq;
+ 	bool zero_flag;
+@@ -3223,11 +3224,12 @@ static int mv_pp3_tx(struct sk_buff *skb, struct net_device *dev)
+ 	int tx_ts_queue;
+ #endif
+ 
++	MV_LIGHT_LOCK(flags);
++
+ #ifdef PP3_INTERNAL_DEBUG
+ 	if (debug_stop_rx_tx)
+-		return NETDEV_TX_OK;
++		goto out;
+ #endif
+-	MV_LIGHT_LOCK(flags);
+ 
+ 	/* No support for scatter-gather */
+ 	if (unlikely(skb_is_nonlinear(skb))) {
+-- 
+2.7.4
+

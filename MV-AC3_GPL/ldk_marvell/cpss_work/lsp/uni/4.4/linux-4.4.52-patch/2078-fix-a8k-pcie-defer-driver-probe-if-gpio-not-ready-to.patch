@@ -1,0 +1,39 @@
+From c384ef68d71e079b36f263dfed5cb7b24fdf30ab Mon Sep 17 00:00:00 2001
+From: Evan Wang <xswang@marvell.com>
+Date: Wed, 27 Sep 2017 09:11:29 +0800
+Subject: [PATCH 2078/2241] fix: a8k: pcie: defer driver probe if gpio not
+ ready to use
+
+If the EP reset is connected to gpio, which is not ready to
+use, it is necessary to defer driver probe in case gpio
+becomes ready.
+
+Change-Id: I8f5c164c87b403d643b36bfe0f37fcfac582aaac
+Signed-off-by: Evan Wang <xswang@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/44719
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Marcin Wojtas <mw@semihalf.com>
+Reviewed-by: Igal Liberman <igall@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/pci/host/pcie-armada8k.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/drivers/pci/host/pcie-armada8k.c b/drivers/pci/host/pcie-armada8k.c
+index f7d97d2..6a3347e 100644
+--- a/drivers/pci/host/pcie-armada8k.c
++++ b/drivers/pci/host/pcie-armada8k.c
+@@ -320,6 +320,10 @@ static int armada8k_pcie_probe(struct platform_device *pdev)
+ 	reset_gpio = of_get_named_gpio_flags(pdev->dev.of_node,
+ 					     "reset-gpios", 0,
+ 					     &armada8k_pcie->flags);
++	if (reset_gpio == -EPROBE_DEFER) {
++		ret = reset_gpio;
++		goto fail_free;
++	}
+ 	if (gpio_is_valid(reset_gpio)) {
+ 		armada8k_pcie->reset_gpio = gpio_to_desc(reset_gpio);
+ 		armada8k_pcie_reset(armada8k_pcie);
+-- 
+2.7.4
+

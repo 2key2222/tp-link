@@ -1,0 +1,115 @@
+From 0094eb231108895ca5bc4d3f16725ddaef8a845d Mon Sep 17 00:00:00 2001
+From: Christine Gharzuzi <chrisg@marvell.com>
+Date: Tue, 4 Apr 2017 12:58:19 +0300
+Subject: [PATCH 1547/2241] fix: a8k: update SPI partition for DB boards
+
+1. remove unused legacy SPI partition for boot-from-uart for A0.
+2. add new partition for recovery section:
+   section in SPI preserved for 2nd U-Boot image - used for recovery.
+3. aligned Filesystem partition to be last partition accordingly.
+
+updated partitions:
+
+1.boot partition, start = 0MB , size = 2MB
+2.recovery image partition, start = 2MB, size = 2MB
+3.Filesystem partition, start = 4MB, size = 12MB
+
+Change-Id: Ief113a5d88ea064df1340be64ec4b0dce20f3cff
+Signed-off-by: Christine Gharzuzi <chrisg@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/38423
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-7040-db.dtsi  | 10 +++++-----
+ arch/arm64/boot/dts/marvell/armada-7040-pcac.dts |  6 +++++-
+ arch/arm64/boot/dts/marvell/armada-7040-pd.dts   | 10 +++++-----
+ arch/arm64/boot/dts/marvell/armada-8040-db.dtsi  | 10 +++++-----
+ 4 files changed, 20 insertions(+), 16 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-7040-db.dtsi b/arch/arm64/boot/dts/marvell/armada-7040-db.dtsi
+index 021e020..647c3a5 100644
+--- a/arch/arm64/boot/dts/marvell/armada-7040-db.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-7040-db.dtsi
+@@ -124,12 +124,12 @@
+ 						reg = <0x0 0x200000>;
+ 					};
+ 					partition@200000 {
+-						label = "Filesystem";
+-						reg = <0x200000 0xd00000>;
++						label = "recovery_image";
++						reg = <0x200000 0x200000>;
+ 					};
+-					partition@d00000 {
+-						label = "boot_2nd";
+-						reg = <0xf00000 0x100000>;
++					partition@400000 {
++						label = "Filesystem";
++						reg = <0x400000 0xc00000>;
+ 					};
+ 				};
+ 			};
+diff --git a/arch/arm64/boot/dts/marvell/armada-7040-pcac.dts b/arch/arm64/boot/dts/marvell/armada-7040-pcac.dts
+index 6232208..5e4e34d 100644
+--- a/arch/arm64/boot/dts/marvell/armada-7040-pcac.dts
++++ b/arch/arm64/boot/dts/marvell/armada-7040-pcac.dts
+@@ -147,8 +147,12 @@
+ 						reg = <0x0 0x200000>;
+ 					};
+ 					partition@200000 {
++						label = "recovery_image";
++						reg = <0x200000 0x200000>;
++					};
++					partition@400000 {
+ 						label = "Filesystem";
+-						reg = <0x200000 0xd00000>;
++						reg = <0x400000 0xc00000>;
+ 					};
+ 				};
+ 			};
+diff --git a/arch/arm64/boot/dts/marvell/armada-7040-pd.dts b/arch/arm64/boot/dts/marvell/armada-7040-pd.dts
+index 223ca45..95fffb4 100644
+--- a/arch/arm64/boot/dts/marvell/armada-7040-pd.dts
++++ b/arch/arm64/boot/dts/marvell/armada-7040-pd.dts
+@@ -167,12 +167,12 @@
+ 						reg = <0x0 0x200000>;
+ 					};
+ 					partition@200000 {
+-						label = "Filesystem";
+-						reg = <0x200000 0xd00000>;
++						label = "recovery_image";
++						reg = <0x200000 0x200000>;
+ 					};
+-					partition@d00000 {
+-						label = "boot_2nd";
+-						reg = <0xf00000 0x100000>;
++					partition@400000 {
++						label = "Filesystem";
++						reg = <0x400000 0xc00000>;
+ 					};
+ 				};
+ 			};
+diff --git a/arch/arm64/boot/dts/marvell/armada-8040-db.dtsi b/arch/arm64/boot/dts/marvell/armada-8040-db.dtsi
+index 57ceef0..879dd43 100644
+--- a/arch/arm64/boot/dts/marvell/armada-8040-db.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-8040-db.dtsi
+@@ -76,12 +76,12 @@
+ 						reg = <0x0 0x200000>;
+ 					};
+ 					partition@200000 {
+-						label = "Filesystem";
+-						reg = <0x200000 0xd00000>;
++						label = "recovery_image";
++						reg = <0x200000 0x200000>;
+ 					};
+-					partition@d00000 {
+-						label = "boot_2nd";
+-						reg = <0xf00000 0x100000>;
++					partition@400000 {
++						label = "Filesystem";
++						reg = <0x400000 0xc00000>;
+ 					};
+ 				};
+ 			};
+-- 
+2.7.4
+

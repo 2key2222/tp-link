@@ -1,0 +1,383 @@
+From 82b07c5737de2ca45d6365535a71914d0aa3bb1f Mon Sep 17 00:00:00 2001
+From: Ofer Heifetz <oferh@marvell.com>
+Date: Tue, 24 Oct 2017 21:28:01 +0300
+Subject: [PATCH 2044/2241] crypto: inside-secure: per request invalidation use
+
+Overwriting the context send & handle_result is wrong since more
+than one request may be in the queue, in high load scenario there may
+be cases that the bind routine is switched for a request to the wrong
+routine which causes crashes.
+
+This commit adds a need_inv flag for the request in addition to
+the context, when needed, the context flag is set based on the context
+data change. Then when a request is added to crypto queue, its
+need_inv is set and the context flag is cleared.
+
+When the invalidation handler is called, the request need_inv is
+cleared.
+
+Change-Id: Id776f731a18e75c6d85bd4d7a658fc931715efef
+Signed-off-by: Ofer Heifetz <oferh@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/45566
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/crypto/inside-secure/cipher.c   | 72 +++++++++++++++++++++++-------
+ drivers/crypto/inside-secure/hash.c     | 79 ++++++++++++++++++++++++---------
+ drivers/crypto/inside-secure/safexcel.h |  1 +
+ 3 files changed, 115 insertions(+), 37 deletions(-)
+
+diff --git a/drivers/crypto/inside-secure/cipher.c b/drivers/crypto/inside-secure/cipher.c
+index fa7534c..919d5e4 100644
+--- a/drivers/crypto/inside-secure/cipher.c
++++ b/drivers/crypto/inside-secure/cipher.c
+@@ -30,6 +30,7 @@ struct safexcel_cipher_ctx {
+ 
+ struct safexcel_cipher_reqctx {
+ 	enum safexcel_cipher_direction direction;
++	bool needs_inv;
+ };
+ 
+ /* Build cipher token */
+@@ -130,7 +131,7 @@ static int safexcel_context_control(struct safexcel_cipher_ctx *ctx,
+ }
+ 
+ /* Handle a cipher result descriptor */
+-static int safexcel_handle_result(struct safexcel_crypto_priv *priv, int ring,
++static int safexcel_handle_req_result(struct safexcel_crypto_priv *priv, int ring,
+ 				  struct crypto_async_request *async,
+ 				  bool *should_complete, int *ret)
+ {
+@@ -263,7 +264,6 @@ static int safexcel_aes_send(struct crypto_async_request *async,
+ 		n_rdesc++;
+ 	}
+ 
+-	ctx->base.handle_result = safexcel_handle_result;
+ 	request->req = &req->base;
+ 	list_add_tail(&request->list, &priv->ring[ring].list);
+ 
+@@ -336,9 +336,7 @@ static int safexcel_handle_inv_result(struct safexcel_crypto_priv *priv,
+ 		return ndesc;
+ 	}
+ 
+-	ctx->base.needs_inv = false;
+ 	ctx->base.ring = safexcel_select_ring(priv);
+-	ctx->base.send = safexcel_aes_send;
+ 
+ 	spin_lock_bh(&priv->ring[ctx->base.ring].queue_lock);
+ 	enq_ret = ablkcipher_enqueue_request(&priv->ring[ctx->base.ring].queue, req);
+@@ -355,6 +353,26 @@ static int safexcel_handle_inv_result(struct safexcel_crypto_priv *priv,
+ 	return ndesc;
+ }
+ 
++static int safexcel_handle_result(struct safexcel_crypto_priv *priv, int ring,
++				  struct crypto_async_request *async,
++				  bool *should_complete, int *ret)
++{
++
++	struct ablkcipher_request *req = ablkcipher_request_cast(async);
++	struct safexcel_cipher_reqctx *sreq = ablkcipher_request_ctx(req);
++	int err;
++
++	if (sreq->needs_inv) {
++		sreq->needs_inv = false;
++		err = safexcel_handle_inv_result(priv, ring, async,
++						 should_complete, ret);
++	} else
++		err = safexcel_handle_req_result(priv, ring, async,
++						 should_complete, ret);
++
++	return err;
++}
++
+ /* Send cipher invalidation command to the engine */
+ static int safexcel_cipher_send_inv(struct crypto_async_request *async,
+ 				    int ring, struct safexcel_request *request,
+@@ -365,8 +383,6 @@ static int safexcel_cipher_send_inv(struct crypto_async_request *async,
+ 	struct safexcel_crypto_priv *priv = ctx->priv;
+ 	int ret;
+ 
+-	ctx->base.handle_result = safexcel_handle_inv_result;
+-
+ 	ret = safexcel_invalidate_cache(async, &ctx->base, priv,
+ 					ctx->base.ctxr_dma, ring, request);
+ 	if (unlikely(ret))
+@@ -378,29 +394,49 @@ static int safexcel_cipher_send_inv(struct crypto_async_request *async,
+ 	return 0;
+ }
+ 
++static int safexcel_send(struct crypto_async_request *async,
++			 int ring, struct safexcel_request *request,
++			 int *commands, int *results)
++{
++	struct ablkcipher_request *req = ablkcipher_request_cast(async);
++	struct safexcel_cipher_reqctx *sreq = ablkcipher_request_ctx(req);
++	int ret;
++
++	if (sreq->needs_inv)
++		ret = safexcel_cipher_send_inv(async, ring, request,
++					       commands, results);
++	else
++		ret = safexcel_aes_send(async, ring, request,
++					commands, results);
++	return ret;
++}
++
+ /* Upon context exit, send invalidation command */
+ static int safexcel_cipher_exit_inv(struct crypto_tfm *tfm)
+ {
+ 	struct safexcel_cipher_ctx *ctx = crypto_tfm_ctx(tfm);
+ 	struct safexcel_crypto_priv *priv = ctx->priv;
+-	struct ablkcipher_request req;
++	char __req_desc[sizeof(struct ablkcipher_request) +
++		tfm->crt_ablkcipher.reqsize] CRYPTO_MINALIGN_ATTR;
++	struct ablkcipher_request *req = (void *)__req_desc;
++	struct safexcel_cipher_reqctx *sreq = ablkcipher_request_ctx(req);
+ 	struct safexcel_inv_result result = { 0 };
+ 	int ret;
+ 
+-	memset(&req, 0, sizeof(struct ablkcipher_request));
++	memset(req, 0, sizeof(struct ablkcipher_request));
+ 
+ 	/* create invalidation request */
+ 	init_completion(&result.completion);
+-	ablkcipher_request_set_callback(&req, CRYPTO_TFM_REQ_MAY_BACKLOG,
++	ablkcipher_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG,
+ 					safexcel_inv_complete, &result);
+ 
+-	ablkcipher_request_set_tfm(&req, __crypto_ablkcipher_cast(tfm));
+-	ctx = crypto_tfm_ctx(req.base.tfm);
++	ablkcipher_request_set_tfm(req, __crypto_ablkcipher_cast(tfm));
++	ctx = crypto_tfm_ctx(req->base.tfm);
+ 	ctx->base.exit_inv = true;
+-	ctx->base.send = safexcel_cipher_send_inv;
++	sreq->needs_inv = true;
+ 
+ 	spin_lock_bh(&priv->ring[ctx->base.ring].queue_lock);
+-	ret = ablkcipher_enqueue_request(&priv->ring[ctx->base.ring].queue, &req);
++	ret = ablkcipher_enqueue_request(&priv->ring[ctx->base.ring].queue, req);
+ 	spin_unlock_bh(&priv->ring[ctx->base.ring].queue_lock);
+ 
+ 	queue_work(priv->ring[ctx->base.ring].workqueue,
+@@ -428,6 +464,7 @@ static int safexcel_aes(struct ablkcipher_request *req,
+ 	int ret;
+ 
+ 	rctx->direction = dir;
++	rctx->needs_inv = false;
+ 	ctx->mode = mode;
+ 
+ 	/*
+@@ -439,11 +476,12 @@ static int safexcel_aes(struct ablkcipher_request *req,
+ 	 * If it's EIP97 with existing context, the send routine is already set.
+ 	 */
+ 	if (ctx->base.ctxr) {
+-		if (priv->eip_type == EIP197 && ctx->base.needs_inv)
+-			ctx->base.send = safexcel_cipher_send_inv;
++		if (priv->eip_type == EIP197 && ctx->base.needs_inv) {
++			rctx->needs_inv = true;
++			ctx->base.needs_inv = false;
++		}
+ 	} else {
+ 		ctx->base.ring = safexcel_select_ring(priv);
+-		ctx->base.send = safexcel_aes_send;
+ 		ctx->base.ctxr = dma_pool_zalloc(priv->context_pool,
+ 						 EIP197_GFP_FLAGS(req->base),
+ 						 &ctx->base.ctxr_dma);
+@@ -480,6 +518,8 @@ static int safexcel_ablkcipher_cra_init(struct crypto_tfm *tfm)
+ 		container_of(tfm->__crt_alg, struct safexcel_alg_template, alg.crypto);
+ 
+ 	ctx->priv = tmpl->priv;
++	ctx->base.send = safexcel_send;
++	ctx->base.handle_result = safexcel_handle_result;
+ 
+ 	tfm->crt_ablkcipher.reqsize = sizeof(struct safexcel_cipher_reqctx);
+ 
+diff --git a/drivers/crypto/inside-secure/hash.c b/drivers/crypto/inside-secure/hash.c
+index 0574d52..ceb6a38 100644
+--- a/drivers/crypto/inside-secure/hash.c
++++ b/drivers/crypto/inside-secure/hash.c
+@@ -114,9 +114,9 @@ static void safexcel_context_control(struct safexcel_ahash_ctx *ctx,
+ }
+ 
+ /* Handle a hash result descriptor */
+-static int safexcel_handle_result(struct safexcel_crypto_priv *priv, int ring,
+-				  struct crypto_async_request *async,
+-				  bool *should_complete, int *ret)
++static int safexcel_handle_req_result(struct safexcel_crypto_priv *priv, int ring,
++				      struct crypto_async_request *async,
++				      bool *should_complete, int *ret)
+ {
+ 	struct safexcel_result_desc *rdesc;
+ 	int cache_next_len, len;
+@@ -163,9 +163,9 @@ static int safexcel_handle_result(struct safexcel_crypto_priv *priv, int ring,
+ }
+ 
+ /* Send hash command to the engine */
+-static int safexcel_ahash_send(struct crypto_async_request *async, int ring,
+-			       struct safexcel_request *request, int *commands,
+-			       int *results)
++static int safexcel_ahash_send_req(struct crypto_async_request *async, int ring,
++				    struct safexcel_request *request, int *commands,
++				    int *results)
+ {
+ 	struct ahash_request *areq = ahash_request_cast(async);
+ 	struct crypto_ahash *ahash = crypto_ahash_reqtfm(areq);
+@@ -274,7 +274,6 @@ send_command:
+ 		goto cdesc_rollback;
+ 	}
+ 
+-	ctx->base.handle_result = safexcel_handle_result;
+ 	request->req = &areq->base;
+ 
+ 	list_add_tail(&request->list, &priv->ring[ring].list);
+@@ -365,14 +364,11 @@ static int safexcel_handle_inv_result(struct safexcel_crypto_priv *priv,
+ 	}
+ 
+ 	ctx->base.ring = safexcel_select_ring(priv);
+-	ctx->base.needs_inv = false;
+-	ctx->base.send = safexcel_ahash_send;
+ 
+ 	spin_lock_bh(&priv->ring[ctx->base.ring].queue_lock);
+ 	enq_ret = ahash_enqueue_request(&priv->ring[ctx->base.ring].queue, areq);
+ 	spin_unlock_bh(&priv->ring[ctx->base.ring].queue_lock);
+ 
+-
+ 	if (enq_ret != -EINPROGRESS)
+ 		*ret = enq_ret;
+ 
+@@ -384,6 +380,25 @@ static int safexcel_handle_inv_result(struct safexcel_crypto_priv *priv,
+ 	return 1;
+ }
+ 
++static int safexcel_handle_result(struct safexcel_crypto_priv *priv, int ring,
++				  struct crypto_async_request *async,
++				  bool *should_complete, int *ret)
++{
++	struct ahash_request *areq = ahash_request_cast(async);
++	struct safexcel_ahash_req *req = ahash_request_ctx(areq);
++	int err;
++
++	if (req->needs_inv) {
++		req->needs_inv = false;
++		err = safexcel_handle_inv_result(priv, ring, async,
++						 should_complete, ret);
++	} else
++		err = safexcel_handle_req_result(priv, ring, async,
++						 should_complete, ret);
++
++	return err;
++}
++
+ /* Send hash invalidation command to the engine */
+ static int safexcel_ahash_send_inv(struct crypto_async_request *async,
+ 				   int ring, struct safexcel_request *request,
+@@ -393,7 +408,6 @@ static int safexcel_ahash_send_inv(struct crypto_async_request *async,
+ 	struct safexcel_ahash_ctx *ctx = crypto_ahash_ctx(crypto_ahash_reqtfm(areq));
+ 	int ret;
+ 
+-	ctx->base.handle_result = safexcel_handle_inv_result;
+ 	ret = safexcel_invalidate_cache(async, &ctx->base, ctx->priv,
+ 					ctx->base.ctxr_dma, ring, request);
+ 	if (unlikely(ret))
+@@ -405,29 +419,48 @@ static int safexcel_ahash_send_inv(struct crypto_async_request *async,
+ 	return 0;
+ }
+ 
++static int safexcel_ahash_send(struct crypto_async_request *async,
++			 int ring, struct safexcel_request *request,
++			 int *commands, int *results)
++{
++
++	struct ahash_request *areq = ahash_request_cast(async);
++	struct safexcel_ahash_req *req = ahash_request_ctx(areq);
++	int ret;
++
++	if (req->needs_inv)
++		ret = safexcel_ahash_send_inv(async, ring, request,
++					      commands, results);
++	else
++		ret = safexcel_ahash_send_req(async, ring, request,
++					      commands, results);
++	return ret;
++}
++
+ /* Upon context exit, send invalidation command */
+ static int safexcel_ahash_exit_inv(struct crypto_tfm *tfm)
+ {
+ 	struct safexcel_ahash_ctx *ctx = crypto_tfm_ctx(tfm);
+ 	struct safexcel_crypto_priv *priv = ctx->priv;
+-	struct ahash_request req;
++	AHASH_REQUEST_ON_STACK(req, __crypto_ahash_cast(tfm));
++	struct safexcel_ahash_req *sreq = ahash_request_ctx(req);
+ 	struct safexcel_inv_result result = { 0 };
+ 	int ret;
+ 
+-	memset(&req, 0, sizeof(struct ahash_request));
++	memset(req, 0, sizeof(struct ahash_request));
+ 
+ 	/* create invalidation request */
+ 	init_completion(&result.completion);
+-	ahash_request_set_callback(&req, CRYPTO_TFM_REQ_MAY_BACKLOG,
++	ahash_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG,
+ 				   safexcel_inv_complete, &result);
+ 
+-	ahash_request_set_tfm(&req, __crypto_ahash_cast(tfm));
+-	ctx = crypto_tfm_ctx(req.base.tfm);
++	ahash_request_set_tfm(req, __crypto_ahash_cast(tfm));
++	ctx = crypto_tfm_ctx(req->base.tfm);
+ 	ctx->base.exit_inv = true;
+-	ctx->base.send = safexcel_ahash_send_inv;
++	sreq->needs_inv = true;
+ 
+ 	spin_lock_bh(&priv->ring[ctx->base.ring].queue_lock);
+-	ret = ahash_enqueue_request(&priv->ring[ctx->base.ring].queue, &req);
++	ret = ahash_enqueue_request(&priv->ring[ctx->base.ring].queue, req);
+ 	spin_unlock_bh(&priv->ring[ctx->base.ring].queue_lock);
+ 
+ 	queue_work(priv->ring[ctx->base.ring].workqueue,
+@@ -533,7 +566,7 @@ static int safexcel_ahash_update(struct ahash_request *areq)
+ 		queued -= extra;
+ 	}
+ 
+-	ctx->base.send = safexcel_ahash_send;
++	req->needs_inv = false;
+ 
+ 	/*
+ 	 * Check if the context exists, if yes:
+@@ -544,8 +577,10 @@ static int safexcel_ahash_update(struct ahash_request *areq)
+ 	 * If it's EIP97 with existing context, the send routine is already set.
+ 	 */
+ 	if (ctx->base.ctxr) {
+-		if (priv->eip_type == EIP197 && ctx->base.needs_inv)
+-			ctx->base.send = safexcel_ahash_send_inv;
++		if (priv->eip_type == EIP197 && ctx->base.needs_inv) {
++			ctx->base.needs_inv = false;
++			req->needs_inv = true;
++		}
+ 	} else {
+ 		ctx->base.ring = safexcel_select_ring(priv);
+ 		ctx->base.ctxr = dma_pool_zalloc(priv->context_pool,
+@@ -628,6 +663,8 @@ static int safexcel_ahash_cra_init(struct crypto_tfm *tfm)
+ 			     struct safexcel_alg_template, alg.ahash);
+ 
+ 	ctx->priv = tmpl->priv;
++	ctx->base.send = safexcel_ahash_send;
++	ctx->base.handle_result = safexcel_handle_result;
+ 
+ 	crypto_ahash_set_reqsize(__crypto_ahash_cast(tfm),
+ 				 sizeof(struct safexcel_ahash_req));
+diff --git a/drivers/crypto/inside-secure/safexcel.h b/drivers/crypto/inside-secure/safexcel.h
+index d88f3ac..5eb6576 100644
+--- a/drivers/crypto/inside-secure/safexcel.h
++++ b/drivers/crypto/inside-secure/safexcel.h
+@@ -657,6 +657,7 @@ struct safexcel_ahash_req {
+ 	bool last_req;
+ 	bool finish;
+ 	bool hmac;
++	bool needs_inv;
+ 
+ 	u8 state_sz;	/* expected sate size, only set once */
+ 	u32 state[SHA256_DIGEST_SIZE / sizeof(u32)];
+-- 
+2.7.4
+

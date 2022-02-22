@@ -1,0 +1,66 @@
+From 934f668a5ef6a096ab0af5424bdcd300be00a2a4 Mon Sep 17 00:00:00 2001
+From: zachary zhang <zhangzg@marvell.com>
+Date: Thu, 16 Nov 2017 16:43:42 +0800
+Subject: [PATCH 2109/2241] fix: dts: a70x0: a80x0: update spi partition
+ description
+
+SPI boot partition should be 4MB in order to cover env variables
+for A7k and A8K board.
+This patch reallocates SPI boot partition to 4MB in order to cover
+env variables and file system size to start from 4M to avoid
+uboot env parameters' location for a7k and a8k board.
+
+Change-Id: I991afccb58abe011bce3cdfc01f3a15b850a4f4a
+Signed-off-by: zachary zhang <zhangzg@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/46168
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+Tested-by: Hanna Hawa <hannah@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-7040-db.dtsi |  6 +-----
+ arch/arm64/boot/dts/marvell/armada-8040-db.dtsi | 10 +++-------
+ 2 files changed, 4 insertions(+), 12 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-7040-db.dtsi b/arch/arm64/boot/dts/marvell/armada-7040-db.dtsi
+index 1f294c8..95c15fe 100644
+--- a/arch/arm64/boot/dts/marvell/armada-7040-db.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-7040-db.dtsi
+@@ -120,11 +120,7 @@
+ 					spi-3byte-addressing;
+ 					partition@0 {
+ 						label = "boot";
+-						reg = <0x0 0x200000>;
+-					};
+-					partition@200000 {
+-						label = "recovery_image";
+-						reg = <0x200000 0x200000>;
++						reg = <0x0 0x400000>;
+ 					};
+ 					partition@400000 {
+ 						label = "Filesystem";
+diff --git a/arch/arm64/boot/dts/marvell/armada-8040-db.dtsi b/arch/arm64/boot/dts/marvell/armada-8040-db.dtsi
+index eb8a760..1093dac 100644
+--- a/arch/arm64/boot/dts/marvell/armada-8040-db.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-8040-db.dtsi
+@@ -270,15 +270,11 @@
+ 					spi-3byte-addressing;
+ 					partition@0 {
+ 						label = "boot";
+-						reg = <0x0 0x200000>;
++						reg = <0x0 0x400000>;
+ 					};
+-					partition@200000 {
++					partition@400000 {
+ 						label = "Filesystem";
+-						reg = <0x200000 0xd00000>;
+-					};
+-					partition@d00000 {
+-						label = "boot_2nd";
+-						reg = <0xf00000 0x100000>;
++						reg = <0x400000 0xC00000>;
+ 					};
+ 				};
+ 			};
+-- 
+2.7.4
+

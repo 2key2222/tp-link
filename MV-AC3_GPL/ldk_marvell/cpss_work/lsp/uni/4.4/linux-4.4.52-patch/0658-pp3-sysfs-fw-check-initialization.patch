@@ -1,0 +1,190 @@
+From 4088346623a07e68398eb533e63a732c19648ac4 Mon Sep 17 00:00:00 2001
+From: Yan Markman <ymarkman@marvell.com>
+Date: Tue, 9 Aug 2016 19:26:12 +0300
+Subject: [PATCH 0658/2241] pp3: sysfs fw check initialization
+
+Check the FW is downloaded before executing
+sysfs "fw" commands
+
+Change-Id: Ic21ec7cbc4c53f7115676c5858f54920d1ab1136
+Signed-off-by: Yan Markman <ymarkman@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/31818
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Dmitri Epshtein <dima@marvell.com>
+Tested-by: Dmitri Epshtein <dima@marvell.com>
+Reviewed-by: Yelena Krivosheev <yelena@marvell.com>
+---
+ drivers/net/ethernet/marvell/pp3/fw/mv_fw.c        |  8 ++++++
+ drivers/net/ethernet/marvell/pp3/fw/mv_fw.h        |  1 +
+ drivers/net/ethernet/marvell/pp3/fw/mv_fw_sysfs.c  |  4 ++-
+ .../net/ethernet/marvell/pp3/fw/mv_pp3_fw_msg.c    | 30 ++++++++++++++++++----
+ 4 files changed, 37 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/pp3/fw/mv_fw.c b/drivers/net/ethernet/marvell/pp3/fw/mv_fw.c
+index e3884c2f..d6ea00c 100644
+--- a/drivers/net/ethernet/marvell/pp3/fw/mv_fw.c
++++ b/drivers/net/ethernet/marvell/pp3/fw/mv_fw.c
+@@ -43,6 +43,7 @@ disclaimer.
+ #include "mv_fw_shared.h"
+ #include "fw/mv_pp3_fw_msg.h"
+ #include "fw/mv_pp3_fw_msg_structs.h"
++#include "fw/mv_fw.h"
+ 
+ static struct mv_pp3 *pp3_fw_priv;
+ static u32 mv_pp3_fw_buffers[MV_PP3_PPN_MEM_BUFS];
+@@ -50,6 +51,7 @@ static u32 mv_pp3_fw_buffers[MV_PP3_PPN_MEM_BUFS];
+ static unsigned int active_ppc_num;
+ static void __iomem *apb_base_addr;
+ static unsigned char *mv_pp3_fw_path;
++static bool mv_pp3_fw_is_available_bool;
+ 
+ /* active PPNs mask per cluster */
+ static u32 ppc_ppn_mask[MV_PP3_PPC_MAX_NUM];
+@@ -653,9 +655,15 @@ int mv_pp3_fw_load(void)
+ 		pr_err("%s: FW load to search engine failed\n", __func__);
+ 		return -1;
+ 	}
++	mv_pp3_fw_is_available_bool = true;
+ 	return 0;
+ }
+ 
++bool mv_pp3_fw_is_available(void)
++{
++	return mv_pp3_fw_is_available_bool;
++}
++
+ /* set path for FW files download */
+ /* allocate buffer with additional place for file name concatination */
+ 
+diff --git a/drivers/net/ethernet/marvell/pp3/fw/mv_fw.h b/drivers/net/ethernet/marvell/pp3/fw/mv_fw.h
+index b6a6f7a..a0c6c47 100644
+--- a/drivers/net/ethernet/marvell/pp3/fw/mv_fw.h
++++ b/drivers/net/ethernet/marvell/pp3/fw/mv_fw.h
+@@ -80,6 +80,7 @@ int mv_pp3_fw_image_load(struct mem_image *ptr_to_image);
+ int mv_pp3_fw_dram_allocation(void);
+ int mv_pp3_fw_init(struct mv_pp3 *priv);
+ int mv_pp3_fw_load(void);
++bool mv_pp3_fw_is_available(void);
+ int mv_pp3_imem_dump(char *path);
+ int mv_pp3_fw_half_range_addr_cfg(void);
+ 
+diff --git a/drivers/net/ethernet/marvell/pp3/fw/mv_fw_sysfs.c b/drivers/net/ethernet/marvell/pp3/fw/mv_fw_sysfs.c
+index 3b1100c..f2aae2a 100644
+--- a/drivers/net/ethernet/marvell/pp3/fw/mv_fw_sysfs.c
++++ b/drivers/net/ethernet/marvell/pp3/fw/mv_fw_sysfs.c
+@@ -165,7 +165,9 @@ static ssize_t mv_fw_store(struct device *dev,
+ 					a, MV_NSS_ETH_PORT_MIN, MV_NSS_ETH_PORT_MAX);
+ 				goto out;
+ 			}
+-			pp3_fw_emac_vport_msg_show(a);
++			err = pp3_fw_emac_vport_msg_show(a);
++			if (err)
++				goto out;
+ 
+ 			err = pp3_fw_vport_mac_list_get(a, MV_PP3_MAC_ADDR_NUM, &macs_list[0][0],
+ 						&valid_macs);
+diff --git a/drivers/net/ethernet/marvell/pp3/fw/mv_pp3_fw_msg.c b/drivers/net/ethernet/marvell/pp3/fw/mv_pp3_fw_msg.c
+index 4674921..85198eb 100644
+--- a/drivers/net/ethernet/marvell/pp3/fw/mv_pp3_fw_msg.c
++++ b/drivers/net/ethernet/marvell/pp3/fw/mv_pp3_fw_msg.c
+@@ -26,6 +26,8 @@
+ #include "vport/mv_pp3_cpu.h"
+ #include "msg/mv_pp3_msg_drv.h"
+ #include "fw/mv_pp3_fw_msg_structs.h"
++#include "fw/mv_pp3_fw_msg.h"
++#include "fw/mv_fw.h"
+ 
+ #ifdef CONFIG_MV_PP3_FPGA
+ #include "gmac/mv_gmac.h"
+@@ -321,13 +323,15 @@ int pp3_fw_emac_vport_msg_get(int vport, struct mv_pp3_fw_emac_vport *out_msg)
+ }
+ /*---------------------------------------------------------------------------*/
+ 
+-void pp3_fw_emac_vport_msg_show(int vport)
++int pp3_fw_emac_vport_msg_show(int vport)
+ {
+-	int err;
++	int err = -1;
+ 	struct mv_pp3_fw_emac_vport out_msg;
+ 
+-	pr_info("---- EMAC virtual port #%d information from Firmware ----\n", vport);
+-	err = pp3_fw_emac_vport_msg_get(vport, &out_msg);
++	if (pp3_vports[vport]) {
++		pr_info("---- EMAC virtual port #%d information from Firmware ----\n", vport);
++		err = pp3_fw_emac_vport_msg_get(vport, &out_msg);
++	}
+ 	if (!err) {
+ 		pr_info("state       : %s\n", out_msg.state ? "Enable" : "Disable");
+ 		pr_info("mtu         : %u\n", out_msg.mtu);
+@@ -337,6 +341,7 @@ void pp3_fw_emac_vport_msg_show(int vport)
+ 		mv_mac_addr_print("ucast MAC   :", &out_msg.mac_addr[0], NULL);
+ 	} else
+ 		pr_err("vport #%d FW information is unavailable. err = %d\n", vport, err);
++	return err;
+ }
+ /*---------------------------------------------------------------------------*/
+ 
+@@ -703,6 +708,7 @@ int pp3_fw_vport_stat_get(int vport, struct mv_pp3_fw_vport_stat *vport_stat)
+ {
+ 	unsigned short param;
+ 
++	/* vport validity checked in caller */
+ 	param = cpu_to_be16((unsigned short)vport);
+ 	if (pp3_fw_set_wait_req(MV_FW_VPORT_STATS_GET, &param, sizeof(param), vport_stat,
+ 		sizeof(struct mv_pp3_fw_vport_stat)) == 0)
+@@ -723,9 +729,11 @@ Return:
+ ---------------------------------------------------------------------------*/
+ int pp3_fw_hwq_stat_get(unsigned short q, bool clean, struct mv_pp3_fw_hwq_stat *hw_stat)
+ {
+-
+ 	struct mv_pp3_fw_hwq_stats_get msg_stat;
+ 
++	if (!mv_pp3_fw_is_available())
++		return -1;
++
+ 	msg_stat.hwq = cpu_to_be16(q);
+ 	msg_stat.clear = clean;
+ 	msg_stat.reserved = 0;
+@@ -749,6 +757,9 @@ Return:
+ ---------------------------------------------------------------------------*/
+ int pp3_fw_swq_stat_get(unsigned char q, struct mv_pp3_fw_swq_stat *sw_stat)
+ {
++	if (!mv_pp3_fw_is_available())
++		return -1;
++
+ 	if (pp3_fw_set_wait_req(MV_FW_SWQ_STATS_GET, &q, sizeof(unsigned char), sw_stat,
+ 		sizeof(struct mv_pp3_fw_swq_stat)) == 0)
+ 		mv_be32_convert((u32 *)sw_stat, sizeof(struct mv_pp3_fw_swq_stat)/sizeof(u32));
+@@ -768,6 +779,9 @@ Return:
+ ---------------------------------------------------------------------------*/
+ int pp3_fw_bm_pool_stat_get(unsigned char q, struct mv_pp3_fw_bm_pool_stat *stat)
+ {
++	if (!mv_pp3_fw_is_available())
++		return -1;
++
+ 	if (pp3_fw_set_wait_req(MV_FW_BM_POOL_STATS_GET, &q, sizeof(unsigned char), stat,
+ 		sizeof(struct mv_pp3_fw_bm_pool_stat)) == 0)
+ 		mv_be32_convert((u32 *)stat, sizeof(struct mv_pp3_fw_bm_pool_stat)/sizeof(u32));
+@@ -787,6 +801,9 @@ Return:
+ ---------------------------------------------------------------------------*/
+ int pp3_fw_channel_stat_get(unsigned char q, struct mv_pp3_fw_msg_chan_stat *stat)
+ {
++	if (!mv_pp3_fw_is_available())
++		return -1;
++
+ 	if (pp3_fw_set_wait_req(MV_FW_MSG_CHAN_STATS_GET, &q, sizeof(unsigned char), stat,
+ 		sizeof(struct mv_pp3_fw_msg_chan_stat)) == 0)
+ 		mv_be32_convert((u32 *)stat, sizeof(struct mv_pp3_fw_msg_chan_stat)/sizeof(u32));
+@@ -808,6 +825,9 @@ int pp3_fw_clear_stat_set(unsigned char stat_type, unsigned short num)
+ {
+ 	struct mv_pp3_fw_reset_stat msg_stat;
+ 
++	if (!mv_pp3_fw_is_available())
++		return -1;
++
+ 	msg_stat.type = stat_type;
+ 	msg_stat.reserved = 0;
+ 	msg_stat.index = cpu_to_be16(num);
+-- 
+2.7.4
+

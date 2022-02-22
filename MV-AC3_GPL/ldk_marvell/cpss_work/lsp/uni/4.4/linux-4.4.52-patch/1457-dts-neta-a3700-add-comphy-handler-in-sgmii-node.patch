@@ -1,0 +1,30 @@
+From 35c003e2650c250f144c904c39f29f0644c56356 Mon Sep 17 00:00:00 2001
+From: Evan Wang <xswang@marvell.com>
+Date: Tue, 17 Jan 2017 00:46:55 +0800
+Subject: [PATCH 1457/2241] dts: neta: a3700: add comphy handler in sgmii node
+
+Change-Id: I57cc9deacc544948e0ead381d12c94eb4fdea6d4
+Signed-off-by: Evan Wang <xswang@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/37077
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Victor Gu <xigu@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-3720-db-sgmii1.dts | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-3720-db-sgmii1.dts b/arch/arm64/boot/dts/marvell/armada-3720-db-sgmii1.dts
+index 3b23d10..75b5013 100644
+--- a/arch/arm64/boot/dts/marvell/armada-3720-db-sgmii1.dts
++++ b/arch/arm64/boot/dts/marvell/armada-3720-db-sgmii1.dts
+@@ -54,6 +54,8 @@
+ 			eth1: ethernet@40000 {
+ 				phy-mode = "sgmii";
+ 				phy = <&phy1>;
++				phys = <&a3700_comphy 1 COMPHY_SGMII1>;
++				phy-names = "comphy";
+ 				status = "okay";
+ 				buffer-manager = <&bm>;
+ 				bm,pool-long = <2>;
+-- 
+2.7.4
+

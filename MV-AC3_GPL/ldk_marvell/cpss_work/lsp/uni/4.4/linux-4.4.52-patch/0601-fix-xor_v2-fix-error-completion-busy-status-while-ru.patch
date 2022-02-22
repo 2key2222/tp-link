@@ -1,0 +1,74 @@
+From e62a8fbf0ae01ea6ad0d291207da6af578056173 Mon Sep 17 00:00:00 2001
+From: Hanna Hawa <hannah@marvell.com>
+Date: Thu, 14 Jul 2016 15:03:47 +0300
+Subject: [PATCH 0601/2241] fix: xor_v2: fix error (completion busy status)
+ while running dma_test
+
+Fix error (completion busy status) while running dma_test with
+XOR_V2 driver, found that we have different lock on dma_cookie_assign
+and add descriptor to the DMA engine, this cause different order
+between threads.
+Scenario that cause this issue, one thread assign cookie, other thread
+assign cookie and continue to the add descriptor
+(with the cookie from the 1st thread)
+This patch remove the cookie_lock and use one lock for cookie assign
+and descriptor add.
+
+Change-Id: I5a5c967f785cdf8415b03e4f2bf9ac425cf0b636
+Signed-off-by: Hanna Hawa <hannah@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/31161
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Neta Zur Hershkovits <neta@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Reviewed-by: Lior Amsalem <alior@marvell.com>
+---
+ drivers/dma/mv_xor_v2.c | 10 ++--------
+ 1 file changed, 2 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/dma/mv_xor_v2.c b/drivers/dma/mv_xor_v2.c
+index f724bf2..1075137 100644
+--- a/drivers/dma/mv_xor_v2.c
++++ b/drivers/dma/mv_xor_v2.c
+@@ -135,7 +135,6 @@ struct mv_xor_v2_descriptor {
+  * @sw_ll_lock: serializes enqueue/dequeue operations to the sw
+  * descriptors pool
+  * @push_lock: serializes enqueue operations to the DESCQ
+- * @cookie_lock: serializes of cookies control
+  * @dma_base: memory mapped DMA register base
+  * @glob_base: memory mapped global register base
+  * @irq_tasklet:
+@@ -150,7 +149,6 @@ struct mv_xor_v2_descriptor {
+ struct mv_xor_v2_device {
+ 	spinlock_t sw_ll_lock;
+ 	spinlock_t push_lock;
+-	spinlock_t cookie_lock;
+ 	void __iomem *dma_base;
+ 	void __iomem *glob_base;
+ 	struct clk *clk[MAX_A8K_XOR_CLOCKS];
+@@ -341,13 +339,10 @@ mv_xor_v2_tx_submit(struct dma_async_tx_descriptor *tx)
+ 		"%s sw_desc %p: async_tx %p\n",
+ 		__func__, sw_desc, &sw_desc->async_tx);
+ 
+-	/* assign coookie */
+-	spin_lock_bh(&xor_dev->cookie_lock);
+-	cookie = dma_cookie_assign(tx);
+-	spin_unlock_bh(&xor_dev->cookie_lock);
+-
+ 	/* lock enqueue DESCQ */
+ 	spin_lock_bh(&xor_dev->push_lock);
++	/* assign coookie */
++	cookie = dma_cookie_assign(tx);
+ 
+ 	/* get the next available slot in the DESQ */
+ 	desq_ptr = mv_xor_v2_get_desq_write_ptr(xor_dev);
+@@ -840,7 +835,6 @@ static int mv_xor_v2_probe(struct platform_device *pdev)
+ 	/* init the channel locks */
+ 	spin_lock_init(&xor_dev->sw_ll_lock);
+ 	spin_lock_init(&xor_dev->push_lock);
+-	spin_lock_init(&xor_dev->cookie_lock);
+ 
+ 	/* init the free SW descriptors list */
+ 	INIT_LIST_HEAD(&xor_dev->free_sw_desc);
+-- 
+2.7.4
+

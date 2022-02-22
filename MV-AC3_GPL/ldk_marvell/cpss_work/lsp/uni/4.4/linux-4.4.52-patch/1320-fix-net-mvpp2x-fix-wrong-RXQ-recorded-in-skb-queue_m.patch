@@ -1,0 +1,41 @@
+From 475a9e18dc2b2786bd2975bab775945cd7539116 Mon Sep 17 00:00:00 2001
+From: Stefan Chulski <stefanc@marvell.com>
+Date: Sun, 29 Jan 2017 17:47:44 +0200
+Subject: [PATCH 1320/2241] fix: net: mvpp2x: fix wrong RXQ recorded in
+ skb->queue_mapping issue
+
+Issue:
+- Physical RXQ ID were recorded in skb->queue_mapping instead of
+  logical CoS RXQ ID.
+- Recording wrong RXQ ID cause crashes and warnings in GRO
+  receive path.
+
+Fix:
+- Record logical CoS RXQ ID.
+
+Change-Id: I44d591155c50a5fc96cc79171ac7aa5ff2a87ce5
+Signed-off-by: Stefan Chulski <stefanc@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/36234
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/36268
+---
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+index 123f175..ce22b92 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+@@ -2420,7 +2420,7 @@ err_drop_frame:
+ 		skb_put(skb, rx_bytes);
+ 		skb->protocol = eth_type_trans(skb, dev);
+ 		mv_pp2x_rx_csum(port, rx_status, skb);
+-		skb_record_rx_queue(skb, (u16)rxq->id);
++		skb_record_rx_queue(skb, (u16)rxq->log_id);
+ 		mv_pp2x_set_skb_hash(rx_desc, rx_status, skb);
+ 		skb_mark_napi_id(skb, napi);
+ 
+-- 
+2.7.4
+

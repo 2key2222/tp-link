@@ -1,0 +1,38 @@
+From 83a3034d9bd606285d19c661152d169a1710b9c2 Mon Sep 17 00:00:00 2001
+From: allen yan <yanwei@marvell.com>
+Date: Fri, 10 Feb 2017 00:06:25 +0800
+Subject: [PATCH 1426/2241] fix: mtd: spi-nand: fix the build warning for
+ spinand_write_page_hwecc
+
+- The original giga dirver has a build warning for spinand_write_page
+  _hwecc. It is because that the defiition of spinand_write_page_hwecc
+  should include the parameter int page, also does the calling of this
+  function. But in the original giga dirver, it lost the parameter, but
+  the calling of spinand_write_page_hwecc still include the parameter.
+  So the build warning happened.
+
+Change-Id: Ibaaa1baee896baaa587a711087cd03084033a9d0
+Signed-off-by: allen yan <yanwei@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/37178
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hua Jing <jinghua@marvell.com>
+---
+ drivers/staging/gd5f_spinand/gd5f_spinand.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/staging/gd5f_spinand/gd5f_spinand.c b/drivers/staging/gd5f_spinand/gd5f_spinand.c
+index 808b697..13281aa 100644
+--- a/drivers/staging/gd5f_spinand/gd5f_spinand.c
++++ b/drivers/staging/gd5f_spinand/gd5f_spinand.c
+@@ -662,7 +662,7 @@ static int spinand_program_page(struct spi_device *spi_nand,
+ 
+ #ifdef CONFIG_MTD_SPINAND_ONDIEECC
+ static int spinand_write_page_hwecc(struct mtd_info *mtd,
+-				    struct nand_chip *chip, const uint8_t *buf, int oob_required)
++				    struct nand_chip *chip, const uint8_t *buf, int oob_required, int page)
+ {
+ 	enable_hw_ecc = 1;
+ 	chip->write_buf(mtd, buf, chip->ecc.size * chip->ecc.steps);
+-- 
+2.7.4
+

@@ -1,0 +1,32 @@
+From 437ae3b7d8e1b323d3a08c47bb1f21c5dde3bd84 Mon Sep 17 00:00:00 2001
+From: Ofer Heifetz <oferh@marvell.com>
+Date: Mon, 21 Dec 2015 14:34:48 +0200
+Subject: [PATCH 0130/2241] config: add nfsd support
+
+adding NFSD support for NAS
+
+Change-Id: I47cde5b4a301ea40f733727680513f7d1b3f7dfe
+Signed-off-by: Ofer Heifetz <oferh@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/26174
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Lior Amsalem <alior@marvell.com>
+---
+ arch/arm64/configs/mvebu_v8_lsp_defconfig | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/arch/arm64/configs/mvebu_v8_lsp_defconfig b/arch/arm64/configs/mvebu_v8_lsp_defconfig
+index 7258fc6..cef1971 100644
+--- a/arch/arm64/configs/mvebu_v8_lsp_defconfig
++++ b/arch/arm64/configs/mvebu_v8_lsp_defconfig
+@@ -177,6 +177,8 @@ CONFIG_EFIVAR_FS=y
+ CONFIG_NFS_FS=y
+ CONFIG_NFS_V4=y
+ CONFIG_ROOT_NFS=y
++CONFIG_NFSD=y
++CONFIG_NFSD_V3=y
+ CONFIG_9P_FS=y
+ CONFIG_NLS_CODEPAGE_437=y
+ CONFIG_NLS_ISO8859_1=y
+-- 
+2.7.4
+

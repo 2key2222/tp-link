@@ -1,0 +1,61 @@
+From 66546cf6525b862cd82453e6c856830388efb09b Mon Sep 17 00:00:00 2001
+From: Marcin Wojtas <mw@semihalf.com>
+Date: Fri, 25 Aug 2017 16:51:51 +0200
+Subject: [PATCH 1979/2241] mtd: spi-nor: add optional forcing of 3B adressing
+ mode
+
+Hitherto code set 4B addressing mode for all SPI flashes whose
+size exceeds 16MB. However, changing the default 3B access
+in some cases may be harmful. For example on Marvell SoCs
+the SPI flash used for booting must remain in the default mode,
+otherwise after soft reset the Boot ROM will fail to fetch
+the firmware.
+
+This patch adds optional property that can be added to the
+SPI flash node and which will force to use 3B addressing mode.
+Binding documentation is updated accordingly.
+
+Fix for: A7K8K-3040 "[u-boot][New SPI flash][devel-23-07-17] Boot failure
+after HW reset when linux is up(got Trying Uart..)."
+
+Change-Id: Ie41ba93f63d8a5e88c76883af07cb266e358d874
+Signed-off-by: Marcin Wojtas <mw@semihalf.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/43588
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+---
+ Documentation/devicetree/bindings/spi/spi-bus.txt | 2 ++
+ drivers/mtd/spi-nor/spi-nor.c                     | 4 ++++
+ 2 files changed, 6 insertions(+)
+
+diff --git a/Documentation/devicetree/bindings/spi/spi-bus.txt b/Documentation/devicetree/bindings/spi/spi-bus.txt
+index d84d5c3..53b4e7f 100644
+--- a/Documentation/devicetree/bindings/spi/spi-bus.txt
++++ b/Documentation/devicetree/bindings/spi/spi-bus.txt
+@@ -63,6 +63,8 @@ contain the following properties.
+                       used for MISO. Defaults to 1 if not present.
+ - spi-1byte-cs     - (optional) Empty property indicating device requires
+ 		      toggling the CS for every 1 byte of data.
++- spi-3byte-addressing - (optional) Empty property indicating device
++		access to be done only in 3B addressing mode.
+ 
+ Some SPI controllers and devices support Dual and Quad SPI transfer mode.
+ It allows data in the SPI system to be transferred in 2 wires(DUAL) or 4 wires(QUAD).
+diff --git a/drivers/mtd/spi-nor/spi-nor.c b/drivers/mtd/spi-nor/spi-nor.c
+index d7b9ea0..040b3c6 100644
+--- a/drivers/mtd/spi-nor/spi-nor.c
++++ b/drivers/mtd/spi-nor/spi-nor.c
+@@ -1289,6 +1289,10 @@ int spi_nor_scan(struct spi_nor *nor, const char *name, enum read_mode mode)
+ 			/* No small sector erase for 4-byte command set */
+ 			nor->erase_opcode = SPINOR_OP_SE_4B;
+ 			mtd->erasesize = info->sector_size;
++		} else if (of_property_read_bool(np, "spi-3byte-addressing")) {
++			nor->addr_width = 3;
++			mtd->size = 0x1000000;
++			dev_info(dev, "Force 3B addressing mode\n");
+ 		} else
+ 			set_4byte(nor, info, 1);
+ 	} else {
+-- 
+2.7.4
+

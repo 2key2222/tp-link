@@ -1,0 +1,45 @@
+From efcb0973757461c4755fb19ed70217690b6a0c7f Mon Sep 17 00:00:00 2001
+From: Markus Elfring <elfring@users.sourceforge.net>
+Date: Mon, 17 Apr 2017 12:58:33 +0200
+Subject: [PATCH 1702/2241] net: mvpp2: Rename a jump label in mvpp2_txq_init()
+
+Adjust jump labels according to the Linux coding style convention.
+
+Patch cherry-picked from mainline 4.12_rc5
+
+Change-Id: Id92bb21c7eef6bb659d3e71911a4decebaaf3038
+Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/40453
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2.c | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2.c b/drivers/net/ethernet/marvell/mvpp2.c
+index 44dda45..4194a34 100644
+--- a/drivers/net/ethernet/marvell/mvpp2.c
++++ b/drivers/net/ethernet/marvell/mvpp2.c
+@@ -4957,7 +4957,7 @@ static int mvpp2_txq_init(struct mvpp2_port *port,
+ 						sizeof(*txq_pcpu->buffs),
+ 						GFP_KERNEL);
+ 		if (!txq_pcpu->buffs)
+-			goto error;
++			goto cleanup;
+ 
+ 		txq_pcpu->count = 0;
+ 		txq_pcpu->reserved_num = 0;
+@@ -4966,8 +4966,7 @@ static int mvpp2_txq_init(struct mvpp2_port *port,
+ 	}
+ 
+ 	return 0;
+-
+-error:
++cleanup:
+ 	for_each_present_cpu(cpu) {
+ 		txq_pcpu = per_cpu_ptr(txq->pcpu, cpu);
+ 		kfree(txq_pcpu->buffs);
+-- 
+2.7.4
+

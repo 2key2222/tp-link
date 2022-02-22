@@ -1,0 +1,73 @@
+From 223be8bf6a68cc65f22fd1be4079f34e9ac9f70f Mon Sep 17 00:00:00 2001
+From: Konstantin Porotchkin <kostap@marvell.com>
+Date: Mon, 5 Dec 2016 11:33:01 +0200
+Subject: [PATCH 1156/2241] fix: dts: a8040: Add missing SPI config in DB-A DTS
+
+Add SPI flash on CP1 configuration to armada-8040-db-A.dts
+Add spi1 pins configuration to armada-8040.dtsi
+Fixes Jira bug SYSTEMSW-3080
+
+Change-Id: I06aadcbc45296a661b0c43c53c61fa744390b92a
+Signed-off-by: Konstantin Porotchkin <kostap@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/34344
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-8040-db-A.dts | 24 ++++++++++++++++++++++++
+ arch/arm64/boot/dts/marvell/armada-8040.dtsi     |  5 +++++
+ 2 files changed, 29 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-8040-db-A.dts b/arch/arm64/boot/dts/marvell/armada-8040-db-A.dts
+index f35db4d..e0106bd 100644
+--- a/arch/arm64/boot/dts/marvell/armada-8040-db-A.dts
++++ b/arch/arm64/boot/dts/marvell/armada-8040-db-A.dts
+@@ -188,6 +188,30 @@
+ 			comphy {
+ 				status = "okay";
+ 			};
++			spi1: spi@700680 {
++				status = "okay";
++				pinctrl-names = "default";
++				pinctrl-0 = <&cps_spi1_pins>;
++				spi-flash@0 {
++					#address-cells = <0x1>;
++					#size-cells = <0x1>;
++					compatible = "jedec,spi-nor";
++					reg = <0x0>;
++					spi-max-frequency = <20000000>;
++					partition@0 {
++						label = "boot";
++						reg = <0x0 0x200000>;
++					};
++					partition@200000 {
++						label = "Filesystem";
++						reg = <0x200000 0xd00000>;
++					};
++					partition@d00000 {
++						label = "boot_2nd";
++						reg = <0xf00000 0x100000>;
++					};
++				};
++			};
+ 		};
+ 		pcie@0x600000 {
+ 			status = "okay";
+diff --git a/arch/arm64/boot/dts/marvell/armada-8040.dtsi b/arch/arm64/boot/dts/marvell/armada-8040.dtsi
+index 641d57d..8dea327 100644
+--- a/arch/arm64/boot/dts/marvell/armada-8040.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-8040.dtsi
+@@ -234,6 +234,11 @@
+ 						       "mpp10", "mpp11";
+ 					marvell,function = "spi0";
+ 				};
++				cps_spi1_pins: spi-pins-1 {
++					marvell,pins = "mpp13", "mpp14", "mpp15",
++						       "mpp16", "mpp17";
++					marvell,function = "spi1";
++				};
+ 			};
+ 		};
+ 		pcie@0x600000 {
+-- 
+2.7.4
+

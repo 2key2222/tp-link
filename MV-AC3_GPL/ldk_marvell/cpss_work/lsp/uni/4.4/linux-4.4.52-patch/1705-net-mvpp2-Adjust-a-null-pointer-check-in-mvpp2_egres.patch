@@ -1,0 +1,40 @@
+From babaca3136aac60a87295635e78b36a76568403c Mon Sep 17 00:00:00 2001
+From: Markus Elfring <elfring@users.sourceforge.net>
+Date: Mon, 17 Apr 2017 14:07:52 +0200
+Subject: [PATCH 1705/2241] net: mvpp2: Adjust a null pointer check in
+ mvpp2_egress_enable()
+
+The script "checkpatch.pl" pointed information out like the following.
+
+Comparison to NULL could be written "txq->descs".
+
+Thus fix the affected source code place.
+
+Patch cherry-picked from mainline 4.12_rc5
+
+Change-Id: Iccc876cedb9069135e2bed296db1e65679973c9e
+Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/40456
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2.c b/drivers/net/ethernet/marvell/mvpp2.c
+index 770e371..7cb0dba 100644
+--- a/drivers/net/ethernet/marvell/mvpp2.c
++++ b/drivers/net/ethernet/marvell/mvpp2.c
+@@ -4298,7 +4298,7 @@ static void mvpp2_egress_enable(struct mvpp2_port *port)
+ 	for (queue = 0; queue < txq_number; queue++) {
+ 		struct mvpp2_tx_queue *txq = port->txqs[queue];
+ 
+-		if (txq->descs != NULL)
++		if (txq->descs)
+ 			qmap |= (1 << queue);
+ 	}
+ 
+-- 
+2.7.4
+

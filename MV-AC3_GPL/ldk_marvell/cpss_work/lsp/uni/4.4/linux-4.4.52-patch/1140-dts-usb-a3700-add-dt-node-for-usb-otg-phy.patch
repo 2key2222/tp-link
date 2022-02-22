@@ -1,0 +1,35 @@
+From a569fa48198a57ff304de7ec5c78b14ade2918a1 Mon Sep 17 00:00:00 2001
+From: jinghua <xigu@marvell.com>
+Date: Fri, 25 Nov 2016 22:50:46 +0800
+Subject: [PATCH 1140/2241] dts: usb: a3700: add dt node for usb otg phy
+
+Change-Id: I860c42926139f68f3f6f8bfaa246f1c292e4bd6e
+Signed-off-by: jinghua <xigu@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/34078
+Reviewed-by: Wilson Ding <dingwei@marvell.com>
+Tested-by: Wilson Ding <dingwei@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-37xx.dtsi | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-37xx.dtsi b/arch/arm64/boot/dts/marvell/armada-37xx.dtsi
+index 3fedd78..2bb64e1 100644
+--- a/arch/arm64/boot/dts/marvell/armada-37xx.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-37xx.dtsi
+@@ -297,6 +297,13 @@
+ 				status = "disabled";
+ 			};
+ 
++			otg_phy: otg@5d800 {
++				compatible = "marvell,armada-3700-otg";
++				reg = <0x5d800 0x100>;
++				interrupts = <GIC_SPI 16 IRQ_TYPE_LEVEL_HIGH>;
++				status = "disabled";
++			};
++
+ 			usb@5e000 {
+ 				compatible = "marvell,armada-3700-ehci";
+ 				reg = <0x5e000 0x2000>;
+-- 
+2.7.4
+

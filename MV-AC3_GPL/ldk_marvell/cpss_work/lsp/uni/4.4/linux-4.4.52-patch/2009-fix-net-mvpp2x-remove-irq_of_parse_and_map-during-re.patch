@@ -1,0 +1,69 @@
+From 3521fc8309bc44a98f725f45012998189636a0db Mon Sep 17 00:00:00 2001
+From: Victor Gu <xigu@marvell.com>
+Date: Fri, 8 Sep 2017 15:13:36 +0800
+Subject: [PATCH 2009/2241] fix: net: mvpp2x: remove irq_of_parse_and_map
+ during resume
+
+Each time during system resume, the mvpp2x driver calls
+irq_of_parse_and_map API to parse and map irq from DTS to Linux
+virtual irq space again. The irq_of_parse_and_map API will call
+ICU irq domain "alloc" callback to allocate new ICU irq each time,
+and finally all the ICU irq entries are used out after several times
+of system suspend and resume operation, then the mvpp2x stops working
+since the failure of ICU irq allocation.
+However there is no reason at all to dispose the irq mapping during
+system suspend and re-parse the irq on resume, it is good enough to use
+free_irq to disconnect with irq descriptor during suspend, then to use
+request_irq to re-connect irq with irq descriptor during resume.
+In order to fix this issue, this patch removes the irq_of_parse_and_map
+API calling during system resume, correspondingly the
+irq_dispose_mapping during suspend.
+
+Change-Id: Ie3c94f8957ed91f15aaa28884dc14fdc0c2c65a3
+Signed-off-by: Victor Gu <xigu@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/44007
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c | 15 ---------------
+ 1 file changed, 15 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+index bb53227..aa2ed82 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+@@ -6141,20 +6141,9 @@ static int mv_pp2x_port_resume(struct platform_device *pdev,
+ 			       struct device_node *port_node,
+ 			       struct mv_pp2x *priv, struct mv_pp2x_port *port)
+ {
+-	struct device_node *emac_node = NULL;
+-	int i;
+-
+-	if (priv->pp2_version == PPV22 && !(port->flags & MVPP2_F_LOOPBACK)) {
+-		emac_node = of_parse_phandle(port_node, "emac-data", 0);
+-		port->mac_data.link_irq = irq_of_parse_and_map(emac_node, 0);
+-	}
+-
+ 	if (port->mac_data.phy_node)
+ 		mv_pp2x_phy_connect(port);
+ 
+-	for (i = 0; i < port->num_irqs; i++)
+-		port->of_irqs[i] = irq_of_parse_and_map(port_node, i);
+-
+ 	mv_pp2x_port_hw_init(port);
+ 
+ 	return 0;
+@@ -6208,10 +6197,6 @@ static int mvpp2x_suspend(struct device *dev)
+ 		/* Stop interface if port is up */
+ 		if (netif_running(priv->port_list[i]->dev))
+ 			mv_pp2x_stop(priv->port_list[i]->dev);
+-		/* Dispose all port IRQ's */
+-		if (mac->link_irq != MVPP2_NO_LINK_IRQ)
+-			irq_dispose_mapping(mac->link_irq);
+-		mv_pp2x_port_irqs_dispose_mapping(priv->port_list[i]);
+ 
+ 		if (mac->phy_node)
+ 			mv_pp2x_phy_disconnect(priv->port_list[i]);
+-- 
+2.7.4
+

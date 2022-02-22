@@ -1,0 +1,55 @@
+From 1a1d073a0973bc0c11ed282520c7cd2ccc9362fa Mon Sep 17 00:00:00 2001
+From: Romain Perier <romain.perier@free-electrons.com>
+Date: Thu, 28 Jul 2016 11:59:43 +0200
+Subject: [PATCH 1342/2241] crypto: marvell - Don't copy IV vectors from the
+ _process op for ciphers
+
+The IV output vectors should only be copied from the _complete operation
+and not from the _process operation, i.e only from the operation that is
+designed to copy the result of the request to the right location. This
+copy is already done in the _complete operation, so this commit removes
+the duplicated code in the _process op.
+
+This patch was back-ported from Linux 4.9.7.
+
+Change-Id: Ief851d51c91ef47bdb9912671ee3c86e88c815aa
+Fixes: 3610d6cd5231 ("crypto: marvell - Add a complete...")
+Signed-off-by: Romain Perier <romain.perier@free-electrons.com>
+Acked-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/36375
+Reviewed-by: Neta Zur Hershkovits <neta@marvell.com>
+Tested-by: Neta Zur Hershkovits <neta@marvell.com>
+---
+ drivers/crypto/marvell/cipher.c | 11 +----------
+ 1 file changed, 1 insertion(+), 10 deletions(-)
+
+diff --git a/drivers/crypto/marvell/cipher.c b/drivers/crypto/marvell/cipher.c
+index 8391aba..d19dc96 100644
+--- a/drivers/crypto/marvell/cipher.c
++++ b/drivers/crypto/marvell/cipher.c
+@@ -139,20 +139,11 @@ static int mv_cesa_ablkcipher_process(struct crypto_async_request *req,
+ 	struct ablkcipher_request *ablkreq = ablkcipher_request_cast(req);
+ 	struct mv_cesa_ablkcipher_req *creq = ablkcipher_request_ctx(ablkreq);
+ 	struct mv_cesa_req *basereq = &creq->base;
+-	unsigned int ivsize;
+-	int ret;
+ 
+ 	if (mv_cesa_req_get_type(basereq) == CESA_STD_REQ)
+ 		return mv_cesa_ablkcipher_std_process(ablkreq, status);
+ 
+-	ret = mv_cesa_dma_process(basereq, status);
+-	if (ret)
+-		return ret;
+-
+-	ivsize = crypto_ablkcipher_ivsize(crypto_ablkcipher_reqtfm(ablkreq));
+-	memcpy_fromio(ablkreq->info, basereq->chain.last->data, ivsize);
+-
+-	return 0;
++	return mv_cesa_dma_process(basereq, status);
+ }
+ 
+ static void mv_cesa_ablkcipher_step(struct crypto_async_request *req)
+-- 
+2.7.4
+

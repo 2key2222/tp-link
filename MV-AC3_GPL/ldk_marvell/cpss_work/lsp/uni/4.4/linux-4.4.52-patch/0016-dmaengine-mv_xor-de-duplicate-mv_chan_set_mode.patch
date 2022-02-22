@@ -1,0 +1,93 @@
+From 984d2f64b7f9ad3533f46684fed88265d5d507fc Mon Sep 17 00:00:00 2001
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Date: Tue, 22 Dec 2015 11:43:28 +0100
+Subject: [PATCH 0016/2241] dmaengine: mv_xor: de-duplicate mv_chan_set_mode*()
+
+When commit 6f166312c6ea2 ("dmaengine: mv_xor: add support for a38x
+command in descriptor mode") added support for the descriptor mode
+available in Marvell Armada 38x and later SoCs, it added a new
+function mv_chan_set_mode_to_desc() which allows to configure a XOR
+channel to get the specific operation to be done from each individual
+DMA descriptor.
+
+However, this function was mainly a duplicate of the existing
+mv_chan_set_mode(), with just the operation being different.
+
+This commit re-organizes the code into a single mv_chan_set_mode()
+function, which takes the operation mode as argument, and the
+mv_xor_channel_add() function decides whether to use
+XOR_OPERATION_MODE_IN_DESC or XOR_OPERATION_MODE_XOR.
+
+Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Reviewed-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+Signed-off-by: Vinod Koul <vinod.koul@intel.com>
+---
+ drivers/dma/mv_xor.c | 41 +++--------------------------------------
+ 1 file changed, 3 insertions(+), 38 deletions(-)
+
+diff --git a/drivers/dma/mv_xor.c b/drivers/dma/mv_xor.c
+index 2d03379..a95878c 100644
+--- a/drivers/dma/mv_xor.c
++++ b/drivers/dma/mv_xor.c
+@@ -139,45 +139,10 @@ static void mv_chan_clear_err_status(struct mv_xor_chan *chan)
+ }
+ 
+ static void mv_chan_set_mode(struct mv_xor_chan *chan,
+-			     enum dma_transaction_type type)
++			     u32 op_mode)
+ {
+-	u32 op_mode;
+ 	u32 config = readl_relaxed(XOR_CONFIG(chan));
+ 
+-	switch (type) {
+-	case DMA_XOR:
+-		op_mode = XOR_OPERATION_MODE_XOR;
+-		break;
+-	case DMA_MEMCPY:
+-		op_mode = XOR_OPERATION_MODE_MEMCPY;
+-		break;
+-	default:
+-		dev_err(mv_chan_to_devp(chan),
+-			"error: unsupported operation %d\n",
+-			type);
+-		BUG();
+-		return;
+-	}
+-
+-	config &= ~0x7;
+-	config |= op_mode;
+-
+-#if defined(__BIG_ENDIAN)
+-	config |= XOR_DESCRIPTOR_SWAP;
+-#else
+-	config &= ~XOR_DESCRIPTOR_SWAP;
+-#endif
+-
+-	writel_relaxed(config, XOR_CONFIG(chan));
+-}
+-
+-static void mv_chan_set_mode_to_desc(struct mv_xor_chan *chan)
+-{
+-	u32 op_mode;
+-	u32 config = readl_relaxed(XOR_CONFIG(chan));
+-
+-	op_mode = XOR_OPERATION_MODE_IN_DESC;
+-
+ 	config &= ~0x7;
+ 	config |= op_mode;
+ 
+@@ -1042,9 +1007,9 @@ mv_xor_channel_add(struct mv_xor_device *xordev,
+ 	mv_chan_unmask_interrupts(mv_chan);
+ 
+ 	if (mv_chan->op_in_desc == XOR_MODE_IN_DESC)
+-		mv_chan_set_mode_to_desc(mv_chan);
++		mv_chan_set_mode(mv_chan, XOR_OPERATION_MODE_IN_DESC);
+ 	else
+-		mv_chan_set_mode(mv_chan, DMA_XOR);
++		mv_chan_set_mode(mv_chan, XOR_OPERATION_MODE_XOR);
+ 
+ 	spin_lock_init(&mv_chan->lock);
+ 	INIT_LIST_HEAD(&mv_chan->chain);
+-- 
+2.7.4
+

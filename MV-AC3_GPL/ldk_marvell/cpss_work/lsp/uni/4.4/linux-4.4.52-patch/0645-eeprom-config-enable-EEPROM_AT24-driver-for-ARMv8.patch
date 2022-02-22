@@ -1,0 +1,30 @@
+From 6693fc5d8063fef432be5a8fdceac56d2eae92ca Mon Sep 17 00:00:00 2001
+From: Hanna Hawa <hannah@marvell.com>
+Date: Sun, 31 Jul 2016 11:19:29 +0300
+Subject: [PATCH 0645/2241] eeprom: config: enable EEPROM_AT24 driver for ARMv8
+
+Change-Id: I4136ef67a13330c36004c685c958f91cac168aa4
+Signed-off-by: Hanna Hawa <hannah@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/31541
+Reviewed-by: Igal Liberman <igall@marvell.com>
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+---
+ arch/arm64/configs/mvebu_v8_lsp_defconfig | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm64/configs/mvebu_v8_lsp_defconfig b/arch/arm64/configs/mvebu_v8_lsp_defconfig
+index 56b6576..e3bdfab 100644
+--- a/arch/arm64/configs/mvebu_v8_lsp_defconfig
++++ b/arch/arm64/configs/mvebu_v8_lsp_defconfig
+@@ -86,6 +86,7 @@ CONFIG_BLK_DEV_RAM_COUNT=1
+ CONFIG_BLK_DEV_RAM_SIZE=48000
+ CONFIG_VIRTIO_BLK=y
+ CONFIG_BLK_DEV_NVME=y
++CONFIG_EEPROM_AT24=y
+ # CONFIG_SCSI_PROC_FS is not set
+ CONFIG_BLK_DEV_SD=y
+ # CONFIG_SCSI_LOWLEVEL is not set
+-- 
+2.7.4
+

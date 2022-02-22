@@ -1,0 +1,72 @@
+From 7249c6feb4dad5e10cb9a552cce6cef34cd47d65 Mon Sep 17 00:00:00 2001
+From: Igal Liberman <igall@marvell.com>
+Date: Wed, 30 Aug 2017 14:51:52 +0300
+Subject: [PATCH 2105/2241] Revert "Revert "bus: mvebu-mbus: use automatic I/O
+ synchronization barriers""
+
+This reverts commit 55a474e2f20363dfeb6c8a8b1867b63e09779ccb.
+
+Change-Id: Ibdf611c6b33891b2920f638cdaef3f86235a28cd
+Reviewed-on: http://vgitil04.il.marvell.com:8080/43556
+Reviewed-by: Neta Zur Hershkovits <neta@marvell.com>
+Tested-by: Neta Zur Hershkovits <neta@marvell.com>
+---
+ drivers/bus/mvebu-mbus.c | 14 +++++++++++---
+ 1 file changed, 11 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/bus/mvebu-mbus.c b/drivers/bus/mvebu-mbus.c
+index 0fd3fd2..7215090 100644
+--- a/drivers/bus/mvebu-mbus.c
++++ b/drivers/bus/mvebu-mbus.c
+@@ -393,6 +393,8 @@ static int mvebu_mbus_setup_window(struct mvebu_mbus_state *mbus,
+ 		(attr << WIN_CTRL_ATTR_SHIFT)    |
+ 		(target << WIN_CTRL_TGT_SHIFT)   |
+ 		WIN_CTRL_ENABLE;
++	if (mbus->hw_io_coherency)
++		ctrl |= WIN_CTRL_SYNCBARRIER;
+ 
+ 	writel(base & WIN_BASE_LOW, addr + WIN_BASE_OFF);
+ 	writel(ctrl, addr + WIN_CTRL_OFF);
+@@ -1183,7 +1185,8 @@ static int __init mvebu_mbus_common_init(struct mvebu_mbus_state *mbus,
+ 					 phys_addr_t mbusbridge_phys_base,
+ 					 size_t mbusbridge_size,
+ 					 phys_addr_t mbusopt_phys_base,
+-					 size_t mbusopt_size)
++					 size_t mbusopt_size,
++					 bool is_coherent)
+ {
+ 	int win;
+ 
+@@ -1221,6 +1224,10 @@ static int __init mvebu_mbus_common_init(struct mvebu_mbus_state *mbus,
+ 	mbus->soc->setup_cpu_target(mbus);
+ 	mvebu_mbus_setup_cpu_target_nooverlap(mbus);
+ 
++	if (is_coherent)
++		writel(UNIT_SYNC_BARRIER_ALL,
++		       mbus->mbuswins_base + UNIT_SYNC_BARRIER_OFF);
++
+ 	register_syscore_ops(&mvebu_mbus_syscore_ops);
+ 
+ 	return 0;
+@@ -1248,7 +1255,7 @@ int __init mvebu_mbus_init(const char *soc, phys_addr_t mbuswins_phys_base,
+ 			mbuswins_phys_base,
+ 			mbuswins_size,
+ 			sdramwins_phys_base,
+-			sdramwins_size, 0, 0, 0, 0);
++			sdramwins_size, 0, 0, 0, 0, false);
+ }
+ 
+ #ifdef CONFIG_OF
+@@ -1473,7 +1480,8 @@ int __init mvebu_mbus_dt_init(bool is_coherent)
+ 				     mbusbridge_res.start,
+ 				     resource_size(&mbusbridge_res),
+ 				     mbusopt_res.start,
+-				     resource_size(&mbusopt_res));
++				     resource_size(&mbusopt_res),
++				     is_coherent);
+ 	if (ret)
+ 		return ret;
+ 
+-- 
+2.7.4
+

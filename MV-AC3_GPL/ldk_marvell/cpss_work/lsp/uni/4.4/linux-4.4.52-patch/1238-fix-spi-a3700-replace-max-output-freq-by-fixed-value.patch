@@ -1,0 +1,92 @@
+From ee816ca0add4499f43387323cc187e571009b250 Mon Sep 17 00:00:00 2001
+From: zachary <zhangzg@marvell.com>
+Date: Mon, 26 Dec 2016 22:05:07 +0800
+Subject: [PATCH 1238/2241] fix: spi: a3700: replace max output freq by fixed
+ value
+
+- SPI max output clock used to be set in dtsi, but since it is
+  a fix value for this SPI controller IP, it should be removed
+  from DT, so it would not be changed to a higher/unsupported
+  number by accident.
+- The SPI controller output clock would be set to the lower one
+  of SPI device max working frequency and max output clock of
+  this controller by SPI driver itself.
+- This patch removes max output clock from DT, replaces it with
+  a fixed value in code.
+
+Change-Id: I3fb9b8a0b7ea9e2ada9344787e156249e465066e
+Signed-off-by: zachary <zhangzg@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/34993
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hua Jing <jinghua@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-37xx.dtsi |  1 -
+ drivers/spi/spi-armada-3700.c                | 18 ++++++------------
+ 2 files changed, 6 insertions(+), 13 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-37xx.dtsi b/arch/arm64/boot/dts/marvell/armada-37xx.dtsi
+index 392b11b..aea0672 100644
+--- a/arch/arm64/boot/dts/marvell/armada-37xx.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-37xx.dtsi
+@@ -111,7 +111,6 @@
+ 				#size-cells = <0>;
+ 				cell-index = <0>;
+ 				clocks = <&ngateclk 12>;
+-				max-frequency = <50000000>;
+ 				fifo-mode;
+ 				interrupts = <GIC_SPI 0 IRQ_TYPE_LEVEL_HIGH>;
+ 				status = "disabled";
+diff --git a/drivers/spi/spi-armada-3700.c b/drivers/spi/spi-armada-3700.c
+index daca6d7..dbf0a70 100644
+--- a/drivers/spi/spi-armada-3700.c
++++ b/drivers/spi/spi-armada-3700.c
+@@ -100,6 +100,7 @@
+ 
+ #define DATA_CAP_CLOCK_CYCLE_NS		14	/*Minimum clock cycle of flash*/
+ #define RVT_EDGE_FLASH_CAP_FREQ		(1000 * 1000 * 1000 / DATA_CAP_CLOCK_CYCLE_NS)
++#define A3700_SPI_MAX_OUTPUT_CLK_FREQ		(50 * 1000 * 1000)	/*50MHz*/
+ 
+ struct a3700_spi_initdata {
+ 	unsigned int cs_num;
+@@ -146,7 +147,6 @@ struct a3700_spi {
+ 	void __iomem           *base;
+ 	struct clk             *clk;
+ 	unsigned int	input_clk_freq;
+-	unsigned int	max_clk_freq;
+ 	unsigned int            irq;
+ 	unsigned int            flags;
+ 	enum a3700_spi_pin_mode  pin_mode;
+@@ -277,11 +277,11 @@ static int a3700_spi_clock_set(struct a3700_spi *a3700_spi,
+ 	u32 prescale;
+ 
+ 	/*
+-	* compare SPI control input frequency and flash input frequency
+-	* to choose lower frequency for using
++	* SPI controller has a maximum output clock freq to flash,
++	* flash could not be working in higher freq than this.
+ 	*/
+-	if (speed_hz >= a3700_spi->max_clk_freq)
+-		prescale = a3700_spi->input_clk_freq / a3700_spi->max_clk_freq;
++	if (speed_hz >= A3700_SPI_MAX_OUTPUT_CLK_FREQ)
++		prescale = a3700_spi->input_clk_freq / A3700_SPI_MAX_OUTPUT_CLK_FREQ;
+ 	else
+ 		prescale = DIV_ROUND_UP(a3700_spi->input_clk_freq, speed_hz);
+ 
+@@ -1115,13 +1115,7 @@ static int a3700_spi_probe(struct platform_device *pdev)
+ 		init_completion(&spi->status.done);
+ 	}
+ 
+-	of_property_read_u32(of_node, "max-frequency", &spi->max_clk_freq);
+-	if (!spi->max_clk_freq) {
+-		dev_err(&pdev->dev, "could not find spi-max-frequency\n");
+-		goto error_clk;
+-	}
+-
+-	/* Enable SPI gating clock and get MAX input clock */
++	/* Enable SPI gating clock*/
+ 	spi->clk = devm_clk_get(&pdev->dev, NULL);
+ 	if (!IS_ERR(spi->clk)) {
+ 		ret = clk_prepare_enable(spi->clk);
+-- 
+2.7.4
+

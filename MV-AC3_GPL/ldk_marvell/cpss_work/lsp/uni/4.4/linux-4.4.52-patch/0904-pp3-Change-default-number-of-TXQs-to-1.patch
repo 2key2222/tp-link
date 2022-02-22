@@ -1,0 +1,42 @@
+From e3702a827fce96fda227f65086babe0ea3a91df5 Mon Sep 17 00:00:00 2001
+From: Dmitri Epshtein <dima@marvell.com>
+Date: Mon, 29 Aug 2016 18:31:14 +0300
+Subject: [PATCH 0904/2241] pp3: Change default number of TXQs to 1
+
+CONFIG_MV_PP3_TXQ_NUM: 		2 -> 1
+CONFIG_MV_PP3_GNSS_TXQ_NUM: 	2 -> 1
+
+Change-Id: I7ec505e6b0ac8c0a03d69b32f8b9f26e1fb01f24
+Signed-off-by: Dmitri Epshtein <dima@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/32340
+Reviewed-by: Yan Markman <ymarkman@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/32347
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Guy Kaneti <guyk@marvell.com>
+---
+ drivers/net/ethernet/marvell/pp3/Kconfig | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/pp3/Kconfig b/drivers/net/ethernet/marvell/pp3/Kconfig
+index b4f4ec8..cb0cfc4 100644
+--- a/drivers/net/ethernet/marvell/pp3/Kconfig
++++ b/drivers/net/ethernet/marvell/pp3/Kconfig
+@@ -87,13 +87,13 @@ config MV_PP3_RXQ_SIZE
+ 
+ config  MV_PP3_TXQ_NUM
+ 	int "Number of TX VQs for NIC devices"
+-        default 2
++        default 1
+         ---help---
+ 	Number of virtual TXQs for each NIC network interface
+ 
+ config  MV_PP3_GNSS_TXQ_NUM
+ 	int "Number of TX VQs for NSS devices"
+-        default 2
++        default 1
+         ---help---
+ 	Number of virtual TXQs for each NSS network interface
+ 
+-- 
+2.7.4
+

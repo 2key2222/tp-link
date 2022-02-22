@@ -1,0 +1,39 @@
+From 65f0f668b88fd8407e739fbc70993a091b8968eb Mon Sep 17 00:00:00 2001
+From: Wei Yongjun <weiyj.lk@gmail.com>
+Date: Thu, 28 Jul 2016 16:17:14 +0000
+Subject: [PATCH 1876/2241] PCI: aardvark: Remove redundant dev_err call in
+ advk_pcie_probe()
+
+devm_ioremap_resource() emits an error message already, so remove the
+dev_err() call in advk_pcie_probe() to avoid redundant error messages.
+
+Change-Id: I3f94509505831923396213fd388b5cc7342ec442
+Signed-off-by: Wei Yongjun <weiyj.lk@gmail.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Reviewed-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/42960
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Victor Gu <xigu@marvell.com>
+---
+ drivers/pci/host/pci-aardvark.c | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
+
+diff --git a/drivers/pci/host/pci-aardvark.c b/drivers/pci/host/pci-aardvark.c
+index 147f9b0..5a850ed 100644
+--- a/drivers/pci/host/pci-aardvark.c
++++ b/drivers/pci/host/pci-aardvark.c
+@@ -970,10 +970,8 @@ static int advk_pcie_probe(struct platform_device *pdev)
+ 
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	pcie->base = devm_ioremap_resource(&pdev->dev, res);
+-	if (IS_ERR(pcie->base)) {
+-		dev_err(&pdev->dev, "Failed to map registers\n");
++	if (IS_ERR(pcie->base))
+ 		return PTR_ERR(pcie->base);
+-	}
+ 
+ 	/* Get comphy and init if there is */
+ 	comphy = devm_of_phy_get(&pdev->dev, dn, "comphy");
+-- 
+2.7.4
+

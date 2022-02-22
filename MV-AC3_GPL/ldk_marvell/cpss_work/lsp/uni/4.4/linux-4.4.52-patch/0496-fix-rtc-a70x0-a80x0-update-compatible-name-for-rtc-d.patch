@@ -1,0 +1,57 @@
+From cdc43f2aa930cf87c603fd191c2b79d909d1b813 Mon Sep 17 00:00:00 2001
+From: Nizan Zorea <nzorea@marvell.com>
+Date: Tue, 12 Apr 2016 17:57:39 +0300
+Subject: [PATCH 0496/2241] fix: rtc: a70x0,a80x0: update compatible name for
+ rtc driver
+
+update rtc compatibale from "marvell,armada-70x0-rtc"
+to "marvell,armada8k-rtc".
+
+Change-Id: I9de41d498f9dcefa878df5e99931779171a8ad38
+Signed-off-by: Nizan Zorea <nzorea@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/30324
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Nadav Haklai <nadavh@marvell.com>
+---
+ Documentation/devicetree/bindings/rtc/armada-380-rtc.txt | 2 +-
+ drivers/rtc/rtc-armada38x.c                              | 4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/rtc/armada-380-rtc.txt b/Documentation/devicetree/bindings/rtc/armada-380-rtc.txt
+index 321af99..89707e3 100644
+--- a/Documentation/devicetree/bindings/rtc/armada-380-rtc.txt
++++ b/Documentation/devicetree/bindings/rtc/armada-380-rtc.txt
+@@ -3,7 +3,7 @@
+ RTC controller for the Armada 38x SoCs
+ 
+ Required properties:
+-- compatible : Should be "marvell,armada-380-rtc" or "marvell,armada-70x0-rtc"
++- compatible : Should be "marvell,armada-380-rtc" or "marvell,armada8k-rtc"
+ - reg: a list of base address and size pairs, one for each entry in
+   reg-names
+ - reg names: should contain:
+diff --git a/drivers/rtc/rtc-armada38x.c b/drivers/rtc/rtc-armada38x.c
+index fedff8f..8c3d398 100644
+--- a/drivers/rtc/rtc-armada38x.c
++++ b/drivers/rtc/rtc-armada38x.c
+@@ -185,7 +185,7 @@ static const struct of_device_id armada38x_rtc_of_match_table[] = {
+ 		.data		= &armada38x_data,
+ 	},
+ 	{
+-		.compatible	= "marvell,armada-70x0-rtc",
++		.compatible	= "marvell,armada8k-rtc",
+ 		.data		= &armada70x0_data,
+ 	},
+ 	{
+@@ -363,7 +363,7 @@ static __init int armada38x_rtc_probe(struct platform_device *pdev)
+ 
+ 	rtc->data = (struct armada38x_rtc_data *)match->data;
+ 	rtc->irq = platform_get_irq(pdev, 0);
+-	if (of_device_is_compatible(pdev->dev.of_node, "marvell,armada-70x0-rtc")) {
++	if (of_device_is_compatible(pdev->dev.of_node, "marvell,armada8k-rtc")) {
+ 		rtc->irq = -1;
+ 		armada38x_rtc_ops.set_alarm = NULL;
+ 		armada38x_rtc_ops.alarm_irq_enable = NULL;
+-- 
+2.7.4
+

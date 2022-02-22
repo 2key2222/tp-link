@@ -1,0 +1,32 @@
+From 4f38f13597a56748589fdc6fbae7da6d0ed2a5fc Mon Sep 17 00:00:00 2001
+From: Omri Itach <omrii@marvell.com>
+Date: Thu, 1 Sep 2016 16:45:14 +0300
+Subject: [PATCH 0964/2241] arm64: configs: enable HW Random Number generator
+
+Armada 7k/8k includes the HW Random Number generetor (EIP-76).
+
+Change-Id: Ia0a9099a722902304e2aa884292f837019ada334
+Signed-off-by: Omri Itach <omrii@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/32474
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ arch/arm64/configs/mvebu_v8_lsp_defconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm64/configs/mvebu_v8_lsp_defconfig b/arch/arm64/configs/mvebu_v8_lsp_defconfig
+index 80ff706..8ee42ab 100644
+--- a/arch/arm64/configs/mvebu_v8_lsp_defconfig
++++ b/arch/arm64/configs/mvebu_v8_lsp_defconfig
+@@ -142,7 +142,7 @@ CONFIG_SERIAL_XILINX_PS_UART=y
+ CONFIG_SERIAL_XILINX_PS_UART_CONSOLE=y
+ CONFIG_SERIAL_MVEBU_UART=y
+ CONFIG_VIRTIO_CONSOLE=y
+-# CONFIG_HW_RANDOM is not set
++CONFIG_HW_RANDOM=y
+ CONFIG_I2C_CHARDEV=y
+ CONFIG_I2C_MV64XXX=y
+ CONFIG_I2C_PXA=y
+-- 
+2.7.4
+

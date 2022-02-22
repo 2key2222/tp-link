@@ -1,0 +1,111 @@
+From 34451a7c89d7313af06d4431ac241f1f829f4c7b Mon Sep 17 00:00:00 2001
+From: Igal Liberman <igall@marvell.com>
+Date: Tue, 7 Feb 2017 17:55:49 +0200
+Subject: [PATCH 1412/2241] phy: comphy: cp110: add digital reset option
+
+This patches uses the new phy "send command" callback and
+implements digital reset of a comphy.
+This gives the comphy consumer option to reset the
+comphy if needed.
+
+Change-Id: I2531f8f89a09647868f08a55e27e6fb7fe0b237d
+Signed-off-by: Igal Liberman <igall@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/37096
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/phy/phy-comphy-cp110.c             | 55 ++++++++++++++++++++++++++++++
+ include/dt-bindings/phy/phy-comphy-mvebu.h |  4 +++
+ 2 files changed, 59 insertions(+)
+
+diff --git a/drivers/phy/phy-comphy-cp110.c b/drivers/phy/phy-comphy-cp110.c
+index 3c2fbaf..c9ff926 100644
+--- a/drivers/phy/phy-comphy-cp110.c
++++ b/drivers/phy/phy-comphy-cp110.c
+@@ -846,6 +846,60 @@ static int mvebu_cp110_comphy_power_off(struct phy *phy)
+ 	return 0;
+ }
+ 
++/*
++ * This function allows to reset the digital synchronizers between
++ * the MAC and the PHY, it is required when the MAC changes its state.
++ */
++static int mvebu_cp110_comphy_digital_reset(struct mvebu_comphy *comphy,
++					     struct mvebu_comphy_priv *priv,
++					     u32 command)
++{
++	int mode = COMPHY_GET_MODE(priv->lanes[comphy->index].mode);
++	void __iomem *sd_ip_addr;
++	u32 mask, data;
++
++	sd_ip_addr = SD_ADDR(priv->comphy_pipe_regs, comphy->index);
++
++	switch (mode) {
++	case (COMPHY_SGMII_MODE):
++	case (COMPHY_HS_SGMII_MODE):
++	case (COMPHY_XFI_MODE):
++	case (COMPHY_SFI_MODE):
++		mask = SD_EXTERNAL_CONFIG1_RF_RESET_IN_MASK;
++		data = ((command == COMPHY_COMMAND_DIGITAL_PWR_OFF) ? 0x0 : 0x1) <<
++			SD_EXTERNAL_CONFIG1_RF_RESET_IN_OFFSET;
++		reg_set(sd_ip_addr + SD_EXTERNAL_CONFIG1_REG, data, mask);
++		break;
++	default:
++		dev_err(priv->dev, "comphy%d: COMPHY_COMMAND_DIGITAL_PWR_ON/OFF is not supported\n",
++			comphy->index);
++			return -EINVAL;
++	}
++
++	return 0;
++
++}
++
++static int mvebu_cp110_comphy_send_command(struct phy *phy, u32 command)
++{
++	struct mvebu_comphy *comphy = phy_get_drvdata(phy);
++	struct mvebu_comphy_priv *priv = to_mvebu_comphy_priv(comphy);
++	int ret = 0;
++
++	switch (command) {
++	case(COMPHY_COMMAND_DIGITAL_PWR_OFF):
++	case(COMPHY_COMMAND_DIGITAL_PWR_ON):
++		ret = mvebu_cp110_comphy_digital_reset(comphy, priv, command);
++		break;
++	default:
++		dev_err(priv->dev, "%s: unsupported command (0x%x)\n",
++			__func__, command);
++		ret = -EINVAL;
++	}
++
++	return ret;
++}
++
+ static int mvebu_cp110_comphy_is_pll_locked(struct phy *phy)
+ {
+ 
+@@ -878,6 +932,7 @@ static struct phy_ops cp110_comphy_ops = {
+ 	.power_off	= mvebu_cp110_comphy_power_off,
+ 	.set_mode	= mvebu_comphy_set_mode,
+ 	.get_mode	= mvebu_comphy_get_mode,
++	.send_command	= mvebu_cp110_comphy_send_command,
+ 	.is_pll_locked  = mvebu_cp110_comphy_is_pll_locked,
+ 	.owner		= THIS_MODULE,
+ };
+diff --git a/include/dt-bindings/phy/phy-comphy-mvebu.h b/include/dt-bindings/phy/phy-comphy-mvebu.h
+index ccb7202..97cd747 100644
+--- a/include/dt-bindings/phy/phy-comphy-mvebu.h
++++ b/include/dt-bindings/phy/phy-comphy-mvebu.h
+@@ -111,5 +111,9 @@
+ /* The  default speed for IO with fixed known speed */
+ #define COMPHY_SPEED_DEFAULT		COMPHY_SPEED_MAX
+ 
++/* Commands for comphy driver */
++#define COMPHY_COMMAND_DIGITAL_PWR_OFF	0x00000001
++#define COMPHY_COMMAND_DIGITAL_PWR_ON	0x00000002
++
+ #endif /* _DT_BINDINGS_PHY_COMPHY_MVEBU */
+ 
+-- 
+2.7.4
+

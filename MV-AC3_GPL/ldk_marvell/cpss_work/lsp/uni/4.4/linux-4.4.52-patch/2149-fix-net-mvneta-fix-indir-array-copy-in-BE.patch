@@ -1,0 +1,39 @@
+From 1b271c8bde02a7cf175c47211e7c2f5ae131e171 Mon Sep 17 00:00:00 2001
+From: Yelena Krivosheev <yelena@marvell.com>
+Date: Mon, 8 Jan 2018 09:04:28 +0200
+Subject: [PATCH 2149/2241] fix: net: mvneta: fix 'indir' array copy in BE
+
+Change-Id: I63f4916bb67cb9e82a63f945360daf2c0f641a82
+Signed-off-by: Yelena Krivosheev <yelena@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/48628
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Dmitri Epshtein <dima@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvneta.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvneta.c b/drivers/net/ethernet/marvell/mvneta.c
+index ac5f47a..20a6cef 100644
+--- a/drivers/net/ethernet/marvell/mvneta.c
++++ b/drivers/net/ethernet/marvell/mvneta.c
+@@ -4174,7 +4174,7 @@ static int mvneta_ethtool_set_rxfh(struct net_device *dev, const u32 *indir,
+ 	if (!indir)
+ 		return 0;
+ 
+-	memcpy(pp->indir, indir, MVNETA_RSS_LU_TABLE_SIZE);
++	memcpy(pp->indir, indir, sizeof(u32) * MVNETA_RSS_LU_TABLE_SIZE);
+ 
+ 	return mvneta_config_rss(pp);
+ }
+@@ -4194,7 +4194,7 @@ static int mvneta_ethtool_get_rxfh(struct net_device *dev, u32 *indir, u8 *key,
+ 	if (!indir)
+ 		return 0;
+ 
+-	memcpy(indir, pp->indir, MVNETA_RSS_LU_TABLE_SIZE);
++	memcpy(indir, pp->indir, sizeof(u32) * MVNETA_RSS_LU_TABLE_SIZE);
+ 
+ 	return 0;
+ }
+-- 
+2.7.4
+

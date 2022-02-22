@@ -1,0 +1,106 @@
+From df2597e3ba507d302c62a43f9f9d570b5fdb27ef Mon Sep 17 00:00:00 2001
+From: Marcin Wojtas <mw@semihalf.com>
+Date: Sun, 28 Aug 2016 03:37:13 +0200
+Subject: [PATCH 0919/2241] pcie: armada8k: cleanup clock support and enable
+ probe deferral
+
+New CP110 system controller driver provides proper clock tree structure,
+hence there is no need to work-around it with obtaining clocks in a loop.
+
+This patch aligns clock handling with the mainline version of the driver.
+Moreover, result of devm_clk_get() takes possible probe deferral
+into consideration, which is needed on a7k/a8k, because CP110 system
+controller clocks are registered as normal driver (not using
+CLK_OF_DECLARE macro for probing).
+
+This patch is part of patch-set which adds
+mainline mvebu clock gating support [15/21].
+
+Change-Id: I2e7e5fae7223a60842185a106ff249aa84d3f4a4
+Signed-off-by: Marcin Wojtas <mw@semihalf.com>
+Signed-off-by: Igal Liberman <igall@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/32400
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Tested-by: Omri Itach <omrii@marvell.com>
+---
+ drivers/pci/host/pcie-armada8k.c | 34 ++++++++++------------------------
+ 1 file changed, 10 insertions(+), 24 deletions(-)
+
+diff --git a/drivers/pci/host/pcie-armada8k.c b/drivers/pci/host/pcie-armada8k.c
+index c526a42..f3843b1 100644
+--- a/drivers/pci/host/pcie-armada8k.c
++++ b/drivers/pci/host/pcie-armada8k.c
+@@ -25,12 +25,10 @@
+ 
+ #include "pcie-designware.h"
+ 
+-#define MAX_A8K_PCIE_CLOCKS	2
+-
+ struct armada8k_pcie {
+ 	void __iomem		*regs_base;
+ 	struct phy		*phy;
+-	struct clk		*clk[MAX_A8K_PCIE_CLOCKS];
++	struct clk		*clk;
+ 	struct pcie_port	pp;
+ };
+ 
+@@ -235,13 +233,18 @@ static int armada8k_pcie_probe(struct platform_device *pdev)
+ 	struct pcie_port *pp;
+ 	struct device *dev = &pdev->dev;
+ 	struct resource *base;
+-	struct clk *clk;
+-	int ret = 0, i;
++	int ret = 0;
+ 
+ 	armada8k_pcie = devm_kzalloc(dev, sizeof(*armada8k_pcie), GFP_KERNEL);
+ 	if (!armada8k_pcie)
+ 		return -ENOMEM;
+ 
++	armada8k_pcie->clk = devm_clk_get(dev, NULL);
++	if (IS_ERR(armada8k_pcie->clk))
++		return PTR_ERR(armada8k_pcie->clk);
++
++	clk_prepare_enable(armada8k_pcie->clk);
++
+ #if 0
+ 	/* Keep this code commented out till we write a PHY driver for
+ 	** armada-8k PCIe PHY. */
+@@ -259,19 +262,6 @@ static int armada8k_pcie_probe(struct platform_device *pdev)
+ 	phy_init(armada8k_pcie->phy);
+ #endif
+ 
+-	/* Optionaly enable clocks */
+-	for (i = 0; i < MAX_A8K_PCIE_CLOCKS; i++) {
+-		clk = of_clk_get(dev->of_node, i);
+-		if (!IS_ERR(clk)) {
+-			if (clk_prepare_enable(clk)) {
+-				dev_err(dev, "couldn't enable clk %d for pcie port\n", i);
+-				devm_clk_put(dev, clk);
+-				goto fail_free;
+-			}
+-			armada8k_pcie->clk[i] = clk;
+-		}
+-	}
+-
+ 	pp = &armada8k_pcie->pp;
+ 
+ 	pp->dev = dev;
+@@ -296,12 +286,8 @@ static int armada8k_pcie_probe(struct platform_device *pdev)
+ 	return 0;
+ 
+ fail_free:
+-	for (i = 0; i < MAX_A8K_PCIE_CLOCKS; i++) {
+-		if (armada8k_pcie->clk[i]) {
+-			clk_disable_unprepare(armada8k_pcie->clk[i]);
+-			devm_clk_put(dev, armada8k_pcie->clk[i]);
+-		}
+-	}
++	if (!IS_ERR(armada8k_pcie->clk))
++		clk_disable_unprepare(armada8k_pcie->clk);
+ 
+ 	devm_kfree(dev, armada8k_pcie);
+ 
+-- 
+2.7.4
+

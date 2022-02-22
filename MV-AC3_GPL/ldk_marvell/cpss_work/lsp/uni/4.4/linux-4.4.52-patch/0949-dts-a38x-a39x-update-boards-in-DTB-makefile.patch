@@ -1,0 +1,45 @@
+From 23f90c35b361aa2935838032ed97bd0045853653 Mon Sep 17 00:00:00 2001
+From: Lior Amsalem <alior@marvell.com>
+Date: Wed, 7 Sep 2016 16:38:30 +0300
+Subject: [PATCH 0949/2241] dts: a38x: a39x: update boards in DTB makefile
+
+Change-Id: Ifff0f0e4b2df54c96b6ed5c60d02cebe93a6de4f
+Signed-off-by: Lior Amsalem <alior@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/32614
+Reviewed-by: Neta Zur Hershkovits <neta@marvell.com>
+Reviewed-by: Wilson Ding <dingwei@marvell.com>
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ arch/arm/boot/dts/Makefile | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+index baf3eaf..bb12adf 100644
+--- a/arch/arm/boot/dts/Makefile
++++ b/arch/arm/boot/dts/Makefile
+@@ -746,6 +746,8 @@ dtb-$(CONFIG_MACH_ARMADA_375) += \
+ 	armada-375-db.dtb
+ dtb-$(CONFIG_MACH_ARMADA_38X) += \
+ 	armada-380-gp.dtb \
++	armada-382-db.dtb \
++	armada-385-amc.dtb \
+ 	armada-385-db-ap.dtb \
+ 	armada-385-linksys-caiman.dtb \
+ 	armada-385-linksys-cobra.dtb \
+@@ -754,7 +756,11 @@ dtb-$(CONFIG_MACH_ARMADA_38X) += \
+ 	armada-388-gp.dtb \
+ 	armada-388-rd.dtb
+ dtb-$(CONFIG_MACH_ARMADA_39X) += \
+-	armada-398-db.dtb
++	armada-398-db.dtb \
++	armada-390-db.dtb \
++	armada-395-amc.dtb \
++	armada-395-gp-eap.dtb \
++	armada-395-gp-gw.dtb
+ dtb-$(CONFIG_MACH_ARMADA_XP) += \
+ 	armada-xp-axpwifiap.dtb \
+ 	armada-xp-db.dtb \
+-- 
+2.7.4
+

@@ -1,0 +1,52 @@
+From c4f9a1f0dc388f45189ec73ae3d9e3aef193d4c5 Mon Sep 17 00:00:00 2001
+From: Dmitri Epshtein <dima@marvell.com>
+Date: Wed, 1 Jun 2016 13:23:52 +0300
+Subject: [PATCH 0478/2241] pp3: Change PP3 driver and FW version display
+
+- New format is: %s:%02d.%02d.%d[.%d]
+For example: NSS:16.05.0
+Fourth number is for debug versions only.
+It will be displayed only if is not 0
+
+Change-Id: I5fa1f67aabc3452002f2acd0f6b14b9b797e280d
+Signed-off-by: Dmitri Epshtein <dima@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/30244
+Reviewed-by: Yan Markman <ymarkman@marvell.com>
+Reviewed-by: Dovrat Zifroni <dovrat@marvell.com>
+Tested-by: Dovrat Zifroni <dovrat@marvell.com>
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Guy Kaneti <guyk@marvell.com>
+---
+ drivers/net/ethernet/marvell/pp3/platform/mv_pp3.c | 13 +++++++++----
+ 1 file changed, 9 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/pp3/platform/mv_pp3.c b/drivers/net/ethernet/marvell/pp3/platform/mv_pp3.c
+index 290b8da..eed35da 100644
+--- a/drivers/net/ethernet/marvell/pp3/platform/mv_pp3.c
++++ b/drivers/net/ethernet/marvell/pp3/platform/mv_pp3.c
+@@ -682,13 +682,18 @@ int mv_pp3_shared_start(struct mv_pp3 *priv)
+ 	drv_ver = mv_pp3_get_driver_version();
+ 	memcpy(version_name, drv_ver->name, ver_name_size);
+ 	pr_info("\n");
+-	pr_info("Driver version: %s:%d.%d.%d.%d",
+-			version_name, drv_ver->major_x, drv_ver->minor_y, drv_ver->local_z, drv_ver->debug_d);
++	pr_info("Driver version: %s:%02d.%02d.%d",
++		version_name, drv_ver->major_x, drv_ver->minor_y, drv_ver->local_z);
++	if (drv_ver->debug_d)
++		pr_cont(".%d\n", drv_ver->debug_d);
+ 
+ 	memcpy(version_name, fw_ver.name, ver_name_size);
+-	pr_info("FW version:     %s:%d.%d.%d.%d\n",
+-			version_name, fw_ver.major_x, fw_ver.minor_y, fw_ver.local_z, fw_ver.debug_d);
++	pr_info("FW version:     %s:%02d.%02d.%d\n",
++		version_name, fw_ver.major_x, fw_ver.minor_y, fw_ver.local_z);
++	if (fw_ver.debug_d)
++		pr_cont(".%d\n", fw_ver.debug_d);
+ 
++	pr_info("\n");
+ 	kfree(version_name);
+ 
+ 	/* Send request for memory buffer size needed by FW */
+-- 
+2.7.4
+

@@ -1,0 +1,42 @@
+From 8169ae929ba01cfe3d4fbaf6523e8df0bc553976 Mon Sep 17 00:00:00 2001
+From: Haim Boot <hayim@marvell.com>
+Date: Mon, 23 May 2016 17:44:59 +0300
+Subject: [PATCH 0409/2241] fix: defconfig: enable mtd device block and jffs
+
+In order to allow mount of spi device, block
+device should be enabled and jffs support as well
+fixes SYSTEMSW-2486
+
+Change-Id: I6b357616156eaa95516b7725d409af255b2c26ff
+Signed-off-by: Haim Boot <hayim@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/29890
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Nadav Haklai <nadavh@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ arch/arm64/configs/mvebu_v8_lsp_defconfig | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/arch/arm64/configs/mvebu_v8_lsp_defconfig b/arch/arm64/configs/mvebu_v8_lsp_defconfig
+index 8bc71a4..e9634b1 100644
+--- a/arch/arm64/configs/mvebu_v8_lsp_defconfig
++++ b/arch/arm64/configs/mvebu_v8_lsp_defconfig
+@@ -71,6 +71,7 @@ CONFIG_DEVTMPFS_MOUNT=y
+ CONFIG_DMA_CMA=y
+ CONFIG_VEXPRESS_CONFIG=y
+ CONFIG_MTD=y
++CONFIG_MTD_BLOCK=y
+ CONFIG_MTD_M25P80=y
+ CONFIG_MTD_NAND=y
+ CONFIG_MTD_NAND_PXA3xx=y
+@@ -220,6 +221,7 @@ CONFIG_VFAT_FS=y
+ CONFIG_TMPFS=y
+ CONFIG_HUGETLBFS=y
+ CONFIG_EFIVAR_FS=y
++CONFIG_JFFS2_FS=y
+ CONFIG_NFS_FS=y
+ CONFIG_NFS_V4=y
+ CONFIG_ROOT_NFS=y
+-- 
+2.7.4
+

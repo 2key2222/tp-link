@@ -1,0 +1,53 @@
+From 035534df2ac80b02368aba4b4a324420fc988444 Mon Sep 17 00:00:00 2001
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Date: Tue, 7 Mar 2017 16:53:19 +0100
+Subject: [PATCH 1687/2241] net: mvpp2: set dma mask and coherent dma mask on
+ PPv2.2
+
+On PPv2.2, the streaming mappings can be anywhere in the first 40 bits
+of the physical address space. However, for the coherent mappings, we
+still need them to be in the first 32 bits of the address space,
+because all BM pools share a single register to store the high 32 bits
+of the BM pool address, which means all BM pools must be allocated in
+the same 4GB memory area.
+
+Patch cherry-picked from mainline 4.12_rc5
+
+Change-Id: Icfb4efe6103c228c05757e54ce0045d401bcd4c3
+Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/40417
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2.c | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2.c b/drivers/net/ethernet/marvell/mvpp2.c
+index 6712286..c1c1ed5 100644
+--- a/drivers/net/ethernet/marvell/mvpp2.c
++++ b/drivers/net/ethernet/marvell/mvpp2.c
+@@ -6806,6 +6806,20 @@ static int mvpp2_probe(struct platform_device *pdev)
+ 	/* Get system's tclk rate */
+ 	priv->tclk = clk_get_rate(priv->pp_clk);
+ 
++	if (priv->hw_version == MVPP22) {
++		err = dma_set_mask(&pdev->dev, DMA_BIT_MASK(40));
++		if (err)
++			goto err_mg_clk;
++		/* Sadly, the BM pools all share the same register to
++		 * store the high 32 bits of their address. So they
++		 * must all have the same high 32 bits, which forces
++		 * us to restrict coherent memory to DMA_BIT_MASK(32).
++		 */
++		err = dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(32));
++		if (err)
++			goto err_mg_clk;
++	}
++
+ 	/* Initialize network controller */
+ 	err = mvpp2_init(pdev, priv);
+ 	if (err < 0) {
+-- 
+2.7.4
+

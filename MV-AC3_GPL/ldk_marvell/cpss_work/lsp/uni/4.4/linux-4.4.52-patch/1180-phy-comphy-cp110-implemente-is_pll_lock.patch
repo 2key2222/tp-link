@@ -1,0 +1,79 @@
+From 7404c357b36a72878d9f7de779fb5e7618bc346f Mon Sep 17 00:00:00 2001
+From: Igal Liberman <igall@marvell.com>
+Date: Tue, 8 Nov 2016 10:26:24 +0200
+Subject: [PATCH 1180/2241] phy: comphy: cp110: implemente is_pll_lock
+
+This patch implements is_pll_lock callback for cp110 comphy.
+The implementation will be used by SATA driver in the next
+commits in order to check the PLL status.
+
+Change-Id: Ic0c00c31a81f9cc72249577bc95b859ff296bda4
+Signed-off-by: Igal Liberman <igall@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/33627
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/phy/phy-mvebu-comphy.c | 28 ++++++++++++++++++++++++++++
+ drivers/phy/phy-mvebu-comphy.h |  2 ++
+ 2 files changed, 30 insertions(+)
+
+diff --git a/drivers/phy/phy-mvebu-comphy.c b/drivers/phy/phy-mvebu-comphy.c
+index a677a00..561aa81 100644
+--- a/drivers/phy/phy-mvebu-comphy.c
++++ b/drivers/phy/phy-mvebu-comphy.c
+@@ -740,11 +740,39 @@ static enum phy_mode mvebu_comphy_get_mode(struct phy *phy)
+ 	return (enum phy_mode)mode;
+ }
+ 
++static int mvebu_comphy_is_pll_locked(struct phy *phy)
++{
++
++	struct mvebu_comphy *comphy = phy_get_drvdata(phy);
++	struct mvebu_comphy_priv *priv = to_mvebu_comphy_priv(comphy);
++	void __iomem *sd_ip_addr, *addr;
++	u32 mask, data;
++	int ret = 0;
++
++	sd_ip_addr = SD_ADDR(priv->comphy_pipe_regs, comphy->index);
++
++	addr = sd_ip_addr + SD_EXTERNAL_STATUS0_REG;
++	data = SD_EXTERNAL_STATUS0_PLL_TX_MASK & SD_EXTERNAL_STATUS0_PLL_RX_MASK;
++	mask = data;
++	data = polling_with_timeout(addr, data, mask, PLL_LOCK_TIMEOUT);
++	if (data != 0) {
++		if (data & SD_EXTERNAL_STATUS0_PLL_RX_MASK)
++			dev_err(priv->dev, "RX PLL is not locked\n");
++		if (data & SD_EXTERNAL_STATUS0_PLL_TX_MASK)
++			dev_err(priv->dev, "TX PLL is not locked\n");
++
++		ret = -ETIMEDOUT;
++	}
++
++	return ret;
++}
++
+ static struct phy_ops mvebu_comphy_ops = {
+ 	.power_on	= mvebu_comphy_power_on,
+ 	.power_off	= mvebu_comphy_power_off,
+ 	.set_mode	= mvebu_comphy_set_mode,
+ 	.get_mode	= mvebu_comphy_get_mode,
++	.is_pll_locked  = mvebu_comphy_is_pll_locked,
+ 	.owner		= THIS_MODULE,
+ };
+ 
+diff --git a/drivers/phy/phy-mvebu-comphy.h b/drivers/phy/phy-mvebu-comphy.h
+index e612d4f..398de8d 100644
+--- a/drivers/phy/phy-mvebu-comphy.h
++++ b/drivers/phy/phy-mvebu-comphy.h
+@@ -147,5 +147,7 @@
+ #define HPIPE_G1_SETTING_5_G1_ICP_OFFSET	0
+ #define HPIPE_G1_SETTING_5_G1_ICP_MASK		(0xf << HPIPE_G1_SETTING_5_G1_ICP_OFFSET)
+ 
++/* General defines */
++#define PLL_LOCK_TIMEOUT			15000
+ #endif /* _MVEBU_COMPHY_H */
+ 
+-- 
+2.7.4
+

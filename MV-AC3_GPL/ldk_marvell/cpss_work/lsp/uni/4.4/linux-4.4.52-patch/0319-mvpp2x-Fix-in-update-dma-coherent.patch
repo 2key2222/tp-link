@@ -1,0 +1,37 @@
+From 350b1592a32586a5da683d2fb0a1ad4424bcca20 Mon Sep 17 00:00:00 2001
+From: Alan Winkowski <walan@marvell.com>
+Date: Mon, 11 Apr 2016 14:14:08 +0300
+Subject: [PATCH 0319/2241] mvpp2x: Fix in update dma-coherent
+
+dma-coherent is read from dts and updated by kernel.
+No need to update in driver
+
+Change-Id: I3e5075ce4e955003e4d6073d474c05aa60d3960c
+Signed-off-by: Alan Winkowski <walan@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/28917
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+index 2cfd368..6093176 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+@@ -4694,11 +4694,9 @@ static int mv_pp2x_probe(struct platform_device *pdev)
+ 		pr_crit("mvpp2: cannot set dma_mask\n");
+ 		goto err_clk;
+ 	}
+-	/*Set dma_coherency to 0 */
++	/*Disable dma_coherency in FPGA*/
+ #ifdef CONFIG_MV_PP2_FPGA
+ 	pdev->dev.archdata.dma_coherent = 0;
+-#else
+-	pdev->dev.archdata.dma_coherent = 0; /* SW_COHERENT */
+ #endif
+ 
+ #ifdef CONFIG_64BIT
+-- 
+2.7.4
+

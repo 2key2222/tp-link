@@ -1,0 +1,53 @@
+From f9735224c82c829af5d9bcedb07dd9e21c9d680c Mon Sep 17 00:00:00 2001
+From: Yehuda Yitschak <yehuday@marvell.com>
+Date: Wed, 17 Feb 2016 14:54:11 +0200
+Subject: [PATCH 0127/2241] ap806: pic: enable PIC interrupt controller for
+ AP806
+
+- Add the driver to ARCH_MVEBU compilation
+- Add device tree entry for interrupt controller
+
+Change-Id: I772847f9f8aa91ffa7d5123e018b1569aa87c1b5
+Signed-off-by: Yehuda Yitschak <yehuday@marvell.com>
+---
+ arch/arm64/Kconfig.platforms                  |  1 +
+ arch/arm64/boot/dts/marvell/armada-ap806.dtsi | 11 +++++++++++
+ 2 files changed, 12 insertions(+)
+
+diff --git a/arch/arm64/Kconfig.platforms b/arch/arm64/Kconfig.platforms
+index a1e2220..04645ad 100644
+--- a/arch/arm64/Kconfig.platforms
++++ b/arch/arm64/Kconfig.platforms
+@@ -3,6 +3,7 @@ menu "Platform selection"
+ config ARCH_MVEBU
+ 	bool "Marvell EBU SoC Family"
+ 	select ARM_GIC_ODMI
++	select MVEBU_PIC
+ 	select ARMADA_AP806_CORE_CLK
+ 	select ARMADA_AP806_RING_CLK
+ 	help
+diff --git a/arch/arm64/boot/dts/marvell/armada-ap806.dtsi b/arch/arm64/boot/dts/marvell/armada-ap806.dtsi
+index 2c6ccc3..c4a5109 100644
+--- a/arch/arm64/boot/dts/marvell/armada-ap806.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-ap806.dtsi
+@@ -116,6 +116,17 @@
+ 				};
+ 			};
+ 
++			pic: interrupt-controller@3f0100 {
++				compatible = "marvell,pic";
++				reg = <0x3f0100 0x10>;
++				irq-mask = <0x7001f>;
++				#interrupt-cells = <1>;
++				#size-cells = <1>;
++				interrupt-controller;
++				interrupt-parent = <&gic>;
++				interrupts = <GIC_PPI 12 IRQ_TYPE_LEVEL_HIGH>;
++			};
++
+ 			timer {
+ 				compatible = "arm,armv8-timer";
+ 				interrupts = <GIC_PPI 13 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_EDGE_RISING)>,
+-- 
+2.7.4
+

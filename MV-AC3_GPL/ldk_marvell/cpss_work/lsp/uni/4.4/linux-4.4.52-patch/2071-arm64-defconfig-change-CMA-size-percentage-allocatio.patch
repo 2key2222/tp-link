@@ -1,0 +1,38 @@
+From 166506c6f48f4f1e70184726fb2d3f20861a785a Mon Sep 17 00:00:00 2001
+From: Arie Elias <earie@marvell.com>
+Date: Mon, 13 Nov 2017 13:36:04 +0200
+Subject: [PATCH 2071/2241] arm64: defconfig: change CMA size percentage
+ allocation to 25%
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+The original size is 15% from total memory.
+For AGNIC system, based on Armada 70x0-PCAC board,
+it’s too low since PCAC board has only 1GB of memory.
+
+Change-Id: I93cf0ad7f5964ca0fe6df67f3ff22330cd76b3e8
+Signed-off-by: Arie Elias <earie@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/46267
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+---
+ arch/arm64/configs/mvebu_v8_lsp_defconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm64/configs/mvebu_v8_lsp_defconfig b/arch/arm64/configs/mvebu_v8_lsp_defconfig
+index 5b05706..1fb4692 100644
+--- a/arch/arm64/configs/mvebu_v8_lsp_defconfig
++++ b/arch/arm64/configs/mvebu_v8_lsp_defconfig
+@@ -77,7 +77,7 @@ CONFIG_DEVTMPFS=y
+ CONFIG_DEVTMPFS_MOUNT=y
+ CONFIG_DMA_CMA=y
+ CONFIG_CMA_SIZE_MBYTES=256
+-CONFIG_CMA_SIZE_PERCENTAGE=15
++CONFIG_CMA_SIZE_PERCENTAGE=25
+ CONFIG_CMA_SIZE_SEL_MIN=y
+ CONFIG_VEXPRESS_CONFIG=y
+ CONFIG_MTD=y
+-- 
+2.7.4
+

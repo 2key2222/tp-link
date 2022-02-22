@@ -1,0 +1,79 @@
+From dbe7f2af967bb05179bfabc5ede9725f2ab7089c Mon Sep 17 00:00:00 2001
+From: Yelena Krivosheev <yelena@marvell.com>
+Date: Tue, 31 Oct 2017 09:45:19 +0200
+Subject: [PATCH 2120/2241] net: mvneta: disable handle of tx queues for user
+ space port
+
+This patch disable link up / down queues processing
+for US ports.
+Link change event today processed in Kernel space only.
+On port link down NETA hardware disable all port TX
+queues and through link up all relevant TX are enabled.
+If port belongs to US, there is no data stored by KS
+regarding TX/RX queues used by port.
+
+Change-Id: Icc457f41f5eae7bacb2a7ff2fc7a6e068adf7466
+Signed-off-by: Yelena Krivosheev <yelena@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/45717
+Tested-by: Omri Itach <omrii@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvneta.c | 41 +++++++++++++++++++----------------
+ 1 file changed, 22 insertions(+), 19 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvneta.c b/drivers/net/ethernet/marvell/mvneta.c
+index bf875ee..73f7dac 100644
+--- a/drivers/net/ethernet/marvell/mvneta.c
++++ b/drivers/net/ethernet/marvell/mvneta.c
+@@ -3511,26 +3511,29 @@ static void mvneta_adjust_link(struct net_device *ndev)
+ 	}
+ 
+ 	if (status_change) {
+-		if (phydev->link) {
+-			if (!pp->use_inband_status) {
+-				u32 val = mvreg_read(pp,
+-						  MVNETA_GMAC_AUTONEG_CONFIG);
+-				val &= ~MVNETA_GMAC_FORCE_LINK_DOWN;
+-				val |= MVNETA_GMAC_FORCE_LINK_PASS;
+-				mvreg_write(pp, MVNETA_GMAC_AUTONEG_CONFIG,
+-					    val);
+-			}
+-			mvneta_port_up(pp);
+-		} else {
+-			if (!pp->use_inband_status) {
+-				u32 val = mvreg_read(pp,
+-						  MVNETA_GMAC_AUTONEG_CONFIG);
+-				val &= ~MVNETA_GMAC_FORCE_LINK_PASS;
+-				val |= MVNETA_GMAC_FORCE_LINK_DOWN;
+-				mvreg_write(pp, MVNETA_GMAC_AUTONEG_CONFIG,
+-					    val);
++		/* nothing to do if port belongs to User Space */
++		if (!(pp->flags & MVNETA_PORT_F_IF_MUSDK)) {
++			if (phydev->link) {
++				if (!pp->use_inband_status) {
++					u32 val = mvreg_read(pp,
++							  MVNETA_GMAC_AUTONEG_CONFIG);
++					val &= ~MVNETA_GMAC_FORCE_LINK_DOWN;
++					val |= MVNETA_GMAC_FORCE_LINK_PASS;
++					mvreg_write(pp, MVNETA_GMAC_AUTONEG_CONFIG,
++						    val);
++				}
++				mvneta_port_up(pp);
++			} else {
++				if (!pp->use_inband_status) {
++					u32 val = mvreg_read(pp,
++							  MVNETA_GMAC_AUTONEG_CONFIG);
++					val &= ~MVNETA_GMAC_FORCE_LINK_PASS;
++					val |= MVNETA_GMAC_FORCE_LINK_DOWN;
++					mvreg_write(pp, MVNETA_GMAC_AUTONEG_CONFIG,
++						    val);
++				}
++				mvneta_port_down(pp);
+ 			}
+-			mvneta_port_down(pp);
+ 		}
+ 		phy_print_status(phydev);
+ 	}
+-- 
+2.7.4
+

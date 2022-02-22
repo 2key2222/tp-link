@@ -1,0 +1,54 @@
+From a2a6fb7f91969228f899f68a86b9f71d3fa7bedf Mon Sep 17 00:00:00 2001
+From: Hanna Hawa <hannah@marvell.com>
+Date: Wed, 26 Oct 2016 10:43:35 +0300
+Subject: [PATCH 1018/2241] fix: dts: xor: ap806: add missing clock entries for
+ XOR driver
+
+Change-Id: Id4de3ff1b9b033f082d2514c44ff6525bcacf5fb
+Signed-off-by: Hanna Hawa <hannah@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/33358
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Tested-by: Omri Itach <omrii@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-ap806.dtsi | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-ap806.dtsi b/arch/arm64/boot/dts/marvell/armada-ap806.dtsi
+index 6984b73f..d17c477 100644
+--- a/arch/arm64/boot/dts/marvell/armada-ap806.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-ap806.dtsi
+@@ -311,6 +311,7 @@
+ 				      <0x410000 0x1000>;
+ 				msi-parent = <&gic_v2m0>;
+ 				dma-coherent;
++				clocks = <&syscon 3>;
+ 				status = "okay";
+ 			};
+ 
+@@ -320,6 +321,7 @@
+ 				      <0x430000 0x1000>;
+ 				msi-parent = <&gic_v2m0>;
+ 				dma-coherent;
++				clocks = <&syscon 3>;
+ 				status = "okay";
+ 			};
+ 
+@@ -329,6 +331,7 @@
+ 				      <0x450000 0x1000>;
+ 				msi-parent = <&gic_v2m0>;
+ 				dma-coherent;
++				clocks = <&syscon 3>;
+ 				status = "okay";
+ 			};
+ 
+@@ -338,6 +341,7 @@
+ 				      <0x470000 0x1000>;
+ 				msi-parent = <&gic_v2m0>;
+ 				dma-coherent;
++				clocks = <&syscon 3>;
+ 				status = "okay";
+ 			};
+ 
+-- 
+2.7.4
+

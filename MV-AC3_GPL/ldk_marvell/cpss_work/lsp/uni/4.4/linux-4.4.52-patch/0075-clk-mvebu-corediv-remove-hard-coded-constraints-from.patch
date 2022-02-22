@@ -1,0 +1,47 @@
+From 83069ba4766ea4fef5ce63b6fd98d6c65cbb6a32 Mon Sep 17 00:00:00 2001
+From: Marcin Wojtas <mw@semihalf.com>
+Date: Mon, 8 Sep 2014 17:54:54 +0200
+Subject: [PATCH 0075/2241] clk: mvebu: corediv: remove hard-coded constraints
+ from rounding rate function
+
+Signed-off-by: Marcin Wojtas <mw@semihalf.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/14185
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Nadav Haklai <nadavh@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/14300
+(cherry picked from commit 737c387afcd86889c6f8d65db829deae77435890)
+Reviewed-on: http://vgitil04.il.marvell.com:8080/16044
+Reviewed-by: Neta Zur Hershkovits <neta@marvell.com>
+Signed-off-by: Neta Zur <neta@marvell.com>
+
+Change-Id: If15059937e7d69af64a9a3874a665770d85c5590
+Reviewed-on: http://vgitil04.il.marvell.com:8080/27297
+Reviewed-by: Nadav Haklai <nadavh@marvell.com>
+Tested-by: Lior Amsalem <alior@marvell.com>
+---
+ drivers/clk/mvebu/clk-corediv.c | 7 +------
+ 1 file changed, 1 insertion(+), 6 deletions(-)
+
+diff --git a/drivers/clk/mvebu/clk-corediv.c b/drivers/clk/mvebu/clk-corediv.c
+index d1e5863..241753e 100644
+--- a/drivers/clk/mvebu/clk-corediv.c
++++ b/drivers/clk/mvebu/clk-corediv.c
+@@ -135,14 +135,9 @@ static unsigned long clk_corediv_recalc_rate(struct clk_hw *hwclk,
+ static long clk_corediv_round_rate(struct clk_hw *hwclk, unsigned long rate,
+ 			       unsigned long *parent_rate)
+ {
+-	/* Valid ratio are 1:4, 1:5, 1:6 and 1:8 */
+ 	u32 div;
+ 
+-	div = *parent_rate / rate;
+-	if (div < 4)
+-		div = 4;
+-	else if (div > 6)
+-		div = 8;
++	div = DIV_ROUND_UP(*parent_rate, rate);
+ 
+ 	return *parent_rate / div;
+ }
+-- 
+2.7.4
+
