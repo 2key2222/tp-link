@@ -1,0 +1,31 @@
+From d0f4ae3327abae796f923a99c2bc8a73146be6eb Mon Sep 17 00:00:00 2001
+From: Igal Liberman <igall@marvell.com>
+Date: Tue, 14 Mar 2017 18:56:20 +0200
+Subject: [PATCH 1459/2241] fix: comphy: fix incorrect
+ HPIPE_G1_SET_2_G1_TX_EMPH0_EN_MASK value
+
+Change-Id: Ib806f6a800601e29e9c058e237988fef9c9efb90
+Signed-off-by: Igal Liberman <igall@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/37455
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+---
+ drivers/phy/phy-comphy-cp110.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/phy/phy-comphy-cp110.h b/drivers/phy/phy-comphy-cp110.h
+index 7a54ae1..6de0ddb 100644
+--- a/drivers/phy/phy-comphy-cp110.h
++++ b/drivers/phy/phy-comphy-cp110.h
+@@ -192,7 +192,7 @@ extern const struct mvebu_comphy_soc_info cp110_comphy;
+ #define HPIPE_G1_SET_2_G1_TX_EMPH0_OFFSET	0
+ #define HPIPE_G1_SET_2_G1_TX_EMPH0_MASK		(0xf << HPIPE_G1_SET_2_G1_TX_EMPH0_OFFSET)
+ #define HPIPE_G1_SET_2_G1_TX_EMPH0_EN_OFFSET	4
+-#define HPIPE_G1_SET_2_G1_TX_EMPH0_EN_MASK	(0x1 << HPIPE_G1_SET_2_G1_TX_EMPH0_MASK)
++#define HPIPE_G1_SET_2_G1_TX_EMPH0_EN_MASK	(0x1 << HPIPE_G1_SET_2_G1_TX_EMPH0_EN_OFFSET)
+ 
+ #define HPIPE_VDD_CAL_CTRL_REG			0x114
+ #define HPIPE_EXT_SELLV_RXSAMPL_OFFSET		5
+-- 
+2.7.4
+

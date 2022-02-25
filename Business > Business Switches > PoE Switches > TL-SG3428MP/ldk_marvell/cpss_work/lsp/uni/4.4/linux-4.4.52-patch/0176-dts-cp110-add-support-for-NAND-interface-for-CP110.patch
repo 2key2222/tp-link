@@ -1,0 +1,83 @@
+From 1192ddd6f7728c791382b68d4b45c0b809d63e4b Mon Sep 17 00:00:00 2001
+From: Yehuda Yitschak <yehuday@marvell.com>
+Date: Mon, 22 Feb 2016 15:13:44 +0200
+Subject: [PATCH 0176/2241] dts: cp110: add support for NAND interface for
+ CP110
+
+Change-Id: I52150596190ceac7771d0a31ad5a05c64e5ac42e
+Signed-off-by: Yehuda Yitschak <yehuday@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-7040-rz-db-nand.dts |  3 +++
+ arch/arm64/boot/dts/marvell/armada-7040-rz-db.dtsi     | 18 ++++++++++++++++++
+ arch/arm64/boot/dts/marvell/armada-cp110.dtsi          | 15 +++++++++++++++
+ 3 files changed, 36 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-7040-rz-db-nand.dts b/arch/arm64/boot/dts/marvell/armada-7040-rz-db-nand.dts
+index 37f192a..573bb13 100644
+--- a/arch/arm64/boot/dts/marvell/armada-7040-rz-db-nand.dts
++++ b/arch/arm64/boot/dts/marvell/armada-7040-rz-db-nand.dts
+@@ -66,6 +66,9 @@
+ 			usb3h1: usb3@510000 {
+ 				status = "okay";
+ 			};
++			nand@720000 {
++				status = "okay";
++			};
+ 		};
+ 		pcie@0x600000 {
+ 			status = "okay";
+diff --git a/arch/arm64/boot/dts/marvell/armada-7040-rz-db.dtsi b/arch/arm64/boot/dts/marvell/armada-7040-rz-db.dtsi
+index d1a0ba2..c48c06b 100644
+--- a/arch/arm64/boot/dts/marvell/armada-7040-rz-db.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-7040-rz-db.dtsi
+@@ -89,6 +89,24 @@
+ 					};
+ 				};
+ 			};
++
++			nand@720000 {
++				nand-ecc-strength = <4>;
++				nand-ecc-step-size = <512>;
++				status = "disabled";
++				partition@0 {
++					label = "U-Boot";
++					reg = <0 0x200000>;
++				};
++				partition@200000 {
++					label = "Linux";
++					reg = <0x200000 0xd00000>;
++				};
++				partition@1000000 {
++					label = "Filesystem";
++					reg = <0x1000000 0x3f000000>;
++				};
++			};
+ 		};
+ 	};
+ };
+diff --git a/arch/arm64/boot/dts/marvell/armada-cp110.dtsi b/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
+index 2db77cb..7a38516 100644
+--- a/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
+@@ -99,3 +99,18 @@ i2c2: i2c@701100 {
+ 	clocks = <&cp110_clk 3>;
+ 	status = "disabled";
+ };
++
++nand@720000 {
++	compatible = "marvell,armada370-nand";
++	reg = <0x720000 0x54>;
++	#address-cells = <1>;
++	#size-cells = <1>;
++	num-cs = <1>;
++	marvell,nand-enable-arbiter;
++	nand-on-flash-bbt;
++	interrupts = <GIC_SPI 83 IRQ_TYPE_LEVEL_HIGH>;
++	clocks = <&gateclk 2>;
++	nand-ecc-strength = <4>;
++	nand-ecc-step-size = <512>;
++	status = "disabled";
++};
+-- 
+2.7.4
+

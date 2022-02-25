@@ -1,0 +1,46 @@
+From 1fd8459922863b1010c3af577e16b6d9e7c00377 Mon Sep 17 00:00:00 2001
+From: Markus Elfring <elfring@users.sourceforge.net>
+Date: Mon, 17 Apr 2017 13:50:35 +0200
+Subject: [PATCH 1704/2241] net: mvpp2: Rename a jump label in
+ mvpp2_prs_vlan_add()
+
+Adjust jump labels according to the Linux coding style convention.
+
+Patch cherry-picked from mainline 4.12_rc5
+
+Change-Id: I16f40bf458777b2081756c1ba1fbb33d3f24ebdd
+Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/40455
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2.c | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2.c b/drivers/net/ethernet/marvell/mvpp2.c
+index 9736c31..770e371 100644
+--- a/drivers/net/ethernet/marvell/mvpp2.c
++++ b/drivers/net/ethernet/marvell/mvpp2.c
+@@ -1942,7 +1942,7 @@ static int mvpp2_prs_vlan_add(struct mvpp2 *priv, unsigned short tpid, int ai,
+ 
+ 		if (tid <= tid_aux) {
+ 			ret = -EINVAL;
+-			goto error;
++			goto free_pe;
+ 		}
+ 
+ 		memset(pe, 0, sizeof(*pe));
+@@ -1974,8 +1974,7 @@ static int mvpp2_prs_vlan_add(struct mvpp2 *priv, unsigned short tpid, int ai,
+ 	mvpp2_prs_tcam_port_map_set(pe, port_map);
+ 
+ 	mvpp2_prs_hw_write(priv, pe);
+-
+-error:
++free_pe:
+ 	kfree(pe);
+ 
+ 	return ret;
+-- 
+2.7.4
+

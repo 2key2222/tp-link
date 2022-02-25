@@ -1,0 +1,38 @@
+From 197d5ae9ae304266ff27fbe3821bf1b9f67f978a Mon Sep 17 00:00:00 2001
+From: Victor Gu <xigu@marvell.com>
+Date: Wed, 23 Mar 2016 01:00:07 +0800
+Subject: [PATCH 0311/2241] arm64: mmc: armada3700: support write operation of
+ SD cards
+
+The DT property wp-inverted is added to support SD write
+operation.
+Otherwise the SD card will be readable only.
+This solution is same as what A38X does, however in order to
+support full write protection feature, need to implement
+the WP via the test pin in future.
+
+Change-Id: Iaf0ee0ea5f98448c18d089076bb617297b68cc12
+Signed-off-by: Victor Gu <xigu@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/28437
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Shadi Ammouri <shadi@marvell.com>
+Reviewed-by: Nadav Haklai <nadavh@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-3720-db.dts | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-3720-db.dts b/arch/arm64/boot/dts/marvell/armada-3720-db.dts
+index 97d03af..bd59c6f 100644
+--- a/arch/arm64/boot/dts/marvell/armada-3720-db.dts
++++ b/arch/arm64/boot/dts/marvell/armada-3720-db.dts
+@@ -125,6 +125,7 @@
+ 
+ 			sdhci1: sdhci@d0000 {
+ 				broken-cd;
++				wp-inverted;
+ 				bus-width = <4>;
+ 				status = "okay";
+ 
+-- 
+2.7.4
+

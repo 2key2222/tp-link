@@ -1,0 +1,41 @@
+From 835a341a85f97b95c0b23a2b552e8f4c5a30211c Mon Sep 17 00:00:00 2001
+From: Shadi Ammouri <shadi@marvell.com>
+Date: Thu, 7 Apr 2016 11:02:07 +0300
+Subject: [PATCH 0315/2241] doc: pic: Update marvell,pic dt-bindings
+ documentation
+
+Added int-en-pol description.
+
+Change-Id: Ica3fac21f145d7c18c16d1e82ed15bfb01a29df7
+Signed-off-by: Shadi Ammouri <shadi@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/28869
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ Documentation/devicetree/bindings/interrupt-controller/marvell,pic.txt | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/Documentation/devicetree/bindings/interrupt-controller/marvell,pic.txt b/Documentation/devicetree/bindings/interrupt-controller/marvell,pic.txt
+index ad3ab69..565f574 100644
+--- a/Documentation/devicetree/bindings/interrupt-controller/marvell,pic.txt
++++ b/Documentation/devicetree/bindings/interrupt-controller/marvell,pic.txt
+@@ -14,6 +14,8 @@ Required properties:
+ - reg: Should contain PIC registers location and length.
+ - interrupts: Identifies the IRQ nunmber of the parent IRQ controller to which the PIC is connected to.
+ - irq-mask: Indicates the valid interrupts supported by this instance of PIC.
++- int-en-pol: Interrupt mask polarity - 0 means that writing 0 to the pic int-mask reg enables the interrupt.
++		Please refer to the functional spec to figure the right polarity for a specific SoC.
+ 
+ Example:
+ 
+@@ -21,6 +23,7 @@ Example:
+ 		compatible = "marvell,pic";
+ 		reg = <0x3f0100 0x10>;
+ 		irq-mask = <0x7001f>;  /* interrupts 0,1,2,3,4,16,17,18 */
++		int-en-pol = <0>; /* 0 unmasks / enables the interrupt. */
+ 		#interrupt-cells = <1>;
+ 		#size-cells = <1>;
+ 		interrupt-controller;
+-- 
+2.7.4
+

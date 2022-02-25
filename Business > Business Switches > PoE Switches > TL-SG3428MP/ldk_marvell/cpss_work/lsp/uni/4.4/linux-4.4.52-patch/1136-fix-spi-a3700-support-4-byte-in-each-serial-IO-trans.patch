@@ -1,0 +1,167 @@
+From a738ebb4a657333b98fb154586bcc80676e4e05f Mon Sep 17 00:00:00 2001
+From: zachary <zhangzg@marvell.com>
+Date: Fri, 11 Nov 2016 22:46:44 +0800
+Subject: [PATCH 1136/2241] fix: spi: a3700: support 4 byte in each serial IO
+ transfer for fifo mode
+
+In order to increase SPI read/write performance, the 4 byte length
+feature should be enabled to read or write 4 byte in each serial IO
+transfer.
+This patch sets the byte length to 1 byte in none fifo mode, and
+set to 4 byte mode in fifo mode.
+The reading and writing of none 4 byte aligned length is also supported
+by it.
+According to the testing, the 4 byte length transfer combined with higher
+SPI clock frequency such as 100MHZ could increase the SPI performance.
+
+Change-Id: I90b731f3cdf52e05061233d040c10380815246cc
+Signed-off-by: zachary <zhangzg@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/33634
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Wilson Ding <dingwei@marvell.com>
+---
+ drivers/spi/spi-armada-3700.c | 83 ++++++++++++++++++++++++++-----------------
+ 1 file changed, 51 insertions(+), 32 deletions(-)
+
+diff --git a/drivers/spi/spi-armada-3700.c b/drivers/spi/spi-armada-3700.c
+index 6540021..d8fba14 100644
+--- a/drivers/spi/spi-armada-3700.c
++++ b/drivers/spi/spi-armada-3700.c
+@@ -468,7 +468,6 @@ static int a3700_spi_transfer_setup(struct spi_device *spi,
+ 	struct spi_transfer *xfer)
+ {
+ 	struct a3700_spi *a3700_spi;
+-	unsigned int byte_len;
+ 	int	ret = 0;
+ 
+ 	a3700_spi = spi_master_get_devdata(spi->master);
+@@ -481,11 +480,6 @@ static int a3700_spi_transfer_setup(struct spi_device *spi,
+ 			goto out;
+ 		}
+ 
+-		byte_len = xfer->bits_per_word >> 3;
+-
+-		/* Set byte length */
+-		a3700_spi_bytelen_set(a3700_spi, byte_len);
+-
+ 		/* Set FIFO threshold */
+ 		a3700_spi_fifo_thres_set(a3700_spi);
+ 
+@@ -509,6 +503,9 @@ static int a3700_spi_transfer_start_legacy(struct spi_device *spi,
+ 	a3700_spi->status.rx_buf  = xfer->rx_buf;
+ 	a3700_spi->status.buf_len = xfer->len;
+ 
++	/* Set 1 byte length */
++	a3700_spi_bytelen_set(a3700_spi, 1);
++
+ 	if (!a3700_spi_transfer_wait(spi, A3700_SPI_XFER_RDY)) {
+ 		dev_err(&spi->dev, "wait transfer ready timed out\n");
+ 		return -ETIMEDOUT;
+@@ -686,6 +683,9 @@ static int a3700_spi_transfer_start_non_legacy(struct spi_device *spi,
+ 	a3700_spi->status.rx_buf  = xfer->rx_buf;
+ 	a3700_spi->status.buf_len = xfer->len;
+ 
++	/* Set 4 byte length for FIFO mode */
++	a3700_spi_bytelen_set(a3700_spi, 4);
++
+ 	/* Flush the FIFOs */
+ 	a3700_spi_fifo_flush(a3700_spi);
+ 
+@@ -733,23 +733,29 @@ static int a3700_spi_fifo_read(struct a3700_spi *a3700_spi)
+ 	struct a3700_spi_status *status = &a3700_spi->status;
+ 	u32 val;
+ 
+-	if (status->buf_len % status->byte_len)
+-		return -EINVAL;
+-
+ 	while (!a3700_is_rfifo_empty(a3700_spi) && status->buf_len) {
+ 		/* Read bytes from data in register */
+ 		val = spireg_read(a3700_spi, A3700_SPI_DATA_IN_REG);
+-		if (status->byte_len == 4) {
+-			status->rx_buf[0] = (val >> 24) & 0xff;
+-			status->rx_buf[1] = (val >> 16) & 0xff;
+-			status->rx_buf[2] = (val >> 8) & 0xff;
+-			status->rx_buf[3] = val & 0xff;
+-		} else
++		if (status->buf_len >= 4) {
++			status->rx_buf[3] = (val >> 24) & 0xff;
++			status->rx_buf[2] = (val >> 16) & 0xff;
++			status->rx_buf[1] = (val >> 8) & 0xff;
+ 			status->rx_buf[0] = val & 0xff;
+ 
++			status->buf_len -= 4;
++			status->rx_buf  += 4;
++		} else {
++			/*
++			* When remain bytes is not larger than 4, we should avoid memory overwriting
++			* and just write the left rx buffer bytes.
++			*/
++			while (status->buf_len) {
++				*status->rx_buf++ = val & 0xff;
++				val >>= 8;
++				status->buf_len--;
++			}
++		}
+ 
+-		status->buf_len -= status->byte_len;
+-		status->rx_buf  += status->byte_len;
+ 	}
+ 
+ 	return 0;
+@@ -767,25 +773,38 @@ static int a3700_spi_fifo_write(struct a3700_spi *a3700_spi)
+ {
+ 	struct a3700_spi_status *status = &a3700_spi->status;
+ 	u32 val;
+-
+-	if (status->buf_len % status->byte_len)
+-		return -EINVAL;
++	int i = 0;
+ 
+ 	while (!a3700_is_wfifo_full(a3700_spi) && status->buf_len) {
+ 		/* Write bytes to data out register */
+ 		val = 0;
+-		if (status->byte_len == 4) {
+-			val |= status->tx_buf[0] << 24;
+-			val |= status->tx_buf[1] << 16;
+-			val |= status->tx_buf[2] << 8;
+-			val |= status->tx_buf[3];
+-		} else
+-			val = status->tx_buf[0];
+-
+-		spireg_write(a3700_spi, A3700_SPI_DATA_OUT_REG, val);
+-
+-		status->buf_len -= status->byte_len;
+-		status->tx_buf  += status->byte_len;
++		if (status->buf_len >= 4) {
++			val |= status->tx_buf[3] << 24;
++			val |= status->tx_buf[2] << 16;
++			val |= status->tx_buf[1] << 8;
++			val |= status->tx_buf[0];
++
++			status->buf_len -= 4;
++			status->tx_buf += 4;
++
++			spireg_write(a3700_spi, A3700_SPI_DATA_OUT_REG, val);
++		} else {
++			/*
++			* If the remained buffer length is less than 4-bytes, we should pad the write buffer with
++			* all ones. So that it avoids overwrite the unexpected bytes following the last one;
++			*/
++			val = 0xffffffff;
++			while (status->buf_len) {
++				val &= ~(0xff << (8 * i));
++				val |= *status->tx_buf++ << (8 * i);
++				i++;
++				status->buf_len--;
++
++				spireg_write(a3700_spi, A3700_SPI_DATA_OUT_REG, val);
++			}
++			break;
++		}
++
+ 	}
+ 
+ 	return 0;
+-- 
+2.7.4
+

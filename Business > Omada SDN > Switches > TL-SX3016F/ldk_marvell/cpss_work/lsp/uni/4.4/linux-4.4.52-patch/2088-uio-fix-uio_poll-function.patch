@@ -1,0 +1,45 @@
+From 1df4bcf7761aed4929365023b7f5fac69942489d Mon Sep 17 00:00:00 2001
+From: Dmitri Epshtein <dima@marvell.com>
+Date: Thu, 16 Nov 2017 11:51:09 +0200
+Subject: [PATCH 2088/2241] uio: fix uio_poll function
+
+Without this fix, poll function don't really going sleep,
+but return immidiately.
+uio_read() works correctly
+
+Change-Id: Ib86eee9f6220aaba013c03b82ca04fcd6c7d8e35
+Signed-off-by: Dmitri Epshtein <dima@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/46406
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Natalie Samsonov <nsamsono@marvell.com>
+Reviewed-by: Yelena Krivosheev <yelena@marvell.com>
+---
+ drivers/uio/uio.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/uio/uio.c b/drivers/uio/uio.c
+index bcc1fc0..933c436 100644
+--- a/drivers/uio/uio.c
++++ b/drivers/uio/uio.c
+@@ -492,13 +492,17 @@ static unsigned int uio_poll(struct file *filep, poll_table *wait)
+ {
+ 	struct uio_listener *listener = filep->private_data;
+ 	struct uio_device *idev = listener->dev;
++	s32 event_count;
+ 
+ 	if (!idev->info->irq)
+ 		return -EIO;
+ 
+ 	poll_wait(filep, &idev->wait, wait);
+-	if (listener->event_count != atomic_read(&idev->event))
++	event_count = atomic_read(&idev->event);
++	if (listener->event_count != event_count) {
++		listener->event_count = event_count;
+ 		return POLLIN | POLLRDNORM;
++	}
+ 	return 0;
+ }
+ 
+-- 
+2.7.4
+

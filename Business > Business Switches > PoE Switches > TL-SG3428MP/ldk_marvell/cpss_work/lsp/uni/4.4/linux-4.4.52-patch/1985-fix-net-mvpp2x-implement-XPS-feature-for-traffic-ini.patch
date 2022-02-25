@@ -1,0 +1,93 @@
+From 14f803440de6e2f11f637927148a4be7d0d1fa79 Mon Sep 17 00:00:00 2001
+From: Stefan Chulski <stefanc@marvell.com>
+Date: Mon, 4 Sep 2017 14:06:19 +0300
+Subject: [PATCH 1985/2241] fix: net: mvpp2x: implement XPS feature for traffic
+ initiated by CPU
+
+This patch fix SAMBA failures on multi CPU systems.
+
+Issue:
+- Samba failures & disconnect on system with multiple samba sessions on
+  different CPU's.
+
+Fix:
+- Implement XPS feature for traffic initiated by CPU. Aggregated TXQ
+  mapped to single Qdisc. All packets would be transmitted by same
+  physical TXQ.
+- Remove workaround from TX done procedure.
+
+Change-Id: I53424650a10a70958bd91de98a4921719c494235
+Signed-off-by: Stefan Chulski <stefanc@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/43727
+Reviewed-by: Yuval Caduri <cyuval@marvell.com>
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h      |  3 +++
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c | 19 ++++++++-----------
+ 2 files changed, 11 insertions(+), 11 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h
+index 17bc922..5ee8302 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h
+@@ -393,6 +393,9 @@ struct mv_pp2x_aggr_tx_queue {
+ 
+ 	/* Index of the next Tx DMA descriptor to process */
+ 	int next_desc_to_proc;
++
++	/* XPS mask */
++	cpumask_t affinity_mask;
+ };
+ 
+ struct mv_pp2x_rx_queue {
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+index 069c635..d2c6792 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+@@ -1077,11 +1077,6 @@ static void mv_pp2x_txq_bufs_free(struct mv_pp2x_port *port,
+ 		txq_pcpu->tx_skb[txq_pcpu->txq_get_index] = 0;
+ 		txq_pcpu->data_size[txq_pcpu->txq_get_index] = 0;
+ 
+-		if (unlikely(!buf_phys_addr)) {
+-			mv_pp2x_txq_inc_get(txq_pcpu);
+-			continue;
+-		}
+-
+ 		if (skb & MVPP2_ETH_SHADOW_EXT) {
+ 			/* Refill TSO external pool */
+ 			skb &= ~MVPP2_ETH_SHADOW_EXT;
+@@ -4379,15 +4374,11 @@ u16 mv_pp2x_select_queue(struct net_device *dev, struct sk_buff *skb,
+ 			 void *accel_priv, select_queue_fallback_t fallback)
+ 
+ {
+-	int val;
+-
+ 	/* If packet in coming from Rx -> RxQ = TxQ, callback function used for packets from CPU Tx */
+ 	if (skb->queue_mapping)
+-		val = skb->queue_mapping - 1;
++		return ((skb->queue_mapping - 1) % mv_pp2x_txq_number) + (smp_processor_id() * mv_pp2x_txq_number);
+ 	else
+-		val = fallback(dev, skb);
+-
+-	return (val % mv_pp2x_txq_number) + (smp_processor_id() * mv_pp2x_txq_number);
++		return mv_pp2x_txq_number * fallback(dev, skb);
+ }
+ 
+ /* Dummy netdev_ops for non-kernel (i.e. musdk) network devices */
+@@ -5001,6 +4992,12 @@ static int mv_pp2x_port_probe(struct platform_device *pdev,
+ 	if (!dev)
+ 		return -ENOMEM;
+ 
++	/* Setup XPS mapping */
++	for_each_present_cpu(cpu) {
++		cpumask_set_cpu(cpu, &priv->aggr_txqs[cpu].affinity_mask);
++		netif_set_xps_queue(dev, &priv->aggr_txqs[cpu].affinity_mask, cpu);
++	}
++
+ 	/*Connect entities */
+ 	port = netdev_priv(dev);
+ 	port->dev = dev;
+-- 
+2.7.4
+

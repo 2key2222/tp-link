@@ -1,0 +1,144 @@
+From 4442fe1504e3d02513ef492e75c0b92436578fb0 Mon Sep 17 00:00:00 2001
+From: Omri Itach <omrii@marvell.com>
+Date: Mon, 9 May 2016 13:50:34 +0300
+Subject: [PATCH 0420/2241] fix: dts: a8040: disable gateclk_1 in CP1
+
+gateclk_1 duplicated node for CP1 causes Linux to freeze on boot.
+- disabled 'gateclk_1' duplicated node
+- replaced CP1 interfaces to use 'gateclk' node of CP0
+
+this is temporary fix, since it's an invalid usage of CP1 interfaces
+of CP0 gateclk node;
+
+Change-Id: Id6e3a90f7c9b17a84a8cdf6c483f54d82f8b104a
+Signed-off-by: Omri Itach <omrii@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/29716
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-cp110-1.dtsi     | 19 ++++++++++---------
+ arch/arm64/boot/dts/marvell/armada-cp110-slave.dtsi |  6 +++---
+ 2 files changed, 13 insertions(+), 12 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-cp110-1.dtsi b/arch/arm64/boot/dts/marvell/armada-cp110-1.dtsi
+index 703011d..dfad874 100644
+--- a/arch/arm64/boot/dts/marvell/armada-cp110-1.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-cp110-1.dtsi
+@@ -23,18 +23,19 @@ cp110_clk_1: clk@0x440700 {
+ 	#clock-cells = <1>;
+ };
+ 
++/* Need to debug freeze when the gateclk_1 is enabled
+ gateclk_1: clock-gating-control@440220 {
+ 	compatible = "marvell,armada-cp110-gating-clock";
+ 	reg = <0x440220 0x4>;
+ 	clocks = <&cp110_clk_1 3>;
+ 	#clock-cells = <1>;
+ };
+-
++*/
+ sata@540000 {
+ 	compatible = "marvell,armada-3700-ahci";
+ 	reg = <0x540000 0x30000>;
+ 	interrupts = <GIC_SPI 287 IRQ_TYPE_LEVEL_HIGH>;
+-	clocks = <&gateclk_1 15>, <&gateclk_1 16>;
++	clocks = <&gateclk 15>, <&gateclk 16>;
+ 	status = "disabled";
+ 	port_base = <0x10000>;
+ 	port_offset = <0x10000>;
+@@ -45,7 +46,7 @@ usb3h0_1: usb3@500000 {
+ 	reg = <0x500000 0x4000>;
+ 	dma-coherent;
+ 	interrupts = <GIC_SPI 286 IRQ_TYPE_LEVEL_HIGH>;
+-	clocks = <&gateclk_1 22>, <&gateclk_1 16>;
++	clocks = <&gateclk 22>, <&gateclk 16>;
+ 	status = "disabled";
+ };
+ 
+@@ -54,7 +55,7 @@ usb3h1_1: usb3@510000 {
+ 	reg = <0x510000 0x4000>;
+ 	dma-coherent;
+ 	interrupts = <GIC_SPI 285 IRQ_TYPE_LEVEL_HIGH>;
+-	clocks = <&gateclk_1 23>, <&gateclk_1 16>;
++	clocks = <&gateclk 23>, <&gateclk 16>;
+ 	status = "disabled";
+ };
+ 
+@@ -109,7 +110,7 @@ nand@720000 {
+ 	marvell,nand-enable-arbiter;
+ 	nand-on-flash-bbt;
+ 	interrupts = <GIC_SPI 307 IRQ_TYPE_LEVEL_HIGH>;
+-	clocks = <&gateclk_1 2>;
++	clocks = <&gateclk 2>;
+ 	nand-ecc-strength = <4>;
+ 	nand-ecc-step-size = <512>;
+ 	status = "disabled";
+@@ -121,7 +122,7 @@ cpxor0@6a0000 {
+ 	      <0x6b0000 0x1000>;
+ 	dma-coherent;
+ 	msi-parent = <&gic_v2m0>;
+-	clocks = <&gateclk_1 14>, <&gateclk_1 8>;
++	clocks = <&gateclk 14>, <&gateclk 8>;
+ };
+ 
+ cpxor1@6c0000 {
+@@ -130,7 +131,7 @@ cpxor1@6c0000 {
+ 	      <0x6d0000 0x1000>;
+ 	dma-coherent;
+ 	msi-parent = <&gic_v2m0>;
+-	clocks = <&gateclk_1 14>, <&gateclk_1 7>;
++	clocks = <&gateclk 14>, <&gateclk 7>;
+ };
+ 
+ mdio@12a200 {
+@@ -235,7 +236,7 @@ ppv22@000000 {
+ 	      <0x130f00 0x100>,  /* MSPG - XLG MAC regs */
+ 	      <0x441000 0x1000>;  /* RFU-1 Regs */
+ 	reg-names = "pp", "serdes", "xmib", "led", "smi", "tai", "xsmi", "mg", "mspg", "xpcs", "gmac", "xlg", "rfu1";
+-	clocks = <&gateclk_1 3>, <&gateclk_1 18>, <&gateclk_1 9>, <&gateclk_1 6>, <&gateclk_1 5>;
++	clocks = <&gateclk 3>, <&gateclk 18>, <&gateclk 9>, <&gateclk 6>, <&gateclk 5>;
+ 	clock-names = "pp_clk", "gop_core_clk", "gop_clk", "mg_core_clk", "mg_clk";
+ 	status = "okay";
+ 	eth0_1: eth0@010000 {
+@@ -274,6 +275,6 @@ eip197@800000 {
+ 	reg = <0x800000 0x200000>;
+ 	dma-coherent;
+ 	interrupts = <GIC_SPI 278 IRQ_TYPE_LEVEL_HIGH>;
+-	clocks = <&gateclk_1 26>;
++	clocks = <&gateclk 26>;
+ 	status = "disabled";
+ };
+diff --git a/arch/arm64/boot/dts/marvell/armada-cp110-slave.dtsi b/arch/arm64/boot/dts/marvell/armada-cp110-slave.dtsi
+index 50ad241..a3d257d 100644
+--- a/arch/arm64/boot/dts/marvell/armada-cp110-slave.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-cp110-slave.dtsi
+@@ -54,7 +54,7 @@
+ 			interrupt-map = <0 0 0 0 &gic 0 GIC_SPI 32 IRQ_TYPE_LEVEL_HIGH>;
+ 			interrupts = <GIC_SPI 32 IRQ_TYPE_LEVEL_HIGH>;
+ 			num-lanes = <1>;
+-			clocks = <&gateclk_1 14>, <&gateclk_1 13>;
++			clocks = <&gateclk 14>, <&gateclk 13>;
+ 			status = "disabled";
+ 		};
+ 
+@@ -76,7 +76,7 @@
+ 			interrupts = <GIC_SPI 34 IRQ_TYPE_LEVEL_HIGH>;
+ 
+ 			num-lanes = <1>;
+-			clocks = <&gateclk_1 14>, <&gateclk_1 11>;
++			clocks = <&gateclk 14>, <&gateclk 11>;
+ 			status = "disabled";
+ 		};
+ 
+@@ -98,7 +98,7 @@
+ 			interrupts = <GIC_SPI 33 IRQ_TYPE_LEVEL_HIGH>;
+ 
+ 			num-lanes = <1>;
+-			clocks = <&gateclk_1 14>, <&gateclk_1 12>;
++			clocks = <&gateclk 14>, <&gateclk 12>;
+ 			status = "disabled";
+ 		};
+ 	};
+-- 
+2.7.4
+

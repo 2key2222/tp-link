@@ -1,0 +1,375 @@
+From caed649c654b4f8b1b093cbb0d861e3810c55003 Mon Sep 17 00:00:00 2001
+From: Stefan Chulski <stefanc@marvell.com>
+Date: Tue, 15 Aug 2017 16:38:42 +0300
+Subject: [PATCH 1892/2241] fix: dts: marvell: fix U-Boot to Linux MAC address
+ mapping
+
+MAC addresses are delivered to Linux by the aliases in A7K and A8K dtsi
+files. In this files all U-boot interfaces ethernetX mapped to all
+Linux emacX Linux device tree nodes.
+In U-boot ethernetX represent ethXaddr environment associated with
+probed interfaces. So if not all interfaces were enabled in U-Boot and
+Linux, MAC address mapping is wrong.
+
+Fix:
+Overwrite aliases in board level dts if not all network interfaces
+were enabled.
+
+Change-Id: I754d999aa77a21d4751c889333f26037a2df5966
+Signed-off-by: Stefan Chulski <stefanc@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/43046
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-7040-db-B.dts            |  5 +++++
+ arch/arm64/boot/dts/marvell/armada-7040-db-C.dts            |  5 +++++
+ arch/arm64/boot/dts/marvell/armada-7040-db-D.dts            |  5 +++++
+ arch/arm64/boot/dts/marvell/armada-7040-db-pp2-vanilla.dts  |  9 +++++++++
+ arch/arm64/boot/dts/marvell/armada-8040-db-B.dts            |  6 ++++++
+ arch/arm64/boot/dts/marvell/armada-8040-db-C.dts            |  6 ++++++
+ arch/arm64/boot/dts/marvell/armada-8040-db-D.dts            |  7 +++++++
+ arch/arm64/boot/dts/marvell/armada-8040-db-E.dts            |  6 ++++++
+ arch/arm64/boot/dts/marvell/armada-8040-db-pp2-vanilla.dts  | 12 ++++++++++++
+ arch/arm64/boot/dts/marvell/armada-8040-db.dts              |  7 +++++++
+ .../boot/dts/marvell/armada-8040-mcbin-pp2-vanilla.dts      | 13 +++++++++++++
+ arch/arm64/boot/dts/marvell/armada-8040-mcbin.dts           |  7 +++++++
+ arch/arm64/boot/dts/marvell/armada-8040-ocp.dts             |  5 +++++
+ 13 files changed, 93 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-7040-db-B.dts b/arch/arm64/boot/dts/marvell/armada-7040-db-B.dts
+index c027b43..1668612 100644
+--- a/arch/arm64/boot/dts/marvell/armada-7040-db-B.dts
++++ b/arch/arm64/boot/dts/marvell/armada-7040-db-B.dts
+@@ -54,6 +54,11 @@
+ 	#address-cells = <2>;
+ 	#size-cells = <2>;
+ 
++	aliases {
++		ethernet0 = &emac2;
++		ethernet1 = &emac3;
++	};
++
+ 	chosen { };
+ 
+ 	ap806 {
+diff --git a/arch/arm64/boot/dts/marvell/armada-7040-db-C.dts b/arch/arm64/boot/dts/marvell/armada-7040-db-C.dts
+index 231c84e..4ee2792 100644
+--- a/arch/arm64/boot/dts/marvell/armada-7040-db-C.dts
++++ b/arch/arm64/boot/dts/marvell/armada-7040-db-C.dts
+@@ -56,6 +56,11 @@
+ 
+ 	chosen { };
+ 
++	aliases {
++		ethernet0 = &emac0;
++		ethernet1 = &emac3;
++	};
++
+ 	ap806 {
+ 		config-space {
+ 			sdhci@6e0000 {
+diff --git a/arch/arm64/boot/dts/marvell/armada-7040-db-D.dts b/arch/arm64/boot/dts/marvell/armada-7040-db-D.dts
+index 7c8bcd2..c4a3d4c 100644
+--- a/arch/arm64/boot/dts/marvell/armada-7040-db-D.dts
++++ b/arch/arm64/boot/dts/marvell/armada-7040-db-D.dts
+@@ -56,6 +56,11 @@
+ 
+ 	chosen { };
+ 
++	aliases {
++		ethernet0 = &emac0;
++		ethernet1 = &emac3;
++	};
++
+ 	ap806 {
+ 		config-space {
+ 			sdhci@6e0000 {
+diff --git a/arch/arm64/boot/dts/marvell/armada-7040-db-pp2-vanilla.dts b/arch/arm64/boot/dts/marvell/armada-7040-db-pp2-vanilla.dts
+index 45c1284..5b67d5b 100644
+--- a/arch/arm64/boot/dts/marvell/armada-7040-db-pp2-vanilla.dts
++++ b/arch/arm64/boot/dts/marvell/armada-7040-db-pp2-vanilla.dts
+@@ -56,6 +56,12 @@
+ 
+ 	chosen { };
+ 
++	aliases {
++		ethernet0 = &eth0;
++		ethernet1 = &eth1;
++		ethernet2 = &eth2;
++	};
++
+ 	ap806 {
+ 		config-space {
+ 			sdhci@6e0000 {
+@@ -151,6 +157,7 @@
+ 						     <ICU_GRP_NSR 129 IRQ_TYPE_LEVEL_HIGH>;
+ 					interrupt-names = "tx-cpu0", "tx-cpu1", "tx-cpu2",
+ 							  "tx-cpu3", "rx-shared", "link";
++					mac-address = [00 00 00 00 00 01];
+ 					port-id = <0>; /* pp2_port_id */
+ 					gop-port-id = <0>;
+ 					status = "okay";
+@@ -165,6 +172,7 @@
+ 						     <ICU_GRP_NSR 128 IRQ_TYPE_LEVEL_HIGH>;
+ 					interrupt-names = "tx-cpu0", "tx-cpu1", "tx-cpu2",
+ 							  "tx-cpu3", "rx-shared", "link";
++					mac-address = [00 00 00 00 00 02];
+ 					port-id = <1>; /* pp2_port_id */
+ 					gop-port-id = <2>;
+ 					phy = <&phy2>;
+@@ -180,6 +188,7 @@
+ 						     <ICU_GRP_NSR 127 IRQ_TYPE_LEVEL_HIGH>;
+ 					interrupt-names = "tx-cpu0", "tx-cpu1", "tx-cpu2",
+ 							  "tx-cpu3", "rx-shared", "link";
++					mac-address = [00 00 00 00 00 03];
+ 					port-id = <2>; /* pp2_port_id */
+ 					gop-port-id = <3>;
+ 					phy = <&phy3>;
+diff --git a/arch/arm64/boot/dts/marvell/armada-8040-db-B.dts b/arch/arm64/boot/dts/marvell/armada-8040-db-B.dts
+index 6c27d55..8817164 100644
+--- a/arch/arm64/boot/dts/marvell/armada-8040-db-B.dts
++++ b/arch/arm64/boot/dts/marvell/armada-8040-db-B.dts
+@@ -57,6 +57,12 @@
+ 
+ 	chosen { };
+ 
++	aliases {
++		ethernet0 = &emac3;
++		ethernet1 = &emac0_1;
++		ethernet2 = &emac2_1;
++	};
++
+ 	ap806 {
+ 		config-space {
+ 			serial@512000 {
+diff --git a/arch/arm64/boot/dts/marvell/armada-8040-db-C.dts b/arch/arm64/boot/dts/marvell/armada-8040-db-C.dts
+index 0d5348c..04e309b 100644
+--- a/arch/arm64/boot/dts/marvell/armada-8040-db-C.dts
++++ b/arch/arm64/boot/dts/marvell/armada-8040-db-C.dts
+@@ -57,6 +57,12 @@
+ 
+ 	chosen { };
+ 
++	aliases {
++		ethernet0 = &emac0;
++		ethernet1 = &emac2;
++		ethernet2 = &emac0_1;
++	};
++
+ 	ap806 {
+ 		config-space {
+ 			serial@512000 {
+diff --git a/arch/arm64/boot/dts/marvell/armada-8040-db-D.dts b/arch/arm64/boot/dts/marvell/armada-8040-db-D.dts
+index bb9381a..30d87ee 100644
+--- a/arch/arm64/boot/dts/marvell/armada-8040-db-D.dts
++++ b/arch/arm64/boot/dts/marvell/armada-8040-db-D.dts
+@@ -57,6 +57,13 @@
+ 
+ 	chosen { };
+ 
++	aliases {
++		ethernet0 = &emac0;
++		ethernet1 = &emac3;
++		ethernet2 = &emac0_1;
++		ethernet3 = &emac2_1;
++	};
++
+ 	ap806 {
+ 		config-space {
+ 			serial@512000 {
+diff --git a/arch/arm64/boot/dts/marvell/armada-8040-db-E.dts b/arch/arm64/boot/dts/marvell/armada-8040-db-E.dts
+index 8632d4d..15dda62 100644
+--- a/arch/arm64/boot/dts/marvell/armada-8040-db-E.dts
++++ b/arch/arm64/boot/dts/marvell/armada-8040-db-E.dts
+@@ -57,6 +57,12 @@
+ 
+ 	chosen { };
+ 
++	aliases {
++		ethernet0 = &emac0;
++		ethernet1 = &emac0_1;
++		ethernet2 = &emac2_1;
++	};
++
+ 	ap806 {
+ 		config-space {
+ 			serial@512000 {
+diff --git a/arch/arm64/boot/dts/marvell/armada-8040-db-pp2-vanilla.dts b/arch/arm64/boot/dts/marvell/armada-8040-db-pp2-vanilla.dts
+index bb8915b..019fc74 100644
+--- a/arch/arm64/boot/dts/marvell/armada-8040-db-pp2-vanilla.dts
++++ b/arch/arm64/boot/dts/marvell/armada-8040-db-pp2-vanilla.dts
+@@ -57,6 +57,13 @@
+ 
+ 	chosen { };
+ 
++	aliases {
++		ethernet0 = &eth0;
++		ethernet1 = &eth2;
++		ethernet2 = &eth0_1;
++		ethernet3 = &eth1_1;
++	};
++
+ 	ap806 {
+ 		config-space {
+ 			serial@512000 {
+@@ -131,6 +138,7 @@
+ 						     <ICU_GRP_NSR 129 IRQ_TYPE_LEVEL_HIGH>;
+ 					interrupt-names = "tx-cpu0", "tx-cpu1", "tx-cpu2",
+ 							  "tx-cpu3", "rx-shared", "link";
++					mac-address = [00 00 00 00 00 01];
+ 					port-id = <0>; /* pp2_port_id */
+ 					gop-port-id = <0>;
+ 					phy-mode = "sfi";
+@@ -145,6 +153,7 @@
+ 						     <ICU_GRP_NSR 128 IRQ_TYPE_LEVEL_HIGH>;
+ 					interrupt-names = "tx-cpu0", "tx-cpu1", "tx-cpu2",
+ 							  "tx-cpu3", "rx-shared", "link";
++				mac-address = [00 00 00 00 00 02];
+ 					status = "disabled";
+ 				};
+ 				eth2: eth2@030000 {
+@@ -156,6 +165,7 @@
+ 						     <ICU_GRP_NSR 127 IRQ_TYPE_LEVEL_HIGH>;
+ 					interrupt-names = "tx-cpu0", "tx-cpu1", "tx-cpu2",
+ 							  "tx-cpu3", "rx-shared", "link";
++					mac-address = [00 00 00 00 00 03];
+ 					port-id = <2>; /* pp2_port_id */
+ 					gop-port-id = <3>;
+ 					phy-mode = "rgmii-id";
+@@ -224,6 +234,7 @@
+ 						     <ICU_GRP_NSR 129 IRQ_TYPE_LEVEL_HIGH>;
+ 					interrupt-names = "tx-cpu0", "tx-cpu1", "tx-cpu2",
+ 							  "tx-cpu3", "rx-shared", "link";
++					mac-address = [00 00 00 00 00 04];
+ 					port-id = <0>; /* pp2_port_id */
+ 					gop-port-id = <0>;
+ 					phy-mode = "sfi";
+@@ -238,6 +249,7 @@
+ 						     <ICU_GRP_NSR 128 IRQ_TYPE_LEVEL_HIGH>;
+ 					interrupt-names = "tx-cpu0", "tx-cpu1", "tx-cpu2",
+ 							  "tx-cpu3", "rx-shared", "link";
++					mac-address = [00 00 00 00 00 05];
+ 					port-id = <1>; /* pp2_port_id */
+ 					gop-port-id = <2>;
+ 					phy-mode = "rgmii-id";
+diff --git a/arch/arm64/boot/dts/marvell/armada-8040-db.dts b/arch/arm64/boot/dts/marvell/armada-8040-db.dts
+index 78d6c66..d63c3da 100644
+--- a/arch/arm64/boot/dts/marvell/armada-8040-db.dts
++++ b/arch/arm64/boot/dts/marvell/armada-8040-db.dts
+@@ -57,6 +57,13 @@
+ 
+ 	chosen { };
+ 
++	aliases {
++		ethernet0 = &emac0;
++		ethernet1 = &emac3;
++		ethernet2 = &emac0_1;
++		ethernet3 = &emac2_1;
++	};
++
+ 	ap806 {
+ 		config-space {
+ 			serial@512000 {
+diff --git a/arch/arm64/boot/dts/marvell/armada-8040-mcbin-pp2-vanilla.dts b/arch/arm64/boot/dts/marvell/armada-8040-mcbin-pp2-vanilla.dts
+index f070eed..29d9e10 100644
+--- a/arch/arm64/boot/dts/marvell/armada-8040-mcbin-pp2-vanilla.dts
++++ b/arch/arm64/boot/dts/marvell/armada-8040-mcbin-pp2-vanilla.dts
+@@ -51,6 +51,13 @@
+ 	compatible = "marvell,armada8040-mcbin", "marvell,armada8040",
+ 			"marvell,armada-ap806-quad", "marvell,armada-ap806";
+ 
++	aliases {
++		ethernet0 = &eth0;
++		ethernet1 = &eth0_1;
++		ethernet2 = &eth1_1;
++		ethernet3 = &eth2_1;
++	};
++
+ 	memory@00000000 {
+ 		device_type = "memory";
+ 		reg = <0x0 0x0 0x0 0x80000000>;
+@@ -155,6 +162,7 @@
+ 						     <ICU_GRP_NSR 129 IRQ_TYPE_LEVEL_HIGH>;
+ 					interrupt-names = "tx-cpu0", "tx-cpu1", "tx-cpu2",
+ 							  "tx-cpu3", "rx-shared", "link";
++					mac-address = [00 00 00 00 00 01];
+ 					port-id = <0>; /* pp2_port_id */
+ 					gop-port-id = <0>;
+ 					phy-mode = "sfi"; /* lane-2 */
+@@ -170,6 +178,7 @@
+ 						     <ICU_GRP_NSR 128 IRQ_TYPE_LEVEL_HIGH>;
+ 					interrupt-names = "tx-cpu0", "tx-cpu1", "tx-cpu2",
+ 							  "tx-cpu3", "rx-shared", "link";
++					mac-address = [00 00 00 00 00 02];
+ 					port-id = <1>; /* pp2_port_id */
+ 					gop-port-id = <2>;
+ 					status = "disabled";
+@@ -183,6 +192,7 @@
+ 						     <ICU_GRP_NSR 127 IRQ_TYPE_LEVEL_HIGH>;
+ 					interrupt-names = "tx-cpu0", "tx-cpu1", "tx-cpu2",
+ 							  "tx-cpu3", "rx-shared", "link";
++					mac-address = [00 00 00 00 00 03];
+ 					port-id = <2>; /* pp2_port_id */
+ 					gop-port-id = <3>;
+ 					status = "disabled";
+@@ -266,6 +276,7 @@
+ 						     <ICU_GRP_NSR 129 IRQ_TYPE_LEVEL_HIGH>;
+ 					interrupt-names = "tx-cpu0", "tx-cpu1", "tx-cpu2",
+ 							  "tx-cpu3", "rx-shared", "link";
++					mac-address = [00 00 00 00 00 04];
+ 					status = "okay";
+ 				};
+ 				eth1_1: eth1@020000 {
+@@ -281,6 +292,7 @@
+ 						     <ICU_GRP_NSR 128 IRQ_TYPE_LEVEL_HIGH>;
+ 					interrupt-names = "tx-cpu0", "tx-cpu1", "tx-cpu2",
+ 							  "tx-cpu3", "rx-shared", "link";
++					mac-address = [00 00 00 00 00 05];
+ 					status = "okay";
+ 				};
+ 				eth2_1: eth2@030000 {
+@@ -292,6 +304,7 @@
+ 						     <ICU_GRP_NSR 127 IRQ_TYPE_LEVEL_HIGH>;
+ 					interrupt-names = "tx-cpu0", "tx-cpu1", "tx-cpu2",
+ 							  "tx-cpu3", "rx-shared", "link";
++					mac-address = [00 00 00 00 00 06];
+ 					port-id = <2>;
+ 					gop-port-id = <3>;
+ 					status = "disabled";
+diff --git a/arch/arm64/boot/dts/marvell/armada-8040-mcbin.dts b/arch/arm64/boot/dts/marvell/armada-8040-mcbin.dts
+index 5c6c394..6fd3bf7 100644
+--- a/arch/arm64/boot/dts/marvell/armada-8040-mcbin.dts
++++ b/arch/arm64/boot/dts/marvell/armada-8040-mcbin.dts
+@@ -56,6 +56,13 @@
+ 		reg = <0x0 0x0 0x0 0x80000000>;
+ 	};
+ 
++	aliases {
++		ethernet0 = &emac0;
++		ethernet1 = &emac0_1;
++		ethernet2 = &emac2_1;
++		ethernet3 = &emac3_1;
++	};
++
+ 	ap806 {
+ 		config-space {
+ 			serial@512000 {
+diff --git a/arch/arm64/boot/dts/marvell/armada-8040-ocp.dts b/arch/arm64/boot/dts/marvell/armada-8040-ocp.dts
+index 97a0d76..4c9493b 100644
+--- a/arch/arm64/boot/dts/marvell/armada-8040-ocp.dts
++++ b/arch/arm64/boot/dts/marvell/armada-8040-ocp.dts
+@@ -56,6 +56,11 @@
+ 		reg = <0x0 0x0 0x0 0x80000000>;
+ 	};
+ 
++	aliases {
++		ethernet0 = &emac0_0;
++		ethernet1 = &emac0_1;
++	};
++
+ 	ap806 {
+ 		config-space {
+ 			serial@512000 {
+-- 
+2.7.4
+

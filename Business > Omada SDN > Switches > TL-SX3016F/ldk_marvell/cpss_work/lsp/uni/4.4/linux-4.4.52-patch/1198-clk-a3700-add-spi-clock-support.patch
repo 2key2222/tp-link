@@ -1,0 +1,88 @@
+From c823f957a1d97e9d799e8888991f1a4d7fe75eff Mon Sep 17 00:00:00 2001
+From: Victor Gu <xigu@marvell.com>
+Date: Mon, 28 Nov 2016 21:34:10 +0800
+Subject: [PATCH 1198/2241] clk: a3700: add spi clock support
+
+This patch implemented GET clock rate of SPI core clock.
+It also supported the SPI clock gating function.
+
+Change-Id: If8014e404580d285d7b46f9d6f1a2d911633f52a
+Signed-off-by: Victor Gu <xigu@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/34113
+Reviewed-by: Wilson Ding <dingwei@marvell.com>
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hua Jing <jinghua@marvell.com>
+---
+ drivers/clk/mvebu/armada-3700.c | 13 +++++++++++++
+ drivers/clk/mvebu/armada-3700.h |  3 +++
+ 2 files changed, 16 insertions(+)
+
+diff --git a/drivers/clk/mvebu/armada-3700.c b/drivers/clk/mvebu/armada-3700.c
+index 3c9a27d..9a3d0fb 100644
+--- a/drivers/clk/mvebu/armada-3700.c
++++ b/drivers/clk/mvebu/armada-3700.c
+@@ -109,6 +109,7 @@ enum {
+ 	A3700_TBG_TO_USB_CLK,
+ 	A3700_TBG_TO_GBE0_CLK,
+ 	A3700_TBG_TO_GBE1_CLK,
++	A3700_TBG_TO_SPI_CLK,
+ };
+ 
+ static const struct coreclk_ratio armada_3700_coreclk_ratios[] __initconst = {
+@@ -119,6 +120,7 @@ static const struct coreclk_ratio armada_3700_coreclk_ratios[] __initconst = {
+ 	{ .id = A3700_TBG_TO_USB_CLK, .name = "usb32-ss-sys" },
+ 	{ .id = A3700_TBG_TO_GBE0_CLK, .name = "gbe0-core" },
+ 	{ .id = A3700_TBG_TO_GBE1_CLK, .name = "gbe1-core" },
++	{ .id = A3700_TBG_TO_SPI_CLK, .name = "spi-core" },
+ };
+ 
+ /***************************************************************************************************
+@@ -196,6 +198,16 @@ static void __init armada_3700_get_clk_ratio(
+ 		*div = (prscl1 * prscl2) << div2;
+ 		break;
+ 
++	case A3700_TBG_TO_SPI_CLK:
++		*tbg = (clkr32(MVEBU_NORTH_CLOCK_TBG_SELECT_REG) >> TBG_SPI_PCLK_SEL_OFFSET) &
++					MVEBU_TBG_CLK_SEL_MASK;
++		prscl1 = (clkr32(MVEBU_NORTH_CLOCK_DIVIDER_SELECT1_REG) >> SPI_CLK_PRSCL1_OFFSET) &
++					MVEBU_TBG_CLK_PRSCL_MASK;
++		prscl2 = (clkr32(MVEBU_NORTH_CLOCK_DIVIDER_SELECT1_REG) >> SPI_CLK_PRSCL2_OFFSET) &
++					MVEBU_TBG_CLK_PRSCL_MASK;
++		*div = prscl1 * prscl2;
++		break;
++
+ 	default:
+ 		*div = 0;
+ 		break;
+@@ -288,6 +300,7 @@ CLK_OF_DECLARE(armada_3700_core_clk, "marvell,armada-3700-core-clock",
+  */
+ static const struct clk_gating_soc_desc armada_3700_north_bridge_gating_desc[] __initconst = {
+ 	{ "sata-host-gate", "sata-host", 3, 0, CLK_GATE_SET_TO_DISABLE },
++	{ "spi-gate", "spi-core", 12, 0, CLK_GATE_SET_TO_DISABLE },
+ 	{ "twsi2", NULL, 16, 0, CLK_GATE_SET_TO_DISABLE },
+ 	{ "twsi1", NULL, 17, 0, CLK_GATE_SET_TO_DISABLE },
+ 	{ }
+diff --git a/drivers/clk/mvebu/armada-3700.h b/drivers/clk/mvebu/armada-3700.h
+index 863bc39..a9da0eb 100644
+--- a/drivers/clk/mvebu/armada-3700.h
++++ b/drivers/clk/mvebu/armada-3700.h
+@@ -93,6 +93,7 @@ struct a3700_clk_desc {
+ /* north bridge clock TBG select register */
+ #define MVEBU_NORTH_CLOCK_TBG_SELECT_REG	(0x0)
+ #define TBG_WCPU_PCLK_SEL_OFFSET		(22)
++#define TBG_SPI_PCLK_SEL_OFFSET			(12)
+ #define TBG_SATA_HOST_PCLK_SEL_OFFSET		(2)
+ #define TBG_MMC_PCLK_SEL_OFFSET		(0)
+ 
+@@ -101,6 +102,8 @@ struct a3700_clk_desc {
+ #define WCPU_CLK_DIV_PRSCL_OFFSET	(28)
+ 
+ #define MVEBU_NORTH_CLOCK_DIVIDER_SELECT1_REG	(0x8)
++#define SPI_CLK_PRSCL1_OFFSET			(27)
++#define SPI_CLK_PRSCL2_OFFSET			(24)
+ 
+ #define MVEBU_NORTH_CLOCK_DIVIDER_SELECT2_REG	(0xC)
+ #define MMC_CLK_PRSCL1_OFFSET		(16)
+-- 
+2.7.4
+

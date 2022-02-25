@@ -1,0 +1,99 @@
+From cd853e10b7095f79354086d133557498c5b6ccef Mon Sep 17 00:00:00 2001
+From: Stefan Chulski <stefanc@marvell.com>
+Date: Tue, 4 Apr 2017 15:27:24 +0300
+Subject: [PATCH 1604/2241] net: mvpp2x: Add RX FIFO mvpp22 driver
+ configuration
+
+Patch didn't change any functionality since RX FIFO were configured
+in u-boot.
+RX FIFO configuration allow independent driver init in Linux without
+dependence on u-boot.
+
+Change-Id: If37f24e7c9baffeff78ec0de203699cb81a0356e
+Signed-off-by: Stefan Chulski <stefanc@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/38448
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ .../net/ethernet/marvell/mvpp2x/mv_pp2x_hw_type.h  |  6 ++++
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c | 38 +++++++++++++++++++++-
+ 2 files changed, 43 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw_type.h b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw_type.h
+index 9e33d1d..0122895 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw_type.h
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw_type.h
+@@ -1231,6 +1231,12 @@
+ #define MVPP2_RX_FIFO_PORT_DATA_SIZE	0x2000
+ #define MVPP2_RX_FIFO_PORT_ATTR_SIZE	0x80
+ #define MVPP2_RX_FIFO_PORT_MIN_PKT	0x80
++#define MVPP2_RX_FIFO_DATA_SIZE_32KB	0x8000
++#define MVPP2_RX_FIFO_DATA_SIZE_8KB	0x2000
++#define MVPP2_RX_FIFO_DATA_SIZE_4KB	0x1000
++#define MVPP2_RX_FIFO_ATTR_SIZE_32KB	0x200
++#define MVPP2_RX_FIFO_ATTR_SIZE_8KB	0x80
++#define MVPP2_RX_FIFO_ATTR_SIZE_4KB	0x40
+ 
+ /* RX buffer constants */
+ #define MVPP2_SKB_SHINFO_SIZE \
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+index c5df5df..578c12a 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+@@ -5358,6 +5358,41 @@ static int mv_pp2x_platform_data_get(struct platform_device *pdev,
+ 	return 0;
+ }
+ 
++/* Initialize Rx FIFO's */
++static void mv_pp22_rx_fifo_init(struct mv_pp2x *priv)
++{
++	int port;
++
++	/* Port 0 maximum speed -10Gb/s port - required by spec RX FIFO size 32KB
++	*   Port 1 maximum speed -2.5Gb/s port -required by spec RX FIFO size 8KB
++	*   Port 2 maximum speed -1Gb/s port - required by spec RX FIFO size 4KB
++	*   Port 3 LoopBack port -required by spec RX FIFO size 4KB
++	*/
++	for (port = 0; port < MVPP2_MAX_PORTS; port++) {
++		if (port == 0) {
++			mv_pp2x_write(&priv->hw, MVPP2_RX_DATA_FIFO_SIZE_REG(port),
++				      MVPP2_RX_FIFO_DATA_SIZE_32KB);
++			mv_pp2x_write(&priv->hw, MVPP2_RX_ATTR_FIFO_SIZE_REG(port),
++				      MVPP2_RX_FIFO_ATTR_SIZE_32KB);
++		} else if (port == 1) {
++			mv_pp2x_write(&priv->hw, MVPP2_RX_DATA_FIFO_SIZE_REG(port),
++				      MVPP2_RX_FIFO_DATA_SIZE_8KB);
++			mv_pp2x_write(&priv->hw, MVPP2_RX_ATTR_FIFO_SIZE_REG(port),
++				      MVPP2_RX_FIFO_ATTR_SIZE_8KB);
++		} else {
++			mv_pp2x_write(&priv->hw, MVPP2_RX_DATA_FIFO_SIZE_REG(port),
++				      MVPP2_RX_FIFO_DATA_SIZE_4KB);
++			mv_pp2x_write(&priv->hw, MVPP2_RX_ATTR_FIFO_SIZE_REG(port),
++				      MVPP2_RX_FIFO_ATTR_SIZE_4KB);
++		}
++	}
++
++	mv_pp2x_write(&priv->hw, MVPP2_RX_MIN_PKT_SIZE_REG,
++		      MVPP2_RX_FIFO_PORT_MIN_PKT);
++	mv_pp2x_write(&priv->hw, MVPP2_RX_FIFO_INIT_REG, 0x1);
++}
++
++/* Initialize Tx FIFO's */
+ static void mv_pp22_tx_fifo_init(struct mv_pp2x *priv)
+ {
+ 	int i;
+@@ -5578,8 +5613,9 @@ static int mv_pp2x_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	if (priv->pp2_version == PPV22) {
+-		/* Init tx fifo for each port */
++		/* Init tx&rx fifo for each port */
+ 		mv_pp22_tx_fifo_init(priv);
++		mv_pp22_rx_fifo_init(priv);
+ 		mv_pp22_set_net_comp(priv);
+ 	} else {
+ 		mv_pp21_fifo_init(priv);
+-- 
+2.7.4
+

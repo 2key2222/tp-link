@@ -1,0 +1,148 @@
+From 52e7fc5d17da2c514b28fc3b235f5bf2b6ed6061 Mon Sep 17 00:00:00 2001
+From: Stefan Chulski <stefanc@marvell.com>
+Date: Thu, 6 Jul 2017 15:14:39 +0300
+Subject: [PATCH 1797/2241] fix: net: mvpp2x: Add aggregated TXQ ring overrun
+ protection
+
+Issue:
+- Due to hrtimer, skb_more and TSO feature features, software can
+  bulk descriptors in TXQ aggregated and there are no protection
+  from ring overrun during software bulking.
+- Issue cause kernel panics.
+
+Fix:
+- Introduce new sw_count aggregated TXQ counter that will indicate
+  number of descriptors occupied by SW.
+- Drop skb if number of occupied by SW and HW descriptors are greater than
+  aggregated queue size.
+- Increase aggregated TXQ size from 512 to 2048 descriptors.
+
+Change-Id: If146ffb26855d1162909540bb5ef77204327cf9f
+Signed-off-by: Stefan Chulski <stefanc@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/41273
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Yuval Caduri <cyuval@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h         |  7 +++++--
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.c      |  6 +++---
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw_type.h |  2 +-
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c    | 12 +++++++++---
+ 4 files changed, 18 insertions(+), 9 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h
+index 6666715..525e758 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h
+@@ -371,8 +371,11 @@ struct mv_pp2x_aggr_tx_queue {
+ 	/* Number of Tx DMA descriptors in the descriptor ring */
+ 	int size;
+ 
+-	/* Number of currently used Tx DMA descriptor in the descriptor ring */
+-	int count;
++	/* Number of currently used Tx DMA descriptor in the descriptor ring used by SW */
++	int sw_count;
++
++	/* Number of currently used Tx DMA descriptor in the descriptor ring used by HW */
++	int hw_count;
+ 
+ 	/* Virtual pointer to address of the Aggr_Tx DMA descriptors
+ 	* memory_allocation
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.c
+index 08808aa..7c561f0 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.c
+@@ -3894,14 +3894,14 @@ int mv_pp2x_aggr_desc_num_check(struct mv_pp2x *priv,
+ 				struct mv_pp2x_aggr_tx_queue *aggr_txq,
+ 				int num, int cpu)
+ {
+-	if ((aggr_txq->count + num) > aggr_txq->size) {
++	if ((aggr_txq->sw_count + aggr_txq->hw_count + num) > aggr_txq->size) {
+ 		/* Update number of occupied aggregated Tx descriptors */
+ 		u32 val = mv_pp2x_relaxed_read(&priv->hw,
+ 				MVPP2_AGGR_TXQ_STATUS_REG(cpu), cpu);
+ 
+-		aggr_txq->count = val & MVPP2_AGGR_TXQ_PENDING_MASK;
++		aggr_txq->hw_count = val & MVPP2_AGGR_TXQ_PENDING_MASK;
+ 
+-		if ((aggr_txq->count + num) > aggr_txq->size)
++		if ((aggr_txq->sw_count + aggr_txq->hw_count + num) > aggr_txq->size)
+ 			return -ENOMEM;
+ 	}
+ 
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw_type.h b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw_type.h
+index 2faf9bc..5ca506a 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw_type.h
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw_type.h
+@@ -1214,7 +1214,7 @@
+ #define MVPP2_CPU_DESC_CHUNK		128
+ 
+ /* Max number of Tx descriptors in each aggregated queue */
+-#define MVPP2_AGGR_TXQ_SIZE		512
++#define MVPP2_AGGR_TXQ_SIZE		2048
+ 
+ /* Descriptor aligned size */
+ #define MVPP2_DESC_ALIGNED_SIZE		32
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+index 9bc6987..efea481 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+@@ -1995,6 +1995,8 @@ static void mv_pp2x_tx_send_proc_cb(unsigned long data)
+ 	aggr_txq = &port->priv->aggr_txqs[cpu];
+ 
+ 	if (likely(aggr_txq->xmit_bulk > 0)) {
++		aggr_txq->sw_count -= aggr_txq->xmit_bulk;
++		aggr_txq->hw_count += aggr_txq->xmit_bulk;
+ 		mv_pp2x_aggr_txq_pend_desc_add(port, aggr_txq->xmit_bulk);
+ 		aggr_txq->xmit_bulk = 0;
+ 	}
+@@ -3090,23 +3092,25 @@ static inline int mv_pp2_tx_tso(struct sk_buff *skb, struct net_device *dev,
+ 		}
+ 	}
+ 
++	aggr_txq->sw_count += total_desc_num;
+ 	aggr_txq->xmit_bulk += total_desc_num;
+ 	if (!skb->xmit_more) {
+ 		/* Transmit TCP segment with bulked descriptors and cancel tx hr timer if exist */
++		aggr_txq->sw_count -= aggr_txq->xmit_bulk;
++		aggr_txq->hw_count += aggr_txq->xmit_bulk;
+ 		mv_pp2x_aggr_txq_pend_desc_add(port, aggr_txq->xmit_bulk);
+ 		aggr_txq->xmit_bulk = 0;
+ 		mv_pp2x_tx_timer_kill(port_pcpu);
+ 	}
+ 
+ 	txq_pcpu->reserved_num -= total_desc_num;
+-	aggr_txq->count += total_desc_num;
+ 
+ 	return total_desc_num;
+ 
+ out_no_tx_desc:
+ 	/* No enough memory for packet header - rollback */
+ 	pr_err("%s: No TX descriptors - rollback %d, txq_count=%d, nr_frags=%d, skb=%p, len=%d, gso_segs=%d\n",
+-	       __func__, total_desc_num, aggr_txq->count, skb_shinfo(skb)->nr_frags,
++	       __func__, total_desc_num, (aggr_txq->hw_count + aggr_txq->sw_count), skb_shinfo(skb)->nr_frags,
+ 			skb, skb->len, skb_shinfo(skb)->gso_segs);
+ 
+ 	for (i = 0; i < total_desc_num; i++) {
+@@ -3322,7 +3326,7 @@ static int mv_pp2x_tx(struct sk_buff *skb, struct net_device *dev)
+ 		}
+ 	}
+ 	txq_pcpu->reserved_num -= frags;
+-	aggr_txq->count += frags;
++	aggr_txq->sw_count += frags;
+ 	aggr_txq->xmit_bulk += frags;
+ 
+ #ifdef CONFIG_MV_PTP_SERVICE
+@@ -3345,6 +3349,8 @@ out:
+ 	} else {
+ 		/* Transmit bulked descriptors*/
+ 		if (aggr_txq->xmit_bulk > 0) {
++			aggr_txq->sw_count -= aggr_txq->xmit_bulk;
++			aggr_txq->hw_count += aggr_txq->xmit_bulk;
+ 			mv_pp2x_aggr_txq_pend_desc_add(port, aggr_txq->xmit_bulk);
+ 			aggr_txq->xmit_bulk = 0;
+ 		}
+-- 
+2.7.4
+

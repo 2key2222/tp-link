@@ -1,0 +1,31 @@
+From d7aa30f7b9847b4d2cebd27087e81b8b60fca31e Mon Sep 17 00:00:00 2001
+From: Hanna Hawa <hannah@marvell.com>
+Date: Sun, 3 Jul 2016 17:56:47 +0300
+Subject: [PATCH 0575/2241] config: vfio: enable XOR V2, and AHCI vfio reset
+ functions
+
+Change-Id: I5bc03e544a5d6207aa5745c9f2bf9b8a2048ad22
+Signed-off-by: Hanna Hawa <hannah@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/30918
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Shadi Ammouri <shadi@marvell.com>
+---
+ arch/arm64/configs/mvebu_v8_lsp_defconfig | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/arch/arm64/configs/mvebu_v8_lsp_defconfig b/arch/arm64/configs/mvebu_v8_lsp_defconfig
+index 06ae430..3c7a8ea 100644
+--- a/arch/arm64/configs/mvebu_v8_lsp_defconfig
++++ b/arch/arm64/configs/mvebu_v8_lsp_defconfig
+@@ -205,6 +205,8 @@ CONFIG_VFIO=y
+ CONFIG_VFIO_PCI=y
+ CONFIG_VFIO_PLATFORM=y
+ CONFIG_VFIO_PLATFORM_XHCI_RESET=y
++CONFIG_VFIO_PLATFORM_XOR_V2_RESET=y
++CONFIG_VFIO_PLATFORM_AHCI_RESET=y
+ CONFIG_VIRT_DRIVERS=y
+ CONFIG_VIRTIO_PCI=y
+ CONFIG_VIRTIO_BALLOON=y
+-- 
+2.7.4
+

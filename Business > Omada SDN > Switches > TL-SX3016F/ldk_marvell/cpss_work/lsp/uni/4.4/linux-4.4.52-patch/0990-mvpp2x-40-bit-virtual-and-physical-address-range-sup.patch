@@ -1,0 +1,362 @@
+From 09c5bdb76e0572d5b4aebeb310b345fe94e58454 Mon Sep 17 00:00:00 2001
+From: Stefan Chulski <stefanc@marvell.com>
+Date: Wed, 21 Sep 2016 15:44:09 +0300
+Subject: [PATCH 0990/2241] mvpp2x: 40 bit virtual and physical address range
+ support
+
+- allow DMA 40 bit physical address range
+- write only physical address in BM release
+- use physical address to free BM buffers
+- create local variable for dma_mask in probe and free variable in remove
+
+Change-Id: I3f44601ba289848b4d6201999f1f037ec1aa707e
+Signed-off-by: Stefan Chulski <stefanc@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/32946
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+Tested-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h      |  4 +-
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.c   |  8 ++-
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.h   | 57 ++++++++++++--------
+ .../net/ethernet/marvell/mvpp2x/mv_pp2x_hw_type.h  |  4 +-
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c | 61 ++++++++--------------
+ 5 files changed, 68 insertions(+), 66 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h
+index b998b48..bb168e8 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h
+@@ -772,8 +772,8 @@ struct mv_pp2x_pool_attributes {
+ 
+ char *mv_pp2x_pool_description_get(enum mv_pp2x_bm_pool_log_num  log_id);
+ 
+-void mv_pp2x_bm_bufs_free(struct mv_pp2x *priv, struct mv_pp2x_bm_pool *bm_pool,
+-			  int buf_num);
++void mv_pp2x_bm_bufs_free(struct device *dev, struct mv_pp2x *priv,
++			struct mv_pp2x_bm_pool *bm_pool, int buf_num);
+ int mv_pp2x_bm_bufs_add(struct mv_pp2x_port *port,
+ 			struct mv_pp2x_bm_pool *bm_pool, int buf_num);
+ int mv_pp2x_bm_pool_ext_add(struct device *dev, struct mv_pp2x *priv,
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.c
+index 51fe0a6..4fad8cc 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.c
+@@ -3824,9 +3824,15 @@ void mv_pp21_port_reset(struct mv_pp2x_port *port)
+ 
+ /* Refill BM pool */
+ void mv_pp2x_pool_refill(struct mv_pp2x *priv, u32 pool,
++			 dma_addr_t phys_addr)
++{
++	mv_pp2x_bm_pool_put(&priv->hw, pool, phys_addr);
++}
++
++void mv_pp2x_pool_refill_virtual(struct mv_pp2x *priv, u32 pool,
+ 			 dma_addr_t phys_addr, u8 *cookie)
+ {
+-	mv_pp2x_bm_pool_put(&priv->hw, pool, phys_addr, cookie);
++	mv_pp2x_bm_pool_put_virtual(&priv->hw, pool, phys_addr, cookie);
+ }
+ 
+ /* Set pool buffer size */
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.h b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.h
+index c8f4e77..70975ff 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.h
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.h
+@@ -245,24 +245,23 @@ static inline struct mv_pp2x_tx_queue *mv_pp2x_get_tx_queue(
+ 	return port->txqs[tx_queue];
+ }
+ 
+-static inline u8 *mv_pp2x_bm_virt_addr_get(struct mv_pp2x_hw *hw, u32 pool)
++static inline dma_addr_t mv_pp2x_bm_phys_addr_get(struct mv_pp2x_hw *hw, u32 pool)
+ {
+-	uintptr_t val = 0;
++	dma_addr_t val;
++
++	val = mv_pp2x_read(hw, MVPP2_BM_PHY_ALLOC_REG(pool));
+ 
+-	mv_pp2x_read(hw, MVPP2_BM_PHY_ALLOC_REG(pool));
+-/*TODO: Validate this is  correct CONFIG_XXX for (sk_buff *),
+- * it is a kmem_cache address (YuvalC).
+- */
+ #ifdef CONFIG_PHYS_ADDR_T_64BIT
+-	val = mv_pp2x_read(hw, MVPP22_BM_PHY_VIRT_HIGH_ALLOC_REG);
+-	val &= MVPP22_BM_VIRT_HIGH_ALLOC_MASK;
+-	val <<= (32 - MVPP22_BM_VIRT_HIGH_ALLOC_OFFSET);
++	{
++	u64 val2;
++
++	val2 = mv_pp2x_read(hw, MVPP22_BM_PHY_VIRT_HIGH_ALLOC_REG);
++	val2 &= MVPP22_BM_PHY_HIGH_ALLOC_MASK;
++	val |= (val2 << 32);
++	}
+ #endif
+-	val |= mv_pp2x_read(hw, MVPP2_BM_VIRT_ALLOC_REG);
+-	/* TODO: Remove it when 40-bit supported */
+-	val &= 0xffffffff;
+ 
+-	return((u8 *)val);
++	return val;
+ }
+ 
+ static inline void mv_pp2x_bm_hw_pool_create(struct mv_pp2x_hw *hw,
+@@ -274,7 +273,7 @@ static inline void mv_pp2x_bm_hw_pool_create(struct mv_pp2x_hw *hw,
+ 
+ 	mv_pp2x_write(hw, MVPP2_BM_POOL_BASE_ADDR_REG(pool),
+ 		      lower_32_bits(pool_addr));
+-#ifdef CONFIG_ARCH_DMA_ADDR_T_64BIT
++#if defined(CONFIG_ARCH_DMA_ADDR_T_64BIT) && defined(CONFIG_PHYS_ADDR_T_64BIT)
+ 	mv_pp2x_write(hw, MVPP22_BM_POOL_BASE_ADDR_HIGH_REG,
+ 		      (upper_32_bits(pool_addr) & MVPP22_ADDR_HIGH_MASK));
+ #endif
+@@ -285,17 +284,29 @@ static inline void mv_pp2x_bm_hw_pool_create(struct mv_pp2x_hw *hw,
+ 	mv_pp2x_write(hw, MVPP2_BM_POOL_CTRL_REG(pool), val);
+ }
+ 
+-/* Release buffer to BM */
+-static inline void mv_pp2x_bm_pool_put(struct mv_pp2x_hw *hw, u32 pool,
++static inline void mv_pp2x_bm_pool_put_virtual(struct mv_pp2x_hw *hw, u32 pool,
+ 					      dma_addr_t buf_phys_addr,
+ 					      u8 *buf_virt_addr)
+ {
+-
+ 	mv_pp2x_relaxed_write(hw, MVPP2_BM_VIRT_RLS_REG,
+ 			      lower_32_bits((uintptr_t)buf_virt_addr));
++
+ 	mv_pp2x_relaxed_write(hw, MVPP2_BM_PHY_RLS_REG(pool),
+-		      lower_32_bits(buf_phys_addr));
++				lower_32_bits(buf_phys_addr));
++}
++
++/* Release buffer to BM */
++static inline void mv_pp2x_bm_pool_put(struct mv_pp2x_hw *hw, u32 pool,
++					      dma_addr_t buf_phys_addr)
++{
+ 
++#if defined(CONFIG_ARCH_DMA_ADDR_T_64BIT) && defined(CONFIG_PHYS_ADDR_T_64BIT)
++	mv_pp2x_relaxed_write(hw, MVPP22_BM_PHY_VIRT_HIGH_RLS_REG,
++			upper_32_bits(buf_phys_addr));
++#endif
++
++	mv_pp2x_relaxed_write(hw, MVPP2_BM_PHY_RLS_REG(pool),
++				lower_32_bits(buf_phys_addr));
+ }
+ 
+ /* Release multicast buffer */
+@@ -313,8 +324,7 @@ static inline void mv_pp2x_bm_pool_mc_put(struct mv_pp2x_port *port, int pool,
+ 	 */
+ 	mv_pp2x_bm_pool_put(&(port->priv->hw), pool,
+ 			    (dma_addr_t)(buf_phys_addr |
+-			    MVPP2_BM_PHY_RLS_MC_BUFF_MASK),
+-			    (u8 *)(u64)(buf_virt_addr));
++			    MVPP2_BM_PHY_RLS_MC_BUFF_MASK));
+ }
+ 
+ static inline void mv_pp2x_port_interrupts_enable(struct mv_pp2x_port *port)
+@@ -445,7 +455,7 @@ static inline dma_addr_t mv_pp22_rxdesc_phys_addr_get(
+ {
+ 	return((dma_addr_t)
+ 		(rx_desc->u.pp22.buf_phys_addr_key_hash &
+-		DMA_BIT_MASK(32)));
++		DMA_BIT_MASK(40)));
+ }
+ 
+ static inline struct sk_buff *mv_pp21_txdesc_cookie_get(
+@@ -496,7 +506,7 @@ static inline void mv_pp22_txdesc_phys_addr_set(dma_addr_t phys_addr,
+ {
+ 	u64 *buf_phys_addr_p = &tx_desc->u.pp22.buf_phys_addr_hw_cmd2;
+ 
+-#ifdef CONFIG_ARCH_DMA_ADDR_T_64BIT
++#if defined(CONFIG_ARCH_DMA_ADDR_T_64BIT) && defined(CONFIG_PHYS_ADDR_T_64BIT)
+ 	*buf_phys_addr_p &= ~(DMA_BIT_MASK(40));
+ 	*buf_phys_addr_p |= phys_addr & DMA_BIT_MASK(40);
+ #else
+@@ -575,6 +585,9 @@ void mv_pp2x_bm_pool_bufsize_set(struct mv_pp2x_hw *hw,
+ 				 struct mv_pp2x_bm_pool *bm_pool,
+ 				 int buf_size);
+ void mv_pp2x_pool_refill(struct mv_pp2x *priv, u32 pool,
++			 dma_addr_t phys_addr);
++
++void mv_pp2x_pool_refill_virtual(struct mv_pp2x *priv, u32 pool,
+ 			 dma_addr_t phys_addr, u8 *cookie);
+ 
+ void mv_pp21_rxq_long_pool_set(struct mv_pp2x_hw *hw,
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw_type.h b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw_type.h
+index 5b532f9..3e6a575 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw_type.h
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw_type.h
+@@ -978,6 +978,7 @@
+ #define MVPP22_BM_PHY_HIGH_ALLOC_OFFSET		0
+ #define MVPP22_BM_VIRT_HIGH_ALLOC_OFFSET	8
+ #define MVPP22_BM_VIRT_HIGH_ALLOC_MASK		0xff00
++#define MVPP22_BM_PHY_HIGH_ALLOC_MASK		0xff
+ 
+ #define MVPP2_BM_PHY_RLS_REG(pool)		(0x6480 + ((pool) * 4))
+ #define MVPP2_BM_PHY_RLS_MC_BUFF_MASK		BIT(0)
+@@ -2258,9 +2259,6 @@ struct mv_pp2x_bm_pool {
+ 	/* Occupied buffers indicator */
+ 	atomic_t in_use;
+ 	int in_use_thresh;
+-#ifdef CONFIG_64BIT
+-	u64 data_high;
+-#endif
+ };
+ 
+ struct mv_pp2x_buff_hdr {
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+index 3a5adcb..d66edf4 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+@@ -308,20 +308,17 @@ static int mv_pp2x_rx_refill_new(struct mv_pp2x_port *port,
+ 	data = mv_pp2x_frag_alloc(bm_pool);
+ 	if (!data)
+ 		return -ENOMEM;
+-#ifdef CONFIG_64BIT
+-	if (unlikely(bm_pool->data_high != ((u64)data & 0xffffffff00000000)))
+-		return -ENOMEM;
+-#endif
+ 
+ 	phys_addr = dma_map_single(port->dev->dev.parent, data,
+ 				   MVPP2_RX_BUF_SIZE(bm_pool->pkt_size),
+ 				   DMA_FROM_DEVICE);
++
+ 	if (unlikely(dma_mapping_error(port->dev->dev.parent, phys_addr))) {
+ 		mv_pp2x_frag_free(bm_pool, data);
+ 		return -ENOMEM;
+ 	}
+ 
+-	mv_pp2x_pool_refill(port->priv, pool, phys_addr, (u8 *)data);
++	mv_pp2x_pool_refill(port->priv, pool, phys_addr);
+ 	atomic_dec(&bm_pool->in_use);
+ 	return 0;
+ }
+@@ -367,23 +364,12 @@ static int mv_pp2x_bm_pool_create(struct device *dev,
+ 	mv_pp2x_bm_pool_bufsize_set(hw, bm_pool,
+ 				    MVPP2_RX_BUF_SIZE(bm_pool->pkt_size));
+ 	atomic_set(&bm_pool->in_use, 0);
+-#ifdef CONFIG_64BIT
+-{
+-	void *data_tmp;
+-
+-	data_tmp = mv_pp2x_frag_alloc(bm_pool);
+-	if (data_tmp) {
+-		bm_pool->data_high = (u64)data_tmp & 0xffffffff00000000;
+-		mv_pp2x_frag_free(bm_pool, data_tmp);
+-	}
+-}
+-#endif
+ 
+ 	return 0;
+ }
+ 
+-void mv_pp2x_bm_bufs_free(struct mv_pp2x *priv, struct mv_pp2x_bm_pool *bm_pool,
+-			  int buf_num)
++void mv_pp2x_bm_bufs_free(struct device *dev, struct mv_pp2x *priv,
++			struct mv_pp2x_bm_pool *bm_pool, int buf_num)
+ {
+ 	int i;
+ 
+@@ -394,19 +380,16 @@ void mv_pp2x_bm_bufs_free(struct mv_pp2x *priv, struct mv_pp2x_bm_pool *bm_pool,
+ 
+ 	}
+ 	for (i = 0; i < buf_num; i++) {
+-		u8 *vaddr;
++		u8 *virt_addr;
++		dma_addr_t phys_addr;
+ 
+ 		/* Get buffer virtual address (indirect access) */
+-		vaddr = mv_pp2x_bm_virt_addr_get(&priv->hw, bm_pool->id);
+-		if (!vaddr)
++		phys_addr = mv_pp2x_bm_phys_addr_get(&priv->hw, bm_pool->id);
++		if (!phys_addr)
+ 			break;
+ 		if (!bm_pool->external_pool) {
+-#ifdef CONFIG_64BIT
+-			mv_pp2x_frag_free(bm_pool,
+-				(u8 *)(bm_pool->data_high | (uintptr_t)vaddr));
+-#else
+-			mv_pp2x_frag_free(bm_pool, vaddr);
+-#endif
++			virt_addr = phys_to_virt(dma_to_phys(dev, phys_addr));
++			mv_pp2x_frag_free(bm_pool, virt_addr);
+ 		}
+ 	}
+ 
+@@ -423,7 +406,7 @@ int mv_pp2x_bm_pool_destroy(struct device *dev, struct mv_pp2x *priv,
+ 
+ 	buf_num = mv_pp2x_check_hw_buf_num(priv, bm_pool);
+ 
+-	mv_pp2x_bm_bufs_free(priv, bm_pool, buf_num);
++	mv_pp2x_bm_bufs_free(dev, priv, bm_pool, buf_num);
+ 
+ 	/* Check buffer counters after free */
+ 	buf_num = mv_pp2x_check_hw_buf_num(priv, bm_pool);
+@@ -638,7 +621,7 @@ static struct mv_pp2x_bm_pool *mv_pp2x_bm_pool_use_internal(
+ 			return NULL;
+ 		}
+ 	} else if (add_num < 0) {
+-		mv_pp2x_bm_bufs_free(port->priv, pool, -add_num);
++		mv_pp2x_bm_bufs_free(port->dev->dev.parent, port->priv, pool, -add_num);
+ 	}
+ 
+ 	return pool;
+@@ -1155,7 +1138,7 @@ static void mv_pp2x_rxq_drop_pkts(struct mv_pp2x_port *port,
+ 			buf_phys_addr = mv_pp22_rxdesc_phys_addr_get(rx_desc);
+ 		}
+ 		mv_pp2x_pool_refill(port->priv, MVPP2_RX_DESC_POOL(rx_desc),
+-			buf_phys_addr, buf_cookie);
++			buf_phys_addr);
+ 	}
+ 	preempt_enable();
+ 	mv_pp2x_rxq_status_update(port, rxq->id, rx_received, rx_received);
+@@ -2303,14 +2286,10 @@ static int mv_pp2x_rx(struct mv_pp2x_port *port, struct napi_struct *napi,
+ 			data = mv_pp21_rxdesc_cookie_get(rx_desc);
+ 			buf_phys_addr = mv_pp21_rxdesc_phys_addr_get(rx_desc);
+ 		} else {
+-			data = mv_pp22_rxdesc_cookie_get(rx_desc);
+ 			buf_phys_addr = mv_pp22_rxdesc_phys_addr_get(rx_desc);
++			data = phys_to_virt(dma_to_phys(port->dev->dev.parent, buf_phys_addr));
+ 		}
+ 
+-#ifdef CONFIG_64BIT
+-		data = (unsigned char *)((uintptr_t)data | bm_pool->data_high);
+-#endif
+-
+ 		/* Prefetch 128B packet_header */
+ 		prefetch(data + NET_SKB_PAD);
+ 		dma_sync_single_for_cpu(dev->dev.parent, buf_phys_addr,
+@@ -2327,8 +2306,7 @@ static int mv_pp2x_rx(struct mv_pp2x_port *port, struct napi_struct *napi,
+ err_drop_frame:
+ 			dev->stats.rx_errors++;
+ 			mv_pp2x_rx_error(port, rx_desc);
+-			mv_pp2x_pool_refill(port->priv, pool, buf_phys_addr,
+-				data);
++			mv_pp2x_pool_refill(port->priv, pool, buf_phys_addr);
+ 			continue;
+ 		}
+ 
+@@ -5054,7 +5032,11 @@ static int mv_pp2x_probe(struct platform_device *pdev)
+ 	priv->pp2_version = priv->pp2xdata->pp2x_ver;
+ 
+ 	/* DMA Configruation */
+-	err = dma_set_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(32));
++	pdev->dev.dma_mask = kmalloc(sizeof(*pdev->dev.dma_mask), GFP_KERNEL);
++
++	err = dma_set_mask(&pdev->dev, DMA_BIT_MASK(40));
++	if (err == 0)
++		dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(32));
+ 	if (err) {
+ 		dev_err(&pdev->dev, "mvpp2: cannot set dma_mask\n");
+ 		goto err_clk;
+@@ -5193,6 +5175,9 @@ static int mv_pp2x_remove(struct platform_device *pdev)
+ 				  aggr_txq->descs_phys);
+ 	}
+ 
++	kfree(pdev->dev.dma_mask);
++	pdev->dev.dma_mask = &pdev->dev.coherent_dma_mask;
++
+ 	clk_disable_unprepare(hw->pp_clk);
+ 	clk_disable_unprepare(hw->gop_clk);
+ 
+-- 
+2.7.4
+

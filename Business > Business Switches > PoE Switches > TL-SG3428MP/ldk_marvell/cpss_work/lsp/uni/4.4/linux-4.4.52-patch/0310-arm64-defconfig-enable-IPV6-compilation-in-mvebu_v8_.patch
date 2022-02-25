@@ -1,0 +1,31 @@
+From 148f71dc7a1e29a687519f703982f08b1940a9ba Mon Sep 17 00:00:00 2001
+From: Stefan Chulski <stefanc@marvell.com>
+Date: Sun, 3 Apr 2016 15:11:59 +0300
+Subject: [PATCH 0310/2241] arm64: defconfig: enable IPV6 compilation in
+ mvebu_v8_lsp_defconfig
+
+-In menuconfig IPv6 changed to y
+
+Change-Id: I8e7f1f2f5558edaf48bc9d21f3da479e80e56aeb
+Reviewed-on: http://vgitil04.il.marvell.com:8080/28739
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ arch/arm64/configs/mvebu_v8_lsp_defconfig | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/arch/arm64/configs/mvebu_v8_lsp_defconfig b/arch/arm64/configs/mvebu_v8_lsp_defconfig
+index 8e909d9..7e20e13 100644
+--- a/arch/arm64/configs/mvebu_v8_lsp_defconfig
++++ b/arch/arm64/configs/mvebu_v8_lsp_defconfig
+@@ -56,7 +56,6 @@ CONFIG_IP_PNP=y
+ CONFIG_IP_PNP_DHCP=y
+ CONFIG_IP_PNP_BOOTP=y
+ # CONFIG_INET_LRO is not set
+-# CONFIG_IPV6 is not set
+ CONFIG_BRIDGE=y
+ CONFIG_VLAN_8021Q=y
+ CONFIG_OPENVSWITCH=y
+-- 
+2.7.4
+

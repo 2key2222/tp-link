@@ -1,0 +1,80 @@
+From ac4ed083d9662690a938502767301b0541b40aaf Mon Sep 17 00:00:00 2001
+From: Stefan Chulski <stefanc@marvell.com>
+Date: Tue, 24 Jan 2017 20:18:54 +0200
+Subject: [PATCH 1312/2241] fix: net: mvpp2x: fix tx bulking and tx tso
+ transmit race
+
+Issue:
+- Race between tx bulking in regular transmit path and in TSO transmit
+  path cause transition of wrong number descriptors from aggregated TXQ
+  to physical TXQ.
+
+Fix:
+a. Remove exist workaround:
+- Each CPU work with different Physical TXQ
+- Equal weighted round robin in TX scheduler
+
+b. Actual fix:
+- If skb->xmit_more is false transmit all bulked packets path
+  in TSO transmit path.
+
+Change-Id: I44ab3522c3ea80482118dec40269dd73385d16ed
+Signed-off-by: Stefan Chulski <stefanc@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/35996
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c | 23 ++++++++++++----------
+ 1 file changed, 13 insertions(+), 10 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+index 5d77743..cba518c 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+@@ -1272,7 +1272,6 @@ static int mv_pp2x_txq_init(struct mv_pp2x_port *port,
+ 	val |= MVPP2_TXQ_REFILL_TOKENS_ALL_MASK;
+ 	mv_pp2x_write(hw, MVPP2_TXQ_SCHED_REFILL_REG(txq->log_id), val);
+ 
+-	mv_pp2x_write(hw, MVPP2_TXP_SCHED_FIXED_PRIO_REG, 0);
+ 	val = MVPP2_TXQ_TOKEN_SIZE_MAX;
+ 	mv_pp2x_write(hw, MVPP2_TXQ_SCHED_TOKEN_SIZE_REG(txq->log_id),
+ 		      val);
+@@ -2820,8 +2819,12 @@ static inline int mv_pp2_tx_tso(struct sk_buff *skb, struct net_device *dev,
+ 		}
+ 	}
+ 
+-	/* TCP segment is ready - transmit it */
+-	mv_pp2x_aggr_txq_pend_desc_add(port, total_desc_num);
++	aggr_txq->xmit_bulk += total_desc_num;
++	if (!skb->xmit_more) {
++		/* Transmit TCP segment with bulked descriptors*/
++		mv_pp2x_aggr_txq_pend_desc_add(port, aggr_txq->xmit_bulk);
++		aggr_txq->xmit_bulk = 0;
++	}
+ 
+ 	txq_pcpu->reserved_num -= total_desc_num;
+ 	txq_pcpu->count += total_desc_num;
+@@ -3951,13 +3954,13 @@ u16 mv_pp2x_select_queue(struct net_device *dev, struct sk_buff *skb,
+ 			 void *accel_priv, select_queue_fallback_t fallback)
+ 
+ {
+-	/* TXQ software ring underrun workaround:
+-	  * Using of same physical TXQ from different CPU's cause reading of wrong
+-	  * value in Transmitted Descriptors Counter during TX done procedure
+-	  * and as result TXQ software ring underrun.
+-	  * WA: Each CPU will use different physical TXQ with same equal weighted round robin.
+-	  */
+-	int val = skb->napi_id - 1;
++	int val;
++
++	/* If packet in coming from Rx -> RxQ = TxQ, callback function used for packets from CPU Tx */
++	if (skb->queue_mapping)
++		val = skb->queue_mapping - 1;
++	else
++		val = fallback(dev, skb);
+ 
+ 	return (val % mv_pp2x_txq_number) + (smp_processor_id() * mv_pp2x_txq_number);
+ }
+-- 
+2.7.4
+

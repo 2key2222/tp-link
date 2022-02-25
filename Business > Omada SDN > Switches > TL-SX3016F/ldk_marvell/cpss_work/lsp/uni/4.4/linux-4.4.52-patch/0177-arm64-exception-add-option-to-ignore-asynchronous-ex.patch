@@ -1,0 +1,71 @@
+From ad32b22ae2169572ab294a76b67074f40ce5fbcc Mon Sep 17 00:00:00 2001
+From: Yehuda Yitschak <yehuday@marvell.com>
+Date: Mon, 22 Feb 2016 15:18:05 +0200
+Subject: [PATCH 0177/2241] arm64: exception: add option to ignore asynchronous
+ external abort
+
+in certain scenarios failed PCIe configuration accesses during
+bootloader phase cause asynchronous external abort which remain
+sticky and are triggered only when linux enables external aborts
+
+as a nasty hack, allow linux to ignore such exceptions
+
+Change-Id: I02f1d4ab4bfc3cc2d72afae1dad9b0bb6eaee235
+Signed-off-by: Yehuda Yitschak <yehuday@marvell.com>
+---
+ arch/arm64/kernel/entry.S | 10 ++++++++++
+ drivers/pci/host/Kconfig  |  9 +++++++++
+ 2 files changed, 19 insertions(+)
+
+diff --git a/arch/arm64/kernel/entry.S b/arch/arm64/kernel/entry.S
+index bd14849..698c4c6 100644
+--- a/arch/arm64/kernel/entry.S
++++ b/arch/arm64/kernel/entry.S
+@@ -218,7 +218,11 @@ ENTRY(vectors)
+ 	ventry	el1_sync			// Synchronous EL1h
+ 	ventry	el1_irq				// IRQ EL1h
+ 	ventry	el1_fiq_invalid			// FIQ EL1h
++#ifdef CONFIG_IGNORE_ASYNC_ABORT
++	ventry	el1_ignore
++#else
+ 	ventry	el1_error_invalid		// Error EL1h
++#endif
+ 
+ 	ventry	el0_sync			// Synchronous 64-bit EL0
+ 	ventry	el0_irq				// IRQ 64-bit EL0
+@@ -291,6 +295,12 @@ el1_error_invalid:
+ 	inv_entry 1, BAD_ERROR
+ ENDPROC(el1_error_invalid)
+ 
++#ifdef CONFIG_IGNORE_ASYNC_ABORT
++el1_ignore:
++	eret
++ENDPROC(el1_ignore)
++#endif
++
+ /*
+  * EL1 mode handlers.
+  */
+diff --git a/drivers/pci/host/Kconfig b/drivers/pci/host/Kconfig
+index 237837f..21d52af 100644
+--- a/drivers/pci/host/Kconfig
++++ b/drivers/pci/host/Kconfig
+@@ -16,6 +16,15 @@ config PCI_MVEBU
+ 	depends on ARCH_MVEBU || ARCH_DOVE
+ 	depends on OF
+ 
++config IGNORE_ASYNC_ABORT
++	bool "Ignore asynchronous abort from configuration access"
++	depends on ARCH_MVEBU
++	help
++	 Ignore asynchronous abort caused during configuration
++	 access to ports with no endpoint connected.
++	 Warning: This will mask all Serror aborts
++	 regardless of their cause
++
+ config PCIE_DW
+ 	bool
+ 
+-- 
+2.7.4
+

@@ -1,0 +1,84 @@
+From c369cf3d2346ff93d6ec0ad68d09d00019ac48f1 Mon Sep 17 00:00:00 2001
+From: Terry Zhou <bjzhou@marvell.com>
+Date: Thu, 5 May 2016 11:02:00 +0800
+Subject: [PATCH 0392/2241] clk: mvebu: corediv: add support for Msys SoC
+
+Change-Id: I1ee76b59ac4a310533ce4220ca0f5772cbdd1432
+Signed-off-by: Terry Zhou <bjzhou@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/29691
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Wilson Ding <dingwei@marvell.com>
+Reviewed-by: Lior Amsalem <alior@marvell.com>
+---
+ .../bindings/clock/mvebu-corediv-clock.txt         |  3 ++-
+ drivers/clk/mvebu/clk-corediv.c                    | 24 ++++++++++++++++++++++
+ 2 files changed, 26 insertions(+), 1 deletion(-)
+
+diff --git a/Documentation/devicetree/bindings/clock/mvebu-corediv-clock.txt b/Documentation/devicetree/bindings/clock/mvebu-corediv-clock.txt
+index 520562a..95f6dd4 100644
+--- a/Documentation/devicetree/bindings/clock/mvebu-corediv-clock.txt
++++ b/Documentation/devicetree/bindings/clock/mvebu-corediv-clock.txt
+@@ -1,12 +1,13 @@
+ * Core Divider Clock bindings for Marvell MVEBU SoCs
+ 
+-The following is a list of provided IDs and clock names on Armada 370/XP:
++The following is a list of provided IDs and clock names on Armada 370/XP & Msys:
+  0 = nand (NAND clock)
+ 
+ Required properties:
+ - compatible : must be "marvell,armada-370-corediv-clock",
+ 		       "marvell,armada-375-corediv-clock",
+ 		       "marvell,armada-380-corediv-clock",
++		       "marvell,msys-corediv-clock",
+ 
+ - reg : must be the register address of Core Divider control register
+ - #clock-cells : from common clock binding; shall be set to 1
+diff --git a/drivers/clk/mvebu/clk-corediv.c b/drivers/clk/mvebu/clk-corediv.c
+index 241753e..f364760 100644
+--- a/drivers/clk/mvebu/clk-corediv.c
++++ b/drivers/clk/mvebu/clk-corediv.c
+@@ -71,6 +71,11 @@ static const struct clk_corediv_desc mvebu_corediv_desc[] = {
+ 	{ .mask = 0x3f, .offset = 8, .fieldbit = 1 }, /* NAND clock */
+ };
+ 
++static const struct clk_corediv_desc mvebu_msys_corediv_desc[] __initconst = {
++	/* NAND clock */
++	{ .mask = 0xf, .offset = 6, .fieldbit = 27},
++};
++
+ #define to_corediv_clk(p) container_of(p, struct clk_corediv, hw)
+ 
+ static int clk_corediv_is_enabled(struct clk_hw *hwclk)
+@@ -227,6 +232,18 @@ static const struct clk_corediv_soc_desc armada375_corediv_soc = {
+ 	.ratio_offset = 0x4,
+ };
+ 
++static const struct clk_corediv_soc_desc msys_corediv_soc = {
++	.descs = mvebu_msys_corediv_desc,
++	.ndescs = ARRAY_SIZE(mvebu_msys_corediv_desc),
++	.ops = {
++		.recalc_rate = clk_corediv_recalc_rate,
++		.round_rate = clk_corediv_round_rate,
++		.set_rate = clk_corediv_set_rate,
++	},
++	.ratio_reload = BIT(10),
++	.ratio_offset = 0x8,
++};
++
+ static void __init
+ mvebu_corediv_clk_init(struct device_node *node,
+ 		       const struct clk_corediv_soc_desc *soc_desc)
+@@ -308,3 +325,10 @@ static void __init armada380_corediv_clk_init(struct device_node *node)
+ }
+ CLK_OF_DECLARE(armada380_corediv_clk, "marvell,armada-380-corediv-clock",
+ 	       armada380_corediv_clk_init);
++
++static void __init mvebu_corediv_clk_msys_init(struct device_node *node)
++{
++	return mvebu_corediv_clk_init(node, &msys_corediv_soc);
++}
++CLK_OF_DECLARE(mvebu_corediv_msys_clk, "marvell,msys-corediv-clock",
++		  mvebu_corediv_clk_msys_init);
+-- 
+2.7.4
+

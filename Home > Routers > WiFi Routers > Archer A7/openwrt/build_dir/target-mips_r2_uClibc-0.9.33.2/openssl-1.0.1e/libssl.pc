@@ -1,0 +1,12 @@
+prefix=/usr
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: OpenSSL
+Description: Secure Sockets Layer and cryptography libraries
+Version: 1.0.1e
+Requires: 
+Libs: -L${libdir} -lssl -lcrypto
+Libs.private: -L/home/ubuntu/Archer_C7_V5/openwrt/staging_dir/target-mips_r2_uClibc-0.9.33.2/usr/lib -L/home/ubuntu/Archer_C7_V5/openwrt/staging_dir/target-mips_r2_uClibc-0.9.33.2/lib -L/home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/usr/lib -L/home/ubuntu/Archer_C7_V5/openwrt/staging_dir/toolchain-mips_r2_gcc-4.6-linaro_uClibc-0.9.33.2/lib -ldl -ldl
+Cflags: -I${includedir} 

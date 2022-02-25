@@ -1,0 +1,167 @@
+--------------------
+./configure --prefix=/usr --shared --uname=Linux
+Thu Dec  9 04:34:04 PST 2021
+
+=== ztest15750.c ===
+extern int getchar();
+int hello() {return getchar();}
+===
+mips-openwrt-linux-uclibc-gcc -c -Os -pipe -mips32r2 -mtune=74kc -fno-caller-saves -freorder-blocks -fhonour-copts -Wno-error=unused-but-set-variable -msoft-float -fpic ztest15750.c
+... using gcc
+
+Checking for shared library support...
+=== ztest15750.c ===
+extern int getchar();
+int hello() {return getchar();}
+===
+mips-openwrt-linux-uclibc-gcc -w -c -Os -pipe -mips32r2 -mtune=74kc -fno-caller-saves -freorder-blocks -fhonour-copts -Wno-error=unused-but-set-variable -msoft-float -fpic -fPIC ztest15750.c
+mips-openwrt-linux-uclibc-gcc -shared -Wl,-soname,libz.so.1 -Os -pipe -mips32r2 -mtune=74kc -fno-caller-saves -freorder-blocks -fhonour-copts -Wno-error=unused-but-set-variable -msoft-float -fpic -fPIC -o ztest15750.so ztest15750.o
+Building shared library libz.so.1.2.7 with mips-openwrt-linux-uclibc-gcc.
+
+
+=== ztest15750.c ===
+#include <sys/types.h>
+off64_t dummy = 0;
+===
+mips-openwrt-linux-uclibc-gcc -c -Os -pipe -mips32r2 -mtune=74kc -fno-caller-saves -freorder-blocks -fhonour-copts -Wno-error=unused-but-set-variable -msoft-float -fpic -D_LARGEFILE64_SOURCE=1 ztest15750.c
+Checking for off64_t... Yes.
+Checking for fseeko... Yes.
+
+=== ztest15750.c ===
+#include <string.h>
+#include <errno.h>
+int main() { return strlen(strerror(errno)); }
+===
+mips-openwrt-linux-uclibc-gcc -Os -pipe -mips32r2 -mtune=74kc -fno-caller-saves -freorder-blocks -fhonour-copts -Wno-error=unused-but-set-variable -msoft-float -fpic -D_LARGEFILE64_SOURCE=1 -o ztest15750 ztest15750.c
+Checking for strerror... Yes.
+
+=== ztest15750.c ===
+#include <unistd.h>
+int main() { return 0; }
+===
+mips-openwrt-linux-uclibc-gcc -c -Os -pipe -mips32r2 -mtune=74kc -fno-caller-saves -freorder-blocks -fhonour-copts -Wno-error=unused-but-set-variable -msoft-float -fpic -D_LARGEFILE64_SOURCE=1 ztest15750.c
+Checking for unistd.h... Yes.
+
+=== ztest15750.c ===
+#include <stdarg.h>
+int main() { return 0; }
+===
+mips-openwrt-linux-uclibc-gcc -c -Os -pipe -mips32r2 -mtune=74kc -fno-caller-saves -freorder-blocks -fhonour-copts -Wno-error=unused-but-set-variable -msoft-float -fpic -D_LARGEFILE64_SOURCE=1 ztest15750.c
+Checking for stdarg.h... Yes.
+
+=== ztest15750.c ===
+#include <stdio.h>
+#include <stdarg.h>
+#include "zconf.h"
+int main()
+{
+#ifndef STDC
+  choke me
+#endif
+  return 0;
+}
+===
+mips-openwrt-linux-uclibc-gcc -c -Os -pipe -mips32r2 -mtune=74kc -fno-caller-saves -freorder-blocks -fhonour-copts -Wno-error=unused-but-set-variable -msoft-float -fpic -D_LARGEFILE64_SOURCE=1 ztest15750.c
+Checking whether to use vs[n]printf() or s[n]printf()... using vs[n]printf().
+
+=== ztest15750.c ===
+#include <stdio.h>
+#include <stdarg.h>
+int mytest(const char *fmt, ...)
+{
+  char buf[20];
+  va_list ap;
+  va_start(ap, fmt);
+  vsnprintf(buf, sizeof(buf), fmt, ap);
+  va_end(ap);
+  return 0;
+}
+int main()
+{
+  return (mytest("Hello%d\n", 1));
+}
+===
+mips-openwrt-linux-uclibc-gcc -Os -pipe -mips32r2 -mtune=74kc -fno-caller-saves -freorder-blocks -fhonour-copts -Wno-error=unused-but-set-variable -msoft-float -fpic -D_LARGEFILE64_SOURCE=1 -o ztest15750 ztest15750.c
+Checking for vsnprintf() in stdio.h... Yes.
+
+=== ztest15750.c ===
+#include <stdio.h>
+#include <stdarg.h>
+int mytest(const char *fmt, ...)
+{
+  int n;
+  char buf[20];
+  va_list ap;
+  va_start(ap, fmt);
+  n = vsnprintf(buf, sizeof(buf), fmt, ap);
+  va_end(ap);
+  return n;
+}
+int main()
+{
+  return (mytest("Hello%d\n", 1));
+}
+===
+mips-openwrt-linux-uclibc-gcc -c -Os -pipe -mips32r2 -mtune=74kc -fno-caller-saves -freorder-blocks -fhonour-copts -Wno-error=unused-but-set-variable -msoft-float -fpic -D_LARGEFILE64_SOURCE=1 ztest15750.c
+Checking for return value of vsnprintf()... Yes.
+
+=== ztest15750.c ===
+#define ZLIB_INTERNAL __attribute__((visibility ("hidden")))
+int ZLIB_INTERNAL foo;
+int main()
+{
+  return 0;
+}
+===
+mips-openwrt-linux-uclibc-gcc -c -Os -pipe -mips32r2 -mtune=74kc -fno-caller-saves -freorder-blocks -fhonour-copts -Wno-error=unused-but-set-variable -msoft-float -fpic -D_LARGEFILE64_SOURCE=1 ztest15750.c
+Checking for attribute(visibility) support... Yes.
+
+=== ztest15750.c ===
+#include <stdio.h>
+#define is32(n,t) for(n=1,k=0;n;n<<=1,k++);if(k==32){puts(t);return 0;}
+int main() {
+    int k;
+    unsigned i;
+    unsigned long l;
+    unsigned short s;
+    is32(i, "unsigned")
+    is32(l, "unsigned long")
+    is32(s, "unsigned short")
+    return 1;
+}
+===
+mips-openwrt-linux-uclibc-gcc -Os -pipe -mips32r2 -mtune=74kc -fno-caller-saves -freorder-blocks -fhonour-copts -Wno-error=unused-but-set-variable -msoft-float -fpic -D_LARGEFILE64_SOURCE=1 -DHAVE_HIDDEN ztest15750.c -o ztest15750
+Looking for a four-byte integer type... Not found.
+
+ALL = static shared all64
+AR = mips-openwrt-linux-uclibc-ar
+ARFLAGS = rc
+CC = mips-openwrt-linux-uclibc-gcc
+CFLAGS = -Os -pipe -mips32r2 -mtune=74kc -fno-caller-saves -freorder-blocks -fhonour-copts -Wno-error=unused-but-set-variable -msoft-float -fpic -D_LARGEFILE64_SOURCE=1 -DHAVE_HIDDEN
+CPP = mips-openwrt-linux-uclibc-gcc -E
+EXE =
+LDCONFIG = ldconfig
+LDFLAGS =
+LDSHARED = mips-openwrt-linux-uclibc-gcc -shared -Wl,-soname,libz.so.1
+LDSHAREDLIBC = -lc
+OBJC = $(OBJZ) $(OBJG)
+PIC_OBJC = $(PIC_OBJZ) $(PIC_OBJG)
+RANLIB = mips-openwrt-linux-uclibc-ranlib
+SFLAGS = -Os -pipe -mips32r2 -mtune=74kc -fno-caller-saves -freorder-blocks -fhonour-copts -Wno-error=unused-but-set-variable -msoft-float -fpic -fPIC -D_LARGEFILE64_SOURCE=1 -DHAVE_HIDDEN
+SHAREDLIB = libz.so
+SHAREDLIBM = libz.so.1
+SHAREDLIBV = libz.so.1.2.7
+STATICLIB = libz.a
+TEST = all teststatic testshared test64
+VER = 1.2.7
+Z_U4 =
+exec_prefix = ${prefix}
+includedir = ${prefix}/include
+libdir = ${exec_prefix}/lib
+mandir = ${prefix}/share/man
+prefix = /usr
+sharedlibdir = ${libdir}
+uname = Linux
+--------------------
+
+

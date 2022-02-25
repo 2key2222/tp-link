@@ -1,0 +1,40 @@
+From 533dc2ceb06ea5aa7d60934f051fe2513d09fa3d Mon Sep 17 00:00:00 2001
+From: Elad Raz <eladr@mellanox.com>
+Date: Wed, 6 Jan 2016 13:01:05 +0100
+Subject: [PATCH 0709/2241] switchdev: add bridge vlan_filtering attribute
+
+Upstream-commit: 81435c33e062cbd4508da6f64655cb0967eeb65f
+
+Adding vlan_filtering attribute to allow hardware vendor to support
+vlan-aware bridges. Vlan_filtering is a per-bridge attribute.
+
+Signed-off-by: Elad Raz <eladr@mellanox.com>
+Signed-off-by: Jiri Pirko <jiri@mellanox.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+---
+ include/net/switchdev.h | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/include/net/switchdev.h b/include/net/switchdev.h
+index 31d0e51..6f5ea20 100644
+--- a/include/net/switchdev.h
++++ b/include/net/switchdev.h
+@@ -47,6 +47,7 @@ enum switchdev_attr_id {
+ 	SWITCHDEV_ATTR_ID_PORT_STP_STATE,
+ 	SWITCHDEV_ATTR_ID_PORT_BRIDGE_FLAGS,
+ 	SWITCHDEV_ATTR_ID_BRIDGE_AGEING_TIME,
++	SWITCHDEV_ATTR_ID_BRIDGE_VLAN_FILTERING,
+ };
+ 
+ struct switchdev_attr {
+@@ -57,6 +58,7 @@ struct switchdev_attr {
+ 		u8 stp_state;				/* PORT_STP_STATE */
+ 		unsigned long brport_flags;		/* PORT_BRIDGE_FLAGS */
+ 		u32 ageing_time;			/* BRIDGE_AGEING_TIME */
++		bool vlan_filtering;			/* BRIDGE_VLAN_FILTERING */
+ 	} u;
+ };
+ 
+-- 
+2.7.4
+

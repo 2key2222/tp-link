@@ -1,0 +1,46 @@
+From c05956e50d94c183a7006055ad0e11f0ab001de8 Mon Sep 17 00:00:00 2001
+From: Markus Elfring <elfring@users.sourceforge.net>
+Date: Mon, 17 Apr 2017 11:36:34 +0200
+Subject: [PATCH 1701/2241] net: mvpp2: Rename a jump label in
+ mvpp2_tx_frag_process()
+
+Adjust jump labels according to the Linux coding style convention.
+
+Patch cherry-picked from mainline 4.12_rc5
+
+Change-Id: I425c9f7105b79cc5d3b2e4ec965662343fe0e7bc
+Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/40452
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2.c | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2.c b/drivers/net/ethernet/marvell/mvpp2.c
+index 7e74a76..44dda45 100644
+--- a/drivers/net/ethernet/marvell/mvpp2.c
++++ b/drivers/net/ethernet/marvell/mvpp2.c
+@@ -5473,7 +5473,7 @@ static int mvpp2_tx_frag_process(struct mvpp2_port *port, struct sk_buff *skb,
+ 					       DMA_TO_DEVICE);
+ 		if (dma_mapping_error(port->dev->dev.parent, buf_dma_addr)) {
+ 			mvpp2_txq_desc_put(txq);
+-			goto error;
++			goto cleanup;
+ 		}
+ 
+ 		mvpp2_txdesc_offset_set(port, tx_desc,
+@@ -5494,8 +5494,7 @@ static int mvpp2_tx_frag_process(struct mvpp2_port *port, struct sk_buff *skb,
+ 	}
+ 
+ 	return 0;
+-
+-error:
++cleanup:
+ 	/* Release all descriptors that were used to map fragments of
+ 	 * this packet, as well as the corresponding DMA mappings
+ 	 */
+-- 
+2.7.4
+

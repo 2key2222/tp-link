@@ -1,0 +1,34 @@
+From 082b04e30d2bc24f34e1d9ebfbce8567e79c5602 Mon Sep 17 00:00:00 2001
+From: Grzegorz Jaszczyk <jaz@semihalf.com>
+Date: Fri, 19 Feb 2016 16:42:54 +0100
+Subject: [PATCH 0215/2241] ARM: mvebu: a39x: align the pmsu registers entry
+
+After 'ARM: mvebu: cpufreq: Protect entring WFI by disabling the ACP port'
+new register region which describes the CIB 'Control and Configuration
+Register' must be describe in the dts.
+
+Change-Id: I8a1aa2ef729457b63de920afa783681afb01e4e6
+Signed-off-by: Grzegorz Jaszczyk <jaz@semihalf.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/27968
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Lior Amsalem <alior@marvell.com>
+---
+ arch/arm/boot/dts/armada-39x.dtsi | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/armada-39x.dtsi b/arch/arm/boot/dts/armada-39x.dtsi
+index cb66f20..0ad0db7 100644
+--- a/arch/arm/boot/dts/armada-39x.dtsi
++++ b/arch/arm/boot/dts/armada-39x.dtsi
+@@ -325,7 +325,7 @@
+ 			pmsu@22000 {
+ 				compatible = "marvell,armada-390-pmsu",
+ 					     "marvell,armada-380-pmsu";
+-				reg = <0x22000 0x1000>;
++				reg = <0x22000 0x1000>, <0x20280 0x4>;
+ 			};
+ 
+ 			xor@60800 {
+-- 
+2.7.4
+

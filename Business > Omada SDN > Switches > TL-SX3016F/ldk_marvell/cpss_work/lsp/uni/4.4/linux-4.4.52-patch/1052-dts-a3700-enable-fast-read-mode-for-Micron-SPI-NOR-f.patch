@@ -1,0 +1,31 @@
+From dc8463a098dccca774f45ac1f5c3aa01319147e1 Mon Sep 17 00:00:00 2001
+From: zachary <zhangzg@marvell.com>
+Date: Thu, 10 Nov 2016 00:47:27 +0800
+Subject: [PATCH 1052/2241] dts: a3700: enable fast read mode for Micron SPI
+ NOR flash
+
+Change-Id: I4a88656633105bbb188273ef2400bd35cc841328
+Signed-off-by: zachary <zhangzg@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/33638
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Victor Gu <xigu@marvell.com>
+Reviewed-by: Wilson Ding <dingwei@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-3720-db.dts | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-3720-db.dts b/arch/arm64/boot/dts/marvell/armada-3720-db.dts
+index 70fae3b..52bfe3f 100644
+--- a/arch/arm64/boot/dts/marvell/armada-3720-db.dts
++++ b/arch/arm64/boot/dts/marvell/armada-3720-db.dts
+@@ -72,6 +72,7 @@
+ 					compatible = "jedec,spi-nor";
+ 					reg = <0>; /* Chip select 0 */
+ 					spi-max-frequency = <104000000>;
++					m25p,fast-read;
+ 
+ 					pinctrl-names = "default";
+ 					pinctrl-0 = <&spi0_pins &spi_quad_pins>;
+-- 
+2.7.4
+

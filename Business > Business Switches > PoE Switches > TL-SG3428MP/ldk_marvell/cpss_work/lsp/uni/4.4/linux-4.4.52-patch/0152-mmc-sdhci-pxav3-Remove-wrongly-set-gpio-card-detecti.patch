@@ -1,0 +1,38 @@
+From 52c41256dafb7adc558eb6a12c647a5423ac92cf Mon Sep 17 00:00:00 2001
+From: Nadav Haklai <nadavh@marvell.com>
+Date: Tue, 11 Aug 2015 17:20:55 +0300
+Subject: [PATCH 0152/2241] mmc: sdhci-pxav3: Remove wrongly set gpio card
+ detection armada-380-gp.dts
+
+Marvell GP board now uses DAT3 for card detection so the gpio detection
+should be removed
+
+Change-Id: Ifbac6db1614b657427d0c27f0a0d94105742a24b
+Signed-off-by: Nadav Haklai <nadavh@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/22755
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/22795
+Reviewed-on: http://vgitil04.il.marvell.com:8080/27572
+Reviewed-by: Lior Amsalem <alior@marvell.com>
+Tested-by: Lior Amsalem <alior@marvell.com>
+---
+ arch/arm/boot/dts/armada-380-gp.dts | 3 ---
+ 1 file changed, 3 deletions(-)
+
+diff --git a/arch/arm/boot/dts/armada-380-gp.dts b/arch/arm/boot/dts/armada-380-gp.dts
+index 47774f7..0958f88 100644
+--- a/arch/arm/boot/dts/armada-380-gp.dts
++++ b/arch/arm/boot/dts/armada-380-gp.dts
+@@ -176,9 +176,6 @@
+ 			};
+ 
+ 			sdhci@d8000 {
+-				pinctrl-names = "default";
+-				pinctrl-0 = <&sdhci_pins>;
+-				cd-gpios = <&expander0 5 GPIO_ACTIVE_LOW>;
+ 				no-1-8-v;
+ 				wp-inverted;
+ 				bus-width = <8>;
+-- 
+2.7.4
+

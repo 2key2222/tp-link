@@ -1,0 +1,30 @@
+From 4251d842d43efc60147357b4a7e581b17dfa3e0f Mon Sep 17 00:00:00 2001
+From: Yehuda Yitschak <yehuday@marvell.com>
+Date: Wed, 10 Dec 2014 08:38:05 +0200
+Subject: [PATCH 0097/2241] checkpatch: added checkpatch configuration file
+
+	- Disabled gerrit change-id error
+	- Disabled MAINTAINERS warning
+
+Change-Id: Ic3bc76344c681e03568633851087168481a53f3c
+Signed-off-by: Yehuda Yitschak <yehuday@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/15232
+Reviewed-by: Shadi Ammouri <shadi@marvell.com>
+---
+ .checkpatch.conf | 4 ++++
+ 1 file changed, 4 insertions(+)
+ create mode 100644 .checkpatch.conf
+
+diff --git a/.checkpatch.conf b/.checkpatch.conf
+new file mode 100644
+index 0000000..c62913a
+--- /dev/null
++++ b/.checkpatch.conf
+@@ -0,0 +1,4 @@
++# Ignore Gerrit change-id error
++--ignore GERRIT_CHANGE_ID
++# Ignore updates to MAINTAINERS
++--ignore FILE_PATH_CHANGES
+-- 
+2.7.4
+

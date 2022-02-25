@@ -1,0 +1,35 @@
+From 9e82b9d814c868af1c4b1695bd8ca96017764c66 Mon Sep 17 00:00:00 2001
+From: Stefan Chulski <stefanc@marvell.com>
+Date: Thu, 15 Dec 2016 09:58:11 +0200
+Subject: [PATCH 1167/2241] fix: net: mvpp2x: remove sleep from link status
+ callback
+
+- link status callback called under link change interrupt and
+  we shouldn't sleep there.
+
+Change-Id: I6b76f036ed8d33951918338312d4131cac884a27
+Signed-off-by: Stefan Chulski <stefanc@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/34687
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2x/mv_gop110_hw.c | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_gop110_hw.c b/drivers/net/ethernet/marvell/mvpp2x/mv_gop110_hw.c
+index dde8f80..095e9c1 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_gop110_hw.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_gop110_hw.c
+@@ -1152,7 +1152,6 @@ bool mv_gop110_port_is_link_up(struct gop_hw *gop, struct mv_mac_data *mac)
+ 	case PHY_INTERFACE_MODE_KR:
+ 	case PHY_INTERFACE_MODE_SFI:
+ 	case PHY_INTERFACE_MODE_XFI:
+-		udelay(1000);
+ 		return mv_gop110_xlg_mac_link_status_get(gop, port_num);
+ 	break;
+ 	default:
+-- 
+2.7.4
+

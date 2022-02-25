@@ -1,0 +1,51 @@
+From 9ffc264280fdf7b15ab0105b4a5bc1b8edb0036c Mon Sep 17 00:00:00 2001
+From: zachary <zhangzg@marvell.com>
+Date: Sat, 31 Dec 2016 00:46:44 +0800
+Subject: [PATCH 1237/2241] fix: spi: a3700: configure spi clock mode on each
+ message transfer
+
+- SPI clock mode used to be set according to master mode bits during probe,
+  which is not correct, since master mode bits is the capacity of the SPI
+  controller, and it is used to check if the device requires clock mode
+  that out of capacity in SPI frame work.
+- On the other hand, SPI clock mode should be set according to device at
+  the beginning of each message transfer.
+- This patch removes clock mode configuration in probe, and adds it to
+  each message transfer.
+
+Change-Id: I42b2887215eaa47b8b3f09999d7a3a617bfb26cf
+Signed-off-by: zachary <zhangzg@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/35093
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hua Jing <jinghua@marvell.com>
+---
+ drivers/spi/spi-armada-3700.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/spi/spi-armada-3700.c b/drivers/spi/spi-armada-3700.c
+index f94a618a..daca6d7 100644
+--- a/drivers/spi/spi-armada-3700.c
++++ b/drivers/spi/spi-armada-3700.c
+@@ -376,9 +376,6 @@ static int a3700_spi_init(struct a3700_spi *a3700_spi)
+ 		goto out;
+ 	}
+ 
+-	/* Set SPI mode */
+-	a3700_spi_mode_set(a3700_spi, master->mode_bits);
+-
+ 	/* Reset counters */
+ 	spireg_write(a3700_spi, A3700_SPI_IF_HDR_CNT_REG, 0);
+ 	spireg_write(a3700_spi, A3700_SPI_IF_DIN_CNT_REG, 0);
+@@ -508,6 +505,9 @@ static int a3700_spi_transfer_setup(struct spi_device *spi,
+ 			goto out;
+ 		}
+ 
++		/* Set SPI mode */
++		a3700_spi_mode_set(a3700_spi, spi->mode);
++
+ 		/* Set FIFO threshold */
+ 		a3700_spi_fifo_thres_set(a3700_spi);
+ 
+-- 
+2.7.4
+

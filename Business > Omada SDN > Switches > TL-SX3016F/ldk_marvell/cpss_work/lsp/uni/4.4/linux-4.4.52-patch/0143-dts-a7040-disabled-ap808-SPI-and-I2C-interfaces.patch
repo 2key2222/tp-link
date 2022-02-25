@@ -1,0 +1,53 @@
+From 353fb82afe77d5bc1a3e311f61ad660ca155e954 Mon Sep 17 00:00:00 2001
+From: Yehuda Yitschak <yehuday@marvell.com>
+Date: Sun, 21 Feb 2016 14:52:01 +0200
+Subject: [PATCH 0143/2241] dts: a7040: disabled ap808 SPI and I2C interfaces
+
+in Armada7040 we use the CP110 SPI and I2C interfaces
+
+Change-Id: I2c302e620b43d4de98b4967cc2f47a2e5b5edad6
+Signed-off-by: Yehuda Yitschak <yehuday@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-7040-rz-db.dtsi | 26 ----------------------
+ 1 file changed, 26 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-7040-rz-db.dtsi b/arch/arm64/boot/dts/marvell/armada-7040-rz-db.dtsi
+index 26cc818..aa9eecb 100644
+--- a/arch/arm64/boot/dts/marvell/armada-7040-rz-db.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-7040-rz-db.dtsi
+@@ -58,32 +58,6 @@
+ 
+ 	ap806 {
+ 		config-space {
+-			spi@510600 {
+-				status = "okay";
+-
+-				spi-flash@0 {
+-					#address-cells = <1>;
+-					#size-cells = <1>;
+-					compatible = "n25q128a13";
+-					reg = <0>; /* Chip select 0 */
+-					spi-max-frequency = <10000000>;
+-
+-					partition@0 {
+-						label = "U-Boot";
+-						reg = <0 0x200000>;
+-					};
+-					partition@400000 {
+-						label = "Filesystem";
+-						reg = <0x200000 0xce0000>;
+-					};
+-				};
+-			};
+-
+-			i2c@511000 {
+-				status = "okay";
+-				clock-frequency = <100000>;
+-			};
+-
+ 			serial@512000 {
+ 				status = "okay";
+ 			};
+-- 
+2.7.4
+

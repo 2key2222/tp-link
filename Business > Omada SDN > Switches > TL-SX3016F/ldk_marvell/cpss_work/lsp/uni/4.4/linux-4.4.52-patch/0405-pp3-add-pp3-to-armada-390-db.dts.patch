@@ -1,0 +1,539 @@
+From c973362c76071ad0c9cdf807a1ec28dc74e3088d Mon Sep 17 00:00:00 2001
+From: Uri Eliyahu <uriel@marvell.com>
+Date: Sun, 8 May 2016 15:02:15 +0300
+Subject: [PATCH 0405/2241] pp3: add pp3 to armada-390-db.dts
+
+Change-Id: Id302ddaa3e7e0dce6374e1102d0554e906f9950d
+Signed-off-by: Uri Eliyahu <uriel@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/29594
+Reviewed-by: Lior Amsalem <alior@marvell.com>
+Tested-by: Lior Amsalem <alior@marvell.com>
+---
+ .../bindings/net/marvell-pp3-a390-db.txt           |  80 +++++++++++++
+ .../devicetree/bindings/net/marvell-pp3-mdio.txt   |  38 ++++++
+ .../bindings/net/marvell-pp3-platform.txt          | 128 +++++++++++++++++++++
+ arch/arm/boot/dts/armada-390-db.dts                |  79 ++++++++++++-
+ arch/arm/boot/dts/armada-390.dtsi                  |  82 +++++++++++++
+ arch/arm/boot/dts/armada-39x.dtsi                  |  12 ++
+ include/dt-bindings/mvebu_nss/nss39x.h             |  15 +++
+ 7 files changed, 432 insertions(+), 2 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/net/marvell-pp3-a390-db.txt
+ create mode 100644 Documentation/devicetree/bindings/net/marvell-pp3-mdio.txt
+ create mode 100644 Documentation/devicetree/bindings/net/marvell-pp3-platform.txt
+ create mode 100644 include/dt-bindings/mvebu_nss/nss39x.h
+
+diff --git a/Documentation/devicetree/bindings/net/marvell-pp3-a390-db.txt b/Documentation/devicetree/bindings/net/marvell-pp3-a390-db.txt
+new file mode 100644
+index 0000000..33f1b1c
+--- /dev/null
++++ b/Documentation/devicetree/bindings/net/marvell-pp3-a390-db.txt
+@@ -0,0 +1,80 @@
++* Marvell Armada 390 DB Board
++
++Must contain the following nodes:
++	- nss_complex, see marvell-net_complex.txt
++	- gop, to describe init port configuration mode and phy
++	- pp3_platform, to describe active interfaces configuration
++
++General properties are described in marvell-pp3-platform.txt
++
++Example:
++
++nss_complex {
++	status = "okay";
++};
++
++gop {
++	emac0: mac0 {
++		phy-mode = "rxaui";
++		phy-id = <0>;
++	};
++OR
++	emac0: mac0 {
++		phy-mode = "sgmii";
++		phy-id = <0>;
++		phy-speed = <1000>; /* or 2500 for SGMII 2.5 */
++	};
++
++	emac1: mac1 {
++		phy-mode = "sgmii";
++		phy-id = <5>;
++	};
++OR
++	emac1: mac1 {
++		phy-mode = "qsgmii";
++		phy-id = <5>;
++	};
++OR
++	emac1: mac1 {
++		phy-mode = "rgmii";
++		phy-id = <1>;
++	};
++
++	emac2: mac2 {
++		phy-mode = "sgmii";
++		phy-id = <4>;
++	};
++
++	emac3: mac3 {
++		phy-mode = "sgmii";
++		phy-id = <6>;
++	};
++};
++
++pp3_platform {
++	status = "okay";
++
++	nic@0 {
++		status = "okay";
++		emac-data = <&emac0>;
++	};
++
++	nic@1 {
++		status = "okay";
++		emac-data = <&emac1>;
++	};
++
++	nic@2 {
++		status = "okay";
++		emac-data = <&emac2>;
++	};
++
++	nic@3 {
++		status = "okay";
++		emac-data = <&emac3>;
++	};
++
++	nss@0 {
++		status = "okay";
++	};
++};
+diff --git a/Documentation/devicetree/bindings/net/marvell-pp3-mdio.txt b/Documentation/devicetree/bindings/net/marvell-pp3-mdio.txt
+new file mode 100644
+index 0000000..9699d31
+--- /dev/null
++++ b/Documentation/devicetree/bindings/net/marvell-pp3-mdio.txt
+@@ -0,0 +1,38 @@
++* Marvell MDIO Ethernet Controller interface
++
++The Ethernet controllers of the Marvel A390 have an identical unit that provides
++an interface with the MDIO bus. This driver handles this MDIO
++interface.
++
++Required properties:
++- compatible: "marvell,pp3-mdio"
++- smi_reg: address offset of the SMI GOP register
++
++Optional properties:
++- interrupts: interrupt line number for the SMI error/done interrupt
++- clocks: Phandle to the clock control device and gate bit
++
++The child nodes of the MDIO driver are the individual PHY devices
++connected to this MDIO bus. They must have a "reg" property given the
++PHY address on the MDIO bus.
++
++Example at the SoC level:
++
++mdio {
++	#address-cells = <1>;
++	#size-cells = <0>;
++	compatible = "marvell,pp3-mdio";
++	smi_reg = <0x5000000>;
++};
++
++And at the board level:
++
++mdio {
++	phy0: ethernet-phy@0 {
++		reg = <0>;
++	};
++
++	phy1: ethernet-phy@1 {
++		reg = <5>;
++	};
++}
+diff --git a/Documentation/devicetree/bindings/net/marvell-pp3-platform.txt b/Documentation/devicetree/bindings/net/marvell-pp3-platform.txt
+new file mode 100644
+index 0000000..0312198
+--- /dev/null
++++ b/Documentation/devicetree/bindings/net/marvell-pp3-platform.txt
+@@ -0,0 +1,128 @@
++* Marvell Armada 390 Ethernet Controller (PP3)
++
++Required properties:
++
++- compatible: should be "marvell,armada-390-pp3"
++- reg: describing the MBus windows have the following layout:
++
++        MBUS_ID(w, a) o z
++  where:
++   - w is the 'target ID' value for the MBus window
++   - a the 'attribute' value for the MBus window
++   - o the address offset inside the window
++   - s the size of window
++
++  Must contain the following register sets:
++	- AMB controller registers
++	- A2M Masters 0 and 1 area
++	- NSS configuration registers
++	- NSS area
++- clocks-frequency: define clock frequency NSS unit run with
++- interrupts: base of ODMI interrupts used for RX
++- gop_access: define access to GOP registers parameters
++- ptp-event-pin: GPIO pin number used as ptp-event input
++
++The network interfaces are represented by subnodes.
++
++Required properties:
++
++- id: interafce ID
++- emac-data: pointer to relevant emac node (see below)
++
++Example:
++
++pp3_platform {
++	compatible = "marvell,armada-390-pp3";
++	status = "disabled";
++	reg = <MBUS_ID(0xf0, 0x01) 0x70000 0x1000>,    /* A2M Master 0 */
++	      <MBUS_ID(0xf0, 0x01) 0x30000 0x1000>,    /* A2M Master 1 */
++	      <MBUS_ID(0xf0, 0x01) 0x18a00 0x1000>,    /* AMB registers */
++	      <MBUS_ID(0x0c, 0x04) 0       0x800000>,  /* NSS IP registers */
++	      <MBUS_ID(0x0c, 0x05) 0       0x8000000>; /* NSS IP space */
++	clocks-frequency = <250000000>;
++	interrupts = <GIC_SPI 96 IRQ_TYPE_LEVEL_HIGH>;  /* ODMI IRQs */
++	gop_access = <&mg_base>;
++	ptp-event-pin = <10>;
++
++	nic@0 {
++		status = "disabled";
++		id = <0>;
++		emac-data = <&emac0>;
++	};
++
++	nic@1 {
++		status = "disabled";
++		id = <1>;
++		emac-data = <&emac1>;
++	};
++
++	nic@2 {
++		status = "disabled";
++		id = <2>;
++		emac-data = <&emac2>;
++	};
++
++	nic@3 {
++		status = "disabled";
++		id = <3>;
++		emac-data = <&emac3>;
++	};
++
++	nss@0 {
++		status = "disabled";
++		id = <0>;
++	};
++};
++
++GOP node describe Group of Ports block and access data, include MAC data.
++
++Required properties:
++- mg_base - define remap window information
++            The mvebu-mbus DT binding currently doesn't allow
++            describing static windows with the remap capability, so we
++            need this information to use the mvebu-mbus API to dynamically create the
++            required window. This should be changed once mvebu-mbus is
++            extended to cover such a case.
++- emac0,1,2,3 - MAC data:
++  - interrupts: mac link change interrupt line
++  - mac-address: plase folder for mac address updated by u-boot
++  - phy-mode: one from the following modes: "sgmii", "sgmii2_5", "rgmii", "rxaui", "xaui" or "qsgmii"
++  - phy-id: phy address
++  - force-link: must be set to "yes" explicitly, if no AN run.
++
++gop {
++	status = "disabled";
++	mg_base: mg_base {
++		gop-base = <0xf8000000>;
++		gop-size = <0x400000>;
++		mg-target-id = <0xb>;
++		mg-attr = <4>;
++		mg-remap-base = <0>;
++	};
++
++	emac0: mac0 {
++		interrupts = <GIC_SPI 49 IRQ_TYPE_LEVEL_HIGH>;  /* Link IRQ */
++		mac-address = [ 00 00 00 00 00 00 ];
++	};
++
++	emac1: mac1 {
++		interrupts = <GIC_SPI 50 IRQ_TYPE_LEVEL_HIGH>;  /* Link IRQ */
++		mac-address = [ 00 00 00 00 00 00 ];
++	};
++
++	emac2: mac2 {
++		interrupts = <GIC_SPI 51 IRQ_TYPE_LEVEL_HIGH>;  /* Link IRQ */
++		mac-address = [ 00 00 00 00 00 00 ];
++	};
++	emac3: mac3 {
++		interrupts = <GIC_SPI 53 IRQ_TYPE_LEVEL_HIGH>;  /* Link IRQ */
++		mac-address = [ 00 00 00 00 00 00 ];
++		phy-mode = "sgmii";
++		phy-id = <0>;
++		switch-data = <&switch>; /* Optional */
++	};
++};
++
++For supported boards information see:
++Documentation/devicetree/bindings/net/marvell-pp3-a395-db_gp.txt
++Documentation/devicetree/bindings/net/marvell-pp3-a390-db.txt
+diff --git a/arch/arm/boot/dts/armada-390-db.dts b/arch/arm/boot/dts/armada-390-db.dts
+index d0bd83d..032585d 100644
+--- a/arch/arm/boot/dts/armada-390-db.dts
++++ b/arch/arm/boot/dts/armada-390-db.dts
+@@ -57,8 +57,15 @@
+ 
+ 	soc {
+ 		ranges = <MBUS_ID(0xf0, 0x01) 0 0xf1000000 0x100000
+-			  MBUS_ID(0x01, 0x1d) 0 0xfff00000 0x100000>;
+-
++			  MBUS_ID(0x01, 0x1d) 0 0xfff00000 0x100000
++							/* CESA0: PHYS=0xf1100000 size 64K - used for CPU Idel WA */
++			  MBUS_ID(0x09, 0x19) 0 0xf1100000 0x10000
++							/* CESA1: PHYS=0xf1110000 - used for CPU Idel WA */
++			  MBUS_ID(0x09, 0x15) 0 0xf1110000 0x10000
++							/* nss window, 16M */
++			  MBUS_ID(NSS_TARGET_ID, NSS_REGS_ATTR)  0 0xf5000000 NSS_REGS_SIZE
++							/* mac_nic window, (nss internal window) 128M */
++			  MBUS_ID(NSS_TARGET_ID, NSS_SPACE_ATTR) 0 0xD0000000 NSS_SPACE_SIZE>;
+ 		internal-regs {
+ 			spi@10680 {
+ 				status = "okay";
+@@ -103,6 +110,20 @@
+ 				clock-frequency = <100000>;
+ 			};
+ 
++			mdio {
++				phy1: ethernet-phy@1 {
++					reg = <5>;
++				};
++
++				phy2: ethernet-phy@2 {
++					reg = <4>;
++				};
++
++				phy3: ethernet-phy@3 {
++					reg = <6>;
++				};
++			};
++
+ 			serial@12000 {
+ 				status = "okay";
+ 			};
+@@ -129,6 +150,60 @@
+ 			pinctrl-0 = <&smi_nss_pins>;
+ 			pinctrl-names="default";
+ 		};
++		nss_complex {
++			status = "okay";
++			pinctrl-0 = <&smi_nss_pins>;
++			pinctrl-names="default";
++		};
++
++		gop {
++			emac0: mac0 {
++				phy-mode = "rxaui";
++			};
++
++			emac1: mac1 {
++				phy = <&phy1>;
++				phy-mode = "sgmii";
++			};
++
++			emac2: mac2 {
++				phy = <&phy2>;
++				phy-mode = "sgmii";
++			};
++
++			emac3: mac3 {
++				phy = <&phy3>;
++				phy-mode = "sgmii";
++			};
++		};
++
++		pp3_platform {
++			status = "okay";
++
++			nic@0 {
++				status = "okay";
++				emac-data = <&emac0>;
++			};
++
++			nic@1 {
++				status = "okay";
++				emac-data = <&emac1>;
++			};
++
++			nic@2 {
++				status = "okay";
++				emac-data = <&emac2>;
++			};
++
++			nic@3 {
++				status = "okay";
++				emac-data = <&emac3>;
++			};
++
++			nss@0 {
++				status = "okay";
++			};
++		};
+ 
+ 		pcie-controller {
+ 			status = "okay";
+diff --git a/arch/arm/boot/dts/armada-390.dtsi b/arch/arm/boot/dts/armada-390.dtsi
+index df689a1..8158977 100644
+--- a/arch/arm/boot/dts/armada-390.dtsi
++++ b/arch/arm/boot/dts/armada-390.dtsi
+@@ -45,6 +45,7 @@
+  */
+ 
+ #include "armada-39x.dtsi"
++#include <dt-bindings/mvebu_nss/nss39x.h>
+ 
+ / {
+ 	compatible = "marvell,armada390";
+@@ -58,6 +59,87 @@
+ 					marvell,pins = "mpp4", "mpp5";
+ 					marvell,function = "smi";
+ 				};
++				rgmii_pins: rgmii_pins {
++					marvell,pins = "mpp21", "mpp27", "mpp28",
++							"mpp29", "mpp30", "mpp31",
++							"mpp32", "mpp37", "mpp38",
++							"mpp39", "mpp40", "mpp41";
++					marvell,function = "ge";
++				};
++			};
++			mdio {
++				#address-cells = <1>;
++				#size-cells = <0>;
++				compatible = "marvell,pp3-mdio";
++				smi_reg = <0x5000000>;
++			};
++		};
++
++		gop {
++			status = "disabled";
++			mg_base: mg_base {
++				gop-base = <0xf7000000>;
++				gop-size = <0x400000>;
++				mg-target-id = <0xb>;
++				mg-attr = <4>;
++				mg-remap-base = <0>;
++			};
++
++			emac0: mac0 {
++				interrupts = <GIC_SPI 49 IRQ_TYPE_LEVEL_HIGH>;  /* Link IRQ */
++				mac-address = [ 00 00 00 00 00 00 ];
++			};
++
++			emac1: mac1 {
++				interrupts = <GIC_SPI 50 IRQ_TYPE_LEVEL_HIGH>;  /* Link IRQ */
++				mac-address = [ 00 00 00 00 00 00 ];
++			};
++
++			emac2: mac2 {
++				interrupts = <GIC_SPI 51 IRQ_TYPE_LEVEL_HIGH>;  /* Link IRQ */
++				mac-address = [ 00 00 00 00 00 00 ];
++			};
++			emac3: mac3 {
++				interrupts = <GIC_SPI 52 IRQ_TYPE_LEVEL_HIGH>;  /* Link IRQ */
++				mac-address = [ 00 00 00 00 00 00 ];
++			};
++		};
++
++		pp3_platform {
++			compatible = "marvell,armada-390-pp3";
++			status = "disabled";
++			reg = <MBUS_ID(0xf0, 0x01) 0x70000 0x1000>,    /* A2M Master 0 */
++			      <MBUS_ID(0xf0, 0x01) 0x30000 0x1000>,    /* A2M Master 1 */
++			      <MBUS_ID(0xf0, 0x01) 0x18a00 0x1000>,    /* AMB registers */
++			      <MBUS_ID(NSS_TARGET_ID, NSS_REGS_ATTR)  0 NSS_REGS_SIZE>, /* NSS IP registers */
++			      <MBUS_ID(NSS_TARGET_ID, NSS_SPACE_ATTR) 0 NSS_SPACE_SIZE>; /* NSS IP space */
++			clock-frequency = <250000000>;
++			gop_access = <&mg_base>;
++			msi-parent = <&odmi>;
++
++			nic@0 {
++				status = "disabled";
++				id = <0>;
++			};
++
++			nic@1 {
++				status = "disabled";
++				id = <1>;
++			};
++
++			nic@2 {
++				status = "disabled";
++				id = <2>;
++			};
++
++			nic@3 {
++				status = "disabled";
++				id = <3>;
++			};
++
++			nss@0 {
++				status = "disabled";
++				id = <0>;
+ 			};
+ 		};
+ 	};
+diff --git a/arch/arm/boot/dts/armada-39x.dtsi b/arch/arm/boot/dts/armada-39x.dtsi
+index a40263a..02ba5a5 100644
+--- a/arch/arm/boot/dts/armada-39x.dtsi
++++ b/arch/arm/boot/dts/armada-39x.dtsi
+@@ -383,6 +383,18 @@
+ 				reg = <0x22000 0x1000>, <0x20280 0x4>;
+ 			};
+ 
++			odmi:odmi@0x19000{
++				compatible = "marvell,odmi-controller";
++				interrupt-controller;
++				msi-controller;
++				marvell,odmi-frames = <4>;
++				reg = <0x19000 0x100>,
++				      <0x1b000 0x100>,
++				      <0x1d000 0x100>,
++				      <0x1f000 0x100>;
++				marvell,spi-base = <128>, <136>, <144>, <152>;
++			};
++
+ 			xor@60800 {
+ 				compatible = "marvell,armada-380-xor", "marvell,orion-xor";
+ 				reg = <0x60800 0x100
+diff --git a/include/dt-bindings/mvebu_nss/nss39x.h b/include/dt-bindings/mvebu_nss/nss39x.h
+new file mode 100644
+index 0000000..95ca275
+--- /dev/null
++++ b/include/dt-bindings/mvebu_nss/nss39x.h
+@@ -0,0 +1,15 @@
++/*
++ * This header provides constants for NSS common values.
++ *
++ */
++
++#ifndef _DT_BINDINGS_MVEBU_NSS_H
++#define _DT_BINDINGS_MVEBU_NSS_H
++
++#define NSS_REGS_SIZE  0x1000000
++#define NSS_SPACE_SIZE 0x8000000
++#define NSS_TARGET_ID  0xC
++#define NSS_REGS_ATTR  0x4
++#define NSS_SPACE_ATTR 0x5
++
++#endif /* _DT_BINDINGS_MVEBU_NSS_H */
+-- 
+2.7.4
+

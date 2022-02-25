@@ -1,0 +1,35 @@
+From fdec5030744a3464fd845e52357b74db3ac4622f Mon Sep 17 00:00:00 2001
+From: Antoine Tenart <antoine.tenart@free-electrons.com>
+Date: Wed, 17 Jan 2018 10:32:47 +0100
+Subject: [PATCH 2177/2241] crypto: inside-secure: fix the extra cache
+ computation
+
+This patch fixes the extra cache computation when the queued data is a
+multiple of a block size. This fixes the hash support in some cases.
+
+Change-Id: I1901e57d6caf336ed6580fe5cae1a89775c87048
+Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
+Signed-off-by: Ofer Heifetz <oferh@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/49201
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+---
+ drivers/crypto/inside-secure/hash.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/crypto/inside-secure/hash.c b/drivers/crypto/inside-secure/hash.c
+index 94872d7..74097ae 100644
+--- a/drivers/crypto/inside-secure/hash.c
++++ b/drivers/crypto/inside-secure/hash.c
+@@ -219,7 +219,7 @@ static int safexcel_ahash_send_req(struct crypto_async_request *async, int ring,
+ 			/* If this is not the last request and the queued data
+ 			 * is a multiple of a block, cache the last one for now.
+ 			 */
+-			extra = queued - crypto_ahash_blocksize(ahash);
++			extra = crypto_ahash_blocksize(ahash);
+ 
+ 		if (extra) {
+ 			sg_pcopy_to_buffer(areq->src, sg_nents(areq->src),
+-- 
+2.7.4
+

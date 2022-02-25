@@ -1,0 +1,37 @@
+From 9166f1bbfe27f5976f56d7486ba398026a46498a Mon Sep 17 00:00:00 2001
+From: Antoine Tenart <antoine.tenart@free-electrons.com>
+Date: Wed, 17 Jan 2018 10:36:01 +0100
+Subject: [PATCH 2173/2241] crypto: inside-secure: fix the cache_len
+ computation
+
+This patch fixes the cache length computation as cache_len could end up
+being a negative value. The check between the queued size and the
+block size is updated to reflect the caching mechanism which can cache
+up to a full block size (included!).
+
+Change-Id: Ib4ae1bb4821966bb63c9b30930b0cb11ed3c2998
+Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
+Signed-off-by: Ofer Heifetz <oferh@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/49202
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/crypto/inside-secure/hash.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/crypto/inside-secure/hash.c b/drivers/crypto/inside-secure/hash.c
+index 2d6737c..8f0a9a2 100644
+--- a/drivers/crypto/inside-secure/hash.c
++++ b/drivers/crypto/inside-secure/hash.c
+@@ -204,7 +204,7 @@ static int safexcel_ahash_send_req(struct crypto_async_request *async, int ring,
+ 	int i, queued, len, cache_len, extra, n_cdesc = 0, ret = 0;
+ 
+ 	queued = len = req->len - req->processed;
+-	if (queued < crypto_ahash_blocksize(ahash))
++	if (queued <= crypto_ahash_blocksize(ahash))
+ 		cache_len = queued;
+ 	else
+ 		cache_len = queued - areq->nbytes;
+-- 
+2.7.4
+

@@ -1,0 +1,31 @@
+From 3748cb5eaab0c4c1c02b793dbf6001258c9ef1cf Mon Sep 17 00:00:00 2001
+From: Shlomi Gridish <sgridish@marvell.com>
+Date: Wed, 27 Sep 2017 23:15:59 +0300
+Subject: [PATCH 2015/2241] fix: pci: uio: update device name to match musdk
+ convention
+
+Change-Id: I1c64793434d9e3f601c3aa68c499d195372fce8d
+Signed-off-by: Shlomi Gridish <sgridish@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/44872
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+Tested-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/uio/uio_pci_ep.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/uio/uio_pci_ep.c b/drivers/uio/uio_pci_ep.c
+index 425edb9..cc4090c 100644
+--- a/drivers/uio/uio_pci_ep.c
++++ b/drivers/uio/uio_pci_ep.c
+@@ -70,7 +70,7 @@ static int uio_pci_ep_probe(struct platform_device *pdev)
+ 	uio_pci->dev = dev;
+ 
+ 	/* store private data */
+-	info->name = "uio-pci-ep";
++	info->name = "uio_pci_ep_0";
+ 	info->version = "1.0.0";
+ 
+ 	/* setup the PCI EP topology. This should eventually move to the PCI EP Function driver */
+-- 
+2.7.4
+

@@ -1,0 +1,58 @@
+From d1f79ae4ce64d4536b141593619795c0d34fa4b3 Mon Sep 17 00:00:00 2001
+From: Grzegorz Jaszczyk <jaz@semihalf.com>
+Date: Wed, 25 May 2016 14:03:21 +0200
+Subject: [PATCH 0458/2241] ARM: mvebu: a39x: enable rtc for all Armada-39x
+ SoCs
+
+Despite that FS states that rtc is present only in A395 and A398 and not in
+A390, the rtc is working with A390.
+
+Change-Id: I25684a8fd0fff50dadabe318d2755ced20c10d5e
+Signed-off-by: Grzegorz Jaszczyk <jaz@semihalf.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/30077
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Lior Amsalem <alior@marvell.com>
+---
+ arch/arm/boot/dts/armada-395.dtsi | 7 -------
+ arch/arm/boot/dts/armada-39x.dtsi | 7 +++++++
+ 2 files changed, 7 insertions(+), 7 deletions(-)
+
+diff --git a/arch/arm/boot/dts/armada-395.dtsi b/arch/arm/boot/dts/armada-395.dtsi
+index e0d9273..f0d9bc8 100644
+--- a/arch/arm/boot/dts/armada-395.dtsi
++++ b/arch/arm/boot/dts/armada-395.dtsi
+@@ -60,13 +60,6 @@
+ 				};
+ 			};
+ 
+-			rtc@a3800 {
+-				compatible = "marvell,armada-380-rtc";
+-				reg = <0xa3800 0x20>, <0x184a0 0x0c>;
+-				reg-names = "rtc", "rtc-soc";
+-				interrupts = <GIC_SPI 21 IRQ_TYPE_LEVEL_HIGH>;
+-			};
+-
+ 			sata@a8000 {
+ 				compatible = "marvell,armada-380-ahci";
+ 				reg = <0xa8000 0x2000>;
+diff --git a/arch/arm/boot/dts/armada-39x.dtsi b/arch/arm/boot/dts/armada-39x.dtsi
+index cb3e0b0..5f83f7f 100644
+--- a/arch/arm/boot/dts/armada-39x.dtsi
++++ b/arch/arm/boot/dts/armada-39x.dtsi
+@@ -127,6 +127,13 @@
+ 				prefetch-data = <1>;
+ 			};
+ 
++			rtc@a3800 {
++				compatible = "marvell,armada-380-rtc";
++				reg = <0xa3800 0x20>, <0x184a0 0x0c>;
++				reg-names = "rtc", "rtc-soc";
++				interrupts = <GIC_SPI 21 IRQ_TYPE_LEVEL_HIGH>;
++			};
++
+ 			scu@c000 {
+ 				compatible = "arm,cortex-a9-scu";
+ 				reg = <0xc000 0x100>;
+-- 
+2.7.4
+

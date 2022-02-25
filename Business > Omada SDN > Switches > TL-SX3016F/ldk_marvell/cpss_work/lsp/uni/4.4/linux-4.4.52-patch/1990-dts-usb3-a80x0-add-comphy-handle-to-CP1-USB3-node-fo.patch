@@ -1,0 +1,39 @@
+From 42bd28f0b4c42d5a7bb118bfa1837a80db806e2d Mon Sep 17 00:00:00 2001
+From: David Sniatkiwicz <davidsn@marvell.com>
+Date: Sun, 10 Sep 2017 10:43:57 +0300
+Subject: [PATCH 1990/2241] dts: usb3: a80x0: add comphy handle to CP1 USB3
+ node for configuration B
+
+Change-Id: I33015e976d32ca5de6372771a3e1351f3a9a6abc
+Signed-off-by: David Sniatkiwicz <davidsn@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/44026
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Nadav Haklai <nadavh@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-8040-db-B.dts | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-8040-db-B.dts b/arch/arm64/boot/dts/marvell/armada-8040-db-B.dts
+index a64f17f..15ecac7 100644
+--- a/arch/arm64/boot/dts/marvell/armada-8040-db-B.dts
++++ b/arch/arm64/boot/dts/marvell/armada-8040-db-B.dts
+@@ -158,11 +158,12 @@
+ 	};
+ 	cpn-110-slave {
+ 		config-space {
+-			/* usb3h0_1 is USB2 only (UTMI) */
+ 			usb3h0_1: usb3@500000 {
++				separated-phys-for-usb2-usb3;
++				phys = <&utmi0_1>,
++				       <&comphy1 1 COMPHY_USB3H0>;
++				phy-names = "usb2", "usb3";
+ 				status = "okay";
+-				phys = <&utmi0_1>;
+-				phy-names = "usb";
+ 			};
+ 			serial@702000 {
+ 				status = "okay";
+-- 
+2.7.4
+

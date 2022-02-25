@@ -1,0 +1,62 @@
+From 16c1a15c0a7ee8e926506a2e6f874a906005d0b6 Mon Sep 17 00:00:00 2001
+From: Evan Wang <xswang@marvell.com>
+Date: Fri, 19 May 2017 12:29:45 +0800
+Subject: [PATCH 1636/2241] fix: mvebu: mmc: add vqmmc regulator for community
+ board
+
+On A3700 community board, the vqmmc regulator is missed
+in DTB file, which leads the initial vqmmc is not correct,
+and causes the SD card can not be recognized.
+
+The patch added the vqmmc regulator node in community DTB.
+
+JIRA number: A3700-1182
+
+Change-Id: I56bf708e9c84d39a7ef2655c017efdc9f41ad270
+Signed-off-by: Evan Wang <xswang@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/39682
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Victor Gu <xigu@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/39697
+---
+ arch/arm64/boot/dts/marvell/armada-3720-community.dts | 17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-3720-community.dts b/arch/arm64/boot/dts/marvell/armada-3720-community.dts
+index 8035255..bad9a5e 100644
+--- a/arch/arm64/boot/dts/marvell/armada-3720-community.dts
++++ b/arch/arm64/boot/dts/marvell/armada-3720-community.dts
+@@ -149,6 +149,7 @@
+ 				bus-width = <4>;
+ 				cd-gpios = <&gpio_nb 3 GPIO_ACTIVE_LOW>;
+ 				no-1-8-v;
++				vqmmc-supply = <&vcc_sd_reg1>;
+ 				marvell,pad-type = "sd";
+ 				status = "okay";
+ 
+@@ -160,6 +161,22 @@
+ 				phys = <&a3700_comphy 2 COMPHY_SATA0>;
+ 				status = "okay";
+ 			};
++
++			vcc_sd_reg1: regulator@0 {
++				compatible = "regulator-gpio";
++				regulator-name = "vcc_sd1";
++				regulator-min-microvolt = <1800000>;
++				regulator-max-microvolt = <3300000>;
++				regulator-boot-on;
++
++				gpios = <&gpio_nb 4 GPIO_ACTIVE_HIGH>;
++				gpios-states = <0>;
++				states = <1800000 0x1
++					  3300000 0x0>;
++
++				enable-active-high;
++			};
++
+ 			eip97: eip97@90000 {
+ 				status = "okay";
+ 			};
+-- 
+2.7.4
+

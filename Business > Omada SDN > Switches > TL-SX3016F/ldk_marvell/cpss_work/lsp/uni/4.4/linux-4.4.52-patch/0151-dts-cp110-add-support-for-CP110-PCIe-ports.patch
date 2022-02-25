@@ -1,0 +1,144 @@
+From f4baffdec46ff7673349298cf8ab6d53f669dfa4 Mon Sep 17 00:00:00 2001
+From: Yehuda Yitschak <yehuday@marvell.com>
+Date: Sun, 21 Feb 2016 16:35:43 +0200
+Subject: [PATCH 0151/2241] dts: cp110: add support for CP110 PCIe ports
+
+- Add nodes for all 3 PCIe ports
+- Enable the relevant ones in the specific board setup DTS file
+- Enable Armada-8k PCIe in LSP defconfig
+
+Change-Id: I3e85409105963a768a67e4eb1dee7756e3ac81a0
+Signed-off-by: Yehuda Yitschak <yehuday@marvell.com>
+---
+ .../boot/dts/marvell/armada-7040-rz-db-nand.dts    |  6 ++
+ .../boot/dts/marvell/armada-7040-rz-db-router.dts  |  3 +
+ .../boot/dts/marvell/armada-cp110-master.dtsi      | 71 ++++++++++++++++++++++
+ arch/arm64/configs/mvebu_v8_lsp_defconfig          |  2 +-
+ 4 files changed, 81 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-7040-rz-db-nand.dts b/arch/arm64/boot/dts/marvell/armada-7040-rz-db-nand.dts
+index 29d8222..37f192a 100644
+--- a/arch/arm64/boot/dts/marvell/armada-7040-rz-db-nand.dts
++++ b/arch/arm64/boot/dts/marvell/armada-7040-rz-db-nand.dts
+@@ -67,5 +67,11 @@
+ 				status = "okay";
+ 			};
+ 		};
++		pcie@0x600000 {
++			status = "okay";
++		};
++		pcie@0x640000 {
++			status = "okay";
++		};
+ 	};
+ };
+diff --git a/arch/arm64/boot/dts/marvell/armada-7040-rz-db-router.dts b/arch/arm64/boot/dts/marvell/armada-7040-rz-db-router.dts
+index c8d819e..749fd02 100644
+--- a/arch/arm64/boot/dts/marvell/armada-7040-rz-db-router.dts
++++ b/arch/arm64/boot/dts/marvell/armada-7040-rz-db-router.dts
+@@ -70,5 +70,8 @@
+ 				status = "okay";
+ 			};
+ 		};
++		pcie@0x640000 {
++			status = "okay";
++		};
+ 	};
+ };
+diff --git a/arch/arm64/boot/dts/marvell/armada-cp110-master.dtsi b/arch/arm64/boot/dts/marvell/armada-cp110-master.dtsi
+index 2fa87eed..ffa777e 100644
+--- a/arch/arm64/boot/dts/marvell/armada-cp110-master.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-cp110-master.dtsi
+@@ -33,5 +33,76 @@
+ 
+ 			#include "armada-cp110.dtsi"
+ 		};
++
++		/* PCIe ports have unique addressing so they do not
++		 * come from the common CP110 dtsi
++		 */
++		pcie@0x600000 {
++			compatible = "marvell,armada8k-pcie", "snps,dw-pcie";
++			reg = <0 0xf2600000 0 0x10000>, <0 0xf6f00000 0 0x80000>;	/* Last 512KB of mem space */
++			reg-names = "ctrl", "config";
++			#address-cells = <3>;
++			#size-cells = <2>;
++			#interrupt-cells = <1>;
++			device_type = "pci";
++			/* msi-parent = <&gic_v2m1>; */
++			dma-coherent;
++
++			bus-range = <0 0xff>;
++			ranges = <0x81000000 0 0xf9000000 0  0xf9000000 0 0x10000	/* downstream I/O */
++				  0x82000000 0 0xf6000000 0  0xf6000000 0 0xf00000>;	/* non-prefetchable memory */
++			interrupt-map-mask = <0 0 0 0>;
++			interrupt-map = <0 0 0 0 &gic 0 GIC_SPI 32 IRQ_TYPE_LEVEL_HIGH>;
++			interrupts = <GIC_SPI 32 IRQ_TYPE_LEVEL_HIGH>;
++			num-lanes = <1>;
++			clocks = <&gateclk 14>, <&gateclk 13>;
++			status = "disabled";
++		};
++
++		pcie@0x620000 {
++			compatible = "marvell,armada8k-pcie", "snps,dw-pcie";
++			reg = <0 0xf2620000 0 0x10000>, <0 0xf7f00000 0 0x80000>;	/* Last 512KB of mem space */
++			reg-names = "ctrl", "config";
++			#address-cells = <3>;
++			#size-cells = <2>;
++			#interrupt-cells = <1>;
++			device_type = "pci";
++			/* msi-parent = <&gic_v2m1>; */
++			dma-coherent;
++
++			bus-range = <0 0xff>;
++			ranges = <0x81000000 0 0xf9010000 0  0xf9010000 0 0x10000	/* downstream I/O */
++				  0x82000000 0 0xf7000000 0  0xf7000000 0 0xf00000>;	/* non-prefetchable memory */
++			interrupt-map-mask = <0 0 0 0>;
++			interrupt-map = <0 0 0 0 &gic 0 GIC_SPI 34 IRQ_TYPE_LEVEL_HIGH>;
++			interrupts = <GIC_SPI 34 IRQ_TYPE_LEVEL_HIGH>;
++
++			num-lanes = <1>;
++			clocks = <&gateclk 14>, <&gateclk 11>;
++			status = "disabled";
++		};
++
++		pcie@0x640000 {
++			compatible = "marvell,armada8k-pcie", "snps,dw-pcie";
++			reg = <0 0xf2640000 0 0x10000>, <0 0xf8f00000 0 0x80000>;	/* Last 64KB of mem space */
++			reg-names = "ctrl", "config";
++			#address-cells = <3>;
++			#size-cells = <2>;
++			#interrupt-cells = <1>;
++			device_type = "pci";
++			/* msi-parent = <&gic_v2m2>; */
++			dma-coherent;
++
++			bus-range = <0 0xff>;
++			ranges = <0x81000000 0 0xf9020000 0  0xf9020000 0 0x10000	/* downstream I/O */
++				  0x82000000 0 0xf8000000 0  0xf8000000 0 0xf00000>;	/* non-prefetchable memory */
++			interrupt-map-mask = <0 0 0 0>;
++			interrupt-map = <0 0 0 0 &gic 0 GIC_SPI 33 IRQ_TYPE_LEVEL_HIGH>;
++			interrupts = <GIC_SPI 33 IRQ_TYPE_LEVEL_HIGH>;
++
++			num-lanes = <1>;
++			clocks = <&gateclk 14>, <&gateclk 12>;
++			status = "disabled";
++		};
+ 	};
+ };
+diff --git a/arch/arm64/configs/mvebu_v8_lsp_defconfig b/arch/arm64/configs/mvebu_v8_lsp_defconfig
+index 312b371..f34b41f 100644
+--- a/arch/arm64/configs/mvebu_v8_lsp_defconfig
++++ b/arch/arm64/configs/mvebu_v8_lsp_defconfig
+@@ -35,7 +35,7 @@ CONFIG_PCI=y
+ CONFIG_PCI_MSI=y
+ CONFIG_PCI_HOST_GENERIC=y
+ CONFIG_PCIE_IPROC=y
+-CONFIG_PCIEPORTBUS=y
++CONFIG_PCIE_ARMADA_8K=y
+ CONFIG_SCHED_MC=y
+ CONFIG_PREEMPT=y
+ CONFIG_KSM=y
+-- 
+2.7.4
+

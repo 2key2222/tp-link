@@ -1,0 +1,55 @@
+From 509144ca1c497fff9d430e073089b624c8e8205c Mon Sep 17 00:00:00 2001
+From: Chih-Min Chao <cmchao@marvell.com>
+Date: Mon, 28 Aug 2017 17:21:27 +0800
+Subject: [PATCH 1950/2241] fix: dt: bindings: add 'armada-' prefix to ap806
+
+sync the bindings values with dts and there should be "armada-" prefix
+for 'ap806'
+
+   ap806      -> armada-ap806
+   ap806-dual -> armada-ap806-dual
+   ap806-quad -> armada-ap806-quad
+
+Change-Id: I9ab093c68d7e4283badfe3f40129f323cacdaf70
+Signed-off-by: Chih-Min Chao <cmchao@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/43449
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ Documentation/devicetree/bindings/arm/marvell/armada-7k-8k.txt | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/arm/marvell/armada-7k-8k.txt b/Documentation/devicetree/bindings/arm/marvell/armada-7k-8k.txt
+index f03b849..6f24985 100644
+--- a/Documentation/devicetree/bindings/arm/marvell/armada-7k-8k.txt
++++ b/Documentation/devicetree/bindings/arm/marvell/armada-7k-8k.txt
+@@ -7,16 +7,16 @@ the following root node property:
+  - compatible, with one of the following values:
+ 
+ SoC:
+-   - "marvell,armada7020", "marvell,ap806-dual", "marvell,ap806"
++   - "marvell,armada7020", "marvell,armada-ap806-dual", "marvell,armada-ap806"
+       when the SoC being used is the Armada 7020
+ 
+-   - "marvell,armada7040", "marvell,ap806-quad", "marvell,ap806"
++   - "marvell,armada7040", "marvell,armada-ap806-quad", "marvell,armada-ap806"
+       when the SoC being used is the Armada 7040
+ 
+-   - "marvell,armada8020", "marvell,ap806-dual", "marvell,ap806"
++   - "marvell,armada8020", "marvell,armada-ap806-dual", "marvell,armada-ap806"
+       when the SoC being used is the Armada 8020
+ 
+-   - "marvell,armada8040", "marvell,ap806-quad", "marvell,ap806"
++   - "marvell,armada8040", "marvell,armada-ap806-quad", "marvell,armada-ap806"
+       when the SoC being used is the Armada 8040
+ 
+ Boards:
+@@ -77,4 +77,4 @@ Boards:
+ Example:
+ 
+ compatible = "marvell,armada7040-db-router", "marvell,armada7040-db-nand", "marvell,armada7040-db-all-pcie", "marvell,armada7040-pd",
+-	     "marvell,armada7040-db", "marvell,armada7040", "marvell,ap806-quad", "marvell,ap806";
++	     "marvell,armada7040-db", "marvell,armada7040", "marvell,armada-ap806-quad", "marvell,armada-ap806";
+-- 
+2.7.4
+

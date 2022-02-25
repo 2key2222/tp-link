@@ -1,0 +1,72 @@
+From 2b195c94ee7f04c5e7fa1f358626e69c40e16e1b Mon Sep 17 00:00:00 2001
+From: Konstantin Porotchkin <kostap@marvell.com>
+Date: Mon, 22 May 2017 15:01:19 +0300
+Subject: [PATCH 1804/2241] mmc: sdhci-xenon: Fix the default value of
+ LOGIC_TIMING_ADJUST register in eMMC 5.0 PHY
+
+The default value of LOGIC_TIMING_ADJUST register in eMMC 5.0 PHY
+is different from that in eMMC 5.1 PHY.
+Set the specific value for that register in eMMC 5.0 PHY.
+
+Change-Id: Ia39fd194ed327f5cff8a2292384b4d05ee1ac731
+Signed-off-by: Hu Ziji <huziji@marvell.com>
+Reported-by: Jisheng Zhang <jszhang@marvell.com>
+Tested-by: Jisheng Zhang <jszhang@marvell.com>
+Acked-by: Adrian Hunter <adrian.hunter@intel.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/39802
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+---
+ drivers/mmc/host/sdhci-xenon-phy.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/mmc/host/sdhci-xenon-phy.c b/drivers/mmc/host/sdhci-xenon-phy.c
+index bec77f5..93ee5ad 100644
+--- a/drivers/mmc/host/sdhci-xenon-phy.c
++++ b/drivers/mmc/host/sdhci-xenon-phy.c
+@@ -108,6 +108,7 @@
+ 
+ #define XENON_EMMC_5_0_PHY_LOGIC_TIMING_ADJUST	\
+ 	(XENON_EMMC_5_0_PHY_REG_BASE + 0x14)
++#define XENON_EMMC_5_0_PHY_LOGIC_TIMING_VALUE	0x5A54
+ #define XENON_EMMC_PHY_LOGIC_TIMING_ADJUST	(XENON_EMMC_PHY_REG_BASE + 0x18)
+ #define XENON_LOGIC_TIMING_VALUE		0x00AA8977
+ 
+@@ -130,6 +131,8 @@ struct xenon_emmc_phy_regs {
+ 	u16 logic_timing_adj;
+ 	/* DLL Update Enable bit */
+ 	u32 dll_update;
++	/* value in Logic Timing Adjustment register */
++	u32 logic_timing_val;
+ };
+ 
+ static const char * const phy_types[] = {
+@@ -166,6 +169,7 @@ static struct xenon_emmc_phy_regs xenon_emmc_5_0_phy_regs = {
+ 	.dll_ctrl	= XENON_EMMC_5_0_PHY_DLL_CONTROL,
+ 	.logic_timing_adj = XENON_EMMC_5_0_PHY_LOGIC_TIMING_ADJUST,
+ 	.dll_update	= XENON_DLL_UPDATE_STROBE_5_0,
++	.logic_timing_val = XENON_EMMC_5_0_PHY_LOGIC_TIMING_VALUE,
+ };
+ 
+ static struct xenon_emmc_phy_regs xenon_emmc_5_1_phy_regs = {
+@@ -176,6 +180,7 @@ static struct xenon_emmc_phy_regs xenon_emmc_5_1_phy_regs = {
+ 	.dll_ctrl	= XENON_EMMC_PHY_DLL_CONTROL,
+ 	.logic_timing_adj = XENON_EMMC_PHY_LOGIC_TIMING_ADJUST,
+ 	.dll_update	= XENON_DLL_UPDATE,
++	.logic_timing_val = XENON_LOGIC_TIMING_VALUE,
+ };
+ 
+ /*
+@@ -607,7 +612,7 @@ static void xenon_emmc_phy_set(struct sdhci_host *host,
+ 
+ 	if (timing == MMC_TIMING_MMC_HS400)
+ 		/* Hardware team recommend a value for HS400 */
+-		sdhci_writel(host, XENON_LOGIC_TIMING_VALUE,
++		sdhci_writel(host, phy_regs->logic_timing_val,
+ 			     phy_regs->logic_timing_adj);
+ 	else
+ 		xenon_emmc_phy_disable_data_strobe(host);
+-- 
+2.7.4
+

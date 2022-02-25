@@ -1,0 +1,158 @@
+From 9fa3a515998759a6cc30644df632124d55604374 Mon Sep 17 00:00:00 2001
+From: Andrew Lunn <andrew@lunn.ch>
+Date: Wed, 13 Apr 2016 02:40:39 +0200
+Subject: [PATCH 0788/2241] net: dsa: Pass the dsa device to the switch drivers
+
+Upstream-commit: bbb8d793994c894eef2a48a35fac6de3c6b4fa93
+
+By passing a device structure to the switch devices, it allows them
+to use devm_* methods for resource management.
+
+Signed-off-by: Andrew Lunn <andrew@lunn.ch>
+Acked-by: Florian Fainelli <f.fainelli@gmail.com>
+Tested-by: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+---
+ drivers/net/dsa/bcm_sf2.c   | 3 ++-
+ drivers/net/dsa/mv88e6060.c | 3 ++-
+ drivers/net/dsa/mv88e6123.c | 3 ++-
+ drivers/net/dsa/mv88e6131.c | 3 ++-
+ drivers/net/dsa/mv88e6171.c | 3 ++-
+ drivers/net/dsa/mv88e6352.c | 3 ++-
+ include/net/dsa.h           | 3 ++-
+ net/dsa/dsa.c               | 7 ++++---
+ 8 files changed, 18 insertions(+), 10 deletions(-)
+
+diff --git a/drivers/net/dsa/bcm_sf2.c b/drivers/net/dsa/bcm_sf2.c
+index 6160420..f03b4b5 100644
+--- a/drivers/net/dsa/bcm_sf2.c
++++ b/drivers/net/dsa/bcm_sf2.c
+@@ -135,7 +135,8 @@ static int bcm_sf2_sw_get_sset_count(struct dsa_switch *ds)
+ 	return BCM_SF2_STATS_SIZE;
+ }
+ 
+-static char *bcm_sf2_sw_probe(struct device *host_dev, int sw_addr)
++static char *bcm_sf2_sw_probe(struct device *dsa_dev, struct device *host_dev,
++			      int sw_addr)
+ {
+ 	return "Broadcom Starfighter 2";
+ }
+diff --git a/drivers/net/dsa/mv88e6060.c b/drivers/net/dsa/mv88e6060.c
+index 0527f48..34d0f9f 100644
+--- a/drivers/net/dsa/mv88e6060.c
++++ b/drivers/net/dsa/mv88e6060.c
+@@ -57,7 +57,8 @@ static int reg_write(struct dsa_switch *ds, int addr, int reg, u16 val)
+ 			return __ret;				\
+ 	})
+ 
+-static char *mv88e6060_probe(struct device *host_dev, int sw_addr)
++static char *mv88e6060_probe(struct device *dsa_dev, struct device *host_dev,
++			     int sw_addr)
+ {
+ 	struct mii_bus *bus = dsa_host_dev_to_mii_bus(host_dev);
+ 	int ret;
+diff --git a/drivers/net/dsa/mv88e6123.c b/drivers/net/dsa/mv88e6123.c
+index 69a6f79..ede4c6f 100644
+--- a/drivers/net/dsa/mv88e6123.c
++++ b/drivers/net/dsa/mv88e6123.c
+@@ -29,7 +29,8 @@ static const struct mv88e6xxx_switch_id mv88e6123_table[] = {
+ 	{ PORT_SWITCH_ID_6165_A2, "Marvell 88e6165 (A2)" },
+ };
+ 
+-static char *mv88e6123_probe(struct device *host_dev, int sw_addr)
++static char *mv88e6123_probe(struct device *dsa_dev, struct device *host_dev,
++			     int sw_addr)
+ {
+ 	return mv88e6xxx_lookup_name(host_dev, sw_addr, mv88e6123_table,
+ 				     ARRAY_SIZE(mv88e6123_table));
+diff --git a/drivers/net/dsa/mv88e6131.c b/drivers/net/dsa/mv88e6131.c
+index 2407028..bfadfd2 100644
+--- a/drivers/net/dsa/mv88e6131.c
++++ b/drivers/net/dsa/mv88e6131.c
+@@ -25,7 +25,8 @@ static const struct mv88e6xxx_switch_id mv88e6131_table[] = {
+ 	{ PORT_SWITCH_ID_6185, "Marvell 88E6185" },
+ };
+ 
+-static char *mv88e6131_probe(struct device *host_dev, int sw_addr)
++static char *mv88e6131_probe(struct device *dsa_dev, struct device *host_dev,
++			     int sw_addr)
+ {
+ 	return mv88e6xxx_lookup_name(host_dev, sw_addr, mv88e6131_table,
+ 				     ARRAY_SIZE(mv88e6131_table));
+diff --git a/drivers/net/dsa/mv88e6171.c b/drivers/net/dsa/mv88e6171.c
+index 0e62f3b..fb35d3a 100644
+--- a/drivers/net/dsa/mv88e6171.c
++++ b/drivers/net/dsa/mv88e6171.c
+@@ -24,7 +24,8 @@ static const struct mv88e6xxx_switch_id mv88e6171_table[] = {
+ 	{ PORT_SWITCH_ID_6351, "Marvell 88E6351" },
+ };
+ 
+-static char *mv88e6171_probe(struct device *host_dev, int sw_addr)
++static char *mv88e6171_probe(struct device *dsa_dev, struct device *host_dev,
++			     int sw_addr)
+ {
+ 	return mv88e6xxx_lookup_name(host_dev, sw_addr, mv88e6171_table,
+ 				     ARRAY_SIZE(mv88e6171_table));
+diff --git a/drivers/net/dsa/mv88e6352.c b/drivers/net/dsa/mv88e6352.c
+index 7f452e4..577ab2c 100644
+--- a/drivers/net/dsa/mv88e6352.c
++++ b/drivers/net/dsa/mv88e6352.c
+@@ -37,7 +37,8 @@ static const struct mv88e6xxx_switch_id mv88e6352_table[] = {
+ 	{ PORT_SWITCH_ID_6352_A1, "Marvell 88E6352 (A1)" },
+ };
+ 
+-static char *mv88e6352_probe(struct device *host_dev, int sw_addr)
++static char *mv88e6352_probe(struct device *dsa_dev, struct device *host_dev,
++			     int sw_addr)
+ {
+ 	return mv88e6xxx_lookup_name(host_dev, sw_addr, mv88e6352_table,
+ 				     ARRAY_SIZE(mv88e6352_table));
+diff --git a/include/net/dsa.h b/include/net/dsa.h
+index 18d1be3..0f9f6f3 100644
+--- a/include/net/dsa.h
++++ b/include/net/dsa.h
+@@ -212,7 +212,8 @@ struct dsa_switch_driver {
+ 	/*
+ 	 * Probing and setup.
+ 	 */
+-	char	*(*probe)(struct device *host_dev, int sw_addr);
++	char	*(*probe)(struct device *dsa_dev, struct device *host_dev,
++			  int sw_addr);
+ 	int	(*setup)(struct dsa_switch *ds);
+ 	int	(*set_addr)(struct dsa_switch *ds, u8 *addr);
+ 	u32	(*get_phy_flags)(struct dsa_switch *ds, int port);
+diff --git a/net/dsa/dsa.c b/net/dsa/dsa.c
+index c28c474..c062753 100644
+--- a/net/dsa/dsa.c
++++ b/net/dsa/dsa.c
+@@ -51,7 +51,8 @@ void unregister_switch_driver(struct dsa_switch_driver *drv)
+ EXPORT_SYMBOL_GPL(unregister_switch_driver);
+ 
+ static struct dsa_switch_driver *
+-dsa_switch_probe(struct device *host_dev, int sw_addr, char **_name)
++dsa_switch_probe(struct device *parent, struct device *host_dev, int sw_addr,
++		 char **_name)
+ {
+ 	struct dsa_switch_driver *ret;
+ 	struct list_head *list;
+@@ -66,7 +67,7 @@ dsa_switch_probe(struct device *host_dev, int sw_addr, char **_name)
+ 
+ 		drv = list_entry(list, struct dsa_switch_driver, list);
+ 
+-		name = drv->probe(host_dev, sw_addr);
++		name = drv->probe(parent, host_dev, sw_addr);
+ 		if (name != NULL) {
+ 			ret = drv;
+ 			break;
+@@ -387,7 +388,7 @@ dsa_switch_setup(struct dsa_switch_tree *dst, int index,
+ 	/*
+ 	 * Probe for switch model.
+ 	 */
+-	drv = dsa_switch_probe(host_dev, pd->sw_addr, &name);
++	drv = dsa_switch_probe(parent, host_dev, pd->sw_addr, &name);
+ 	if (drv == NULL) {
+ 		netdev_err(dst->master_netdev, "[%d]: could not detect attached switch\n",
+ 			   index);
+-- 
+2.7.4
+

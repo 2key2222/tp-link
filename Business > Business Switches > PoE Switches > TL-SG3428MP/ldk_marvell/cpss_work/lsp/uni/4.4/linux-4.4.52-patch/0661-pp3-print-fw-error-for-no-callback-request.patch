@@ -1,0 +1,37 @@
+From bf95d63b6d829d41af2882eb8ae68a9589718582 Mon Sep 17 00:00:00 2001
+From: Yan Markman <ymarkman@marvell.com>
+Date: Sun, 14 Aug 2016 15:40:54 +0300
+Subject: [PATCH 0661/2241] pp3: print fw error for no-callback request
+
+The explicit debug error trace required for FW-messages
+without own call-back handler.
+Print error directly in drv_messenger for that case
+
+Change-Id: I4b7ae038f483dc63c1c99447f96bf52a9ab716e2
+Signed-off-by: Yan Markman <ymarkman@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/31916
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Yelena Krivosheev <yelena@marvell.com>
+Reviewed-by: Dmitri Epshtein <dima@marvell.com>
+---
+ drivers/net/ethernet/marvell/pp3/msg/mv_pp3_msg_drv.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/drivers/net/ethernet/marvell/pp3/msg/mv_pp3_msg_drv.c b/drivers/net/ethernet/marvell/pp3/msg/mv_pp3_msg_drv.c
+index f14b851..39af53b 100644
+--- a/drivers/net/ethernet/marvell/pp3/msg/mv_pp3_msg_drv.c
++++ b/drivers/net/ethernet/marvell/pp3/msg/mv_pp3_msg_drv.c
+@@ -257,6 +257,10 @@ static void pp3_chan_callback(int chan, void *msg, int size, int seq_num, int fl
+ 		p->num_ok = num_ok;
+ 		p->size_of_reply = size;
+ 		msg_info->msg_cb((void *)msg_info->p1);
++	} else if (ret_code) {
++		pr_info("FW no-callback-request opcode=%d N%d/%d FAILED with ret=%d\n",
++			msg_opcode, seq_num, msg_info->seq_num, ret_code);
+ 	}
++
+ 	mv_pp3_drv_request_delete(seq_num);
+ }
+-- 
+2.7.4
+

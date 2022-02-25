@@ -1,0 +1,251 @@
+From d89467ba123bb103e616449774da22e96c0877a8 Mon Sep 17 00:00:00 2001
+From: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+Date: Fri, 12 Feb 2016 12:09:39 -0500
+Subject: [PATCH 0749/2241] net: dsa: pass bridge down to drivers
+
+Upstream-commit: a6692754d61a6b3735803783f394880805675f99
+
+Some DSA drivers may or may not support multiple software bridges on top
+of an hardware switch.
+
+It is more convenient for them to access the bridge's net_device for
+finer configuration.
+
+Removing the need to craft and access a bitmask also simplifies the
+code.
+
+This patch changes the signature of bridge related functions, update DSA
+drivers, and removes dsa_slave_br_port_mask.
+
+Signed-off-by: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+Tested-by: Florian Fainelli <f.fainelli@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+---
+ Documentation/networking/dsa/dsa.txt |  7 ++-----
+ drivers/net/dsa/bcm_sf2.c            | 12 +++++++-----
+ drivers/net/dsa/bcm_sf2.h            |  2 ++
+ drivers/net/dsa/mv88e6xxx.c          | 13 +++++++++++--
+ drivers/net/dsa/mv88e6xxx.h          |  6 ++++--
+ include/net/dsa.h                    |  5 ++---
+ net/dsa/slave.c                      | 31 ++-----------------------------
+ 7 files changed, 30 insertions(+), 46 deletions(-)
+
+diff --git a/Documentation/networking/dsa/dsa.txt b/Documentation/networking/dsa/dsa.txt
+index aa9c1f9..ebf2153 100644
+--- a/Documentation/networking/dsa/dsa.txt
++++ b/Documentation/networking/dsa/dsa.txt
+@@ -524,17 +524,14 @@ Bridge layer
+ - port_join_bridge: bridge layer function invoked when a given switch port is
+   added to a bridge, this function should be doing the necessary at the switch
+   level to permit the joining port from being added to the relevant logical
+-  domain for it to ingress/egress traffic with other members of the bridge. DSA
+-  does nothing but calculate a bitmask of switch ports currently members of the
+-  specified bridge being requested the join
++  domain for it to ingress/egress traffic with other members of the bridge.
+ 
+ - port_leave_bridge: bridge layer function invoked when a given switch port is
+   removed from a bridge, this function should be doing the necessary at the
+   switch level to deny the leaving port from ingress/egress traffic from the
+   remaining bridge members. When the port leaves the bridge, it should be aged
+   out at the switch hardware for the switch to (re) learn MAC addresses behind
+-  this port. DSA calculates the bitmask of ports still members of the bridge
+-  being left
++  this port.
+ 
+ - port_stp_update: bridge layer function invoked when a given switch port STP
+   state is computed by the bridge layer and should be propagated to switch
+diff --git a/drivers/net/dsa/bcm_sf2.c b/drivers/net/dsa/bcm_sf2.c
+index 0864f05..5024180 100644
+--- a/drivers/net/dsa/bcm_sf2.c
++++ b/drivers/net/dsa/bcm_sf2.c
+@@ -483,16 +483,17 @@ static int bcm_sf2_sw_fast_age_port(struct dsa_switch  *ds, int port)
+ }
+ 
+ static int bcm_sf2_sw_br_join(struct dsa_switch *ds, int port,
+-			      u32 br_port_mask)
++			      struct net_device *bridge)
+ {
+ 	struct bcm_sf2_priv *priv = ds_to_priv(ds);
+ 	unsigned int i;
+ 	u32 reg, p_ctl;
+ 
++	priv->port_sts[port].bridge_dev = bridge;
+ 	p_ctl = core_readl(priv, CORE_PORT_VLAN_CTL_PORT(port));
+ 
+ 	for (i = 0; i < priv->hw_params.num_ports; i++) {
+-		if (!((1 << i) & br_port_mask))
++		if (priv->port_sts[i].bridge_dev != bridge)
+ 			continue;
+ 
+ 		/* Add this local port to the remote port VLAN control
+@@ -515,10 +516,10 @@ static int bcm_sf2_sw_br_join(struct dsa_switch *ds, int port,
+ 	return 0;
+ }
+ 
+-static int bcm_sf2_sw_br_leave(struct dsa_switch *ds, int port,
+-			       u32 br_port_mask)
++static int bcm_sf2_sw_br_leave(struct dsa_switch *ds, int port)
+ {
+ 	struct bcm_sf2_priv *priv = ds_to_priv(ds);
++	struct net_device *bridge = priv->port_sts[port].bridge_dev;
+ 	unsigned int i;
+ 	u32 reg, p_ctl;
+ 
+@@ -526,7 +527,7 @@ static int bcm_sf2_sw_br_leave(struct dsa_switch *ds, int port,
+ 
+ 	for (i = 0; i < priv->hw_params.num_ports; i++) {
+ 		/* Don't touch the remaining ports */
+-		if (!((1 << i) & br_port_mask))
++		if (priv->port_sts[i].bridge_dev != bridge)
+ 			continue;
+ 
+ 		reg = core_readl(priv, CORE_PORT_VLAN_CTL_PORT(i));
+@@ -541,6 +542,7 @@ static int bcm_sf2_sw_br_leave(struct dsa_switch *ds, int port,
+ 
+ 	core_writel(priv, p_ctl, CORE_PORT_VLAN_CTL_PORT(port));
+ 	priv->port_sts[port].vlan_ctl_mask = p_ctl;
++	priv->port_sts[port].bridge_dev = NULL;
+ 
+ 	return 0;
+ }
+diff --git a/drivers/net/dsa/bcm_sf2.h b/drivers/net/dsa/bcm_sf2.h
+index c7994e3..71b1e52 100644
+--- a/drivers/net/dsa/bcm_sf2.h
++++ b/drivers/net/dsa/bcm_sf2.h
+@@ -50,6 +50,8 @@ struct bcm_sf2_port_status {
+ 	struct ethtool_eee eee;
+ 
+ 	u32 vlan_ctl_mask;
++
++	struct net_device *bridge_dev;
+ };
+ 
+ struct bcm_sf2_arl_entry {
+diff --git a/drivers/net/dsa/mv88e6xxx.c b/drivers/net/dsa/mv88e6xxx.c
+index b0e00ed..2e515e8 100644
+--- a/drivers/net/dsa/mv88e6xxx.c
++++ b/drivers/net/dsa/mv88e6xxx.c
+@@ -1889,13 +1889,22 @@ unlock:
+ 	return err;
+ }
+ 
+-int mv88e6xxx_port_bridge_join(struct dsa_switch *ds, int port, u32 members)
++int mv88e6xxx_port_bridge_join(struct dsa_switch *ds, int port,
++			       struct net_device *bridge)
+ {
++	struct mv88e6xxx_priv_state *ps = ds_to_priv(ds);
++
++	ps->ports[port].bridge_dev = bridge;
++
+ 	return 0;
+ }
+ 
+-int mv88e6xxx_port_bridge_leave(struct dsa_switch *ds, int port, u32 members)
++int mv88e6xxx_port_bridge_leave(struct dsa_switch *ds, int port)
+ {
++	struct mv88e6xxx_priv_state *ps = ds_to_priv(ds);
++
++	ps->ports[port].bridge_dev = NULL;
++
+ 	return 0;
+ }
+ 
+diff --git a/drivers/net/dsa/mv88e6xxx.h b/drivers/net/dsa/mv88e6xxx.h
+index 63a6f58..260b491 100644
+--- a/drivers/net/dsa/mv88e6xxx.h
++++ b/drivers/net/dsa/mv88e6xxx.h
+@@ -380,6 +380,7 @@ struct mv88e6xxx_vtu_stu_entry {
+ };
+ 
+ struct mv88e6xxx_priv_port {
++	struct net_device *bridge_dev;
+ 	u8 state;
+ };
+ 
+@@ -481,8 +482,9 @@ int mv88e6xxx_phy_write_indirect(struct dsa_switch *ds, int addr, int regnum,
+ int mv88e6xxx_get_eee(struct dsa_switch *ds, int port, struct ethtool_eee *e);
+ int mv88e6xxx_set_eee(struct dsa_switch *ds, int port,
+ 		      struct phy_device *phydev, struct ethtool_eee *e);
+-int mv88e6xxx_port_bridge_join(struct dsa_switch *ds, int port, u32 members);
+-int mv88e6xxx_port_bridge_leave(struct dsa_switch *ds, int port, u32 members);
++int mv88e6xxx_port_bridge_join(struct dsa_switch *ds, int port,
++			       struct net_device *bridge);
++int mv88e6xxx_port_bridge_leave(struct dsa_switch *ds, int port);
+ int mv88e6xxx_port_stp_update(struct dsa_switch *ds, int port, u8 state);
+ int mv88e6xxx_port_vlan_prepare(struct dsa_switch *ds, int port,
+ 				const struct switchdev_obj_port_vlan *vlan,
+diff --git a/include/net/dsa.h b/include/net/dsa.h
+index 26a0e86..1c845d7 100644
+--- a/include/net/dsa.h
++++ b/include/net/dsa.h
+@@ -297,9 +297,8 @@ struct dsa_switch_driver {
+ 	 * Bridge integration
+ 	 */
+ 	int	(*port_join_bridge)(struct dsa_switch *ds, int port,
+-				    u32 br_port_mask);
+-	int	(*port_leave_bridge)(struct dsa_switch *ds, int port,
+-				     u32 br_port_mask);
++				    struct net_device *bridge);
++	int	(*port_leave_bridge)(struct dsa_switch *ds, int port);
+ 	int	(*port_stp_update)(struct dsa_switch *ds, int port,
+ 				   u8 state);
+ 
+diff --git a/net/dsa/slave.c b/net/dsa/slave.c
+index 75ec490..01dc356 100644
+--- a/net/dsa/slave.c
++++ b/net/dsa/slave.c
+@@ -385,31 +385,6 @@ static int dsa_slave_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
+ 	return -EOPNOTSUPP;
+ }
+ 
+-/* Return a bitmask of all ports being currently bridged within a given bridge
+- * device. Note that on leave, the mask will still return the bitmask of ports
+- * currently bridged, prior to port removal, and this is exactly what we want.
+- */
+-static u32 dsa_slave_br_port_mask(struct dsa_switch *ds,
+-				  struct net_device *bridge)
+-{
+-	struct dsa_slave_priv *p;
+-	unsigned int port;
+-	u32 mask = 0;
+-
+-	for (port = 0; port < DSA_MAX_PORTS; port++) {
+-		if (!dsa_is_port_initialized(ds, port))
+-			continue;
+-
+-		p = netdev_priv(ds->ports[port]);
+-
+-		if (ds->ports[port]->priv_flags & IFF_BRIDGE_PORT &&
+-		    p->bridge_dev == bridge)
+-			mask |= 1 << port;
+-	}
+-
+-	return mask;
+-}
+-
+ static int dsa_slave_stp_update(struct net_device *dev, u8 state)
+ {
+ 	struct dsa_slave_priv *p = netdev_priv(dev);
+@@ -533,8 +508,7 @@ static int dsa_slave_bridge_port_join(struct net_device *dev,
+ 	p->bridge_dev = br;
+ 
+ 	if (ds->drv->port_join_bridge)
+-		ret = ds->drv->port_join_bridge(ds, p->port,
+-						dsa_slave_br_port_mask(ds, br));
++		ret = ds->drv->port_join_bridge(ds, p->port, br);
+ 
+ 	return ret;
+ }
+@@ -547,8 +521,7 @@ static int dsa_slave_bridge_port_leave(struct net_device *dev)
+ 
+ 
+ 	if (ds->drv->port_leave_bridge)
+-		ret = ds->drv->port_leave_bridge(ds, p->port,
+-						 dsa_slave_br_port_mask(ds, p->bridge_dev));
++		ret = ds->drv->port_leave_bridge(ds, p->port);
+ 
+ 	p->bridge_dev = NULL;
+ 
+-- 
+2.7.4
+

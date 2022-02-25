@@ -1,0 +1,33 @@
+From cbbf45cdb2b1483419a13b0660caf1f59156adb6 Mon Sep 17 00:00:00 2001
+From: Marcin Wojtas <mw@semihalf.com>
+Date: Sun, 14 Feb 2016 00:24:29 +0100
+Subject: [PATCH 0159/2241] dmaengine: remove PLAT_ORION dependency for mv_xor
+ driver
+
+Since new ARMv8 SoC from Marvell uses same dmaengine as older SoC's,
+PLAT_ORION dependency can be removed for CONFIG_MV_XOR.
+
+Change-Id: Ieac18697f6beac06720c89c0c6bd5bf382c492bb
+Signed-off-by: Marcin Wojtas <mw@semihalf.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/27674
+Reviewed-by: Nadav Haklai <nadavh@marvell.com>
+Tested-by: Nadav Haklai <nadavh@marvell.com>
+---
+ drivers/dma/Kconfig | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
+index 051937e..8f4e7ab 100644
+--- a/drivers/dma/Kconfig
++++ b/drivers/dma/Kconfig
+@@ -332,7 +332,6 @@ config MPC512X_DMA
+ 
+ config MV_XOR
+ 	bool "Marvell XOR engine support"
+-	depends on PLAT_ORION
+ 	select DMA_ENGINE
+ 	select DMA_ENGINE_RAID
+ 	select ASYNC_TX_ENABLE_CHANNEL_SWITCH
+-- 
+2.7.4
+

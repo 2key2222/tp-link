@@ -1,0 +1,26 @@
+From a173964a0e6caffc25c4d8aed8bb67aaf1c92549 Mon Sep 17 00:00:00 2001
+From: Yehuda Yitschak <yehuday@marvell.com>
+Date: Mon, 22 Feb 2016 16:30:08 +0200
+Subject: [PATCH 0179/2241] config: added timestamps for printk messages
+
+Change-Id: Ifc9c3c2d6793e321ff128904c0b9f7c075660231
+Signed-off-by: Yehuda Yitschak <yehuday@marvell.com>
+---
+ arch/arm64/configs/mvebu_v8_lsp_defconfig | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm64/configs/mvebu_v8_lsp_defconfig b/arch/arm64/configs/mvebu_v8_lsp_defconfig
+index 3fede0f..968875e 100644
+--- a/arch/arm64/configs/mvebu_v8_lsp_defconfig
++++ b/arch/arm64/configs/mvebu_v8_lsp_defconfig
+@@ -196,6 +196,7 @@ CONFIG_NLS_CODEPAGE_437=y
+ CONFIG_NLS_ISO8859_1=y
+ CONFIG_VIRTUALIZATION=y
+ CONFIG_KVM=y
++CONFIG_PRINTK_TIME=y
+ CONFIG_DEBUG_INFO=y
+ CONFIG_DEBUG_FS=y
+ CONFIG_MAGIC_SYSRQ=y
+-- 
+2.7.4
+

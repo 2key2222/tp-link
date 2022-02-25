@@ -1,0 +1,43 @@
+From fdffd9a340cf7590d19a10ba0b5a77d9be67116e Mon Sep 17 00:00:00 2001
+From: Stefan Chulski <stefanc@marvell.com>
+Date: Mon, 5 Sep 2016 15:26:18 +0300
+Subject: [PATCH 0935/2241] fix: mvpp2x: fix wrong number of removed ports
+ issue
+
+- wrong number of ports were removed during driver remove
+- fix Jira SYSTEMSW-2878
+
+Change-Id: Ib289c5e13192a0c10084fcb307a69934bdaf05b4
+Signed-off-by: Stefan Chulski <stefanc@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/32543
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+index c177389..3cd09d0 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+@@ -5157,13 +5157,15 @@ static int mv_pp2x_remove(struct platform_device *pdev)
+ {
+ 	struct mv_pp2x *priv = platform_get_drvdata(pdev);
+ 	struct mv_pp2x_hw *hw = &priv->hw;
+-	int i;
++	int i, num_of_ports;
+ 
+ 	cancel_delayed_work(&priv->stats_task);
+ 	flush_workqueue(priv->workqueue);
+ 	destroy_workqueue(priv->workqueue);
+ 
+-	for (i = 0; i < priv->num_ports; i++) {
++	num_of_ports = priv->num_ports;
++
++	for (i = 0; i < num_of_ports; i++) {
+ 		if (priv->port_list[i])
+ 			mv_pp2x_port_remove(priv->port_list[i]);
+ 		priv->num_ports--;
+-- 
+2.7.4
+

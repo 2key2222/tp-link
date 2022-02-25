@@ -1,0 +1,61 @@
+From bc610cfd747c41dfefd1d823d3ef72d1477b14f7 Mon Sep 17 00:00:00 2001
+From: Yelena Krivosheev <yelena@marvell.com>
+Date: Sun, 21 May 2017 13:46:57 +0300
+Subject: [PATCH 1642/2241] fix: net: mvneta: prevent buffer refill desorder on
+ low memory available
+
+Fix kernel panic on NAS test with high memory consumption.
+To prevent buffer refill disorder on "stop refill" mode, the
+RX copybreak mode must be disable.
+This mode will back after full buffers refill.
+
+Change-Id: I2f97c6d1eb3c188061171a3905c222fbfcaae2e7
+Signed-off-by: Yelena Krivosheev <yelena@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/39723
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Neta Zur Hershkovits <neta@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/39763
+---
+ drivers/net/ethernet/marvell/mvneta.c | 11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvneta.c b/drivers/net/ethernet/marvell/mvneta.c
+index 5928c65..5d5c7d7 100644
+--- a/drivers/net/ethernet/marvell/mvneta.c
++++ b/drivers/net/ethernet/marvell/mvneta.c
+@@ -637,7 +637,8 @@ static int txq_number = 8;
+ 
+ static int rxq_def;
+ 
+-static int rx_copybreak __read_mostly = 256;
++#define MV_RX_COPYBREAK_DEF	(256)
++static int rx_copybreak __read_mostly = MV_RX_COPYBREAK_DEF;
+ 
+ /* HW BM need that each port be identify by a unique ID */
+ static int global_port_id;
+@@ -2077,9 +2078,11 @@ static void mvneta_cleanup_timer_callback(unsigned long data)
+ 			mvneta_rxq_desc_num_update(pp, rxq, 0, refill_num);
+ 
+ 			/* Update refill stop flag */
+-			if (!atomic_read(&rxq->missed))
++			if (!atomic_read(&rxq->missed)) {
+ 				atomic_set(&rxq->refill_stop, 0);
+-
++				/* enable copy a small frame through RX and not unmap the DMA region */
++				rx_copybreak = MV_RX_COPYBREAK_DEF;
++			}
+ 			pr_debug("%s: %d buffers refilled to rxq #%d - missed = %d\n",
+ 				 __func__, refill_num, rxq->id, atomic_read(&rxq->missed));
+ 		}
+@@ -2239,6 +2242,8 @@ err_drop_frame:
+ 				atomic_set(&rxq->refill_stop, 1);
+ 				netdev_err(dev, "Linux processing - Can't refill queue %d\n",
+ 					   rxq->id);
++				/* disable rx_copybreak mode */
++				/* to prevent hidden buffer refill and buffers disorder */
+ 				rx_copybreak = 0;
+ 				atomic_inc(&rxq->missed);
+ 
+-- 
+2.7.4
+

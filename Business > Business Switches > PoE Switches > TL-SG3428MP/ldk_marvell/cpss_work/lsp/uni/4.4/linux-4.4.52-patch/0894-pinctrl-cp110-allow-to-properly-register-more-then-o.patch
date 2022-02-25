@@ -1,0 +1,62 @@
+From ffc6bf2aa030b3930341cda5377c1b6fde709fad Mon Sep 17 00:00:00 2001
+From: Grzegorz Jaszczyk <jaz@semihalf.com>
+Date: Wed, 17 Aug 2016 14:08:05 +0200
+Subject: [PATCH 0894/2241] pinctrl: cp110: allow to properly register more
+ then one instance of this driver
+
+Armada 8K contains two CP module. To allow usage of the same pinctrl driver
+for both CP0 and CP1, do not use global variable for pin control info
+(mvebu_pinctrl_soc_info).
+
+Before this commit, during the registration of the "a80x0-cp1-pinctrl",
+information relevant for "a80x0-cp0-pinctrl" was overwritten and therefore
+the first "a80x0-cp0-pinctrl" stopped working.
+
+Change-Id: I4df1acf5550b0998019b2032b6590fb77c82ae74
+Signed-off-by: Grzegorz Jaszczyk <jaz@semihalf.com>
+Signed-off-by: Igal Liberman <igall@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/32373
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+Tested-by: Star_Automation <star@marvell.com>
+---
+ drivers/pinctrl/mvebu/pinctrl-armada-cp110.c | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/pinctrl/mvebu/pinctrl-armada-cp110.c b/drivers/pinctrl/mvebu/pinctrl-armada-cp110.c
+index 4051eb7..4827d5f 100644
+--- a/drivers/pinctrl/mvebu/pinctrl-armada-cp110.c
++++ b/drivers/pinctrl/mvebu/pinctrl-armada-cp110.c
+@@ -607,8 +607,6 @@ static struct mvebu_mpp_mode armada_cp110_mpp_modes[] = {
+ 		 MPP_VAR_FUNCTION(10,	"ge",		"mdc",		V_ARMADA_80X0_CP0_PLUS)),
+ };
+ 
+-static struct mvebu_pinctrl_soc_info armada_cp110_pinctrl_info;
+-
+ static const struct of_device_id armada_cp110_pinctrl_of_match[] = {
+ 	{
+ 		.compatible	= "marvell,a70x0-pinctrl",
+@@ -636,7 +634,7 @@ static struct pinctrl_gpio_range armada_cp110_mpp_gpio_ranges[] = {
+ 
+ static int armada_cp110_pinctrl_probe(struct platform_device *pdev)
+ {
+-	struct mvebu_pinctrl_soc_info *soc = &armada_cp110_pinctrl_info;
++	struct mvebu_pinctrl_soc_info *soc;
+ 	const struct of_device_id *match =
+ 		of_match_device(armada_cp110_pinctrl_of_match, &pdev->dev);
+ 	struct resource *res;
+@@ -644,6 +642,11 @@ static int armada_cp110_pinctrl_probe(struct platform_device *pdev)
+ 	if (!match)
+ 		return -ENODEV;
+ 
++	soc = devm_kzalloc(&pdev->dev,
++			   sizeof(struct mvebu_pinctrl_soc_info), GFP_KERNEL);
++	if (!soc)
++		return -ENOMEM;
++
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	mpp_base = devm_ioremap_resource(&pdev->dev, res);
+ 	if (IS_ERR(mpp_base))
+-- 
+2.7.4
+

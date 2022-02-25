@@ -1,0 +1,276 @@
+From 1bf3d328b565093a5d44d7253778983991b215cd Mon Sep 17 00:00:00 2001
+From: Ken Ma <make@marvell.com>
+Date: Thu, 4 Jan 2018 10:15:27 +0800
+Subject: [PATCH 2161/2241] arm64: dts: a7/8k: Enable mdio in board level
+
+OCP board has no SMI connectivity on board, but it had to manually
+disable the mdio node in the OCP Device tree.
+This patch disables mdio by default in the cp110 dtsi file and enables
+mdio in board level according to the board specific configuration.
+
+Change-Id: I3d3ac69d5feca2c550dace70981ace8571f20bbf
+Signed-off-by: Ken Ma <make@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/48514
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Tested-by: Omri Itach <omrii@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-3900-db.dtsi               | 1 +
+ arch/arm64/boot/dts/marvell/armada-7020-amc.dts               | 1 +
+ arch/arm64/boot/dts/marvell/armada-7040-db.dtsi               | 5 +++++
+ arch/arm64/boot/dts/marvell/armada-7040-pcac.dts              | 1 +
+ arch/arm64/boot/dts/marvell/armada-70x0-customer.dts          | 1 +
+ arch/arm64/boot/dts/marvell/armada-8040-db-B.dts              | 2 ++
+ arch/arm64/boot/dts/marvell/armada-8040-db-C.dts              | 1 +
+ arch/arm64/boot/dts/marvell/armada-8040-db-D.dts              | 1 +
+ arch/arm64/boot/dts/marvell/armada-8040-db-E.dts              | 1 +
+ arch/arm64/boot/dts/marvell/armada-8040-db-pp2-vanilla.dts    | 2 ++
+ arch/arm64/boot/dts/marvell/armada-8040-db.dts                | 2 ++
+ arch/arm64/boot/dts/marvell/armada-8040-mcbin-pp2-vanilla.dts | 2 ++
+ arch/arm64/boot/dts/marvell/armada-8040-mcbin.dts             | 2 ++
+ arch/arm64/boot/dts/marvell/armada-80x0-customer.dts          | 2 ++
+ arch/arm64/boot/dts/marvell/armada-cp110.dtsi                 | 2 ++
+ 15 files changed, 26 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-3900-db.dtsi b/arch/arm64/boot/dts/marvell/armada-3900-db.dtsi
+index af0b631..e06e79d 100644
+--- a/arch/arm64/boot/dts/marvell/armada-3900-db.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-3900-db.dtsi
+@@ -130,6 +130,7 @@
+ 			mdio@15b000 {
+ 				#address-cells = <1>;
+ 				#size-cells = <0>;
++				status = "okay";
+ 
+ 				phy0: ethernet-phy@0 {
+ 					compatible = "ethernet-phy-ieee802.3-c45";
+diff --git a/arch/arm64/boot/dts/marvell/armada-7020-amc.dts b/arch/arm64/boot/dts/marvell/armada-7020-amc.dts
+index 3e28b93..65dc43a 100644
+--- a/arch/arm64/boot/dts/marvell/armada-7020-amc.dts
++++ b/arch/arm64/boot/dts/marvell/armada-7020-amc.dts
+@@ -123,6 +123,7 @@
+ 			mdio@12a200 {
+ 				#address-cells = <1>;
+ 				#size-cells = <0>;
++				status = "okay";
+ 				cp0_phy0: ethernet-phy@1 {
+ 					reg = <1>;
+ 				};
+diff --git a/arch/arm64/boot/dts/marvell/armada-7040-db.dtsi b/arch/arm64/boot/dts/marvell/armada-7040-db.dtsi
+index d9bcca3..62c49d3 100644
+--- a/arch/arm64/boot/dts/marvell/armada-7040-db.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-7040-db.dtsi
+@@ -146,6 +146,11 @@
+ 					reg = <0x1000000 0x3f000000>;
+ 				};
+ 			};
++
++			mdio@12a200 {
++				status = "okay";
++			};
++
+ 			cp0_comphy: comphy {
+ 				skip_pcie_power_off;
+ 			};
+diff --git a/arch/arm64/boot/dts/marvell/armada-7040-pcac.dts b/arch/arm64/boot/dts/marvell/armada-7040-pcac.dts
+index d678de5..9be7a32 100644
+--- a/arch/arm64/boot/dts/marvell/armada-7040-pcac.dts
++++ b/arch/arm64/boot/dts/marvell/armada-7040-pcac.dts
+@@ -184,6 +184,7 @@
+ 			mdio@12a200 {
+ 				#address-cells = <1>;
+ 				#size-cells = <0>;
++				status = "okay";
+ 				cp0_phy1: ethernet-phy@1 {
+ 					reg = <1>;
+ 				};
+diff --git a/arch/arm64/boot/dts/marvell/armada-70x0-customer.dts b/arch/arm64/boot/dts/marvell/armada-70x0-customer.dts
+index b26f858..06bbd28 100644
+--- a/arch/arm64/boot/dts/marvell/armada-70x0-customer.dts
++++ b/arch/arm64/boot/dts/marvell/armada-70x0-customer.dts
+@@ -242,6 +242,7 @@
+ 			mdio@12a200 {
+ 				#address-cells = <1>;
+ 				#size-cells = <0>;
++				status = "okay";
+ 				/* UPDATE */
+ 				phy2: ethernet-phy@2 {
+ 					reg = <0>;
+diff --git a/arch/arm64/boot/dts/marvell/armada-8040-db-B.dts b/arch/arm64/boot/dts/marvell/armada-8040-db-B.dts
+index 60f58fc..193c2d0 100644
+--- a/arch/arm64/boot/dts/marvell/armada-8040-db-B.dts
++++ b/arch/arm64/boot/dts/marvell/armada-8040-db-B.dts
+@@ -107,6 +107,7 @@
+ 			mdio@12a200 {
+ 				#address-cells = <1>;
+ 				#size-cells = <0>;
++				status = "okay";
+ 				cp0_phy1: ethernet-phy@1 {
+ 					reg = <1>;
+ 				};
+@@ -176,6 +177,7 @@
+ 			mdio@12a200 {
+ 				#address-cells = <1>;
+ 				#size-cells = <0>;
++				status = "okay";
+ 				cp1_phy1: ethernet-phy@1 {
+ 					reg = <0>;
+ 				};
+diff --git a/arch/arm64/boot/dts/marvell/armada-8040-db-C.dts b/arch/arm64/boot/dts/marvell/armada-8040-db-C.dts
+index c0271fc..554a0ac 100644
+--- a/arch/arm64/boot/dts/marvell/armada-8040-db-C.dts
++++ b/arch/arm64/boot/dts/marvell/armada-8040-db-C.dts
+@@ -120,6 +120,7 @@
+ 			mdio@12a200 {
+ 				#address-cells = <1>;
+ 				#size-cells = <0>;
++				status = "okay";
+ 				cp0_phy1: ethernet-phy@1 {
+ 					reg = <1>;
+ 				};
+diff --git a/arch/arm64/boot/dts/marvell/armada-8040-db-D.dts b/arch/arm64/boot/dts/marvell/armada-8040-db-D.dts
+index eaee977..fbd9ec1 100644
+--- a/arch/arm64/boot/dts/marvell/armada-8040-db-D.dts
++++ b/arch/arm64/boot/dts/marvell/armada-8040-db-D.dts
+@@ -121,6 +121,7 @@
+ 			mdio@12a200 {
+ 				#address-cells = <1>;
+ 				#size-cells = <0>;
++				status = "okay";
+ 				cp0_phy1: ethernet-phy@1 {
+ 					reg = <1>;
+ 				};
+diff --git a/arch/arm64/boot/dts/marvell/armada-8040-db-E.dts b/arch/arm64/boot/dts/marvell/armada-8040-db-E.dts
+index 3756ad4..63ce07d 100644
+--- a/arch/arm64/boot/dts/marvell/armada-8040-db-E.dts
++++ b/arch/arm64/boot/dts/marvell/armada-8040-db-E.dts
+@@ -197,6 +197,7 @@
+ 			mdio@12a200 {
+ 				#address-cells = <1>;
+ 				#size-cells = <0>;
++				status = "okay";
+ 				cp1_phy1: ethernet-phy@1 {
+ 					reg = <0>;
+ 				};
+diff --git a/arch/arm64/boot/dts/marvell/armada-8040-db-pp2-vanilla.dts b/arch/arm64/boot/dts/marvell/armada-8040-db-pp2-vanilla.dts
+index 6047bca..fee4b57 100644
+--- a/arch/arm64/boot/dts/marvell/armada-8040-db-pp2-vanilla.dts
++++ b/arch/arm64/boot/dts/marvell/armada-8040-db-pp2-vanilla.dts
+@@ -112,6 +112,7 @@
+ 			mdio@12a200 {
+ 				#address-cells = <1>;
+ 				#size-cells = <0>;
++				status = "okay";
+ 				cp0_phy1: ethernet-phy@1 {
+ 					reg = <1>;
+ 				};
+@@ -199,6 +200,7 @@
+ 			mdio@12a200 {
+ 				#address-cells = <1>;
+ 				#size-cells = <0>;
++				status = "okay";
+ 				cp1_phy1: ethernet-phy@1 {
+ 					reg = <0>;
+ 				};
+diff --git a/arch/arm64/boot/dts/marvell/armada-8040-db.dts b/arch/arm64/boot/dts/marvell/armada-8040-db.dts
+index a84b6bb..b385d34 100644
+--- a/arch/arm64/boot/dts/marvell/armada-8040-db.dts
++++ b/arch/arm64/boot/dts/marvell/armada-8040-db.dts
+@@ -121,6 +121,7 @@
+ 			mdio@12a200 {
+ 				#address-cells = <1>;
+ 				#size-cells = <0>;
++				status = "okay";
+ 				cp0_phy1: ethernet-phy@1 {
+ 					reg = <1>;
+ 				};
+@@ -195,6 +196,7 @@
+ 			mdio@12a200 {
+ 				#address-cells = <1>;
+ 				#size-cells = <0>;
++				status = "okay";
+ 				cp1_phy1: ethernet-phy@1 {
+ 					reg = <0>;
+ 				};
+diff --git a/arch/arm64/boot/dts/marvell/armada-8040-mcbin-pp2-vanilla.dts b/arch/arm64/boot/dts/marvell/armada-8040-mcbin-pp2-vanilla.dts
+index b92ad00..da32dc5 100644
+--- a/arch/arm64/boot/dts/marvell/armada-8040-mcbin-pp2-vanilla.dts
++++ b/arch/arm64/boot/dts/marvell/armada-8040-mcbin-pp2-vanilla.dts
+@@ -131,6 +131,7 @@
+ 			mdio@12a200 {
+ 				#address-cells = <1>;
+ 				#size-cells = <0>;
++				status = "okay";
+ 				smi_phy0: ethernet-phy@0 {
+ 					reg = <0>;
+ 				};
+@@ -138,6 +139,7 @@
+ 			mdio@15b000 {
+ 				#address-cells = <1>;
+ 				#size-cells = <0>;
++				status = "okay";
+ 				cp0_phy0: ethernet-phy@0 {
+ 					compatible = "ethernet-phy-ieee802.3-c45";
+ 					reg = <0>;
+diff --git a/arch/arm64/boot/dts/marvell/armada-8040-mcbin.dts b/arch/arm64/boot/dts/marvell/armada-8040-mcbin.dts
+index fc5b37c..d5d3c29 100644
+--- a/arch/arm64/boot/dts/marvell/armada-8040-mcbin.dts
++++ b/arch/arm64/boot/dts/marvell/armada-8040-mcbin.dts
+@@ -134,6 +134,7 @@
+ 			mdio@12a200 {
+ 				#address-cells = <1>;
+ 				#size-cells = <0>;
++				status = "okay";
+ 				smi_phy0: ethernet-phy@0 {
+ 					reg = <0>;
+ 				};
+@@ -141,6 +142,7 @@
+ 			mdio@15b000 {
+ 				#address-cells = <1>;
+ 				#size-cells = <0>;
++				status = "okay";
+ 				phy0: ethernet-phy@0 {
+ 					compatible = "ethernet-phy-ieee802.3-c45";
+ 					reg = <0>;
+diff --git a/arch/arm64/boot/dts/marvell/armada-80x0-customer.dts b/arch/arm64/boot/dts/marvell/armada-80x0-customer.dts
+index d356bf6..2b59e3b 100644
+--- a/arch/arm64/boot/dts/marvell/armada-80x0-customer.dts
++++ b/arch/arm64/boot/dts/marvell/armada-80x0-customer.dts
+@@ -158,6 +158,7 @@
+ 			mdio@12a200 {
+ 				#address-cells = <1>;
+ 				#size-cells = <0>;
++				status = "okay";
+ 				/* UPDATE */
+ 				cp0_phy2: ethernet-phy@2 {
+ 					reg = <0>;
+@@ -262,6 +263,7 @@
+ 				/* UPDATE */
+ 				#address-cells = <1>;
+ 				#size-cells = <0>;
++				status = "okay";
+ 				cp1_phy2: ethernet-phy@2 {
+ 					reg = <0>;
+ 				};
+diff --git a/arch/arm64/boot/dts/marvell/armada-cp110.dtsi b/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
+index d05c4f2..7941dff 100644
+--- a/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
+@@ -378,6 +378,7 @@
+ 				#size-cells = <0>;
+ 				compatible = "marvell,orion-mdio";
+ 				reg = <0x12a200 0x10>;
++				status = "disabled";
+ 			};
+ 
+ 			CP110_LABEL(mdio1): mdio@15b000 {
+@@ -385,6 +386,7 @@
+ 				#size-cells = <0>;
+ 				compatible = "marvell,xmdio";
+ 				reg = <0x12a600 0x10>;
++				status = "disabled";
+ 			};
+ 
+ 			CP110_LABEL(sdhci): sdhci@780000 {
+-- 
+2.7.4
+

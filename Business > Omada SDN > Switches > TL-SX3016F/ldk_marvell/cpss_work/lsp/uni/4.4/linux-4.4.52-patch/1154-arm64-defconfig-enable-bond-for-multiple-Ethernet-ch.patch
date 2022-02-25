@@ -1,0 +1,42 @@
+From de2e120ff719ca5effc8e6957e67f4ff81b678e1 Mon Sep 17 00:00:00 2001
+From: Hanna Hawa <hannah@marvell.com>
+Date: Wed, 30 Nov 2016 16:11:30 +0200
+Subject: [PATCH 1154/2241] arm64: defconfig: enable 'bond' for multiple
+ Ethernet channels together
+
+The Linux bonding driver provides a method for aggregating
+multiple network interfaces into a single logical "bonded" interface.
+The behavior of the bonded interfaces depends upon the mode; generally
+speaking, modes provide either hot standby or load balancing services.
+Additionally, link integrity monitoring may be performed.
+
+NOTE:
+without configuring the 'bonding' via sysfs, this has no
+functional impact.
+for more info, see Documentation/networking/bonding.txt
+
+Change-Id: I8b7ba14bc0ac339636ac6cfcc4ba024450c635ae
+Signed-off-by: Hanna Hawa <hannah@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/34237
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Wilson Ding <dingwei@marvell.com>
+---
+ arch/arm64/configs/mvebu_v8_lsp_defconfig | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm64/configs/mvebu_v8_lsp_defconfig b/arch/arm64/configs/mvebu_v8_lsp_defconfig
+index 5b9f76c..f54a549 100644
+--- a/arch/arm64/configs/mvebu_v8_lsp_defconfig
++++ b/arch/arm64/configs/mvebu_v8_lsp_defconfig
+@@ -110,6 +110,7 @@ CONFIG_MD_RAID1=y
+ CONFIG_MD_RAID10=y
+ CONFIG_MD_RAID456=y
+ CONFIG_NETDEVICES=y
++CONFIG_BONDING=y
+ CONFIG_MACVLAN=y
+ CONFIG_MACVTAP=y
+ CONFIG_TUN=y
+-- 
+2.7.4
+

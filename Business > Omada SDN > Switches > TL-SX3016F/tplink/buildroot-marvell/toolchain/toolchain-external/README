@@ -1,0 +1,9 @@
+完成工具链解压后继续以下三个步骤：
+1 更改arm-marvell-linux-gnueabi\libc\usr\include\linux\version.h的对应行为以下代码：
+#define LINUX_VERSION_CODE 263220
+
+2 将if_link.h与rtnetlink.h copy到以下目录：
+arm-marvell-linux-gnueabi\libc\usr\include\linux
+并覆盖原文件
+
+3 将目录下的mkimage工具copy到 buildroot-marvell/host/usr/bin/目录下

@@ -1,0 +1,112 @@
+From 397ba674497c036b8f640131cdd9ed5edfab7af7 Mon Sep 17 00:00:00 2001
+From: Ken Ma <make@marvell.com>
+Date: Tue, 8 Aug 2017 15:26:01 +0800
+Subject: [PATCH 1924/2241] ARM64: dts: marvell: armada-37xx: connect gpio
+ reference to new gpio nodes
+
+New pinctrl/gpio driver(pinctrl-armada-37xx.c) replaces old
+pinctrl/gpio driver(pinctrl-armada-3700.c and gpio-armada-3700.c),
+this patch connects gpio reference to new gpio nodes(gpionb and
+gpiosb), old gpio nodes(gpio_nb and gpio_sb) will be removed soon.
+
+Change-Id: Ideabc8ca9dc277d9bdf2bd9adb8ebf4705772a7d
+Signed-off-by: Ken Ma <make@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/42783
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Victor Gu <xigu@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-3720-community.dts | 6 +++---
+ arch/arm64/boot/dts/marvell/armada-3720-db.dts        | 6 +++---
+ arch/arm64/boot/dts/marvell/armada-37x0-customer.dts  | 6 +++---
+ 3 files changed, 9 insertions(+), 9 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-3720-community.dts b/arch/arm64/boot/dts/marvell/armada-3720-community.dts
+index e6f5b72..cc68158 100644
+--- a/arch/arm64/boot/dts/marvell/armada-3720-community.dts
++++ b/arch/arm64/boot/dts/marvell/armada-3720-community.dts
+@@ -147,7 +147,7 @@
+ 			sdhci1: sdhci@d0000 {
+ 				wp-inverted;
+ 				bus-width = <4>;
+-				cd-gpios = <&gpio_nb 3 GPIO_ACTIVE_LOW>;
++				cd-gpios = <&gpionb 3 GPIO_ACTIVE_LOW>;
+ 				no-1-8-v;
+ 				vqmmc-supply = <&vcc_sd_reg1>;
+ 				marvell,pad-type = "sd";
+@@ -169,7 +169,7 @@
+ 				regulator-max-microvolt = <3300000>;
+ 				regulator-boot-on;
+ 
+-				gpios = <&gpio_nb 4 GPIO_ACTIVE_HIGH>;
++				gpios = <&gpionb 4 GPIO_ACTIVE_HIGH>;
+ 				gpios-states = <0>;
+ 				states = <1800000 0x1
+ 					  3300000 0x0>;
+@@ -230,5 +230,5 @@
+ 	status = "okay";
+ 	phys = <&a3700_comphy 1 COMPHY_PCIE0>;
+ 	phy-names = "comphy";
+-	reset-gpios = <&gpio_sb 3 GPIO_ACTIVE_HIGH>;
++	reset-gpios = <&gpiosb 3 GPIO_ACTIVE_HIGH>;
+ };
+diff --git a/arch/arm64/boot/dts/marvell/armada-3720-db.dts b/arch/arm64/boot/dts/marvell/armada-3720-db.dts
+index 9ce2c2f..318e7b2 100644
+--- a/arch/arm64/boot/dts/marvell/armada-3720-db.dts
++++ b/arch/arm64/boot/dts/marvell/armada-3720-db.dts
+@@ -198,7 +198,7 @@
+ 			sdhci1: sdhci@d0000 {
+ 				wp-inverted;
+ 				bus-width = <4>;
+-				cd-gpios = <&gpio_sb 2 GPIO_ACTIVE_LOW>;
++				cd-gpios = <&gpiosb 2 GPIO_ACTIVE_LOW>;
+ 				vqmmc-supply = <&vcc_sd_reg1>;
+ 				marvell,pad-type = "sd";
+ 				status = "okay";
+@@ -235,7 +235,7 @@
+ 				regulator-max-microvolt = <3300000>;
+ 				regulator-boot-on;
+ 
+-				gpios = <&gpio_sb 23 GPIO_ACTIVE_HIGH>;
++				gpios = <&gpiosb 23 GPIO_ACTIVE_HIGH>;
+ 				gpios-states = <0>;
+ 				states = <1800000 0x1
+ 					  3300000 0x0>;
+@@ -298,5 +298,5 @@
+ 	status = "okay";
+ 	phys = <&a3700_comphy 1 COMPHY_PCIE0>;
+ 	phy-names = "comphy";
+-	reset-gpios = <&gpio_sb 3 GPIO_ACTIVE_HIGH>;
++	reset-gpios = <&gpiosb 3 GPIO_ACTIVE_HIGH>;
+ };
+diff --git a/arch/arm64/boot/dts/marvell/armada-37x0-customer.dts b/arch/arm64/boot/dts/marvell/armada-37x0-customer.dts
+index 1db9863..18878f5 100644
+--- a/arch/arm64/boot/dts/marvell/armada-37x0-customer.dts
++++ b/arch/arm64/boot/dts/marvell/armada-37x0-customer.dts
+@@ -166,13 +166,13 @@
+ 			sdhci1: sdhci@d0000 {
+ 				wp-inverted;
+ 				bus-width = <4>;
+-				cd-gpios = <&gpio_sb 2 GPIO_ACTIVE_LOW>;
++				cd-gpios = <&gpiosb 2 GPIO_ACTIVE_LOW>;
+ 				vqmmc-supply = <&vcc_sd_reg1>;
+ 				marvell,pad-type = "sd";
+ 				status = "disabled";
+ 				/* UPDATE */
+ 				pinctrl-names = "default";
+-				pinctrl-0 = <&sdio_pins &cd_pins>;
++				pinctrl-0 = <&sdio_pins>;
+ 			};
+ 
+ 			sdhci0: sdhci@d8000 {
+@@ -198,7 +198,7 @@
+ 				regulator-max-microvolt = <3300000>;
+ 				regulator-boot-on;
+ 
+-				gpios = <&gpio_sb 23 GPIO_ACTIVE_HIGH>;
++				gpios = <&gpiosb 23 GPIO_ACTIVE_HIGH>;
+ 				gpios-states = <0>;
+ 				states = <1800000 0x1 3300000 0x0>;
+ 				enable-active-high;
+-- 
+2.7.4
+

@@ -1,0 +1,97 @@
+From 61bc8e4bce80c729f2e6881d8ce1cb34750e3dbd Mon Sep 17 00:00:00 2001
+From: jinghua <xigu@marvell.com>
+Date: Fri, 14 Apr 2017 09:52:09 +0800
+Subject: [PATCH 1594/2241] dts: a3700: usb: move from usb static host mode to
+ otg mode
+
+- This patch changes A3700 devel board dts file to move from USB
+  static host mode to OTG mode.
+
+Change-Id: I58717874c1b740d34523ef18a24021a8cac284a2
+Signed-off-by: jinghua <xigu@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/38677
+Reviewed-by: Hua Jing <jinghua@marvell.com>
+Tested-by: Hua Jing <jinghua@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/38757
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-3720-db.dts | 17 ++++++++---------
+ arch/arm64/boot/dts/marvell/armada-37xx.dtsi   |  2 +-
+ 2 files changed, 9 insertions(+), 10 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-3720-db.dts b/arch/arm64/boot/dts/marvell/armada-3720-db.dts
+index 6bb85ba..2d46266 100644
+--- a/arch/arm64/boot/dts/marvell/armada-3720-db.dts
++++ b/arch/arm64/boot/dts/marvell/armada-3720-db.dts
+@@ -143,13 +143,13 @@
+ 			};
+ 
+ 			u3d@50000 {
+-				status = "disabled";
++				status = "okay";
+ 				phys = <&a3700_comphy 1 COMPHY_USB3>;
+ 				phy-names = "usb";
+ 			};
+ 
+ 			udc@54100 {
+-				status = "disabled";
++				status = "okay";
+ 				phys = <&utmi_usb32>;
+ 				phy-names = "usb";
+ 			};
+@@ -157,7 +157,7 @@
+ 			/* CON31 */
+ 			usb3@58000 {
+ 				status = "okay";
+-				usb-phy = <&usb3_phy>;
++				usb-phy = <&usb_phy>;
+ 				phys = <&utmi_usb32>, /* utmi usb32 dedicated phy */
+ 				       <&a3700_comphy 1 COMPHY_USB3>; /* usb3 comphy */
+ 				phy-names = "usb2", "usb3";
+@@ -177,6 +177,11 @@
+ 				status = "okay";
+ 			};
+ 
++			usb_phy: usb_phy@5d800 {
++				vcc-supply = <&exp_usb3_vbus>;
++				status = "okay";
++			};
++
+ 			interrupt-controller@74840 {
+ 				status = "okay";
+ 			};
+@@ -264,18 +269,12 @@
+ 
+ 	};
+ 
+-	usb3_phy: usb3-phy {
+-		compatible = "usb-nop-xceiv";
+-		vcc-supply = <&exp_usb3_vbus>;
+-	};
+-
+ 	exp_usb3_vbus: usb3-vbus {
+ 		compatible = "regulator-fixed";
+ 		regulator-name = "usb3-vbus";
+ 		regulator-min-microvolt = <5000000>;
+ 		regulator-max-microvolt = <5000000>;
+ 		enable-active-high;
+-		regulator-always-on;
+ 		gpio = <&expander0 1 GPIO_ACTIVE_HIGH>;
+ 	};
+ };
+diff --git a/arch/arm64/boot/dts/marvell/armada-37xx.dtsi b/arch/arm64/boot/dts/marvell/armada-37xx.dtsi
+index cfe495f..0e29c0f 100644
+--- a/arch/arm64/boot/dts/marvell/armada-37xx.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-37xx.dtsi
+@@ -353,7 +353,7 @@
+ 				status = "disabled";
+ 			};
+ 			usb3@58000 {
+-				compatible = "generic-xhci";
++				compatible = "marvell,armada-3700-xhci";
+ 				reg = <0x58000 0x4000>;
+ 				interrupts = <GIC_SPI 3 IRQ_TYPE_LEVEL_HIGH>;
+ 				clocks = <&sgateclk 17>;
+-- 
+2.7.4
+

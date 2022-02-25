@@ -1,0 +1,62 @@
+Source-Makefile: package/qca-nss-ecm/Makefile
+Package: kmod-qca-nss-ecm
+Submenu: Network Support
+Version: <LINUX_VERSION>-1
+Depends: @TARGET_ipq806x +kmod-qca-nss-drv +kmod-qca-hyfi-bridge +iptables-mod-extra
+Menu-Depends: 
+Provides: 
+Section: kernel
+Category: Kernel modules
+Title: QCA NSS Enhanced Connection Manager (ECM)
+Maintainer: OpenWrt Developers Team <openwrt-devel@openwrt.org>
+Source: qca-nss-ecm-.tar.gz
+Type: ipkg
+Kernel-Config: CONFIG_BRIDGE_NETFILTER=y
+Description: QCA NSS Enhanced Connection Manager (ECM)
+OpenWrt Developers Team <openwrt-devel@openwrt.org>
+@@
+Config:
+   	menu "overwrite package version"
+		depends on PACKAGE_kmod-qca-nss-ecm
+	config qca-nss-ecm_USE_CUSTOM_VERSION
+		depends on PACKAGE_kmod-qca-nss-ecm
+		bool "Use custom package version"
+		default n
+
+	config qca-nss-ecm_CUSTOM_VERSION
+		depends on qca-nss-ecm_USE_CUSTOM_VERSION
+		string "qca-nss-ecm version as string (default version: )"
+		default ""
+
+	endmenu
+   	menu "custom source directory"
+		depends on PACKAGE_kmod-qca-nss-ecm
+	config qca-nss-ecm_USE_CUSTOM_SOURCE_DIR
+		depends on PACKAGE_kmod-qca-nss-ecm
+		bool "Use custom source directory"
+		default n
+	config qca-nss-ecm_CUSTOM_SOURCE_DIR
+		depends on qca-nss-ecm_USE_CUSTOM_SOURCE_DIR
+		string "Custom source directory"
+		default ""
+	endmenu
+@@
+
+Package: kmod-qca-nss-ecm-noload
+Submenu: Network Support
+Version: <LINUX_VERSION>-1
+Depends: @TARGET_ipq806x +kmod-qca-nss-drv +kmod-qca-hyfi-bridge +iptables-mod-extra
+Menu-Depends: 
+Provides: kmod-qca-nss-ecm
+Section: kernel
+Category: Kernel modules
+Title: QCA NSS Enhanced Connection Manager (ECM)
+Maintainer: OpenWrt Developers Team <openwrt-devel@openwrt.org>
+Source: qca-nss-ecm-.tar.gz
+Type: ipkg
+Kernel-Config: CONFIG_BRIDGE_NETFILTER=y
+Description: QCA NSS Enhanced Connection Manager (ECM)
+OpenWrt Developers Team <openwrt-devel@openwrt.org>
+@@
+
+

@@ -1,0 +1,32 @@
+From 7574f6af2aafbed4cef29afbd0e0d4ac4ad5e022 Mon Sep 17 00:00:00 2001
+From: David Sniatkiwicz <davidsn@marvell.com>
+Date: Wed, 30 Aug 2017 17:07:31 +0300
+Subject: [PATCH 1972/2241] fix: dts: comphy: a70x0: enable comphy for A7K-PCAC
+ board
+
+Change-Id: Ie7bb675a8eee7252ec21fd86f4ec2d22740e20c5
+Signed-off-by: David Sniatkiwicz <davidsn@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/43565
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-7040-pcac.dts | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-7040-pcac.dts b/arch/arm64/boot/dts/marvell/armada-7040-pcac.dts
+index b2d21bd..c01b830 100644
+--- a/arch/arm64/boot/dts/marvell/armada-7040-pcac.dts
++++ b/arch/arm64/boot/dts/marvell/armada-7040-pcac.dts
+@@ -91,6 +91,9 @@
+ 
+ 	cpn-110-master {
+ 		config-space {
++			comphy0: comphy {
++				status = "okay";
++			};
+ 			sata: sata@540000 {
+ 				status = "okay";
+ 				sata-port@0 {
+-- 
+2.7.4
+

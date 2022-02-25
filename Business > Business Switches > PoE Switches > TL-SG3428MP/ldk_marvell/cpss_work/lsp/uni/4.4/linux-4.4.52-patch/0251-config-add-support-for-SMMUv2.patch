@@ -1,0 +1,30 @@
+From c8a2780d296cf97afc54d248b9c80d4158b6e813 Mon Sep 17 00:00:00 2001
+From: Yehuda Yitschak <yehuday@marvell.com>
+Date: Tue, 15 Mar 2016 13:01:05 +0200
+Subject: [PATCH 0251/2241] config: add support for SMMUv2
+
+Change-Id: I8030b92134d344b7007811b1a75f5c5e50b0cd6f
+Signed-off-by: Yehuda Yitschak <yehuday@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/28258
+Reviewed-by: Neta Zur Hershkovits <neta@marvell.com>
+Tested-by: Star_Automation <star@marvell.com>
+---
+ arch/arm64/configs/mvebu_v8_lsp_defconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm64/configs/mvebu_v8_lsp_defconfig b/arch/arm64/configs/mvebu_v8_lsp_defconfig
+index a198360..19c7cfb 100644
+--- a/arch/arm64/configs/mvebu_v8_lsp_defconfig
++++ b/arch/arm64/configs/mvebu_v8_lsp_defconfig
+@@ -184,7 +184,7 @@ CONFIG_VIRTIO_MMIO=y
+ CONFIG_COMMON_CLK_VERSATILE=y
+ CONFIG_CLK_SP810=y
+ CONFIG_CLK_VEXPRESS_OSC=y
+-# CONFIG_IOMMU_SUPPORT is not set
++CONFIG_ARM_SMMU=y
+ CONFIG_RESET_CONTROLLER=y
+ CONFIG_PHY_XGENE=y
+ CONFIG_EXT2_FS=y
+-- 
+2.7.4
+

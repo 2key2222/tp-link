@@ -1,0 +1,77 @@
+From 1a63d0cb528419f741aede83c4a5fb529ff55e07 Mon Sep 17 00:00:00 2001
+From: Marcin Wojtas <mw@semihalf.com>
+Date: Sun, 28 Aug 2016 04:39:02 +0200
+Subject: [PATCH 0924/2241] dma: mv_xor_v2: handle probe deferral for the clock
+
+This patch enables probe deferring in case CP110 system controller
+clock is not ready and aligns clock handling to mainline version
+of the driver.
+
+result of devm_clk_get() takes possible probe deferral
+into consideration, which is needed on a7k/a8k, because CP110 system
+controller clocks are registered as normal driver (not using
+CLK_OF_DECLARE macro for probing).
+
+In practice, such issue is seen on the ARM64 Marvell 7K/8K platform,
+where the clocks are registered by a platform driver.
+
+This patch is part of patch-set which adds
+mainline mvebu clock gating support [20/21].
+
+Change-Id: I2fb7bbd913ebe0cf91fe04613d38312878302d03
+Signed-off-by: Marcin Wojtas <mw@semihalf.com>
+Signed-off-by: Igal Liberman <igall@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/32405
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Tested-by: Omri Itach <omrii@marvell.com>
+---
+ drivers/dma/mv_xor_v2.c | 17 +++++++++++------
+ 1 file changed, 11 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/dma/mv_xor_v2.c b/drivers/dma/mv_xor_v2.c
+index a460f24..392d183 100644
+--- a/drivers/dma/mv_xor_v2.c
++++ b/drivers/dma/mv_xor_v2.c
+@@ -771,20 +771,22 @@ static int mv_xor_v2_probe(struct platform_device *pdev)
+ 
+ 	platform_set_drvdata(pdev, xor_dev);
+ 
+-	xor_dev->clk = devm_clk_get(dev, NULL);
++	xor_dev->clk = devm_clk_get(&pdev->dev, NULL);
+ 	if (!IS_ERR(xor_dev->clk)) {
+ 		ret = clk_prepare_enable(xor_dev->clk);
+-		if (ret) {
+-			dev_err(dev, "Failed to enable XOR clock.\n");
+-			devm_clk_put(dev, xor_dev->clk);
++		if (ret)
+ 			return ret;
+-		}
++	} else if (PTR_ERR(xor_dev->clk) == -EPROBE_DEFER) {
++		return -EPROBE_DEFER;
++	} else {
++		dev_err(dev, "Failed to enable XOR clock.\n");
++		return PTR_ERR(xor_dev->clk);
+ 	}
+ 
+ 	ret = platform_msi_domain_alloc_irqs(&pdev->dev, 1,
+ 					     mv_xor_v2_set_msi_msg);
+ 	if (ret)
+-		return ret;
++		goto disable_clk;
+ 
+ 	msi_desc = first_msi_entry(&pdev->dev);
+ 	if (!msi_desc)
+@@ -883,6 +885,9 @@ free_hw_desq:
+ 			  xor_dev->hw_desq_virt, xor_dev->hw_desq);
+ free_msi_irqs:
+ 	platform_msi_domain_free_irqs(&pdev->dev);
++disable_clk:
++	if (!IS_ERR(xor_dev->clk))
++		clk_disable_unprepare(xor_dev->clk);
+ 	return ret;
+ }
+ 
+-- 
+2.7.4
+

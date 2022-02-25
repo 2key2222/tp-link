@@ -1,0 +1,48 @@
+From 1a7f3657694c39dcbf6fc63d48debf09c749c33c Mon Sep 17 00:00:00 2001
+From: Omri Itach <omrii@marvell.com>
+Date: Wed, 26 Oct 2016 18:28:00 +0300
+Subject: [PATCH 1022/2241] dts: sata: cp110: enable dma-coherent for SATA
+ units
+
+SATA unit on A7K/A8K CP110 rev A1 supports IOCC, so this patch
+adds dma-coherent flag to sata units in cp110 device trees.
+
+NOTE: with this change, SATA will not be supported for A0.
+
+Change-Id: I2070edf5e82565a2436731b9b299bd983a6c7d39
+Signed-off-by: Omri Itach <omrii@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/33379
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+Tested-by: Star_Automation <star@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-cp110-1.dtsi | 1 +
+ arch/arm64/boot/dts/marvell/armada-cp110.dtsi   | 1 +
+ 2 files changed, 2 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-cp110-1.dtsi b/arch/arm64/boot/dts/marvell/armada-cp110-1.dtsi
+index a347125..eab5777 100644
+--- a/arch/arm64/boot/dts/marvell/armada-cp110-1.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-cp110-1.dtsi
+@@ -50,6 +50,7 @@ pinctrl@440000 {
+ sata@540000 {
+ 	compatible = "marvell,armada-3700-ahci";
+ 	reg = <0x540000 0x30000>;
++	dma-coherent;
+ 	interrupts = <GIC_SPI 287 IRQ_TYPE_LEVEL_HIGH>;
+ 	clocks = <&cps_syscon0 1 15>;
+ 	status = "disabled";
+diff --git a/arch/arm64/boot/dts/marvell/armada-cp110.dtsi b/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
+index b54b5d9..49e5c22 100644
+--- a/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
+@@ -120,6 +120,7 @@ serial@702300 {
+ sata: sata@540000 {
+ 	compatible = "marvell,armada-3700-ahci";
+ 	reg = <0x540000 0x30000>;
++	dma-coherent;
+ 	interrupts = <GIC_SPI 63 IRQ_TYPE_LEVEL_HIGH>;
+ 	clocks = <&cpm_syscon0 1 15>;
+ 	status = "disabled";
+-- 
+2.7.4
+

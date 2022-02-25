@@ -1,0 +1,30 @@
+From 5b6ebf87bad231f2e6807878ad5c1b5e69c21788 Mon Sep 17 00:00:00 2001
+From: Marcin Wojtas <mw@semihalf.com>
+Date: Mon, 15 Feb 2016 02:11:59 +0100
+Subject: [PATCH 0173/2241] arm64: defconfig: enable Xenon SDHCI driver support
+ in mvebu_v8_lsp_defconfig
+
+Change-Id: Ib1d6d1e41b479f0b1b01bf66dca46bc78e882c63
+Signed-off-by: Marcin Wojtas <mw@semihalf.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/27685
+Reviewed-by: Nadav Haklai <nadavh@marvell.com>
+Tested-by: Nadav Haklai <nadavh@marvell.com>
+---
+ arch/arm64/configs/mvebu_v8_lsp_defconfig | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm64/configs/mvebu_v8_lsp_defconfig b/arch/arm64/configs/mvebu_v8_lsp_defconfig
+index 93214380..3c9a417 100644
+--- a/arch/arm64/configs/mvebu_v8_lsp_defconfig
++++ b/arch/arm64/configs/mvebu_v8_lsp_defconfig
+@@ -145,6 +145,7 @@ CONFIG_USB_ULPI=y
+ CONFIG_MMC=y
+ CONFIG_MMC_ARMMMCI=y
+ CONFIG_MMC_SDHCI=y
++CONFIG_MMC_XENON_SDHCI=y
+ CONFIG_MMC_SDHCI_PLTFM=y
+ CONFIG_MMC_SPI=y
+ CONFIG_MMC_DW=y
+-- 
+2.7.4
+

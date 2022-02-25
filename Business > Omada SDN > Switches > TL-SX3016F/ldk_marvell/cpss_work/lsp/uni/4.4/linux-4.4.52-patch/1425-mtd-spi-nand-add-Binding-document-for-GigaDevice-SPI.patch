@@ -1,0 +1,42 @@
+From 6fcbd0c6151bfc7bab96afe76c9bbb9f2ac49a95 Mon Sep 17 00:00:00 2001
+From: allen yan <yanwei@marvell.com>
+Date: Thu, 23 Feb 2017 00:32:14 +0800
+Subject: [PATCH 1425/2241] mtd: spi-nand: add Binding document for GigaDevice
+ SPI NAND
+
+- Add document for GigaDevice SPI NAND patch from:
+http://lists.infradead.org/pipermail/linux-mtd/2014-November/056365.html
+
+Change-Id: I75e6fa7c9a1d782c6d109b963bd56688393c9b8d
+Signed-off-by: Ionela Voinescu <ionela.voinescu@imgtec.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/37177
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hua Jing <jinghua@marvell.com>
+---
+ Documentation/devicetree/bindings/mtd/gd5f-nand.txt | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/mtd/gd5f-nand.txt
+
+diff --git a/Documentation/devicetree/bindings/mtd/gd5f-nand.txt b/Documentation/devicetree/bindings/mtd/gd5f-nand.txt
+new file mode 100644
+index 0000000..577561b
+--- /dev/null
++++ b/Documentation/devicetree/bindings/mtd/gd5f-nand.txt
+@@ -0,0 +1,13 @@
++GigaDevice 4Gb SPI NAND flash
++
++Required properties:
++- compatible: "gigadevice,gd5f"
++- reg: SPI chip select line
++- spi-max-frequency : maximum frequency of the SPI bus the chip can operate at
++
++
++gd5f: spi@18101000 {
++	compatible = "gigadevice,gd5f";
++	reg = <1>; /* Chip select 1 */
++	spi-max-frequency = <6250000>;
++};
+\ No newline at end of file
+-- 
+2.7.4
+

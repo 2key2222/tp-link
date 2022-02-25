@@ -1,0 +1,43 @@
+From 0c8dafe15df64d34fbf43ec6a5cc7a6d2a021a3c Mon Sep 17 00:00:00 2001
+From: Terry Zhou <bjzhou@marvell.com>
+Date: Thu, 17 Nov 2016 10:37:58 +0800
+Subject: [PATCH 1394/2241] fix: msys: do not call mbus init in mvebu_init_irq
+ for msys
+
+For msys, the switch interrupt driver (marvell,swic) uses register from
+the switch region space, the decoding window for switch must be
+initialized before calling interrupt drivers. so we call mbus init
+before mvebu_init_irq and skip the same function inside mvebu_init_irq
+
+Change-Id: I947eb6839e2006c5d35a74d3e34f88e417d6f0f4
+Signed-off-by: Terry Zhou <bjzhou@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/33866
+Reviewed-by: Victor Gu <xigu@marvell.com>
+Tested-by: Victor Gu <xigu@marvell.com>
+---
+ arch/arm/mach-mvebu/board-v7.c | 9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/mach-mvebu/board-v7.c b/arch/arm/mach-mvebu/board-v7.c
+index 98489d9..42da6f3 100644
+--- a/arch/arm/mach-mvebu/board-v7.c
++++ b/arch/arm/mach-mvebu/board-v7.c
+@@ -154,7 +154,14 @@ static void __init mvebu_init_irq(void)
+ 	irqchip_init();
+ 	mvebu_scu_enable();
+ 	coherency_init();
+-	BUG_ON(mvebu_mbus_dt_init(coherency_available()));
++
++	/* In case we are running from MSYS, skip mbus initialization. The
++	 * mvebu_mbus_dt_init was executed earlier in msys_irqchip_init. This
++	 * was required by switch interrupt driver (marvell,swic), which had
++	 * to have access to switch region (decoding windows had to be opened).
++	 */
++	if (!(of_machine_is_compatible("marvell,msys")))
++		BUG_ON(mvebu_mbus_dt_init(coherency_available()));
+ }
+ 
+ static void __init msys_irqchip_init(void)
+-- 
+2.7.4
+

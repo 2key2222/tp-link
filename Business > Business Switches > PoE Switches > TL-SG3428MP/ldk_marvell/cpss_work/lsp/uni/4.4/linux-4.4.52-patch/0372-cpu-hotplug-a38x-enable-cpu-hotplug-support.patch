@@ -1,0 +1,42 @@
+From d6cd9ca566445e721810118d9dc065cbadea4a0e Mon Sep 17 00:00:00 2001
+From: orenbh <orenbh@marvell.com>
+Date: Sun, 1 May 2016 17:43:42 +0300
+Subject: [PATCH 0372/2241] cpu hotplug: a38x: enable cpu hotplug support
+
+disabling cpuidle framework includes disabling of cpu hotplug
+cpu hotplug is re-enable since it is required for kdump support
+cpuidle remains disabled (executing only WFI mode)
+
+Change-Id: If3b77f55981cc63abed3db98357912cfbfa5cbcd
+Signed-off-by: orenbh <orenbh@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/29425
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Lior Amsalem <alior@marvell.com>
+---
+ arch/arm/mach-mvebu/pmsu.c | 10 ----------
+ 1 file changed, 10 deletions(-)
+
+diff --git a/arch/arm/mach-mvebu/pmsu.c b/arch/arm/mach-mvebu/pmsu.c
+index fa6d26c..63040868 100644
+--- a/arch/arm/mach-mvebu/pmsu.c
++++ b/arch/arm/mach-mvebu/pmsu.c
+@@ -530,16 +530,6 @@ static int __init mvebu_v7_cpu_pm_init(void)
+ 		return 0;
+ 	of_node_put(np);
+ 
+-	/*
+-	 * Currently the CPU idle support for Armada 38x is broken, as
+-	 * the CPU hotplug uses some of the CPU idle functions it is
+-	 * broken too, so let's disable it
+-	 */
+-	if (of_machine_is_compatible("marvell,armada380")) {
+-		cpu_hotplug_disable();
+-		pr_warn("CPU hotplug support is currently broken on Armada 38x: disabling\n");
+-	}
+-
+ 	if (of_machine_is_compatible("marvell,armadaxp"))
+ 		ret = armada_xp_cpuidle_init();
+ 	else if (of_machine_is_compatible("marvell,armada370"))
+-- 
+2.7.4
+

@@ -1,0 +1,64 @@
+From 1a559c9c8df9c47d4657f0b5cd10fec4a8cfbd18 Mon Sep 17 00:00:00 2001
+From: Allen Yan <yanwei@marvell.com>
+Date: Thu, 4 Jan 2018 15:16:27 +0800
+Subject: [PATCH 2147/2241] dts: usb: 3700: add regulator node for USB2 host
+ VBUS
+
+Currently, the VBUS for EHCI won't be pull up when do EHCI init.
+It depends on the uboot and it is unreasonable.
+This patch pull up the VBUS for EHCI.
+
+Change-Id: I5ae0f71bd1977ae2c6b546a3d367409f120b834e
+Signed-off-by: Allen Yan <yanwei@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/48522
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Victor Gu <xigu@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-3720-db.dts | 17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-3720-db.dts b/arch/arm64/boot/dts/marvell/armada-3720-db.dts
+index f9baabc..095241f 100644
+--- a/arch/arm64/boot/dts/marvell/armada-3720-db.dts
++++ b/arch/arm64/boot/dts/marvell/armada-3720-db.dts
+@@ -178,6 +178,7 @@
+ 
+ 			usb@5e000 {
+ 				status = "okay";
++				usb-phy = <&usb2_phy>;
+ 				phys = <&utmi_usb2>;
+ 				phy-names = "usb";
+ 			};
+@@ -186,6 +187,12 @@
+ 				status = "okay";
+ 			};
+ 
++			usb2_phy: usb2-phy {
++				compatible = "usb-nop-xceiv";
++				vcc-supply = <&exp_usb2_vbus>;
++				status = "okay";
++			};
++
+ 			usb_phy: usb_phy@5d800 {
+ 				vcc-supply = <&exp_usb3_vbus>;
+ 				status = "okay";
+@@ -289,6 +296,16 @@
+ 
+ 	};
+ 
++	exp_usb2_vbus: usb2-vbus {
++		compatible = "regulator-fixed";
++		regulator-name = "usb2-vbus";
++		regulator-min-microvolt = <5000000>;
++		regulator-max-microvolt = <5000000>;
++		enable-active-high;
++		regulator-always-on;
++		gpio = <&expander0 0 GPIO_ACTIVE_HIGH>;
++	};
++
+ 	exp_usb3_vbus: usb3-vbus {
+ 		compatible = "regulator-fixed";
+ 		regulator-name = "usb3-vbus";
+-- 
+2.7.4
+

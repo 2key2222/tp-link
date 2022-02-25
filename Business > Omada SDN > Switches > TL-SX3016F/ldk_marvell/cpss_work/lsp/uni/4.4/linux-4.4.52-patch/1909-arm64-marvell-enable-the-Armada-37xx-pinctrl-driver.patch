@@ -1,0 +1,40 @@
+From 0da4b83e1b67b69b74a50cc82b28f6c1737e6d82 Mon Sep 17 00:00:00 2001
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Date: Wed, 5 Apr 2017 17:18:03 +0200
+Subject: [PATCH 1909/2241] arm64: marvell: enable the Armada 37xx pinctrl
+ driver
+
+This commit makes sure the driver for the Armada 37xx pin controller is
+enabled.
+
+Change-Id: Id46bd5cf891589647676ff7225d08f02ab72abcd
+Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Signed-off-by: Ken Ma <make@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/42771
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Victor Gu <xigu@marvell.com>
+Reviewed-by: Evan Wang <xswang@marvell.com>
+---
+ arch/arm64/Kconfig.platforms | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/arch/arm64/Kconfig.platforms b/arch/arm64/Kconfig.platforms
+index 1010596..aaa2410 100644
+--- a/arch/arm64/Kconfig.platforms
++++ b/arch/arm64/Kconfig.platforms
+@@ -8,8 +8,12 @@ config ARCH_MVEBU
+ 	select MVEBU_ICU_IRQ
+ 	select MVEBU_CLK_COMMON
+ 	select ARMADA_37XX_CLK
++	select GPIOLIB
++	select GPIOLIB_IRQCHIP
++	select OF_GPIO
+ 	select PINCTRL
+ 	select PINCTRL_ARMADA_3700
++	select PINCTRL_ARMADA_37XX
+ 	select ARMADA_AP806_CORE_CLK
+ 	select ARMADA_AP806_RING_CLK
+ 	select ARMADA_AP806_CPU_CLK
+-- 
+2.7.4
+

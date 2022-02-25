@@ -1,0 +1,62 @@
+From 70c45c562528683058ef76c2aae9326d9d67f28c Mon Sep 17 00:00:00 2001
+From: David Sniatkiwicz <davidsn@marvell.com>
+Date: Thu, 6 Jul 2017 12:25:45 +0300
+Subject: [PATCH 1792/2241] fix: ap806: thermal: fix timing issue with lower
+ loglevel
+
+Loglevel (sets to 3) affects the thermal sensor timing initialization,
+which caused an error(thermal_zone0: failed to read out thermal zone (-5))
+since the driver tried to read the temperature before
+the register was ready.
+This is fixed by adding timeout retries to this register polling.
+
+Change-Id: Idc08ccbeaff7c832a6bbbbcd5454e6275808946c
+Signed-off-by: David Sniatkiwicz <davidsn@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/41239
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+---
+ drivers/thermal/armada_thermal.c | 14 +++++++++++++-
+ 1 file changed, 13 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/thermal/armada_thermal.c b/drivers/thermal/armada_thermal.c
+index 1a20a75..96dd4bf 100644
+--- a/drivers/thermal/armada_thermal.c
++++ b/drivers/thermal/armada_thermal.c
+@@ -51,6 +51,8 @@
+ #define AP806_RESET	BIT(1)
+ #define AP806_ENABLE	BIT(2)
+ 
++#define AP806_INIT_TIMEOUT	10
++
+ /* For AP806 TSEN output format is signed as a 2s complement number
+ 	ranging from-512 to +511*/
+ #define AP806_TSEN_OUTPUT_MSB		512
+@@ -372,13 +374,23 @@ static void armada380_init_sensor(struct platform_device *pdev,
+ static void armada_ap806_init_sensor(struct platform_device *pdev,
+ 				  struct armada_thermal_priv *priv)
+ {
++	unsigned int timeout;
+ 	unsigned long reg = readl_relaxed(priv->control);
+ 
+ 	reg &= ~AP806_RESET;
+ 	reg |= AP806_START;
+ 	reg |= AP806_ENABLE;
+ 	writel(reg, priv->control);
+-	mdelay(10);
++
++	timeout = AP806_INIT_TIMEOUT;
++	if (priv->data->is_valid) {
++		do {
++			mdelay(10);
++			if (priv->data->is_valid(priv))
++				break;
++			timeout--;
++		} while (timeout != 0);
++	}
+ 
+ 	/* Set thresholds */
+ 	ap806_temp_set_threshold(pdev, priv);
+-- 
+2.7.4
+

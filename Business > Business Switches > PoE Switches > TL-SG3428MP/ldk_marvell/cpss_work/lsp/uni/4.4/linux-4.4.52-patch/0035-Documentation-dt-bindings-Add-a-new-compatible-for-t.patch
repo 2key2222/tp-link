@@ -1,0 +1,31 @@
+From 80fcd6d5df1fc1e03df9841d4ba302352b90d313 Mon Sep 17 00:00:00 2001
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Date: Tue, 2 Feb 2016 18:13:27 +0100
+Subject: [PATCH 0035/2241] Documentation: dt-bindings: Add a new compatible
+ for the Armada 3700
+
+The AHCI interfaces used in the Armada 3700 has a few differences with
+the one used in the Armada 38x, so it deserves its own compatible string.
+
+Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Reviewed-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Acked-by: Rob Herring <robh@kernel.org>
+---
+ Documentation/devicetree/bindings/ata/ahci-platform.txt | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/Documentation/devicetree/bindings/ata/ahci-platform.txt b/Documentation/devicetree/bindings/ata/ahci-platform.txt
+index c000832..b3983e0 100644
+--- a/Documentation/devicetree/bindings/ata/ahci-platform.txt
++++ b/Documentation/devicetree/bindings/ata/ahci-platform.txt
+@@ -13,6 +13,7 @@ Required properties:
+   - "hisilicon,hisi-ahci"
+   - "ibm,476gtr-ahci"
+   - "marvell,armada-380-ahci"
++  - "marvell,armada-3700-ahci"
+   - "snps,dwc-ahci"
+   - "snps,exynos5440-ahci"
+   - "snps,spear-ahci"
+-- 
+2.7.4
+

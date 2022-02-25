@@ -1,0 +1,49 @@
+From be522ade86c3fc3b757fdfe83893fa08bd1f66e6 Mon Sep 17 00:00:00 2001
+From: Ofer Heifetz <oferh@marvell.com>
+Date: Thu, 22 Sep 2016 18:11:33 +0300
+Subject: [PATCH 1008/2241] tools: nas: add a37xx irq affinity
+
+set the sata and pex irq affinity to be on CPU1 instead of default CPU0
+this improves Samba write performance
+
+Change-Id: I0d00b3aa26aad685d279ffbe9328dc85de37b1d5
+Signed-off-by: Ofer Heifetz <oferh@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/33084
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+Tested-by: Star_Automation <star@marvell.com>
+---
+ tools/nas/nas_init.sh | 12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
+
+diff --git a/tools/nas/nas_init.sh b/tools/nas/nas_init.sh
+index c99c1eb..fa9d432 100755
+--- a/tools/nas/nas_init.sh
++++ b/tools/nas/nas_init.sh
+@@ -1,6 +1,6 @@
+ #!/bin/bash
+ 
+-VERSION="6.0"
++VERSION="6.1"
+ PREPARE_HDD="no"
+ MKFS="no"
+ HDD_NUM=""
+@@ -775,6 +775,16 @@ elif [ "$PLATFORM" == "a388" ]; then
+ 
+ 	set +o verbose
+ 	echo -ne "[Done]\n"
++elif [ "$PLATFORM" == "a37xx" ]; then
++	set -o verbose
++
++	# SATA
++	echo 2 > /proc/irq/32/smp_affinity
++	# PCI-E SATA controller
++	echo 2  > /proc/irq/34/smp_affinity
++
++	set +o verbose
++	echo -ne "[Done]\n"
+ else
+ 	echo -ne "[Skip]\n"
+ fi
+-- 
+2.7.4
+

@@ -1,0 +1,59 @@
+From a53bff3dad04c488c5691cc5fdc7c5583703cb78 Mon Sep 17 00:00:00 2001
+From: orenbh <orenbh@marvell.com>
+Date: Mon, 17 Nov 2014 15:54:40 +0200
+Subject: [PATCH 1084/2241] cpu: mvebu: add support for L1 cache prefetch
+
+	Performance optimization - Add support for L1 cache prefetch enable
+	Porting from 3.10.39-14t3
+commit 0113f97f6e57 "cpu: mvebu: add support for L1 cache prefetch"
+
+Change-Id: Idfb926584be334ad3221020371db48dfe353c59f
+Signed-off-by: orenbh <orenbh@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/14519
+Reviewed-by: Shadi Ammouri <shadi@marvell.com>
+Tested-by: Yehuda Yitschak <yehuday@marvell.com>
+Signed-off-by: Neta Zur <neta@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/33699
+---
+ arch/arm/mm/Kconfig   | 10 ++++++++++
+ arch/arm/mm/proc-v7.S |  3 +++
+ 2 files changed, 13 insertions(+)
+
+diff --git a/arch/arm/mm/Kconfig b/arch/arm/mm/Kconfig
+index 4121886..682c079 100644
+--- a/arch/arm/mm/Kconfig
++++ b/arch/arm/mm/Kconfig
+@@ -891,6 +891,16 @@ config CACHE_FEROCEON_L2_WRITETHROUGH
+ 	  Say Y here to use the Feroceon L2 cache in writethrough mode.
+ 	  Unless you specifically require this, say N for writeback mode.
+ 
++config CPU_L1_CACHE_PREF_ENABLE
++	bool "Enable CPU L1 Cache Prefetch"
++	depends on CPU_V7
++	default y if CPU_V7 && ARCH_MVEBU
++	help
++	  Say Y here to enable L1 cache prefetch.
++	  If unsure, say N.
++	  L1 cache prefetch is performance feature,
++	  impact mainly cpu read operations.
++
+ config MIGHT_HAVE_CACHE_L2X0
+ 	bool
+ 	help
+diff --git a/arch/arm/mm/proc-v7.S b/arch/arm/mm/proc-v7.S
+index 8e1ea43..7b26bac 100644
+--- a/arch/arm/mm/proc-v7.S
++++ b/arch/arm/mm/proc-v7.S
+@@ -267,6 +267,9 @@ __v7_ca5mp_setup:
+ __v7_ca9mp_setup:
+ __v7_cr7mp_setup:
+ 	mov	r10, #(1 << 0)			@ Cache/TLB ops broadcasting
++#ifdef CONFIG_CPU_L1_CACHE_PREF_ENABLE
++	orr	r10, r10, #(1 << 2)
++#endif
+ 	b	1f
+ __v7_ca7mp_setup:
+ __v7_ca12mp_setup:
+-- 
+2.7.4
+

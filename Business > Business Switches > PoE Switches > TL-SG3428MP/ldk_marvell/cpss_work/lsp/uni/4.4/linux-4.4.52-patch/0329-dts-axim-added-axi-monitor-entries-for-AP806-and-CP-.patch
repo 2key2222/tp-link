@@ -1,0 +1,112 @@
+From a4047c95ceeeaa583c09524c92eb1b7e5559a532 Mon Sep 17 00:00:00 2001
+From: Yehuda Yitschak <yehuday@marvell.com>
+Date: Wed, 6 Apr 2016 15:01:45 +0300
+Subject: [PATCH 0329/2241] dts: axim: added axi monitor entries for AP806 and
+ CP-110
+
+Change-Id: I1998c875b34d232c92a4af5f6da6a6a092e5329e
+Signed-off-by: Yehuda Yitschak <yehuday@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/28831
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Shadi Ammouri <shadi@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-ap806.dtsi | 28 ++++++++++++++++++
+ arch/arm64/boot/dts/marvell/armada-cp110.dtsi | 42 +++++++++++++++++++++++++++
+ 2 files changed, 70 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-ap806.dtsi b/arch/arm64/boot/dts/marvell/armada-ap806.dtsi
+index 5e0f13f..0e68c78 100644
+--- a/arch/arm64/boot/dts/marvell/armada-ap806.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-ap806.dtsi
+@@ -152,6 +152,34 @@
+ 					     <GIC_SPI 6 IRQ_TYPE_LEVEL_HIGH>;
+ 			};
+ 
++			axim-ddr-rd@840000 {
++				compatible = "marvell,coresight-axim", "arm,primecell";
++				reg = <0x840000 0x1000>;
++				clocks = <&syscon 3>;
++				clock-names = "apb_pclk";
++			};
++
++			axim-ddr-wr@841000 {
++				compatible = "marvell,coresight-axim", "arm,primecell";
++				reg = <0x841000 0x1000>;
++				clocks = <&syscon 3>;
++				clock-names = "apb_pclk";
++			};
++
++			axim-ihb-rd@848000 {
++				compatible = "marvell,coresight-axim", "arm,primecell";
++				reg = <0x848000 0x1000>;
++				clocks = <&syscon 3>;
++				clock-names = "apb_pclk";
++			};
++
++			axim-ihb-rd@849000 {
++				compatible = "marvell,coresight-axim", "arm,primecell";
++				reg = <0x849000 0x1000>;
++				clocks = <&syscon 3>;
++				clock-names = "apb_pclk";
++			};
++
+ 			odmi: odmi@300000 {
+ 				compatible = "marvell,odmi-controller";
+ 				interrupt-controller;
+diff --git a/arch/arm64/boot/dts/marvell/armada-cp110.dtsi b/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
+index 38e54d6..a6ffae8 100644
+--- a/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
+@@ -147,6 +147,48 @@ mdio@15b000 {
+ 	reg = <0x12a600 0x10>;
+ };
+ 
++axim-cp-rd@3c5000 {
++	compatible = "marvell,coresight-axim", "arm,primecell";
++	reg = <0x3c5000 0x1000>;
++	clocks = <&syscon 3>;
++	clock-names = "apb_pclk";
++};
++
++axim-cp-wr@3c6000 {
++	compatible = "marvell,coresight-axim", "arm,primecell";
++	reg = <0x3c6000 0x1000>;
++	clocks = <&syscon 3>;
++	clock-names = "apb_pclk";
++};
++
++axim-ppv2-rd@3c0000 {
++	compatible = "marvell,coresight-axim", "arm,primecell";
++	reg = <0x3c0000 0x1000>;
++	clocks = <&syscon 3>;
++	clock-names = "apb_pclk";
++};
++
++axim-ppv2-wr@3c1000 {
++	compatible = "marvell,coresight-axim", "arm,primecell";
++	reg = <0x3c1000 0x1000>;
++	clocks = <&syscon 3>;
++	clock-names = "apb_pclk";
++};
++
++axim-hb1-rd@3c8000 {
++	compatible = "marvell,coresight-axim", "arm,primecell";
++	reg = <0x3c8000 0x1000>;
++	clocks = <&syscon 3>;
++	clock-names = "apb_pclk";
++};
++
++axim-hb1-wr@3c9000 {
++	compatible = "marvell,coresight-axim", "arm,primecell";
++	reg = <0x3c9000 0x1000>;
++	clocks = <&syscon 3>;
++	clock-names = "apb_pclk";
++};
++
+ aliases {
+ 	ethernet0 = &emac0;
+ 	ethernet1 = &emac2;
+-- 
+2.7.4
+

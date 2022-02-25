@@ -1,0 +1,150 @@
+From cef19d67218fcd7cfccebf5428d843de94de7834 Mon Sep 17 00:00:00 2001
+From: Dmitri Epshtein <dima@marvell.com>
+Date: Mon, 5 Sep 2016 01:54:29 +0300
+Subject: [PATCH 0962/2241] pp3: Add basic ethtool support for nss interfaces
+
+- get/set coalescing: ethtool -c|-C ifname
+
+Change-Id: I9fa75290d5286cc384423fbbef11667d20a1ef00
+Signed-off-by: Dmitri Epshtein <dima@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/32511
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Neta Zur Hershkovits <neta@marvell.com>
+---
+ .../net/ethernet/marvell/pp3/gnss/mv_pp3_gnss_api.c |  3 +++
+ .../net/ethernet/marvell/pp3/net_dev/mv_ethtool.c   |  7 +++++++
+ .../net/ethernet/marvell/pp3/net_dev/mv_ethtool.h   |  1 +
+ .../net/ethernet/marvell/pp3/net_dev/mv_netdev.c    | 21 +++++++++++++++++++--
+ .../net/ethernet/marvell/pp3/net_dev/mv_netdev.h    |  1 +
+ drivers/net/ethernet/marvell/pp3/platform/mv_pp3.c  |  8 +-------
+ 6 files changed, 32 insertions(+), 9 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/pp3/gnss/mv_pp3_gnss_api.c b/drivers/net/ethernet/marvell/pp3/gnss/mv_pp3_gnss_api.c
+index 4382069..c2ac419 100644
+--- a/drivers/net/ethernet/marvell/pp3/gnss/mv_pp3_gnss_api.c
++++ b/drivers/net/ethernet/marvell/pp3/gnss/mv_pp3_gnss_api.c
+@@ -20,6 +20,7 @@
+ #include "fw/mv_fw.h"
+ #include "net_dev/mv_dev_vq.h"
+ #include "net_dev/mv_netdev.h"
++#include "net_dev/mv_ethtool.h"
+ 
+ #include "mv_pp3_gnss_api.h"
+ #include <net/gnss/mv_nss_defs.h>
+@@ -112,6 +113,8 @@ int mv_pp3_gnss_dev_create(unsigned short vport, bool state, unsigned char *mac)
+ 	if (mac)
+ 		memcpy(dev->dev_addr, mac, MV_MAC_ADDR_SIZE);
+ 
++	dev->ethtool_ops = &mv_pp3_gnss_ethtool_ops;
++
+ 	dev->mtu = MV_EXT_PORT_MTU;
+ 	dev_priv = MV_PP3_PRIV(dev);
+ 	dev_priv->id = vport;
+diff --git a/drivers/net/ethernet/marvell/pp3/net_dev/mv_ethtool.c b/drivers/net/ethernet/marvell/pp3/net_dev/mv_ethtool.c
+index df6f3d1..094c9bc 100644
+--- a/drivers/net/ethernet/marvell/pp3/net_dev/mv_ethtool.c
++++ b/drivers/net/ethernet/marvell/pp3/net_dev/mv_ethtool.c
+@@ -353,3 +353,10 @@ const struct ethtool_ops mv_pp3_ethtool_ops = {
+ 	.set_coalesce				= mv_pp3_eth_tool_set_coalesce,
+ 	.nway_reset				= mv_pp3_eth_tool_nway_reset,
+ };
++
++/* NSS ports ethtool functions */
++const struct ethtool_ops mv_pp3_gnss_ethtool_ops = {
++	.get_drvinfo				= mv_pp3_eth_tool_get_drvinfo,
++	.get_coalesce				= mv_pp3_eth_tool_get_coalesce,
++	.set_coalesce				= mv_pp3_eth_tool_set_coalesce,
++};
+diff --git a/drivers/net/ethernet/marvell/pp3/net_dev/mv_ethtool.h b/drivers/net/ethernet/marvell/pp3/net_dev/mv_ethtool.h
+index e7cd34a..ee8cbdc 100644
+--- a/drivers/net/ethernet/marvell/pp3/net_dev/mv_ethtool.h
++++ b/drivers/net/ethernet/marvell/pp3/net_dev/mv_ethtool.h
+@@ -31,5 +31,6 @@ disclaimer.
+ #include <linux/ethtool.h>
+ 
+ extern const struct ethtool_ops mv_pp3_ethtool_ops;
++extern const struct ethtool_ops mv_pp3_gnss_ethtool_ops;
+ 
+ #endif /* __mv_ethtool_h__ */
+diff --git a/drivers/net/ethernet/marvell/pp3/net_dev/mv_netdev.c b/drivers/net/ethernet/marvell/pp3/net_dev/mv_netdev.c
+index eab0f68..a4ccbaf 100644
+--- a/drivers/net/ethernet/marvell/pp3/net_dev/mv_netdev.c
++++ b/drivers/net/ethernet/marvell/pp3/net_dev/mv_netdev.c
+@@ -2230,8 +2230,6 @@ int mv_pp3_netdev_set_emac_params(struct net_device *dev, struct device_node *np
+ 	mv_pp3_ftd_mac_data_get(np, &dev_priv->mac_data);
+ 	mv_pp3_fdt_mac_address_get(np, dev_priv->dev->dev_addr);
+ 
+-	dev->ethtool_ops = &mv_pp3_ethtool_ops;
+-
+ 	/* set mac connectivity flag */
+ 	set_bit(MV_PP3_F_MAC_CONNECT_BIT, &(dev_priv->flags));
+ 
+@@ -2390,6 +2388,25 @@ void mv_pp3_netdev_show(struct net_device *dev)
+ }
+ /*---------------------------------------------------------------------------*/
+ 
++struct net_device *mv_pp3_netdev_nic_init(struct device_node *np)
++{
++	struct net_device *dev;
++	int i;
++	char name[20];
++
++	of_property_read_u32(np, "id", &i);
++	sprintf(name, "nic%d", i);
++	dev = mv_pp3_netdev_init(name, CONFIG_MV_PP3_RXQ_NUM, CONFIG_MV_PP3_TXQ_NUM);
++	if (!dev)
++		return NULL;
++
++	dev->ethtool_ops = &mv_pp3_ethtool_ops;
++
++	mv_pp3_netdev_set_emac_params(dev, np);
++	mv_pp3_netdev_show(dev);
++
++	return dev;
++}
+ /*---------------------------------------------------------------------------*/
+ /* alloc global structure memory					     */
+ /*---------------------------------------------------------------------------*/
+diff --git a/drivers/net/ethernet/marvell/pp3/net_dev/mv_netdev.h b/drivers/net/ethernet/marvell/pp3/net_dev/mv_netdev.h
+index e55bbd3b..ae17854 100644
+--- a/drivers/net/ethernet/marvell/pp3/net_dev/mv_netdev.h
++++ b/drivers/net/ethernet/marvell/pp3/net_dev/mv_netdev.h
+@@ -77,6 +77,7 @@ int mv_pp3_dev_num_get(void);
+ struct pp3_dev_priv *mv_pp3_dev_priv_get(int i);
+ struct net_device *mv_pp3_vport_dev_get(int vport);
+ struct net_device *mv_pp3_netdev_init(const char *name, int rx_vqs, int tx_vqs);
++struct net_device *mv_pp3_netdev_nic_init(struct device_node *np);
+ void mv_pp3_netdev_delete(struct net_device *dev);
+ int mv_pp3_netdev_set_emac_params(struct net_device *dev, struct device_node *np);
+ int mv_pp3_rx_dg_to_pkts(struct pp3_dev_priv *dev_priv, int dg);
+diff --git a/drivers/net/ethernet/marvell/pp3/platform/mv_pp3.c b/drivers/net/ethernet/marvell/pp3/platform/mv_pp3.c
+index 0ec0c9e..a430a8a 100644
+--- a/drivers/net/ethernet/marvell/pp3/platform/mv_pp3.c
++++ b/drivers/net/ethernet/marvell/pp3/platform/mv_pp3.c
+@@ -768,7 +768,6 @@ static int mv_pp3_shared_probe(struct platform_device *pdev)
+ 	struct msi_desc *msi_desc;
+ 	struct resource *a2m[MV_PP3_A2M_MAX_MASTER], *amb, *nss_regs;
+ 	struct net_device *dev;
+-	char name[20];
+ 
+ 	coherency_hard_mode = coherency_available();
+ #ifdef CONFIG_MV_PP3_COHERENCY_HARD_MODE_ONLY
+@@ -939,14 +938,9 @@ static int mv_pp3_shared_probe(struct platform_device *pdev)
+ 			continue;
+ 
+ 		if (!strcmp(child->name, "nic")) {
+-			of_property_read_u32(child, "id", &i);
+-			sprintf(name, "nic%d", i);
+-			dev = mv_pp3_netdev_init(name, CONFIG_MV_PP3_RXQ_NUM, CONFIG_MV_PP3_TXQ_NUM);
++			dev = mv_pp3_netdev_nic_init(child);
+ 			if (!dev)
+ 				return -ENODEV;
+-
+-			mv_pp3_netdev_set_emac_params(dev, child);
+-			mv_pp3_netdev_show(dev);
+ 		}
+ 	}
+ 	if (mv_pp3_gnss_dev_create(MV_NSS_EXT_PORT_MAX, false, NULL))
+-- 
+2.7.4
+

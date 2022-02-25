@@ -1,0 +1,73 @@
+From 6ea6e95a713e3b4e5ecfe9bbd456b9fd3f3e705c Mon Sep 17 00:00:00 2001
+From: David Sniatkiwicz <davidsn@marvell.com>
+Date: Wed, 17 Jan 2018 14:16:17 +0200
+Subject: [PATCH 2207/2241] mvebu: dts: a8kp: rename AP XOR stream id macro
+
+Change-Id: I77146f66ed88432cef6d8c5323a4cee7b8922c39
+Signed-off-by: David Sniatkiwicz <davidsn@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/48831
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Tested-by: Omri Itach <omrii@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-ap810.dtsi | 8 ++++----
+ include/dt-bindings/soc/ap810-stream-id.h     | 4 ++--
+ 2 files changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-ap810.dtsi b/arch/arm64/boot/dts/marvell/armada-ap810.dtsi
+index 59de9f3..4f5129d 100644
+--- a/arch/arm64/boot/dts/marvell/armada-ap810.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-ap810.dtsi
+@@ -103,7 +103,7 @@
+ 				compatible = "marvell,mv-xor-v2";
+ 				reg = <0x400000 0x1000>,
+ 				      <0x410000 0x1000>;
+-				msi-parent = <&AP810_LABEL(gic_its) MVEBU_STREAM_ID_XORx(0, AP_NUM)>;
++				msi-parent = <&AP810_LABEL(gic_its) MVEBU_STREAM_ID_APx_XORx(0, AP_NUM)>;
+ 				dma-bus-width = <40>;
+ 				dma-coherent;
+ 			};
+@@ -112,7 +112,7 @@
+ 				compatible = "marvell,mv-xor-v2";
+ 				reg = <0x420000 0x1000>,
+ 				      <0x430000 0x1000>;
+-				msi-parent = <&AP810_LABEL(gic_its) MVEBU_STREAM_ID_XORx(1, AP_NUM)>;
++				msi-parent = <&AP810_LABEL(gic_its) MVEBU_STREAM_ID_APx_XORx(1, AP_NUM)>;
+ 				dma-bus-width = <40>;
+ 				dma-coherent;
+ 			};
+@@ -121,7 +121,7 @@
+ 				compatible = "marvell,mv-xor-v2";
+ 				reg = <0x440000 0x1000>,
+ 				      <0x450000 0x1000>;
+-				msi-parent = <&AP810_LABEL(gic_its) MVEBU_STREAM_ID_XORx(2, AP_NUM)>;
++				msi-parent = <&AP810_LABEL(gic_its) MVEBU_STREAM_ID_APx_XORx(2, AP_NUM)>;
+ 				dma-bus-width = <40>;
+ 				dma-coherent;
+ 			};
+@@ -130,7 +130,7 @@
+ 				compatible = "marvell,mv-xor-v2";
+ 				reg = <0x460000 0x1000>,
+ 				      <0x470000 0x1000>;
+-				msi-parent = <&AP810_LABEL(gic_its) MVEBU_STREAM_ID_XORx(3, AP_NUM)>;
++				msi-parent = <&AP810_LABEL(gic_its) MVEBU_STREAM_ID_APx_XORx(3, AP_NUM)>;
+ 				dma-bus-width = <40>;
+ 				dma-coherent;
+ 			};
+diff --git a/include/dt-bindings/soc/ap810-stream-id.h b/include/dt-bindings/soc/ap810-stream-id.h
+index 010aa1a..c7daf10 100644
+--- a/include/dt-bindings/soc/ap810-stream-id.h
++++ b/include/dt-bindings/soc/ap810-stream-id.h
+@@ -5,8 +5,8 @@
+  */
+ 
+ /* AP XOR stream IDs: 0xa0-0xaf */
+-#define MVEBU_STREAM_ID_XOR0		0xa0
+-#define MVEBU_STREAM_ID_XORx(x, ap)	(MVEBU_STREAM_ID_XOR0 + ap * 4 + x)
++#define MVEBU_STREAM_ID_AP0_XOR0	0xa0
++#define MVEBU_STREAM_ID_APx_XORx(x, ap)	(MVEBU_STREAM_ID_AP0_XOR0 + ap * 4 + x)
+ 
+ /* CP(n) XOR0 stream ID: 0x89 + 11*n */
+ #define MVEBU_STREAM_ID_CP0_XOR0	0x89
+-- 
+2.7.4
+

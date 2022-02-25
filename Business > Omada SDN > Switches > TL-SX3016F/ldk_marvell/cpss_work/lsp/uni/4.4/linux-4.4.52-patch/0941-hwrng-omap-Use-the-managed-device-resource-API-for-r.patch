@@ -1,0 +1,43 @@
+From ddfbe3014e96e84044867f50a6e861b3896dfe72 Mon Sep 17 00:00:00 2001
+From: Romain Perier <romain.perier@free-electrons.com>
+Date: Mon, 5 Sep 2016 13:22:42 +0200
+Subject: [PATCH 0941/2241] hwrng: omap - Use the managed device resource API
+ for registration
+
+Use devm_hwrng_register instead of hwrng_register. It avoids the need
+to handle unregistration explicitly from the remove function.
+
+Change-Id: I4903f5196a390a467c5f86751f30ad062db8cf19
+Signed-off-by: Romain Perier <romain.perier@free-electrons.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/32586
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+---
+ drivers/char/hw_random/omap-rng.c | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
+
+diff --git a/drivers/char/hw_random/omap-rng.c b/drivers/char/hw_random/omap-rng.c
+index d57200b..dd197e5 100644
+--- a/drivers/char/hw_random/omap-rng.c
++++ b/drivers/char/hw_random/omap-rng.c
+@@ -381,7 +381,7 @@ static int omap_rng_probe(struct platform_device *pdev)
+ 	if (ret)
+ 		goto err_ioremap;
+ 
+-	ret = hwrng_register(&omap_rng_ops);
++	ret = devm_hwrng_register(dev, &omap_rng_ops);
+ 	if (ret)
+ 		goto err_register;
+ 
+@@ -402,8 +402,6 @@ static int omap_rng_remove(struct platform_device *pdev)
+ {
+ 	struct omap_rng_dev *priv = platform_get_drvdata(pdev);
+ 
+-	hwrng_unregister(&omap_rng_ops);
+-
+ 	priv->pdata->cleanup(priv);
+ 
+ 	pm_runtime_put_sync(&pdev->dev);
+-- 
+2.7.4
+

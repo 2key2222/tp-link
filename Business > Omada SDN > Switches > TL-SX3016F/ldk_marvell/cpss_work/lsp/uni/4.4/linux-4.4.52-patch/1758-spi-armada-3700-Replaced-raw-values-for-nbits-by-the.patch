@@ -1,0 +1,46 @@
+From 57f6c3be75319099533208469766e02232c7a956 Mon Sep 17 00:00:00 2001
+From: Romain Perier <romain.perier@free-electrons.com>
+Date: Wed, 21 Dec 2016 11:10:30 +0100
+Subject: [PATCH 1758/2241] spi: armada-3700: Replaced raw values for nbits by
+ the SPI macros
+
+Currently, function a3700_spi_pin_mode_set() configures the SPI transfer
+mode according to the value passed as second argument. This value is
+detected using the raw values from a switch case.
+
+This commit replaces these raw values by the corresponding macro
+constants in linux/spi/spi.h
+
+Change-Id: Ia13a5966adc0e0db40c240ab9d988b627852b625
+Signed-off-by: Romain Perier <romain.perier@free-electrons.com>
+Signed-off-by: Mark Brown <broonie@kernel.org>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/40884
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Victor Gu <xigu@marvell.com>
+---
+ drivers/spi/spi-armada-3700.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/spi/spi-armada-3700.c b/drivers/spi/spi-armada-3700.c
+index ec5fb01..a36f697 100644
+--- a/drivers/spi/spi-armada-3700.c
++++ b/drivers/spi/spi-armada-3700.c
+@@ -170,12 +170,12 @@ static int a3700_spi_pin_mode_set(struct a3700_spi *a3700_spi,
+ 	val &= ~(A3700_SPI_DATA_PIN0 | A3700_SPI_DATA_PIN1);
+ 
+ 	switch (pin_mode) {
+-	case 1:
++	case SPI_NBITS_SINGLE:
+ 		break;
+-	case 2:
++	case SPI_NBITS_DUAL:
+ 		val |= A3700_SPI_DATA_PIN0;
+ 		break;
+-	case 4:
++	case SPI_NBITS_QUAD:
+ 		val |= A3700_SPI_DATA_PIN1;
+ 		break;
+ 	default:
+-- 
+2.7.4
+

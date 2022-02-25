@@ -1,0 +1,100 @@
+From 457c79c2068e8734ac00820ddaa16825672c1180 Mon Sep 17 00:00:00 2001
+From: Victor Gu <xigu@marvell.com>
+Date: Thu, 25 Aug 2016 01:17:07 +0800
+Subject: [PATCH 1181/2241] mmc: sdhci-xenon: add support of slow mode property
+
+Add a slow mode option to Xenon PHY driver:
+"xenon,phy-slow-mode"
+This option is intended to solve the data corruption
+problems on some devices (like A8K AP-eMMC interface)
+This option has to be used along with "max-frequency = <x>"
+generic MMC option that limits the interface clock
+to a value lover or equal to 50MHz. For instance:
+sdhci {
+	xenon,phy-slow-mode;
+	max-frequency = <50000000>;
+	status = "okay";
+}';
+
+Change-Id: Iad9652ed19039a89e828fc2eeaf84d0d7a8d018c
+Signed-off-by: Victor Gu <xigu@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/32169
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+Tested-by: Hanna Hawa <hannah@marvell.com>
+Tested-by: Star_Automation <star@marvell.com>
+---
+ .../devicetree/bindings/mmc/marvell,xenon-sdhci.txt         |  5 +++++
+ drivers/mmc/host/sdhci-xenon-phy.c                          | 13 ++++++++++++-
+ 2 files changed, 17 insertions(+), 1 deletion(-)
+
+diff --git a/Documentation/devicetree/bindings/mmc/marvell,xenon-sdhci.txt b/Documentation/devicetree/bindings/mmc/marvell,xenon-sdhci.txt
+index f3a8ccf..bcdc70a 100644
+--- a/Documentation/devicetree/bindings/mmc/marvell,xenon-sdhci.txt
++++ b/Documentation/devicetree/bindings/mmc/marvell,xenon-sdhci.txt
+@@ -68,6 +68,11 @@ Optional Properties:
+   divider value if the common divider value 64 does not work on their platform.
+   - xenon,phy-tun-step-divider = <divider>;
+ 
++  Force PHY into slow mode.
++  Only available when bus frequency is not more than 50MHz in SDR mode.
++  Disabled by default. Enable phy-slow-mode only if normal mode doesn't work.
++  - xenon,phy-slow-mode;
++
+ - Re-tuning Counter
+   Xenon SDHC SOC usually doesn't provide re-tuning counter in
+   Capabilities Register 3 Bit[11:8].
+diff --git a/drivers/mmc/host/sdhci-xenon-phy.c b/drivers/mmc/host/sdhci-xenon-phy.c
+index cecd7f0..80dab4f 100644
+--- a/drivers/mmc/host/sdhci-xenon-phy.c
++++ b/drivers/mmc/host/sdhci-xenon-phy.c
+@@ -53,6 +53,8 @@ static int xenon_delay_adj_test(struct mmc_card *card);
+  */
+ 
+ struct emmc_phy_params {
++	bool	slow_mode;
++
+ 	u8 znr;
+ 	u8 zpr;
+ 	bool no_dll_tuning;
+@@ -106,6 +108,11 @@ static int emmc_phy_parse_param_dt(struct device_node *np,
+ {
+ 	u32 value;
+ 
++	if (of_property_read_bool(np, "xenon,phy-slow-mode"))
++		params->slow_mode = true;
++	else
++		params->slow_mode = false;
++
+ 	if (of_get_property(np, "xenon,phy-no-dll-tuning", NULL))
+ 		params->no_dll_tuning = true;
+ 	else
+@@ -148,6 +155,7 @@ static int xenon_emmc_phy_init(struct sdhci_host *host)
+ 	u32 wait, clock;
+ 	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
+ 	struct sdhci_xenon_priv *priv = sdhci_pltfm_priv(pltfm_host);
++	struct emmc_phy_params *params = priv->phy_params;
+ 	int timing_adj_reg;
+ 
+ 	if (priv->phy_type == EMMC_5_0_PHY)
+@@ -157,6 +165,8 @@ static int xenon_emmc_phy_init(struct sdhci_host *host)
+ 
+ 	reg = sdhci_readl(host, timing_adj_reg);
+ 	reg |= PHY_INITIALIZAION;
++	if (params->slow_mode)
++		reg |= TIMING_ADJUST_SLOW_MODE | OUTPUT_QSN_PHASE_SELECT;
+ 	sdhci_writel(host, reg, timing_adj_reg);
+ 
+ 	/* Add duration of FC_SYNC_RST */
+@@ -476,7 +486,8 @@ static void xenon_emmc_phy_config_tuning(struct sdhci_host *host)
+ 	int ret;
+ 	unsigned long flags;
+ 
+-	WARN_ON(host->clock <= MMC_HIGH_52_MAX_DTR);
++	if (!params->slow_mode)
++		WARN_ON(host->clock <= MMC_HIGH_52_MAX_DTR);
+ 	if (host->clock <= MMC_HIGH_52_MAX_DTR)
+ 		return;
+ 
+-- 
+2.7.4
+

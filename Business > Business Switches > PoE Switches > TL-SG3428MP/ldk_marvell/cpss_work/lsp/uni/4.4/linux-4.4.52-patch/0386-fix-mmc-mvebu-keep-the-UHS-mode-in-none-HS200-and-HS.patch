@@ -1,0 +1,44 @@
+From 80b0142803ba455b1922100b99cb1d0d9a61d40f Mon Sep 17 00:00:00 2001
+From: Victor Gu <xigu@marvell.com>
+Date: Thu, 5 May 2016 01:55:26 +0800
+Subject: [PATCH 0386/2241] fix: mmc: mvebu: keep the UHS mode in none HS200
+ and HS400 modes
+
+This patch fixes the issue that the UHS mode bits are cleared in none
+HS200 and HS400 modes, which makes the SD host controller in wrong timing
+mode and causes issues.
+
+Change-Id: Ib9e2764a7ae12190b5e7b38c03a05d3948e1069d
+Signed-off-by: Victor Gu <xigu@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/29622
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+Reviewed-by: Wilson Ding <dingwei@marvell.com>
+---
+ drivers/mmc/host/sdhci.c | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
+index 8e2afb3..bf64d3d 100644
+--- a/drivers/mmc/host/sdhci.c
++++ b/drivers/mmc/host/sdhci.c
+@@ -1465,11 +1465,13 @@ void sdhci_set_uhs_signaling(struct sdhci_host *host, unsigned timing)
+ 	 * defined in original SDHCI.
+ 	 */
+ 	if (host->quirks2 & SDHCI_QUIRK2_TIMING_HS200_HS400) {
+-		ctrl_2 &= ~SDHCI_CTRL_UHS_MASK;
+-		if (timing == MMC_TIMING_MMC_HS200)
++		if (timing == MMC_TIMING_MMC_HS200) {
++			ctrl_2 &= ~SDHCI_CTRL_UHS_MASK;
+ 			ctrl_2 |= SDHCI_CTRL_HS200_ONLY;
+-		else if (timing == MMC_TIMING_MMC_HS400)
++		} else if (timing == MMC_TIMING_MMC_HS400) {
++			ctrl_2 &= ~SDHCI_CTRL_UHS_MASK;
+ 			ctrl_2 |= SDHCI_CTRL_HS400_ONLY;
++		}
+ 	}
+ 
+ 	sdhci_writew(host, ctrl_2, SDHCI_HOST_CONTROL2);
+-- 
+2.7.4
+

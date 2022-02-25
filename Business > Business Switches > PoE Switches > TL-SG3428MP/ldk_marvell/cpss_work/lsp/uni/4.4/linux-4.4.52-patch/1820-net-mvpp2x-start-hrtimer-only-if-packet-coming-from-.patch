@@ -1,0 +1,45 @@
+From f59a3957f6660e9bb22e442b40c48009b81e2866 Mon Sep 17 00:00:00 2001
+From: Stefan Chulski <stefanc@marvell.com>
+Date: Mon, 24 Jul 2017 16:36:19 +0300
+Subject: [PATCH 1820/2241] net: mvpp2x: start hrtimer only if packet coming
+ from RX
+
+Skip tx hrtimer and transmit packet if in skb->hash Marvell
+unuiqe hash wasn't set.
+
+Change-Id: I21063156a26610fe624fac2e81b1060cdedf855e
+Signed-off-by: Stefan Chulski <stefanc@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/42061
+Reviewed-by: Yuval Caduri <cyuval@marvell.com>
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Nadav Haklai <nadavh@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c | 12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+index 85dead7..0a28b1a 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+@@ -3340,8 +3340,16 @@ static int mv_pp2x_tx(struct sk_buff *skb, struct net_device *dev)
+ #endif
+ 
+ 	/* Start 50 microseconds timer to transmit */
+-	if (!skb->xmit_more)
+-		mv_pp2x_tx_timer_set(cp_pcpu);
++	if (!skb->xmit_more) {
++		if (skb->hash == MVPP2_UNIQUE_HASH) {
++			mv_pp2x_tx_timer_set(cp_pcpu);
++		} else {
++			mv_pp2x_tx_timer_kill(cp_pcpu);
++			aggr_txq->hw_count += aggr_txq->sw_count;
++			mv_pp2x_aggr_txq_pend_desc_add(port, aggr_txq->sw_count);
++			aggr_txq->sw_count = 0;
++		}
++	}
+ 
+ out:
+ 	if (likely(frags > 0)) {
+-- 
+2.7.4
+

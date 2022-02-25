@@ -1,0 +1,18 @@
+Source-Makefile: feeds/iplatform/opensource/net-snmp/Makefile
+Package: net-snmp
+Submenu: SNMP
+Version: 5.7.2-1
+Depends: +libc +USE_EGLIBC:librt +USE_EGLIBC:libpthread 
+Menu-Depends: 
+Provides: 
+Section: snmpd
+Category: TP-LINK iplatform apps
+Title: Simple Network Management Protocol implement
+Maintainer: OpenWrt Developers Team <openwrt-devel@openwrt.org>
+Source: 
+Type: ipkg
+Description: Simple Network Management Protocol implement
+OpenWrt Developers Team <openwrt-devel@openwrt.org>
+@@
+
+

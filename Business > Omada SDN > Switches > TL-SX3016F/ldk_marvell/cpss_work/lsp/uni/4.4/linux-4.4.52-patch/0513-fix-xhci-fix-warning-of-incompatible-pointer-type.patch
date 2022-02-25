@@ -1,0 +1,43 @@
+From cebd9e04e836e27c7cc915fc30ab3fe6394eb9c7 Mon Sep 17 00:00:00 2001
+From: Lior Amsalem <alior@marvell.com>
+Date: Mon, 20 Jun 2016 23:51:41 +0300
+Subject: [PATCH 0513/2241] fix: xhci: fix warning of incompatible pointer type
+
+Change-Id: Ib0f5c460bc5c56bc9bbb9b6e95c8d16fad3040f9
+Signed-off-by: Lior Amsalem <alior@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/30592
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Wilson Ding <dingwei@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+---
+ drivers/usb/host/xhci-plat.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/usb/host/xhci-plat.c b/drivers/usb/host/xhci-plat.c
+index 054ce5a..7f40bde 100644
+--- a/drivers/usb/host/xhci-plat.c
++++ b/drivers/usb/host/xhci-plat.c
+@@ -232,6 +232,11 @@ static int xhci_plat_remove(struct platform_device *dev)
+ 	return 0;
+ }
+ 
++void xhci_plat_shutdown(struct platform_device *dev)
++{
++	xhci_plat_remove(dev);
++}
++
+ #ifdef CONFIG_PM_SLEEP
+ static int xhci_plat_suspend(struct device *dev)
+ {
+@@ -288,7 +293,7 @@ MODULE_DEVICE_TABLE(acpi, usb_xhci_acpi_match);
+ static struct platform_driver usb_xhci_driver = {
+ 	.probe		= xhci_plat_probe,
+ 	.remove		= xhci_plat_remove,
+-	.shutdown	= xhci_plat_remove,
++	.shutdown	= xhci_plat_shutdown,
+ 	.driver	= {
+ 		.name = "xhci-hcd",
+ 		.pm = DEV_PM_OPS,
+-- 
+2.7.4
+

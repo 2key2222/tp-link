@@ -1,0 +1,58 @@
+From 39eacf1445d50d2629025b19fbe4d07ae0c55a72 Mon Sep 17 00:00:00 2001
+From: Neta Zur <neta@marvell.com>
+Date: Thu, 17 Nov 2016 15:18:44 +0200
+Subject: [PATCH 1083/2241] fix: a39x: update i2c compatible string
+
+Update i2c compatible from mv64xxx-i2c to mv78230-i2c
+The mv78230-i2c activate i2c errata delay and I2C Master Bridge
+
+Change-Id: I6f6fcac6b17d2903dd7675edd655dfc6e6944d88
+Signed-off-by: Neta Zur <neta@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/33885
+---
+ arch/arm/boot/dts/armada-39x.dtsi | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/arch/arm/boot/dts/armada-39x.dtsi b/arch/arm/boot/dts/armada-39x.dtsi
+index 9a25a11..6837494 100644
+--- a/arch/arm/boot/dts/armada-39x.dtsi
++++ b/arch/arm/boot/dts/armada-39x.dtsi
+@@ -187,7 +187,7 @@
+ 			};
+ 
+ 			i2c0: i2c@11000 {
+-				compatible = "marvell,mv64xxx-i2c";
++				compatible = "marvell,mv78230-i2c";
+ 				reg = <0x11000 0x20>;
+ 				#address-cells = <1>;
+ 				#size-cells = <0>;
+@@ -198,7 +198,7 @@
+ 			};
+ 
+ 			i2c1: i2c@11100 {
+-				compatible = "marvell,mv64xxx-i2c";
++				compatible = "marvell,mv78230-i2c";
+ 				reg = <0x11100 0x20>;
+ 				#address-cells = <1>;
+ 				#size-cells = <0>;
+@@ -209,7 +209,7 @@
+ 			};
+ 
+ 			i2c2: i2c@11200 {
+-				compatible = "marvell,mv64xxx-i2c";
++				compatible = "marvell,mv78230-i2c";
+ 				reg = <0x11200 0x20>;
+ 				#address-cells = <1>;
+ 				#size-cells = <0>;
+@@ -220,7 +220,7 @@
+ 			};
+ 
+ 			i2c3: i2c@11300 {
+-				compatible = "marvell,mv64xxx-i2c";
++				compatible = "marvell,mv78230-i2c";
+ 				reg = <0x11300 0x20>;
+ 				#address-cells = <1>;
+ 				#size-cells = <0>;
+-- 
+2.7.4
+

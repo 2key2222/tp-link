@@ -1,0 +1,2955 @@
+From 650a54cda51bdcbbfadb2c4edae4f8df529f5213 Mon Sep 17 00:00:00 2001
+From: Linus Walleij <linus.walleij@linaro.org>
+Date: Wed, 4 Nov 2015 09:56:26 +0100
+Subject: [PATCH 0116/2241] gpio: change member .dev to .parent
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+The name .dev in a struct is normally reserved for a struct device
+that is let us say a superclass to the thing described by the struct.
+struct gpio_chip stands out by confusingly using a struct device *dev
+to point to the parent device (such as a platform_device) that
+represents the hardware. As we want to give gpio_chip:s real devices,
+this is not working. We need to rename this member to parent.
+
+This was done by two coccinelle scripts, I guess it is possible to
+combine them into one, but I don't know such stuff. They look like
+this:
+
+@@
+struct gpio_chip *var;
+@@
+-var->dev
++var->parent
+
+and:
+
+@@
+struct gpio_chip var;
+@@
+-var.dev
++var.parent
+
+and:
+
+@@
+struct bgpio_chip *var;
+@@
+-var->gc.dev
++var->gc.parent
+
+Plus a few instances of bgpio that I couldn't figure out how
+to teach Coccinelle to rewrite.
+
+This patch hits all over the place, but I *strongly* prefer this
+solution to any piecemal approaches that just exercise patch
+mechanics all over the place. It mainly hits drivers/gpio and
+drivers/pinctrl which is my own backyard anyway.
+
+Change-Id: I3fb42a870231773c40f06dc11cf6141f5f15908d
+Cc: Haavard Skinnemoen <hskinnemoen@gmail.com>
+Cc: Rafał Miłecki <zajec5@gmail.com>
+Cc: Richard Purdie <rpurdie@rpsys.net>
+Cc: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+Cc: Alek Du <alek.du@intel.com>
+Cc: Jaroslav Kysela <perex@perex.cz>
+Cc: Takashi Iwai <tiwai@suse.com>
+Acked-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Acked-by: Lee Jones <lee.jones@linaro.org>
+Acked-by: Jiri Kosina <jkosina@suse.cz>
+Acked-by: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+Acked-by: Jacek Anaszewski <j.anaszewski@samsung.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/27568
+Reviewed-by: Lior Amsalem <alior@marvell.com>
+Tested-by: Lior Amsalem <alior@marvell.com>
+---
+ arch/avr32/mach-at32ap/pio.c                  |  2 +-
+ drivers/bcma/driver_gpio.c                    |  2 +-
+ drivers/gpio/gpio-104-idio-16.c               |  2 +-
+ drivers/gpio/gpio-74x164.c                    |  4 +--
+ drivers/gpio/gpio-adnp.c                      | 19 ++++++-----
+ drivers/gpio/gpio-altera.c                    |  2 +-
+ drivers/gpio/gpio-amd8111.c                   |  2 +-
+ drivers/gpio/gpio-amdpt.c                     | 18 +++++-----
+ drivers/gpio/gpio-arizona.c                   |  2 +-
+ drivers/gpio/gpio-ath79.c                     |  2 +-
+ drivers/gpio/gpio-bcm-kona.c                  |  6 ++--
+ drivers/gpio/gpio-crystalcove.c               |  2 +-
+ drivers/gpio/gpio-davinci.c                   |  4 +--
+ drivers/gpio/gpio-dln2.c                      | 10 +++---
+ drivers/gpio/gpio-em.c                        |  4 +--
+ drivers/gpio/gpio-f7188x.c                    |  2 +-
+ drivers/gpio/gpio-generic.c                   |  2 +-
+ drivers/gpio/gpio-ich.c                       |  2 +-
+ drivers/gpio/gpio-intel-mid.c                 |  2 +-
+ drivers/gpio/gpio-janz-ttl.c                  |  6 ++--
+ drivers/gpio/gpio-kempld.c                    |  2 +-
+ drivers/gpio/gpio-lp3943.c                    |  2 +-
+ drivers/gpio/gpio-lpc18xx.c                   |  2 +-
+ drivers/gpio/gpio-lynxpoint.c                 |  2 +-
+ drivers/gpio/gpio-max730x.c                   |  2 +-
+ drivers/gpio/gpio-max732x.c                   |  4 +--
+ drivers/gpio/gpio-mb86s7x.c                   |  2 +-
+ drivers/gpio/gpio-mc33880.c                   |  2 +-
+ drivers/gpio/gpio-mc9s08dz60.c                |  2 +-
+ drivers/gpio/gpio-mcp23s08.c                  | 16 +++++----
+ drivers/gpio/gpio-moxart.c                    |  2 +-
+ drivers/gpio/gpio-msic.c                      |  2 +-
+ drivers/gpio/gpio-mvebu.c                     |  2 +-
+ drivers/gpio/gpio-octeon.c                    |  2 +-
+ drivers/gpio/gpio-omap.c                      |  4 +--
+ drivers/gpio/gpio-palmas.c                    | 14 ++++----
+ drivers/gpio/gpio-pca953x.c                   |  2 +-
+ drivers/gpio/gpio-pcf857x.c                   |  2 +-
+ drivers/gpio/gpio-pch.c                       |  2 +-
+ drivers/gpio/gpio-pl061.c                     | 12 +++----
+ drivers/gpio/gpio-rc5t583.c                   |  2 +-
+ drivers/gpio/gpio-rcar.c                      |  2 +-
+ drivers/gpio/gpio-sch.c                       |  2 +-
+ drivers/gpio/gpio-sch311x.c                   |  4 +--
+ drivers/gpio/gpio-spear-spics.c               |  2 +-
+ drivers/gpio/gpio-stmpe.c                     |  2 +-
+ drivers/gpio/gpio-stp-xway.c                  |  4 +--
+ drivers/gpio/gpio-sx150x.c                    |  2 +-
+ drivers/gpio/gpio-syscon.c                    |  4 +--
+ drivers/gpio/gpio-tb10x.c                     |  2 +-
+ drivers/gpio/gpio-tc3589x.c                   |  2 +-
+ drivers/gpio/gpio-timberdale.c                |  2 +-
+ drivers/gpio/gpio-tps6586x.c                  |  2 +-
+ drivers/gpio/gpio-tps65910.c                  |  2 +-
+ drivers/gpio/gpio-tps65912.c                  |  2 +-
+ drivers/gpio/gpio-ts5500.c                    |  5 +--
+ drivers/gpio/gpio-twl4030.c                   |  4 +--
+ drivers/gpio/gpio-twl6040.c                   |  6 ++--
+ drivers/gpio/gpio-tz1090-pdc.c                |  2 +-
+ drivers/gpio/gpio-tz1090.c                    |  2 +-
+ drivers/gpio/gpio-vf610.c                     |  2 +-
+ drivers/gpio/gpio-viperboard.c                | 16 ++++-----
+ drivers/gpio/gpio-vr41xx.c                    |  4 +--
+ drivers/gpio/gpio-wm831x.c                    |  2 +-
+ drivers/gpio/gpio-wm8350.c                    |  2 +-
+ drivers/gpio/gpio-wm8994.c                    |  2 +-
+ drivers/gpio/gpio-xgene.c                     |  2 +-
+ drivers/gpio/gpio-xilinx.c                    |  2 +-
+ drivers/gpio/gpio-xlp.c                       |  2 +-
+ drivers/gpio/gpio-zevio.c                     |  4 +--
+ drivers/gpio/gpio-zx.c                        |  2 +-
+ drivers/gpio/gpio-zynq.c                      |  6 ++--
+ drivers/gpio/gpiolib-acpi.c                   | 47 ++++++++++++++-------------
+ drivers/gpio/gpiolib-of.c                     |  4 +--
+ drivers/gpio/gpiolib-sysfs.c                  |  5 +--
+ drivers/gpio/gpiolib.c                        | 19 ++++++-----
+ drivers/hid/hid-cp2112.c                      |  2 +-
+ drivers/input/touchscreen/ad7879.c            |  2 +-
+ drivers/leds/leds-pca9532.c                   |  6 ++--
+ drivers/leds/leds-tca6507.c                   |  2 +-
+ drivers/media/dvb-frontends/cxd2820r_core.c   |  2 +-
+ drivers/mfd/dm355evm_msp.c                    |  2 +-
+ drivers/mfd/htc-egpio.c                       |  2 +-
+ drivers/mfd/htc-i2cpld.c                      |  4 +--
+ drivers/mfd/tps65010.c                        |  2 +-
+ drivers/mfd/ucb1x00-core.c                    |  2 +-
+ drivers/pinctrl/bcm/pinctrl-bcm2835.c         |  8 ++---
+ drivers/pinctrl/bcm/pinctrl-cygnus-gpio.c     |  2 +-
+ drivers/pinctrl/intel/pinctrl-baytrail.c      |  2 +-
+ drivers/pinctrl/intel/pinctrl-cherryview.c    |  2 +-
+ drivers/pinctrl/intel/pinctrl-intel.c         |  2 +-
+ drivers/pinctrl/mediatek/pinctrl-mtk-common.c | 12 +++----
+ drivers/pinctrl/meson/pinctrl-meson.c         |  2 +-
+ drivers/pinctrl/nomadik/pinctrl-abx500.c      |  7 ++--
+ drivers/pinctrl/nomadik/pinctrl-nomadik.c     |  8 ++---
+ drivers/pinctrl/pinctrl-amd.c                 |  2 +-
+ drivers/pinctrl/pinctrl-as3722.c              |  2 +-
+ drivers/pinctrl/pinctrl-at91-pio4.c           | 12 +++----
+ drivers/pinctrl/pinctrl-at91.c                |  2 +-
+ drivers/pinctrl/pinctrl-coh901.c              |  2 +-
+ drivers/pinctrl/pinctrl-digicolor.c           |  2 +-
+ drivers/pinctrl/pinctrl-pistachio.c           |  2 +-
+ drivers/pinctrl/pinctrl-rockchip.c            |  2 +-
+ drivers/pinctrl/pinctrl-st.c                  |  2 +-
+ drivers/pinctrl/pinctrl-xway.c                | 10 +++---
+ drivers/pinctrl/qcom/pinctrl-msm.c            |  2 +-
+ drivers/pinctrl/qcom/pinctrl-spmi-gpio.c      |  2 +-
+ drivers/pinctrl/qcom/pinctrl-spmi-mpp.c       |  2 +-
+ drivers/pinctrl/qcom/pinctrl-ssbi-gpio.c      |  2 +-
+ drivers/pinctrl/qcom/pinctrl-ssbi-mpp.c       |  2 +-
+ drivers/pinctrl/samsung/pinctrl-exynos.c      |  3 +-
+ drivers/pinctrl/samsung/pinctrl-exynos5440.c  | 12 +++----
+ drivers/pinctrl/samsung/pinctrl-samsung.c     |  2 +-
+ drivers/pinctrl/sh-pfc/gpio.c                 |  2 +-
+ drivers/pinctrl/sirf/pinctrl-atlas7.c         |  2 +-
+ drivers/pinctrl/sirf/pinctrl-sirf.c           |  2 +-
+ drivers/pinctrl/spear/pinctrl-plgpio.c        |  2 +-
+ drivers/pinctrl/sunxi/pinctrl-sunxi.c         | 10 +++---
+ drivers/pinctrl/vt8500/pinctrl-wmt.c          |  8 ++---
+ drivers/platform/x86/intel_pmic_gpio.c        |  4 +--
+ drivers/tty/serial/max310x.c                  |  2 +-
+ drivers/tty/serial/sc16is7xx.c                |  2 +-
+ include/linux/gpio/driver.h                   |  4 +--
+ sound/soc/codecs/rt5677.c                     |  2 +-
+ sound/soc/codecs/wm5100.c                     |  2 +-
+ sound/soc/codecs/wm8903.c                     |  2 +-
+ sound/soc/codecs/wm8962.c                     |  2 +-
+ sound/soc/codecs/wm8996.c                     |  2 +-
+ 128 files changed, 274 insertions(+), 261 deletions(-)
+
+diff --git a/arch/avr32/mach-at32ap/pio.c b/arch/avr32/mach-at32ap/pio.c
+index 4561281..439b7af 100644
+--- a/arch/avr32/mach-at32ap/pio.c
++++ b/arch/avr32/mach-at32ap/pio.c
+@@ -397,7 +397,7 @@ static int __init pio_probe(struct platform_device *pdev)
+ 	pio->chip.label = pio->name;
+ 	pio->chip.base = pdev->id * 32;
+ 	pio->chip.ngpio = 32;
+-	pio->chip.dev = &pdev->dev;
++	pio->chip.parent = &pdev->dev;
+ 	pio->chip.owner = THIS_MODULE;
+ 
+ 	pio->chip.direction_input = direction_input;
+diff --git a/drivers/bcma/driver_gpio.c b/drivers/bcma/driver_gpio.c
+index 504899a7..9497544 100644
+--- a/drivers/bcma/driver_gpio.c
++++ b/drivers/bcma/driver_gpio.c
+@@ -188,7 +188,7 @@ int bcma_gpio_init(struct bcma_drv_cc *cc)
+ 	chip->direction_input	= bcma_gpio_direction_input;
+ 	chip->direction_output	= bcma_gpio_direction_output;
+ 	chip->owner		= THIS_MODULE;
+-	chip->dev		= bcma_bus_get_host_dev(bus);
++	chip->parent		= bcma_bus_get_host_dev(bus);
+ #if IS_BUILTIN(CONFIG_OF)
+ 	if (cc->core->bus->hosttype == BCMA_HOSTTYPE_SOC)
+ 		chip->of_node	= cc->core->dev.of_node;
+diff --git a/drivers/gpio/gpio-104-idio-16.c b/drivers/gpio/gpio-104-idio-16.c
+index 5400d7d..107cfd7 100644
+--- a/drivers/gpio/gpio-104-idio-16.c
++++ b/drivers/gpio/gpio-104-idio-16.c
+@@ -127,7 +127,7 @@ static int __init idio_16_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	idio16gpio->chip.label = NAME;
+-	idio16gpio->chip.dev = dev;
++	idio16gpio->chip.parent = dev;
+ 	idio16gpio->chip.owner = THIS_MODULE;
+ 	idio16gpio->chip.base = -1;
+ 	idio16gpio->chip.ngpio = 32;
+diff --git a/drivers/gpio/gpio-74x164.c b/drivers/gpio/gpio-74x164.c
+index 60172f8..fb55530 100644
+--- a/drivers/gpio/gpio-74x164.c
++++ b/drivers/gpio/gpio-74x164.c
+@@ -33,7 +33,7 @@ static struct gen_74x164_chip *gpio_to_74x164_chip(struct gpio_chip *gc)
+ 
+ static int __gen_74x164_write_config(struct gen_74x164_chip *chip)
+ {
+-	struct spi_device *spi = to_spi_device(chip->gpio_chip.dev);
++	struct spi_device *spi = to_spi_device(chip->gpio_chip.parent);
+ 	struct spi_message message;
+ 	struct spi_transfer *msg_buf;
+ 	int i, ret = 0;
+@@ -143,7 +143,7 @@ static int gen_74x164_probe(struct spi_device *spi)
+ 		return -ENOMEM;
+ 
+ 	chip->gpio_chip.can_sleep = true;
+-	chip->gpio_chip.dev = &spi->dev;
++	chip->gpio_chip.parent = &spi->dev;
+ 	chip->gpio_chip.owner = THIS_MODULE;
+ 
+ 	mutex_init(&chip->lock);
+diff --git a/drivers/gpio/gpio-adnp.c b/drivers/gpio/gpio-adnp.c
+index d3d0a90..b34a62a 100644
+--- a/drivers/gpio/gpio-adnp.c
++++ b/drivers/gpio/gpio-adnp.c
+@@ -47,7 +47,7 @@ static int adnp_read(struct adnp *adnp, unsigned offset, uint8_t *value)
+ 
+ 	err = i2c_smbus_read_byte_data(adnp->client, offset);
+ 	if (err < 0) {
+-		dev_err(adnp->gpio.dev, "%s failed: %d\n",
++		dev_err(adnp->gpio.parent, "%s failed: %d\n",
+ 			"i2c_smbus_read_byte_data()", err);
+ 		return err;
+ 	}
+@@ -62,7 +62,7 @@ static int adnp_write(struct adnp *adnp, unsigned offset, uint8_t value)
+ 
+ 	err = i2c_smbus_write_byte_data(adnp->client, offset, value);
+ 	if (err < 0) {
+-		dev_err(adnp->gpio.dev, "%s failed: %d\n",
++		dev_err(adnp->gpio.parent, "%s failed: %d\n",
+ 			"i2c_smbus_write_byte_data()", err);
+ 		return err;
+ 	}
+@@ -266,8 +266,8 @@ static int adnp_gpio_setup(struct adnp *adnp, unsigned int num_gpios)
+ 	chip->base = -1;
+ 	chip->ngpio = num_gpios;
+ 	chip->label = adnp->client->name;
+-	chip->dev = &adnp->client->dev;
+-	chip->of_node = chip->dev->of_node;
++	chip->parent = &adnp->client->dev;
++	chip->of_node = chip->parent->of_node;
+ 	chip->owner = THIS_MODULE;
+ 
+ 	err = gpiochip_add(chip);
+@@ -435,7 +435,8 @@ static int adnp_irq_setup(struct adnp *adnp)
+ 	 * is chosen to match the register layout of the hardware in that
+ 	 * each segment contains the corresponding bits for all interrupts.
+ 	 */
+-	adnp->irq_enable = devm_kzalloc(chip->dev, num_regs * 6, GFP_KERNEL);
++	adnp->irq_enable = devm_kzalloc(chip->parent, num_regs * 6,
++					GFP_KERNEL);
+ 	if (!adnp->irq_enable)
+ 		return -ENOMEM;
+ 
+@@ -462,12 +463,12 @@ static int adnp_irq_setup(struct adnp *adnp)
+ 		adnp->irq_enable[i] = 0x00;
+ 	}
+ 
+-	err = devm_request_threaded_irq(chip->dev, adnp->client->irq,
++	err = devm_request_threaded_irq(chip->parent, adnp->client->irq,
+ 					NULL, adnp_irq,
+ 					IRQF_TRIGGER_RISING | IRQF_ONESHOT,
+-					dev_name(chip->dev), adnp);
++					dev_name(chip->parent), adnp);
+ 	if (err != 0) {
+-		dev_err(chip->dev, "can't request IRQ#%d: %d\n",
++		dev_err(chip->parent, "can't request IRQ#%d: %d\n",
+ 			adnp->client->irq, err);
+ 		return err;
+ 	}
+@@ -478,7 +479,7 @@ static int adnp_irq_setup(struct adnp *adnp)
+ 				   handle_simple_irq,
+ 				   IRQ_TYPE_NONE);
+ 	if (err) {
+-		dev_err(chip->dev,
++		dev_err(chip->parent,
+ 			"could not connect irqchip to gpiochip\n");
+ 		return err;
+ 	}
+diff --git a/drivers/gpio/gpio-altera.c b/drivers/gpio/gpio-altera.c
+index 3e6661b..84a20af 100644
+--- a/drivers/gpio/gpio-altera.c
++++ b/drivers/gpio/gpio-altera.c
+@@ -290,7 +290,7 @@ static int altera_gpio_probe(struct platform_device *pdev)
+ 	altera_gc->mmchip.gc.get		= altera_gpio_get;
+ 	altera_gc->mmchip.gc.set		= altera_gpio_set;
+ 	altera_gc->mmchip.gc.owner		= THIS_MODULE;
+-	altera_gc->mmchip.gc.dev		= &pdev->dev;
++	altera_gc->mmchip.gc.parent		= &pdev->dev;
+ 
+ 	ret = of_mm_gpiochip_add(node, &altera_gc->mmchip);
+ 	if (ret) {
+diff --git a/drivers/gpio/gpio-amd8111.c b/drivers/gpio/gpio-amd8111.c
+index d00d819..5c378e9f 100644
+--- a/drivers/gpio/gpio-amd8111.c
++++ b/drivers/gpio/gpio-amd8111.c
+@@ -220,7 +220,7 @@ found:
+ 		goto out;
+ 	}
+ 	gp.pdev = pdev;
+-	gp.chip.dev = &pdev->dev;
++	gp.chip.parent = &pdev->dev;
+ 
+ 	spin_lock_init(&gp.lock);
+ 
+diff --git a/drivers/gpio/gpio-amdpt.c b/drivers/gpio/gpio-amdpt.c
+index cbbb966..f842ccc 100644
+--- a/drivers/gpio/gpio-amdpt.c
++++ b/drivers/gpio/gpio-amdpt.c
+@@ -39,14 +39,14 @@ static int pt_gpio_request(struct gpio_chip *gc, unsigned offset)
+ 	unsigned long flags;
+ 	u32 using_pins;
+ 
+-	dev_dbg(gc->dev, "pt_gpio_request offset=%x\n", offset);
++	dev_dbg(gc->parent, "pt_gpio_request offset=%x\n", offset);
+ 
+ 	spin_lock_irqsave(&pt_gpio->lock, flags);
+ 
+ 	using_pins = readl(pt_gpio->reg_base + PT_SYNC_REG);
+ 	if (using_pins & BIT(offset)) {
+-		dev_warn(gc->dev, "PT GPIO pin %x reconfigured\n",
+-			offset);
++		dev_warn(gc->parent, "PT GPIO pin %x reconfigured\n",
++			 offset);
+ 		spin_unlock_irqrestore(&pt_gpio->lock, flags);
+ 		return -EINVAL;
+ 	}
+@@ -72,7 +72,7 @@ static void pt_gpio_free(struct gpio_chip *gc, unsigned offset)
+ 
+ 	spin_unlock_irqrestore(&pt_gpio->lock, flags);
+ 
+-	dev_dbg(gc->dev, "pt_gpio_free offset=%x\n", offset);
++	dev_dbg(gc->parent, "pt_gpio_free offset=%x\n", offset);
+ }
+ 
+ static void pt_gpio_set_value(struct gpio_chip *gc, unsigned offset, int value)
+@@ -81,7 +81,7 @@ static void pt_gpio_set_value(struct gpio_chip *gc, unsigned offset, int value)
+ 	unsigned long flags;
+ 	u32 data;
+ 
+-	dev_dbg(gc->dev, "pt_gpio_set_value offset=%x, value=%x\n",
++	dev_dbg(gc->parent, "pt_gpio_set_value offset=%x, value=%x\n",
+ 		offset, value);
+ 
+ 	spin_lock_irqsave(&pt_gpio->lock, flags);
+@@ -116,7 +116,7 @@ static int pt_gpio_get_value(struct gpio_chip *gc, unsigned offset)
+ 	data >>= offset;
+ 	data &= 1;
+ 
+-	dev_dbg(gc->dev, "pt_gpio_get_value offset=%x, value=%x\n",
++	dev_dbg(gc->parent, "pt_gpio_get_value offset=%x, value=%x\n",
+ 		offset, data);
+ 
+ 	return data;
+@@ -128,7 +128,7 @@ static int pt_gpio_direction_input(struct gpio_chip *gc, unsigned offset)
+ 	unsigned long flags;
+ 	u32 data;
+ 
+-	dev_dbg(gc->dev, "pt_gpio_dirction_input offset=%x\n", offset);
++	dev_dbg(gc->parent, "pt_gpio_dirction_input offset=%x\n", offset);
+ 
+ 	spin_lock_irqsave(&pt_gpio->lock, flags);
+ 
+@@ -148,7 +148,7 @@ static int pt_gpio_direction_output(struct gpio_chip *gc,
+ 	unsigned long flags;
+ 	u32 data;
+ 
+-	dev_dbg(gc->dev, "pt_gpio_direction_output offset=%x, value=%x\n",
++	dev_dbg(gc->parent, "pt_gpio_direction_output offset=%x, value=%x\n",
+ 		offset, value);
+ 
+ 	spin_lock_irqsave(&pt_gpio->lock, flags);
+@@ -202,7 +202,7 @@ static int pt_gpio_probe(struct platform_device *pdev)
+ 
+ 	pt_gpio->gc.label            = pdev->name;
+ 	pt_gpio->gc.owner            = THIS_MODULE;
+-	pt_gpio->gc.dev              = dev;
++	pt_gpio->gc.parent              = dev;
+ 	pt_gpio->gc.request          = pt_gpio_request;
+ 	pt_gpio->gc.free             = pt_gpio_free;
+ 	pt_gpio->gc.direction_input  = pt_gpio_direction_input;
+diff --git a/drivers/gpio/gpio-arizona.c b/drivers/gpio/gpio-arizona.c
+index ca00273..412d131 100644
+--- a/drivers/gpio/gpio-arizona.c
++++ b/drivers/gpio/gpio-arizona.c
+@@ -108,7 +108,7 @@ static int arizona_gpio_probe(struct platform_device *pdev)
+ 
+ 	arizona_gpio->arizona = arizona;
+ 	arizona_gpio->gpio_chip = template_chip;
+-	arizona_gpio->gpio_chip.dev = &pdev->dev;
++	arizona_gpio->gpio_chip.parent = &pdev->dev;
+ #ifdef CONFIG_OF_GPIO
+ 	arizona_gpio->gpio_chip.of_node = arizona->dev->of_node;
+ #endif
+diff --git a/drivers/gpio/gpio-ath79.c b/drivers/gpio/gpio-ath79.c
+index 5eaea8b..732c6d4 100644
+--- a/drivers/gpio/gpio-ath79.c
++++ b/drivers/gpio/gpio-ath79.c
+@@ -177,7 +177,7 @@ static int ath79_gpio_probe(struct platform_device *pdev)
+ 
+ 	spin_lock_init(&ctrl->lock);
+ 	memcpy(&ctrl->chip, &ath79_gpio_chip, sizeof(ctrl->chip));
+-	ctrl->chip.dev = &pdev->dev;
++	ctrl->chip.parent = &pdev->dev;
+ 	ctrl->chip.ngpio = ath79_gpio_count;
+ 	if (oe_inverted) {
+ 		ctrl->chip.direction_input = ar934x_gpio_direction_input;
+diff --git a/drivers/gpio/gpio-bcm-kona.c b/drivers/gpio/gpio-bcm-kona.c
+index 4ea71d5..c2ad8a1 100644
+--- a/drivers/gpio/gpio-bcm-kona.c
++++ b/drivers/gpio/gpio-bcm-kona.c
+@@ -273,7 +273,7 @@ static int bcm_kona_gpio_set_debounce(struct gpio_chip *chip, unsigned gpio,
+ 	reg_base = kona_gpio->reg_base;
+ 	/* debounce must be 1-128ms (or 0) */
+ 	if ((debounce > 0 && debounce < 1000) || debounce > 128000) {
+-		dev_err(chip->dev, "Debounce value %u not in range\n",
++		dev_err(chip->parent, "Debounce value %u not in range\n",
+ 			debounce);
+ 		return -EINVAL;
+ 	}
+@@ -416,7 +416,7 @@ static int bcm_kona_gpio_irq_set_type(struct irq_data *d, unsigned int type)
+ 	case IRQ_TYPE_LEVEL_LOW:
+ 		/* BCM GPIO doesn't support level triggering */
+ 	default:
+-		dev_err(kona_gpio->gpio_chip.dev,
++		dev_err(kona_gpio->gpio_chip.parent,
+ 			"Invalid BCM GPIO irq type 0x%x\n", type);
+ 		return -EINVAL;
+ 	}
+@@ -477,7 +477,7 @@ static int bcm_kona_gpio_irq_reqres(struct irq_data *d)
+ 	struct bcm_kona_gpio *kona_gpio = irq_data_get_irq_chip_data(d);
+ 
+ 	if (gpiochip_lock_as_irq(&kona_gpio->gpio_chip, d->hwirq)) {
+-		dev_err(kona_gpio->gpio_chip.dev,
++		dev_err(kona_gpio->gpio_chip.parent,
+ 			"unable to lock HW IRQ %lu for IRQ\n",
+ 			d->hwirq);
+ 		return -EINVAL;
+diff --git a/drivers/gpio/gpio-crystalcove.c b/drivers/gpio/gpio-crystalcove.c
+index fddd204..141093a 100644
+--- a/drivers/gpio/gpio-crystalcove.c
++++ b/drivers/gpio/gpio-crystalcove.c
+@@ -341,7 +341,7 @@ static int crystalcove_gpio_probe(struct platform_device *pdev)
+ 	cg->chip.base = -1;
+ 	cg->chip.ngpio = CRYSTALCOVE_VGPIO_NUM;
+ 	cg->chip.can_sleep = true;
+-	cg->chip.dev = dev;
++	cg->chip.parent = dev;
+ 	cg->chip.dbg_show = crystalcove_gpio_dbg_show;
+ 	cg->regmap = pmic->regmap;
+ 
+diff --git a/drivers/gpio/gpio-davinci.c b/drivers/gpio/gpio-davinci.c
+index 5e71538..cf31179 100644
+--- a/drivers/gpio/gpio-davinci.c
++++ b/drivers/gpio/gpio-davinci.c
+@@ -179,8 +179,8 @@ static int davinci_gpio_of_xlate(struct gpio_chip *gc,
+ 			     const struct of_phandle_args *gpiospec,
+ 			     u32 *flags)
+ {
+-	struct davinci_gpio_controller *chips = dev_get_drvdata(gc->dev);
+-	struct davinci_gpio_platform_data *pdata = dev_get_platdata(gc->dev);
++	struct davinci_gpio_controller *chips = dev_get_drvdata(gc->parent);
++	struct davinci_gpio_platform_data *pdata = dev_get_platdata(gc->parent);
+ 
+ 	if (gpiospec->args[0] > pdata->ngpio)
+ 		return -EINVAL;
+diff --git a/drivers/gpio/gpio-dln2.c b/drivers/gpio/gpio-dln2.c
+index 6685712..e541af0 100644
+--- a/drivers/gpio/gpio-dln2.c
++++ b/drivers/gpio/gpio-dln2.c
+@@ -377,7 +377,7 @@ static void dln2_irq_bus_unlock(struct irq_data *irqd)
+ 
+ 		ret = dln2_gpio_set_event_cfg(dln2, pin, type, 0);
+ 		if (ret)
+-			dev_err(dln2->gpio.dev, "failed to set event\n");
++			dev_err(dln2->gpio.parent, "failed to set event\n");
+ 	}
+ 
+ 	mutex_unlock(&dln2->irq_lock);
+@@ -406,19 +406,19 @@ static void dln2_gpio_event(struct platform_device *pdev, u16 echo,
+ 	struct dln2_gpio *dln2 = platform_get_drvdata(pdev);
+ 
+ 	if (len < sizeof(*event)) {
+-		dev_err(dln2->gpio.dev, "short event message\n");
++		dev_err(dln2->gpio.parent, "short event message\n");
+ 		return;
+ 	}
+ 
+ 	pin = le16_to_cpu(event->pin);
+ 	if (pin >= dln2->gpio.ngpio) {
+-		dev_err(dln2->gpio.dev, "out of bounds pin %d\n", pin);
++		dev_err(dln2->gpio.parent, "out of bounds pin %d\n", pin);
+ 		return;
+ 	}
+ 
+ 	irq = irq_find_mapping(dln2->gpio.irqdomain, pin);
+ 	if (!irq) {
+-		dev_err(dln2->gpio.dev, "pin %d not mapped to IRQ\n", pin);
++		dev_err(dln2->gpio.parent, "pin %d not mapped to IRQ\n", pin);
+ 		return;
+ 	}
+ 
+@@ -462,7 +462,7 @@ static int dln2_gpio_probe(struct platform_device *pdev)
+ 	dln2->pdev = pdev;
+ 
+ 	dln2->gpio.label = "dln2";
+-	dln2->gpio.dev = dev;
++	dln2->gpio.parent = dev;
+ 	dln2->gpio.owner = THIS_MODULE;
+ 	dln2->gpio.base = -1;
+ 	dln2->gpio.ngpio = pins;
+diff --git a/drivers/gpio/gpio-em.c b/drivers/gpio/gpio-em.c
+index 6bca1e1..c3ca2b1 100644
+--- a/drivers/gpio/gpio-em.c
++++ b/drivers/gpio/gpio-em.c
+@@ -103,7 +103,7 @@ static int em_gio_irq_reqres(struct irq_data *d)
+ 	struct em_gio_priv *p = irq_data_get_irq_chip_data(d);
+ 
+ 	if (gpiochip_lock_as_irq(&p->gpio_chip, irqd_to_hwirq(d))) {
+-		dev_err(p->gpio_chip.dev,
++		dev_err(p->gpio_chip.parent,
+ 			"unable to lock HW IRQ %lu for IRQ\n",
+ 			irqd_to_hwirq(d));
+ 		return -EINVAL;
+@@ -332,7 +332,7 @@ static int em_gio_probe(struct platform_device *pdev)
+ 	gpio_chip->request = em_gio_request;
+ 	gpio_chip->free = em_gio_free;
+ 	gpio_chip->label = name;
+-	gpio_chip->dev = &pdev->dev;
++	gpio_chip->parent = &pdev->dev;
+ 	gpio_chip->owner = THIS_MODULE;
+ 	gpio_chip->base = -1;
+ 	gpio_chip->ngpio = ngpios;
+diff --git a/drivers/gpio/gpio-f7188x.c b/drivers/gpio/gpio-f7188x.c
+index 5e3c4fa..1734e4f 100644
+--- a/drivers/gpio/gpio-f7188x.c
++++ b/drivers/gpio/gpio-f7188x.c
+@@ -333,7 +333,7 @@ static int f7188x_gpio_probe(struct platform_device *pdev)
+ 	for (i = 0; i < data->nr_bank; i++) {
+ 		struct f7188x_gpio_bank *bank = &data->bank[i];
+ 
+-		bank->chip.dev = &pdev->dev;
++		bank->chip.parent = &pdev->dev;
+ 		bank->data = data;
+ 
+ 		err = gpiochip_add(&bank->chip);
+diff --git a/drivers/gpio/gpio-generic.c b/drivers/gpio/gpio-generic.c
+index 88ae70d..ea581dc 100644
+--- a/drivers/gpio/gpio-generic.c
++++ b/drivers/gpio/gpio-generic.c
+@@ -545,7 +545,7 @@ int bgpio_init(struct bgpio_chip *bgc, struct device *dev,
+ 		return -EINVAL;
+ 
+ 	spin_lock_init(&bgc->lock);
+-	bgc->gc.dev = dev;
++	bgc->gc.parent = dev;
+ 	bgc->gc.label = dev_name(dev);
+ 	bgc->gc.base = -1;
+ 	bgc->gc.ngpio = bgc->bits;
+diff --git a/drivers/gpio/gpio-ich.c b/drivers/gpio/gpio-ich.c
+index 4ba7ed5..8623d12 100644
+--- a/drivers/gpio/gpio-ich.c
++++ b/drivers/gpio/gpio-ich.c
+@@ -282,7 +282,7 @@ static void ichx_gpiolib_setup(struct gpio_chip *chip)
+ {
+ 	chip->owner = THIS_MODULE;
+ 	chip->label = DRV_NAME;
+-	chip->dev = &ichx_priv.dev->dev;
++	chip->parent = &ichx_priv.dev->dev;
+ 
+ 	/* Allow chip-specific overrides of request()/get() */
+ 	chip->request = ichx_priv.desc->request ?
+diff --git a/drivers/gpio/gpio-intel-mid.c b/drivers/gpio/gpio-intel-mid.c
+index c50e930..7b54829 100644
+--- a/drivers/gpio/gpio-intel-mid.c
++++ b/drivers/gpio/gpio-intel-mid.c
+@@ -373,7 +373,7 @@ static int intel_gpio_probe(struct pci_dev *pdev,
+ 
+ 	priv->reg_base = pcim_iomap_table(pdev)[0];
+ 	priv->chip.label = dev_name(&pdev->dev);
+-	priv->chip.dev = &pdev->dev;
++	priv->chip.parent = &pdev->dev;
+ 	priv->chip.request = intel_gpio_request;
+ 	priv->chip.direction_input = intel_gpio_direction_input;
+ 	priv->chip.direction_output = intel_gpio_direction_output;
+diff --git a/drivers/gpio/gpio-janz-ttl.c b/drivers/gpio/gpio-janz-ttl.c
+index 3a16643..e5f85ca 100644
+--- a/drivers/gpio/gpio-janz-ttl.c
++++ b/drivers/gpio/gpio-janz-ttl.c
+@@ -59,7 +59,7 @@ struct ttl_module {
+ 
+ static int ttl_get_value(struct gpio_chip *gpio, unsigned offset)
+ {
+-	struct ttl_module *mod = dev_get_drvdata(gpio->dev);
++	struct ttl_module *mod = dev_get_drvdata(gpio->parent);
+ 	u8 *shadow;
+ 	int ret;
+ 
+@@ -81,7 +81,7 @@ static int ttl_get_value(struct gpio_chip *gpio, unsigned offset)
+ 
+ static void ttl_set_value(struct gpio_chip *gpio, unsigned offset, int value)
+ {
+-	struct ttl_module *mod = dev_get_drvdata(gpio->dev);
++	struct ttl_module *mod = dev_get_drvdata(gpio->parent);
+ 	void __iomem *port;
+ 	u8 *shadow;
+ 
+@@ -172,7 +172,7 @@ static int ttl_probe(struct platform_device *pdev)
+ 
+ 	/* Initialize the GPIO data structures */
+ 	gpio = &mod->gpio;
+-	gpio->dev = &pdev->dev;
++	gpio->parent = &pdev->dev;
+ 	gpio->label = pdev->name;
+ 	gpio->get = ttl_get_value;
+ 	gpio->set = ttl_set_value;
+diff --git a/drivers/gpio/gpio-kempld.c b/drivers/gpio/gpio-kempld.c
+index 83f281d..35dd1e0 100644
+--- a/drivers/gpio/gpio-kempld.c
++++ b/drivers/gpio/gpio-kempld.c
+@@ -166,7 +166,7 @@ static int kempld_gpio_probe(struct platform_device *pdev)
+ 	chip = &gpio->chip;
+ 	chip->label = "gpio-kempld";
+ 	chip->owner = THIS_MODULE;
+-	chip->dev = dev;
++	chip->parent = dev;
+ 	chip->can_sleep = true;
+ 	if (pdata && pdata->gpio_base)
+ 		chip->base = pdata->gpio_base;
+diff --git a/drivers/gpio/gpio-lp3943.c b/drivers/gpio/gpio-lp3943.c
+index cfc5b12..f979c3b 100644
+--- a/drivers/gpio/gpio-lp3943.c
++++ b/drivers/gpio/gpio-lp3943.c
+@@ -205,7 +205,7 @@ static int lp3943_gpio_probe(struct platform_device *pdev)
+ 
+ 	lp3943_gpio->lp3943 = lp3943;
+ 	lp3943_gpio->chip = lp3943_gpio_chip;
+-	lp3943_gpio->chip.dev = &pdev->dev;
++	lp3943_gpio->chip.parent = &pdev->dev;
+ 
+ 	platform_set_drvdata(pdev, lp3943_gpio);
+ 
+diff --git a/drivers/gpio/gpio-lpc18xx.c b/drivers/gpio/gpio-lpc18xx.c
+index e39dcb0..b01fbc9 100644
+--- a/drivers/gpio/gpio-lpc18xx.c
++++ b/drivers/gpio/gpio-lpc18xx.c
+@@ -127,7 +127,7 @@ static int lpc18xx_gpio_probe(struct platform_device *pdev)
+ 
+ 	spin_lock_init(&gc->lock);
+ 
+-	gc->gpio.dev = &pdev->dev;
++	gc->gpio.parent = &pdev->dev;
+ 
+ 	ret = gpiochip_add(&gc->gpio);
+ 	if (ret) {
+diff --git a/drivers/gpio/gpio-lynxpoint.c b/drivers/gpio/gpio-lynxpoint.c
+index 127c37b..6a48ffd 100644
+--- a/drivers/gpio/gpio-lynxpoint.c
++++ b/drivers/gpio/gpio-lynxpoint.c
+@@ -368,7 +368,7 @@ static int lp_gpio_probe(struct platform_device *pdev)
+ 	gc->base = -1;
+ 	gc->ngpio = LP_NUM_GPIO;
+ 	gc->can_sleep = false;
+-	gc->dev = dev;
++	gc->parent = dev;
+ 
+ 	ret = gpiochip_add(gc);
+ 	if (ret) {
+diff --git a/drivers/gpio/gpio-max730x.c b/drivers/gpio/gpio-max730x.c
+index 0f57d2d..5d6a723 100644
+--- a/drivers/gpio/gpio-max730x.c
++++ b/drivers/gpio/gpio-max730x.c
+@@ -189,7 +189,7 @@ int __max730x_probe(struct max7301 *ts)
+ 
+ 	ts->chip.ngpio = PIN_NUMBER;
+ 	ts->chip.can_sleep = true;
+-	ts->chip.dev = dev;
++	ts->chip.parent = dev;
+ 	ts->chip.owner = THIS_MODULE;
+ 
+ 	/*
+diff --git a/drivers/gpio/gpio-max732x.c b/drivers/gpio/gpio-max732x.c
+index 8c5252c..c1e7b55 100644
+--- a/drivers/gpio/gpio-max732x.c
++++ b/drivers/gpio/gpio-max732x.c
+@@ -603,7 +603,7 @@ static int max732x_setup_gpio(struct max732x_chip *chip,
+ 	gc->base = gpio_start;
+ 	gc->ngpio = port;
+ 	gc->label = chip->client->name;
+-	gc->dev = &chip->client->dev;
++	gc->parent = &chip->client->dev;
+ 	gc->owner = THIS_MODULE;
+ 
+ 	return port;
+@@ -649,7 +649,7 @@ static int max732x_probe(struct i2c_client *client,
+ 	chip->client = client;
+ 
+ 	nr_port = max732x_setup_gpio(chip, id, pdata->gpio_base);
+-	chip->gpio_chip.dev = &client->dev;
++	chip->gpio_chip.parent = &client->dev;
+ 
+ 	addr_a = (client->addr & 0x0f) | 0x60;
+ 	addr_b = (client->addr & 0x0f) | 0x50;
+diff --git a/drivers/gpio/gpio-mb86s7x.c b/drivers/gpio/gpio-mb86s7x.c
+index ee93c0a..93d61a5 100644
+--- a/drivers/gpio/gpio-mb86s7x.c
++++ b/drivers/gpio/gpio-mb86s7x.c
+@@ -187,7 +187,7 @@ static int mb86s70_gpio_probe(struct platform_device *pdev)
+ 	gchip->gc.label = dev_name(&pdev->dev);
+ 	gchip->gc.ngpio = 32;
+ 	gchip->gc.owner = THIS_MODULE;
+-	gchip->gc.dev = &pdev->dev;
++	gchip->gc.parent = &pdev->dev;
+ 	gchip->gc.base = -1;
+ 
+ 	platform_set_drvdata(pdev, gchip);
+diff --git a/drivers/gpio/gpio-mc33880.c b/drivers/gpio/gpio-mc33880.c
+index 2853731..b46b9e5 100644
+--- a/drivers/gpio/gpio-mc33880.c
++++ b/drivers/gpio/gpio-mc33880.c
+@@ -116,7 +116,7 @@ static int mc33880_probe(struct spi_device *spi)
+ 	mc->chip.base = pdata->base;
+ 	mc->chip.ngpio = PIN_NUMBER;
+ 	mc->chip.can_sleep = true;
+-	mc->chip.dev = &spi->dev;
++	mc->chip.parent = &spi->dev;
+ 	mc->chip.owner = THIS_MODULE;
+ 
+ 	mc->port_config = 0x00;
+diff --git a/drivers/gpio/gpio-mc9s08dz60.c b/drivers/gpio/gpio-mc9s08dz60.c
+index d62b4f8..defa38f 100644
+--- a/drivers/gpio/gpio-mc9s08dz60.c
++++ b/drivers/gpio/gpio-mc9s08dz60.c
+@@ -99,7 +99,7 @@ static int mc9s08dz60_probe(struct i2c_client *client,
+ 
+ 	mc9s->chip.label = client->name;
+ 	mc9s->chip.base = -1;
+-	mc9s->chip.dev = &client->dev;
++	mc9s->chip.parent = &client->dev;
+ 	mc9s->chip.owner = THIS_MODULE;
+ 	mc9s->chip.ngpio = GPIO_NUM;
+ 	mc9s->chip.can_sleep = true;
+diff --git a/drivers/gpio/gpio-mcp23s08.c b/drivers/gpio/gpio-mcp23s08.c
+index 4a41694..13cace0 100644
+--- a/drivers/gpio/gpio-mcp23s08.c
++++ b/drivers/gpio/gpio-mcp23s08.c
+@@ -446,7 +446,7 @@ static int mcp23s08_irq_reqres(struct irq_data *data)
+ 	struct mcp23s08 *mcp = irq_data_get_irq_chip_data(data);
+ 
+ 	if (gpiochip_lock_as_irq(&mcp->chip, data->hwirq)) {
+-		dev_err(mcp->chip.dev,
++		dev_err(mcp->chip.parent,
+ 			"unable to lock HW IRQ %lu for IRQ usage\n",
+ 			data->hwirq);
+ 		return -EINVAL;
+@@ -481,7 +481,8 @@ static int mcp23s08_irq_setup(struct mcp23s08 *mcp)
+ 
+ 	mutex_init(&mcp->irq_lock);
+ 
+-	mcp->irq_domain = irq_domain_add_linear(chip->dev->of_node, chip->ngpio,
++	mcp->irq_domain = irq_domain_add_linear(chip->parent->of_node,
++						chip->ngpio,
+ 						&irq_domain_simple_ops, mcp);
+ 	if (!mcp->irq_domain)
+ 		return -ENODEV;
+@@ -491,10 +492,11 @@ static int mcp23s08_irq_setup(struct mcp23s08 *mcp)
+ 	else
+ 		irqflags |= IRQF_TRIGGER_LOW;
+ 
+-	err = devm_request_threaded_irq(chip->dev, mcp->irq, NULL, mcp23s08_irq,
+-					irqflags, dev_name(chip->dev), mcp);
++	err = devm_request_threaded_irq(chip->parent, mcp->irq, NULL,
++					mcp23s08_irq,
++					irqflags, dev_name(chip->parent), mcp);
+ 	if (err != 0) {
+-		dev_err(chip->dev, "unable to request IRQ#%d: %d\n",
++		dev_err(chip->parent, "unable to request IRQ#%d: %d\n",
+ 			mcp->irq, err);
+ 		return err;
+ 	}
+@@ -638,7 +640,7 @@ static int mcp23s08_probe_one(struct mcp23s08 *mcp, struct device *dev,
+ 
+ 	mcp->chip.base = pdata->base;
+ 	mcp->chip.can_sleep = true;
+-	mcp->chip.dev = dev;
++	mcp->chip.parent = dev;
+ 	mcp->chip.owner = THIS_MODULE;
+ 
+ 	/* verify MCP_IOCON.SEQOP = 0, so sequential reads work,
+@@ -652,7 +654,7 @@ static int mcp23s08_probe_one(struct mcp23s08 *mcp, struct device *dev,
+ 	mcp->irq_controller = pdata->irq_controller;
+ 	if (mcp->irq && mcp->irq_controller) {
+ 		mcp->irq_active_high =
+-			of_property_read_bool(mcp->chip.dev->of_node,
++			of_property_read_bool(mcp->chip.parent->of_node,
+ 					      "microchip,irq-active-high");
+ 
+ 		if (type == MCP_TYPE_017)
+diff --git a/drivers/gpio/gpio-moxart.c b/drivers/gpio/gpio-moxart.c
+index d3355a6..8942f49 100644
+--- a/drivers/gpio/gpio-moxart.c
++++ b/drivers/gpio/gpio-moxart.c
+@@ -61,7 +61,7 @@ static int moxart_gpio_probe(struct platform_device *pdev)
+ 	bgc->data = bgc->read_reg(bgc->reg_set);
+ 	bgc->gc.base = 0;
+ 	bgc->gc.ngpio = 32;
+-	bgc->gc.dev = dev;
++	bgc->gc.parent = dev;
+ 	bgc->gc.owner = THIS_MODULE;
+ 
+ 	ret = gpiochip_add(&bgc->gc);
+diff --git a/drivers/gpio/gpio-msic.c b/drivers/gpio/gpio-msic.c
+index 22523aae..fe9ef2bc 100644
+--- a/drivers/gpio/gpio-msic.c
++++ b/drivers/gpio/gpio-msic.c
+@@ -293,7 +293,7 @@ static int platform_msic_gpio_probe(struct platform_device *pdev)
+ 	mg->chip.base = pdata->gpio_base;
+ 	mg->chip.ngpio = MSIC_NUM_GPIO;
+ 	mg->chip.can_sleep = true;
+-	mg->chip.dev = dev;
++	mg->chip.parent = dev;
+ 
+ 	mutex_init(&mg->buslock);
+ 
+diff --git a/drivers/gpio/gpio-mvebu.c b/drivers/gpio/gpio-mvebu.c
+index d428b97..6acedf4 100644
+--- a/drivers/gpio/gpio-mvebu.c
++++ b/drivers/gpio/gpio-mvebu.c
+@@ -698,7 +698,7 @@ static int mvebu_gpio_probe(struct platform_device *pdev)
+ 
+ 	mvchip->soc_variant = soc_variant;
+ 	mvchip->chip.label = dev_name(&pdev->dev);
+-	mvchip->chip.dev = &pdev->dev;
++	mvchip->chip.parent = &pdev->dev;
+ 	mvchip->chip.request = gpiochip_generic_request;
+ 	mvchip->chip.free = gpiochip_generic_free;
+ 	mvchip->chip.direction_input = mvebu_gpio_direction_input;
+diff --git a/drivers/gpio/gpio-octeon.c b/drivers/gpio/gpio-octeon.c
+index 62ae251..3c66ce4 100644
+--- a/drivers/gpio/gpio-octeon.c
++++ b/drivers/gpio/gpio-octeon.c
+@@ -108,7 +108,7 @@ static int octeon_gpio_probe(struct platform_device *pdev)
+ 
+ 	pdev->dev.platform_data = chip;
+ 	chip->label = "octeon-gpio";
+-	chip->dev = &pdev->dev;
++	chip->parent = &pdev->dev;
+ 	chip->owner = THIS_MODULE;
+ 	chip->base = 0;
+ 	chip->can_sleep = false;
+diff --git a/drivers/gpio/gpio-omap.c b/drivers/gpio/gpio-omap.c
+index f7fbb46..e183351 100644
+--- a/drivers/gpio/gpio-omap.c
++++ b/drivers/gpio/gpio-omap.c
+@@ -1090,7 +1090,7 @@ static int omap_gpio_chip_init(struct gpio_bank *bank, struct irq_chip *irqc)
+ 	if (bank->is_mpuio) {
+ 		bank->chip.label = "mpuio";
+ 		if (bank->regs->wkup_en)
+-			bank->chip.dev = &omap_mpuio_device.dev;
++			bank->chip.parent = &omap_mpuio_device.dev;
+ 		bank->chip.base = OMAP_MPUIO(0);
+ 	} else {
+ 		bank->chip.label = "gpio";
+@@ -1197,7 +1197,7 @@ static int omap_gpio_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	bank->dev = dev;
+-	bank->chip.dev = dev;
++	bank->chip.parent = dev;
+ 	bank->chip.owner = THIS_MODULE;
+ 	bank->dbck_flag = pdata->dbck_flag;
+ 	bank->stride = pdata->bank_stride;
+diff --git a/drivers/gpio/gpio-palmas.c b/drivers/gpio/gpio-palmas.c
+index 52b447c..ddd1a00 100644
+--- a/drivers/gpio/gpio-palmas.c
++++ b/drivers/gpio/gpio-palmas.c
+@@ -54,7 +54,7 @@ static int palmas_gpio_get(struct gpio_chip *gc, unsigned offset)
+ 
+ 	ret = palmas_read(palmas, PALMAS_GPIO_BASE, reg, &val);
+ 	if (ret < 0) {
+-		dev_err(gc->dev, "Reg 0x%02x read failed, %d\n", reg, ret);
++		dev_err(gc->parent, "Reg 0x%02x read failed, %d\n", reg, ret);
+ 		return ret;
+ 	}
+ 
+@@ -65,7 +65,7 @@ static int palmas_gpio_get(struct gpio_chip *gc, unsigned offset)
+ 
+ 	ret = palmas_read(palmas, PALMAS_GPIO_BASE, reg, &val);
+ 	if (ret < 0) {
+-		dev_err(gc->dev, "Reg 0x%02x read failed, %d\n", reg, ret);
++		dev_err(gc->parent, "Reg 0x%02x read failed, %d\n", reg, ret);
+ 		return ret;
+ 	}
+ 	return !!(val & BIT(offset));
+@@ -90,7 +90,7 @@ static void palmas_gpio_set(struct gpio_chip *gc, unsigned offset,
+ 
+ 	ret = palmas_write(palmas, PALMAS_GPIO_BASE, reg, BIT(offset));
+ 	if (ret < 0)
+-		dev_err(gc->dev, "Reg 0x%02x write failed, %d\n", reg, ret);
++		dev_err(gc->parent, "Reg 0x%02x write failed, %d\n", reg, ret);
+ }
+ 
+ static int palmas_gpio_output(struct gpio_chip *gc, unsigned offset,
+@@ -111,7 +111,8 @@ static int palmas_gpio_output(struct gpio_chip *gc, unsigned offset,
+ 	ret = palmas_update_bits(palmas, PALMAS_GPIO_BASE, reg,
+ 				BIT(offset), BIT(offset));
+ 	if (ret < 0)
+-		dev_err(gc->dev, "Reg 0x%02x update failed, %d\n", reg, ret);
++		dev_err(gc->parent, "Reg 0x%02x update failed, %d\n", reg,
++			ret);
+ 	return ret;
+ }
+ 
+@@ -128,7 +129,8 @@ static int palmas_gpio_input(struct gpio_chip *gc, unsigned offset)
+ 
+ 	ret = palmas_update_bits(palmas, PALMAS_GPIO_BASE, reg, BIT(offset), 0);
+ 	if (ret < 0)
+-		dev_err(gc->dev, "Reg 0x%02x update failed, %d\n", reg, ret);
++		dev_err(gc->parent, "Reg 0x%02x update failed, %d\n", reg,
++			ret);
+ 	return ret;
+ }
+ 
+@@ -188,7 +190,7 @@ static int palmas_gpio_probe(struct platform_device *pdev)
+ 	palmas_gpio->gpio_chip.to_irq = palmas_gpio_to_irq;
+ 	palmas_gpio->gpio_chip.set	= palmas_gpio_set;
+ 	palmas_gpio->gpio_chip.get	= palmas_gpio_get;
+-	palmas_gpio->gpio_chip.dev = &pdev->dev;
++	palmas_gpio->gpio_chip.parent = &pdev->dev;
+ #ifdef CONFIG_OF_GPIO
+ 	palmas_gpio->gpio_chip.of_node = pdev->dev.of_node;
+ #endif
+diff --git a/drivers/gpio/gpio-pca953x.c b/drivers/gpio/gpio-pca953x.c
+index c844d7e..e031390 100644
+--- a/drivers/gpio/gpio-pca953x.c
++++ b/drivers/gpio/gpio-pca953x.c
+@@ -367,7 +367,7 @@ static void pca953x_setup_gpio(struct pca953x_chip *chip, int gpios)
+ 	gc->base = chip->gpio_start;
+ 	gc->ngpio = gpios;
+ 	gc->label = chip->client->name;
+-	gc->dev = &chip->client->dev;
++	gc->parent = &chip->client->dev;
+ 	gc->owner = THIS_MODULE;
+ 	gc->names = chip->names;
+ }
+diff --git a/drivers/gpio/gpio-pcf857x.c b/drivers/gpio/gpio-pcf857x.c
+index 1d4d9bc..c755210 100644
+--- a/drivers/gpio/gpio-pcf857x.c
++++ b/drivers/gpio/gpio-pcf857x.c
+@@ -293,7 +293,7 @@ static int pcf857x_probe(struct i2c_client *client,
+ 
+ 	gpio->chip.base			= pdata ? pdata->gpio_base : -1;
+ 	gpio->chip.can_sleep		= true;
+-	gpio->chip.dev			= &client->dev;
++	gpio->chip.parent			= &client->dev;
+ 	gpio->chip.owner		= THIS_MODULE;
+ 	gpio->chip.get			= pcf857x_get;
+ 	gpio->chip.set			= pcf857x_set;
+diff --git a/drivers/gpio/gpio-pch.c b/drivers/gpio/gpio-pch.c
+index 34ed176..e43db64 100644
+--- a/drivers/gpio/gpio-pch.c
++++ b/drivers/gpio/gpio-pch.c
+@@ -220,7 +220,7 @@ static void pch_gpio_setup(struct pch_gpio *chip)
+ 	struct gpio_chip *gpio = &chip->gpio;
+ 
+ 	gpio->label = dev_name(chip->dev);
+-	gpio->dev = chip->dev;
++	gpio->parent = chip->dev;
+ 	gpio->owner = THIS_MODULE;
+ 	gpio->direction_input = pch_gpio_direction_input;
+ 	gpio->get = pch_gpio_get;
+diff --git a/drivers/gpio/gpio-pl061.c b/drivers/gpio/gpio-pl061.c
+index 4d4b376..e041639 100644
+--- a/drivers/gpio/gpio-pl061.c
++++ b/drivers/gpio/gpio-pl061.c
+@@ -131,7 +131,7 @@ static int pl061_irq_type(struct irq_data *d, unsigned trigger)
+ 	if ((trigger & (IRQ_TYPE_LEVEL_HIGH | IRQ_TYPE_LEVEL_LOW)) &&
+ 	    (trigger & (IRQ_TYPE_EDGE_RISING | IRQ_TYPE_EDGE_FALLING)))
+ 	{
+-		dev_err(gc->dev,
++		dev_err(gc->parent,
+ 			"trying to configure line %d for both level and edge "
+ 			"detection, choose one!\n",
+ 			offset);
+@@ -158,7 +158,7 @@ static int pl061_irq_type(struct irq_data *d, unsigned trigger)
+ 		else
+ 			gpioiev &= ~bit;
+ 		irq_set_handler_locked(d, handle_level_irq);
+-		dev_dbg(gc->dev, "line %d: IRQ on %s level\n",
++		dev_dbg(gc->parent, "line %d: IRQ on %s level\n",
+ 			offset,
+ 			polarity ? "HIGH" : "LOW");
+ 	} else if ((trigger & IRQ_TYPE_EDGE_BOTH) == IRQ_TYPE_EDGE_BOTH) {
+@@ -167,7 +167,7 @@ static int pl061_irq_type(struct irq_data *d, unsigned trigger)
+ 		/* Select both edges, setting this makes GPIOEV be ignored */
+ 		gpioibe |= bit;
+ 		irq_set_handler_locked(d, handle_edge_irq);
+-		dev_dbg(gc->dev, "line %d: IRQ on both edges\n", offset);
++		dev_dbg(gc->parent, "line %d: IRQ on both edges\n", offset);
+ 	} else if ((trigger & IRQ_TYPE_EDGE_RISING) ||
+ 		   (trigger & IRQ_TYPE_EDGE_FALLING)) {
+ 		bool rising = trigger & IRQ_TYPE_EDGE_RISING;
+@@ -182,7 +182,7 @@ static int pl061_irq_type(struct irq_data *d, unsigned trigger)
+ 		else
+ 			gpioiev &= ~bit;
+ 		irq_set_handler_locked(d, handle_edge_irq);
+-		dev_dbg(gc->dev, "line %d: IRQ on %s edge\n",
++		dev_dbg(gc->parent, "line %d: IRQ on %s edge\n",
+ 			offset,
+ 			rising ? "RISING" : "FALLING");
+ 	} else {
+@@ -191,7 +191,7 @@ static int pl061_irq_type(struct irq_data *d, unsigned trigger)
+ 		gpioibe &= ~bit;
+ 		gpioiev &= ~bit;
+ 		irq_set_handler_locked(d, handle_bad_irq);
+-		dev_warn(gc->dev, "no trigger selected for line %d\n",
++		dev_warn(gc->parent, "no trigger selected for line %d\n",
+ 			 offset);
+ 	}
+ 
+@@ -316,7 +316,7 @@ static int pl061_probe(struct amba_device *adev, const struct amba_id *id)
+ 	chip->gc.set = pl061_set_value;
+ 	chip->gc.ngpio = PL061_GPIO_NR;
+ 	chip->gc.label = dev_name(dev);
+-	chip->gc.dev = dev;
++	chip->gc.parent = dev;
+ 	chip->gc.owner = THIS_MODULE;
+ 
+ 	ret = gpiochip_add(&chip->gc);
+diff --git a/drivers/gpio/gpio-rc5t583.c b/drivers/gpio/gpio-rc5t583.c
+index 6eabf23..f26d9f7 100644
+--- a/drivers/gpio/gpio-rc5t583.c
++++ b/drivers/gpio/gpio-rc5t583.c
+@@ -132,7 +132,7 @@ static int rc5t583_gpio_probe(struct platform_device *pdev)
+ 	rc5t583_gpio->gpio_chip.to_irq = rc5t583_gpio_to_irq,
+ 	rc5t583_gpio->gpio_chip.ngpio = RC5T583_MAX_GPIO,
+ 	rc5t583_gpio->gpio_chip.can_sleep = true,
+-	rc5t583_gpio->gpio_chip.dev = &pdev->dev;
++	rc5t583_gpio->gpio_chip.parent = &pdev->dev;
+ 	rc5t583_gpio->gpio_chip.base = -1;
+ 	rc5t583_gpio->rc5t583 = rc5t583;
+ 
+diff --git a/drivers/gpio/gpio-rcar.c b/drivers/gpio/gpio-rcar.c
+index 2a81224..3cbb25e 100644
+--- a/drivers/gpio/gpio-rcar.c
++++ b/drivers/gpio/gpio-rcar.c
+@@ -449,7 +449,7 @@ static int gpio_rcar_probe(struct platform_device *pdev)
+ 	gpio_chip->direction_output = gpio_rcar_direction_output;
+ 	gpio_chip->set = gpio_rcar_set;
+ 	gpio_chip->label = name;
+-	gpio_chip->dev = dev;
++	gpio_chip->parent = dev;
+ 	gpio_chip->owner = THIS_MODULE;
+ 	gpio_chip->base = p->config.gpio_base;
+ 	gpio_chip->ngpio = p->config.number_of_pins;
+diff --git a/drivers/gpio/gpio-sch.c b/drivers/gpio/gpio-sch.c
+index b72906f..a8a333ad 100644
+--- a/drivers/gpio/gpio-sch.c
++++ b/drivers/gpio/gpio-sch.c
+@@ -171,7 +171,7 @@ static int sch_gpio_probe(struct platform_device *pdev)
+ 	sch->iobase = res->start;
+ 	sch->chip = sch_gpio_chip;
+ 	sch->chip.label = dev_name(&pdev->dev);
+-	sch->chip.dev = &pdev->dev;
++	sch->chip.parent = &pdev->dev;
+ 
+ 	switch (pdev->id) {
+ 	case PCI_DEVICE_ID_INTEL_SCH_LPC:
+diff --git a/drivers/gpio/gpio-sch311x.c b/drivers/gpio/gpio-sch311x.c
+index 0cb1141..3841398 100644
+--- a/drivers/gpio/gpio-sch311x.c
++++ b/drivers/gpio/gpio-sch311x.c
+@@ -149,7 +149,7 @@ static int sch311x_gpio_request(struct gpio_chip *chip, unsigned offset)
+ 
+ 	if (!request_region(block->runtime_reg + block->config_regs[offset],
+ 			    1, DRV_NAME)) {
+-		dev_err(chip->dev, "Failed to request region 0x%04x.\n",
++		dev_err(chip->parent, "Failed to request region 0x%04x.\n",
+ 			block->runtime_reg + block->config_regs[offset]);
+ 		return -EBUSY;
+ 	}
+@@ -261,7 +261,7 @@ static int sch311x_gpio_probe(struct platform_device *pdev)
+ 		block->chip.get = sch311x_gpio_get;
+ 		block->chip.set = sch311x_gpio_set;
+ 		block->chip.ngpio = 8;
+-		block->chip.dev = &pdev->dev;
++		block->chip.parent = &pdev->dev;
+ 		block->chip.base = sch311x_gpio_blocks[i].base;
+ 		block->config_regs = sch311x_gpio_blocks[i].config_regs;
+ 		block->data_reg = sch311x_gpio_blocks[i].data_reg;
+diff --git a/drivers/gpio/gpio-spear-spics.c b/drivers/gpio/gpio-spear-spics.c
+index 69ffca5..bd436b7 100644
+--- a/drivers/gpio/gpio-spear-spics.c
++++ b/drivers/gpio/gpio-spear-spics.c
+@@ -164,7 +164,7 @@ static int spics_gpio_probe(struct platform_device *pdev)
+ 	spics->chip.get = spics_get_value;
+ 	spics->chip.set = spics_set_value;
+ 	spics->chip.label = dev_name(&pdev->dev);
+-	spics->chip.dev = &pdev->dev;
++	spics->chip.parent = &pdev->dev;
+ 	spics->chip.owner = THIS_MODULE;
+ 	spics->last_off = -1;
+ 
+diff --git a/drivers/gpio/gpio-stmpe.c b/drivers/gpio/gpio-stmpe.c
+index dabfb99..9e47197 100644
+--- a/drivers/gpio/gpio-stmpe.c
++++ b/drivers/gpio/gpio-stmpe.c
+@@ -356,7 +356,7 @@ static int stmpe_gpio_probe(struct platform_device *pdev)
+ 	stmpe_gpio->stmpe = stmpe;
+ 	stmpe_gpio->chip = template_chip;
+ 	stmpe_gpio->chip.ngpio = stmpe->num_gpios;
+-	stmpe_gpio->chip.dev = &pdev->dev;
++	stmpe_gpio->chip.parent = &pdev->dev;
+ 	stmpe_gpio->chip.of_node = np;
+ 	stmpe_gpio->chip.base = -1;
+ 
+diff --git a/drivers/gpio/gpio-stp-xway.c b/drivers/gpio/gpio-stp-xway.c
+index 81bdbe7..c250f21 100644
+--- a/drivers/gpio/gpio-stp-xway.c
++++ b/drivers/gpio/gpio-stp-xway.c
+@@ -139,7 +139,7 @@ static int xway_stp_request(struct gpio_chip *gc, unsigned gpio)
+ 		container_of(gc, struct xway_stp, gc);
+ 
+ 	if ((gpio < 8) && (chip->reserved & BIT(gpio))) {
+-		dev_err(gc->dev, "GPIO %d is driven by hardware\n", gpio);
++		dev_err(gc->parent, "GPIO %d is driven by hardware\n", gpio);
+ 		return -ENODEV;
+ 	}
+ 
+@@ -214,7 +214,7 @@ static int xway_stp_probe(struct platform_device *pdev)
+ 	if (IS_ERR(chip->virt))
+ 		return PTR_ERR(chip->virt);
+ 
+-	chip->gc.dev = &pdev->dev;
++	chip->gc.parent = &pdev->dev;
+ 	chip->gc.label = "stp-xway";
+ 	chip->gc.direction_output = xway_stp_dir_out;
+ 	chip->gc.set = xway_stp_set;
+diff --git a/drivers/gpio/gpio-sx150x.c b/drivers/gpio/gpio-sx150x.c
+index 76f9201..c014515 100644
+--- a/drivers/gpio/gpio-sx150x.c
++++ b/drivers/gpio/gpio-sx150x.c
+@@ -473,7 +473,7 @@ static void sx150x_init_chip(struct sx150x_chip *chip,
+ 
+ 	chip->client                     = client;
+ 	chip->dev_cfg                    = &sx150x_devices[driver_data];
+-	chip->gpio_chip.dev              = &client->dev;
++	chip->gpio_chip.parent              = &client->dev;
+ 	chip->gpio_chip.label            = client->name;
+ 	chip->gpio_chip.direction_input  = sx150x_gpio_direction_input;
+ 	chip->gpio_chip.direction_output = sx150x_gpio_direction_output;
+diff --git a/drivers/gpio/gpio-syscon.c b/drivers/gpio/gpio-syscon.c
+index 7b25fdf..333d5af 100644
+--- a/drivers/gpio/gpio-syscon.c
++++ b/drivers/gpio/gpio-syscon.c
+@@ -159,7 +159,7 @@ static void keystone_gpio_set(struct gpio_chip *chip, unsigned offset, int val)
+ 			BIT(offs % SYSCON_REG_BITS) | KEYSTONE_LOCK_BIT,
+ 			BIT(offs % SYSCON_REG_BITS) | KEYSTONE_LOCK_BIT);
+ 	if (ret < 0)
+-		dev_err(chip->dev, "gpio write failed ret(%d)\n", ret);
++		dev_err(chip->parent, "gpio write failed ret(%d)\n", ret);
+ }
+ 
+ static const struct syscon_gpio_data keystone_dsp_gpio = {
+@@ -228,7 +228,7 @@ static int syscon_gpio_probe(struct platform_device *pdev)
+ 		priv->dir_reg_offset <<= 3;
+ 	}
+ 
+-	priv->chip.dev = dev;
++	priv->chip.parent = dev;
+ 	priv->chip.owner = THIS_MODULE;
+ 	priv->chip.label = dev_name(dev);
+ 	priv->chip.base = -1;
+diff --git a/drivers/gpio/gpio-tb10x.c b/drivers/gpio/gpio-tb10x.c
+index 4356e6c..1a7c3ef 100644
+--- a/drivers/gpio/gpio-tb10x.c
++++ b/drivers/gpio/gpio-tb10x.c
+@@ -197,7 +197,7 @@ static int tb10x_gpio_probe(struct platform_device *pdev)
+ 		return PTR_ERR(tb10x_gpio->base);
+ 
+ 	tb10x_gpio->gc.label		= of_node_full_name(dn);
+-	tb10x_gpio->gc.dev		= &pdev->dev;
++	tb10x_gpio->gc.parent		= &pdev->dev;
+ 	tb10x_gpio->gc.owner		= THIS_MODULE;
+ 	tb10x_gpio->gc.direction_input	= tb10x_gpio_direction_in;
+ 	tb10x_gpio->gc.get		= tb10x_gpio_get;
+diff --git a/drivers/gpio/gpio-tc3589x.c b/drivers/gpio/gpio-tc3589x.c
+index d1d585d..7c1537e 100644
+--- a/drivers/gpio/gpio-tc3589x.c
++++ b/drivers/gpio/gpio-tc3589x.c
+@@ -258,7 +258,7 @@ static int tc3589x_gpio_probe(struct platform_device *pdev)
+ 
+ 	tc3589x_gpio->chip = template_chip;
+ 	tc3589x_gpio->chip.ngpio = tc3589x->num_gpio;
+-	tc3589x_gpio->chip.dev = &pdev->dev;
++	tc3589x_gpio->chip.parent = &pdev->dev;
+ 	tc3589x_gpio->chip.base = -1;
+ 	tc3589x_gpio->chip.of_node = np;
+ 
+diff --git a/drivers/gpio/gpio-timberdale.c b/drivers/gpio/gpio-timberdale.c
+index 30653e6..dda8f21 100644
+--- a/drivers/gpio/gpio-timberdale.c
++++ b/drivers/gpio/gpio-timberdale.c
+@@ -268,7 +268,7 @@ static int timbgpio_probe(struct platform_device *pdev)
+ 
+ 	gc->label = dev_name(&pdev->dev);
+ 	gc->owner = THIS_MODULE;
+-	gc->dev = &pdev->dev;
++	gc->parent = &pdev->dev;
+ 	gc->direction_input = timbgpio_gpio_direction_input;
+ 	gc->get = timbgpio_gpio_get;
+ 	gc->direction_output = timbgpio_gpio_direction_output;
+diff --git a/drivers/gpio/gpio-tps6586x.c b/drivers/gpio/gpio-tps6586x.c
+index 9c9238e..89b2249 100644
+--- a/drivers/gpio/gpio-tps6586x.c
++++ b/drivers/gpio/gpio-tps6586x.c
+@@ -104,7 +104,7 @@ static int tps6586x_gpio_probe(struct platform_device *pdev)
+ 
+ 	tps6586x_gpio->gpio_chip.owner = THIS_MODULE;
+ 	tps6586x_gpio->gpio_chip.label = pdev->name;
+-	tps6586x_gpio->gpio_chip.dev = &pdev->dev;
++	tps6586x_gpio->gpio_chip.parent = &pdev->dev;
+ 	tps6586x_gpio->gpio_chip.ngpio = 4;
+ 	tps6586x_gpio->gpio_chip.can_sleep = true;
+ 
+diff --git a/drivers/gpio/gpio-tps65910.c b/drivers/gpio/gpio-tps65910.c
+index 88f1f5f..83894c0 100644
+--- a/drivers/gpio/gpio-tps65910.c
++++ b/drivers/gpio/gpio-tps65910.c
+@@ -146,7 +146,7 @@ static int tps65910_gpio_probe(struct platform_device *pdev)
+ 	tps65910_gpio->gpio_chip.direction_output = tps65910_gpio_output;
+ 	tps65910_gpio->gpio_chip.set	= tps65910_gpio_set;
+ 	tps65910_gpio->gpio_chip.get	= tps65910_gpio_get;
+-	tps65910_gpio->gpio_chip.dev = &pdev->dev;
++	tps65910_gpio->gpio_chip.parent = &pdev->dev;
+ #ifdef CONFIG_OF_GPIO
+ 	tps65910_gpio->gpio_chip.of_node = tps65910->dev->of_node;
+ #endif
+diff --git a/drivers/gpio/gpio-tps65912.c b/drivers/gpio/gpio-tps65912.c
+index 9cdbc0c..0f073ff 100644
+--- a/drivers/gpio/gpio-tps65912.c
++++ b/drivers/gpio/gpio-tps65912.c
+@@ -104,7 +104,7 @@ static int tps65912_gpio_probe(struct platform_device *pdev)
+ 
+ 	tps65912_gpio->tps65912 = tps65912;
+ 	tps65912_gpio->gpio_chip = template_chip;
+-	tps65912_gpio->gpio_chip.dev = &pdev->dev;
++	tps65912_gpio->gpio_chip.parent = &pdev->dev;
+ 	if (pdata && pdata->gpio_base)
+ 		tps65912_gpio->gpio_chip.base = pdata->gpio_base;
+ 
+diff --git a/drivers/gpio/gpio-ts5500.c b/drivers/gpio/gpio-ts5500.c
+index b29a102..aafe791 100644
+--- a/drivers/gpio/gpio-ts5500.c
++++ b/drivers/gpio/gpio-ts5500.c
+@@ -315,7 +315,8 @@ static void ts5500_disable_irq(struct ts5500_priv *priv)
+ 	else if (priv->hwirq == 1)
+ 		ts5500_clear_mask(BIT(6), 0x7d); /* LCD_RS on IRQ1 */
+ 	else
+-		dev_err(priv->gpio_chip.dev, "invalid hwirq %d\n", priv->hwirq);
++		dev_err(priv->gpio_chip.parent, "invalid hwirq %d\n",
++			priv->hwirq);
+ 	spin_unlock_irqrestore(&priv->lock, flags);
+ }
+ 
+@@ -346,7 +347,7 @@ static int ts5500_dio_probe(struct platform_device *pdev)
+ 
+ 	priv->gpio_chip.owner = THIS_MODULE;
+ 	priv->gpio_chip.label = name;
+-	priv->gpio_chip.dev = dev;
++	priv->gpio_chip.parent = dev;
+ 	priv->gpio_chip.direction_input = ts5500_gpio_input;
+ 	priv->gpio_chip.direction_output = ts5500_gpio_output;
+ 	priv->gpio_chip.get = ts5500_gpio_get;
+diff --git a/drivers/gpio/gpio-twl4030.c b/drivers/gpio/gpio-twl4030.c
+index 9e1dbb9..14f40bf 100644
+--- a/drivers/gpio/gpio-twl4030.c
++++ b/drivers/gpio/gpio-twl4030.c
+@@ -256,7 +256,7 @@ static int twl_request(struct gpio_chip *chip, unsigned offset)
+ 		/* optionally have the first two GPIOs switch vMMC1
+ 		 * and vMMC2 power supplies based on card presence.
+ 		 */
+-		pdata = dev_get_platdata(chip->dev);
++		pdata = dev_get_platdata(chip->parent);
+ 		if (pdata)
+ 			value |= pdata->mmc_cd & 0x03;
+ 
+@@ -509,7 +509,7 @@ no_irqs:
+ 	priv->gpio_chip = template_chip;
+ 	priv->gpio_chip.base = -1;
+ 	priv->gpio_chip.ngpio = TWL4030_GPIO_MAX;
+-	priv->gpio_chip.dev = &pdev->dev;
++	priv->gpio_chip.parent = &pdev->dev;
+ 
+ 	mutex_init(&priv->mutex);
+ 
+diff --git a/drivers/gpio/gpio-twl6040.c b/drivers/gpio/gpio-twl6040.c
+index c946e7e..2da7c5f 100644
+--- a/drivers/gpio/gpio-twl6040.c
++++ b/drivers/gpio/gpio-twl6040.c
+@@ -36,7 +36,7 @@ static struct gpio_chip twl6040gpo_chip;
+ 
+ static int twl6040gpo_get(struct gpio_chip *chip, unsigned offset)
+ {
+-	struct twl6040 *twl6040 = dev_get_drvdata(chip->dev->parent);
++	struct twl6040 *twl6040 = dev_get_drvdata(chip->parent->parent);
+ 	int ret = 0;
+ 
+ 	ret = twl6040_reg_read(twl6040, TWL6040_REG_GPOCTL);
+@@ -55,7 +55,7 @@ static int twl6040gpo_direction_out(struct gpio_chip *chip, unsigned offset,
+ 
+ static void twl6040gpo_set(struct gpio_chip *chip, unsigned offset, int value)
+ {
+-	struct twl6040 *twl6040 = dev_get_drvdata(chip->dev->parent);
++	struct twl6040 *twl6040 = dev_get_drvdata(chip->parent->parent);
+ 	int ret;
+ 	u8 gpoctl;
+ 
+@@ -95,7 +95,7 @@ static int gpo_twl6040_probe(struct platform_device *pdev)
+ 	else
+ 		twl6040gpo_chip.ngpio = 1; /* twl6041 have 1 GPO */
+ 
+-	twl6040gpo_chip.dev = &pdev->dev;
++	twl6040gpo_chip.parent = &pdev->dev;
+ #ifdef CONFIG_OF_GPIO
+ 	twl6040gpo_chip.of_node = twl6040_core_dev->of_node;
+ #endif
+diff --git a/drivers/gpio/gpio-tz1090-pdc.c b/drivers/gpio/gpio-tz1090-pdc.c
+index 3623d00..a974397 100644
+--- a/drivers/gpio/gpio-tz1090-pdc.c
++++ b/drivers/gpio/gpio-tz1090-pdc.c
+@@ -188,7 +188,7 @@ static int tz1090_pdc_gpio_probe(struct platform_device *pdev)
+ 
+ 	/* Set up GPIO chip */
+ 	priv->chip.label		= "tz1090-pdc-gpio";
+-	priv->chip.dev			= &pdev->dev;
++	priv->chip.parent			= &pdev->dev;
+ 	priv->chip.direction_input	= tz1090_pdc_gpio_direction_input;
+ 	priv->chip.direction_output	= tz1090_pdc_gpio_direction_output;
+ 	priv->chip.get			= tz1090_pdc_gpio_get;
+diff --git a/drivers/gpio/gpio-tz1090.c b/drivers/gpio/gpio-tz1090.c
+index 87bb1b1..7858d90 100644
+--- a/drivers/gpio/gpio-tz1090.c
++++ b/drivers/gpio/gpio-tz1090.c
+@@ -425,7 +425,7 @@ static int tz1090_gpio_bank_probe(struct tz1090_gpio_bank_info *info)
+ 	snprintf(bank->label, sizeof(bank->label), "tz1090-gpio-%u",
+ 		 info->index);
+ 	bank->chip.label		= bank->label;
+-	bank->chip.dev			= dev;
++	bank->chip.parent			= dev;
+ 	bank->chip.direction_input	= tz1090_gpio_direction_input;
+ 	bank->chip.direction_output	= tz1090_gpio_direction_output;
+ 	bank->chip.get			= tz1090_gpio_get;
+diff --git a/drivers/gpio/gpio-vf610.c b/drivers/gpio/gpio-vf610.c
+index 87b950c..9031e60 100644
+--- a/drivers/gpio/gpio-vf610.c
++++ b/drivers/gpio/gpio-vf610.c
+@@ -249,7 +249,7 @@ static int vf610_gpio_probe(struct platform_device *pdev)
+ 
+ 	gc = &port->gc;
+ 	gc->of_node = np;
+-	gc->dev = dev;
++	gc->parent = dev;
+ 	gc->label = "vf610-gpio";
+ 	gc->ngpio = VF610_GPIO_PER_PORT;
+ 	gc->base = of_alias_get_id(np, "gpio") * VF610_GPIO_PER_PORT;
+diff --git a/drivers/gpio/gpio-viperboard.c b/drivers/gpio/gpio-viperboard.c
+index e2a11f2..26e7edb 100644
+--- a/drivers/gpio/gpio-viperboard.c
++++ b/drivers/gpio/gpio-viperboard.c
+@@ -173,7 +173,7 @@ static void vprbrd_gpioa_set(struct gpio_chip *chip,
+ 		mutex_unlock(&vb->lock);
+ 
+ 		if (ret != sizeof(struct vprbrd_gpioa_msg))
+-			dev_err(chip->dev, "usb error setting pin value\n");
++			dev_err(chip->parent, "usb error setting pin value\n");
+ 	}
+ }
+ 
+@@ -345,7 +345,7 @@ static void vprbrd_gpiob_set(struct gpio_chip *chip,
+ 		mutex_unlock(&vb->lock);
+ 
+ 		if (ret != sizeof(struct vprbrd_gpiob_msg))
+-			dev_err(chip->dev, "usb error setting pin value\n");
++			dev_err(chip->parent, "usb error setting pin value\n");
+ 	}
+ }
+ 
+@@ -366,7 +366,7 @@ static int vprbrd_gpiob_direction_input(struct gpio_chip *chip,
+ 	mutex_unlock(&vb->lock);
+ 
+ 	if (ret)
+-		dev_err(chip->dev, "usb error setting pin to input\n");
++		dev_err(chip->parent, "usb error setting pin to input\n");
+ 
+ 	return ret;
+ }
+@@ -385,7 +385,7 @@ static int vprbrd_gpiob_direction_output(struct gpio_chip *chip,
+ 
+ 	ret = vprbrd_gpiob_setdir(vb, offset, 1);
+ 	if (ret)
+-		dev_err(chip->dev, "usb error setting pin to output\n");
++		dev_err(chip->parent, "usb error setting pin to output\n");
+ 
+ 	mutex_unlock(&vb->lock);
+ 
+@@ -409,7 +409,7 @@ static int vprbrd_gpio_probe(struct platform_device *pdev)
+ 	vb_gpio->vb = vb;
+ 	/* registering gpio a */
+ 	vb_gpio->gpioa.label = "viperboard gpio a";
+-	vb_gpio->gpioa.dev = &pdev->dev;
++	vb_gpio->gpioa.parent = &pdev->dev;
+ 	vb_gpio->gpioa.owner = THIS_MODULE;
+ 	vb_gpio->gpioa.base = -1;
+ 	vb_gpio->gpioa.ngpio = 16;
+@@ -420,13 +420,13 @@ static int vprbrd_gpio_probe(struct platform_device *pdev)
+ 	vb_gpio->gpioa.direction_output = vprbrd_gpioa_direction_output;
+ 	ret = gpiochip_add(&vb_gpio->gpioa);
+ 	if (ret < 0) {
+-		dev_err(vb_gpio->gpioa.dev, "could not add gpio a");
++		dev_err(vb_gpio->gpioa.parent, "could not add gpio a");
+ 		goto err_gpioa;
+ 	}
+ 
+ 	/* registering gpio b */
+ 	vb_gpio->gpiob.label = "viperboard gpio b";
+-	vb_gpio->gpiob.dev = &pdev->dev;
++	vb_gpio->gpiob.parent = &pdev->dev;
+ 	vb_gpio->gpiob.owner = THIS_MODULE;
+ 	vb_gpio->gpiob.base = -1;
+ 	vb_gpio->gpiob.ngpio = 16;
+@@ -437,7 +437,7 @@ static int vprbrd_gpio_probe(struct platform_device *pdev)
+ 	vb_gpio->gpiob.direction_output = vprbrd_gpiob_direction_output;
+ 	ret = gpiochip_add(&vb_gpio->gpiob);
+ 	if (ret < 0) {
+-		dev_err(vb_gpio->gpiob.dev, "could not add gpio b");
++		dev_err(vb_gpio->gpiob.parent, "could not add gpio b");
+ 		goto err_gpiob;
+ 	}
+ 
+diff --git a/drivers/gpio/gpio-vr41xx.c b/drivers/gpio/gpio-vr41xx.c
+index c1caa45..1947531 100644
+--- a/drivers/gpio/gpio-vr41xx.c
++++ b/drivers/gpio/gpio-vr41xx.c
+@@ -139,7 +139,7 @@ static void unmask_giuint_low(struct irq_data *d)
+ static unsigned int startup_giuint(struct irq_data *data)
+ {
+ 	if (gpiochip_lock_as_irq(&vr41xx_gpio_chip, data->hwirq))
+-		dev_err(vr41xx_gpio_chip.dev,
++		dev_err(vr41xx_gpio_chip.parent,
+ 			"unable to lock HW IRQ %lu for IRQ\n",
+ 			data->hwirq);
+ 	/* Satisfy the .enable semantics by unmasking the line */
+@@ -542,7 +542,7 @@ static int giu_probe(struct platform_device *pdev)
+ 	if (!giu_base)
+ 		return -ENOMEM;
+ 
+-	vr41xx_gpio_chip.dev = &pdev->dev;
++	vr41xx_gpio_chip.parent = &pdev->dev;
+ 
+ 	ret = gpiochip_add(&vr41xx_gpio_chip);
+ 	if (!ret) {
+diff --git a/drivers/gpio/gpio-wm831x.c b/drivers/gpio/gpio-wm831x.c
+index 58ce75c..2e73e4b 100644
+--- a/drivers/gpio/gpio-wm831x.c
++++ b/drivers/gpio/gpio-wm831x.c
+@@ -258,7 +258,7 @@ static int wm831x_gpio_probe(struct platform_device *pdev)
+ 	wm831x_gpio->wm831x = wm831x;
+ 	wm831x_gpio->gpio_chip = template_chip;
+ 	wm831x_gpio->gpio_chip.ngpio = wm831x->num_gpio;
+-	wm831x_gpio->gpio_chip.dev = &pdev->dev;
++	wm831x_gpio->gpio_chip.parent = &pdev->dev;
+ 	if (pdata && pdata->gpio_base)
+ 		wm831x_gpio->gpio_chip.base = pdata->gpio_base;
+ 	else
+diff --git a/drivers/gpio/gpio-wm8350.c b/drivers/gpio/gpio-wm8350.c
+index 060b893..1e3d8da 100644
+--- a/drivers/gpio/gpio-wm8350.c
++++ b/drivers/gpio/gpio-wm8350.c
+@@ -124,7 +124,7 @@ static int wm8350_gpio_probe(struct platform_device *pdev)
+ 	wm8350_gpio->wm8350 = wm8350;
+ 	wm8350_gpio->gpio_chip = template_chip;
+ 	wm8350_gpio->gpio_chip.ngpio = 13;
+-	wm8350_gpio->gpio_chip.dev = &pdev->dev;
++	wm8350_gpio->gpio_chip.parent = &pdev->dev;
+ 	if (pdata && pdata->gpio_base)
+ 		wm8350_gpio->gpio_chip.base = pdata->gpio_base;
+ 	else
+diff --git a/drivers/gpio/gpio-wm8994.c b/drivers/gpio/gpio-wm8994.c
+index 6f5e42d..de73c80 100644
+--- a/drivers/gpio/gpio-wm8994.c
++++ b/drivers/gpio/gpio-wm8994.c
+@@ -260,7 +260,7 @@ static int wm8994_gpio_probe(struct platform_device *pdev)
+ 	wm8994_gpio->wm8994 = wm8994;
+ 	wm8994_gpio->gpio_chip = template_chip;
+ 	wm8994_gpio->gpio_chip.ngpio = WM8994_GPIO_MAX;
+-	wm8994_gpio->gpio_chip.dev = &pdev->dev;
++	wm8994_gpio->gpio_chip.parent = &pdev->dev;
+ 	if (pdata && pdata->gpio_base)
+ 		wm8994_gpio->gpio_chip.base = pdata->gpio_base;
+ 	else
+diff --git a/drivers/gpio/gpio-xgene.c b/drivers/gpio/gpio-xgene.c
+index 18a8182..b8ceb718 100644
+--- a/drivers/gpio/gpio-xgene.c
++++ b/drivers/gpio/gpio-xgene.c
+@@ -188,7 +188,7 @@ static int xgene_gpio_probe(struct platform_device *pdev)
+ 	gpio->chip.ngpio = XGENE_MAX_GPIOS;
+ 
+ 	spin_lock_init(&gpio->lock);
+-	gpio->chip.dev = &pdev->dev;
++	gpio->chip.parent = &pdev->dev;
+ 	gpio->chip.direction_input = xgene_gpio_dir_in;
+ 	gpio->chip.direction_output = xgene_gpio_dir_out;
+ 	gpio->chip.get = xgene_gpio_get;
+diff --git a/drivers/gpio/gpio-xilinx.c b/drivers/gpio/gpio-xilinx.c
+index d5284df..5c2971e 100644
+--- a/drivers/gpio/gpio-xilinx.c
++++ b/drivers/gpio/gpio-xilinx.c
+@@ -305,7 +305,7 @@ static int xgpio_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	chip->mmchip.gc.ngpio = chip->gpio_width[0] + chip->gpio_width[1];
+-	chip->mmchip.gc.dev = &pdev->dev;
++	chip->mmchip.gc.parent = &pdev->dev;
+ 	chip->mmchip.gc.direction_input = xgpio_dir_in;
+ 	chip->mmchip.gc.direction_output = xgpio_dir_out;
+ 	chip->mmchip.gc.get = xgpio_get;
+diff --git a/drivers/gpio/gpio-xlp.c b/drivers/gpio/gpio-xlp.c
+index bc06a2c..3f31aac 100644
+--- a/drivers/gpio/gpio-xlp.c
++++ b/drivers/gpio/gpio-xlp.c
+@@ -373,7 +373,7 @@ static int xlp_gpio_probe(struct platform_device *pdev)
+ 	gc->owner = THIS_MODULE;
+ 	gc->label = dev_name(&pdev->dev);
+ 	gc->base = 0;
+-	gc->dev = &pdev->dev;
++	gc->parent = &pdev->dev;
+ 	gc->ngpio = ngpio;
+ 	gc->of_node = pdev->dev.of_node;
+ 	gc->direction_output = xlp_gpio_dir_output;
+diff --git a/drivers/gpio/gpio-zevio.c b/drivers/gpio/gpio-zevio.c
+index 6f02d7c..65b61dc 100644
+--- a/drivers/gpio/gpio-zevio.c
++++ b/drivers/gpio/gpio-zevio.c
+@@ -185,7 +185,7 @@ static int zevio_gpio_probe(struct platform_device *pdev)
+ 
+ 	/* Copy our reference */
+ 	controller->chip.gc = zevio_gpio_chip;
+-	controller->chip.gc.dev = &pdev->dev;
++	controller->chip.gc.parent = &pdev->dev;
+ 
+ 	status = of_mm_gpiochip_add(pdev->dev.of_node, &(controller->chip));
+ 	if (status) {
+@@ -199,7 +199,7 @@ static int zevio_gpio_probe(struct platform_device *pdev)
+ 	for (i = 0; i < controller->chip.gc.ngpio; i += 8)
+ 		zevio_gpio_port_set(controller, i, ZEVIO_GPIO_INT_MASK, 0xFF);
+ 
+-	dev_dbg(controller->chip.gc.dev, "ZEVIO GPIO controller set up!\n");
++	dev_dbg(controller->chip.gc.parent, "ZEVIO GPIO controller set up!\n");
+ 
+ 	return 0;
+ }
+diff --git a/drivers/gpio/gpio-zx.c b/drivers/gpio/gpio-zx.c
+index 1dcf7a6..ab2e54f 100644
+--- a/drivers/gpio/gpio-zx.c
++++ b/drivers/gpio/gpio-zx.c
+@@ -245,7 +245,7 @@ static int zx_gpio_probe(struct platform_device *pdev)
+ 	chip->gc.base = ZX_GPIO_NR * id;
+ 	chip->gc.ngpio = ZX_GPIO_NR;
+ 	chip->gc.label = dev_name(dev);
+-	chip->gc.dev = dev;
++	chip->gc.parent = dev;
+ 	chip->gc.owner = THIS_MODULE;
+ 
+ 	ret = gpiochip_add(&chip->gc);
+diff --git a/drivers/gpio/gpio-zynq.c b/drivers/gpio/gpio-zynq.c
+index 8abeaca..8a04e00 100644
+--- a/drivers/gpio/gpio-zynq.c
++++ b/drivers/gpio/gpio-zynq.c
+@@ -592,7 +592,7 @@ static int zynq_gpio_request(struct gpio_chip *chip, unsigned offset)
+ {
+ 	int ret;
+ 
+-	ret = pm_runtime_get_sync(chip->dev);
++	ret = pm_runtime_get_sync(chip->parent);
+ 
+ 	/*
+ 	 * If the device is already active pm_runtime_get() will return 1 on
+@@ -603,7 +603,7 @@ static int zynq_gpio_request(struct gpio_chip *chip, unsigned offset)
+ 
+ static void zynq_gpio_free(struct gpio_chip *chip, unsigned offset)
+ {
+-	pm_runtime_put(chip->dev);
++	pm_runtime_put(chip->parent);
+ }
+ 
+ static const struct dev_pm_ops zynq_gpio_dev_pm_ops = {
+@@ -698,7 +698,7 @@ static int zynq_gpio_probe(struct platform_device *pdev)
+ 	chip = &gpio->chip;
+ 	chip->label = gpio->p_data->label;
+ 	chip->owner = THIS_MODULE;
+-	chip->dev = &pdev->dev;
++	chip->parent = &pdev->dev;
+ 	chip->get = zynq_gpio_get_value;
+ 	chip->set = zynq_gpio_set_value;
+ 	chip->request = zynq_gpio_request;
+diff --git a/drivers/gpio/gpiolib-acpi.c b/drivers/gpio/gpiolib-acpi.c
+index 16a7b68..e4620e1 100644
+--- a/drivers/gpio/gpiolib-acpi.c
++++ b/drivers/gpio/gpiolib-acpi.c
+@@ -51,10 +51,10 @@ struct acpi_gpio_chip {
+ 
+ static int acpi_gpiochip_find(struct gpio_chip *gc, void *data)
+ {
+-	if (!gc->dev)
++	if (!gc->parent)
+ 		return false;
+ 
+-	return ACPI_HANDLE(gc->dev) == data;
++	return ACPI_HANDLE(gc->parent) == data;
+ }
+ 
+ #ifdef CONFIG_PINCTRL
+@@ -184,7 +184,7 @@ static acpi_status acpi_gpiochip_request_interrupt(struct acpi_resource *ares,
+ 	if (agpio->connection_type != ACPI_RESOURCE_GPIO_TYPE_INT)
+ 		return AE_OK;
+ 
+-	handle = ACPI_HANDLE(chip->dev);
++	handle = ACPI_HANDLE(chip->parent);
+ 	pin = agpio->pin_table[0];
+ 
+ 	if (pin <= 255) {
+@@ -208,7 +208,7 @@ static acpi_status acpi_gpiochip_request_interrupt(struct acpi_resource *ares,
+ 
+ 	desc = gpiochip_request_own_desc(chip, pin, "ACPI:Event");
+ 	if (IS_ERR(desc)) {
+-		dev_err(chip->dev, "Failed to request GPIO\n");
++		dev_err(chip->parent, "Failed to request GPIO\n");
+ 		return AE_ERROR;
+ 	}
+ 
+@@ -216,13 +216,13 @@ static acpi_status acpi_gpiochip_request_interrupt(struct acpi_resource *ares,
+ 
+ 	ret = gpiochip_lock_as_irq(chip, pin);
+ 	if (ret) {
+-		dev_err(chip->dev, "Failed to lock GPIO as interrupt\n");
++		dev_err(chip->parent, "Failed to lock GPIO as interrupt\n");
+ 		goto fail_free_desc;
+ 	}
+ 
+ 	irq = gpiod_to_irq(desc);
+ 	if (irq < 0) {
+-		dev_err(chip->dev, "Failed to translate GPIO to IRQ\n");
++		dev_err(chip->parent, "Failed to translate GPIO to IRQ\n");
+ 		goto fail_unlock_irq;
+ 	}
+ 
+@@ -259,7 +259,8 @@ static acpi_status acpi_gpiochip_request_interrupt(struct acpi_resource *ares,
+ 	ret = request_threaded_irq(event->irq, NULL, handler, irqflags,
+ 				   "ACPI:Event", event);
+ 	if (ret) {
+-		dev_err(chip->dev, "Failed to setup interrupt handler for %d\n",
++		dev_err(chip->parent,
++			"Failed to setup interrupt handler for %d\n",
+ 			event->irq);
+ 		goto fail_free_event;
+ 	}
+@@ -293,10 +294,10 @@ void acpi_gpiochip_request_interrupts(struct gpio_chip *chip)
+ 	acpi_handle handle;
+ 	acpi_status status;
+ 
+-	if (!chip->dev || !chip->to_irq)
++	if (!chip->parent || !chip->to_irq)
+ 		return;
+ 
+-	handle = ACPI_HANDLE(chip->dev);
++	handle = ACPI_HANDLE(chip->parent);
+ 	if (!handle)
+ 		return;
+ 
+@@ -323,10 +324,10 @@ void acpi_gpiochip_free_interrupts(struct gpio_chip *chip)
+ 	acpi_handle handle;
+ 	acpi_status status;
+ 
+-	if (!chip->dev || !chip->to_irq)
++	if (!chip->parent || !chip->to_irq)
+ 		return;
+ 
+-	handle = ACPI_HANDLE(chip->dev);
++	handle = ACPI_HANDLE(chip->parent);
+ 	if (!handle)
+ 		return;
+ 
+@@ -748,7 +749,7 @@ out:
+ static void acpi_gpiochip_request_regions(struct acpi_gpio_chip *achip)
+ {
+ 	struct gpio_chip *chip = achip->chip;
+-	acpi_handle handle = ACPI_HANDLE(chip->dev);
++	acpi_handle handle = ACPI_HANDLE(chip->parent);
+ 	acpi_status status;
+ 
+ 	INIT_LIST_HEAD(&achip->conns);
+@@ -757,20 +758,22 @@ static void acpi_gpiochip_request_regions(struct acpi_gpio_chip *achip)
+ 						    acpi_gpio_adr_space_handler,
+ 						    NULL, achip);
+ 	if (ACPI_FAILURE(status))
+-		dev_err(chip->dev, "Failed to install GPIO OpRegion handler\n");
++		dev_err(chip->parent,
++		        "Failed to install GPIO OpRegion handler\n");
+ }
+ 
+ static void acpi_gpiochip_free_regions(struct acpi_gpio_chip *achip)
+ {
+ 	struct gpio_chip *chip = achip->chip;
+-	acpi_handle handle = ACPI_HANDLE(chip->dev);
++	acpi_handle handle = ACPI_HANDLE(chip->parent);
+ 	struct acpi_gpio_connection *conn, *tmp;
+ 	acpi_status status;
+ 
+ 	status = acpi_remove_address_space_handler(handle, ACPI_ADR_SPACE_GPIO,
+ 						   acpi_gpio_adr_space_handler);
+ 	if (ACPI_FAILURE(status)) {
+-		dev_err(chip->dev, "Failed to remove GPIO OpRegion handler\n");
++		dev_err(chip->parent,
++			"Failed to remove GPIO OpRegion handler\n");
+ 		return;
+ 	}
+ 
+@@ -787,16 +790,16 @@ void acpi_gpiochip_add(struct gpio_chip *chip)
+ 	acpi_handle handle;
+ 	acpi_status status;
+ 
+-	if (!chip || !chip->dev)
++	if (!chip || !chip->parent)
+ 		return;
+ 
+-	handle = ACPI_HANDLE(chip->dev);
++	handle = ACPI_HANDLE(chip->parent);
+ 	if (!handle)
+ 		return;
+ 
+ 	acpi_gpio = kzalloc(sizeof(*acpi_gpio), GFP_KERNEL);
+ 	if (!acpi_gpio) {
+-		dev_err(chip->dev,
++		dev_err(chip->parent,
+ 			"Failed to allocate memory for ACPI GPIO chip\n");
+ 		return;
+ 	}
+@@ -806,7 +809,7 @@ void acpi_gpiochip_add(struct gpio_chip *chip)
+ 
+ 	status = acpi_attach_data(handle, acpi_gpio_chip_dh, acpi_gpio);
+ 	if (ACPI_FAILURE(status)) {
+-		dev_err(chip->dev, "Failed to attach ACPI GPIO chip\n");
++		dev_err(chip->parent, "Failed to attach ACPI GPIO chip\n");
+ 		kfree(acpi_gpio);
+ 		return;
+ 	}
+@@ -820,16 +823,16 @@ void acpi_gpiochip_remove(struct gpio_chip *chip)
+ 	acpi_handle handle;
+ 	acpi_status status;
+ 
+-	if (!chip || !chip->dev)
++	if (!chip || !chip->parent)
+ 		return;
+ 
+-	handle = ACPI_HANDLE(chip->dev);
++	handle = ACPI_HANDLE(chip->parent);
+ 	if (!handle)
+ 		return;
+ 
+ 	status = acpi_get_data(handle, acpi_gpio_chip_dh, (void **)&acpi_gpio);
+ 	if (ACPI_FAILURE(status)) {
+-		dev_warn(chip->dev, "Failed to retrieve ACPI GPIO chip\n");
++		dev_warn(chip->parent, "Failed to retrieve ACPI GPIO chip\n");
+ 		return;
+ 	}
+ 
+diff --git a/drivers/gpio/gpiolib-of.c b/drivers/gpio/gpiolib-of.c
+index 5fe34a9d..6ed465e 100644
+--- a/drivers/gpio/gpiolib-of.c
++++ b/drivers/gpio/gpiolib-of.c
+@@ -423,8 +423,8 @@ int of_gpiochip_add(struct gpio_chip *chip)
+ {
+ 	int status;
+ 
+-	if ((!chip->of_node) && (chip->dev))
+-		chip->of_node = chip->dev->of_node;
++	if ((!chip->of_node) && (chip->parent))
++		chip->of_node = chip->parent->of_node;
+ 
+ 	if (!chip->of_node)
+ 		return 0;
+diff --git a/drivers/gpio/gpiolib-sysfs.c b/drivers/gpio/gpiolib-sysfs.c
+index b57ed8e..405dfca 100644
+--- a/drivers/gpio/gpiolib-sysfs.c
++++ b/drivers/gpio/gpiolib-sysfs.c
+@@ -605,7 +605,7 @@ int gpiod_export(struct gpio_desc *desc, bool direction_may_change)
+ 	if (chip->names && chip->names[offset])
+ 		ioname = chip->names[offset];
+ 
+-	dev = device_create_with_groups(&gpio_class, chip->dev,
++	dev = device_create_with_groups(&gpio_class, chip->parent,
+ 					MKDEV(0, 0), data, gpio_groups,
+ 					ioname ? ioname : "gpio%u",
+ 					desc_to_gpio(desc));
+@@ -730,7 +730,8 @@ int gpiochip_sysfs_register(struct gpio_chip *chip)
+ 		return 0;
+ 
+ 	/* use chip->base for the ID; it's already known to be unique */
+-	dev = device_create_with_groups(&gpio_class, chip->dev, MKDEV(0, 0),
++	dev = device_create_with_groups(&gpio_class, chip->parent,
++					MKDEV(0, 0),
+ 					chip, gpiochip_groups,
+ 					"gpiochip%d", chip->base);
+ 	if (IS_ERR(dev))
+diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
+index 06d345b..2bcfc90 100644
+--- a/drivers/gpio/gpiolib.c
++++ b/drivers/gpio/gpiolib.c
+@@ -205,8 +205,8 @@ static int gpiochip_add_to_list(struct gpio_chip *chip)
+ 	if (pos != &gpio_chips && pos->prev != &gpio_chips) {
+ 		_chip = list_entry(pos->prev, struct gpio_chip, list);
+ 		if (_chip->base + _chip->ngpio > chip->base) {
+-			dev_err(chip->dev,
+-			       "GPIO integer space overlap, cannot add chip\n");
++			dev_err(chip->parent,
++				"GPIO integer space overlap, cannot add chip\n");
+ 			err = -EBUSY;
+ 		}
+ 	}
+@@ -267,7 +267,7 @@ static int gpiochip_set_desc_names(struct gpio_chip *gc)
+ 
+ 		gpio = gpio_name_to_desc(gc->names[i]);
+ 		if (gpio)
+-			dev_warn(gc->dev, "Detected name collision for "
++			dev_warn(gc->parent, "Detected name collision for "
+ 				 "GPIO name '%s'\n",
+ 				 gc->names[i]);
+ 	}
+@@ -348,8 +348,8 @@ int gpiochip_add(struct gpio_chip *chip)
+ 	INIT_LIST_HEAD(&chip->pin_ranges);
+ #endif
+ 
+-	if (!chip->owner && chip->dev && chip->dev->driver)
+-		chip->owner = chip->dev->driver->owner;
++	if (!chip->owner && chip->parent && chip->parent->driver)
++		chip->owner = chip->parent->driver->owner;
+ 
+ 	status = gpiochip_set_desc_names(chip);
+ 	if (status)
+@@ -424,7 +424,8 @@ void gpiochip_remove(struct gpio_chip *chip)
+ 	spin_unlock_irqrestore(&gpio_lock, flags);
+ 
+ 	if (requested)
+-		dev_crit(chip->dev, "REMOVING GPIOCHIP WITH GPIOS STILL REQUESTED\n");
++		dev_crit(chip->parent,
++			 "REMOVING GPIOCHIP WITH GPIOS STILL REQUESTED\n");
+ 
+ 	kfree(chip->desc);
+ 	chip->desc = NULL;
+@@ -683,11 +684,11 @@ int _gpiochip_irqchip_add(struct gpio_chip *gpiochip,
+ 	if (!gpiochip || !irqchip)
+ 		return -EINVAL;
+ 
+-	if (!gpiochip->dev) {
++	if (!gpiochip->parent) {
+ 		pr_err("missing gpiochip .dev parent pointer\n");
+ 		return -EINVAL;
+ 	}
+-	of_node = gpiochip->dev->of_node;
++	of_node = gpiochip->parent->of_node;
+ #ifdef CONFIG_OF_GPIO
+ 	/*
+ 	 * If the gpiochip has an assigned OF node this takes precedence
+@@ -2489,7 +2490,7 @@ static int gpiolib_seq_show(struct seq_file *s, void *v)
+ 
+ 	seq_printf(s, "%sGPIOs %d-%d", (char *)s->private,
+ 			chip->base, chip->base + chip->ngpio - 1);
+-	dev = chip->dev;
++	dev = chip->parent;
+ 	if (dev)
+ 		seq_printf(s, ", %s/%s", dev->bus ? dev->bus->name : "no-bus",
+ 			dev_name(dev));
+diff --git a/drivers/hid/hid-cp2112.c b/drivers/hid/hid-cp2112.c
+index 7afc3fc..f47954e 100644
+--- a/drivers/hid/hid-cp2112.c
++++ b/drivers/hid/hid-cp2112.c
+@@ -1104,7 +1104,7 @@ static int cp2112_probe(struct hid_device *hdev, const struct hid_device_id *id)
+ 	dev->gc.base			= -1;
+ 	dev->gc.ngpio			= 8;
+ 	dev->gc.can_sleep		= 1;
+-	dev->gc.dev			= &hdev->dev;
++	dev->gc.parent			= &hdev->dev;
+ 
+ 	ret = gpiochip_add(&dev->gc);
+ 	if (ret < 0) {
+diff --git a/drivers/input/touchscreen/ad7879.c b/drivers/input/touchscreen/ad7879.c
+index fec66ad..16b5cc2 100644
+--- a/drivers/input/touchscreen/ad7879.c
++++ b/drivers/input/touchscreen/ad7879.c
+@@ -454,7 +454,7 @@ static int ad7879_gpio_add(struct ad7879 *ts,
+ 		ts->gc.ngpio = 1;
+ 		ts->gc.label = "AD7879-GPIO";
+ 		ts->gc.owner = THIS_MODULE;
+-		ts->gc.dev = ts->dev;
++		ts->gc.parent = ts->dev;
+ 
+ 		ret = gpiochip_add(&ts->gc);
+ 		if (ret)
+diff --git a/drivers/leds/leds-pca9532.c b/drivers/leds/leds-pca9532.c
+index 5a6363d..a975b32 100644
+--- a/drivers/leds/leds-pca9532.c
++++ b/drivers/leds/leds-pca9532.c
+@@ -319,7 +319,7 @@ static int pca9532_destroy_devices(struct pca9532_data *data, int n_devs)
+ 	}
+ 
+ #ifdef CONFIG_LEDS_PCA9532_GPIO
+-	if (data->gpio.dev)
++	if (data->gpio.parent)
+ 		gpiochip_remove(&data->gpio);
+ #endif
+ 
+@@ -413,13 +413,13 @@ static int pca9532_configure(struct i2c_client *client,
+ 		data->gpio.can_sleep = 1;
+ 		data->gpio.base = pdata->gpio_base;
+ 		data->gpio.ngpio = data->chip_info->num_leds;
+-		data->gpio.dev = &client->dev;
++		data->gpio.parent = &client->dev;
+ 		data->gpio.owner = THIS_MODULE;
+ 
+ 		err = gpiochip_add(&data->gpio);
+ 		if (err) {
+ 			/* Use data->gpio.dev as a flag for freeing gpiochip */
+-			data->gpio.dev = NULL;
++			data->gpio.parent = NULL;
+ 			dev_warn(&client->dev, "could not add gpiochip\n");
+ 		} else {
+ 			dev_info(&client->dev, "gpios %i...%i\n",
+diff --git a/drivers/leds/leds-tca6507.c b/drivers/leds/leds-tca6507.c
+index edbecc4..75529a2 100644
+--- a/drivers/leds/leds-tca6507.c
++++ b/drivers/leds/leds-tca6507.c
+@@ -651,7 +651,7 @@ static int tca6507_probe_gpios(struct i2c_client *client,
+ 	tca->gpio.owner = THIS_MODULE;
+ 	tca->gpio.direction_output = tca6507_gpio_direction_output;
+ 	tca->gpio.set = tca6507_gpio_set_value;
+-	tca->gpio.dev = &client->dev;
++	tca->gpio.parent = &client->dev;
+ #ifdef CONFIG_OF_GPIO
+ 	tca->gpio.of_node = of_node_get(client->dev.of_node);
+ #endif
+diff --git a/drivers/media/dvb-frontends/cxd2820r_core.c b/drivers/media/dvb-frontends/cxd2820r_core.c
+index def6d21..24a457d 100644
+--- a/drivers/media/dvb-frontends/cxd2820r_core.c
++++ b/drivers/media/dvb-frontends/cxd2820r_core.c
+@@ -722,7 +722,7 @@ struct dvb_frontend *cxd2820r_attach(const struct cxd2820r_config *cfg,
+ #ifdef CONFIG_GPIOLIB
+ 		/* add GPIOs */
+ 		priv->gpio_chip.label = KBUILD_MODNAME;
+-		priv->gpio_chip.dev = &priv->i2c->dev;
++		priv->gpio_chip.parent = &priv->i2c->dev;
+ 		priv->gpio_chip.owner = THIS_MODULE;
+ 		priv->gpio_chip.direction_output =
+ 				cxd2820r_gpio_direction_output;
+diff --git a/drivers/mfd/dm355evm_msp.c b/drivers/mfd/dm355evm_msp.c
+index 4c826f7..bc90efe 100644
+--- a/drivers/mfd/dm355evm_msp.c
++++ b/drivers/mfd/dm355evm_msp.c
+@@ -259,7 +259,7 @@ static int add_children(struct i2c_client *client)
+ 	int		i;
+ 
+ 	/* GPIO-ish stuff */
+-	dm355evm_msp_gpio.dev = &client->dev;
++	dm355evm_msp_gpio.parent = &client->dev;
+ 	status = gpiochip_add(&dm355evm_msp_gpio);
+ 	if (status < 0)
+ 		return status;
+diff --git a/drivers/mfd/htc-egpio.c b/drivers/mfd/htc-egpio.c
+index 6ccaf90..d334e7d 100644
+--- a/drivers/mfd/htc-egpio.c
++++ b/drivers/mfd/htc-egpio.c
+@@ -321,7 +321,7 @@ static int __init egpio_probe(struct platform_device *pdev)
+ 		ei->chip[i].dev = &(pdev->dev);
+ 		chip = &(ei->chip[i].chip);
+ 		chip->label           = "htc-egpio";
+-		chip->dev             = &pdev->dev;
++		chip->parent          = &pdev->dev;
+ 		chip->owner           = THIS_MODULE;
+ 		chip->get             = egpio_get;
+ 		chip->set             = egpio_set;
+diff --git a/drivers/mfd/htc-i2cpld.c b/drivers/mfd/htc-i2cpld.c
+index 0c6ff72..bd6b96d 100644
+--- a/drivers/mfd/htc-i2cpld.c
++++ b/drivers/mfd/htc-i2cpld.c
+@@ -429,7 +429,7 @@ static int htcpld_register_chip_gpio(
+ 	/* Setup the GPIO chips */
+ 	gpio_chip = &(chip->chip_out);
+ 	gpio_chip->label           = "htcpld-out";
+-	gpio_chip->dev             = dev;
++	gpio_chip->parent             = dev;
+ 	gpio_chip->owner           = THIS_MODULE;
+ 	gpio_chip->get             = htcpld_chip_get;
+ 	gpio_chip->set             = htcpld_chip_set;
+@@ -440,7 +440,7 @@ static int htcpld_register_chip_gpio(
+ 
+ 	gpio_chip = &(chip->chip_in);
+ 	gpio_chip->label           = "htcpld-in";
+-	gpio_chip->dev             = dev;
++	gpio_chip->parent             = dev;
+ 	gpio_chip->owner           = THIS_MODULE;
+ 	gpio_chip->get             = htcpld_chip_get;
+ 	gpio_chip->set             = NULL;
+diff --git a/drivers/mfd/tps65010.c b/drivers/mfd/tps65010.c
+index 448f0a1..b968474 100644
+--- a/drivers/mfd/tps65010.c
++++ b/drivers/mfd/tps65010.c
+@@ -638,7 +638,7 @@ static int tps65010_probe(struct i2c_client *client,
+ 		tps->outmask = board->outmask;
+ 
+ 		tps->chip.label = client->name;
+-		tps->chip.dev = &client->dev;
++		tps->chip.parent = &client->dev;
+ 		tps->chip.owner = THIS_MODULE;
+ 
+ 		tps->chip.set = tps65010_gpio_set;
+diff --git a/drivers/mfd/ucb1x00-core.c b/drivers/mfd/ucb1x00-core.c
+index f691d7e..a6ec7cc 100644
+--- a/drivers/mfd/ucb1x00-core.c
++++ b/drivers/mfd/ucb1x00-core.c
+@@ -570,7 +570,7 @@ static int ucb1x00_probe(struct mcp *mcp)
+ 
+ 	if (pdata && pdata->gpio_base) {
+ 		ucb->gpio.label = dev_name(&ucb->dev);
+-		ucb->gpio.dev = &ucb->dev;
++		ucb->gpio.parent = &ucb->dev;
+ 		ucb->gpio.owner = THIS_MODULE;
+ 		ucb->gpio.base = pdata->gpio_base;
+ 		ucb->gpio.ngpio = 10;
+diff --git a/drivers/pinctrl/bcm/pinctrl-bcm2835.c b/drivers/pinctrl/bcm/pinctrl-bcm2835.c
+index 17dd8fe..2e6c2db 100644
+--- a/drivers/pinctrl/bcm/pinctrl-bcm2835.c
++++ b/drivers/pinctrl/bcm/pinctrl-bcm2835.c
+@@ -337,14 +337,14 @@ static int bcm2835_gpio_direction_input(struct gpio_chip *chip, unsigned offset)
+ 
+ static int bcm2835_gpio_get(struct gpio_chip *chip, unsigned offset)
+ {
+-	struct bcm2835_pinctrl *pc = dev_get_drvdata(chip->dev);
++	struct bcm2835_pinctrl *pc = dev_get_drvdata(chip->parent);
+ 
+ 	return bcm2835_gpio_get_bit(pc, GPLEV0, offset);
+ }
+ 
+ static void bcm2835_gpio_set(struct gpio_chip *chip, unsigned offset, int value)
+ {
+-	struct bcm2835_pinctrl *pc = dev_get_drvdata(chip->dev);
++	struct bcm2835_pinctrl *pc = dev_get_drvdata(chip->parent);
+ 
+ 	bcm2835_gpio_set_bit(pc, value ? GPSET0 : GPCLR0, offset);
+ }
+@@ -358,7 +358,7 @@ static int bcm2835_gpio_direction_output(struct gpio_chip *chip,
+ 
+ static int bcm2835_gpio_to_irq(struct gpio_chip *chip, unsigned offset)
+ {
+-	struct bcm2835_pinctrl *pc = dev_get_drvdata(chip->dev);
++	struct bcm2835_pinctrl *pc = dev_get_drvdata(chip->parent);
+ 
+ 	return irq_linear_revmap(pc->irq_domain, offset);
+ }
+@@ -964,7 +964,7 @@ static int bcm2835_pinctrl_probe(struct platform_device *pdev)
+ 		return PTR_ERR(pc->base);
+ 
+ 	pc->gpio_chip = bcm2835_gpio_chip;
+-	pc->gpio_chip.dev = dev;
++	pc->gpio_chip.parent = dev;
+ 	pc->gpio_chip.of_node = np;
+ 
+ 	pc->irq_domain = irq_domain_add_linear(np, BCM2835_NUM_GPIOS,
+diff --git a/drivers/pinctrl/bcm/pinctrl-cygnus-gpio.c b/drivers/pinctrl/bcm/pinctrl-cygnus-gpio.c
+index 12a48f4..bd212b2 100644
+--- a/drivers/pinctrl/bcm/pinctrl-cygnus-gpio.c
++++ b/drivers/pinctrl/bcm/pinctrl-cygnus-gpio.c
+@@ -720,7 +720,7 @@ static int cygnus_gpio_probe(struct platform_device *pdev)
+ 	gc->ngpio = ngpios;
+ 	chip->num_banks = (ngpios + NGPIOS_PER_BANK - 1) / NGPIOS_PER_BANK;
+ 	gc->label = dev_name(dev);
+-	gc->dev = dev;
++	gc->parent = dev;
+ 	gc->of_node = dev->of_node;
+ 	gc->request = cygnus_gpio_request;
+ 	gc->free = cygnus_gpio_free;
+diff --git a/drivers/pinctrl/intel/pinctrl-baytrail.c b/drivers/pinctrl/intel/pinctrl-baytrail.c
+index b59ce75..bb92f8a 100644
+--- a/drivers/pinctrl/intel/pinctrl-baytrail.c
++++ b/drivers/pinctrl/intel/pinctrl-baytrail.c
+@@ -598,7 +598,7 @@ static int byt_gpio_probe(struct platform_device *pdev)
+ 	gc->dbg_show = byt_gpio_dbg_show;
+ 	gc->base = -1;
+ 	gc->can_sleep = false;
+-	gc->dev = dev;
++	gc->parent = dev;
+ 
+ #ifdef CONFIG_PM_SLEEP
+ 	vg->saved_context = devm_kcalloc(&pdev->dev, gc->ngpio,
+diff --git a/drivers/pinctrl/intel/pinctrl-cherryview.c b/drivers/pinctrl/intel/pinctrl-cherryview.c
+index a009ae3..7a19823 100644
+--- a/drivers/pinctrl/intel/pinctrl-cherryview.c
++++ b/drivers/pinctrl/intel/pinctrl-cherryview.c
+@@ -1445,7 +1445,7 @@ static int chv_gpio_probe(struct chv_pinctrl *pctrl, int irq)
+ 
+ 	chip->ngpio = pctrl->community->ngpios;
+ 	chip->label = dev_name(pctrl->dev);
+-	chip->dev = pctrl->dev;
++	chip->parent = pctrl->dev;
+ 	chip->base = -1;
+ 
+ 	ret = gpiochip_add(chip);
+diff --git a/drivers/pinctrl/intel/pinctrl-intel.c b/drivers/pinctrl/intel/pinctrl-intel.c
+index 26f6b6f..c6dcde7 100644
+--- a/drivers/pinctrl/intel/pinctrl-intel.c
++++ b/drivers/pinctrl/intel/pinctrl-intel.c
+@@ -872,7 +872,7 @@ static int intel_gpio_probe(struct intel_pinctrl *pctrl, int irq)
+ 
+ 	pctrl->chip.ngpio = pctrl->soc->npins;
+ 	pctrl->chip.label = dev_name(pctrl->dev);
+-	pctrl->chip.dev = pctrl->dev;
++	pctrl->chip.parent = pctrl->dev;
+ 	pctrl->chip.base = -1;
+ 
+ 	ret = gpiochip_add(&pctrl->chip);
+diff --git a/drivers/pinctrl/mediatek/pinctrl-mtk-common.c b/drivers/pinctrl/mediatek/pinctrl-mtk-common.c
+index 181b358..f2c2de8 100644
+--- a/drivers/pinctrl/mediatek/pinctrl-mtk-common.c
++++ b/drivers/pinctrl/mediatek/pinctrl-mtk-common.c
+@@ -95,7 +95,7 @@ static void mtk_gpio_set(struct gpio_chip *chip, unsigned offset, int value)
+ {
+ 	unsigned int reg_addr;
+ 	unsigned int bit;
+-	struct mtk_pinctrl *pctl = dev_get_drvdata(chip->dev);
++	struct mtk_pinctrl *pctl = dev_get_drvdata(chip->parent);
+ 
+ 	reg_addr = mtk_get_port(pctl, offset) + pctl->devdata->dout_offset;
+ 	bit = BIT(offset & 0xf);
+@@ -742,7 +742,7 @@ static int mtk_gpio_get_direction(struct gpio_chip *chip, unsigned offset)
+ 	unsigned int bit;
+ 	unsigned int read_val = 0;
+ 
+-	struct mtk_pinctrl *pctl = dev_get_drvdata(chip->dev);
++	struct mtk_pinctrl *pctl = dev_get_drvdata(chip->parent);
+ 
+ 	reg_addr =  mtk_get_port(pctl, offset) + pctl->devdata->dir_offset;
+ 	bit = BIT(offset & 0xf);
+@@ -755,7 +755,7 @@ static int mtk_gpio_get(struct gpio_chip *chip, unsigned offset)
+ 	unsigned int reg_addr;
+ 	unsigned int bit;
+ 	unsigned int read_val = 0;
+-	struct mtk_pinctrl *pctl = dev_get_drvdata(chip->dev);
++	struct mtk_pinctrl *pctl = dev_get_drvdata(chip->parent);
+ 
+ 	reg_addr = mtk_get_port(pctl, offset) +
+ 		pctl->devdata->din_offset;
+@@ -768,7 +768,7 @@ static int mtk_gpio_get(struct gpio_chip *chip, unsigned offset)
+ static int mtk_gpio_to_irq(struct gpio_chip *chip, unsigned offset)
+ {
+ 	const struct mtk_desc_pin *pin;
+-	struct mtk_pinctrl *pctl = dev_get_drvdata(chip->dev);
++	struct mtk_pinctrl *pctl = dev_get_drvdata(chip->parent);
+ 	int irq;
+ 
+ 	pin = pctl->devdata->pins + offset;
+@@ -936,7 +936,7 @@ static void mtk_eint_unmask(struct irq_data *d)
+ static int mtk_gpio_set_debounce(struct gpio_chip *chip, unsigned offset,
+ 	unsigned debounce)
+ {
+-	struct mtk_pinctrl *pctl = dev_get_drvdata(chip->dev);
++	struct mtk_pinctrl *pctl = dev_get_drvdata(chip->parent);
+ 	int eint_num, virq, eint_offset;
+ 	unsigned int set_offset, bit, clr_bit, clr_offset, rst, i, unmask, dbnc;
+ 	static const unsigned int debounce_time[] = {500, 1000, 16000, 32000, 64000,
+@@ -1347,7 +1347,7 @@ int mtk_pctrl_init(struct platform_device *pdev,
+ 	*pctl->chip = mtk_gpio_chip;
+ 	pctl->chip->ngpio = pctl->devdata->npins;
+ 	pctl->chip->label = dev_name(&pdev->dev);
+-	pctl->chip->dev = &pdev->dev;
++	pctl->chip->parent = &pdev->dev;
+ 	pctl->chip->base = -1;
+ 
+ 	ret = gpiochip_add(pctl->chip);
+diff --git a/drivers/pinctrl/meson/pinctrl-meson.c b/drivers/pinctrl/meson/pinctrl-meson.c
+index 13730ca..0df5952 100644
+--- a/drivers/pinctrl/meson/pinctrl-meson.c
++++ b/drivers/pinctrl/meson/pinctrl-meson.c
+@@ -562,7 +562,7 @@ static int meson_gpiolib_register(struct meson_pinctrl *pc)
+ 		domain = &pc->domains[i];
+ 
+ 		domain->chip.label = domain->data->name;
+-		domain->chip.dev = pc->dev;
++		domain->chip.parent = pc->dev;
+ 		domain->chip.request = meson_gpio_request;
+ 		domain->chip.free = meson_gpio_free;
+ 		domain->chip.direction_input = meson_gpio_direction_input;
+diff --git a/drivers/pinctrl/nomadik/pinctrl-abx500.c b/drivers/pinctrl/nomadik/pinctrl-abx500.c
+index b59fbb4..434d5de 100644
+--- a/drivers/pinctrl/nomadik/pinctrl-abx500.c
++++ b/drivers/pinctrl/nomadik/pinctrl-abx500.c
+@@ -986,7 +986,7 @@ static int abx500_pin_config_set(struct pinctrl_dev *pctldev,
+ 		param = pinconf_to_config_param(configs[i]);
+ 		argument = pinconf_to_config_argument(configs[i]);
+ 
+-		dev_dbg(chip->dev, "pin %d [%#lx]: %s %s\n",
++		dev_dbg(chip->parent, "pin %d [%#lx]: %s %s\n",
+ 			pin, configs[i],
+ 			(param == PIN_CONFIG_OUTPUT) ? "output " : "input",
+ 			(param == PIN_CONFIG_OUTPUT) ?
+@@ -1077,7 +1077,8 @@ static int abx500_pin_config_set(struct pinctrl_dev *pctldev,
+ 			break;
+ 
+ 		default:
+-			dev_err(chip->dev, "illegal configuration requested\n");
++			dev_err(chip->parent,
++				"illegal configuration requested\n");
+ 		}
+ 	} /* for each config */
+ out:
+@@ -1172,7 +1173,7 @@ static int abx500_gpio_probe(struct platform_device *pdev)
+ 	pct->dev = &pdev->dev;
+ 	pct->parent = dev_get_drvdata(pdev->dev.parent);
+ 	pct->chip = abx500gpio_chip;
+-	pct->chip.dev = &pdev->dev;
++	pct->chip.parent = &pdev->dev;
+ 	pct->chip.base = -1; /* Dynamic allocation */
+ 
+ 	match = of_match_device(abx500_gpio_match, &pdev->dev);
+diff --git a/drivers/pinctrl/nomadik/pinctrl-nomadik.c b/drivers/pinctrl/nomadik/pinctrl-nomadik.c
+index f844b4a..92c0dd1 100644
+--- a/drivers/pinctrl/nomadik/pinctrl-nomadik.c
++++ b/drivers/pinctrl/nomadik/pinctrl-nomadik.c
+@@ -438,7 +438,7 @@ nmk_gpio_disable_lazy_irq(struct nmk_gpio_chip *nmk_chip, unsigned offset)
+ 			       nmk_chip->addr + NMK_GPIO_FIMSC);
+ 	}
+ 
+-	dev_dbg(nmk_chip->chip.dev, "%d: clearing interrupt mask\n", gpio);
++	dev_dbg(nmk_chip->chip.parent, "%d: clearing interrupt mask\n", gpio);
+ }
+ 
+ static void nmk_write_masked(void __iomem *reg, u32 mask, u32 value)
+@@ -1188,7 +1188,7 @@ static struct nmk_gpio_chip *nmk_gpio_populate_chip(struct device_node *np,
+ 	chip->base = id * NMK_GPIO_PER_CHIP;
+ 	chip->ngpio = NMK_GPIO_PER_CHIP;
+ 	chip->label = dev_name(&gpio_pdev->dev);
+-	chip->dev = &gpio_pdev->dev;
++	chip->parent = &gpio_pdev->dev;
+ 
+ 	res = platform_get_resource(gpio_pdev, IORESOURCE_MEM, 0);
+ 	base = devm_ioremap_resource(&pdev->dev, res);
+@@ -1890,7 +1890,7 @@ static int nmk_pin_config_set(struct pinctrl_dev *pctldev, unsigned pin,
+ 			if (slpm_val)
+ 				val = slpm_val - 1;
+ 
+-			dev_dbg(nmk_chip->chip.dev,
++			dev_dbg(nmk_chip->chip.parent,
+ 				"pin %d: sleep pull %s, dir %s, val %s\n",
+ 				pin,
+ 				slpm_pull ? pullnames[pull] : "same",
+@@ -1899,7 +1899,7 @@ static int nmk_pin_config_set(struct pinctrl_dev *pctldev, unsigned pin,
+ 				slpm_val ? (val ? "high" : "low") : "same");
+ 		}
+ 
+-		dev_dbg(nmk_chip->chip.dev,
++		dev_dbg(nmk_chip->chip.parent,
+ 			"pin %d [%#lx]: pull %s, slpm %s (%s%s), lowemi %s\n",
+ 			pin, cfg, pullnames[pull], slpmnames[slpm],
+ 			output ? "output " : "input",
+diff --git a/drivers/pinctrl/pinctrl-amd.c b/drivers/pinctrl/pinctrl-amd.c
+index 7340ff7..1f29855 100644
+--- a/drivers/pinctrl/pinctrl-amd.c
++++ b/drivers/pinctrl/pinctrl-amd.c
+@@ -758,7 +758,7 @@ static int amd_gpio_probe(struct platform_device *pdev)
+ 	gpio_dev->gc.base			= 0;
+ 	gpio_dev->gc.label			= pdev->name;
+ 	gpio_dev->gc.owner			= THIS_MODULE;
+-	gpio_dev->gc.dev			= &pdev->dev;
++	gpio_dev->gc.parent			= &pdev->dev;
+ 	gpio_dev->gc.ngpio			= TOTAL_NUMBER_OF_PINS;
+ #if defined(CONFIG_OF_GPIO)
+ 	gpio_dev->gc.of_node			= pdev->dev.of_node;
+diff --git a/drivers/pinctrl/pinctrl-as3722.c b/drivers/pinctrl/pinctrl-as3722.c
+index 56af28b..89479be 100644
+--- a/drivers/pinctrl/pinctrl-as3722.c
++++ b/drivers/pinctrl/pinctrl-as3722.c
+@@ -582,7 +582,7 @@ static int as3722_pinctrl_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	as_pci->gpio_chip = as3722_gpio_chip;
+-	as_pci->gpio_chip.dev = &pdev->dev;
++	as_pci->gpio_chip.parent = &pdev->dev;
+ 	as_pci->gpio_chip.of_node = pdev->dev.parent->of_node;
+ 	ret = gpiochip_add(&as_pci->gpio_chip);
+ 	if (ret < 0) {
+diff --git a/drivers/pinctrl/pinctrl-at91-pio4.c b/drivers/pinctrl/pinctrl-at91-pio4.c
+index 271cca6..ad3aa99 100644
+--- a/drivers/pinctrl/pinctrl-at91-pio4.c
++++ b/drivers/pinctrl/pinctrl-at91-pio4.c
+@@ -290,7 +290,7 @@ static void atmel_gpio_irq_handler(struct irq_desc *desc)
+ 
+ static int atmel_gpio_direction_input(struct gpio_chip *chip, unsigned offset)
+ {
+-	struct atmel_pioctrl *atmel_pioctrl = dev_get_drvdata(chip->dev);
++	struct atmel_pioctrl *atmel_pioctrl = dev_get_drvdata(chip->parent);
+ 	struct atmel_pin *pin = atmel_pioctrl->pins[offset];
+ 	unsigned reg;
+ 
+@@ -305,7 +305,7 @@ static int atmel_gpio_direction_input(struct gpio_chip *chip, unsigned offset)
+ 
+ static int atmel_gpio_get(struct gpio_chip *chip, unsigned offset)
+ {
+-	struct atmel_pioctrl *atmel_pioctrl = dev_get_drvdata(chip->dev);
++	struct atmel_pioctrl *atmel_pioctrl = dev_get_drvdata(chip->parent);
+ 	struct atmel_pin *pin = atmel_pioctrl->pins[offset];
+ 	unsigned reg;
+ 
+@@ -317,7 +317,7 @@ static int atmel_gpio_get(struct gpio_chip *chip, unsigned offset)
+ static int atmel_gpio_direction_output(struct gpio_chip *chip, unsigned offset,
+ 				       int value)
+ {
+-	struct atmel_pioctrl *atmel_pioctrl = dev_get_drvdata(chip->dev);
++	struct atmel_pioctrl *atmel_pioctrl = dev_get_drvdata(chip->parent);
+ 	struct atmel_pin *pin = atmel_pioctrl->pins[offset];
+ 	unsigned reg;
+ 
+@@ -336,7 +336,7 @@ static int atmel_gpio_direction_output(struct gpio_chip *chip, unsigned offset,
+ 
+ static void atmel_gpio_set(struct gpio_chip *chip, unsigned offset, int val)
+ {
+-	struct atmel_pioctrl *atmel_pioctrl = dev_get_drvdata(chip->dev);
++	struct atmel_pioctrl *atmel_pioctrl = dev_get_drvdata(chip->parent);
+ 	struct atmel_pin *pin = atmel_pioctrl->pins[offset];
+ 
+ 	atmel_gpio_write(atmel_pioctrl, pin->bank,
+@@ -346,7 +346,7 @@ static void atmel_gpio_set(struct gpio_chip *chip, unsigned offset, int val)
+ 
+ static int atmel_gpio_to_irq(struct gpio_chip *chip, unsigned offset)
+ {
+-	struct atmel_pioctrl *atmel_pioctrl = dev_get_drvdata(chip->dev);
++	struct atmel_pioctrl *atmel_pioctrl = dev_get_drvdata(chip->parent);
+ 
+ 	return irq_find_mapping(atmel_pioctrl->irq_domain, offset);
+ }
+@@ -971,7 +971,7 @@ static int atmel_pinctrl_probe(struct platform_device *pdev)
+ 	atmel_pioctrl->gpio_chip->of_node = dev->of_node;
+ 	atmel_pioctrl->gpio_chip->ngpio = atmel_pioctrl->npins;
+ 	atmel_pioctrl->gpio_chip->label = dev_name(dev);
+-	atmel_pioctrl->gpio_chip->dev = dev;
++	atmel_pioctrl->gpio_chip->parent = dev;
+ 	atmel_pioctrl->gpio_chip->names = atmel_pioctrl->group_names;
+ 
+ 	atmel_pioctrl->pm_wakeup_sources = devm_kzalloc(dev,
+diff --git a/drivers/pinctrl/pinctrl-at91.c b/drivers/pinctrl/pinctrl-at91.c
+index 0d2fc0c..667d906 100644
+--- a/drivers/pinctrl/pinctrl-at91.c
++++ b/drivers/pinctrl/pinctrl-at91.c
+@@ -1750,7 +1750,7 @@ static int at91_gpio_probe(struct platform_device *pdev)
+ 	chip = &at91_chip->chip;
+ 	chip->of_node = np;
+ 	chip->label = dev_name(&pdev->dev);
+-	chip->dev = &pdev->dev;
++	chip->parent = &pdev->dev;
+ 	chip->owner = THIS_MODULE;
+ 	chip->base = alias_idx * MAX_NB_GPIO_PER_BANK;
+ 
+diff --git a/drivers/pinctrl/pinctrl-coh901.c b/drivers/pinctrl/pinctrl-coh901.c
+index 813eb7c..e1cbf56 100644
+--- a/drivers/pinctrl/pinctrl-coh901.c
++++ b/drivers/pinctrl/pinctrl-coh901.c
+@@ -637,7 +637,7 @@ static int __init u300_gpio_probe(struct platform_device *pdev)
+ 
+ 	gpio->chip = u300_gpio_chip;
+ 	gpio->chip.ngpio = U300_GPIO_NUM_PORTS * U300_GPIO_PINS_PER_PORT;
+-	gpio->chip.dev = &pdev->dev;
++	gpio->chip.parent = &pdev->dev;
+ 	gpio->chip.base = 0;
+ 	gpio->dev = &pdev->dev;
+ 
+diff --git a/drivers/pinctrl/pinctrl-digicolor.c b/drivers/pinctrl/pinctrl-digicolor.c
+index 38a7799..d8efb2c 100644
+--- a/drivers/pinctrl/pinctrl-digicolor.c
++++ b/drivers/pinctrl/pinctrl-digicolor.c
+@@ -244,7 +244,7 @@ static int dc_gpiochip_add(struct dc_pinmap *pmap, struct device_node *np)
+ 	int ret;
+ 
+ 	chip->label		= DRIVER_NAME;
+-	chip->dev		= pmap->dev;
++	chip->parent		= pmap->dev;
+ 	chip->request		= gpiochip_generic_request;
+ 	chip->free		= gpiochip_generic_free;
+ 	chip->direction_input	= dc_gpio_direction_input;
+diff --git a/drivers/pinctrl/pinctrl-pistachio.c b/drivers/pinctrl/pinctrl-pistachio.c
+index 98a459b..cdc6759 100644
+--- a/drivers/pinctrl/pinctrl-pistachio.c
++++ b/drivers/pinctrl/pinctrl-pistachio.c
+@@ -1388,7 +1388,7 @@ static int pistachio_gpio_register(struct pistachio_pinctrl *pctl)
+ 		bank->pctl = pctl;
+ 		bank->base = pctl->base + GPIO_BANK_BASE(i);
+ 
+-		bank->gpio_chip.dev = pctl->dev;
++		bank->gpio_chip.parent = pctl->dev;
+ 		bank->gpio_chip.of_node = child;
+ 		ret = gpiochip_add(&bank->gpio_chip);
+ 		if (ret < 0) {
+diff --git a/drivers/pinctrl/pinctrl-rockchip.c b/drivers/pinctrl/pinctrl-rockchip.c
+index a065112..2b88a40 100644
+--- a/drivers/pinctrl/pinctrl-rockchip.c
++++ b/drivers/pinctrl/pinctrl-rockchip.c
+@@ -1754,7 +1754,7 @@ static int rockchip_gpiolib_register(struct platform_device *pdev,
+ 		gc = &bank->gpio_chip;
+ 		gc->base = bank->pin_base;
+ 		gc->ngpio = bank->nr_pins;
+-		gc->dev = &pdev->dev;
++		gc->parent = &pdev->dev;
+ 		gc->of_node = bank->of_node;
+ 		gc->label = bank->name;
+ 
+diff --git a/drivers/pinctrl/pinctrl-st.c b/drivers/pinctrl/pinctrl-st.c
+index b58d3f2..52639e6 100644
+--- a/drivers/pinctrl/pinctrl-st.c
++++ b/drivers/pinctrl/pinctrl-st.c
+@@ -1522,7 +1522,7 @@ static int st_gpiolib_register_bank(struct st_pinctrl *info,
+ 	bank->gpio_chip.base = bank_num * ST_GPIO_PINS_PER_BANK;
+ 	bank->gpio_chip.ngpio = ST_GPIO_PINS_PER_BANK;
+ 	bank->gpio_chip.of_node = np;
+-	bank->gpio_chip.dev = dev;
++	bank->gpio_chip.parent = dev;
+ 	spin_lock_init(&bank->lock);
+ 
+ 	of_property_read_string(np, "st,bank-name", &range->name);
+diff --git a/drivers/pinctrl/pinctrl-xway.c b/drivers/pinctrl/pinctrl-xway.c
+index ae724bd..b4380fb 100644
+--- a/drivers/pinctrl/pinctrl-xway.c
++++ b/drivers/pinctrl/pinctrl-xway.c
+@@ -648,7 +648,7 @@ static struct ltq_pinmux_info xway_info = {
+ /* ---------  gpio_chip related code --------- */
+ static void xway_gpio_set(struct gpio_chip *chip, unsigned int pin, int val)
+ {
+-	struct ltq_pinmux_info *info = dev_get_drvdata(chip->dev);
++	struct ltq_pinmux_info *info = dev_get_drvdata(chip->parent);
+ 
+ 	if (val)
+ 		gpio_setbit(info->membase[0], GPIO_OUT(pin), PORT_PIN(pin));
+@@ -658,14 +658,14 @@ static void xway_gpio_set(struct gpio_chip *chip, unsigned int pin, int val)
+ 
+ static int xway_gpio_get(struct gpio_chip *chip, unsigned int pin)
+ {
+-	struct ltq_pinmux_info *info = dev_get_drvdata(chip->dev);
++	struct ltq_pinmux_info *info = dev_get_drvdata(chip->parent);
+ 
+ 	return gpio_getbit(info->membase[0], GPIO_IN(pin), PORT_PIN(pin));
+ }
+ 
+ static int xway_gpio_dir_in(struct gpio_chip *chip, unsigned int pin)
+ {
+-	struct ltq_pinmux_info *info = dev_get_drvdata(chip->dev);
++	struct ltq_pinmux_info *info = dev_get_drvdata(chip->parent);
+ 
+ 	gpio_clearbit(info->membase[0], GPIO_DIR(pin), PORT_PIN(pin));
+ 
+@@ -674,7 +674,7 @@ static int xway_gpio_dir_in(struct gpio_chip *chip, unsigned int pin)
+ 
+ static int xway_gpio_dir_out(struct gpio_chip *chip, unsigned int pin, int val)
+ {
+-	struct ltq_pinmux_info *info = dev_get_drvdata(chip->dev);
++	struct ltq_pinmux_info *info = dev_get_drvdata(chip->parent);
+ 
+ 	gpio_setbit(info->membase[0], GPIO_DIR(pin), PORT_PIN(pin));
+ 	xway_gpio_set(chip, pin, val);
+@@ -783,7 +783,7 @@ static int pinmux_xway_probe(struct platform_device *pdev)
+ 	xway_pctrl_desc.pins = xway_info.pads;
+ 
+ 	/* load the gpio chip */
+-	xway_chip.dev = &pdev->dev;
++	xway_chip.parent = &pdev->dev;
+ 	ret = gpiochip_add(&xway_chip);
+ 	if (ret) {
+ 		dev_err(&pdev->dev, "Failed to register gpio chip\n");
+diff --git a/drivers/pinctrl/qcom/pinctrl-msm.c b/drivers/pinctrl/qcom/pinctrl-msm.c
+index 146264a..af2a130 100644
+--- a/drivers/pinctrl/qcom/pinctrl-msm.c
++++ b/drivers/pinctrl/qcom/pinctrl-msm.c
+@@ -800,7 +800,7 @@ static int msm_gpio_init(struct msm_pinctrl *pctrl)
+ 	chip->base = 0;
+ 	chip->ngpio = ngpio;
+ 	chip->label = dev_name(pctrl->dev);
+-	chip->dev = pctrl->dev;
++	chip->parent = pctrl->dev;
+ 	chip->owner = THIS_MODULE;
+ 	chip->of_node = pctrl->dev->of_node;
+ 
+diff --git a/drivers/pinctrl/qcom/pinctrl-spmi-gpio.c b/drivers/pinctrl/qcom/pinctrl-spmi-gpio.c
+index 6c42ca1..3e5ccc7 100644
+--- a/drivers/pinctrl/qcom/pinctrl-spmi-gpio.c
++++ b/drivers/pinctrl/qcom/pinctrl-spmi-gpio.c
+@@ -760,7 +760,7 @@ static int pmic_gpio_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	state->chip = pmic_gpio_gpio_template;
+-	state->chip.dev = dev;
++	state->chip.parent = dev;
+ 	state->chip.base = -1;
+ 	state->chip.ngpio = npins;
+ 	state->chip.label = dev_name(dev);
+diff --git a/drivers/pinctrl/qcom/pinctrl-spmi-mpp.c b/drivers/pinctrl/qcom/pinctrl-spmi-mpp.c
+index 9ce0e30..69c14ba 100644
+--- a/drivers/pinctrl/qcom/pinctrl-spmi-mpp.c
++++ b/drivers/pinctrl/qcom/pinctrl-spmi-mpp.c
+@@ -862,7 +862,7 @@ static int pmic_mpp_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	state->chip = pmic_mpp_gpio_template;
+-	state->chip.dev = dev;
++	state->chip.parent = dev;
+ 	state->chip.base = -1;
+ 	state->chip.ngpio = npins;
+ 	state->chip.label = dev_name(dev);
+diff --git a/drivers/pinctrl/qcom/pinctrl-ssbi-gpio.c b/drivers/pinctrl/qcom/pinctrl-ssbi-gpio.c
+index 19a3c3b..7bea0df 100644
+--- a/drivers/pinctrl/qcom/pinctrl-ssbi-gpio.c
++++ b/drivers/pinctrl/qcom/pinctrl-ssbi-gpio.c
+@@ -730,7 +730,7 @@ static int pm8xxx_gpio_probe(struct platform_device *pdev)
+ 
+ 	pctrl->chip = pm8xxx_gpio_template;
+ 	pctrl->chip.base = -1;
+-	pctrl->chip.dev = &pdev->dev;
++	pctrl->chip.parent = &pdev->dev;
+ 	pctrl->chip.of_node = pdev->dev.of_node;
+ 	pctrl->chip.of_gpio_n_cells = 2;
+ 	pctrl->chip.label = dev_name(pctrl->dev);
+diff --git a/drivers/pinctrl/qcom/pinctrl-ssbi-mpp.c b/drivers/pinctrl/qcom/pinctrl-ssbi-mpp.c
+index b868ef1..8f5c96c 100644
+--- a/drivers/pinctrl/qcom/pinctrl-ssbi-mpp.c
++++ b/drivers/pinctrl/qcom/pinctrl-ssbi-mpp.c
+@@ -821,7 +821,7 @@ static int pm8xxx_mpp_probe(struct platform_device *pdev)
+ 
+ 	pctrl->chip = pm8xxx_mpp_template;
+ 	pctrl->chip.base = -1;
+-	pctrl->chip.dev = &pdev->dev;
++	pctrl->chip.parent = &pdev->dev;
+ 	pctrl->chip.of_node = pdev->dev.of_node;
+ 	pctrl->chip.of_gpio_n_cells = 2;
+ 	pctrl->chip.label = dev_name(pctrl->dev);
+diff --git a/drivers/pinctrl/samsung/pinctrl-exynos.c b/drivers/pinctrl/samsung/pinctrl-exynos.c
+index 71ccf6a..7d7374e 100644
+--- a/drivers/pinctrl/samsung/pinctrl-exynos.c
++++ b/drivers/pinctrl/samsung/pinctrl-exynos.c
+@@ -176,7 +176,8 @@ static int exynos_irq_request_resources(struct irq_data *irqd)
+ 
+ 	ret = gpiochip_lock_as_irq(&bank->gpio_chip, irqd->hwirq);
+ 	if (ret) {
+-		dev_err(bank->gpio_chip.dev, "unable to lock pin %s-%lu IRQ\n",
++		dev_err(bank->gpio_chip.parent,
++			"unable to lock pin %s-%lu IRQ\n",
+ 			bank->name, irqd->hwirq);
+ 		return ret;
+ 	}
+diff --git a/drivers/pinctrl/samsung/pinctrl-exynos5440.c b/drivers/pinctrl/samsung/pinctrl-exynos5440.c
+index 3149a87..55ca89a2 100644
+--- a/drivers/pinctrl/samsung/pinctrl-exynos5440.c
++++ b/drivers/pinctrl/samsung/pinctrl-exynos5440.c
+@@ -541,7 +541,7 @@ static const struct pinconf_ops exynos5440_pinconf_ops = {
+ /* gpiolib gpio_set callback function */
+ static void exynos5440_gpio_set(struct gpio_chip *gc, unsigned offset, int value)
+ {
+-	struct exynos5440_pinctrl_priv_data *priv = dev_get_drvdata(gc->dev);
++	struct exynos5440_pinctrl_priv_data *priv = dev_get_drvdata(gc->parent);
+ 	void __iomem *base = priv->reg_base;
+ 	u32 data;
+ 
+@@ -555,7 +555,7 @@ static void exynos5440_gpio_set(struct gpio_chip *gc, unsigned offset, int value
+ /* gpiolib gpio_get callback function */
+ static int exynos5440_gpio_get(struct gpio_chip *gc, unsigned offset)
+ {
+-	struct exynos5440_pinctrl_priv_data *priv = dev_get_drvdata(gc->dev);
++	struct exynos5440_pinctrl_priv_data *priv = dev_get_drvdata(gc->parent);
+ 	void __iomem *base = priv->reg_base;
+ 	u32 data;
+ 
+@@ -568,7 +568,7 @@ static int exynos5440_gpio_get(struct gpio_chip *gc, unsigned offset)
+ /* gpiolib gpio_direction_input callback function */
+ static int exynos5440_gpio_direction_input(struct gpio_chip *gc, unsigned offset)
+ {
+-	struct exynos5440_pinctrl_priv_data *priv = dev_get_drvdata(gc->dev);
++	struct exynos5440_pinctrl_priv_data *priv = dev_get_drvdata(gc->parent);
+ 	void __iomem *base = priv->reg_base;
+ 	u32 data;
+ 
+@@ -588,7 +588,7 @@ static int exynos5440_gpio_direction_input(struct gpio_chip *gc, unsigned offset
+ static int exynos5440_gpio_direction_output(struct gpio_chip *gc, unsigned offset,
+ 							int value)
+ {
+-	struct exynos5440_pinctrl_priv_data *priv = dev_get_drvdata(gc->dev);
++	struct exynos5440_pinctrl_priv_data *priv = dev_get_drvdata(gc->parent);
+ 	void __iomem *base = priv->reg_base;
+ 	u32 data;
+ 
+@@ -609,7 +609,7 @@ static int exynos5440_gpio_direction_output(struct gpio_chip *gc, unsigned offse
+ /* gpiolib gpio_to_irq callback function */
+ static int exynos5440_gpio_to_irq(struct gpio_chip *gc, unsigned offset)
+ {
+-	struct exynos5440_pinctrl_priv_data *priv = dev_get_drvdata(gc->dev);
++	struct exynos5440_pinctrl_priv_data *priv = dev_get_drvdata(gc->parent);
+ 	unsigned int virq;
+ 
+ 	if (offset < 16 || offset > 23)
+@@ -818,7 +818,7 @@ static int exynos5440_gpiolib_register(struct platform_device *pdev,
+ 	priv->gc = gc;
+ 	gc->base = 0;
+ 	gc->ngpio = EXYNOS5440_MAX_PINS;
+-	gc->dev = &pdev->dev;
++	gc->parent = &pdev->dev;
+ 	gc->set = exynos5440_gpio_set;
+ 	gc->get = exynos5440_gpio_get;
+ 	gc->direction_input = exynos5440_gpio_direction_input;
+diff --git a/drivers/pinctrl/samsung/pinctrl-samsung.c b/drivers/pinctrl/samsung/pinctrl-samsung.c
+index 3f622cc..bb4db20 100644
+--- a/drivers/pinctrl/samsung/pinctrl-samsung.c
++++ b/drivers/pinctrl/samsung/pinctrl-samsung.c
+@@ -914,7 +914,7 @@ static int samsung_gpiolib_register(struct platform_device *pdev,
+ 		gc = &bank->gpio_chip;
+ 		gc->base = drvdata->pin_base + bank->pin_base;
+ 		gc->ngpio = bank->nr_pins;
+-		gc->dev = &pdev->dev;
++		gc->parent = &pdev->dev;
+ 		gc->of_node = bank->of_node;
+ 		gc->label = bank->name;
+ 
+diff --git a/drivers/pinctrl/sh-pfc/gpio.c b/drivers/pinctrl/sh-pfc/gpio.c
+index db3f09a..cdb2460 100644
+--- a/drivers/pinctrl/sh-pfc/gpio.c
++++ b/drivers/pinctrl/sh-pfc/gpio.c
+@@ -246,7 +246,7 @@ static int gpio_pin_setup(struct sh_pfc_chip *chip)
+ 	gc->to_irq = gpio_pin_to_irq;
+ 
+ 	gc->label = pfc->info->name;
+-	gc->dev = pfc->dev;
++	gc->parent = pfc->dev;
+ 	gc->owner = THIS_MODULE;
+ 	gc->base = 0;
+ 	gc->ngpio = pfc->nr_gpio_pins;
+diff --git a/drivers/pinctrl/sirf/pinctrl-atlas7.c b/drivers/pinctrl/sirf/pinctrl-atlas7.c
+index 829018c..1850dc1b386 100644
+--- a/drivers/pinctrl/sirf/pinctrl-atlas7.c
++++ b/drivers/pinctrl/sirf/pinctrl-atlas7.c
+@@ -6012,7 +6012,7 @@ static int atlas7_gpio_probe(struct platform_device *pdev)
+ 	chip->label = kstrdup(np->name, GFP_KERNEL);
+ 	chip->of_node = np;
+ 	chip->of_gpio_n_cells = 2;
+-	chip->dev = &pdev->dev;
++	chip->parent = &pdev->dev;
+ 
+ 	/* Add gpio chip to system */
+ 	ret = gpiochip_add(chip);
+diff --git a/drivers/pinctrl/sirf/pinctrl-sirf.c b/drivers/pinctrl/sirf/pinctrl-sirf.c
+index 2a8d697..ae97bdc 100644
+--- a/drivers/pinctrl/sirf/pinctrl-sirf.c
++++ b/drivers/pinctrl/sirf/pinctrl-sirf.c
+@@ -811,7 +811,7 @@ static int sirfsoc_gpio_probe(struct device_node *np)
+ 	sgpio->chip.gc.of_node = np;
+ 	sgpio->chip.gc.of_xlate = sirfsoc_gpio_of_xlate;
+ 	sgpio->chip.gc.of_gpio_n_cells = 2;
+-	sgpio->chip.gc.dev = &pdev->dev;
++	sgpio->chip.gc.parent = &pdev->dev;
+ 	sgpio->chip.regs = regs;
+ 
+ 	err = gpiochip_add(&sgpio->chip.gc);
+diff --git a/drivers/pinctrl/spear/pinctrl-plgpio.c b/drivers/pinctrl/spear/pinctrl-plgpio.c
+index 1f0af25..925f597 100644
+--- a/drivers/pinctrl/spear/pinctrl-plgpio.c
++++ b/drivers/pinctrl/spear/pinctrl-plgpio.c
+@@ -561,7 +561,7 @@ static int plgpio_probe(struct platform_device *pdev)
+ 	plgpio->chip.get = plgpio_get_value;
+ 	plgpio->chip.set = plgpio_set_value;
+ 	plgpio->chip.label = dev_name(&pdev->dev);
+-	plgpio->chip.dev = &pdev->dev;
++	plgpio->chip.parent = &pdev->dev;
+ 	plgpio->chip.owner = THIS_MODULE;
+ 	plgpio->chip.of_node = pdev->dev.of_node;
+ 
+diff --git a/drivers/pinctrl/sunxi/pinctrl-sunxi.c b/drivers/pinctrl/sunxi/pinctrl-sunxi.c
+index a4a5b50..7572ba7 100644
+--- a/drivers/pinctrl/sunxi/pinctrl-sunxi.c
++++ b/drivers/pinctrl/sunxi/pinctrl-sunxi.c
+@@ -454,7 +454,7 @@ static int sunxi_pinctrl_gpio_direction_input(struct gpio_chip *chip,
+ 
+ static int sunxi_pinctrl_gpio_get(struct gpio_chip *chip, unsigned offset)
+ {
+-	struct sunxi_pinctrl *pctl = dev_get_drvdata(chip->dev);
++	struct sunxi_pinctrl *pctl = dev_get_drvdata(chip->parent);
+ 	u32 reg = sunxi_data_reg(offset);
+ 	u8 index = sunxi_data_offset(offset);
+ 	u32 set_mux = pctl->desc->irq_read_needs_mux &&
+@@ -475,7 +475,7 @@ static int sunxi_pinctrl_gpio_get(struct gpio_chip *chip, unsigned offset)
+ static void sunxi_pinctrl_gpio_set(struct gpio_chip *chip,
+ 				unsigned offset, int value)
+ {
+-	struct sunxi_pinctrl *pctl = dev_get_drvdata(chip->dev);
++	struct sunxi_pinctrl *pctl = dev_get_drvdata(chip->parent);
+ 	u32 reg = sunxi_data_reg(offset);
+ 	u8 index = sunxi_data_offset(offset);
+ 	unsigned long flags;
+@@ -522,7 +522,7 @@ static int sunxi_pinctrl_gpio_of_xlate(struct gpio_chip *gc,
+ 
+ static int sunxi_pinctrl_gpio_to_irq(struct gpio_chip *chip, unsigned offset)
+ {
+-	struct sunxi_pinctrl *pctl = dev_get_drvdata(chip->dev);
++	struct sunxi_pinctrl *pctl = dev_get_drvdata(chip->parent);
+ 	struct sunxi_desc_function *desc;
+ 	unsigned pinnum = pctl->desc->pin_base + offset;
+ 	unsigned irqnum;
+@@ -536,7 +536,7 @@ static int sunxi_pinctrl_gpio_to_irq(struct gpio_chip *chip, unsigned offset)
+ 
+ 	irqnum = desc->irqbank * IRQ_PER_BANK + desc->irqnum;
+ 
+-	dev_dbg(chip->dev, "%s: request IRQ for GPIO %d, return %d\n",
++	dev_dbg(chip->parent, "%s: request IRQ for GPIO %d, return %d\n",
+ 		chip->label, offset + chip->base, irqnum);
+ 
+ 	return irq_find_mapping(pctl->domain, irqnum);
+@@ -960,7 +960,7 @@ int sunxi_pinctrl_init(struct platform_device *pdev,
+ 	pctl->chip->ngpio = round_up(last_pin, PINS_PER_BANK) -
+ 			    pctl->desc->pin_base;
+ 	pctl->chip->label = dev_name(&pdev->dev);
+-	pctl->chip->dev = &pdev->dev;
++	pctl->chip->parent = &pdev->dev;
+ 	pctl->chip->base = pctl->desc->pin_base;
+ 
+ 	ret = gpiochip_add(pctl->chip);
+diff --git a/drivers/pinctrl/vt8500/pinctrl-wmt.c b/drivers/pinctrl/vt8500/pinctrl-wmt.c
+index fb22d3f..e9c1dfd 100644
+--- a/drivers/pinctrl/vt8500/pinctrl-wmt.c
++++ b/drivers/pinctrl/vt8500/pinctrl-wmt.c
+@@ -488,7 +488,7 @@ static struct pinctrl_desc wmt_desc = {
+ 
+ static int wmt_gpio_get_direction(struct gpio_chip *chip, unsigned offset)
+ {
+-	struct wmt_pinctrl_data *data = dev_get_drvdata(chip->dev);
++	struct wmt_pinctrl_data *data = dev_get_drvdata(chip->parent);
+ 	u32 bank = WMT_BANK_FROM_PIN(offset);
+ 	u32 bit = WMT_BIT_FROM_PIN(offset);
+ 	u32 reg_dir = data->banks[bank].reg_dir;
+@@ -503,7 +503,7 @@ static int wmt_gpio_get_direction(struct gpio_chip *chip, unsigned offset)
+ 
+ static int wmt_gpio_get_value(struct gpio_chip *chip, unsigned offset)
+ {
+-	struct wmt_pinctrl_data *data = dev_get_drvdata(chip->dev);
++	struct wmt_pinctrl_data *data = dev_get_drvdata(chip->parent);
+ 	u32 bank = WMT_BANK_FROM_PIN(offset);
+ 	u32 bit = WMT_BIT_FROM_PIN(offset);
+ 	u32 reg_data_in = data->banks[bank].reg_data_in;
+@@ -519,7 +519,7 @@ static int wmt_gpio_get_value(struct gpio_chip *chip, unsigned offset)
+ static void wmt_gpio_set_value(struct gpio_chip *chip, unsigned offset,
+ 			       int val)
+ {
+-	struct wmt_pinctrl_data *data = dev_get_drvdata(chip->dev);
++	struct wmt_pinctrl_data *data = dev_get_drvdata(chip->parent);
+ 	u32 bank = WMT_BANK_FROM_PIN(offset);
+ 	u32 bit = WMT_BIT_FROM_PIN(offset);
+ 	u32 reg_data_out = data->banks[bank].reg_data_out;
+@@ -575,7 +575,7 @@ int wmt_pinctrl_probe(struct platform_device *pdev,
+ 	wmt_desc.npins = data->npins;
+ 
+ 	data->gpio_chip = wmt_gpio_chip;
+-	data->gpio_chip.dev = &pdev->dev;
++	data->gpio_chip.parent = &pdev->dev;
+ 	data->gpio_chip.of_node = pdev->dev.of_node;
+ 	data->gpio_chip.ngpio = data->nbanks * 32;
+ 
+diff --git a/drivers/platform/x86/intel_pmic_gpio.c b/drivers/platform/x86/intel_pmic_gpio.c
+index 709f0af..0e73fd1 100644
+--- a/drivers/platform/x86/intel_pmic_gpio.c
++++ b/drivers/platform/x86/intel_pmic_gpio.c
+@@ -274,11 +274,11 @@ static int platform_pmic_gpio_probe(struct platform_device *pdev)
+ 	pg->chip.base = pdata->gpio_base;
+ 	pg->chip.ngpio = NUM_GPIO;
+ 	pg->chip.can_sleep = 1;
+-	pg->chip.dev = dev;
++	pg->chip.parent = dev;
+ 
+ 	mutex_init(&pg->buslock);
+ 
+-	pg->chip.dev = dev;
++	pg->chip.parent = dev;
+ 	retval = gpiochip_add(&pg->chip);
+ 	if (retval) {
+ 		pr_err("Can not add pmic gpio chip\n");
+diff --git a/drivers/tty/serial/max310x.c b/drivers/tty/serial/max310x.c
+index d451330..3f98165 100644
+--- a/drivers/tty/serial/max310x.c
++++ b/drivers/tty/serial/max310x.c
+@@ -1174,7 +1174,7 @@ static int max310x_probe(struct device *dev, struct max310x_devtype *devtype,
+ #ifdef CONFIG_GPIOLIB
+ 	/* Setup GPIO cotroller */
+ 	s->gpio.owner		= THIS_MODULE;
+-	s->gpio.dev		= dev;
++	s->gpio.parent		= dev;
+ 	s->gpio.label		= dev_name(dev);
+ 	s->gpio.direction_input	= max310x_gpio_direction_input;
+ 	s->gpio.get		= max310x_gpio_get;
+diff --git a/drivers/tty/serial/sc16is7xx.c b/drivers/tty/serial/sc16is7xx.c
+index 7d5ee8a..ac51f0d 100644
+--- a/drivers/tty/serial/sc16is7xx.c
++++ b/drivers/tty/serial/sc16is7xx.c
+@@ -1180,7 +1180,7 @@ static int sc16is7xx_probe(struct device *dev,
+ 	if (devtype->nr_gpio) {
+ 		/* Setup GPIO cotroller */
+ 		s->gpio.owner		 = THIS_MODULE;
+-		s->gpio.dev		 = dev;
++		s->gpio.parent		 = dev;
+ 		s->gpio.label		 = dev_name(dev);
+ 		s->gpio.direction_input	 = sc16is7xx_gpio_direction_input;
+ 		s->gpio.get		 = sc16is7xx_gpio_get;
+diff --git a/include/linux/gpio/driver.h b/include/linux/gpio/driver.h
+index d1baebf..b02c43b 100644
+--- a/include/linux/gpio/driver.h
++++ b/include/linux/gpio/driver.h
+@@ -20,7 +20,7 @@ struct seq_file;
+ /**
+  * struct gpio_chip - abstract a GPIO controller
+  * @label: for diagnostics
+- * @dev: optional device providing the GPIOs
++ * @parent: optional parent device providing the GPIOs
+  * @cdev: class device used by sysfs interface (may be NULL)
+  * @owner: helps prevent removal of modules exporting active GPIOs
+  * @list: links gpio_chips together for traversal
+@@ -89,7 +89,7 @@ struct seq_file;
+  */
+ struct gpio_chip {
+ 	const char		*label;
+-	struct device		*dev;
++	struct device		*parent;
+ 	struct device		*cdev;
+ 	struct module		*owner;
+ 	struct list_head        list;
+diff --git a/sound/soc/codecs/rt5677.c b/sound/soc/codecs/rt5677.c
+index 69d987a..2828591 100644
+--- a/sound/soc/codecs/rt5677.c
++++ b/sound/soc/codecs/rt5677.c
+@@ -4696,7 +4696,7 @@ static void rt5677_init_gpio(struct i2c_client *i2c)
+ 
+ 	rt5677->gpio_chip = rt5677_template_chip;
+ 	rt5677->gpio_chip.ngpio = RT5677_GPIO_NUM;
+-	rt5677->gpio_chip.dev = &i2c->dev;
++	rt5677->gpio_chip.parent = &i2c->dev;
+ 	rt5677->gpio_chip.base = -1;
+ 
+ 	ret = gpiochip_add(&rt5677->gpio_chip);
+diff --git a/sound/soc/codecs/wm5100.c b/sound/soc/codecs/wm5100.c
+index c2cdcae..171a23d 100644
+--- a/sound/soc/codecs/wm5100.c
++++ b/sound/soc/codecs/wm5100.c
+@@ -2306,7 +2306,7 @@ static void wm5100_init_gpio(struct i2c_client *i2c)
+ 
+ 	wm5100->gpio_chip = wm5100_template_chip;
+ 	wm5100->gpio_chip.ngpio = 6;
+-	wm5100->gpio_chip.dev = &i2c->dev;
++	wm5100->gpio_chip.parent = &i2c->dev;
+ 
+ 	if (wm5100->pdata.gpio_base)
+ 		wm5100->gpio_chip.base = wm5100->pdata.gpio_base;
+diff --git a/sound/soc/codecs/wm8903.c b/sound/soc/codecs/wm8903.c
+index e4cc41e..2512def 100644
+--- a/sound/soc/codecs/wm8903.c
++++ b/sound/soc/codecs/wm8903.c
+@@ -1853,7 +1853,7 @@ static void wm8903_init_gpio(struct wm8903_priv *wm8903)
+ 
+ 	wm8903->gpio_chip = wm8903_template_chip;
+ 	wm8903->gpio_chip.ngpio = WM8903_NUM_GPIO;
+-	wm8903->gpio_chip.dev = wm8903->dev;
++	wm8903->gpio_chip.parent = wm8903->dev;
+ 
+ 	if (pdata->gpio_base)
+ 		wm8903->gpio_chip.base = pdata->gpio_base;
+diff --git a/sound/soc/codecs/wm8962.c b/sound/soc/codecs/wm8962.c
+index a7e7978..6a49b36 100644
+--- a/sound/soc/codecs/wm8962.c
++++ b/sound/soc/codecs/wm8962.c
+@@ -3380,7 +3380,7 @@ static void wm8962_init_gpio(struct snd_soc_codec *codec)
+ 
+ 	wm8962->gpio_chip = wm8962_template_chip;
+ 	wm8962->gpio_chip.ngpio = WM8962_MAX_GPIO;
+-	wm8962->gpio_chip.dev = codec->dev;
++	wm8962->gpio_chip.parent = codec->dev;
+ 
+ 	if (pdata->gpio_base)
+ 		wm8962->gpio_chip.base = pdata->gpio_base;
+diff --git a/sound/soc/codecs/wm8996.c b/sound/soc/codecs/wm8996.c
+index f7ccd9f..8d7d6c0 100644
+--- a/sound/soc/codecs/wm8996.c
++++ b/sound/soc/codecs/wm8996.c
+@@ -2204,7 +2204,7 @@ static void wm8996_init_gpio(struct wm8996_priv *wm8996)
+ 
+ 	wm8996->gpio_chip = wm8996_template_chip;
+ 	wm8996->gpio_chip.ngpio = 5;
+-	wm8996->gpio_chip.dev = wm8996->dev;
++	wm8996->gpio_chip.parent = wm8996->dev;
+ 
+ 	if (wm8996->pdata.gpio_base)
+ 		wm8996->gpio_chip.base = wm8996->pdata.gpio_base;
+-- 
+2.7.4
+

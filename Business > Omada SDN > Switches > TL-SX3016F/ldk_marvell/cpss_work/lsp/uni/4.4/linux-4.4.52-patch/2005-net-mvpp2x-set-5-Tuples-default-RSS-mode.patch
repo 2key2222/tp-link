@@ -1,0 +1,35 @@
+From fa0d8f54c2be7d63033282baee9278b72ef37f8d Mon Sep 17 00:00:00 2001
+From: Stefan Chulski <stefanc@marvell.com>
+Date: Wed, 6 Sep 2017 17:22:34 +0300
+Subject: [PATCH 2005/2241] net: mvpp2x: set 5-Tuples default RSS mode
+
+For TCP and UDP traffic RSS could be done by 5-Tuples and 2-Tuples.
+This patch sets 5-Tuples as default RSS mode, instead of 2-Tuples.
+5-Tuples RSS set to split flows with same destination and source
+IP's, but with different ports to different CPU's.
+
+Change-Id: I7fe95b2c95c46de7fb5f3eb2ce382326b74bd6c5
+Signed-off-by: Stefan Chulski <stefanc@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/43860
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+index 5d29063..cabfd16 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+@@ -79,7 +79,7 @@ u8 mv_pp2x_num_cos_queues = 1;
+ u8 mv_pp2x_num_cos_queues = 4;
+ #endif
+ static u8 mv_pp2x_queue_mode = MVPP2_QDIST_SINGLE_MODE;
+-static u8 rss_mode;
++static u8 rss_mode = MVPP2_RSS_5T; /* Set 5-tuple default RSS mode */
+ static u8 default_cpu;
+ static u8 cos_classifer;
+ static u32 pri_map = 0x3210; /* As default, cos0--rxq0, cos1--rxq1,
+-- 
+2.7.4
+

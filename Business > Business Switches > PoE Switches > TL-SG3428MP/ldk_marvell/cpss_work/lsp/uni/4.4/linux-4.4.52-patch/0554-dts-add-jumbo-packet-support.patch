@@ -1,0 +1,54 @@
+From c0296ee4293b03fd7b90fa0f184e1097e78c0e8c Mon Sep 17 00:00:00 2001
+From: Stefan Chulski <stefanc@marvell.com>
+Date: Wed, 29 Jun 2016 15:26:06 +0300
+Subject: [PATCH 0554/2241] dts: add jumbo packet support
+
+- new parameter of l4_chksum_jumbo_port added
+- l4_chksum_jumbo_port description added to documentation
+
+Change-Id: I8e1f1aaa6e77fbf729c50778d66895b2c6fb72ce
+Signed-off-by: Stefan Chulski <stefanc@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/30849
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Yuval Caduri <cyuval@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ Documentation/devicetree/bindings/net/marvell-pp2x.txt | 2 ++
+ arch/arm64/boot/dts/marvell/armada-cp110.dtsi          | 1 +
+ 2 files changed, 3 insertions(+)
+
+diff --git a/Documentation/devicetree/bindings/net/marvell-pp2x.txt b/Documentation/devicetree/bindings/net/marvell-pp2x.txt
+index 633731f..2dbc115 100644
+--- a/Documentation/devicetree/bindings/net/marvell-pp2x.txt
++++ b/Documentation/devicetree/bindings/net/marvell-pp2x.txt
+@@ -15,6 +15,7 @@ ppv22 required properties:
+ 	- ppv22 clock
+ 	- GOP clocks
+ - clock-names: names of used clocks, must be "pp_clk", "gop_core_clk", "gop_clk", "mg_core_clk", "mg_clk".
++- l4_chksum_jumbo_port: used to select jumbo port support L4 checksum.
+ 
+ The ethernet ports are represented by subnodes. At least one port is required.
+ 
+@@ -91,6 +92,7 @@ ppv22@000000 {
+ 	clocks = <&gateclk 3>, <&gateclk 18>, <&gateclk 9>, <&gateclk 6>, <&gateclk 5>;
+ 	clock-names = "pp_clk", "gop_core_clk", "gop_clk", "mg_core_clk", "mg_clk";
+ 	status = "okay";
++	l4_chksum_jumbo_port = <0>;
+ 	eth0: eth0@010000 {
+ 		interrupts = <GIC_SPI 05 IRQ_TYPE_LEVEL_HIGH>; /* TX/RX Interrupt */
+ 		port-id = <0>; /* pp2_port_id */
+diff --git a/arch/arm64/boot/dts/marvell/armada-cp110.dtsi b/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
+index 26218e3..97a597c 100644
+--- a/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
+@@ -319,6 +319,7 @@ ppv22@000000 {
+ 	clocks = <&gateclk 3>, <&gateclk 18>, <&gateclk 9>, <&gateclk 6>, <&gateclk 5>;
+ 	clock-names = "pp_clk", "gop_core_clk", "gop_clk", "mg_core_clk", "mg_clk";
+ 	status = "okay";
++	l4_chksum_jumbo_port = <0>;
+ 	eth0: eth0@010000 {
+ 		interrupts = <GIC_SPI 37 IRQ_TYPE_LEVEL_HIGH>, /* TX CPU#0 Interrupt */
+ 			     <GIC_SPI 41 IRQ_TYPE_LEVEL_HIGH>, /* TX CPU#1 Interrupt */
+-- 
+2.7.4
+

@@ -1,0 +1,47 @@
+From 5e37bd0e154ae8202e15559d4d401a0524354a2f Mon Sep 17 00:00:00 2001
+From: Markus Elfring <elfring@users.sourceforge.net>
+Date: Mon, 17 Apr 2017 08:09:07 +0200
+Subject: [PATCH 1691/2241] net: mvpp2: Use kmalloc_array() in mvpp2_txq_init()
+
+* A multiplication for the size determination of a memory allocation
+  indicated that an array data structure should be processed.
+  Thus use the corresponding function "kmalloc_array".
+
+  This issue was detected by using the Coccinelle software.
+
+* Replace the specification of a data structure by a pointer dereference
+  to make the corresponding size determination a bit safer according to
+  the Linux coding style convention.
+
+Patch cherry-picked from mainline 4.12_rc5
+
+Change-Id: I39e1390de144c101992b69354f137d548ab2fc13
+Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/40441
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2.c b/drivers/net/ethernet/marvell/mvpp2.c
+index 339e1ae..d7f98b0 100644
+--- a/drivers/net/ethernet/marvell/mvpp2.c
++++ b/drivers/net/ethernet/marvell/mvpp2.c
+@@ -4953,9 +4953,9 @@ static int mvpp2_txq_init(struct mvpp2_port *port,
+ 	for_each_present_cpu(cpu) {
+ 		txq_pcpu = per_cpu_ptr(txq->pcpu, cpu);
+ 		txq_pcpu->size = txq->size;
+-		txq_pcpu->buffs = kmalloc(txq_pcpu->size *
+-					  sizeof(struct mvpp2_txq_pcpu_buf),
+-					  GFP_KERNEL);
++		txq_pcpu->buffs = kmalloc_array(txq_pcpu->size,
++						sizeof(*txq_pcpu->buffs),
++						GFP_KERNEL);
+ 		if (!txq_pcpu->buffs)
+ 			goto error;
+ 
+-- 
+2.7.4
+

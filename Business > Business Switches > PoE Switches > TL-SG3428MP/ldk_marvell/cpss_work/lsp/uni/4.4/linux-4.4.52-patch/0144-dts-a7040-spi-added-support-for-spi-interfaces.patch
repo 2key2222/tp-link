@@ -1,0 +1,76 @@
+From 80708a269999a10588f1d1096f78b84a29322412 Mon Sep 17 00:00:00 2001
+From: Yehuda Yitschak <yehuday@marvell.com>
+Date: Sun, 21 Feb 2016 14:54:00 +0200
+Subject: [PATCH 0144/2241] dts: a7040: spi: added support for spi interfaces
+
+Added both SPI interfaces to CP110 dtsi file
+enabled only SPI-1 for armada7040 DB boards since
+SPI-0 is never connected
+
+Change-Id: I5cf8c16ce4e1c359feff34ce043ecbafbf23a8c5
+Signed-off-by: Yehuda Yitschak <yehuday@marvell.com>
+---
+ .../boot/dts/marvell/armada-7040-rz-db-router.dts    |  3 +++
+ .../boot/dts/marvell/armada-7040-rz-db-rxaui.dts     |  3 +++
+ arch/arm64/boot/dts/marvell/armada-cp110.dtsi        | 20 ++++++++++++++++++++
+ 3 files changed, 26 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-7040-rz-db-router.dts b/arch/arm64/boot/dts/marvell/armada-7040-rz-db-router.dts
+index dab592b..c8d819e 100644
+--- a/arch/arm64/boot/dts/marvell/armada-7040-rz-db-router.dts
++++ b/arch/arm64/boot/dts/marvell/armada-7040-rz-db-router.dts
+@@ -66,6 +66,9 @@
+ 			usb3h1: usb3@510000 {
+ 				status = "okay";
+ 			};
++			spi@700680 {
++				status = "okay";
++			};
+ 		};
+ 	};
+ };
+diff --git a/arch/arm64/boot/dts/marvell/armada-7040-rz-db-rxaui.dts b/arch/arm64/boot/dts/marvell/armada-7040-rz-db-rxaui.dts
+index f09bb35..c6ca34e 100644
+--- a/arch/arm64/boot/dts/marvell/armada-7040-rz-db-rxaui.dts
++++ b/arch/arm64/boot/dts/marvell/armada-7040-rz-db-rxaui.dts
+@@ -60,6 +60,9 @@
+ 			sata: sata@540000 {
+ 				status = "okay";
+ 			};
++			spi@700680 {
++				status = "okay";
++			};
+ 		};
+ 	};
+ };
+diff --git a/arch/arm64/boot/dts/marvell/armada-cp110.dtsi b/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
+index bbb1fab..c9cecd0 100644
+--- a/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
+@@ -57,3 +57,23 @@ usb3h1: usb3@510000 {
+ 	clocks = <&gateclk 23>, <&gateclk 16>;
+ 	status = "disabled";
+ };
++
++spi@700600 {
++	compatible = "marvell,armada-380-spi";
++	reg = <0x700600 0x50>;
++	#address-cells = <0x1>;
++	#size-cells = <0x0>;
++	cell-index = <0x0>;
++	clocks = <&cp110_clk 3>;
++	status = "disabled";
++};
++
++spi@700680 {
++	compatible = "marvell,armada-380-spi";
++	reg = <0x700680 0x50>;
++	#address-cells = <0x1>;
++	#size-cells = <0x0>;
++	cell-index = <0x0>;
++	clocks = <&cp110_clk 3>;
++	status = "disabled";
++};
+-- 
+2.7.4
+

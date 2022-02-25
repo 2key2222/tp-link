@@ -1,0 +1,36 @@
+From 2fff7f6bc36ae9de02a4cf25b653ca2a47e723db Mon Sep 17 00:00:00 2001
+From: Stefan Chulski <stefanc@marvell.com>
+Date: Tue, 17 Oct 2017 11:51:14 +0300
+Subject: [PATCH 2060/2241] net: mvpp2x: add Netmap 40Bit address support
+
+Physical address higher bits saved during Netmap BM
+refill procedure, to enable 40Bit address support.
+
+Change-Id: Ib780650fa3751b0c54fb578f8023128066d5d8aa
+Signed-off-by: Stefan Chulski <stefanc@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/45240
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.h | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.h b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.h
+index 93a2391..9007408 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.h
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.h
+@@ -293,6 +293,11 @@ static inline void mv_pp2x_bm_pool_put_virtual(struct mv_pp2x_hw *hw, u32 pool,
+ 					       dma_addr_t buf_phys_addr,
+ 					      u8 *buf_virt_addr, int cpu)
+ {
++#if defined(CONFIG_ARCH_DMA_ADDR_T_64BIT) && defined(CONFIG_PHYS_ADDR_T_64BIT)
++	mv_pp2x_relaxed_write(hw, MVPP22_BM_PHY_VIRT_HIGH_RLS_REG,
++			      upper_32_bits(buf_phys_addr), cpu);
++#endif
++
+ 	mv_pp2x_relaxed_write(hw, MVPP2_BM_VIRT_RLS_REG,
+ 			      lower_32_bits((uintptr_t)buf_virt_addr), cpu);
+ 
+-- 
+2.7.4
+

@@ -1,0 +1,104 @@
+From 19763100baccba316a7498aa88c196bbe8bb8021 Mon Sep 17 00:00:00 2001
+From: jinghua <xigu@marvell.com>
+Date: Thu, 13 Apr 2017 19:49:42 +0800
+Subject: [PATCH 1588/2241] fix: usb: a3700: hook usb3/2 phy to hcd
+
+- Armada 3700 has two phys for usb32 host controller, one
+  is USB3 PHY, the other is USB2 UTMI PHY, and they both
+  need to be hooked to hcd, so they could be configured
+  by hcd in different senario, like power down in suspend
+  and power up in resume.
+- For non-otg mode, it is done by usb_add_hcd_with_phy_name
+  in routine xhci_plat_probe. But for otg mode, it is not
+  done yet.
+- This patch hooks usb3/2 phy to hcd in otg mode, before
+  xhci driver register hcd to otg driver, since otg
+  driver has no idea about the phy names, and could only
+  invoke usb_add_hcd instead of usb_add_hcd_with_phy_name.
+- JIRA bug: A3700-828
+
+Change-Id: Ida7909565f1fe2280195d3a8b2f11e70c5091794
+Signed-off-by: jinghua <xigu@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/38670
+Tested-by: Hua Jing <jinghua@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/38750
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+---
+ drivers/usb/host/xhci-plat.c | 54 ++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 54 insertions(+)
+
+diff --git a/drivers/usb/host/xhci-plat.c b/drivers/usb/host/xhci-plat.c
+index e9159dd..e2d9a66 100644
+--- a/drivers/usb/host/xhci-plat.c
++++ b/drivers/usb/host/xhci-plat.c
+@@ -77,6 +77,41 @@ static int xhci_plat_start(struct usb_hcd *hcd)
+ 	return xhci_run(hcd);
+ }
+ 
++/*
++ * this routine finds phy with its name, init/power-on it, then
++ * hook it to hcd->phy. Normally, it could be done within routine
++ * usb_add_hcd_with_phy_name, but for the case of OTG, usb_add_hcd
++ * will be invoked in otg driver, which has no idea about the phy
++ * name. so before register hcd to otg driver, hcd->phy has to be
++ * configured.
++ */
++int xhci_phy_init(struct usb_hcd *hcd, const char *phy_name)
++{
++	struct phy *phy = NULL;
++	int ret = 0;
++
++	phy = phy_get(hcd->self.controller, phy_name);
++
++	if (IS_ERR(phy)) {
++		ret = PTR_ERR(phy);
++	} else {
++		ret = phy_init(phy);
++		if (ret) {
++			phy_put(phy);
++			return ret;
++		}
++		ret = phy_power_on(phy);
++		if (ret) {
++			phy_exit(phy);
++			phy_put(phy);
++			return ret;
++		}
++		hcd->phy = phy;
++	}
++
++	return ret;
++}
++
+ static int xhci_plat_probe(struct platform_device *pdev)
+ {
+ 	struct device_node	*node = pdev->dev.of_node;
+@@ -195,6 +230,25 @@ static int xhci_plat_probe(struct platform_device *pdev)
+ 
+ 		hcd->irq = irq;
+ 
++		/*
++		 * init/power-on the phy, then hook it to hcd->phy.
++		 * Normally, in non-otg mode, this is done by routine usb_add_hcd_with_phy_name,
++		 * but in the case of otg, usb_add_hcd has to be invoked in otg driver,
++		 * which has no idea about the phy name. So before register hcd to otg
++		 * driver, hcd->phy has to be configured, then when otg driver calls
++		 * usb_add_hcd, phy has already been setup correctly.
++		 */
++		if (of_property_read_bool(pdev->dev.of_node, "separated-phys-for-usb2-usb3")) {
++			if (xhci_phy_init(hcd, "usb2")) {
++				dev_err(&pdev->dev, "unable to init and power on USB2 PHY\n");
++				goto disable_usb_phy;
++			}
++			if (xhci_phy_init(xhci->shared_hcd, "usb3")) {
++				dev_err(&pdev->dev, "unable to init and power on USB3 PHY\n");
++				goto disable_usb_phy;
++			}
++		}
++
+ 		ret = otg_set_host(hcd->usb_phy->otg, &hcd->self);
+ 		if (ret) {
+ 			dev_err(&pdev->dev, "unable to register with OTG PHY\n");
+-- 
+2.7.4
+

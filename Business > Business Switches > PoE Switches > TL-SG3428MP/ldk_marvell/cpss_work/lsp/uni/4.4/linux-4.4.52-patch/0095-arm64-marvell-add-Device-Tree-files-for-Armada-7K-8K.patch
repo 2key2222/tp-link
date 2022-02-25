@@ -1,0 +1,848 @@
+From 49e827e33a4bbb0bf6db77fd846f5054d0b5f952 Mon Sep 17 00:00:00 2001
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Date: Tue, 15 Dec 2015 13:11:55 +0100
+Subject: [PATCH 0095/2241] arm64: marvell: add Device Tree files for Armada
+ 7K/8K
+
+This commit adds the base Device Tree files for the Armada 7K and 8K
+SoCs, as well as the Armada 8040 DB board.
+
+The Armada 7020, 7040 (7K family) and 8020, 8040 (8K family) are
+composed of:
+
+ - An AP806 block that contains the CPU core and a few basic
+   peripherals. The AP806 is available in dual core configurations
+   (used in 7020 and 8020) and quad core configurations (used in 8020
+   and 8040).
+
+ - One or two CP110 blocks that contain all the high-speed interfaces
+   (SATA, PCIe, Ethernet, etc.). The 7K family chips have one CP110,
+   and the 8K family chips have two CP110, giving them twice the
+   number of HW interfaces.
+
+In order to represent this from a Device Tree point of view, this
+commit creates the following hierarchy:
+
+ * armada-ap806.dtsi - definitions common to dual/quad ap806
+   * armada-ap806-dual.dtsi - descrition of the two CPUs
+     * armada-7020.dtsi - description of the 7020 SoC
+     * armada-8020.dtsi - description of the 8020 SoC
+   * armada-ap806-quad.dtsi - description of the four CPUs
+     * armada-7040.dtsi - description of the 7040 SoC
+     * armada-8040.dtsi - description of the 8040 SoC
+       * armada-8040-db.dts - description of the 8040 board
+
+The CP110 blocks are not described yet, and will be part of future
+patch series.
+
+Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+---
+ .../bindings/arm/marvell/armada-7k-8k.txt          |  24 +++
+ arch/arm64/boot/dts/marvell/Makefile               |   1 +
+ arch/arm64/boot/dts/marvell/armada-7020.dtsi       |  54 +++++
+ arch/arm64/boot/dts/marvell/armada-7040-db.dts     |  92 ++++++++
+ arch/arm64/boot/dts/marvell/armada-7040.dtsi       |  54 +++++
+ arch/arm64/boot/dts/marvell/armada-8020.dtsi       |  54 +++++
+ arch/arm64/boot/dts/marvell/armada-8040.dtsi       |  54 +++++
+ arch/arm64/boot/dts/marvell/armada-ap806-dual.dtsi |  71 +++++++
+ arch/arm64/boot/dts/marvell/armada-ap806-quad.dtsi |  84 ++++++++
+ arch/arm64/boot/dts/marvell/armada-ap806.dtsi      | 232 +++++++++++++++++++++
+ 10 files changed, 720 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/arm/marvell/armada-7k-8k.txt
+ create mode 100644 arch/arm64/boot/dts/marvell/armada-7020.dtsi
+ create mode 100644 arch/arm64/boot/dts/marvell/armada-7040-db.dts
+ create mode 100644 arch/arm64/boot/dts/marvell/armada-7040.dtsi
+ create mode 100644 arch/arm64/boot/dts/marvell/armada-8020.dtsi
+ create mode 100644 arch/arm64/boot/dts/marvell/armada-8040.dtsi
+ create mode 100644 arch/arm64/boot/dts/marvell/armada-ap806-dual.dtsi
+ create mode 100644 arch/arm64/boot/dts/marvell/armada-ap806-quad.dtsi
+ create mode 100644 arch/arm64/boot/dts/marvell/armada-ap806.dtsi
+
+diff --git a/Documentation/devicetree/bindings/arm/marvell/armada-7k-8k.txt b/Documentation/devicetree/bindings/arm/marvell/armada-7k-8k.txt
+new file mode 100644
+index 0000000..5487bdc
+--- /dev/null
++++ b/Documentation/devicetree/bindings/arm/marvell/armada-7k-8k.txt
+@@ -0,0 +1,24 @@
++Marvell Armada 7K/8K Platforms Device Tree Bindings
++---------------------------------------------------
++
++Boards using a SoC of the Marvell Armada 7K or 8K families must carry
++the following root node property:
++
++ - compatible, with one of the following values:
++
++   - "marvell,armada7020", "marvell,ap806-dual", "marvell,ap806"
++      when the SoC being used is the Armada 7020
++
++   - "marvell,armada7040", "marvell,ap806-quad", "marvell,ap806"
++      when the SoC being used is the Armada 7040
++
++   - "marvell,armada8020", "marvell,ap806-dual", "marvell,ap806"
++      when the SoC being used is the Armada 8020
++
++   - "marvell,armada8040", "marvell,ap806-quad", "marvell,ap806"
++      when the SoC being used is the Armada 8040
++
++Example:
++
++compatible = "marvell,armada7040-db", "marvell,armada7040",
++             "marvell,ap806-quad", "marvell,ap806";
+diff --git a/arch/arm64/boot/dts/marvell/Makefile b/arch/arm64/boot/dts/marvell/Makefile
+index 2114af8..308468d 100644
+--- a/arch/arm64/boot/dts/marvell/Makefile
++++ b/arch/arm64/boot/dts/marvell/Makefile
+@@ -4,6 +4,7 @@ dtb-$(CONFIG_ARCH_BERLIN) += berlin4ct-stb.dtb
+ 
+ # Mvebu SoC Family
+ dtb-$(CONFIG_ARCH_MVEBU) += armada-3720-db.dtb
++dtb-$(CONFIG_ARCH_MVEBU) += armada-7040-db.dtb
+ 
+ always		:= $(dtb-y)
+ subdir-y	:= $(dts-dirs)
+diff --git a/arch/arm64/boot/dts/marvell/armada-7020.dtsi b/arch/arm64/boot/dts/marvell/armada-7020.dtsi
+new file mode 100644
+index 0000000..439e6a6
+--- /dev/null
++++ b/arch/arm64/boot/dts/marvell/armada-7020.dtsi
+@@ -0,0 +1,54 @@
++/*
++ * Copyright (C) 2016 Marvell Technology Group Ltd.
++ *
++ * This file is dual-licensed: you can use it either under the terms
++ * of the GPLv2 or the X11 license, at your option. Note that this dual
++ * licensing only applies to this file, and not this project as a
++ * whole.
++ *
++ *  a) This library is free software; you can redistribute it and/or
++ *     modify it under the terms of the GNU General Public License as
++ *     published by the Free Software Foundation; either version 2 of the
++ *     License, or (at your option) any later version.
++ *
++ *     This library is distributed in the hope that it will be useful,
++ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *     GNU General Public License for more details.
++ *
++ * Or, alternatively,
++ *
++ *  b) Permission is hereby granted, free of charge, to any person
++ *     obtaining a copy of this software and associated documentation
++ *     files (the "Software"), to deal in the Software without
++ *     restriction, including without limitation the rights to use,
++ *     copy, modify, merge, publish, distribute, sublicense, and/or
++ *     sell copies of the Software, and to permit persons to whom the
++ *     Software is furnished to do so, subject to the following
++ *     conditions:
++ *
++ *     The above copyright notice and this permission notice shall be
++ *     included in all copies or substantial portions of the Software.
++ *
++ *     THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
++ *     EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
++ *     OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
++ *     NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
++ *     HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
++ *     WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++ *     FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
++ *     OTHER DEALINGS IN THE SOFTWARE.
++ */
++
++/*
++ * Device Tree file for the Armada 7020 SoC, made of an AP806 Dual and
++ * one CP110.
++ */
++
++#include "armada-ap806-dual.dtsi"
++
++/ {
++	model = "Marvell Armada 7020";
++	compatible = "marvell,armada7020", "marvell,armada-ap806-dual",
++	             "marvell,armada-ap806";
++};
+diff --git a/arch/arm64/boot/dts/marvell/armada-7040-db.dts b/arch/arm64/boot/dts/marvell/armada-7040-db.dts
+new file mode 100644
+index 0000000..28cded2
+--- /dev/null
++++ b/arch/arm64/boot/dts/marvell/armada-7040-db.dts
+@@ -0,0 +1,92 @@
++/*
++ * Copyright (C) 2016 Marvell Technology Group Ltd.
++ *
++ * This file is dual-licensed: you can use it either under the terms
++ * of the GPLv2 or the X11 license, at your option. Note that this dual
++ * licensing only applies to this file, and not this project as a
++ * whole.
++ *
++ *  a) This library is free software; you can redistribute it and/or
++ *     modify it under the terms of the GNU General Public License as
++ *     published by the Free Software Foundation; either version 2 of the
++ *     License, or (at your option) any later version.
++ *
++ *     This library is distributed in the hope that it will be useful,
++ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *     GNU General Public License for more details.
++ *
++ * Or, alternatively,
++ *
++ *  b) Permission is hereby granted, free of charge, to any person
++ *     obtaining a copy of this software and associated documentation
++ *     files (the "Software"), to deal in the Software without
++ *     restriction, including without limitation the rights to use,
++ *     copy, modify, merge, publish, distribute, sublicense, and/or
++ *     sell copies of the Software, and to permit persons to whom the
++ *     Software is furnished to do so, subject to the following
++ *     conditions:
++ *
++ *     The above copyright notice and this permission notice shall be
++ *     included in all copies or substantial portions of the Software.
++ *
++ *     THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
++ *     EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
++ *     OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
++ *     NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
++ *     HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
++ *     WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++ *     FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
++ *     OTHER DEALINGS IN THE SOFTWARE.
++ */
++
++/*
++ * Device Tree file for Marvell Armada 7040 Development board platform
++ */
++
++#include "armada-7040.dtsi"
++
++/ {
++	model = "Marvell Armada 7040 DB board";
++	compatible = "marvell,armada7040-db", "marvell,armada7040",
++	             "marvell,armada-ap806-quad", "marvell,armada-ap806";
++
++	memory@00000000 {
++		device_type = "memory";
++		reg = <0x0 0x0 0x0 0x80000000>;
++	};
++
++	ap806 {
++		config-space {
++			spi@510600 {
++				status = "okay";
++
++				spi-flash@0 {
++					#address-cells = <1>;
++					#size-cells = <1>;
++					compatible = "n25q128a13";
++					reg = <0>; /* Chip select 0 */
++					spi-max-frequency = <10000000>;
++
++					partition@0 {
++						label = "U-Boot";
++						reg = <0 0x200000>;
++					};
++					partition@400000 {
++						label = "Filesystem";
++						reg = <0x200000 0xce0000>;
++					};
++				};
++			};
++
++			i2c@511000 {
++				status = "okay";
++				clock-frequency = <100000>;
++			};
++
++			serial@512000 {
++				status = "okay";
++			};
++		};
++	};
++};
+diff --git a/arch/arm64/boot/dts/marvell/armada-7040.dtsi b/arch/arm64/boot/dts/marvell/armada-7040.dtsi
+new file mode 100644
+index 0000000..10dc909
+--- /dev/null
++++ b/arch/arm64/boot/dts/marvell/armada-7040.dtsi
+@@ -0,0 +1,54 @@
++/*
++ * Copyright (C) 2016 Marvell Technology Group Ltd.
++ *
++ * This file is dual-licensed: you can use it either under the terms
++ * of the GPLv2 or the X11 license, at your option. Note that this dual
++ * licensing only applies to this file, and not this project as a
++ * whole.
++ *
++ *  a) This library is free software; you can redistribute it and/or
++ *     modify it under the terms of the GNU General Public License as
++ *     published by the Free Software Foundation; either version 2 of the
++ *     License, or (at your option) any later version.
++ *
++ *     This library is distributed in the hope that it will be useful,
++ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *     GNU General Public License for more details.
++ *
++ * Or, alternatively,
++ *
++ *  b) Permission is hereby granted, free of charge, to any person
++ *     obtaining a copy of this software and associated documentation
++ *     files (the "Software"), to deal in the Software without
++ *     restriction, including without limitation the rights to use,
++ *     copy, modify, merge, publish, distribute, sublicense, and/or
++ *     sell copies of the Software, and to permit persons to whom the
++ *     Software is furnished to do so, subject to the following
++ *     conditions:
++ *
++ *     The above copyright notice and this permission notice shall be
++ *     included in all copies or substantial portions of the Software.
++ *
++ *     THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
++ *     EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
++ *     OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
++ *     NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
++ *     HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
++ *     WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++ *     FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
++ *     OTHER DEALINGS IN THE SOFTWARE.
++ */
++
++/*
++ * Device Tree file for the Armada 7040 SoC, made of an AP806 Quad and
++ * one CP110.
++ */
++
++#include "armada-ap806-quad.dtsi"
++
++/ {
++	model = "Marvell Armada 7040";
++	compatible = "marvell,armada7040", "marvell,armada-ap806-quad",
++	             "marvell,armada-ap806";
++};
+diff --git a/arch/arm64/boot/dts/marvell/armada-8020.dtsi b/arch/arm64/boot/dts/marvell/armada-8020.dtsi
+new file mode 100644
+index 0000000..6cbdfc2
+--- /dev/null
++++ b/arch/arm64/boot/dts/marvell/armada-8020.dtsi
+@@ -0,0 +1,54 @@
++/*
++ * Copyright (C) 2016 Marvell Technology Group Ltd.
++ *
++ * This file is dual-licensed: you can use it either under the terms
++ * of the GPLv2 or the X11 license, at your option. Note that this dual
++ * licensing only applies to this file, and not this project as a
++ * whole.
++ *
++ *  a) This library is free software; you can redistribute it and/or
++ *     modify it under the terms of the GNU General Public License as
++ *     published by the Free Software Foundation; either version 2 of the
++ *     License, or (at your option) any later version.
++ *
++ *     This library is distributed in the hope that it will be useful,
++ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *     GNU General Public License for more details.
++ *
++ * Or, alternatively,
++ *
++ *  b) Permission is hereby granted, free of charge, to any person
++ *     obtaining a copy of this software and associated documentation
++ *     files (the "Software"), to deal in the Software without
++ *     restriction, including without limitation the rights to use,
++ *     copy, modify, merge, publish, distribute, sublicense, and/or
++ *     sell copies of the Software, and to permit persons to whom the
++ *     Software is furnished to do so, subject to the following
++ *     conditions:
++ *
++ *     The above copyright notice and this permission notice shall be
++ *     included in all copies or substantial portions of the Software.
++ *
++ *     THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
++ *     EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
++ *     OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
++ *     NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
++ *     HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
++ *     WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++ *     FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
++ *     OTHER DEALINGS IN THE SOFTWARE.
++ */
++
++/*
++ * Device Tree file for the Armada 8020 SoC, made of an AP806 Dual and
++ * two CP110.
++ */
++
++#include "armada-ap806-dual.dtsi"
++
++/ {
++	model = "Marvell Armada 8020";
++	compatible = "marvell,armada8020", "marvell,armada-ap806-dual",
++	             "marvell,armada-ap806";
++};
+diff --git a/arch/arm64/boot/dts/marvell/armada-8040.dtsi b/arch/arm64/boot/dts/marvell/armada-8040.dtsi
+new file mode 100644
+index 0000000..67fe603
+--- /dev/null
++++ b/arch/arm64/boot/dts/marvell/armada-8040.dtsi
+@@ -0,0 +1,54 @@
++/*
++ * Copyright (C) 2016 Marvell Technology Group Ltd.
++ *
++ * This file is dual-licensed: you can use it either under the terms
++ * of the GPLv2 or the X11 license, at your option. Note that this dual
++ * licensing only applies to this file, and not this project as a
++ * whole.
++ *
++ *  a) This library is free software; you can redistribute it and/or
++ *     modify it under the terms of the GNU General Public License as
++ *     published by the Free Software Foundation; either version 2 of the
++ *     License, or (at your option) any later version.
++ *
++ *     This library is distributed in the hope that it will be useful,
++ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *     GNU General Public License for more details.
++ *
++ * Or, alternatively,
++ *
++ *  b) Permission is hereby granted, free of charge, to any person
++ *     obtaining a copy of this software and associated documentation
++ *     files (the "Software"), to deal in the Software without
++ *     restriction, including without limitation the rights to use,
++ *     copy, modify, merge, publish, distribute, sublicense, and/or
++ *     sell copies of the Software, and to permit persons to whom the
++ *     Software is furnished to do so, subject to the following
++ *     conditions:
++ *
++ *     The above copyright notice and this permission notice shall be
++ *     included in all copies or substantial portions of the Software.
++ *
++ *     THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
++ *     EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
++ *     OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
++ *     NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
++ *     HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
++ *     WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++ *     FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
++ *     OTHER DEALINGS IN THE SOFTWARE.
++ */
++
++/*
++ * Device Tree file for the Armada 8040 SoC, made of an AP806 Quad and
++ * two CP110.
++ */
++
++#include "armada-ap806-quad.dtsi"
++
++/ {
++	model = "Marvell Armada 8040";
++	compatible = "marvell,armada8040", "marvell,armada-ap806-quad",
++	             "marvell,armada-ap806";
++};
+diff --git a/arch/arm64/boot/dts/marvell/armada-ap806-dual.dtsi b/arch/arm64/boot/dts/marvell/armada-ap806-dual.dtsi
+new file mode 100644
+index 0000000..f25c5c1
+--- /dev/null
++++ b/arch/arm64/boot/dts/marvell/armada-ap806-dual.dtsi
+@@ -0,0 +1,71 @@
++/*
++ * Copyright (C) 2016 Marvell Technology Group Ltd.
++ *
++ * This file is dual-licensed: you can use it either under the terms
++ * of the GPLv2 or the X11 license, at your option. Note that this dual
++ * licensing only applies to this file, and not this project as a
++ * whole.
++ *
++ *  a) This library is free software; you can redistribute it and/or
++ *     modify it under the terms of the GNU General Public License as
++ *     published by the Free Software Foundation; either version 2 of the
++ *     License, or (at your option) any later version.
++ *
++ *     This library is distributed in the hope that it will be useful,
++ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *     GNU General Public License for more details.
++ *
++ * Or, alternatively,
++ *
++ *  b) Permission is hereby granted, free of charge, to any person
++ *     obtaining a copy of this software and associated documentation
++ *     files (the "Software"), to deal in the Software without
++ *     restriction, including without limitation the rights to use,
++ *     copy, modify, merge, publish, distribute, sublicense, and/or
++ *     sell copies of the Software, and to permit persons to whom the
++ *     Software is furnished to do so, subject to the following
++ *     conditions:
++ *
++ *     The above copyright notice and this permission notice shall be
++ *     included in all copies or substantial portions of the Software.
++ *
++ *     THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
++ *     EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
++ *     OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
++ *     NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
++ *     HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
++ *     WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++ *     FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
++ *     OTHER DEALINGS IN THE SOFTWARE.
++ */
++
++/*
++ * Device Tree file for Marvell Armada AP806.
++ */
++
++#include "armada-ap806.dtsi"
++
++/ {
++	model = "Marvell Armada AP806 Dual";
++	compatible = "marvell,armada-ap806-dual", "marvell,armada-ap806";
++
++	cpus {
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		cpu@000 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a72", "arm,armv8";
++			reg = <0x000>;
++			enable-method = "psci";
++		};
++		cpu@001 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a72", "arm,armv8";
++			reg = <0x001>;
++			enable-method = "psci";
++		};
++	};
++};
++
+diff --git a/arch/arm64/boot/dts/marvell/armada-ap806-quad.dtsi b/arch/arm64/boot/dts/marvell/armada-ap806-quad.dtsi
+new file mode 100644
+index 0000000..baa7d9a
+--- /dev/null
++++ b/arch/arm64/boot/dts/marvell/armada-ap806-quad.dtsi
+@@ -0,0 +1,84 @@
++/*
++ * Copyright (C) 2016 Marvell Technology Group Ltd.
++ *
++ * This file is dual-licensed: you can use it either under the terms
++ * of the GPLv2 or the X11 license, at your option. Note that this dual
++ * licensing only applies to this file, and not this project as a
++ * whole.
++ *
++ *  a) This library is free software; you can redistribute it and/or
++ *     modify it under the terms of the GNU General Public License as
++ *     published by the Free Software Foundation; either version 2 of the
++ *     License, or (at your option) any later version.
++ *
++ *     This library is distributed in the hope that it will be useful,
++ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *     GNU General Public License for more details.
++ *
++ * Or, alternatively,
++ *
++ *  b) Permission is hereby granted, free of charge, to any person
++ *     obtaining a copy of this software and associated documentation
++ *     files (the "Software"), to deal in the Software without
++ *     restriction, including without limitation the rights to use,
++ *     copy, modify, merge, publish, distribute, sublicense, and/or
++ *     sell copies of the Software, and to permit persons to whom the
++ *     Software is furnished to do so, subject to the following
++ *     conditions:
++ *
++ *     The above copyright notice and this permission notice shall be
++ *     included in all copies or substantial portions of the Software.
++ *
++ *     THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
++ *     EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
++ *     OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
++ *     NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
++ *     HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
++ *     WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++ *     FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
++ *     OTHER DEALINGS IN THE SOFTWARE.
++ */
++
++/*
++ * Device Tree file for Marvell Armada AP806.
++ */
++
++#include "armada-ap806.dtsi"
++
++/ {
++	model = "Marvell Armada AP806 Quad";
++	compatible = "marvell,armada-ap806-quad", "marvell,armada-ap806";
++
++	cpus {
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		cpu@000 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a72", "arm,armv8";
++			reg = <0x000>;
++			enable-method = "psci";
++		};
++		cpu@001 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a72", "arm,armv8";
++			reg = <0x001>;
++			enable-method = "psci";
++		};
++		cpu@100 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a72", "arm,armv8";
++			reg = <0x100>;
++			enable-method = "psci";
++		};
++		cpu@101 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a72", "arm,armv8";
++			reg = <0x101>;
++			enable-method = "psci";
++		};
++	};
++
++};
++
+diff --git a/arch/arm64/boot/dts/marvell/armada-ap806.dtsi b/arch/arm64/boot/dts/marvell/armada-ap806.dtsi
+new file mode 100644
+index 0000000..96c4bf2
+--- /dev/null
++++ b/arch/arm64/boot/dts/marvell/armada-ap806.dtsi
+@@ -0,0 +1,232 @@
++/*
++ * Copyright (C) 2016 Marvell Technology Group Ltd.
++ *
++ * This file is dual-licensed: you can use it either under the terms
++ * of the GPLv2 or the X11 license, at your option. Note that this dual
++ * licensing only applies to this file, and not this project as a
++ * whole.
++ *
++ *  a) This library is free software; you can redistribute it and/or
++ *     modify it under the terms of the GNU General Public License as
++ *     published by the Free Software Foundation; either version 2 of the
++ *     License, or (at your option) any later version.
++ *
++ *     This library is distributed in the hope that it will be useful,
++ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *     GNU General Public License for more details.
++ *
++ * Or, alternatively,
++ *
++ *  b) Permission is hereby granted, free of charge, to any person
++ *     obtaining a copy of this software and associated documentation
++ *     files (the "Software"), to deal in the Software without
++ *     restriction, including without limitation the rights to use,
++ *     copy, modify, merge, publish, distribute, sublicense, and/or
++ *     sell copies of the Software, and to permit persons to whom the
++ *     Software is furnished to do so, subject to the following
++ *     conditions:
++ *
++ *     The above copyright notice and this permission notice shall be
++ *     included in all copies or substantial portions of the Software.
++ *
++ *     THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
++ *     EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
++ *     OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
++ *     NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
++ *     HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
++ *     WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++ *     FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
++ *     OTHER DEALINGS IN THE SOFTWARE.
++ */
++
++/*
++ * Device Tree file for Marvell Armada AP806.
++ */
++
++#include <dt-bindings/interrupt-controller/arm-gic.h>
++
++/dts-v1/;
++
++/ {
++	model = "Marvell Armada AP806";
++	compatible = "marvell,armada-ap806";
++	#address-cells = <2>;
++	#size-cells = <2>;
++
++	psci {
++		compatible = "arm,psci-0.2";
++		method = "smc";
++	};
++
++
++	ap806 {
++		#address-cells = <2>;
++		#size-cells = <2>;
++		compatible = "simple-bus";
++		interrupt-parent = <&gic>;
++		ranges;
++
++		config-space {
++			#address-cells = <1>;
++			#size-cells = <1>;
++			compatible = "simple-bus";
++			ranges = <0x0 0x0 0xf0000000 0x1000000>;
++
++			gic: interrupt-controller@210000 {
++				compatible = "arm,cortex-a15-gic", "arm,cortex-a9-gic";
++				#interrupt-cells = <3>;
++				#address-cells = <1>;
++				#size-cells = <1>;
++				ranges;
++				interrupt-controller;
++				interrupts = <GIC_PPI 9 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_HIGH)>;
++				reg = <0x210000 0x1000>,
++				      <0x220000 0x1000>,
++				      <0x240000 0x2000>,
++				      <0x260000 0x2000>;
++
++				gic_v2m0: v2m@280000 {
++					compatible = "arm,gic-v2m-frame";
++					msi-controller;
++					reg = <0x280000 0x1000>;
++					arm,msi-base-spi = <160>;
++					arm,msi-num-spis = <32>;
++				};
++				gic_v2m1: v2m@290000 {
++					compatible = "arm,gic-v2m-frame";
++					msi-controller;
++					reg = <0x290000 0x1000>;
++					arm,msi-base-spi = <192>;
++					arm,msi-num-spis = <32>;
++				};
++				gic_v2m2: v2m@2a0000 {
++					compatible = "arm,gic-v2m-frame";
++					msi-controller;
++					reg = <0x2a0000 0x1000>;
++					arm,msi-base-spi = <224>;
++					arm,msi-num-spis = <32>;
++				};
++				gic_v2m3: v2m@2b0000 {
++					compatible = "arm,gic-v2m-frame";
++					msi-controller;
++					reg = <0x2b0000 0x1000>;
++					arm,msi-base-spi = <256>;
++					arm,msi-num-spis = <32>;
++				};
++			};
++
++			timer {
++				compatible = "arm,armv8-timer";
++				interrupts = <GIC_PPI 13 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_EDGE_RISING)>,
++					     <GIC_PPI 14 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_EDGE_RISING)>,
++					     <GIC_PPI 11 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_EDGE_RISING)>,
++					     <GIC_PPI 10 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_EDGE_RISING)>;
++			};
++
++			odmi: odmi@300000 {
++				compatible = "marvell,odmi-controller";
++				interrupt-controller;
++				msi-controller;
++				marvell,odmi-frames = <4>;
++				reg = <0x300000 0x4000>,
++				      <0x304000 0x4000>,
++				      <0x308000 0x4000>,
++				      <0x30C000 0x4000>;
++				marvell,spi-base = <128>, <136>, <144>, <152>;
++			};
++
++			spi0: spi@510600 {
++				compatible = "marvell,armada-380-spi";
++				reg = <0x510600 0x50>;
++				#address-cells = <1>;
++				#size-cells = <0>;
++				cell-index = <0>;
++				interrupts = <GIC_SPI 21 IRQ_TYPE_LEVEL_HIGH>;
++				clocks = <&ringclk 2>;
++				status = "disabled";
++			};
++
++			i2c0: i2c@511000 {
++				compatible = "marvell,mv64xxx-i2c";
++				reg = <0x511000 0x20>;
++				#address-cells = <1>;
++				#size-cells = <0>;
++				interrupts = <GIC_SPI 20 IRQ_TYPE_LEVEL_HIGH>;
++				timeout-ms = <1000>;
++				clocks = <&ringclk 2>;
++				status = "disabled";
++			};
++
++			serial@512000 {
++				compatible = "snps,dw-apb-uart";
++				reg = <0x512000 0x100>;
++				reg-shift = <2>;
++				interrupts = <GIC_SPI 19 IRQ_TYPE_LEVEL_HIGH>;
++				reg-io-width = <1>;
++				clocks = <&ringclk 2>;
++				status = "disabled";
++			};
++
++			serial@512100 {
++				compatible = "snps,dw-apb-uart";
++				reg = <0x512100 0x100>;
++				reg-shift = <2>;
++				interrupts = <GIC_SPI 29 IRQ_TYPE_LEVEL_HIGH>;
++				reg-io-width = <1>;
++				clocks = <&ringclk 2>;
++				status = "disabled";
++
++			};
++
++			coreclk: clk@0x6F8204 {
++				compatible = "marvell,armada-ap806-core-clock";
++				reg = <0x6F8204 0x04>;
++				#clock-cells = <1>;
++				clock-output-names = "ddr", "ring", "cpu";
++			};
++
++			ringclk: clk@0x6F8250 {
++				compatible = "marvell,armada-ap806-ring-clock";
++				reg = <0x6F8250 0x04>;
++				#clock-cells = <1>;
++				clock-output-names = "ring-0", "ring-2", "ring-3", "ring-4", "ring-5";
++				clocks = <&coreclk 1>;
++			};
++
++			xor0@400000 {
++				compatible = "marvell,mv-xor-v2";
++				reg = <0x400000 0x1000>,
++				      <0x410000 0x1000>;
++				msi-parent = <&gic_v2m0>;
++				dma-coherent;
++			};
++
++			xor1@420000 {
++				compatible = "marvell,mv-xor-v2";
++				reg = <0x420000 0x1000>,
++				      <0x430000 0x1000>;
++				msi-parent = <&gic_v2m0>;
++				dma-coherent;
++			};
++
++			xor2@440000 {
++				compatible = "marvell,mv-xor-v2";
++				reg = <0x440000 0x1000>,
++				      <0x450000 0x1000>;
++				msi-parent = <&gic_v2m0>;
++				dma-coherent;
++			};
++
++			xor3@460000 {
++				compatible = "marvell,mv-xor-v2";
++				reg = <0x460000 0x1000>,
++				      <0x470000 0x1000>;
++				msi-parent = <&gic_v2m0>;
++				dma-coherent;
++			};
++		};
++	};
++
++};
++
+-- 
+2.7.4
+

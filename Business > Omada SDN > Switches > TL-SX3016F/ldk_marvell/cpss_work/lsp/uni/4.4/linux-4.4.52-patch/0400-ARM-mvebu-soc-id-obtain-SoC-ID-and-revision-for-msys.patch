@@ -1,0 +1,144 @@
+From 0695eeb4bf9a6362b9e9a40df10d509ffdad000e Mon Sep 17 00:00:00 2001
+From: Terry Zhou <bjzhou@marvell.com>
+Date: Fri, 20 May 2016 17:33:59 +0800
+Subject: [PATCH 0400/2241] ARM: mvebu: soc-id: obtain SoC ID and revision for
+ msys device
+
+- Support to get device id and revision id from dfx register
+
+Change-Id: Ifee9a2835b0f2d396b8f67d60684b8677e3e1f19
+Signed-off-by: Terry Zhou <bjzhou@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/29830
+Reviewed-by: Wilson Ding <dingwei@marvell.com>
+Tested-by: Wilson Ding <dingwei@marvell.com>
+---
+ .../bindings/arm/marvell/msys-soc-id.txt           | 14 +++++++
+ arch/arm/boot/dts/msys.dtsi                        |  5 +++
+ arch/arm/mach-mvebu/mvebu-soc-id.c                 | 48 +++++++++++++++++++++-
+ 3 files changed, 65 insertions(+), 2 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/arm/marvell/msys-soc-id.txt
+
+diff --git a/Documentation/devicetree/bindings/arm/marvell/msys-soc-id.txt b/Documentation/devicetree/bindings/arm/marvell/msys-soc-id.txt
+new file mode 100644
+index 0000000..94a06ab
+--- /dev/null
++++ b/Documentation/devicetree/bindings/arm/marvell/msys-soc-id.txt
+@@ -0,0 +1,14 @@
++Marvell Msys SoC ID
++---------------------------------------------------------------
++
++Required properties:
++
++- compatible: Should be "marvell,msys-soc-id".
++
++- reg: should be the register base and length as documented in the
++  datasheet for the Device ID Status
++
++soc-id@f8244 {
++	compatible = "marvell,msys-soc-id";
++	reg = <0xf8244 0x4>;
++};
+diff --git a/arch/arm/boot/dts/msys.dtsi b/arch/arm/boot/dts/msys.dtsi
+index 55dfe60..180b26f 100644
+--- a/arch/arm/boot/dts/msys.dtsi
++++ b/arch/arm/boot/dts/msys.dtsi
+@@ -68,6 +68,11 @@
+ 				clocks = <&coreclk 3>;
+ 				clock-output-names = "nand";
+ 			};
++
++			soc-id@f8244 {
++				compatible = "marvell,msys-soc-id";
++				reg = <0xf8244 0x4>;
++			};
+ 		};
+ 
+ 		ireg: internal-regs {
+diff --git a/arch/arm/mach-mvebu/mvebu-soc-id.c b/arch/arm/mach-mvebu/mvebu-soc-id.c
+index a99434b..fd775a6 100644
+--- a/arch/arm/mach-mvebu/mvebu-soc-id.c
++++ b/arch/arm/mach-mvebu/mvebu-soc-id.c
+@@ -34,6 +34,9 @@
+ #define SOC_ID_MASK	    0xFFFF0000
+ #define SOC_REV_MASK	    0xFF
+ 
++#define MSYS_DEV_ID_MASK	0xFF00
++#define MSYS_REV_MASK		0xF
++
+ static u32 soc_dev_id;
+ static u32 soc_rev;
+ static bool is_id_valid;
+@@ -45,6 +48,12 @@ static const struct of_device_id mvebu_pcie_of_match_table[] = {
+ 	{},
+ };
+ 
++static const struct of_device_id mvebu_msys_of_match_table[] = {
++	{ .compatible = "marvell,msys-soc-id", },
++	{},
++};
++
++
+ int mvebu_get_soc_id(u32 *dev, u32 *rev)
+ {
+ 	if (is_id_valid) {
+@@ -131,12 +140,44 @@ clk_err:
+ 	return ret;
+ }
+ 
++static int __init get_soc_id_by_dfx(void)
++{
++	struct device_node *np;
++	int ret = 0;
++	void __iomem *reg_base;
++
++	np = of_find_matching_node(NULL, mvebu_msys_of_match_table);
++	if (!np)
++		return ret;
++
++	reg_base = of_iomap(np, 0);
++	if (reg_base == NULL) {
++		pr_err("cannot map registers\n");
++		ret = -ENOMEM;
++		return ret;
++	}
++
++	/* SoC ID */
++	soc_dev_id = (readl(reg_base) >> 12) & MSYS_DEV_ID_MASK;
++	/* SoC revision */
++	soc_rev = (readl(reg_base) >> 28) & MSYS_REV_MASK;
++
++	is_id_valid = true;
++
++	pr_info("MVEBU SoC ID=0x%X, Rev=0x%X\n", soc_dev_id, soc_rev);
++
++	iounmap(reg_base);
++
++	return ret;
++}
++
+ static int __init mvebu_soc_id_init(void)
+ {
+ 
+ 	/*
+ 	 * First try to get the ID and the revision by the system
+-	 * register and use PCI registers only if it is not possible
++	 * register, then try to read it from PCI registers,
++	 * use DFX registers only if the previous methods are not possible
+ 	 */
+ 	if (!mvebu_system_controller_get_soc_id(&soc_dev_id, &soc_rev)) {
+ 		is_id_valid = true;
+@@ -144,7 +185,10 @@ static int __init mvebu_soc_id_init(void)
+ 		return 0;
+ 	}
+ 
+-	return get_soc_id_by_pci();
++	if (!get_soc_id_by_pci())
++		return 0;
++
++	return get_soc_id_by_dfx();
+ }
+ early_initcall(mvebu_soc_id_init);
+ 
+-- 
+2.7.4
+

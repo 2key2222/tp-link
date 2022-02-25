@@ -1,0 +1,66 @@
+From 2196b01cb95a96551f4ef635a04a9f7bdf839769 Mon Sep 17 00:00:00 2001
+From: Masahiro Yamada <yamada.masahiro@socionext.com>
+Date: Wed, 6 Jan 2016 13:25:09 +0900
+Subject: [PATCH 0908/2241] clk: add clk_unregister_fixed_factor()
+
+Allow to unregister fixed factor clock.
+
+Signed-off-by: Masahiro Yamada <yamada.masahiro@socionext.com>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+
+Upstream commit:
+cbf9591f665d ("clk: add clk_unregister_fixed_factor()")
+
+This patch is part of patch-set which adds
+mainline mvebu clock gating support [3/21].
+
+Change-Id: Icac8540990f2aae00d7eba73bd5aa6951c4d30cb
+Signed-off-by: Marcin Wojtas <mw@semihalf.com>
+Signed-off-by: Igal Liberman <igall@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/32388
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Tested-by: Omri Itach <omrii@marvell.com>
+---
+ drivers/clk/clk-fixed-factor.c | 13 +++++++++++++
+ include/linux/clk-provider.h   |  1 +
+ 2 files changed, 14 insertions(+)
+
+diff --git a/drivers/clk/clk-fixed-factor.c b/drivers/clk/clk-fixed-factor.c
+index f0ddf37..053448e 100644
+--- a/drivers/clk/clk-fixed-factor.c
++++ b/drivers/clk/clk-fixed-factor.c
+@@ -100,6 +100,19 @@ struct clk *clk_register_fixed_factor(struct device *dev, const char *name,
+ }
+ EXPORT_SYMBOL_GPL(clk_register_fixed_factor);
+ 
++void clk_unregister_fixed_factor(struct clk *clk)
++{
++	struct clk_hw *hw;
++
++	hw = __clk_get_hw(clk);
++	if (!hw)
++		return;
++
++	clk_unregister(clk);
++	kfree(to_clk_fixed_factor(hw));
++}
++EXPORT_SYMBOL_GPL(clk_unregister_fixed_factor);
++
+ #ifdef CONFIG_OF
+ /**
+  * of_fixed_factor_clk_setup() - Setup function for simple fixed factor clock
+diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
+index 1f2d462..8c61970 100644
+--- a/include/linux/clk-provider.h
++++ b/include/linux/clk-provider.h
+@@ -497,6 +497,7 @@ extern const struct clk_ops clk_fixed_factor_ops;
+ struct clk *clk_register_fixed_factor(struct device *dev, const char *name,
+ 		const char *parent_name, unsigned long flags,
+ 		unsigned int mult, unsigned int div);
++void clk_unregister_fixed_factor(struct clk *clk);
+ 
+ /**
+  * struct clk_fractional_divider - adjustable fractional divider clock
+-- 
+2.7.4
+

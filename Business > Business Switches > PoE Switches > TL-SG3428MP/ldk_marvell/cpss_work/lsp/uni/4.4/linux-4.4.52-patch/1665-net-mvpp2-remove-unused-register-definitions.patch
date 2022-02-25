@@ -1,0 +1,36 @@
+From 60917686c8e09e63a4691c849306ce46e84bc782 Mon Sep 17 00:00:00 2001
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Date: Tue, 21 Feb 2017 11:28:09 +0100
+Subject: [PATCH 1665/2241] net: mvpp2: remove unused register definitions
+
+Patch cherry-picked from mainline 4.12_rc5
+
+Change-Id: Ia4d6d77429ca8cfaf1a92e50e7a726831646a4a0
+Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Acked-by: Russell King <rmk+kernel@armlinux.org.uk>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/40393
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2.c | 4 ----
+ 1 file changed, 4 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2.c b/drivers/net/ethernet/marvell/mvpp2.c
+index 5b52082..1f1a0f5 100644
+--- a/drivers/net/ethernet/marvell/mvpp2.c
++++ b/drivers/net/ethernet/marvell/mvpp2.c
+@@ -252,10 +252,6 @@
+ #define MVPP2_SRC_ADDR_HIGH			0x28
+ #define MVPP2_PHY_AN_CFG0_REG			0x34
+ #define     MVPP2_PHY_AN_STOP_SMI0_MASK		BIT(7)
+-#define MVPP2_MIB_COUNTERS_BASE(port)		(0x1000 + ((port) >> 1) * \
+-						0x400 + (port) * 0x400)
+-#define     MVPP2_MIB_LATE_COLLISION		0x7c
+-#define MVPP2_ISR_SUM_MASK_REG			0x220c
+ #define MVPP2_MNG_EXTENDED_GLOBAL_CTRL_REG	0x305c
+ #define MVPP2_EXT_GLOBAL_CTRL_DEFAULT		0x27
+ 
+-- 
+2.7.4
+

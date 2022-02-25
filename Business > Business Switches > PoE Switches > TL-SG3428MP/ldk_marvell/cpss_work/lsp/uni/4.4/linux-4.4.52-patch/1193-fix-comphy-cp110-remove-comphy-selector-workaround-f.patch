@@ -1,0 +1,51 @@
+From 3e23930f76f9d0988362e0b832045e7d08cef293 Mon Sep 17 00:00:00 2001
+From: Igal Liberman <igall@marvell.com>
+Date: Tue, 20 Dec 2016 19:24:11 +0200
+Subject: [PATCH 1193/2241] fix: comphy: cp110: remove comphy selector
+ workaround for sata
+
+This patch removes a workaround which was added due the lack of
+SATA mode support in comphy driver (we couldn't perform comphy
+selector reset if the comphy was configured into SATA mode).
+
+After adding SATA support to comphy driver, we can reset
+comphy selector safely.
+
+Change-Id: I03af1df5fc534d621131bfa93c9a40534fa7a5a5
+Signed-off-by: Igal Liberman <igall@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/34814
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/phy/phy-mvebu-comphy.c | 14 +++++---------
+ 1 file changed, 5 insertions(+), 9 deletions(-)
+
+diff --git a/drivers/phy/phy-mvebu-comphy.c b/drivers/phy/phy-mvebu-comphy.c
+index 97e4ed5..43a9c4f 100644
+--- a/drivers/phy/phy-mvebu-comphy.c
++++ b/drivers/phy/phy-mvebu-comphy.c
+@@ -116,16 +116,12 @@ static void mvebu_comphy_clr_phy_selector(struct mvebu_comphy_priv *priv,
+ 	reg = readl(priv->comphy_regs + COMMON_SELECTOR_PHY_REG_OFFSET);
+ 	field = reg & mask;
+ 
+-	/* We need to clear comphy selector for network protocols but we can't
+-	 * clear the whole register because we don't support SATA initialization.
+-	 * So we clear a comphy field only if two conditions present:
+-	 *	1. The value of the comphy selector is NOT '0' (if it's '0',
+-	 *	   comphy selector is unconnected, no need to update).
+-	 *	2. The value of the comphy is NOT 0x4 (0x4 selects SATA).
+-	 * If both condition present, set '0' for the specific comphy.
++	/* Clear comphy selector - if it was set by u-boot.
++	 * (might be that this comphy was configured as PCIe/USB,
++	 * in such case, no need to clear comphy selector because PCIe/USB
++	 * are controlled by hpipe selector.
+ 	 */
+-	if (field &&
+-	    !(field == (COMMON_SELECTOR_COMPHYN_SATA << comphy_offset))) {
++	if (field) {
+ 		reg &= ~mask;
+ 		writel(reg, priv->comphy_regs + COMMON_SELECTOR_PHY_REG_OFFSET);
+ 	}
+-- 
+2.7.4
+

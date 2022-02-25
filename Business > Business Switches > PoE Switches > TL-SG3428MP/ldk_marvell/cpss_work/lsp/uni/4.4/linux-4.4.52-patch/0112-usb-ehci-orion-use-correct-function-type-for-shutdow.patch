@@ -1,0 +1,35 @@
+From a169be52e2699f383a7a3d15fb2b89c15d5404dd Mon Sep 17 00:00:00 2001
+From: Grzegorz Jaszczyk <jaz@semihalf.com>
+Date: Thu, 4 Feb 2016 13:09:41 +0100
+Subject: [PATCH 0112/2241] usb: ehci-orion: use correct function type for
+ shutdown
+
+	Fix build warnings:
+	- warning: initialization from incompatible pointer type
+	- warning: control reaches end of non-void
+
+Change-Id: I7e44768c06304bb5bb0218c9c8db56934c236bc3
+Signed-off-by: Grzegorz Jaszczyk <jaz@semihalf.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/27488
+Reviewed-by: Lior Amsalem <alior@marvell.com>
+Tested-by: Lior Amsalem <alior@marvell.com>
+---
+ drivers/usb/host/ehci-orion.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/usb/host/ehci-orion.c b/drivers/usb/host/ehci-orion.c
+index b0192ca..61b9aae 100644
+--- a/drivers/usb/host/ehci-orion.c
++++ b/drivers/usb/host/ehci-orion.c
+@@ -308,7 +308,7 @@ static int ehci_orion_drv_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
+-static int ehci_orion_drv_shutdown(struct platform_device *pdev)
++static void ehci_orion_drv_shutdown(struct platform_device *pdev)
+ {
+ 	struct usb_hcd *hcd = platform_get_drvdata(pdev);
+ 	static void __iomem *usb_pwr_ctrl_base;
+-- 
+2.7.4
+

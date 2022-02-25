@@ -1,0 +1,224 @@
+From d3d53297855ba2af63d86bf08774cd3173f207d3 Mon Sep 17 00:00:00 2001
+From: Stefan Chulski <stefanc@marvell.com>
+Date: Thu, 18 May 2017 19:47:26 +0300
+Subject: [PATCH 1659/2241] net: mvpp2x: add hrtimer into driver xmit callback
+
+Motivation:
+
+1. TX hrtimer feature is added to improve Network forwarding performance.
+2. During packet xmit function, the driver writes a register to inform
+   HW about num_descriptors ready to be transmitted.
+3. When xmit function is finished, Linux NW Stack used spinlock to
+   prevent Qdisc overrun.
+4. spinlock function includes a dmb(). Use of dmb() after reg_write
+   (in #2) will cause 700 cycles stall.
+5. To reduce the NW performance degradation of the dmb()
+   after-the-reg_write, the hrtimer feature is implemented.
+
+Feature:
+1. Instead of reg_write atfer each xmit callback,
+   50 microsecond hrtimer would be started.
+2. Hrtimer will reduce amount of accesses to transmit register and
+   will reduce dmb() influence on network forwarding performance.
+3. Hrtimer won't be started for GSO packets. If packet is coming from
+   GSO transmit path and hrtimer started before -> hrimer would be
+   canceled and all bulked packets are transmitted.
+
+Implementation of hrtimer provide ~20% performance improvement in NW FWR
+IXIA benchmarks.
+
+Change-Id: Ibceff4ea32d7325812873a4b5afcd0c7bec813f6
+Signed-off-by: Stefan Chulski <stefanc@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/39667
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+Reviewed-by: Yuval Caduri <cyuval@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h      |  5 ++
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c | 88 ++++++++++++++++++++--
+ 2 files changed, 87 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h
+index 87dfad5..e791c0d 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h
+@@ -133,6 +133,7 @@
+ /* Coalescing */
+ #define MVPP2_TXDONE_COAL_PKTS		64
+ #define MVPP2_TXDONE_HRTIMER_PERIOD_NS	1000000UL
++#define MVPP2_TX_HRTIMER_PERIOD_NS	50000UL
+ #define MVPP2_TXDONE_COAL_USEC		1000
+ 
+ #define MVPP2_RX_COAL_PKTS		32
+@@ -554,6 +555,10 @@ struct mv_pp2x_port_pcpu {
+ 	int ext_buf_size;
+ 	struct list_head ext_buf_port_list;
+ 	struct mv_pp2x_ext_buf_pool *ext_buf_pool;
++
++	struct hrtimer tx_timer;
++	struct tasklet_struct tx_tasklet;
++	bool tx_timer_scheduled;
+ };
+ 
+ struct queue_vector {
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+index f7be8d6..afd9ac8e6 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+@@ -1838,6 +1838,28 @@ static void mv_pp2x_timer_set(struct mv_pp2x_port_pcpu *port_pcpu)
+ 	}
+ }
+ 
++/* Set transmit TX timer */
++static void mv_pp2x_tx_timer_set(struct mv_pp2x_port_pcpu *port_pcpu)
++{
++	ktime_t interval;
++
++	if (!port_pcpu->tx_timer_scheduled) {
++		port_pcpu->tx_timer_scheduled = true;
++		interval = ktime_set(0, MVPP2_TX_HRTIMER_PERIOD_NS);
++		hrtimer_start(&port_pcpu->tx_timer, interval,
++			      HRTIMER_MODE_REL_PINNED);
++	}
++}
++
++/* Cancel transmit TX timer */
++static void mv_pp2x_tx_timer_kill(struct mv_pp2x_port_pcpu *port_pcpu)
++{
++	if (port_pcpu->tx_timer_scheduled) {
++		port_pcpu->tx_timer_scheduled = false;
++		hrtimer_cancel(&port_pcpu->tx_timer);
++	}
++}
++
+ static void mv_pp2x_tx_proc_cb(unsigned long data)
+ {
+ 	struct net_device *dev = (struct net_device *)data;
+@@ -1858,6 +1880,25 @@ static void mv_pp2x_tx_proc_cb(unsigned long data)
+ 		mv_pp2x_timer_set(port_pcpu);
+ }
+ 
++/* Tasklet transmit procedure */
++static void mv_pp2x_tx_send_proc_cb(unsigned long data)
++{
++	struct net_device *dev = (struct net_device *)data;
++	struct mv_pp2x_port *port = netdev_priv(dev);
++	struct mv_pp2x_aggr_tx_queue *aggr_txq;
++	struct mv_pp2x_port_pcpu *port_pcpu = this_cpu_ptr(port->pcpu);
++	int cpu = smp_processor_id();
++
++	port_pcpu->tx_timer_scheduled = false;
++
++	aggr_txq = &port->priv->aggr_txqs[cpu];
++
++	if (likely(aggr_txq->xmit_bulk > 0)) {
++		mv_pp2x_aggr_txq_pend_desc_add(port, aggr_txq->xmit_bulk);
++		aggr_txq->xmit_bulk = 0;
++	}
++}
++
+ static enum hrtimer_restart mv_pp2x_hr_timer_cb(struct hrtimer *timer)
+ {
+ 	struct mv_pp2x_port_pcpu *port_pcpu = container_of(timer,
+@@ -1868,6 +1909,16 @@ static enum hrtimer_restart mv_pp2x_hr_timer_cb(struct hrtimer *timer)
+ 	return HRTIMER_NORESTART;
+ }
+ 
++static enum hrtimer_restart mv_pp2x_tx_hr_timer_cb(struct hrtimer *timer)
++{
++	struct mv_pp2x_port_pcpu *port_pcpu = container_of(timer,
++			 struct mv_pp2x_port_pcpu, tx_timer);
++
++	tasklet_schedule(&port_pcpu->tx_tasklet);
++
++	return HRTIMER_NORESTART;
++}
++
+ /* The function calculate the width, such as cpu width, cos queue width */
+ static void mv_pp2x_width_calc(struct mv_pp2x_port *port, u32 *cpu_width,
+ 			       u32 *cos_width, u32 *port_rxq_width)
+@@ -2764,6 +2815,7 @@ static inline int mv_pp2_tx_tso(struct sk_buff *skb, struct net_device *dev,
+ 	u32 tcp_seq = 0;
+ 	skb_frag_t *skb_frag_ptr;
+ 	const struct tcphdr *th = tcp_hdr(skb);
++	struct mv_pp2x_port_pcpu *port_pcpu = this_cpu_ptr(port->pcpu);
+ 
+ 	if (unlikely(mv_pp2_tso_validate(skb, dev)))
+ 		return 0;
+@@ -2889,9 +2941,10 @@ static inline int mv_pp2_tx_tso(struct sk_buff *skb, struct net_device *dev,
+ 
+ 	aggr_txq->xmit_bulk += total_desc_num;
+ 	if (!skb->xmit_more) {
+-		/* Transmit TCP segment with bulked descriptors*/
++		/* Transmit TCP segment with bulked descriptors and cancel tx hr timer if exist */
+ 		mv_pp2x_aggr_txq_pend_desc_add(port, aggr_txq->xmit_bulk);
+ 		aggr_txq->xmit_bulk = 0;
++		mv_pp2x_tx_timer_kill(port_pcpu);
+ 	}
+ 
+ 	txq_pcpu->reserved_num -= total_desc_num;
+@@ -2939,6 +2992,7 @@ static int mv_pp2x_tx(struct sk_buff *skb, struct net_device *dev)
+ 	u16 txq_id;
+ 	u32 tx_cmd;
+ 	int cpu = smp_processor_id();
++	struct mv_pp2x_port_pcpu *port_pcpu = this_cpu_ptr(port->pcpu);
+ 
+ 	/* Set relevant physical TxQ and Linux netdev queue */
+ 	txq_id = skb_get_queue_mapping(skb) % mv_pp2x_txq_number;
+@@ -3054,11 +3108,10 @@ static int mv_pp2x_tx(struct sk_buff *skb, struct net_device *dev)
+ 	mv_pp2_is_pkt_ptp_tx_proc(port, tx_desc, skb);
+ #endif
+ 
+-	/* Enable transmit */
+-	if (!skb->xmit_more) {
+-		mv_pp2x_aggr_txq_pend_desc_add(port, aggr_txq->xmit_bulk);
+-		aggr_txq->xmit_bulk = 0;
+-	}
++	/* Start 50 microseconds timer to transmit */
++	if (!skb->xmit_more)
++		mv_pp2x_tx_timer_set(port_pcpu);
++
+ out:
+ 	if (likely(frags > 0)) {
+ 		struct mv_pp2x_pcpu_stats *stats = this_cpu_ptr(port->stats);
+@@ -3744,6 +3797,12 @@ int mv_pp2x_stop(struct net_device *dev)
+ 			port_pcpu->timer_scheduled = false;
+ 			tasklet_kill(&port_pcpu->tx_done_tasklet);
+ 		}
++		for_each_present_cpu(cpu) {
++			port_pcpu = per_cpu_ptr(port->pcpu, cpu);
++			hrtimer_cancel(&port_pcpu->tx_timer);
++			port_pcpu->tx_timer_scheduled = false;
++			tasklet_kill(&port_pcpu->tx_tasklet);
++		}
+ 	}
+ 
+ 	mv_pp2x_cleanup_rxqs(port);
+@@ -4786,6 +4845,23 @@ static int mv_pp2x_port_probe(struct platform_device *pdev,
+ 				     mv_pp2x_tx_proc_cb, (unsigned long)dev);
+ 		}
+ 	}
++
++	/* Init hrtimer for tx transmit procedure.
++	 * Instead of reg_write atfer each xmit callback, 50 microsecond
++	 * hrtimer would be started. Hrtimer will reduce amount of accesses
++	 * to transmit register and dmb() influence on network performance.
++	 */
++	for_each_present_cpu(cpu) {
++		port_pcpu = per_cpu_ptr(port->pcpu, cpu);
++
++		hrtimer_init(&port_pcpu->tx_timer, CLOCK_MONOTONIC,
++			     HRTIMER_MODE_REL_PINNED);
++		port_pcpu->tx_timer.function = mv_pp2x_tx_hr_timer_cb;
++		port_pcpu->tx_timer_scheduled = false;
++
++		tasklet_init(&port_pcpu->tx_tasklet,
++			     mv_pp2x_tx_send_proc_cb, (unsigned long)dev);
++	}
+ 	/* Init pool of external buffers for TSO, fragmentation, etc */
+ 	for_each_present_cpu(cpu) {
+ 		port_pcpu = per_cpu_ptr(port->pcpu, cpu);
+-- 
+2.7.4
+

@@ -1,0 +1,76 @@
+From dba6348584f4d81937a8c1dbaeb87b7678c939be Mon Sep 17 00:00:00 2001
+From: Stefan Chulski <stefanc@marvell.com>
+Date: Tue, 28 Jun 2016 18:23:06 +0300
+Subject: [PATCH 0544/2241] net: mvpp2x: add status_show command
+
+- command will print phy_mode, port speed, link status
+  and duplex
+- echo [p]        > status_show : p - MVPP port number
+
+Change-Id: I8b04b1f5ea3701c028b673a069519dbbb2e99513
+Signed-off-by: Stefan Chulski <stefanc@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/30800
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+Reviewed-by: Yuval Caduri <cyuval@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2x/mv_gop110_hw.c | 13 ++++++++-----
+ drivers/net/ethernet/marvell/mvpp2x/mv_gop110_hw.h |  2 +-
+ 2 files changed, 9 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_gop110_hw.c b/drivers/net/ethernet/marvell/mvpp2x/mv_gop110_hw.c
+index 8cd8d37..88a636a 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_gop110_hw.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_gop110_hw.c
+@@ -1299,11 +1299,14 @@ int mv_gop110_port_events_clear(struct gop_hw *gop, struct mv_mac_data *mac)
+ 	return 0;
+ }
+ 
+-int mv_gop110_status_show(struct gop_hw *gop, struct mv_mac_data *mac)
++int mv_gop110_status_show(struct gop_hw *gop, struct mv_pp2x *pp2, int port_num)
+ {
+-	int port_num = mac->gop_index;
+ 	struct mv_port_link_status port_status;
+-	bool port_en = false;
++	struct mv_pp2x_port *pp_port;
++	struct mv_mac_data *mac;
++
++	pp_port = mv_pp2x_port_struct_get(pp2, port_num);
++	mac = &pp_port->mac_data;
+ 
+ 	mv_gop110_port_link_status(gop, mac, &port_status);
+ 
+@@ -1333,8 +1336,7 @@ int mv_gop110_status_show(struct gop_hw *gop, struct mv_mac_data *mac)
+ 		pr_err("%s: Wrong port mode (%d)", __func__, mac->phy_mode);
+ 		return -1;
+ 	}
+-	pr_info("\nMAC status              : %s",
+-		(port_en) ? "enable" : "disable");
++
+ 	pr_info("\nLink status             : %s",
+ 		(port_status.linkup) ? "link up" : "link down");
+ 	pr_info("\n");
+@@ -1388,6 +1390,7 @@ int mv_gop110_status_show(struct gop_hw *gop, struct mv_mac_data *mac)
+ 
+ 	return 0;
+ }
++EXPORT_SYMBOL(mv_gop110_status_show);
+ 
+ /* get port speed and duplex */
+ int mv_gop110_speed_duplex_get(struct gop_hw *gop, struct mv_mac_data *mac,
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_gop110_hw.h b/drivers/net/ethernet/marvell/mvpp2x/mv_gop110_hw.h
+index 672de43..df216c4 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_gop110_hw.h
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_gop110_hw.h
+@@ -138,7 +138,7 @@ int mv_gop110_port_regs(struct gop_hw *gop, struct mv_mac_data *mac);
+ int mv_gop110_port_events_mask(struct gop_hw *gop, struct mv_mac_data *mac);
+ int mv_gop110_port_events_unmask(struct gop_hw *gop, struct mv_mac_data *mac);
+ int mv_gop110_port_events_clear(struct gop_hw *gop, struct mv_mac_data *mac);
+-int mv_gop110_status_show(struct gop_hw *gop, struct mv_mac_data *mac);
++int mv_gop110_status_show(struct gop_hw *gop, struct mv_pp2x *pp2, int port_num);
+ int mv_gop110_speed_duplex_get(struct gop_hw *gop, struct mv_mac_data *mac,
+ 			       enum mv_port_speed *speed,
+ 			       enum mv_port_duplex *duplex);
+-- 
+2.7.4
+

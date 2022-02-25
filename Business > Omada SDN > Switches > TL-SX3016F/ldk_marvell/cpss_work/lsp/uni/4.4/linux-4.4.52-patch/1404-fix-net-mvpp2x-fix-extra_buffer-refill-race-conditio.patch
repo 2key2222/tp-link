@@ -1,0 +1,87 @@
+From b2f6f917238750b63b3d7f9f71c87aaec85944d0 Mon Sep 17 00:00:00 2001
+From: Stefan Chulski <stefanc@marvell.com>
+Date: Mon, 13 Feb 2017 15:10:05 +0200
+Subject: [PATCH 1404/2241] fix: net: mvpp2x: fix extra_buffer refill race
+ condition.
+
+Issue:
+- CPU hot plug feature shuts down CPU's and changes interrupt affinity.
+- Changing of interrupt affinity creates a race condition on
+  'ext_buf_list' between
+      mv_pp2_extra_pool_get() func. during TX packet sending.
+      mv_pp2_extra_pool_put() func. during TX_done interrupt.
+- This race causes kernel crash.
+
+Fix:
+- Use 'ext_buf_list' as a ring instead of using as a stack
+  fixes the race condition.
+
+Change-Id: Idca4b28d6d9de2cf7222cef39c7c120a796b2f1e
+Signed-off-by: Stefan Chulski <stefanc@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/36771
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c | 19 ++++++++++++++-----
+ 1 file changed, 14 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+index ce22b92..cdd6c16 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+@@ -262,6 +262,14 @@ static void mv_pp2x_txq_dec_put(struct mv_pp2x_txq_pcpu *txq_pcpu)
+ 		txq_pcpu->txq_put_index--;
+ }
+ 
++static void mv_pp2x_extra_pool_inc(struct mv_pp2x_ext_buf_pool *ext_buf_pool)
++{
++	if (unlikely(ext_buf_pool->buf_pool_next_free == ext_buf_pool->buf_pool_size - 1))
++		ext_buf_pool->buf_pool_next_free = 0;
++	else
++		ext_buf_pool->buf_pool_next_free++;
++}
++
+ static u8 mv_pp2x_first_pool_get(struct mv_pp2x *priv)
+ {
+ 	return priv->pp2_cfg.first_bm_pool;
+@@ -826,8 +834,8 @@ static inline void *mv_pp2_extra_pool_get(struct mv_pp2x_port *port)
+ 	struct mv_pp2x_ext_buf_struct *ext_buf_struct;
+ 
+ 	if (!list_empty(&port_pcpu->ext_buf_port_list)) {
+-		ext_buf_struct = list_first_entry(&port_pcpu->ext_buf_port_list,
+-						  struct mv_pp2x_ext_buf_struct, ext_buf_list);
++		ext_buf_struct = list_last_entry(&port_pcpu->ext_buf_port_list,
++						 struct mv_pp2x_ext_buf_struct, ext_buf_list);
+ 		list_del(&ext_buf_struct->ext_buf_list);
+ 		port_pcpu->ext_buf_pool->buf_pool_in_use--;
+ 
+@@ -850,15 +858,15 @@ static inline int mv_pp2_extra_pool_put(struct mv_pp2x_port *port, void *ext_buf
+ 		kfree(ext_buf);
+ 		return 1;
+ 	}
++	port_pcpu->ext_buf_pool->buf_pool_in_use++;
+ 
+ 	ext_buf_struct =
+-		&port_pcpu->ext_buf_pool->ext_buf_struct[port_pcpu->ext_buf_pool->buf_pool_in_use];
+-
++		&port_pcpu->ext_buf_pool->ext_buf_struct[port_pcpu->ext_buf_pool->buf_pool_next_free];
++	mv_pp2x_extra_pool_inc(port_pcpu->ext_buf_pool);
+ 	ext_buf_struct->ext_buf_data = ext_buf;
+ 
+ 	list_add(&ext_buf_struct->ext_buf_list,
+ 		 &port_pcpu->ext_buf_port_list);
+-	port_pcpu->ext_buf_pool->buf_pool_in_use++;
+ 
+ 	return 0;
+ }
+@@ -4649,6 +4657,7 @@ static int mv_pp2x_port_probe(struct platform_device *pdev,
+ 			}
+ 			list_add(&port_pcpu->ext_buf_pool->ext_buf_struct[i].ext_buf_list,
+ 				 &port_pcpu->ext_buf_port_list);
++			mv_pp2x_extra_pool_inc(port_pcpu->ext_buf_pool);
+ 			port_pcpu->ext_buf_pool->buf_pool_in_use++;
+ 		}
+ 	}
+-- 
+2.7.4
+

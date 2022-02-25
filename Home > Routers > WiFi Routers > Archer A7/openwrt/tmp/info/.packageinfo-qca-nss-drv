@@ -1,0 +1,18 @@
+Source-Makefile: package/qca-nss-drv/Makefile
+Package: kmod-qca-nss-drv
+Submenu: Network Devices
+Version: <LINUX_VERSION>-1
+Depends: @TARGET_ipq806x qca-nss-fw +kmod-qca-nss-gmac
+Menu-Depends: 
+Provides: 
+Section: kernel
+Category: Kernel modules
+Title: Kernel driver for NSS (core driver)
+Maintainer: OpenWrt Developers Team <openwrt-devel@openwrt.org>
+Source: qca-nss-drv-.tar.gz
+Type: ipkg
+Description: Kernel driver for NSS (core driver)
+OpenWrt Developers Team <openwrt-devel@openwrt.org>
+@@
+
+

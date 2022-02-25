@@ -1,0 +1,158 @@
+From 89942ffe6831910342e3657198c106442141467a Mon Sep 17 00:00:00 2001
+From: Uri Eliyahu <uriel@marvell.com>
+Date: Mon, 23 May 2016 15:35:58 +0300
+Subject: [PATCH 0404/2241] dts: a39x: net_complex support
+
+	- Compatible string is: "marvell, armada-390-nss_complex"
+
+Change-Id: I8cb386393b3b31ec99e9e047176ff4930eb97ea6
+Signed-off-by: Uri Eliyahu <uriel@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/29878
+Reviewed-by: Lior Amsalem <alior@marvell.com>
+Tested-by: Lior Amsalem <alior@marvell.com>
+---
+ arch/arm/boot/dts/armada-390-db.dts  |  5 +++++
+ arch/arm/boot/dts/armada-390.dtsi    |  4 ++++
+ arch/arm/boot/dts/armada-395-amc.dts |  6 ++++++
+ arch/arm/boot/dts/armada-395-gp.dts  |  5 +++++
+ arch/arm/boot/dts/armada-395.dtsi    |  4 ++++
+ arch/arm/boot/dts/armada-398-db.dts  |  6 ++++++
+ arch/arm/boot/dts/armada-398.dtsi    |  4 ++++
+ arch/arm/boot/dts/armada-39x.dtsi    | 10 ++++++++++
+ 8 files changed, 44 insertions(+)
+
+diff --git a/arch/arm/boot/dts/armada-390-db.dts b/arch/arm/boot/dts/armada-390-db.dts
+index 0700f44..d0bd83d 100644
+--- a/arch/arm/boot/dts/armada-390-db.dts
++++ b/arch/arm/boot/dts/armada-390-db.dts
+@@ -124,6 +124,11 @@
+ 				status = "okay";
+ 			};
+ 		};
++		nss_complex {
++			status = "okay";
++			pinctrl-0 = <&smi_nss_pins>;
++			pinctrl-names="default";
++		};
+ 
+ 		pcie-controller {
+ 			status = "okay";
+diff --git a/arch/arm/boot/dts/armada-390.dtsi b/arch/arm/boot/dts/armada-390.dtsi
+index 6cd18d8..df689a1 100644
+--- a/arch/arm/boot/dts/armada-390.dtsi
++++ b/arch/arm/boot/dts/armada-390.dtsi
+@@ -54,6 +54,10 @@
+ 			pinctrl@18000 {
+ 				compatible = "marvell,mv88f6920-pinctrl";
+ 				reg = <0x18000 0x20>;
++				smi_nss_pins: smi_nss_pins {
++					marvell,pins = "mpp4", "mpp5";
++					marvell,function = "smi";
++				};
+ 			};
+ 		};
+ 	};
+diff --git a/arch/arm/boot/dts/armada-395-amc.dts b/arch/arm/boot/dts/armada-395-amc.dts
+index 6eae6ea..59d4541 100644
+--- a/arch/arm/boot/dts/armada-395-amc.dts
++++ b/arch/arm/boot/dts/armada-395-amc.dts
+@@ -125,6 +125,12 @@
+ 			};
+ 		};
+ 
++		nss_complex {
++			status = "okay";
++			pinctrl-0 = <&smi_nss_pins>;
++			pinctrl-names="default";
++		};
++
+ 		pcie-controller {
+ 			status = "okay";
+ 
+diff --git a/arch/arm/boot/dts/armada-395-gp.dts b/arch/arm/boot/dts/armada-395-gp.dts
+index 5370b03..d708bb8 100644
+--- a/arch/arm/boot/dts/armada-395-gp.dts
++++ b/arch/arm/boot/dts/armada-395-gp.dts
+@@ -155,6 +155,11 @@
+ 			};
+ 		};
+ 
++		nss_complex {
++			status = "okay";
++			pinctrl-0 = <&smi_nss_pins>;
++			pinctrl-names="default";
++		};
+ 
+ 		pcie-controller {
+ 			status = "okay";
+diff --git a/arch/arm/boot/dts/armada-395.dtsi b/arch/arm/boot/dts/armada-395.dtsi
+index e783984..e0d9273 100644
+--- a/arch/arm/boot/dts/armada-395.dtsi
++++ b/arch/arm/boot/dts/armada-395.dtsi
+@@ -54,6 +54,10 @@
+ 			pinctrl@18000 {
+ 				compatible = "marvell,mv88f6925-pinctrl";
+ 				reg = <0x18000 0x20>;
++				smi_nss_pins: smi_nss_pins {
++					marvell,pins = "mpp4", "mpp5";
++					marvell,function = "smi";
++				};
+ 			};
+ 
+ 			rtc@a3800 {
+diff --git a/arch/arm/boot/dts/armada-398-db.dts b/arch/arm/boot/dts/armada-398-db.dts
+index 788c3ba..9e874c6 100644
+--- a/arch/arm/boot/dts/armada-398-db.dts
++++ b/arch/arm/boot/dts/armada-398-db.dts
+@@ -134,6 +134,12 @@
+ 			};
+ 		};
+ 
++		nss_complex {
++			status = "okay";
++			pinctrl-0 = <&smi_nss_pins>;
++			pinctrl-names="default";
++		};
++
+ 		pcie-controller {
+ 			status = "okay";
+ 
+diff --git a/arch/arm/boot/dts/armada-398.dtsi b/arch/arm/boot/dts/armada-398.dtsi
+index 234a998..b91af36 100644
+--- a/arch/arm/boot/dts/armada-398.dtsi
++++ b/arch/arm/boot/dts/armada-398.dtsi
+@@ -54,6 +54,10 @@
+ 			pinctrl@18000 {
+ 				compatible = "marvell,mv88f6928-pinctrl";
+ 				reg = <0x18000 0x20>;
++				smi_nss_pins: smi_nss_pins {
++					marvell,pins = "mpp4", "mpp5";
++					marvell,function = "smi";
++				};
+ 			};
+ 
+ 			sata@e0000 {
+diff --git a/arch/arm/boot/dts/armada-39x.dtsi b/arch/arm/boot/dts/armada-39x.dtsi
+index 267ad52..a40263a 100644
+--- a/arch/arm/boot/dts/armada-39x.dtsi
++++ b/arch/arm/boot/dts/armada-39x.dtsi
+@@ -100,6 +100,16 @@
+ 			reg = <MBUS_ID(0x01, 0x1d) 0 0x200000>;
+ 		};
+ 
++		nss_complex {
++			compatible = "marvell,armada-390-nss_complex";
++			status = "disabled";
++			reg = <MBUS_ID(0xf0, 0x01) 0x18200 0x100>,     /* netcomplex_misc */
++			      <MBUS_ID(0xf0, 0x01) 0x18300 0x200>,     /* netcomplex_phy */
++			      <MBUS_ID(0xf0, 0x01) 0x18a00 0x1000>,    /* netcomplex_base */
++			      <MBUS_ID(0xf0, 0x01) 0xE4000 0x500>,     /* DFX server */
++			      <MBUS_ID(0xf0, 0x01) 0x0 0x100000>;      /* AXI bus */
++		};
++
+ 		internal-regs {
+ 			compatible = "simple-bus";
+ 			#address-cells = <1>;
+-- 
+2.7.4
+

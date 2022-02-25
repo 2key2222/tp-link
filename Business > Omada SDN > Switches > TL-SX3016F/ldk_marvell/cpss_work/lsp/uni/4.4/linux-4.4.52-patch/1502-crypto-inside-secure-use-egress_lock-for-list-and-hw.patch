@@ -1,0 +1,97 @@
+From 7983ba0bc50c278ca93c8fc043ff505f86cbc006 Mon Sep 17 00:00:00 2001
+From: Ofer Heifetz <oferh@marvell.com>
+Date: Sun, 19 Mar 2017 16:56:15 +0200
+Subject: [PATCH 1502/2241] crypto: inside-secure: use egress_lock for list and
+ hw ring
+
+The lock must be held for the duration of ring resource
+allocation and inserting into the ring linked list.
+When the lock is not held for both operations, the HW ring
+and the list FIFO get out of sync.
+
+Change-Id: Ic6c09ff491e920d2e35dc66a6b9ae31afd8103d7
+Signed-off-by: Ofer Heifetz <oferh@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/37584
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+---
+ drivers/crypto/inside-secure/cipher.c   | 5 +++--
+ drivers/crypto/inside-secure/hash.c     | 7 +++++--
+ drivers/crypto/inside-secure/safexcel.c | 7 +------
+ 3 files changed, 9 insertions(+), 10 deletions(-)
+
+diff --git a/drivers/crypto/inside-secure/cipher.c b/drivers/crypto/inside-secure/cipher.c
+index c778922..5fda6c2 100644
+--- a/drivers/crypto/inside-secure/cipher.c
++++ b/drivers/crypto/inside-secure/cipher.c
+@@ -259,10 +259,11 @@ static int safexcel_aes_send(struct crypto_async_request *async,
+ 		n_rdesc++;
+ 	}
+ 
+-	spin_unlock_bh(&priv->ring[ring].egress_lock);
+-
+ 	ctx->base.handle_result = safexcel_handle_result;
+ 	request->req = &req->base;
++	list_add_tail(&request->list, &priv->ring[ring].list);
++
++	spin_unlock_bh(&priv->ring[ring].egress_lock);
+ 
+ 	*commands = n_cdesc;
+ 	*results = nr_dst;
+diff --git a/drivers/crypto/inside-secure/hash.c b/drivers/crypto/inside-secure/hash.c
+index ea21d32..4fd654f 100644
+--- a/drivers/crypto/inside-secure/hash.c
++++ b/drivers/crypto/inside-secure/hash.c
+@@ -276,11 +276,14 @@ send_command:
+ 		goto cdesc_rollback;
+ 	}
+ 
++	ctx->base.handle_result = safexcel_handle_result;
++	request->req = &areq->base;
++
++	list_add_tail(&request->list, &priv->ring[ring].list);
++
+ 	spin_unlock_bh(&priv->ring[ring].egress_lock);
+ 
+ 	req->len += areq->nbytes;
+-	request->req = &areq->base;
+-	ctx->base.handle_result = safexcel_handle_result;
+ 
+ 	*commands = n_cdesc;
+ 	*results = 1;
+diff --git a/drivers/crypto/inside-secure/safexcel.c b/drivers/crypto/inside-secure/safexcel.c
+index dc1d255..0d8f393 100644
+--- a/drivers/crypto/inside-secure/safexcel.c
++++ b/drivers/crypto/inside-secure/safexcel.c
+@@ -667,10 +667,6 @@ void safexcel_dequeue(struct safexcel_crypto_priv *priv, int ring)
+ 			goto resource_fail;
+ 		}
+ 
+-		spin_lock_bh(&priv->ring[ring].egress_lock);
+-		list_add_tail(&request->list, &priv->ring[ring].list);
+-		spin_unlock_bh(&priv->ring[ring].egress_lock);
+-
+ 		cdesc += commands;
+ 		rdesc += results;
+ 		nreq++;
+@@ -820,6 +816,7 @@ int safexcel_invalidate_cache(struct crypto_async_request *async,
+ 	}
+ 
+ 	request->req = async;
++	list_add_tail(&request->list, &priv->ring[ring].list);
+ 
+ 	spin_unlock_bh(&priv->ring[ring].egress_lock);
+ 
+@@ -854,8 +851,6 @@ static inline void safexcel_handle_result_descriptor(struct safexcel_crypto_priv
+ 		list_del(&sreq->list);
+ 		spin_unlock_bh(&priv->ring[ring].egress_lock);
+ 
+-		WARN_ON(!virt_addr_valid(sreq->req->tfm));
+-
+ 		ctx = crypto_tfm_ctx(sreq->req->tfm);
+ 		ndesc = ctx->handle_result(priv, ring, sreq->req,
+ 					   &should_complete, &ret);
+-- 
+2.7.4
+

@@ -1,0 +1,100 @@
+From af61ed6d3cf38537058581f339e1e7cd072010e4 Mon Sep 17 00:00:00 2001
+From: Stefan Chulski <stefanc@marvell.com>
+Date: Tue, 16 Aug 2016 14:28:40 +0300
+Subject: [PATCH 0690/2241] fix: mvpp2x: limit RX coalescing time
+
+- limit RX coalescing time with 0xfffff0 core clock cycles
+
+Change-Id: Id894af088545516c95be89ddcba12d56aa606056
+Signed-off-by: Stefan Chulski <stefanc@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/31976
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Yuval Caduri <cyuval@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_ethtool.c | 2 +-
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.c      | 9 +++++++--
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.h      | 2 +-
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw_type.h | 3 ++-
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c    | 2 +-
+ 5 files changed, 12 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_ethtool.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_ethtool.c
+index 506cc6b..87bba07 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_ethtool.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_ethtool.c
+@@ -532,7 +532,7 @@ static int mv_pp2x_ethtool_set_coalesce(struct net_device *dev,
+ 		rxq->time_coal = c->rx_coalesce_usecs;
+ 		rxq->pkts_coal = c->rx_max_coalesced_frames;
+ 		mv_pp2x_rx_pkts_coal_set(port, rxq);
+-		mv_pp2x_rx_time_coal_set(port, rxq, rxq->time_coal);
++		mv_pp2x_rx_time_coal_set(port, rxq);
+ 	}
+ 	port->tx_time_coal = c->tx_coalesce_usecs;
+ 	for (queue = 0; queue < port->num_tx_queues; queue++) {
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.c
+index aca7d5f..0e33905 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.c
+@@ -3475,11 +3475,16 @@ void mv_pp2x_rx_pkts_coal_set(struct mv_pp2x_port *port,
+ 
+ /* Set the time delay in usec before Rx interrupt */
+ void mv_pp2x_rx_time_coal_set(struct mv_pp2x_port *port,
+-			      struct mv_pp2x_rx_queue *rxq, u32 usec)
++			      struct mv_pp2x_rx_queue *rxq)
+ {
+ 	u32 val;
+ 
+-	val = (port->priv->hw.tclk / USEC_PER_SEC) * usec;
++	val = (port->priv->hw.tclk / USEC_PER_SEC) * rxq->time_coal;
++	if (val > MVPP2_MAX_ISR_RX_THRESHOLD) {
++		rxq->time_coal = (MVPP2_MAX_ISR_RX_THRESHOLD *
++			USEC_PER_SEC) / port->priv->hw.tclk;
++		val = MVPP2_MAX_ISR_RX_THRESHOLD;
++	}
+ 	mv_pp2x_write(&port->priv->hw,
+ 		      MVPP2_ISR_RX_THRESHOLD_REG(rxq->id), val);
+ }
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.h b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.h
+index b6169aa..52eff7d 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.h
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.h
+@@ -602,7 +602,7 @@ void mv_pp21_port_reset(struct mv_pp2x_port *port);
+ void mv_pp2x_rx_pkts_coal_set(struct mv_pp2x_port *port,
+ 			      struct mv_pp2x_rx_queue *rxq);
+ void mv_pp2x_rx_time_coal_set(struct mv_pp2x_port *port,
+-			      struct mv_pp2x_rx_queue *rxq, u32 usec);
++			      struct mv_pp2x_rx_queue *rxq);
+ void mv_pp2x_tx_done_pkts_coal_set(void *arg);
+ void mv_pp2x_cause_error(struct net_device *dev, int cause);
+ void mv_pp2x_rx_error(struct mv_pp2x_port *port,
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw_type.h b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw_type.h
+index c4663cd..5b532f9 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw_type.h
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw_type.h
+@@ -851,7 +851,8 @@
+ #define MVPP22_ISR_TX_THRESHOLD_MASK		MVPP22_MAX_ISR_TX_THRESHOLD
+ 
+ #define MVPP2_ISR_RX_THRESHOLD_REG(rxq)		(0x5200 + 4 * (rxq))
+-#define MVPP2_ISR_RX_THRESHOLD_MASK		0xfffff0
++#define MVPP2_MAX_ISR_RX_THRESHOLD		0xfffff0
++#define MVPP2_ISR_RX_THRESHOLD_MASK		MVPP2_MAX_ISR_RX_THRESHOLD
+ 
+ #define MVPP21_ISR_RXQ_GROUP_REG(port)		(0x5400 + 4 * (port))
+ #define MVPP22_ISR_RXQ_GROUP_INDEX_REG		0x5400
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+index ce7c74e..a7e69a1 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+@@ -1015,7 +1015,7 @@ static int mv_pp2x_rxq_init(struct mv_pp2x_port *port,
+ 
+ 	/* Set coalescing pkts and time */
+ 	mv_pp2x_rx_pkts_coal_set(port, rxq);
+-	mv_pp2x_rx_time_coal_set(port, rxq, rxq->time_coal);
++	mv_pp2x_rx_time_coal_set(port, rxq);
+ 
+ 	/* Add number of descriptors ready for receiving packets */
+ 	mv_pp2x_rxq_status_update(port, rxq->id, 0, rxq->size);
+-- 
+2.7.4
+

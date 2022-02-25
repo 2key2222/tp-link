@@ -1,0 +1,52 @@
+From 65e041b476224772e474f9a03288b09dfcc081ec Mon Sep 17 00:00:00 2001
+From: Igal Liberman <igall@marvell.com>
+Date: Mon, 27 Mar 2017 17:47:13 +0300
+Subject: [PATCH 1537/2241] crypto: inside-secure: optimize DSE bufferability
+ control
+
+Currently, we configure the data write bufferability to "last transfer
+of each packet non-bufferable, rest bufferable".
+This patch optimize this configuration and sets "always bufferable".
+
+This change slightly improves performance.
+
+Change-Id: I573b15f7df925e305e2bc3c60061266f248c4acb
+Signed-off-by: Igal Liberman <igall@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/38072
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Ofer Heifetz <oferh@marvell.com>
+---
+ drivers/crypto/inside-secure/safexcel.c | 2 +-
+ drivers/crypto/inside-secure/safexcel.h | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/crypto/inside-secure/safexcel.c b/drivers/crypto/inside-secure/safexcel.c
+index 7228901..74be7af 100644
+--- a/drivers/crypto/inside-secure/safexcel.c
++++ b/drivers/crypto/inside-secure/safexcel.c
+@@ -534,7 +534,7 @@ static int eip197_hw_init(struct device *dev, struct safexcel_crypto_priv *priv)
+ 	val = EIP197_HIA_DSE_CFG_DIS_DEBUG;
+ 	val |= EIP197_HIA_DxE_CFG_MIN_DATA_SIZE(7) | EIP197_HIA_DxE_CFG_MAX_DATA_SIZE(8);
+ 	val |= EIP197_HIA_DxE_CFG_DATA_CACHE_CTRL(WR_CACHE_3BITS);
+-	val |= EIP197_HIA_DSE_CFG_BUFFER_CTRL(2);
++	val |= EIP197_HIA_DSE_CFG_ALLWAYS_BUFFERABLE;
+ 	val |= EIP197_HIA_DSE_CFG_EN_SINGLE_WR;
+ 	writel(val, EIP197_HIA_DSE(priv) + EIP197_HIA_DSE_CFG);
+ 
+diff --git a/drivers/crypto/inside-secure/safexcel.h b/drivers/crypto/inside-secure/safexcel.h
+index 9248f3d..04445ea 100644
+--- a/drivers/crypto/inside-secure/safexcel.h
++++ b/drivers/crypto/inside-secure/safexcel.h
+@@ -301,7 +301,7 @@
+ #define EIP197_HIA_DxE_CFG_MAX_CTRL_SIZE(n)	((n) << 24)
+ #define EIP197_HIA_DFE_CFG_DIS_DEBUG		(BIT(31) | BIT(29))
+ #define EIP197_HIA_DSE_CFG_DIS_DEBUG		BIT(31)
+-#define EIP197_HIA_DSE_CFG_BUFFER_CTRL(n)	(((n) & 0x3) << 14)
++#define EIP197_HIA_DSE_CFG_ALLWAYS_BUFFERABLE	(GENMASK(15, 14))
+ #define EIP197_HIA_DSE_CFG_EN_SINGLE_WR		BIT(29)
+ 
+ /* EIP197_HIA_DFE/DSE_THR_CTRL */
+-- 
+2.7.4
+

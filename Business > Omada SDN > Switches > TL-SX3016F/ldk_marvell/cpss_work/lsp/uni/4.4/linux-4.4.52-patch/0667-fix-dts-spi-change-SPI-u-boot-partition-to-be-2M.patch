@@ -1,0 +1,41 @@
+From a3b74e4eaf7a6f12d205cd36e80ad92aed10393e Mon Sep 17 00:00:00 2001
+From: Hanna Hawa <hannah@marvell.com>
+Date: Thu, 4 Aug 2016 17:04:54 +0300
+Subject: [PATCH 0667/2241] fix: dts: spi: change SPI u-boot partition to be 2M
+
+Reduce the size of the U-boot to be 2M with environment variable
+and increase the size of filesystem partition to be 13M
+The updated SPI partitions are:
+bootloader: 2M
+filesystem: 13M
+bootloader_2nd: 1M
+
+Change-Id: I4a6844eab11694c49d34fe3d1c27d172c39bb841
+Signed-off-by: Hanna Hawa <hannah@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/31744
+Reviewed-by: Haim Boot <hayim@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-7040-db.dtsi | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-7040-db.dtsi b/arch/arm64/boot/dts/marvell/armada-7040-db.dtsi
+index c6821c4..1188140 100644
+--- a/arch/arm64/boot/dts/marvell/armada-7040-db.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-7040-db.dtsi
+@@ -112,11 +112,11 @@
+ 					spi-max-frequency = <20000000>;
+ 					partition@0 {
+ 						label = "boot";
+-						reg = <0x0 0x300000>;
++						reg = <0x0 0x200000>;
+ 					};
+ 					partition@200000 {
+ 						label = "Filesystem";
+-						reg = <0x300000 0xc00000>;
++						reg = <0x200000 0xd00000>;
+ 					};
+ 					partition@d00000 {
+ 						label = "boot_2nd";
+-- 
+2.7.4
+

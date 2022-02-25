@@ -1,0 +1,158 @@
+From cc5311315729ec339235c0b83353d1c7a1206db4 Mon Sep 17 00:00:00 2001
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Date: Tue, 7 Mar 2017 16:53:17 +0100
+Subject: [PATCH 1708/2241] net: mvpp2: adapt rxq distribution to PPv2.2
+
+In PPv2.1, we have a maximum of 8 RXQs per port, with a default of 4
+RXQs per port, and we were assigning RXQs 0->3 to the first port, 4->7
+to the second port, 8->11 to the third port, etc.
+
+In PPv2.2, we have a maximum of 32 RXQs per port, and we must allocate
+RXQs from the range of 32 RXQs available for each port. So port 0 must
+use RXQs in the range 0->31, port 1 in the range 32->63, etc.
+
+This commit adapts the mvpp2 to this difference between PPv2.1 and
+PPv2.2:
+
+ - The constant definition MVPP2_MAX_RXQ is replaced by a new field
+   'max_port_rxqs' in 'struct mvpp2', which stores the maximum number of
+   RXQs per port. This field is initialized during ->probe() depending
+   on the IP version.
+
+ - MVPP2_RXQ_TOTAL_NUM is removed, and instead we calculate the total
+   number of RXQs by multiplying the number of ports by the maximum of
+   RXQs per port. This was anyway used in only one place.
+
+ - In mvpp2_port_probe(), the calculation of port->first_rxq is adjusted
+   to cope with the different allocation strategy between PPv2.1 and
+   PPv2.2. Due to this change, the 'next_first_rxq' argument of this
+   function is no longer needed and is removed.
+
+Patch cherry-picked from mainline 4.12_rc5
+
+Change-Id: I9449fa7a4fd9278d1f4c8bff3c34001c17da4ffa
+Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/40415
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2.c | 35 +++++++++++++++++++----------------
+ 1 file changed, 19 insertions(+), 16 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2.c b/drivers/net/ethernet/marvell/mvpp2.c
+index e5984a1..04f3cdf 100644
+--- a/drivers/net/ethernet/marvell/mvpp2.c
++++ b/drivers/net/ethernet/marvell/mvpp2.c
+@@ -402,15 +402,9 @@
+ /* Maximum number of TXQs used by single port */
+ #define MVPP2_MAX_TXQ			8
+ 
+-/* Maximum number of RXQs used by single port */
+-#define MVPP2_MAX_RXQ			8
+-
+ /* Dfault number of RXQs in use */
+ #define MVPP2_DEFAULT_RXQ		4
+ 
+-/* Total number of RXQs available to all ports */
+-#define MVPP2_RXQ_TOTAL_NUM		(MVPP2_MAX_PORTS * MVPP2_MAX_RXQ)
+-
+ /* Max number of Rx descriptors */
+ #define MVPP2_MAX_RXD			128
+ 
+@@ -731,6 +725,9 @@ struct mvpp2 {
+ 
+ 	/* HW version */
+ 	enum { MVPP21, MVPP22 } hw_version;
++
++	/* Maximum number of RXQs per port */
++	unsigned int max_port_rxqs;
+ };
+ 
+ struct mvpp2_pcpu_stats {
+@@ -6389,7 +6386,8 @@ static int mvpp2_port_init(struct mvpp2_port *port)
+ 	struct mvpp2_txq_pcpu *txq_pcpu;
+ 	int queue, cpu, err;
+ 
+-	if (port->first_rxq + rxq_number > MVPP2_RXQ_TOTAL_NUM)
++	if (port->first_rxq + rxq_number >
++	    MVPP2_MAX_PORTS * priv->max_port_rxqs)
+ 		return -EINVAL;
+ 
+ 	/* Disable port */
+@@ -6510,8 +6508,7 @@ err_free_percpu:
+ /* Ports initialization */
+ static int mvpp2_port_probe(struct platform_device *pdev,
+ 			    struct device_node *port_node,
+-			    struct mvpp2 *priv,
+-			    int *next_first_rxq)
++			    struct mvpp2 *priv)
+ {
+ 	struct device_node *phy_node;
+ 	struct mvpp2_port *port;
+@@ -6568,7 +6565,11 @@ static int mvpp2_port_probe(struct platform_device *pdev,
+ 
+ 	port->priv = priv;
+ 	port->id = id;
+-	port->first_rxq = *next_first_rxq;
++	if (priv->hw_version == MVPP21)
++		port->first_rxq = port->id * rxq_number;
++	else
++		port->first_rxq = port->id * priv->max_port_rxqs;
++
+ 	port->phy_node = phy_node;
+ 	port->phy_interface = phy_mode;
+ 
+@@ -6663,8 +6664,6 @@ static int mvpp2_port_probe(struct platform_device *pdev,
+ 	}
+ 	netdev_info(dev, "Using %s mac address %pM\n", mac_from, dev->dev_addr);
+ 
+-	/* Increment the first Rx queue number to be used by the next port */
+-	*next_first_rxq += rxq_number;
+ 	priv->port_list[id] = port;
+ 	return 0;
+ 
+@@ -6810,7 +6809,7 @@ static int mvpp2_init(struct platform_device *pdev, struct mvpp2 *priv)
+ 	u32 val;
+ 
+ 	/* Checks for hardware constraints */
+-	if (rxq_number % 4 || (rxq_number > MVPP2_MAX_RXQ) ||
++	if (rxq_number % 4 || (rxq_number > priv->max_port_rxqs) ||
+ 	    (txq_number > MVPP2_MAX_TXQ)) {
+ 		dev_err(&pdev->dev, "invalid queue size parameter\n");
+ 		return -EINVAL;
+@@ -6901,7 +6900,7 @@ static int mvpp2_probe(struct platform_device *pdev)
+ 	struct mvpp2 *priv;
+ 	struct resource *res;
+ 	void __iomem *base;
+-	int port_count, first_rxq, cpu;
++	int port_count, cpu;
+ 	int err;
+ 
+ 	priv = devm_kzalloc(&pdev->dev, sizeof(*priv), GFP_KERNEL);
+@@ -6936,6 +6935,11 @@ static int mvpp2_probe(struct platform_device *pdev)
+ 		priv->cpu_base[cpu] = base + cpu * addr_space_sz;
+ 	}
+ 
++	if (priv->hw_version == MVPP21)
++		priv->max_port_rxqs = 8;
++	else
++		priv->max_port_rxqs = 32;
++
+ 	priv->pp_clk = devm_clk_get(&pdev->dev, "pp_clk");
+ 	if (IS_ERR(priv->pp_clk))
+ 		return PTR_ERR(priv->pp_clk);
+@@ -7004,9 +7008,8 @@ static int mvpp2_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	/* Initialize ports */
+-	first_rxq = 0;
+ 	for_each_available_child_of_node(dn, port_node) {
+-		err = mvpp2_port_probe(pdev, port_node, priv, &first_rxq);
++		err = mvpp2_port_probe(pdev, port_node, priv);
+ 		if (err < 0)
+ 			goto err_mg_clk;
+ 	}
+-- 
+2.7.4
+

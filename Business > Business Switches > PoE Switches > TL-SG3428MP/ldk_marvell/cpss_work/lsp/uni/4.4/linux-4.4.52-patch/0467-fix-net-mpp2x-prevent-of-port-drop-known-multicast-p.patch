@@ -1,0 +1,100 @@
+From 69d949a33ba0adf61c3ecc3a63f328da1dbeee79 Mon Sep 17 00:00:00 2001
+From: Stefan Chulski <stefanc@marvell.com>
+Date: Sun, 29 May 2016 11:48:20 +0300
+Subject: [PATCH 0467/2241] fix: net: mpp2x: prevent of port drop known
+ multicast packets
+
+- prevent of port drop known multicast packets at promiscuous
+  and all multicast disabled mode
+- update function mv_pp2x_set_rx_mode() register UC and MC addr
+
+Change-Id: I034624bba8b1734426effbc909fd4636dc945884
+Reviewed-on: http://vgitil04.il.marvell.com:8080/30089
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+Tested-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c | 55 +++++++++++++++++-----
+ 1 file changed, 42 insertions(+), 13 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+index fa876aa..099bac7 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+@@ -2948,7 +2948,7 @@ int mv_pp2x_open_cls(struct net_device *dev)
+ 	err = mv_pp2x_prs_mac_da_accept(hw, port->id,
+ 				      dev->dev_addr, true);
+ 	if (err) {
+-		netdev_err(dev, "mv_pp2x_prs_mac_da_accept MC failed\n");
++		netdev_err(dev, "mv_pp2x_prs_mac_da_accept M2M failed\n");
+ 		return err;
+ 	}
+ 	err = mv_pp2x_prs_tag_mode_set(hw, port->id, MVPP2_TAG_TYPE_MH);
+@@ -3161,24 +3161,53 @@ int mv_pp2x_stop(struct net_device *dev)
+ 	return 0;
+ }
+ 
++/* register unicast and multicast addresses */
+ static void mv_pp2x_set_rx_mode(struct net_device *dev)
+ {
+ 	struct mv_pp2x_port *port = netdev_priv(dev);
+-	struct mv_pp2x_hw *hw = &(port->priv->hw);
+ 	struct netdev_hw_addr *ha;
++	struct mv_pp2x_hw *hw = &(port->priv->hw);
+ 	int id = port->id;
+-	bool allmulti = dev->flags & IFF_ALLMULTI;
+-
+-	mv_pp2x_prs_mac_promisc_set(hw, id, dev->flags & IFF_PROMISC);
+-	mv_pp2x_prs_mac_multi_set(hw, id, MVPP2_PE_MAC_MC_ALL, allmulti);
+-	mv_pp2x_prs_mac_multi_set(hw, id, MVPP2_PE_MAC_MC_IP6, allmulti);
+-
+-	/* Remove all port->id's mcast enries */
+-	mv_pp2x_prs_mcast_del_all(hw, id);
++	int err;
+ 
+-	if (allmulti && !netdev_mc_empty(dev)) {
+-		netdev_for_each_mc_addr(ha, dev)
+-			mv_pp2x_prs_mac_da_accept(hw, id, ha->addr, true);
++	if (dev->flags & IFF_PROMISC) {
++		/* Accept all: Multicast + Unicast */
++		mv_pp2x_prs_mac_multi_set(hw, id, MVPP2_PE_MAC_MC_ALL, true);
++		mv_pp2x_prs_mac_multi_set(hw, id, MVPP2_PE_MAC_MC_IP6, true);
++		/* Remove all port->id's mcast enries */
++		mv_pp2x_prs_mcast_del_all(hw, id);
++		/* Enter promisc mode */
++		mv_pp2x_prs_mac_promisc_set(hw, id, true);
++	} else {
++		if (dev->flags & IFF_ALLMULTI) {
++			/* Accept all multicast */
++			mv_pp2x_prs_mac_multi_set(hw, id,
++						  MVPP2_PE_MAC_MC_ALL, true);
++			mv_pp2x_prs_mac_multi_set(hw, id,
++						  MVPP2_PE_MAC_MC_IP6, true);
++			/* Remove all port->id's mcast enries */
++			mv_pp2x_prs_mcast_del_all(hw, id);
++		} else {
++			/* Accept only initialized multicast */
++			if (!netdev_mc_empty(dev)) {
++				netdev_for_each_mc_addr(ha, dev) {
++					err = mv_pp2x_prs_mac_da_accept(hw,
++							id, ha->addr, true);
++					if (err)
++						netdev_err(dev,
++						"MAC[%2x:%2x:%2x:%2x:%2x:%2x] add failed\n",
++						ha->addr[0], ha->addr[1],
++						ha->addr[2], ha->addr[3],
++						ha->addr[4], ha->addr[5]);
++				}
++			}
++			mv_pp2x_prs_mac_multi_set(hw, id,
++						  MVPP2_PE_MAC_MC_ALL, false);
++			mv_pp2x_prs_mac_multi_set(hw, id,
++						  MVPP2_PE_MAC_MC_IP6, false);
++		}
++		/* Leave promisc mode */
++		mv_pp2x_prs_mac_promisc_set(hw, id, false);
+ 	}
+ }
+ 
+-- 
+2.7.4
+

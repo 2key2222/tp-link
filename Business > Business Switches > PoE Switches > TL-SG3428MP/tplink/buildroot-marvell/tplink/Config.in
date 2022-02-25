@@ -1,0 +1,90 @@
+menu "TPLINK"
+
+config BR2_TPLINK_BUILD_SYSTEM
+	bool "TP-LINK Switch Software System"
+	help
+	  Enable this option if you want to build a switch software system for
+	  your embedded device
+	  
+config BR2_TPLINK_PROJECT_NAME
+    string "Project name"
+    default "T1600G_28TS"
+    help
+        Configure the name of project to build.
+		archive dir = src/archive/$(BR2_TPLINK_PROJECT_NAME).
+		use 'make -f $(BR2_TPLINK_PROJECT_NAME).mk' to build sdk.
+		macro -DTPLINK_$(BR2_TPLINK_PROJECT_NAME) will be add to build sdk & adapter.
+
+config BR2_TPLINK_COM_SW
+	bool "COMMON SOFTWARE"
+	help
+		Enable this opti if you want to build common software
+		
+config BR2_TPLINK_COM_SW_NAME
+	string "Common software name"
+	default ""
+    help
+        Configure the name of project to build common software.
+		archive dir = src/archive/$(BR2_TPLINK_COM_SW_NAME).
+		use 'make -f $(BR2_TPLINK_COM_SW_NAME).mk' to build sdk.
+		macro -DTPLINK_$(BR2_TPLINK_COM_SW_NAME) will be add to build sdk & adapter.
+		
+config BR2_TPLINK_COM_SW_SWITCH_LIST
+	string "Common software switch list"
+	default ""
+    help
+        Configure the list of switches whitch support common software.
+
+		
+config BR2_TPLINK_SOURCE_DIR
+	string "The Source Directory"
+	default "$(TOPDIR)/../src"
+	help
+      Configure the source directory of project      
+
+config BR2_TPLINK_IPV6
+    bool "Include IPV6"
+    default y
+    help
+        Enable the option if you want to enable IPV6 in your switch system.
+
+config BR2_TPLINK_CFLAGS
+	string "tplink global cflags"
+	default "-D$(BR2_TPLINK_PROJECT_NAME)=1 $(BR2_TPLINK_CHIP_VENDOR_DEF) $(BR2_TPLINK_CHIP_PLATFORM_DEF) $(BR2_TPLINK_ARCH_DEF) $(BR2_TPLINK_ENDIAN_DEFS) $(BR2_TPLINK_INET6_DEF)"
+	help
+		Configure the global cflags of tplink.   
+
+config BR2_TPLINK_ARCH_DEF
+	string
+	default "-D_CPU_ARCH=1 -D_CPU_ARCH_ARM=1" if BR2_arm || BR2_armeb
+	default "-D_CPU_ARCH=2 -D_CPU_ARCH_MIPS=2" if BR2_mips || BR2_mips64 || BR2_mipsel || BR2_mips64el
+
+config BR2_TPLINK_ENDIAN_DEFS
+	string
+	default "-D_LITTLE_ENDIAN=1234 -D_BIG_ENDIAN=4321 -D_BYTE_ORDER=4321" if BR2_ENDIAN = "BIG"
+	default "-D_LITTLE_ENDIAN=1234 -D_BIG_ENDIAN=4321 -D_BYTE_ORDER=1234" if BR2_ENDIAN = "LITTLE"
+
+config BR2_TPLINK_CHIP_VENDOR_DEF
+	string
+	default "-D_CHIP_VENDOR=1 -D_CHIP_VENDOR_BCM=1" if BR2_TPLINK_AD_BCM
+	default "-D_CHIP_VENDOR=2 -D_CHIP_VENDOR_MARVELL=2" if BR2_TPLINK_AD_MARVELL
+	default "-D_CHIP_VENDOR=3 -D_CHIP_VENDOR_RTK=3" if BR2_TPLINK_AD_REALTEK
+
+config BR2_TPLINK_CHIP_PLATFORM_DEF
+	string "Chip Platform"
+	default "-D_CHIP_VENDOR_MARVELL_AC3"
+	
+config BR2_TPLINK_INET6_DEF
+	string
+	default "-D_INET6_SUPPORT=1" if BR2_TPLINK_IPV6
+	default "-D_INET6_SUPPORT=0" if !BR2_TPLINK_IPV6
+
+menu "Build SDK"
+config BR2_TPLINK_SDK_DIR
+	string "The Source Directory of SDK"
+	default "/Project/Trunk/SDK"
+	help
+      Configure the source directory of SDK
+source tplink/sdk/Config.in
+endmenu
+endmenu

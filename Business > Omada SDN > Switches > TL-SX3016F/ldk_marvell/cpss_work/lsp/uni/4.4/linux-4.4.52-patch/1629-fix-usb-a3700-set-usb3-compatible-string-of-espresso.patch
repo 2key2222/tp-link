@@ -1,0 +1,41 @@
+From 5baa992df8c2533532e52520515b036fc506dcfe Mon Sep 17 00:00:00 2001
+From: jinghua <xigu@marvell.com>
+Date: Thu, 18 May 2017 13:50:22 +0800
+Subject: [PATCH 1629/2241] fix: usb: a3700: set usb3 compatible string of
+ espressobin to generic-xhci
+
+For Armada3700, by default usb3 compatible string is set to
+"marvell,armada-3700-xhci", in this case xhci plat driver registers
+itself to A3700 USB PHY driver, and waits for wakeup call from it.
+A3700 USB PHY driver detects USB device plug/unplugged by the interrupt
+of USB_ID pin transition, and enable/disable xhci plat driver accordingly.
+But for espressobin board, the USB_ID pin is pulled down by hardware, so
+USB PHY driver could not detect anything. In this case, xhci plat
+driver has to be working solo, with compatible string "generic-xhci".
+This patch updates usb3 compatible string in dts file of espressobin.
+JIRA: A3700-1193
+
+Change-Id: Ie955c8b2847067e4333835a80d546f30cbb882bb
+Signed-off-by: jinghua <xigu@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/39612
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/39672
+---
+ arch/arm64/boot/dts/marvell/armada-3720-community.dts | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-3720-community.dts b/arch/arm64/boot/dts/marvell/armada-3720-community.dts
+index 34a2b5c..2c60fa1 100644
+--- a/arch/arm64/boot/dts/marvell/armada-3720-community.dts
++++ b/arch/arm64/boot/dts/marvell/armada-3720-community.dts
+@@ -123,6 +123,7 @@
+ 			};
+ 
+ 			usb3@58000 {
++				compatible = "generic-xhci";
+ 				status = "okay";
+ 				phys = <&utmi_usb32>, /* utmi usb32 dedicated phy */
+ 				       <&a3700_comphy 1 COMPHY_USB3>; /* usb3 comphy */
+-- 
+2.7.4
+

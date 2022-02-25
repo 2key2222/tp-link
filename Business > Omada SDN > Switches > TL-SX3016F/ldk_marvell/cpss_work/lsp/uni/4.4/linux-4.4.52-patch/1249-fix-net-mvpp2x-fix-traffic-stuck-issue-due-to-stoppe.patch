@@ -1,0 +1,56 @@
+From 64cd3a9bc5c1e35120950fbb8c4cc5d3a0dd41df Mon Sep 17 00:00:00 2001
+From: Stefan Chulski <stefanc@marvell.com>
+Date: Thu, 29 Dec 2016 15:25:52 +0200
+Subject: [PATCH 1249/2241] fix: net: mvpp2x: fix traffic stuck issue due to
+ stopped TxQ
+
+- This patch fix traffic stuck in TX path issue.
+
+Cause:
+- In some cases TxQ were stopped under no enough available
+  descriptors condition and never started, but TxQ shouldn't
+  be stopped due to no enough available descriptors condition,
+  since TxQ start when TXQ count is above stop limit.
+  Possible scenario: There are no TX packets to release by CPU,
+  but there are no available descriptors to allocate(descriptors
+  reserved by other CPU's). In this case TxQ would be stopped and
+  never started.
+
+Fix:
+- Remove netif_tx_stop_queue callback from no enough available
+  descriptors condition, stop TxQ only when TXQ count is below
+  stop limit in TX and start when TXQ count is above stop limit in
+  Tx Done.
+
+Change-Id: I2963e902b8685b8026ca7b0eac347aef7caf78d9
+Signed-off-by: Stefan Chulski <stefanc@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/35164
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c | 2 --
+ 1 file changed, 2 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+index 69bc6af..a53a401 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+@@ -2710,7 +2710,6 @@ static inline int mv_pp2_tx_tso(struct sk_buff *skb, struct net_device *dev,
+ 	if (mv_pp2x_aggr_desc_num_check(port->priv, aggr_txq, max_desc_num, cpu) ||
+ 	    mv_pp2x_tso_txq_reserved_desc_num_proc(port->priv, txq,
+ 						   txq_pcpu, max_desc_num, cpu)) {
+-		netif_tx_stop_queue(nq);
+ 		return 0;
+ 	}
+ 
+@@ -2897,7 +2896,6 @@ static int mv_pp2x_tx(struct sk_buff *skb, struct net_device *dev)
+ 	if (mv_pp2x_aggr_desc_num_check(port->priv, aggr_txq, frags, cpu) ||
+ 	    mv_pp2x_txq_reserved_desc_num_proc(port->priv, txq,
+ 					       txq_pcpu, frags, cpu)) {
+-		netif_tx_stop_queue(nq);
+ 		frags = 0;
+ 		goto out;
+ 	}
+-- 
+2.7.4
+

@@ -1,0 +1,109 @@
+From 84f461b92c129b2481720814ce262986c8a9afae Mon Sep 17 00:00:00 2001
+From: Hanna Hawa <hannah@marvell.com>
+Date: Thu, 3 Nov 2016 18:06:29 +0200
+Subject: [PATCH 1043/2241] mmc: a80x0: a70x0: enable MMC/SDIO interface in
+ CP110
+
+enable eMMC/SDIO interface in CP110 for Armada-70x0/Armada-80x0
+
+Change-Id: I6d6e1c1801ae31c838d407da0255e58f8523c7f5
+Signed-off-by: Hanna Hawa <hannah@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/33559
+Reviewed-by: Nadav Haklai <nadavh@marvell.com>
+Tested-by: Star_Automation <star@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-7040-db-all-pcie.dts | 3 +++
+ arch/arm64/boot/dts/marvell/armada-7040-db-nand.dts     | 3 +++
+ arch/arm64/boot/dts/marvell/armada-7040-db-router.dts   | 3 +++
+ arch/arm64/boot/dts/marvell/armada-7040-db.dtsi         | 3 +++
+ arch/arm64/boot/dts/marvell/armada-8040-db-router.dts   | 3 +++
+ arch/arm64/boot/dts/marvell/armada-8040-db.dtsi         | 3 +++
+ 6 files changed, 18 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-7040-db-all-pcie.dts b/arch/arm64/boot/dts/marvell/armada-7040-db-all-pcie.dts
+index 529a5c8..3691bf0 100644
+--- a/arch/arm64/boot/dts/marvell/armada-7040-db-all-pcie.dts
++++ b/arch/arm64/boot/dts/marvell/armada-7040-db-all-pcie.dts
+@@ -100,6 +100,9 @@
+ 			udc@524100 {
+ 				status = "disabled";
+ 			};
++			sdhci@780000 {
++				status = "okay";
++			};
+ 			spi@700680 {
+ 				status = "okay";
+ 			};
+diff --git a/arch/arm64/boot/dts/marvell/armada-7040-db-nand.dts b/arch/arm64/boot/dts/marvell/armada-7040-db-nand.dts
+index 59af84d..8942690 100644
+--- a/arch/arm64/boot/dts/marvell/armada-7040-db-nand.dts
++++ b/arch/arm64/boot/dts/marvell/armada-7040-db-nand.dts
+@@ -100,6 +100,9 @@
+ 			udc@524100 {
+ 				status = "disabled";
+ 			};
++			sdhci@780000 {
++				status = "okay";
++			};
+ 			nand@720000 {
+ 				status = "okay";
+ 			};
+diff --git a/arch/arm64/boot/dts/marvell/armada-7040-db-router.dts b/arch/arm64/boot/dts/marvell/armada-7040-db-router.dts
+index 829ed32..25103ac 100644
+--- a/arch/arm64/boot/dts/marvell/armada-7040-db-router.dts
++++ b/arch/arm64/boot/dts/marvell/armada-7040-db-router.dts
+@@ -100,6 +100,9 @@
+ 			udc@524100 {
+ 				status = "disabled";
+ 			};
++			sdhci@780000 {
++				status = "okay";
++			};
+ 			spi@700680 {
+ 				status = "okay";
+ 			};
+diff --git a/arch/arm64/boot/dts/marvell/armada-7040-db.dtsi b/arch/arm64/boot/dts/marvell/armada-7040-db.dtsi
+index 564aa20..f2d6e55b 100644
+--- a/arch/arm64/boot/dts/marvell/armada-7040-db.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-7040-db.dtsi
+@@ -103,6 +103,9 @@
+ 			usb3h1: usb3@510000 {
+ 				usb-phy = <&usb3h1_phy>;
+ 			};
++			sdhci@780000 {
++				non-removable;
++			};
+ 			spi@700680 {
+ 				spi-flash@0 {
+ 					#address-cells = <0x1>;
+diff --git a/arch/arm64/boot/dts/marvell/armada-8040-db-router.dts b/arch/arm64/boot/dts/marvell/armada-8040-db-router.dts
+index 04ebfc7..39837fe 100644
+--- a/arch/arm64/boot/dts/marvell/armada-8040-db-router.dts
++++ b/arch/arm64/boot/dts/marvell/armada-8040-db-router.dts
+@@ -67,6 +67,9 @@
+ 			usb3h1: usb3@510000 {
+ 				status = "okay";
+ 			};
++			sdhci@780000 {
++				status = "okay";
++			};
+ 			mdio@12a200 {
+ 				#address-cells = <1>;
+ 				#size-cells = <0>;
+diff --git a/arch/arm64/boot/dts/marvell/armada-8040-db.dtsi b/arch/arm64/boot/dts/marvell/armada-8040-db.dtsi
+index b65fae9..158431b 100644
+--- a/arch/arm64/boot/dts/marvell/armada-8040-db.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-8040-db.dtsi
+@@ -152,6 +152,9 @@
+ 			usb3@510000 {
+ 				usb-phy = <&cpm_usb3h1_phy>;
+ 			};
++			sdhci@780000 {
++				non-removable;
++			};
+ 		};
+ 
+ 		cpm_usb3h0_phy: cpm_usb3_phy0 {
+-- 
+2.7.4
+

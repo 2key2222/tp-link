@@ -1,0 +1,102 @@
+From 5894dc48eb260a1469c1edd8421ce619233b7877 Mon Sep 17 00:00:00 2001
+From: Clemens Gruber <clemens.gruber@pqgruber.com>
+Date: Mon, 15 Feb 2016 23:46:45 +0100
+Subject: [PATCH 0744/2241] phy: marvell: Fix and unify reg-init behavior
+
+Upstream-commit: 79be1a1c9090048f6f327204b8b1cf4ac067b487
+
+For the Marvell 88E1510, marvell_of_reg_init was called too late, in the
+config_aneg function.
+Since commit 113c74d83eef ("net: phy: turn carrier off on phy attach"),
+this lead to the link not coming up at boot anymore, due to the phy
+state machine being stuck at waiting for interrupts (off by default on
+the 88E1510).
+For seven other Marvell PHYs, marvell_of_reg_init was not called at all.
+
+Add a generic marvell_config_init function, which in turn calls
+marvell_of_reg_init.
+PHYs, which already have a specific config_init function with a call to
+marvell_of_reg_init, are left untouched. The generic marvell_config_init
+function is called for all the others, to get consistent behavior across
+all Marvell PHYs.
+
+Fixes: 113c74d83eef ("net: phy: turn carrier off on phy attach")
+Signed-off-by: Clemens Gruber <clemens.gruber@pqgruber.com>
+Reviewed-by: Andrew Lunn <andrew@lunn.ch>
+Reviewed-by: Florian Fainelli <f.fainelli@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+---
+ drivers/net/phy/marvell.c | 15 +++++++++++++--
+ 1 file changed, 13 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/net/phy/marvell.c b/drivers/net/phy/marvell.c
+index 8054fa2..bdb4872 100644
+--- a/drivers/net/phy/marvell.c
++++ b/drivers/net/phy/marvell.c
+@@ -450,6 +450,12 @@ static int m88e1510_config_aneg(struct phy_device *phydev)
+ 	if (err < 0)
+ 		return err;
+ 
++	return 0;
++}
++
++static int marvell_config_init(struct phy_device *phydev)
++{
++	/* Set registers from marvell,reg-init DT property */
+ 	return marvell_of_reg_init(phydev);
+ }
+ 
+@@ -499,7 +505,7 @@ static int m88e1116r_config_init(struct phy_device *phydev)
+ 
+ 	mdelay(500);
+ 
+-	return 0;
++	return marvell_config_init(phydev);
+ }
+ 
+ static int m88e3016_config_init(struct phy_device *phydev)
+@@ -518,7 +524,7 @@ static int m88e3016_config_init(struct phy_device *phydev)
+ 	if (reg < 0)
+ 		return reg;
+ 
+-	return 0;
++	return marvell_config_init(phydev);
+ }
+ 
+ static int m88e1111_config_init(struct phy_device *phydev)
+@@ -1187,6 +1193,7 @@ static struct phy_driver marvell_drivers[] = {
+ 		.features = PHY_GBIT_FEATURES,
+ 		.probe = marvell_probe,
+ 		.flags = PHY_HAS_INTERRUPT,
++		.config_init = &marvell_config_init,
+ 		.config_aneg = &marvell_config_aneg,
+ 		.read_status = &genphy_read_status,
+ 		.ack_interrupt = &marvell_ack_interrupt,
+@@ -1258,6 +1265,7 @@ static struct phy_driver marvell_drivers[] = {
+ 		.features = PHY_GBIT_FEATURES,
+ 		.flags = PHY_HAS_INTERRUPT,
+ 		.probe = marvell_probe,
++		.config_init = &marvell_config_init,
+ 		.config_aneg = &m88e1121_config_aneg,
+ 		.read_status = &marvell_read_status,
+ 		.ack_interrupt = &marvell_ack_interrupt,
+@@ -1276,6 +1284,7 @@ static struct phy_driver marvell_drivers[] = {
+ 		.features = PHY_GBIT_FEATURES,
+ 		.flags = PHY_HAS_INTERRUPT,
+ 		.probe = marvell_probe,
++		.config_init = &marvell_config_init,
+ 		.config_aneg = &m88e1318_config_aneg,
+ 		.read_status = &marvell_read_status,
+ 		.ack_interrupt = &marvell_ack_interrupt,
+@@ -1383,6 +1392,8 @@ static struct phy_driver marvell_drivers[] = {
+ 		.features = PHY_GBIT_FEATURES,
+ 		.flags = PHY_HAS_INTERRUPT,
+ 		.probe = marvell_probe,
++		.config_init = &marvell_config_init,
++		.config_init = &marvell_config_init,
+ 		.config_aneg = &m88e1510_config_aneg,
+ 		.read_status = &marvell_read_status,
+ 		.ack_interrupt = &marvell_ack_interrupt,
+-- 
+2.7.4
+

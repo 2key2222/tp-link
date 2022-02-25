@@ -1,0 +1,32 @@
+From ee0e8176e9f04b97a4bc15e4e3ca754416c9516f Mon Sep 17 00:00:00 2001
+From: Hanna Hawa <hannah@marvell.com>
+Date: Sun, 25 Sep 2016 13:06:25 +0300
+Subject: [PATCH 1006/2241] fix: pinctrl: correct compilation dependencies for
+ AP-806 & CP-110 pinctrl drivers
+
+Change-Id: Ia39f9a5b305537626948a004bcc6b9acd6405499
+Signed-off-by: Hanna Hawa <hannah@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/33105
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Tested-by: Star_Automation <star@marvell.com>
+---
+ drivers/pinctrl/mvebu/Makefile | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/pinctrl/mvebu/Makefile b/drivers/pinctrl/mvebu/Makefile
+index 87860fa..63ec9b2 100644
+--- a/drivers/pinctrl/mvebu/Makefile
++++ b/drivers/pinctrl/mvebu/Makefile
+@@ -7,7 +7,7 @@ obj-$(CONFIG_PINCTRL_ARMADA_38X) += pinctrl-armada-38x.o
+ obj-$(CONFIG_PINCTRL_ARMADA_39X) += pinctrl-armada-39x.o
+ obj-$(CONFIG_PINCTRL_ARMADA_XP)  += pinctrl-armada-xp.o
+ obj-$(CONFIG_PINCTRL_ARMADA_3700) += pinctrl-armada-3700.o
+-obj-$(CONFIG_PCIE_ARMADA_8K) += pinctrl-armada-ap806.o
+-obj-$(CONFIG_PCIE_ARMADA_8K) += pinctrl-armada-cp110.o
++obj-$(CONFIG_PINCTRL_ARMADA_AP806) += pinctrl-armada-ap806.o
++obj-$(CONFIG_PINCTRL_ARMADA_CP110) += pinctrl-armada-cp110.o
+ obj-$(CONFIG_PINCTRL_ORION)  += pinctrl-orion.o
+ obj-$(CONFIG_PINCTRL_MSYS)  += pinctrl-msys.o
+-- 
+2.7.4
+

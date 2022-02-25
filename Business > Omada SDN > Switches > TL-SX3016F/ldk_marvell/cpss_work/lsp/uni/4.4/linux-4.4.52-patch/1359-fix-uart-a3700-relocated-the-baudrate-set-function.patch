@@ -1,0 +1,74 @@
+From 9a36a579dd0c82fff7c5310d0f102773181ff916 Mon Sep 17 00:00:00 2001
+From: allen yan <yanwei@marvell.com>
+Date: Wed, 8 Feb 2017 22:07:52 +0800
+Subject: [PATCH 1359/2241] fix: uart: a3700: relocated the baudrate set
+ function
+
+The mvebu_uart_baud_rate_set() function is now under
+CONFIG_SERIAL_MVEBU_CONSOLE. It will result into a
+compilation issue if CONFIG_SERIAL_MVEBU_CONSOLE is
+not enabled.
+
+Change-Id: I8daa8d366e599e472838c8a098c09a4d1ed3bd87
+Signed-off-by: allen yan <yanwei@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/36532
+Reviewed-by: Wilson Ding <dingwei@marvell.com>
+Tested-by: Wilson Ding <dingwei@marvell.com>
+---
+ drivers/tty/serial/mvebu-uart.c | 33 ++++++++++++++++-----------------
+ 1 file changed, 16 insertions(+), 17 deletions(-)
+
+diff --git a/drivers/tty/serial/mvebu-uart.c b/drivers/tty/serial/mvebu-uart.c
+index 7658cad..dfd8d13 100644
+--- a/drivers/tty/serial/mvebu-uart.c
++++ b/drivers/tty/serial/mvebu-uart.c
+@@ -549,7 +549,22 @@ static void mvebu_uart_shutdown(struct uart_port *port)
+ 	writel(0, port->membase + uart_data->intr.ctrl_reg);
+ }
+ 
+-static void mvebu_uart_baud_rate_set(struct uart_port *port, unsigned int baud);
++static void mvebu_uart_baud_rate_set(struct uart_port *port, unsigned int baud)
++{
++	unsigned int baud_rate_div;
++	struct mvebu_uart_data *uart_data = (struct mvebu_uart_data *)port->private_data;
++
++	/* The Uart clock is divided by the value of divisor to generate
++	 * UCLK_OUT clock, which must be 16 times faster than the target
++	 * baud rate:
++	 * UCLK_OUT = 16 times the taregt baud rate.
++	 */
++	if (!IS_ERR(uart_data->clk)) {
++		baud_rate_div = port->uartclk / (baud * 16);
++		writel(baud_rate_div, port->membase + REG_BRDV(uart_data));
++	}
++}
++
+ static void mvebu_uart_set_termios(struct uart_port *port,
+ 				   struct ktermios *termios,
+ 				   struct ktermios *old)
+@@ -753,22 +768,6 @@ static void mvebu_uart_console_write(struct console *co, const char *s,
+ 		spin_unlock_irqrestore(&port->lock, flags);
+ }
+ 
+-static void mvebu_uart_baud_rate_set(struct uart_port *port, unsigned int baud)
+-{
+-	unsigned int baud_rate_div;
+-	struct mvebu_uart_data *uart_data = (struct mvebu_uart_data *)port->private_data;
+-
+-	/* The Uart clock is divided by the value of divisor to generate
+-	 * UCLK_OUT clock, which must be 16 times faster than the target
+-	 * baud rate:
+-	 * UCLK_OUT = 16 times the taregt baud rate.
+-	 */
+-	if (!IS_ERR(uart_data->clk)) {
+-		baud_rate_div = port->uartclk / (baud * 16);
+-		writel(baud_rate_div, port->membase + REG_BRDV(uart_data));
+-	}
+-}
+-
+ static int mvebu_uart_console_setup(struct console *co, char *options)
+ {
+ 	struct uart_port *port;
+-- 
+2.7.4
+

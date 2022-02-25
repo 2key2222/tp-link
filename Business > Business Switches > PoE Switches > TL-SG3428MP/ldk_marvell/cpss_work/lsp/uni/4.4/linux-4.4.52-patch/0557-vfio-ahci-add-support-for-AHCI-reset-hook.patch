@@ -1,0 +1,126 @@
+From 05bff285e68766e595d57fb731df044eb2c74648 Mon Sep 17 00:00:00 2001
+From: Hanna Hawa <hannah@marvell.com>
+Date: Sun, 26 Jun 2016 14:37:46 +0300
+Subject: [PATCH 0557/2241] vfio: ahci: add support for AHCI reset hook
+
+The VFIO reset hook is called every time a platform device is
+passed to a guest or removed from a guest.
+This initial implementation uses the VFIO reset hook to enable
+the AHCI clocks on behalf of the guest.
+
+Change-Id: I8b5522020c42a1fc7c984802ce262ffa6a57ca61
+Signed-off-by: Hanna Hawa <hannah@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/30748
+Tested-by: Star_Automation <star@marvell.com>
+---
+ drivers/vfio/platform/reset/Kconfig              |  8 ++++
+ drivers/vfio/platform/reset/Makefile             |  2 +
+ drivers/vfio/platform/reset/vfio_platform_ahci.c | 59 ++++++++++++++++++++++++
+ 3 files changed, 69 insertions(+)
+ create mode 100644 drivers/vfio/platform/reset/vfio_platform_ahci.c
+
+diff --git a/drivers/vfio/platform/reset/Kconfig b/drivers/vfio/platform/reset/Kconfig
+index 5a0fd50..bef64a2 100644
+--- a/drivers/vfio/platform/reset/Kconfig
++++ b/drivers/vfio/platform/reset/Kconfig
+@@ -22,6 +22,14 @@ config VFIO_PLATFORM_XOR_V2_RESET
+ 
+ 	  If you don't know what to do here, say N.
+ 
++config VFIO_PLATFORM_AHCI_RESET
++	tristate "VFIO support for SATA AHCI reset"
++	depends on VFIO_PLATFORM
++	help
++	  Enables the VFIO platform driver to handle reset for SATA AHCI
++
++	  If you don't know what to do here, say N.
++
+ config VFIO_PLATFORM_AMDXGBE_RESET
+ 	tristate "VFIO support for AMD XGBE reset"
+ 	depends on VFIO_PLATFORM
+diff --git a/drivers/vfio/platform/reset/Makefile b/drivers/vfio/platform/reset/Makefile
+index 12484fe..a3efabf 100644
+--- a/drivers/vfio/platform/reset/Makefile
++++ b/drivers/vfio/platform/reset/Makefile
+@@ -1,6 +1,7 @@
+ vfio-platform-calxedaxgmac-y := vfio_platform_calxedaxgmac.o
+ vfio-platform-xhci-y := vfio_platform_xhci.o
+ vfio-platform-xor-v2-y := vfio_platform_xor_v2.o
++vfio-platform-ahci-y := vfio_platform_ahci.o
+ vfio-platform-amdxgbe-y := vfio_platform_amdxgbe.o
+ 
+ ccflags-y += -Idrivers/vfio/platform
+@@ -8,4 +9,5 @@ ccflags-y += -Idrivers/vfio/platform
+ obj-$(CONFIG_VFIO_PLATFORM_CALXEDAXGMAC_RESET) += vfio-platform-calxedaxgmac.o
+ obj-$(CONFIG_VFIO_PLATFORM_XHCI_RESET) += vfio-platform-xhci.o
+ obj-$(CONFIG_VFIO_PLATFORM_XOR_V2_RESET) += vfio-platform-xor-v2.o
++obj-$(CONFIG_VFIO_PLATFORM_AHCI_RESET) += vfio-platform-ahci.o
+ obj-$(CONFIG_VFIO_PLATFORM_AMDXGBE_RESET) += vfio-platform-amdxgbe.o
+diff --git a/drivers/vfio/platform/reset/vfio_platform_ahci.c b/drivers/vfio/platform/reset/vfio_platform_ahci.c
+new file mode 100644
+index 0000000..ea71543
+--- /dev/null
++++ b/drivers/vfio/platform/reset/vfio_platform_ahci.c
+@@ -0,0 +1,59 @@
++/*
++ * VFIO platform driver specialized for AHCI reset
++ * reset code is inherited from AHCI native driver
++ *
++ * Copyright 2016 Marvell Semiconductors, Inc.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along with
++ * this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/init.h>
++#include <linux/io.h>
++#include <linux/device.h>
++#include <linux/of.h>
++#include <linux/clk.h>
++
++#include "vfio_platform_private.h"
++
++#define DRIVER_VERSION  "0.1"
++#define DRIVER_AUTHOR   "Hanna Hawa <hannah@marvell.com>"
++#define DRIVER_DESC     "Reset support for AHCI vfio platform device"
++
++#define MAX_AHCI_CLOCKS		5
++
++int vfio_platform_ahci_reset(struct vfio_platform_device *vdev)
++{
++	struct device_node *np = vdev->device->of_node;
++	struct clk *clk;
++	int ret, i;
++
++	for (i = 0; i < MAX_AHCI_CLOCKS; i++) {
++		clk = of_clk_get(np, i);
++		if (!IS_ERR(clk)) {
++			ret = clk_prepare_enable(clk);
++			if (ret)
++				return -ENODEV;
++		}
++	}
++
++	return 0;
++}
++
++module_vfio_reset_handler("marvell,armada-3700-ahci", vfio_platform_ahci_reset);
++
++MODULE_VERSION(DRIVER_VERSION);
++MODULE_LICENSE("GPL v2");
++MODULE_AUTHOR(DRIVER_AUTHOR);
++MODULE_DESCRIPTION(DRIVER_DESC);
+-- 
+2.7.4
+

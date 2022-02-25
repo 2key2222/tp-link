@@ -1,0 +1,35 @@
+From eeea6d14db3889f5279e40f414c07768abe60359 Mon Sep 17 00:00:00 2001
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Date: Thu, 3 Aug 2017 10:41:55 +0200
+Subject: [PATCH 1847/2241] net: mvpp2: fix MVPP21_ISR_RXQ_GROUP_REG definition
+
+The MVPP21_ISR_RXQ_GROUP_REG register is not indexed by rxq, but by
+port, so we fix the parameter name accordingly. There are no
+functional changes.
+
+Change-Id: I23ed51c8715d8d803b765ba3d23071fcf19ec3a6
+Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/42816
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2.c b/drivers/net/ethernet/marvell/mvpp2.c
+index 4fcba71..4e99a5d 100644
+--- a/drivers/net/ethernet/marvell/mvpp2.c
++++ b/drivers/net/ethernet/marvell/mvpp2.c
+@@ -185,7 +185,7 @@
+ /* Interrupt Cause and Mask registers */
+ #define MVPP2_ISR_RX_THRESHOLD_REG(rxq)		(0x5200 + 4 * (rxq))
+ #define     MVPP2_MAX_ISR_RX_THRESHOLD		0xfffff0
+-#define MVPP21_ISR_RXQ_GROUP_REG(rxq)		(0x5400 + 4 * (rxq))
++#define MVPP21_ISR_RXQ_GROUP_REG(port)		(0x5400 + 4 * (port))
+ 
+ #define MVPP22_ISR_RXQ_GROUP_INDEX_REG          0x5400
+ #define MVPP22_ISR_RXQ_GROUP_INDEX_SUBGROUP_MASK 0xf
+-- 
+2.7.4
+

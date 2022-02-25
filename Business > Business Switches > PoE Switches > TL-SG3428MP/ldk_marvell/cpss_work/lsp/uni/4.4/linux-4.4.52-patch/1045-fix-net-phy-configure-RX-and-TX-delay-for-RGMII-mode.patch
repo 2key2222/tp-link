@@ -1,0 +1,46 @@
+From fd4c7a012714ee3ef3e10a9622d0e987bad039d5 Mon Sep 17 00:00:00 2001
+From: Stefan Chulski <stefanc@marvell.com>
+Date: Wed, 26 Oct 2016 17:07:33 +0300
+Subject: [PATCH 1045/2241] fix: net: phy: configure RX and TX delay for RGMII
+ mode
+
+- fix CRC errors on RGMII port. MSCR RX and TX delay should
+  be set during port config and port auto negotiation for RGMII
+  port interface.
+
+Change-Id: I62071a002807f32c14d89ff7e77fbb54525b1671
+Signed-off-by: Stefan Chulski <stefanc@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/33373
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Yuval Caduri <cyuval@marvell.com>
+---
+ drivers/net/phy/marvell.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/net/phy/marvell.c b/drivers/net/phy/marvell.c
+index 77b6ecd..049ba98 100644
+--- a/drivers/net/phy/marvell.c
++++ b/drivers/net/phy/marvell.c
+@@ -382,7 +382,8 @@ static int m88e1121_config_aneg(struct phy_device *phydev)
+ 		mscr = phy_read(phydev, MII_88E1121_PHY_MSCR_REG) &
+ 			MII_88E1121_PHY_MSCR_DELAY_MASK;
+ 
+-		if (phydev->interface == PHY_INTERFACE_MODE_RGMII_ID)
++		if (phydev->interface == PHY_INTERFACE_MODE_RGMII_ID ||
++			phydev->interface == PHY_INTERFACE_MODE_RGMII)
+ 			mscr |= (MII_88E1121_PHY_MSCR_RX_DELAY |
+ 				 MII_88E1121_PHY_MSCR_TX_DELAY);
+ 		else if (phydev->interface == PHY_INTERFACE_MODE_RGMII_RXID)
+@@ -538,7 +539,8 @@ static int m88e1111_config_init(struct phy_device *phydev)
+ 		if (temp < 0)
+ 			return temp;
+ 
+-		if (phydev->interface == PHY_INTERFACE_MODE_RGMII_ID) {
++		if (phydev->interface == PHY_INTERFACE_MODE_RGMII_ID ||
++			phydev->interface == PHY_INTERFACE_MODE_RGMII) {
+ 			temp |= (MII_M1111_RX_DELAY | MII_M1111_TX_DELAY);
+ 		} else if (phydev->interface == PHY_INTERFACE_MODE_RGMII_RXID) {
+ 			temp &= ~MII_M1111_TX_DELAY;
+-- 
+2.7.4
+

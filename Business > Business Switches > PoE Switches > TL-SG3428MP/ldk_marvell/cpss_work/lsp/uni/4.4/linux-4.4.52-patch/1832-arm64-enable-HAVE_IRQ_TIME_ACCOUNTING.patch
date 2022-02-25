@@ -1,0 +1,50 @@
+From 40022c77bcd33e09ca02f45afa5b2211a102d2d5 Mon Sep 17 00:00:00 2001
+From: Will Deacon <will.deacon@arm.com>
+Date: Mon, 23 Nov 2015 15:12:59 +0000
+Subject: [PATCH 1832/2241] arm64: enable HAVE_IRQ_TIME_ACCOUNTING
+
+arm64 relies on the arm_arch_timer for sched_clock, so we can select
+HAVE_IRQ_TIME_ACCOUNTING and have the core sched-clock code enable the
+feature at runtime based on the rate.
+
+Change-Id: Iab4f895d46054c47b1795a063c3c125b97912d81
+Reported-by: Mario Smarduch <m.smarduch@samsung.com>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/42504
+Reviewed-by: Stefan Chulski <stefanc@marvell.com>
+Verified-Armada8K: Stefan Chulski <stefanc@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+---
+ Documentation/features/time/irq-time-acct/arch-support.txt | 2 +-
+ arch/arm64/Kconfig                                         | 1 +
+ 2 files changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/Documentation/features/time/irq-time-acct/arch-support.txt b/Documentation/features/time/irq-time-acct/arch-support.txt
+index e633162..4199ffec 100644
+--- a/Documentation/features/time/irq-time-acct/arch-support.txt
++++ b/Documentation/features/time/irq-time-acct/arch-support.txt
+@@ -9,7 +9,7 @@
+     |       alpha: |  ..  |
+     |         arc: | TODO |
+     |         arm: |  ok  |
+-    |       arm64: |  ..  |
++    |       arm64: |  ok  |
+     |       avr32: | TODO |
+     |    blackfin: | TODO |
+     |         c6x: | TODO |
+diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
+index d9de79c..62412f6 100644
+--- a/arch/arm64/Kconfig
++++ b/arch/arm64/Kconfig
+@@ -70,6 +70,7 @@ config ARM64
+ 	select HAVE_FUNCTION_GRAPH_TRACER
+ 	select HAVE_GENERIC_DMA_COHERENT
+ 	select HAVE_HW_BREAKPOINT if PERF_EVENTS
++	select HAVE_IRQ_TIME_ACCOUNTING
+ 	select HAVE_MEMBLOCK
+ 	select HAVE_PATA_PLATFORM
+ 	select HAVE_PERF_EVENTS
+-- 
+2.7.4
+

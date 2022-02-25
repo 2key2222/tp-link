@@ -1,0 +1,44 @@
+From ec16a3ad66f72b62bd76ce29d5b56ca62c1420a6 Mon Sep 17 00:00:00 2001
+From: Omri Itach <omrii@marvell.com>
+Date: Sun, 13 Nov 2016 13:01:37 +0200
+Subject: [PATCH 1112/2241] arm64: defconfig: cpufreq: set performance governor
+ as default
+
+CPUfreq default governor was set to 'ondemand', which raises
+CPU frequency only when required.
+
+1. Set the default governor to be performance for always
+   using maximum CPU frequency.
+2. add userspace governor, to allow userspace manual control
+   over CPU frequency scaling
+
+NOTE:
+governor selection can be modified at runtime via:
+/sys/devices/system/cpu/cpufreq/policyX/scaling_governor
+
+Change-Id: Ife90df85a034e892707cb9c5e2c1dccdd08d4540
+Signed-off-by: Omri Itach <omrii@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/33687
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ arch/arm64/configs/mvebu_v8_lsp_defconfig | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm64/configs/mvebu_v8_lsp_defconfig b/arch/arm64/configs/mvebu_v8_lsp_defconfig
+index 70e7812..6aecc2b 100644
+--- a/arch/arm64/configs/mvebu_v8_lsp_defconfig
++++ b/arch/arm64/configs/mvebu_v8_lsp_defconfig
+@@ -51,7 +51,8 @@ CONFIG_COMPAT=y
+ CONFIG_CPU_IDLE=y
+ CONFIG_ARM_CPUIDLE=y
+ CONFIG_CPU_FREQ=y
+-CONFIG_CPU_FREQ_DEFAULT_GOV_ONDEMAND=y
++CONFIG_CPU_FREQ_GOV_USERSPACE=y
++CONFIG_CPU_FREQ_GOV_ONDEMAND=y
+ CONFIG_CPUFREQ_DT=y
+ CONFIG_NET=y
+ CONFIG_PACKET=y
+-- 
+2.7.4
+

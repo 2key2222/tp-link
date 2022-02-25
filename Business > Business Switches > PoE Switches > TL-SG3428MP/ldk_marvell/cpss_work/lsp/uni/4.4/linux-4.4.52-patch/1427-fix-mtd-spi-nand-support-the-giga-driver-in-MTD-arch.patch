@@ -1,0 +1,37 @@
+From 1ec047505409553e04e06bd2ab949f460a953e26 Mon Sep 17 00:00:00 2001
+From: allen yan <yanwei@marvell.com>
+Date: Thu, 9 Feb 2017 22:53:03 +0800
+Subject: [PATCH 1427/2241] fix: mtd: spi-nand: support the giga driver in MTD
+ architecture
+
+- This patch make the giga driver can be scanned under MTD
+  architecture. This fills out all the uninitialized function
+  pointers with the defaults.
+- In the older driver probe, it use nand_scan_ident. This is just
+  the fist phase of the normal nand scan, not totally.
+
+Change-Id: Ife83a22633d7b702a8b5f49bf944f41a14d04ccc
+Signed-off-by: allen yan <yanwei@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/37179
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hua Jing <jinghua@marvell.com>
+---
+ drivers/staging/gd5f_spinand/gd5f_spinand.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/staging/gd5f_spinand/gd5f_spinand.c b/drivers/staging/gd5f_spinand/gd5f_spinand.c
+index 13281aa..a82690f 100644
+--- a/drivers/staging/gd5f_spinand/gd5f_spinand.c
++++ b/drivers/staging/gd5f_spinand/gd5f_spinand.c
+@@ -990,7 +990,7 @@ static int spinand_probe(struct spi_device *spi_nand)
+ 	       sizeof(struct nand_flash_dev));
+ 	gd9f_flash_dev[1].name = NULL;
+ 	/* This should set up mtd->writesize, mtd->oobsize, etc. */
+-	if (nand_scan_ident(mtd, 1, gd9f_flash_dev))
++	if (nand_scan(mtd, 1))
+ 		return -ENXIO;
+ 
+ 	/* Establish HW ECC parameters if there is on die ECC */
+-- 
+2.7.4
+

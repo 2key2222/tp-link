@@ -1,0 +1,30 @@
+From c95f0944f3945d6b11b6b1c202e4afcbb79711a1 Mon Sep 17 00:00:00 2001
+From: Alan Winkowski <walan@marvell.com>
+Date: Tue, 8 Mar 2016 17:53:22 +0200
+Subject: [PATCH 0236/2241] mvpp2: Fix dma sync of fragmented packets
+
+Change-Id: I79f2a7480d2edf9538b61b432abacedc39f2530d
+Signed-off-by: Alan Winkowski <walan@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/28120
+Reviewed-by: Neta Zur Hershkovits <neta@marvell.com>
+Tested-by: Neta Zur Hershkovits <neta@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+index 659101b..be36b1c 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+@@ -2077,7 +2077,7 @@ static int mv_pp2x_rx(struct mv_pp2x_port *port, struct napi_struct *napi,
+ 		}
+ 		if (!is_device_dma_coherent(dev->dev.parent))
+ 			dma_sync_single_for_cpu(dev->dev.parent, buf_phys_addr,
+-					rx_desc->data_size, DMA_FROM_DEVICE);
++				MVPP2_BM_LONG_PKT_SIZE, DMA_FROM_DEVICE);
+ #ifdef CONFIG_64BIT
+ 		skb = (struct sk_buff *)((uintptr_t)skb |
+ 			port->priv->pp2xdata->skb_base_addr);
+-- 
+2.7.4
+

@@ -1,0 +1,58 @@
+From 70c60d12864bc15cc9ecaa153c1465df7dd7d144 Mon Sep 17 00:00:00 2001
+From: Hanna Hawa <hannah@marvell.com>
+Date: Thu, 19 May 2016 18:32:03 +0300
+Subject: [PATCH 0402/2241] doc: gpio: add explanation about gpiobase property
+
+Change-Id: I54606cd0e29dcbd13f743d8357cf8f1a12ae683e
+Signed-off-by: Hanna Hawa <hannah@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/29825
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Gina Tadmore <gina@marvell.com>
+Reviewed-by: Shadi Ammouri <shadi@marvell.com>
+---
+ Documentation/devicetree/bindings/gpio/gpio-mvebu.txt | 16 ++++++++++++----
+ 1 file changed, 12 insertions(+), 4 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/gpio/gpio-mvebu.txt b/Documentation/devicetree/bindings/gpio/gpio-mvebu.txt
+index a38f73d..dcb6ea6 100644
+--- a/Documentation/devicetree/bindings/gpio/gpio-mvebu.txt
++++ b/Documentation/devicetree/bindings/gpio/gpio-mvebu.txt
+@@ -21,9 +21,9 @@ Required properties:
+   (example: 1 interrupt per 8 pins on Armada XP, which means 4
+   interrupts per bank of 32 GPIOs).
+ 
+-- interrupt-controller: identifies the node as an interrupt controller
++- interrupt-controller: Identifies the node as an interrupt controller
+ 
+-- #interrupt-cells: specifies the number of cells needed to encode an
++- #interrupt-cells: Specifies the number of cells needed to encode an
+   interrupt source. Should be two.
+   The first cell is the GPIO number.
+   The second cell is used to specify flags:
+@@ -33,13 +33,21 @@ Required properties:
+       4 = active high level-sensitive.
+       8 = active low level-sensitive.
+ 
+-- gpio-controller: marks the device node as a gpio controller
++- gpio-controller: Marks the device node as a GPIO controller
+ 
+-- ngpios: number of GPIOs this controller has
++- ngpios: Number of GPIOs this controller has
+ 
+ - #gpio-cells: Should be two. The first cell is the pin number. The
+   second cell is reserved for flags, unused at the moment.
+ 
++Optional:
++- gpiobase: The base of the GPIO bank, if not defined the base calculated by
++  multiplying the bank ID number by MVEBU_MAX_GPIO_PER_BANK (32)
++  This option used in Armada-8k SoC, because the GPIOs count is different between banks
++  In Armada-70x0: AP-806 has 20 GPIOs and CP-110 has 63 GPIOs that split into 2 banks,
++  The base of CP0 bank0 should be 20 (after AP-806 pins) the base of CP0 bank1 should be
++  52 (after AP-806, and CP0 bank0 pins)
++
+ Example:
+ 
+ 		gpio0: gpio@d0018100 {
+-- 
+2.7.4
+

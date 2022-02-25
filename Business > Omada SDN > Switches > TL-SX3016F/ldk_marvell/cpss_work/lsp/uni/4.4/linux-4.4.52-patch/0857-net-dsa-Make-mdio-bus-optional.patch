@@ -1,0 +1,64 @@
+From dc16addc1148bbb14288a132f83feb64b276134e Mon Sep 17 00:00:00 2001
+From: Andrew Lunn <andrew@lunn.ch>
+Date: Sat, 4 Jun 2016 21:17:04 +0200
+Subject: [PATCH 0857/2241] net: dsa: Make mdio bus optional
+
+Net-next-commit: e755e49eb3ea925834006c294e989df52f592580
+
+The switch may want to instantiate its own MDIO bus. Only do it
+centrally if the switch has not already created one, and the read op
+is implemented.
+
+Signed-off-by: Andrew Lunn <andrew@lunn.ch>
+Reviewed-by: Florian Fainelli <f.fainelli@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+---
+ net/dsa/dsa.c | 24 +++++++++++++-----------
+ 1 file changed, 13 insertions(+), 11 deletions(-)
+
+diff --git a/net/dsa/dsa.c b/net/dsa/dsa.c
+index 221ebde..6c314f3 100644
+--- a/net/dsa/dsa.c
++++ b/net/dsa/dsa.c
+@@ -340,17 +340,18 @@ static int dsa_switch_setup_one(struct dsa_switch *ds, struct device *parent)
+ 	if (ret < 0)
+ 		goto out;
+ 
+-	ds->slave_mii_bus = devm_mdiobus_alloc(parent);
+-	if (ds->slave_mii_bus == NULL) {
+-		ret = -ENOMEM;
+-		goto out;
+-	}
+-	dsa_slave_mii_bus_init(ds);
+-
+-	ret = mdiobus_register(ds->slave_mii_bus);
+-	if (ret < 0)
+-		goto out;
++	if (!ds->slave_mii_bus && drv->phy_read) {
++		ds->slave_mii_bus = devm_mdiobus_alloc(parent);
++		if (!ds->slave_mii_bus) {
++			ret = -ENOMEM;
++			goto out;
++		}
++		dsa_slave_mii_bus_init(ds);
+ 
++		ret = mdiobus_register(ds->slave_mii_bus);
++		if (ret < 0)
++			goto out;
++	}
+ 
+ 	/*
+ 	 * Create network devices for physical switch ports.
+@@ -493,7 +494,8 @@ static void dsa_switch_destroy(struct dsa_switch *ds)
+ 		dsa_cpu_dsa_destroy(ds->ports[port].dn);
+ 	}
+ 
+-	mdiobus_unregister(ds->slave_mii_bus);
++	if (ds->slave_mii_bus && ds->drv->phy_read)
++		mdiobus_unregister(ds->slave_mii_bus);
+ }
+ 
+ #ifdef CONFIG_PM_SLEEP
+-- 
+2.7.4
+

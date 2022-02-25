@@ -1,0 +1,63 @@
+From f9f76eba05f99b6208e57d109480e9ea6b9fc104 Mon Sep 17 00:00:00 2001
+From: Andrew Lunn <andrew@lunn.ch>
+Date: Sat, 12 Mar 2016 00:01:38 +0100
+Subject: [PATCH 0771/2241] dsa: Destroy fixed link phys after the phy has been
+ disconnected
+
+Upstream-commit: 3a44514ff979d7b0192a9f67445509f4ea7dfe2f
+
+The phy is disconnected from the slave in dsa_slave_destroy(). Don't
+destroy fixed link phys until after this, since there can be fixed
+linked phys connected to ports.
+
+Signed-off-by: Andrew Lunn <andrew@lunn.ch>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+---
+ net/dsa/dsa.c | 24 ++++++++++++------------
+ 1 file changed, 12 insertions(+), 12 deletions(-)
+
+diff --git a/net/dsa/dsa.c b/net/dsa/dsa.c
+index d8fb47f..1018e7d 100644
+--- a/net/dsa/dsa.c
++++ b/net/dsa/dsa.c
+@@ -430,7 +430,18 @@ static void dsa_switch_destroy(struct dsa_switch *ds)
+ 		hwmon_device_unregister(ds->hwmon_dev);
+ #endif
+ 
+-	/* Disable configuration of the CPU and DSA ports */
++	/* Destroy network devices for physical switch ports. */
++	for (port = 0; port < DSA_MAX_PORTS; port++) {
++		if (!(ds->phys_port_mask & (1 << port)))
++			continue;
++
++		if (!ds->ports[port])
++			continue;
++
++		dsa_slave_destroy(ds->ports[port]);
++	}
++
++	/* Remove any fixed link PHYs */
+ 	for (port = 0; port < DSA_MAX_PORTS; port++) {
+ 		if (!(dsa_is_cpu_port(ds, port) || dsa_is_dsa_port(ds, port)))
+ 			continue;
+@@ -448,17 +459,6 @@ static void dsa_switch_destroy(struct dsa_switch *ds)
+ 		}
+ 	}
+ 
+-	/* Destroy network devices for physical switch ports. */
+-	for (port = 0; port < DSA_MAX_PORTS; port++) {
+-		if (!(ds->phys_port_mask & (1 << port)))
+-			continue;
+-
+-		if (!ds->ports[port])
+-			continue;
+-
+-		dsa_slave_destroy(ds->ports[port]);
+-	}
+-
+ 	mdiobus_unregister(ds->slave_mii_bus);
+ }
+ 
+-- 
+2.7.4
+

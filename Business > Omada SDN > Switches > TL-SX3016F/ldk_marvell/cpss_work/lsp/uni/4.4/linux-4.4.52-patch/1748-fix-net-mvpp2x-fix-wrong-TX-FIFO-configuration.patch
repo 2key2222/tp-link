@@ -1,0 +1,57 @@
+From d65a1d835a0fb31117521b4e471ad3b85ba3efae Mon Sep 17 00:00:00 2001
+From: Stefan Chulski <stefanc@marvell.com>
+Date: Sun, 4 Jun 2017 11:48:27 +0300
+Subject: [PATCH 1748/2241] fix: net: mvpp2x: fix wrong TX FIFO configuration
+
+This patch fixes Topology B (dts) NFS instability,
+due to wrong TX FIFO configuration.
+
+It sets TX FIFO for _all_ mvpp2x ports to non-zero, even
+for the unconnected ports.
+TX FIFO is required to be in range 2KB-10KB for _all_ ports,
+according to HW specifications.
+Missing of this configuration can lead to data corruption.
+
+Change-Id: I612ecf08326efd781e06d71cfe942f0537d5e85c
+Signed-off-by: Stefan Chulski <stefanc@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/40148
+Reviewed-by: Yuval Caduri <cyuval@marvell.com>
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c | 19 ++++++++++---------
+ 1 file changed, 10 insertions(+), 9 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+index 50cb381..4daeb10 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+@@ -5796,15 +5796,16 @@ static void mv_pp22_tx_fifo_init(struct mv_pp2x *priv)
+ 			priv->l4_chksum_jumbo_port = priv->port_list[0]->id;
+ 	}
+ 
+-	/* Set FIFO according to l4_chksum_jumbo_port */
+-	for (i = 0; i < priv->num_ports; i++) {
+-		if (priv->port_list[i]->id != priv->l4_chksum_jumbo_port) {
+-			mv_pp2x_tx_fifo_size_set(&priv->hw,
+-						 priv->port_list[i]->id,
+-					    MVPP2_TX_FIFO_DATA_SIZE_3KB);
+-			mv_pp2x_tx_fifo_threshold_set(&priv->hw,
+-						      priv->port_list[i]->id,
+-					    MVPP2_TX_FIFO_THRESHOLD_3KB);
++	/* Set FIFO according to l4_chksum_jumbo_port.
++	*  10KB for l4_chksum_jumbo_port and 3KB for other ports.
++	*  TX FIFO should be set for all ports, even if port not initialized.
++	*/
++	for (i = 0; i < MVPP2_MAX_PORTS; i++) {
++		if (i != priv->l4_chksum_jumbo_port) {
++			mv_pp2x_tx_fifo_size_set(&priv->hw, i,
++						 MVPP2_TX_FIFO_DATA_SIZE_3KB);
++			mv_pp2x_tx_fifo_threshold_set(&priv->hw, i,
++						      MVPP2_TX_FIFO_THRESHOLD_3KB);
+ 			}
+ 	}
+ 	mv_pp2x_tx_fifo_size_set(&priv->hw,
+-- 
+2.7.4
+

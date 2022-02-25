@@ -1,0 +1,37 @@
+From deeaffbad7ba902dbbe7bd06724e6351e871e91b Mon Sep 17 00:00:00 2001
+From: Hanna Hawa <hannah@marvell.com>
+Date: Sun, 15 Jan 2017 17:03:17 +0200
+Subject: [PATCH 1274/2241] fix: mmc: cp110: fix failure at HS200 with
+ different eMMC v4.5 cards
+
+Errors found while write/read files with different eMMC card's
+from versions 4.5.
+
+This patch set the divider for calculating TUN_STEP to be 25.
+(value derived from CV tests to find best divider calculation)
+
+Change-Id: I98a7a3a68def7ca2537054cb29cafa7e295e74de
+Signed-off-by: Hanna Hawa <hannah@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/35591
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/35589
+---
+ arch/arm64/boot/dts/marvell/armada-cp110.dtsi | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-cp110.dtsi b/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
+index bead961..38c4dab 100644
+--- a/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
+@@ -304,6 +304,7 @@ sdhci@780000 {
+ 	clock-names = "core";
+ 	clocks = <&cpm_syscon0 1 4>;
+ 	dma-coherent;
++	marvell,xenon-phy-tun-step-divider = <25>;
+ 	status = "disabled";
+ };
+ 
+-- 
+2.7.4
+

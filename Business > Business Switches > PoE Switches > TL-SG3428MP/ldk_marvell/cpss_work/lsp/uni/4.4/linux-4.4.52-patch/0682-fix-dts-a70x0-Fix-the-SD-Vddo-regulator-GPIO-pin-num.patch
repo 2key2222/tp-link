@@ -1,0 +1,35 @@
+From cd5e0cdb0a523cabe9c3d79de7642a57daa5e0b5 Mon Sep 17 00:00:00 2001
+From: Konstantin Porotchkin <kostap@marvell.com>
+Date: Wed, 17 Aug 2016 14:25:13 +0300
+Subject: [PATCH 0682/2241] fix: dts: a70x0: Fix the SD Vddo regulator GPIO pin
+ number
+
+The A70x0 board has preparations for connecting the SD/eMMC
+VDDo regulator (IO voltage) to MPP11 (GPIO11)
+
+Change-Id: Ie75ab7827c01cd2496067361d1fbbe56f0c1611d
+Signed-off-by: Konstantin Porotchkin <kostap@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/32017
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-7040-db.dtsi | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-7040-db.dtsi b/arch/arm64/boot/dts/marvell/armada-7040-db.dtsi
+index 1188140..92be92f 100644
+--- a/arch/arm64/boot/dts/marvell/armada-7040-db.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-7040-db.dtsi
+@@ -59,7 +59,7 @@
+ 	ap806 {
+ 		config-space {
+ 			sd_mmc_reg0: regulator@0 {
+-				gpios = <&gpio0 19 GPIO_ACTIVE_HIGH>;
++				gpios = <&gpio0 11 GPIO_ACTIVE_HIGH>;
+ 				gpios-states = <0>;
+ 				states = <1800000 0x1
+ 					3300000 0x0>;
+-- 
+2.7.4
+

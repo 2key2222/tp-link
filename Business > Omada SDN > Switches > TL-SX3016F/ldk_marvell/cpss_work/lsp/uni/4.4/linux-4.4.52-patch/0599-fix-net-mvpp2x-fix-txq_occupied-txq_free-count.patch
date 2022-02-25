@@ -1,0 +1,62 @@
+From fad6e3fd965ceec9b923c63a713d8f07636a97ba Mon Sep 17 00:00:00 2001
+From: Stefan Chulski <stefanc@marvell.com>
+Date: Sun, 17 Jul 2016 12:01:47 +0300
+Subject: [PATCH 0599/2241] fix: net: mvpp2x: fix txq_occupied & txq_free count
+
+- always return positive value of txq_occupied & txq_free count
+- in case get index equal to put index txq_free count return
+  tx queue size
+
+Change-Id: I955c9ca750cb975bc4c60b8c26a33a805898194e
+Signed-off-by: Stefan Chulski <stefanc@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/31168
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Yuval Caduri <cyuval@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c | 15 ++++++++++-----
+ 1 file changed, 10 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+index 64ec2d4..880f049 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+@@ -174,17 +174,22 @@ struct mv_pp2x_pool_attributes mv_pp2x_pools[] = {
+ static inline int mv_pp2x_txq_count(struct mv_pp2x_txq_pcpu *txq_pcpu)
+ {
+ 
+-	int index_diff = txq_pcpu->txq_put_index - txq_pcpu->txq_get_index;
++	int index_modulo = (txq_pcpu->txq_put_index - txq_pcpu->txq_get_index +
++				txq_pcpu->size) % txq_pcpu->size;
+ 
+-	return(index_diff % txq_pcpu->size);
++	return index_modulo;
+ }
+ 
+ static inline int mv_pp2x_txq_free_count(struct mv_pp2x_txq_pcpu *txq_pcpu)
+ {
+ 
+-	int index_diff = txq_pcpu->txq_get_index - txq_pcpu->txq_put_index;
++	int index_modulo = (txq_pcpu->txq_get_index - txq_pcpu->txq_put_index +
++				txq_pcpu->size) % txq_pcpu->size;
+ 
+-	return(index_diff % txq_pcpu->size);
++	if (index_modulo == 0)
++		return txq_pcpu->size;
++
++	return index_modulo;
+ }
+ 
+ static void mv_pp2x_txq_inc_get(struct mv_pp2x_txq_pcpu *txq_pcpu)
+@@ -887,7 +892,7 @@ static void mv_pp2x_txq_done(struct mv_pp2x_port *port,
+ 
+ 	mv_pp2x_txq_bufs_free(port, txq_pcpu, tx_done);
+ 
+-		if (netif_tx_queue_stopped(nq))
++	if (netif_tx_queue_stopped(nq))
+ 		if (mv_pp2x_txq_free_count(txq_pcpu) >= (MAX_SKB_FRAGS + 2))
+ 			netif_tx_wake_queue(nq);
+ }
+-- 
+2.7.4
+

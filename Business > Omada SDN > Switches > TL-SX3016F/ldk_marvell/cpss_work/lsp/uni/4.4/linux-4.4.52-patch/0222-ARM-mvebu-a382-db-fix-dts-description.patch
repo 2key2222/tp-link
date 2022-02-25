@@ -1,0 +1,82 @@
+From de5fe88da1a6fee3914e7cc4a70b25439c6fada6 Mon Sep 17 00:00:00 2001
+From: Grzegorz Jaszczyk <jaz@semihalf.com>
+Date: Mon, 29 Feb 2016 17:33:07 +0100
+Subject: [PATCH 0222/2241] ARM: mvebu: a382-db: fix dts description
+
+- The 88F6821 contains 2 cpus, so include a385.dtsi instead of a380.dtsi
+and update the compatible accordingly
+- Add missing entries for static mbus decoding windows configuration
+- SDHCI: enotes that 1.8v card voltage is not supported
+- Enable USB3.0
+
+Change-Id: Ibfbee94f0c164ad62f33678d60fa3aa0615f80e2
+Signed-off-by: Grzegorz Jaszczyk <jaz@semihalf.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/27976
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Lior Amsalem <alior@marvell.com>
+---
+ .../devicetree/bindings/arm/marvell/armada-38x.txt          |  2 +-
+ arch/arm/boot/dts/armada-382-db.dts                         | 13 +++++++++++--
+ 2 files changed, 12 insertions(+), 3 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/arm/marvell/armada-38x.txt b/Documentation/devicetree/bindings/arm/marvell/armada-38x.txt
+index 202953f..7d2929d 100644
+--- a/Documentation/devicetree/bindings/arm/marvell/armada-38x.txt
++++ b/Documentation/devicetree/bindings/arm/marvell/armada-38x.txt
+@@ -24,4 +24,4 @@ compatible: must contain "marvell,armada388"
+ 
+ Example:
+ 
+-compatible = "marvell,a385-rd", "marvell,armada385", "marvell,armada380";
++compatible = "marvell,a382-db", "marvell,a385-rd", "marvell,armada385", "marvell,armada380";
+diff --git a/arch/arm/boot/dts/armada-382-db.dts b/arch/arm/boot/dts/armada-382-db.dts
+index af6b5eb..24e5dc0 100644
+--- a/arch/arm/boot/dts/armada-382-db.dts
++++ b/arch/arm/boot/dts/armada-382-db.dts
+@@ -12,11 +12,11 @@
+  */
+ 
+ /dts-v1/;
+-#include "armada-380.dtsi"
++#include "armada-385.dtsi"
+ 
+ / {
+ 	model = "Marvell Armada 382 Development Board";
+-	compatible = "marvell,a382-db", "marvell,armada382", "marvell,armada38x";
++	compatible = "marvell,a382-db", "marvell,armada385", "marvell,armada380";
+ 
+ 	chosen {
+ 		bootargs = "console=ttyS0,115200 earlyprintk";
+@@ -28,6 +28,10 @@
+ 	};
+ 
+ 	soc {
++		ranges = <MBUS_ID(0xf0, 0x01) 0 0xf1000000 0x100000
++			  MBUS_ID(0x01, 0x1d) 0 0xfff00000 0x100000
++			  MBUS_ID(0x09, 0x19) 0 0xf1100000 0x10000
++			  MBUS_ID(0x09, 0x15) 0 0xf1110000 0x10000>;
+ 
+ 		internal-regs {
+ 			ethernet@70000 {
+@@ -71,6 +75,7 @@
+ 				wp-inverted;
+ 				bus-width = <8>;
+ 				status = "okay";
++				no-1-8-v;
+ 			};
+ 
+ 			serial@12000 {
+@@ -129,6 +134,10 @@
+ 			crypto@9D000 {
+ 				status = "okay";
+ 			};
++
++			usb3@f8000 {
++				status = "okay";
++			};
+ 		};
+ 
+ 		pcie-controller {
+-- 
+2.7.4
+

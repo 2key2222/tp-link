@@ -1,0 +1,200 @@
+From f61f50565da5969dac75c46133169a65818b28e0 Mon Sep 17 00:00:00 2001
+From: Stefan Chulski <stefanc@marvell.com>
+Date: Tue, 28 Jun 2016 17:53:48 +0300
+Subject: [PATCH 0542/2241] net: mvpp2x: add autonegotiation set support
+
+- remove dependence of phy_dev
+- add autonegotiation  valid test
+- force link down while setting autonegotiation mode
+- add reset autoneg in case of autonegotiation ON
+
+Change-Id: Ibd8b88705e440a6eb648773ef76bda32b5aed0c8
+Signed-off-by: Stefan Chulski <stefanc@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/30798
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+Reviewed-by: Yuval Caduri <cyuval@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2x/mv_gop110_hw.c | 32 +++++++
+ drivers/net/ethernet/marvell/mvpp2x/mv_gop110_hw.h |  3 +
+ .../net/ethernet/marvell/mvpp2x/mv_pp2x_ethtool.c  | 98 ++++++++++++++++++++--
+ 3 files changed, 127 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_gop110_hw.c b/drivers/net/ethernet/marvell/mvpp2x/mv_gop110_hw.c
+index c4f6ebc..dba925a 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_gop110_hw.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_gop110_hw.c
+@@ -1179,6 +1179,38 @@ bool mv_gop110_port_autoneg_status(struct gop_hw *gop, struct mv_mac_data *mac)
+ 			return false;
+ }
+ 
++int mv_gop110_check_port_type(struct gop_hw *gop, int port_num)
++{
++	u32 reg_val;
++
++	reg_val = mv_gop110_gmac_read(gop, port_num, MV_GMAC_PORT_CTRL0_REG);
++	return (reg_val & MV_GMAC_PORT_CTRL0_PORTTYPE_MASK) >>
++			MV_GMAC_PORT_CTRL0_PORTTYPE_OFFS;
++}
++
++void mv_gop110_gmac_set_autoneg(struct gop_hw *gop, struct mv_mac_data *mac, bool auto_neg)
++{
++	u32 reg_val;
++	int mac_num = mac->gop_index;
++
++	reg_val = mv_gop110_gmac_read(gop, mac_num,
++				MV_GMAC_PORT_AUTO_NEG_CFG_REG);
++
++	if (auto_neg) {
++		reg_val |= MV_GMAC_PORT_AUTO_NEG_CFG_EN_AN_SPEED_MASK;
++		reg_val |= MV_GMAC_PORT_AUTO_NEG_CFG_EN_FDX_AN_MASK;
++		}
++
++	else {
++		reg_val &= ~MV_GMAC_PORT_AUTO_NEG_CFG_EN_AN_SPEED_MASK;
++		reg_val &= ~MV_GMAC_PORT_AUTO_NEG_CFG_EN_FDX_AN_MASK;
++		}
++
++	mv_gop110_gmac_write(gop, mac_num,
++				MV_GMAC_PORT_AUTO_NEG_CFG_REG, reg_val);
++}
++
++
+ int mv_gop110_port_regs(struct gop_hw *gop, struct mv_mac_data *mac)
+ {
+ 	int port_num = mac->gop_index;
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_gop110_hw.h b/drivers/net/ethernet/marvell/mvpp2x/mv_gop110_hw.h
+index 12d5fdb..fda839c 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_gop110_hw.h
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_gop110_hw.h
+@@ -144,6 +144,9 @@ bool mv_gop110_port_is_link_up(struct gop_hw *gop, struct mv_mac_data *mac);
+ int mv_gop110_port_link_status(struct gop_hw *gop, struct mv_mac_data *mac,
+ 			       struct mv_port_link_status *pstatus);
+ bool mv_gop110_port_autoneg_status(struct gop_hw *gop, struct mv_mac_data *mac);
++int mv_gop110_check_port_type(struct gop_hw *gop, int port_num);
++void mv_gop110_gmac_set_autoneg(struct gop_hw *gop, struct mv_mac_data *mac,
++				bool auto_neg);
+ int mv_gop110_port_regs(struct gop_hw *gop, struct mv_mac_data *mac);
+ int mv_gop110_port_events_mask(struct gop_hw *gop, struct mv_mac_data *mac);
+ int mv_gop110_port_events_unmask(struct gop_hw *gop, struct mv_mac_data *mac);
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_ethtool.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_ethtool.c
+index 9d201ae..73a8994 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_ethtool.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_ethtool.c
+@@ -42,6 +42,78 @@
+ #include "mv_pp2x_hw.h"
+ #include "mv_gop110_hw.h"
+ 
++int mv_pp2x_check_speed_duplex_valid(struct ethtool_cmd *cmd,
++					struct mv_port_link_status *pstatus)
++{
++	switch (cmd->duplex) {
++	case DUPLEX_FULL:
++		pstatus->duplex = MV_PORT_DUPLEX_FULL;
++		break;
++	case DUPLEX_HALF:
++		pstatus->duplex = MV_PORT_DUPLEX_HALF;
++		break;
++	default:
++		pr_err("Wrong duplex configuration\n");
++		return -1;
++	}
++
++	switch (cmd->speed) {
++	case SPEED_100:
++		pstatus->speed = MV_PORT_SPEED_100;
++		return 0;
++	case SPEED_10:
++		pstatus->speed = MV_PORT_SPEED_10;
++		return 0;
++	case SPEED_1000:
++		pstatus->speed = MV_PORT_SPEED_1000;
++		if (cmd->duplex)
++			return 0;
++		pr_err("1G port doesn't support half duplex\n");
++		return -1;
++	default:
++		pr_err("Wrong speed configuration\n");
++		return -1;
++	}
++}
++
++
++int mv_pp2x_autoneg_check_valid(struct mv_mac_data *mac, struct gop_hw *gop,
++			struct ethtool_cmd *cmd, struct mv_port_link_status *pstatus)
++{
++
++	int port_num = mac->gop_index;
++	int err;
++
++	switch (mac->phy_mode) {
++	case PHY_INTERFACE_MODE_RGMII:
++	case PHY_INTERFACE_MODE_SGMII:
++	case PHY_INTERFACE_MODE_QSGMII:
++		err = mv_gop110_check_port_type(gop, port_num);
++		if (err) {
++			pr_err("GOP %d set to 1000Base-X and cannot be changed\n", port_num);
++			return -EINVAL;
++		}
++		if (!cmd->autoneg) {
++			err = mv_pp2x_check_speed_duplex_valid(cmd, pstatus);
++			if (err)
++				return -EINVAL;
++			}
++	break;
++	case PHY_INTERFACE_MODE_XAUI:
++	case PHY_INTERFACE_MODE_RXAUI:
++	case PHY_INTERFACE_MODE_KR:
++		pr_err("XLG GOP %d doesn't support autonegotiation\n", port_num);
++		return -ENODEV;
++
++	break;
++	default:
++		pr_err("%s: Wrong port mode (%d)", __func__, mac->phy_mode);
++		return -1;
++	}
++	return 0;
++
++}
++
+ /* Ethtool methods */
+ 
+ /* Get settings (phy address, speed) for ethtools */
+@@ -129,14 +201,28 @@ static int mv_pp2x_ethtool_set_settings(struct net_device *dev,
+ 					struct ethtool_cmd *cmd)
+ {
+ 	struct mv_pp2x_port *port = netdev_priv(dev);
++	int err;
++	struct mv_port_link_status status;
++	struct gop_hw *gop = &port->priv->hw.gop;
++	struct mv_mac_data *mac = &port->mac_data;
++	int gop_port = mac->gop_index;
++
++	err = mv_pp2x_autoneg_check_valid(mac, gop, cmd, &status);
++
++	if (err < 0) {
++		pr_err("Wrong negotiation mode set\n");
++		return err;
++	}
++
++	mv_gop110_force_link_mode_set(gop, mac, false, true);
++	mv_gop110_gmac_set_autoneg(gop, mac, cmd->autoneg);
++	if (cmd->autoneg)
++		mv_gop110_autoneg_restart(gop, mac);
++	else
++		mv_gop110_gmac_speed_duplex_set(gop, gop_port, status.speed, status.duplex);
++	mv_gop110_force_link_mode_set(gop, mac, false, false);
+ 
+-	if (!port->mac_data.phy_dev)
+-		return -ENODEV;
+-#if !defined(CONFIG_MV_PP2_PALLADIUM)
+-	return phy_ethtool_sset(port->mac_data.phy_dev, cmd);
+-#else
+ 	return 0;
+-#endif
+ }
+ 
+ /* Set interrupt coalescing for ethtools */
+-- 
+2.7.4
+

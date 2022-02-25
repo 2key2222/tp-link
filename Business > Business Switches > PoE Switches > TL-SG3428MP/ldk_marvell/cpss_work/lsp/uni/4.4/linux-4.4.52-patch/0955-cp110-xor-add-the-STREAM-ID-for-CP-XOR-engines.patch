@@ -1,0 +1,70 @@
+From de0bbafd30e18f3f82e2873a38b462a4f65ebc51 Mon Sep 17 00:00:00 2001
+From: Yehuda Yitschak <yehuday@marvell.com>
+Date: Wed, 7 Sep 2016 09:51:19 +0300
+Subject: [PATCH 0955/2241] cp110: xor: add the STREAM-ID for CP XOR engines
+
+The CP-110 XOR engine STREAM-ID is configured in ATF
+
+Change-Id: I7118ff33689cbd843f751576703126e6f35c96a6
+Signed-off-by: Yehuda Yitschak <yehuday@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/32599
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-7040.dtsi  | 10 +++++++++-
+ arch/arm64/boot/dts/marvell/armada-cp110.dtsi |  4 ++--
+ 2 files changed, 11 insertions(+), 3 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-7040.dtsi b/arch/arm64/boot/dts/marvell/armada-7040.dtsi
+index f75c87f..63616fb 100644
+--- a/arch/arm64/boot/dts/marvell/armada-7040.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-7040.dtsi
+@@ -61,7 +61,9 @@
+ 		config-space {
+ 			smmu: iommu@5000000 {
+ 				mmu-masters = <&usb3h0 0x483>,
+-					      <&usb3h1 0x484>;
++					      <&usb3h1 0x484>,
++					      <&cp_xor0 0x489>,
++					      <&cp_xor1 0x48a>;
+ 			};
+ 		};
+ 	};
+@@ -89,6 +91,12 @@
+ 			usb3h1: usb3@510000 {
+ 				#stream-id-cells = <1>;
+ 			};
++			cp_xor0: cpxor0@6a0000 {
++				#stream-id-cells = <1>;
++			};
++			cp_xor1: cpxor1@6c0000 {
++				#stream-id-cells = <1>;
++			};
+ 		};
+ 		pcie@0x600000 {
+ 			msi-parent = <&gic_v2m0>;
+diff --git a/arch/arm64/boot/dts/marvell/armada-cp110.dtsi b/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
+index 534ee8a..ca1b504 100644
+--- a/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
+@@ -202,7 +202,7 @@ nand@720000 {
+ 	status = "disabled";
+ };
+ 
+-cpxor0@6a0000 {
++cp_xor0: cpxor0@6a0000 {
+ 	compatible = "marvell,mv-xor-v2";
+ 	reg = <0x6a0000 0x1000>,
+ 	      <0x6b0000 0x1000>;
+@@ -212,7 +212,7 @@ cpxor0@6a0000 {
+ 	status = "okay";
+ };
+ 
+-cpxor1@6c0000 {
++cp_xor1: cpxor1@6c0000 {
+ 	compatible = "marvell,mv-xor-v2";
+ 	reg = <0x6c0000 0x1000>,
+ 	      <0x6d0000 0x1000>;
+-- 
+2.7.4
+

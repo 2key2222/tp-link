@@ -1,0 +1,31 @@
+From a6170350306c61b01737909ec70410cb3b771f8a Mon Sep 17 00:00:00 2001
+From: Lior Amsalem <alior@marvell.com>
+Date: Tue, 14 Jun 2016 12:56:55 +0300
+Subject: [PATCH 0493/2241] arm: configs: adding 10G adapters support for
+ mvebu_v7_lsp_defconfig
+
+Change-Id: I3771a1ac47c86cdddbc454dd26440ffa542690fa
+Signed-off-by: Lior Amsalem <alior@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/30456
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Ofer Heifetz <oferh@marvell.com>
+---
+ arch/arm/configs/mvebu_v7_lsp_defconfig | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/arch/arm/configs/mvebu_v7_lsp_defconfig b/arch/arm/configs/mvebu_v7_lsp_defconfig
+index 3d2feeb..f8da427 100644
+--- a/arch/arm/configs/mvebu_v7_lsp_defconfig
++++ b/arch/arm/configs/mvebu_v7_lsp_defconfig
+@@ -73,6 +73,8 @@ CONFIG_MD_RAID456=y
+ CONFIG_NETDEVICES=y
+ CONFIG_BONDING=y
+ CONFIG_E1000E=y
++CONFIG_IXGB=y
++CONFIG_IXGBE=y
+ CONFIG_MV643XX_ETH=y
+ CONFIG_MVNETA=y
+ CONFIG_MVPP2=y
+-- 
+2.7.4
+

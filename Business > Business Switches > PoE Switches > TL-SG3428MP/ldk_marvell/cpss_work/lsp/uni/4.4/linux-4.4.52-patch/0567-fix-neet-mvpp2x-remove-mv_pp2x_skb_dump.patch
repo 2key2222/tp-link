@@ -1,0 +1,35 @@
+From a94c8c47928634bf1231cd756e1deff881e902eb Mon Sep 17 00:00:00 2001
+From: Stefan Chulski <stefanc@marvell.com>
+Date: Sun, 3 Jul 2016 11:45:40 +0300
+Subject: [PATCH 0567/2241] fix: neet: mvpp2x: remove mv_pp2x_skb_dump
+
+- skb wasn't build yet, in case of MVPP2_VERBOSE=y
+  mv_pp2x_skb_dump will cause crush
+
+Change-Id: I333cf550eb026baf0e5794e6958183e25f7b33dc
+Signed-off-by: Stefan Chulski <stefanc@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/30899
+Reviewed-by: Yuval Caduri <cyuval@marvell.com>
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c | 3 ---
+ 1 file changed, 3 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+index 53bff79..1ca9f0f 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+@@ -2169,9 +2169,6 @@ static int mv_pp2x_rx(struct mv_pp2x_port *port, struct napi_struct *napi,
+ 		data = (unsigned char *)((uintptr_t)data | bm_pool->data_high);
+ #endif
+ 
+-#ifdef MVPP2_VERBOSE
+-		mv_pp2x_skb_dump(skb, rx_desc->data_size, 4);
+-#endif
+ 		/* Prefetch 128B packet_header */
+ 		prefetch(data + NET_SKB_PAD);
+ 		dma_sync_single_for_cpu(dev->dev.parent, buf_phys_addr,
+-- 
+2.7.4
+

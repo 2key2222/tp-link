@@ -1,0 +1,87 @@
+From 86c2965d9c7a1f09c4152e8ce3a63539f91b6383 Mon Sep 17 00:00:00 2001
+From: Hanna Hawa <hannah@marvell.com>
+Date: Tue, 10 May 2016 18:15:59 +0300
+Subject: [PATCH 0385/2241] dts: cp110: add GPIO device tree node for
+ Armada-CP110
+
+add GPIO device tree node for Armada-CP110 to be used by another
+interfaces later
+
+Change-Id: I0be11ce9935f1beb3bcc4727d7f6dec4b15d79b1
+Signed-off-by: Hanna Hawa <hannah@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/29681
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Shadi Ammouri <shadi@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-7040.dtsi  |  8 ++++++++
+ arch/arm64/boot/dts/marvell/armada-cp110.dtsi | 28 +++++++++++++++++++++++++++
+ 2 files changed, 36 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-7040.dtsi b/arch/arm64/boot/dts/marvell/armada-7040.dtsi
+index 4e21882..6e14bf4 100644
+--- a/arch/arm64/boot/dts/marvell/armada-7040.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-7040.dtsi
+@@ -52,6 +52,10 @@
+ 	model = "Marvell Armada 7040";
+ 	compatible = "marvell,armada7040", "marvell,armada-ap806-quad",
+ 	             "marvell,armada-ap806";
++	aliases {
++		gpio1 = &gpio1;
++		gpio2 = &gpio2;
++	};
+ 
+ 	ap806 {
+ 		config-space {
+@@ -64,6 +68,10 @@
+ 
+ 	cpn-110-master {
+ 		config-space {
++			gpio1: gpio@440100 {
++			};
++			gpio2: gpio@440140 {
++			};
+ 			ppv22@000000 {
+ 				dma-coherent;
+ 			};
+diff --git a/arch/arm64/boot/dts/marvell/armada-cp110.dtsi b/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
+index 422dfa5..4811046 100644
+--- a/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
+@@ -35,6 +35,34 @@ pinctrl@440000 {
+ 	reg = <0x440000 0x10>;
+ };
+ 
++gpio@440100 {
++	compatible = "marvell,orion-gpio";
++	reg = <0x440100 0x40>;
++	ngpios = <32>;
++	gpio-controller;
++	#gpio-cells = <2>;
++	interrupt-controller;
++	#interrupt-cells = <2>;
++	interrupts = <GIC_SPI 79 IRQ_TYPE_LEVEL_HIGH>,
++		   <GIC_SPI 78 IRQ_TYPE_LEVEL_HIGH>,
++		   <GIC_SPI 77 IRQ_TYPE_LEVEL_HIGH>,
++		   <GIC_SPI 76 IRQ_TYPE_LEVEL_HIGH>;
++};
++
++gpio@440140 {
++	compatible = "marvell,orion-gpio";
++	reg = <0x440140 0x40>;
++	ngpios = <31>;
++	gpio-controller;
++	#gpio-cells = <2>;
++	interrupt-controller;
++	#interrupt-cells = <2>;
++	interrupts = <GIC_SPI 75 IRQ_TYPE_LEVEL_HIGH>,
++		   <GIC_SPI 74 IRQ_TYPE_LEVEL_HIGH>,
++		   <GIC_SPI 73 IRQ_TYPE_LEVEL_HIGH>,
++		   <GIC_SPI 72 IRQ_TYPE_LEVEL_HIGH>;
++};
++
+ serial@702000 {
+ 	compatible = "snps,dw-apb-uart";
+ 	reg = <0x702000 0x100>;
+-- 
+2.7.4
+

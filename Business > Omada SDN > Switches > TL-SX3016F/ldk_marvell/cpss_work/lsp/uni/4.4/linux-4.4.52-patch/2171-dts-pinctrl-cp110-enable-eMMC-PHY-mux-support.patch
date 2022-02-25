@@ -1,0 +1,38 @@
+From 2da8679d8066000ee0828b3f7e52d60d9a4f7fae Mon Sep 17 00:00:00 2001
+From: Evan Wang <xswang@marvell.com>
+Date: Fri, 24 Nov 2017 15:51:13 +0800
+Subject: [PATCH 2171/2241] dts: pinctrl: cp110: enable eMMC PHY mux support
+
+The new register with name "mmcio" indicates the offset
+of eMMC PHY IO Control 0 Register.
+
+The patch enabled eMMC PHY mux support to avoid uboot
+dependency on MPP&eMMC mux settings.
+
+Change-Id: Ied4f64eb1a499a12d61912140c7ce4c19afac093
+Signed-off-by: Evan Wang <xswang@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/46826
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-cp110.dtsi | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-cp110.dtsi b/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
+index 8c0768e..4b94216 100644
+--- a/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
+@@ -101,7 +101,9 @@
+ 			};
+ 
+ 			CP110_LABEL(pinctrl): pinctrl@440000 {
+-				reg = <0x440000 0x20>;
++				reg = <0x440000 0x20>, /* pinctrl regs */
++				      <0x440424 0x4>; /* eMMC PHY IO Control 0 Register */
++				reg-names = "pinctrl", "mmcio";
+ 			};
+ 
+ 			CP110_LABEL(gpio0): gpio@440100 {
+-- 
+2.7.4
+

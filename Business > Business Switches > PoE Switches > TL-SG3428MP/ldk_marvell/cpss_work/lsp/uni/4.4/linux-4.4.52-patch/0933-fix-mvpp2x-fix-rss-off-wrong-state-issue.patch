@@ -1,0 +1,56 @@
+From 1ed5a26505578fb0274019bf934dcd7bdd47a071 Mon Sep 17 00:00:00 2001
+From: Stefan Chulski <stefanc@marvell.com>
+Date: Mon, 5 Sep 2016 11:48:08 +0300
+Subject: [PATCH 0933/2241] fix: mvpp2x: fix rss off wrong state issue
+
+- the patch fix the issue SYSTEMSW-2835
+- save port rss state mode
+- set rss disable if default CPU set
+- set rss enable if C2 rule set
+
+Change-Id: Id7ec3c954f73ca28d0f9bdfd468bb484a7c29c51
+Signed-off-by: Stefan Chulski <stefanc@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/32525
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+Tested-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c | 14 ++++++++------
+ 1 file changed, 8 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+index 4a95eae..c177389 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+@@ -1991,21 +1991,23 @@ void mv_pp22_rss_enable(struct mv_pp2x_port *port, bool en)
+ 
+ 	if (port->priv->pp2_cfg.queue_mode == MVPP2_QDIST_MULTI_MODE) {
+ 		mv_pp22_rss_c2_enable(port, en);
++		port->rss_cfg.rss_en = en;
+ 		if (en) {
+ 			if (mv_pp22_rss_default_cpu_set(port,
+-				port->rss_cfg.dflt_cpu))
++				port->rss_cfg.dflt_cpu)) {
+ 				netdev_err(port->dev,
+ 				"cannot set rss default cpu on port(%d)\n",
+ 				port->id);
+-			else
+-				port->rss_cfg.rss_en = 1;
++				port->rss_cfg.rss_en = 0;
++			}
+ 		} else {
+-			if (mv_pp2x_cls_c2_rule_set(port, bound_cpu_first_rxq))
++			if (mv_pp2x_cls_c2_rule_set(port,
++						    bound_cpu_first_rxq)) {
+ 				netdev_err(port->dev,
+ 				"cannot set c2 and qos table on port(%d)\n",
+ 				port->id);
+-			else
+-				port->rss_cfg.rss_en = 0;
++				port->rss_cfg.rss_en = 1;
++			}
+ 		}
+ 	}
+ }
+-- 
+2.7.4
+

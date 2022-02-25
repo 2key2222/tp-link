@@ -1,0 +1,163 @@
+From 065356e89f535b13b124e9806ba7d358841e18ca Mon Sep 17 00:00:00 2001
+From: Yelena Krivosheev <yelena@marvell.com>
+Date: Mon, 11 Dec 2017 15:03:07 +0200
+Subject: [PATCH 2121/2241] net: mvneta: fix port up/down under mtu change
+
+It is incorrect to enable TX/RX queues (call to  mvneta_port_up()) for
+port without link.
+MTU change for interface without link cause to TX queues to stuck.
+Remove call to  mvneta_port_up() during 'mtu change' process.
+TX and RX queues enable must be done only on link up event.
+
+Go back to old 'mtu change' mechanism that use mvneta_stop_dev() /
+mvneta_start_dev() and TX/RX queues reinit process.
+
+
+Change-Id: I509e5590ca1b3d4e6a52feaa808871162cbf219b
+Signed-off-by: Yelena Krivosheev <yelena@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/47514
+Tested-by: Omri Itach <omrii@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvneta.c | 66 +++++++++++++++++++++++------------
+ 1 file changed, 43 insertions(+), 23 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvneta.c b/drivers/net/ethernet/marvell/mvneta.c
+index 73f7dac..a9ce397 100644
+--- a/drivers/net/ethernet/marvell/mvneta.c
++++ b/drivers/net/ethernet/marvell/mvneta.c
+@@ -290,6 +290,9 @@ enum mvneta_port_type {
+ 
+ #define MVNETA_TX_MTU_MAX		0x3ffff
+ 
++#define MVNETA_MTU_MIN			(0x40 + 4) /* 64 + 4 */
++#define MVNETA_MRU_MAX			0x4000     /* 16K */
++
+ /* The RSS lookup table actually has 256 entries but we do not use
+  * them yet
+  */
+@@ -318,6 +321,9 @@ enum mvneta_port_type {
+ 	      ETH_HLEN + ETH_FCS_LEN,			     \
+ 	      MVNETA_CPU_D_CACHE_LINE_SIZE)
+ 
++#define MVNETA_MRU_TO_MTU(mru) \
++	(mru - (MVNETA_MH_SIZE + MVNETA_VLAN_TAG_LEN + ETH_HLEN + ETH_FCS_LEN))
++
+ #define IS_TSO_HEADER(txq, addr) \
+ 	((addr >= txq->tso_hdrs_phys) && \
+ 	 (addr < txq->tso_hdrs_phys + txq->size * TSO_HEADER_SIZE))
+@@ -1583,7 +1589,6 @@ static void mvneta_defaults_set(struct mvneta_port *pp)
+ 
+ /* Set max sizes for tx queues */
+ static void mvneta_txq_max_tx_size_set(struct mvneta_port *pp, int max_tx_size)
+-
+ {
+ 	u32 val, size, mtu;
+ 	int queue;
+@@ -3342,21 +3347,24 @@ static void mvneta_stop_dev(struct mvneta_port *pp)
+ static int mvneta_check_mtu_valid(struct net_device *dev, int mtu)
+ {
+ 	struct mvneta_port *pp = netdev_priv(dev);
++	int max_mru;
+ 
+-	if (mtu < 68) {
++	if (mtu < MVNETA_MTU_MIN) {
+ 		netdev_err(dev, "cannot change mtu to less than 68\n");
+ 		return -EINVAL;
+ 	}
+ 
+-	if (pp->bm_priv) {
++	if (pp->bm_priv)
+ 		/* HWBM case. MTU can't be larger than buffers in Long pool */
+-		if (MVNETA_RX_PKT_SIZE(mtu) > pp->pool_long->pkt_size) {
+-			netdev_info(dev, "Illegal MTU value %d\n", mtu);
+-			mtu = pp->pool_long->pkt_size -
+-			      (MVNETA_MH_SIZE + MVNETA_VLAN_TAG_LEN + ETH_HLEN + ETH_FCS_LEN);
+-			netdev_info(dev, "Round to %d to fit in buffer size %d\n",
+-				    mtu, pp->pool_long->pkt_size);
+-		}
++		max_mru = pp->pool_long->pkt_size;
++	else
++		max_mru = MVNETA_MRU_MAX;
++
++	if (MVNETA_RX_PKT_SIZE(mtu) > max_mru) {
++		netdev_info(dev, "Illegal MTU value %d\n", mtu);
++		mtu = MVNETA_MRU_TO_MTU(max_mru);
++		netdev_info(dev, "Round to %d to fit in %d\n",
++			    mtu, max_mru);
+ 	}
+ 
+ 	if (!IS_ALIGNED(MVNETA_RX_PKT_SIZE(mtu), 8)) {
+@@ -3386,6 +3394,7 @@ static void mvneta_percpu_disable(void *arg)
+ static int mvneta_change_mtu(struct net_device *dev, int mtu)
+ {
+ 	struct mvneta_port *pp = netdev_priv(dev);
++	int ret;
+ 
+ 	mtu = mvneta_check_mtu_valid(dev, mtu);
+ 	if (mtu < 0)
+@@ -3398,21 +3407,33 @@ static int mvneta_change_mtu(struct net_device *dev, int mtu)
+ 		return 0;
+ 	}
+ 
+-	/* stop all RX and TX queues */
+-	mvneta_port_down(pp);
+-	netif_tx_stop_all_queues(pp->dev);
++	/* The interface is running, so we have to force a
++	 * reallocation of the queues
++	 */
++	mvneta_stop_dev(pp);
++	on_each_cpu(mvneta_percpu_disable, pp, true);
+ 
+-	/* stop the port activity */
+-	mvneta_port_disable(pp);
++	mvneta_cleanup_txqs(pp);
++	mvneta_cleanup_rxqs(pp);
+ 
+ 	pp->pkt_size = MVNETA_RX_PKT_SIZE(dev->mtu);
+-	mvneta_max_rx_size_set(pp, pp->pkt_size);
+-	mvneta_txq_max_tx_size_set(pp, pp->pkt_size);
++	pp->frag_size = SKB_DATA_ALIGN(MVNETA_RX_BUF_SIZE(pp->pkt_size)) +
++			SKB_DATA_ALIGN(sizeof(struct skb_shared_info));
+ 
+-	/* start the Rx/Tx activity */
+-	mvneta_port_up(pp);
+-	mvneta_port_enable(pp);
+-	netif_tx_start_all_queues(pp->dev);
++	ret = mvneta_setup_rxqs(pp);
++	if (ret) {
++		netdev_err(dev, "unable to setup rxqs after MTU change\n");
++		return ret;
++	}
++
++	ret = mvneta_setup_txqs(pp);
++	if (ret) {
++		netdev_err(dev, "unable to setup txqs after MTU change\n");
++		return ret;
++	}
++
++	on_each_cpu(mvneta_percpu_enable, pp, true);
++	mvneta_start_dev(pp);
+ 
+ 	netdev_update_features(dev);
+ 
+@@ -3427,7 +3448,7 @@ static netdev_features_t mvneta_fix_features(struct net_device *dev,
+ 	if (pp->tx_csum_limit && dev->mtu > pp->tx_csum_limit) {
+ 		features &= ~(NETIF_F_IP_CSUM | NETIF_F_TSO);
+ 		netdev_info(dev,
+-			    "Disable IP checksum for MTU greater than %dB\n",
++			    "Disable L4 checksum for MTU greater than %dB\n",
+ 			    pp->tx_csum_limit);
+ 	}
+ 
+@@ -3665,7 +3686,6 @@ static int mvneta_percpu_notifier(struct notifier_block *nfb,
+ 		on_each_cpu(mvneta_percpu_mask_interrupt, pp, true);
+ 		napi_enable(&port->napi);
+ 
+-
+ 		/* Enable per-CPU interrupts on the CPU that is
+ 		 * brought up.
+ 		 */
+-- 
+2.7.4
+

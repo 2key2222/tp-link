@@ -1,0 +1,68 @@
+From 24de76228e72aec1b7478b51c955419300f13ffd Mon Sep 17 00:00:00 2001
+From: Konstantin Porotchkin <kostap@marvell.com>
+Date: Thu, 11 Aug 2016 15:00:18 +0300
+Subject: [PATCH 0672/2241] mmc: sdhci: Export
+ sdhci_start_signal_voltage_switch() in sdhci.c
+
+Export sdhci_start_signal_voltage_switch() from sdhci.c
+Thus vendor sdhci driver can implement its own signal voltage
+switch routine.
+
+Change-Id: Ic1098eb57bf62e5abaa4fa8166b66176162cfdc9
+Signed-off-by: Hu Ziji <huziji@marvell.com>
+Signed-off-by: Konstantin Porotchkin <kostap@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/31893
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+Tested-by: Star_Automation <star@marvell.com>
+---
+ drivers/mmc/host/sdhci.c | 5 +++--
+ drivers/mmc/host/sdhci.h | 2 ++
+ 2 files changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
+index 7f5d342..dc4fbac 100644
+--- a/drivers/mmc/host/sdhci.c
++++ b/drivers/mmc/host/sdhci.c
+@@ -1774,7 +1774,7 @@ static void sdhci_enable_sdio_irq(struct mmc_host *mmc, int enable)
+ }
+ 
+ static int sdhci_do_start_signal_voltage_switch(struct sdhci_host *host,
+-						struct mmc_ios *ios)
++					 struct mmc_ios *ios)
+ {
+ 	struct mmc_host *mmc = host->mmc;
+ 	u16 ctrl;
+@@ -1864,7 +1864,7 @@ static int sdhci_do_start_signal_voltage_switch(struct sdhci_host *host,
+ 	}
+ }
+ 
+-static int sdhci_start_signal_voltage_switch(struct mmc_host *mmc,
++int sdhci_start_signal_voltage_switch(struct mmc_host *mmc,
+ 	struct mmc_ios *ios)
+ {
+ 	struct sdhci_host *host = mmc_priv(mmc);
+@@ -1877,6 +1877,7 @@ static int sdhci_start_signal_voltage_switch(struct mmc_host *mmc,
+ 	sdhci_runtime_pm_put(host);
+ 	return err;
+ }
++EXPORT_SYMBOL_GPL(sdhci_start_signal_voltage_switch);
+ 
+ static int sdhci_card_busy(struct mmc_host *mmc)
+ {
+diff --git a/drivers/mmc/host/sdhci.h b/drivers/mmc/host/sdhci.h
+index 769e74a..3f45a61 100644
+--- a/drivers/mmc/host/sdhci.h
++++ b/drivers/mmc/host/sdhci.h
+@@ -669,6 +669,8 @@ void sdhci_set_bus_width(struct sdhci_host *host, int width);
+ void sdhci_reset(struct sdhci_host *host, u8 mask);
+ void sdhci_set_uhs_signaling(struct sdhci_host *host, unsigned timing);
+ void sdhci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios);
++int sdhci_start_signal_voltage_switch(struct mmc_host *mmc,
++				      struct mmc_ios *ios);
+ 
+ #ifdef CONFIG_PM
+ extern int sdhci_suspend_host(struct sdhci_host *host);
+-- 
+2.7.4
+

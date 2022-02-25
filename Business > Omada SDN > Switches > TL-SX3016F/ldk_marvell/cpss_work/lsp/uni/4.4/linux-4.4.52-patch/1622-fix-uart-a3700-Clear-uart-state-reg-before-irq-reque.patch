@@ -1,0 +1,51 @@
+From ced3b16a9055d60ea02ccf3c6ae0ed76a8ae3977 Mon Sep 17 00:00:00 2001
+From: allen yan <yanwei@marvell.com>
+Date: Tue, 16 May 2017 10:36:07 +0800
+Subject: [PATCH 1622/2241] fix: uart: a3700: Clear uart state reg before irq
+ request
+
+Currently, uart driver only reset TX/RX fifo without clear state
+register in uart_startup. It will cause some problems.
+In case of sending some data to RX pin before uart_startup, some
+error bits of uart state register would be set up, like UART2_BRK_
+DET. Becasu of the UART2_BRK_DET bit was setted up without clear
+before run into the RX interrupt, it will cause endless loop in
+uart_rx_chars.
+This patch fixed this problem with clearing error bits of uart state
+register before uart_startup.
+
+Change-Id: I456a806170921cbaa84488d1e85bb0b2420504a1
+Signed-off-by: allen yan <yanwei@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/39493
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Victor Gu <xigu@marvell.com>
+---
+ drivers/tty/serial/mvebu-uart.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/tty/serial/mvebu-uart.c b/drivers/tty/serial/mvebu-uart.c
+index 554dc2a..b720128 100644
+--- a/drivers/tty/serial/mvebu-uart.c
++++ b/drivers/tty/serial/mvebu-uart.c
+@@ -544,11 +544,17 @@ static int mvebu_uart_irq_request(struct uart_port *port)
+ static int mvebu_uart_startup(struct uart_port *port)
+ {
+ 	struct mvebu_uart_data *uart_data = (struct mvebu_uart_data *)port->private_data;
+-	unsigned int ctl;
++	unsigned int ctl, ret;
+ 
+ 	writel(CTRL_TXFIFO_RST | CTRL_RXFIFO_RST,
+ 		port->membase + REG_CTRL(uart_data));
+ 	udelay(1);
++
++	/* Clear the Error bits of state reg before irq request */
++	ret = readl(port->membase + REG_STAT(uart_data));
++	ret |= STAT_BRK_ERR;
++	writel(ret, port->membase + REG_STAT(uart_data));
++
+ 	writel(CTRL_BRK_INT, port->membase + REG_CTRL(uart_data));
+ 	ctl = readl(port->membase + uart_data->intr.ctrl_reg);
+ 	ctl |= uart_data->reg_bits.ctrl_rx_rdy_int(uart_data);
+-- 
+2.7.4
+

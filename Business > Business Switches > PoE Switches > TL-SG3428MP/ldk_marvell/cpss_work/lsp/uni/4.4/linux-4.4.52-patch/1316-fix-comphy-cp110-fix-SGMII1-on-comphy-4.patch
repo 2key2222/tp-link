@@ -1,0 +1,62 @@
+From 0ab494b38a123f4abdf7e10e07dedc88d8acd25b Mon Sep 17 00:00:00 2001
+From: Igal Liberman <igall@marvell.com>
+Date: Thu, 26 Jan 2017 11:33:18 +0200
+Subject: [PATCH 1316/2241] fix: comphy: cp110: fix SGMII1 on comphy 4
+
+The comphy selection configuration is incorrect.
+Set the correct values for SGMII.
+
+Change-Id: Ic5fd8ce01eb05b7cd0e5c1ada48606269d609d94
+Signed-off-by: Igal Liberman <igall@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/36062
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/36137
+---
+ drivers/phy/phy-comphy-cp110.c | 10 +++++-----
+ drivers/phy/phy-comphy-cp110.h |  3 ++-
+ 2 files changed, 7 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/phy/phy-comphy-cp110.c b/drivers/phy/phy-comphy-cp110.c
+index 0bea466..71e9722 100644
+--- a/drivers/phy/phy-comphy-cp110.c
++++ b/drivers/phy/phy-comphy-cp110.c
+@@ -89,12 +89,12 @@ static void mvebu_cp110_comphy_set_phy_selector(struct mvebu_comphy_priv *priv,
+ 			break;
+ 		case(4):
+ 			 /* For comphy 4:
+-			  * 0x1 = SGMII/HS-SGMII Port2
+-			  * 0x2 = SGMII/HS-SGMII Port1: XFI/SFI, RXAUI_Lane0
++			  * 0x1 = SGMII/HS-SGMII Port1
++			  * 0x2 = SGMII/HS-SGMII Port0: XFI/SFI, RXAUI_Lane0
+ 			  */
+-			if (priv->lanes[comphy->index].mode == COMPHY_SGMII2 ||
+-			    priv->lanes[comphy->index].mode == COMPHY_HS_SGMII2)
+-				reg |= COMMON_SELECTOR_COMPHY4_SGMII2 << comphy_offset;
++			if (priv->lanes[comphy->index].mode == COMPHY_SGMII1 ||
++			    priv->lanes[comphy->index].mode == COMPHY_HS_SGMII1)
++				reg |= COMMON_SELECTOR_COMPHY4_SGMII1 << comphy_offset;
+ 			else
+ 				reg |= COMMON_SELECTOR_COMPHY4_ALL_OTHERS << comphy_offset;
+ 			break;
+diff --git a/drivers/phy/phy-comphy-cp110.h b/drivers/phy/phy-comphy-cp110.h
+index fa77d7c..834d21c 100644
+--- a/drivers/phy/phy-comphy-cp110.h
++++ b/drivers/phy/phy-comphy-cp110.h
+@@ -31,10 +31,11 @@ extern const struct mvebu_comphy_soc_info cp110_comphy;
+ #define COMMON_SELECTOR_COMPHY_MASK		0xf
+ #define COMMON_SELECTOR_COMPHYN_FIELD_WIDTH	4
+ #define COMMON_SELECTOR_COMPHYN_SATA		0x4
++/* SGMII/HS-SGMII/SFI/RXAUI */
+ #define COMMON_SELECTOR_COMPHY0_1_2_NETWORK	0x1
+ #define COMMON_SELECTOR_COMPHY3_RXAUI		0x1
+ #define COMMON_SELECTOR_COMPHY3_SGMII		0x2
+-#define COMMON_SELECTOR_COMPHY4_SGMII2		0x1
++#define COMMON_SELECTOR_COMPHY4_SGMII1		0x1
+ #define COMMON_SELECTOR_COMPHY4_ALL_OTHERS	0x2
+ #define COMMON_SELECTOR_COMPHY5_RXAUI		0x2
+ #define COMMON_SELECTOR_COMPHY5_SGMII		0x1
+-- 
+2.7.4
+

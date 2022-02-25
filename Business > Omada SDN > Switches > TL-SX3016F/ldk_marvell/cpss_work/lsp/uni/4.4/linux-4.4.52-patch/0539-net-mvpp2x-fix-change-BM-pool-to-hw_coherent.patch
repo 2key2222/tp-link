@@ -1,0 +1,45 @@
+From 6739bfb34349f5362b01acd6a4c8419e0b418beb Mon Sep 17 00:00:00 2001
+From: Stefan Chulski <stefanc@marvell.com>
+Date: Tue, 28 Jun 2016 16:06:15 +0300
+Subject: [PATCH 0539/2241] net: mvpp2x: fix: change BM pool to hw_coherent
+
+Change-Id: I28944b2b2f41a7738448046aa90b2320c1eb509b
+Signed-off-by: Stefan Chulski <stefanc@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/30784
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+Reviewed-by: Yuval Caduri <cyuval@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c | 16 +++++++++++-----
+ 1 file changed, 11 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+index 099bac7..59a9ec1 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+@@ -4265,11 +4265,17 @@ static int mv_pp2x_init(struct platform_device *pdev, struct mv_pp2x *priv)
+ #if !defined(CONFIG_MV_PP2_FPGA)
+ 	/*AXI Bridge Configuration */
+ 
+-	/* BM always non-cache  */
+-	mv_pp2x_write(hw, MVPP22_AXI_BM_WR_ATTR_REG,
+-		MVPP22_AXI_ATTR_NON_CACHE);
+-	mv_pp2x_write(hw, MVPP22_AXI_BM_RD_ATTR_REG,
+-		MVPP22_AXI_ATTR_NON_CACHE);
++	if (is_device_dma_coherent(&pdev->dev)) {
++		mv_pp2x_write(hw, MVPP22_AXI_BM_WR_ATTR_REG,
++			MVPP22_AXI_ATTR_HW_COH_WRITE);
++		mv_pp2x_write(hw, MVPP22_AXI_BM_RD_ATTR_REG,
++			MVPP22_AXI_ATTR_HW_COH_READ);
++	} else {
++		mv_pp2x_write(hw, MVPP22_AXI_BM_WR_ATTR_REG,
++			MVPP22_AXI_ATTR_NON_CACHE);
++		mv_pp2x_write(hw, MVPP22_AXI_BM_RD_ATTR_REG,
++			MVPP22_AXI_ATTR_NON_CACHE);
++	}
+ 
+ 	if (is_device_dma_coherent(&pdev->dev)) {
+ 		/* Descriptors */
+-- 
+2.7.4
+

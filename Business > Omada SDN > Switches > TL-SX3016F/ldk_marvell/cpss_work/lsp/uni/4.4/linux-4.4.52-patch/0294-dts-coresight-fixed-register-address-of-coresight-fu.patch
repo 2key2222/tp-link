@@ -1,0 +1,35 @@
+From 820cd7a4452d1ce9c0ee2d916469f8f3877e5080 Mon Sep 17 00:00:00 2001
+From: Yehuda Yitschak <yehuday@marvell.com>
+Date: Thu, 31 Mar 2016 09:51:25 +0300
+Subject: [PATCH 0294/2241] dts: coresight: fixed register address of coresight
+ funnel
+
+Change-Id: I5eab5c26da797e4b39d86fed9272668bfd5db4e3
+Signed-off-by: Yehuda Yitschak <yehuday@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/28691
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Shadi Ammouri <shadi@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-ap806-quad.dtsi | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-ap806-quad.dtsi b/arch/arm64/boot/dts/marvell/armada-ap806-quad.dtsi
+index c293f13..d3db017 100644
+--- a/arch/arm64/boot/dts/marvell/armada-ap806-quad.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-ap806-quad.dtsi
+@@ -249,9 +249,9 @@
+ 				};
+ 			};
+ 
+-			funnel@809000 {
++			funnel@810000 {
+ 				compatible = "arm,coresight-funnel", "arm,primecell";
+-				reg = <0x809000 0x1000>;
++				reg = <0x810000 0x1000>;
+ 				clocks = <&syscon 3>;
+ 				clock-names = "apb_pclk";
+ 
+-- 
+2.7.4
+

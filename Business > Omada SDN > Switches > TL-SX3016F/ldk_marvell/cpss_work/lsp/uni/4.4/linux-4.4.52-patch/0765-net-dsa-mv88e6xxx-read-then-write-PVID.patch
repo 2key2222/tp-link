@@ -1,0 +1,77 @@
+From 09df71bf115bf14d42ef0bd32d4e63c095fc2229 Mon Sep 17 00:00:00 2001
+From: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+Date: Mon, 7 Mar 2016 18:24:39 -0500
+Subject: [PATCH 0765/2241] net: dsa: mv88e6xxx: read then write PVID
+
+Upstream-commit: 5da96031834a65e064b97c8d9f7df958c818a4cc
+
+The port register 0x07 contains more options than just the default VID,
+even though they are not used yet. So prefer a read then write operation
+over a direct write.
+
+This also allows to keep track of the change through dynamic debug.
+
+Signed-off-by: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+Tested-by: Andrew Lunn <andrew@lunn.ch>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+---
+ drivers/net/dsa/mv88e6xxx.c | 30 ++++++++++++++++++++++++++----
+ 1 file changed, 26 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/net/dsa/mv88e6xxx.c b/drivers/net/dsa/mv88e6xxx.c
+index 3a58a8a..1aee42d 100644
+--- a/drivers/net/dsa/mv88e6xxx.c
++++ b/drivers/net/dsa/mv88e6xxx.c
+@@ -1166,23 +1166,45 @@ int mv88e6xxx_port_stp_update(struct dsa_switch *ds, int port, u8 state)
+ 	return 0;
+ }
+ 
+-static int _mv88e6xxx_port_pvid_get(struct dsa_switch *ds, int port, u16 *pvid)
++static int _mv88e6xxx_port_pvid(struct dsa_switch *ds, int port, u16 *new,
++				u16 *old)
+ {
++	u16 pvid;
+ 	int ret;
+ 
+ 	ret = _mv88e6xxx_reg_read(ds, REG_PORT(port), PORT_DEFAULT_VLAN);
+ 	if (ret < 0)
+ 		return ret;
+ 
+-	*pvid = ret & PORT_DEFAULT_VLAN_MASK;
++	pvid = ret & PORT_DEFAULT_VLAN_MASK;
++
++	if (new) {
++		ret &= ~PORT_DEFAULT_VLAN_MASK;
++		ret |= *new & PORT_DEFAULT_VLAN_MASK;
++
++		ret = _mv88e6xxx_reg_write(ds, REG_PORT(port),
++					   PORT_DEFAULT_VLAN, ret);
++		if (ret < 0)
++			return ret;
++
++		netdev_dbg(ds->ports[port], "DefaultVID %d (was %d)\n", *new,
++			   pvid);
++	}
++
++	if (old)
++		*old = pvid;
+ 
+ 	return 0;
+ }
+ 
++static int _mv88e6xxx_port_pvid_get(struct dsa_switch *ds, int port, u16 *pvid)
++{
++	return _mv88e6xxx_port_pvid(ds, port, NULL, pvid);
++}
++
+ static int _mv88e6xxx_port_pvid_set(struct dsa_switch *ds, int port, u16 pvid)
+ {
+-	return _mv88e6xxx_reg_write(ds, REG_PORT(port), PORT_DEFAULT_VLAN,
+-				   pvid & PORT_DEFAULT_VLAN_MASK);
++	return _mv88e6xxx_port_pvid(ds, port, &pvid, NULL);
+ }
+ 
+ static int _mv88e6xxx_vtu_wait(struct dsa_switch *ds)
+-- 
+2.7.4
+

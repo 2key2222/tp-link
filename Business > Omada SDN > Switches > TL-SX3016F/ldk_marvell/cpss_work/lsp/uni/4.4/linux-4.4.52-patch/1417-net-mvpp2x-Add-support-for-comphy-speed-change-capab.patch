@@ -1,0 +1,84 @@
+From d7f051c43b6700e6d456581cc03a9c2da29b178c Mon Sep 17 00:00:00 2001
+From: Stefan Chulski <stefanc@marvell.com>
+Date: Tue, 14 Feb 2017 17:55:37 +0200
+Subject: [PATCH 1417/2241] net: mvpp2x: Add support for comphy speed change
+ capability
+
+- Patch set comphy speed in COMPHY_DEF macro instead of default.
+- Speed added to support comphy speed change capability.
+- No functional changes in this stage, same functionality in Serdes
+  driver for default speed and 2.5G, 1G and 10G speeds.
+
+Change-Id: Ife5d76a36d3ab067b997dc3be9a35666e2a28022
+Signed-off-by: Stefan Chulski <stefanc@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/37128
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_ethtool.c |  6 +++---
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c    | 10 +++++-----
+ 2 files changed, 8 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_ethtool.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_ethtool.c
+index a29a6a9..696a1b5 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_ethtool.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_ethtool.c
+@@ -545,14 +545,14 @@ int mv_pp2x_get_new_comphy_mode(struct ethtool_cmd *cmd, int port_id)
+ {
+ 	if (cmd->speed == SPEED_10000 && port_id == 0)
+ 		return COMPHY_DEF(COMPHY_SFI_MODE, port_id,
+-				  COMPHY_SPEED_DEFAULT, COMPHY_POLARITY_NO_INVERT);
++				  COMPHY_SPEED_10_3125G, COMPHY_POLARITY_NO_INVERT);
+ 	else if (cmd->speed == SPEED_2500)
+ 		return COMPHY_DEF(COMPHY_HS_SGMII_MODE, port_id,
+-				  COMPHY_SPEED_DEFAULT, COMPHY_POLARITY_NO_INVERT);
++				  COMPHY_SPEED_3_125G, COMPHY_POLARITY_NO_INVERT);
+ 	else if (cmd->speed == SPEED_1000 || cmd->speed == SPEED_100 ||
+ 		 cmd->speed == SPEED_10)
+ 		return COMPHY_DEF(COMPHY_SGMII_MODE, port_id,
+-				  COMPHY_SPEED_DEFAULT, COMPHY_POLARITY_NO_INVERT);
++				  COMPHY_SPEED_1_25G, COMPHY_POLARITY_NO_INVERT);
+ 	else
+ 		return -EINVAL;
+ }
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+index cab5cfa..1125d79 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+@@ -3200,27 +3200,27 @@ static void mv_serdes_port_init(struct mv_pp2x_port *port)
+ 	case PHY_INTERFACE_MODE_QSGMII:
+ 		if (port->mac_data.flags & MV_EMAC_F_SGMII2_5)
+ 			mode = COMPHY_DEF(COMPHY_HS_SGMII_MODE, port->id,
+-					  COMPHY_SPEED_DEFAULT, COMPHY_POLARITY_NO_INVERT);
++					  COMPHY_SPEED_3_125G, COMPHY_POLARITY_NO_INVERT);
+ 		else
+ 			mode = COMPHY_DEF(COMPHY_SGMII_MODE, port->id,
+-					  COMPHY_SPEED_DEFAULT, COMPHY_POLARITY_NO_INVERT);
++					  COMPHY_SPEED_1_25G, COMPHY_POLARITY_NO_INVERT);
+ 		phy_set_mode(port->comphy, mode);
+ 	break;
+ 	case PHY_INTERFACE_MODE_XAUI:
+ 	case PHY_INTERFACE_MODE_RXAUI:
+ 		mode = COMPHY_DEF(COMPHY_RXAUI_MODE, port->id,
+-				  COMPHY_SPEED_DEFAULT, COMPHY_POLARITY_NO_INVERT);
++				  COMPHY_SPEED_10_3125G, COMPHY_POLARITY_NO_INVERT);
+ 		phy_set_mode(port->comphy, mode);
+ 	break;
+ 	case PHY_INTERFACE_MODE_KR:
+ 	case PHY_INTERFACE_MODE_SFI:
+ 		mode = COMPHY_DEF(COMPHY_SFI_MODE, port->id,
+-				  COMPHY_SPEED_DEFAULT, COMPHY_POLARITY_NO_INVERT);
++				  COMPHY_SPEED_10_3125G, COMPHY_POLARITY_NO_INVERT);
+ 		phy_set_mode(port->comphy, mode);
+ 	break;
+ 	case PHY_INTERFACE_MODE_XFI:
+ 		mode = COMPHY_DEF(COMPHY_XFI_MODE, port->id,
+-				  COMPHY_SPEED_DEFAULT, COMPHY_POLARITY_NO_INVERT);
++				  COMPHY_SPEED_10_3125G, COMPHY_POLARITY_NO_INVERT);
+ 		phy_set_mode(port->comphy, mode);
+ 	break;
+ 	default:
+-- 
+2.7.4
+

@@ -1,0 +1,33 @@
+From 4d408bb99c29ac606a3d985216106c8fcfe2a9ba Mon Sep 17 00:00:00 2001
+From: Yelena Krivosheev <yelena@marvell.com>
+Date: Sun, 19 Mar 2017 12:31:49 +0200
+Subject: [PATCH 1512/2241] net: dsa: fix topaz switch ID
+
+Proper 88E6341 switch ID is 0x341
+
+Change-Id: I54648cca373b2b08b28aabf5bd623c143e62343b
+Signed-off-by: Yelena Krivosheev <yelena@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/37547
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Dmitri Epshtein <dima@marvell.com>
+Reviewed-by: Wilson Ding <dingwei@marvell.com>
+---
+ drivers/net/dsa/mv88e6xxx.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/net/dsa/mv88e6xxx.h b/drivers/net/dsa/mv88e6xxx.h
+index 428882f..4572e6b 100644
+--- a/drivers/net/dsa/mv88e6xxx.h
++++ b/drivers/net/dsa/mv88e6xxx.h
+@@ -84,7 +84,7 @@
+ #define PORT_SWITCH_ID_PROD_NUM_6185	0x1a7
+ #define PORT_SWITCH_ID_PROD_NUM_6240	0x240
+ #define PORT_SWITCH_ID_PROD_NUM_6321	0x310
+-#define PORT_SWITCH_ID_PROD_NUM_6341	0x340
++#define PORT_SWITCH_ID_PROD_NUM_6341	0x341
+ #define PORT_SWITCH_ID_PROD_NUM_6352	0x352
+ #define PORT_SWITCH_ID_PROD_NUM_6350	0x371
+ #define PORT_SWITCH_ID_PROD_NUM_6351	0x375
+-- 
+2.7.4
+

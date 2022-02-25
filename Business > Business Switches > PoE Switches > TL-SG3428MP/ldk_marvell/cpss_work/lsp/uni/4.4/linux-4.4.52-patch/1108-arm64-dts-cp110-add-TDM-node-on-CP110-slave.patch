@@ -1,0 +1,66 @@
+From dcc139148f9b71ea11b3c5d34cebbc78e9a26039 Mon Sep 17 00:00:00 2001
+From: Igal Liberman <igall@marvell.com>
+Date: Thu, 14 Jul 2016 11:53:41 +0300
+Subject: [PATCH 1108/2241] arm64: dts: cp110: add TDM node on CP110 slave
+
+DMA coherency is not working fine for A8040 TDM subsystem,
+so 'dma-coherent' property is not added to the device node.
+
+Change-Id: I3c7db12e059684e964013557795091816c800641
+Signed-off-by: Igal Liberman <igall@marvell.com>
+Signed-off-by: Marcin Wojtas <mw@semihalf.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/33911
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-8040.dtsi    | 10 ++++++++++
+ arch/arm64/boot/dts/marvell/armada-cp110-1.dtsi | 12 ++++++++++++
+ 2 files changed, 22 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-8040.dtsi b/arch/arm64/boot/dts/marvell/armada-8040.dtsi
+index 6062c43..641d57d 100644
+--- a/arch/arm64/boot/dts/marvell/armada-8040.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-8040.dtsi
+@@ -224,6 +224,16 @@
+ 						       "mpp9", "mpp10", "mpp11";
+ 					marvell,function = "ge0";
+ 				};
++				cps_tdm_pins: tdm-pins {
++					marvell,pins = "mpp0", "mpp1", "mpp2",
++						       "mpp3", "mpp4", "mpp5";
++					marvell,function = "tdm";
++				};
++				cps_spi0_pins: spi-pins-0 {
++					marvell,pins = "mpp7", "mpp8", "mpp9",
++						       "mpp10", "mpp11";
++					marvell,function = "spi0";
++				};
+ 			};
+ 		};
+ 		pcie@0x600000 {
+diff --git a/arch/arm64/boot/dts/marvell/armada-cp110-1.dtsi b/arch/arm64/boot/dts/marvell/armada-cp110-1.dtsi
+index 01a0db6..888b8a0 100644
+--- a/arch/arm64/boot/dts/marvell/armada-cp110-1.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-cp110-1.dtsi
+@@ -133,6 +133,18 @@ nand@720000 {
+ 	status = "disabled";
+ };
+ 
++tdm@7a0000 {
++	compatible = "marvell,armada-a8k-tdm";
++	reg = <0x7a0000 0x20000>;
++	reg-names = "tdm_regs";
++	interrupts = <GIC_SPI 80 IRQ_TYPE_LEVEL_HIGH>,
++		     <GIC_SPI 81 IRQ_TYPE_LEVEL_HIGH>,
++		     <GIC_SPI 82 IRQ_TYPE_LEVEL_HIGH>;
++	clocks = <&cps_syscon0 1 1>;
++	clock-names = "gateclk";
++	status = "disabled";
++};
++
+ cpxor0@6a0000 {
+ 	compatible = "marvell,mv-xor-v2";
+ 	reg = <0x6a0000 0x1000>,
+-- 
+2.7.4
+

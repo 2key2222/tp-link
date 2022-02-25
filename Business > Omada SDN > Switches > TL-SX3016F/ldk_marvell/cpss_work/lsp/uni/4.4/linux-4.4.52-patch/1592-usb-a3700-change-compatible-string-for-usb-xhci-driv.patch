@@ -1,0 +1,85 @@
+From 27b8dadf880cc22054f14bb4c767ac4436d4ded3 Mon Sep 17 00:00:00 2001
+From: jinghua <xigu@marvell.com>
+Date: Thu, 13 Apr 2017 20:48:24 +0800
+Subject: [PATCH 1592/2241] usb: a3700: change compatible string for usb xhci
+ driver
+
+- A new compatible string for A3700 was introduced in xhci plat
+  driver as "marvell,armada-3700-xhci-otg", but actually there
+  is no full OTG support in A3700, just a usb_id irq to detect
+  usb_id switch between usb host and device.
+- So this patch changes the compatible string to
+  "marvell,armada-3700-xhci", to avoid confusing..
+
+Change-Id: I4f8189c74552630f82a7936b626ea2a7045f6af4
+Signed-off-by: jinghua <xigu@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/38674
+Tested-by: Hua Jing <jinghua@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/38754
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+---
+ Documentation/devicetree/bindings/usb/armada3700-usb-phy.txt | 2 +-
+ Documentation/devicetree/bindings/usb/usb-xhci.txt           | 2 +-
+ drivers/usb/host/xhci-plat.c                                 | 6 +++---
+ 3 files changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/usb/armada3700-usb-phy.txt b/Documentation/devicetree/bindings/usb/armada3700-usb-phy.txt
+index 59a8743..9e3ed39 100644
+--- a/Documentation/devicetree/bindings/usb/armada3700-usb-phy.txt
++++ b/Documentation/devicetree/bindings/usb/armada3700-usb-phy.txt
+@@ -25,7 +25,7 @@ Optional properties:
+ 
+ USB OTG mode example:
+ 	usb3@58000 {
+-		compatible = "marvell,armada-3700-xhci-otg";
++		compatible = "marvell,armada-3700-xhci";
+ 		status = "okay";
+ 		usb-phy = <&otg_phy>;
+ 	};
+diff --git a/Documentation/devicetree/bindings/usb/usb-xhci.txt b/Documentation/devicetree/bindings/usb/usb-xhci.txt
+index 6684112..00a9dcb 100644
+--- a/Documentation/devicetree/bindings/usb/usb-xhci.txt
++++ b/Documentation/devicetree/bindings/usb/usb-xhci.txt
+@@ -4,7 +4,7 @@ Required properties:
+   - compatible: should be one of "generic-xhci",
+     "marvell,armada-375-xhci", "marvell,armada-380-xhci",
+     "renesas,xhci-r8a7790", "renesas,xhci-r8a7791",
+-    "marvell,armada-3700-xhci-otg" (deprecated: "xhci-platform").
++    "marvell,armada-3700-xhci" (deprecated: "xhci-platform").
+   - reg: should contain address and length of the standard XHCI
+     register set for the device.
+   - interrupts: one XHCI interrupt should be described here.
+diff --git a/drivers/usb/host/xhci-plat.c b/drivers/usb/host/xhci-plat.c
+index e2d9a66..1067ae1 100644
+--- a/drivers/usb/host/xhci-plat.c
++++ b/drivers/usb/host/xhci-plat.c
+@@ -217,7 +217,7 @@ static int xhci_plat_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	if (of_device_is_compatible(pdev->dev.of_node,
+-				    "marvell,armada-3700-xhci-otg")) {
++				    "marvell,armada-3700-xhci")) {
+ 		/* If Armada3700 needs to enable OTG support, register XHCI
+ 		 * driver to OTG PHY, and wait for it to call usb_add_hcd
+ 		 * at the right time (start working in USB Host mode).
+@@ -313,7 +313,7 @@ static int xhci_plat_remove(struct platform_device *dev)
+ 	struct clk *clk = xhci->clk;
+ 
+ 	if (of_device_is_compatible(dev->dev.of_node,
+-				    "marvell,armada-3700-xhci-otg")) {
++				    "marvell,armada-3700-xhci")) {
+ 		otg_set_host(hcd->usb_phy->otg, NULL);
+ 	} else {
+ 		usb_remove_hcd(xhci->shared_hcd);
+@@ -438,7 +438,7 @@ static const struct of_device_id usb_xhci_of_match[] = {
+ 	{ .compatible = "marvell,armada-380-xhci"},
+ 	{ .compatible = "renesas,xhci-r8a7790"},
+ 	{ .compatible = "renesas,xhci-r8a7791"},
+-	{ .compatible = "marvell,armada-3700-xhci-otg"},
++	{ .compatible = "marvell,armada-3700-xhci"},
+ 	{ },
+ };
+ MODULE_DEVICE_TABLE(of, usb_xhci_of_match);
+-- 
+2.7.4
+

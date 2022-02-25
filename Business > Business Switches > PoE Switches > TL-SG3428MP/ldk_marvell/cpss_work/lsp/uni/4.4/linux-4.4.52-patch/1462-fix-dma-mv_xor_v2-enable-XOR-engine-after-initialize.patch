@@ -1,0 +1,46 @@
+From 97a85d22d878fe63d46a8d2de5be15116ed2d201 Mon Sep 17 00:00:00 2001
+From: Hanna Hawa <hannah@marvell.com>
+Date: Sun, 12 Mar 2017 14:39:25 +0200
+Subject: [PATCH 1462/2241] fix: dma: mv_xor_v2: enable XOR engine after
+ initialize XOR configuration
+
+The Engine was enabled prior to it's configuration, which isn't correct.
+This patch relocates the activation of XOR engine,
+to be after initialization of XOR configuration.
+
+Change-Id: I7938508351c08a3abdcc64984feb0dce21b81937
+Signed-off-by: Hanna Hawa <hannah@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/37413
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Tested-by: Omri Itach <omrii@marvell.com>
+---
+ drivers/dma/mv_xor_v2.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/dma/mv_xor_v2.c b/drivers/dma/mv_xor_v2.c
+index ffbd1aa..4aa8510 100644
+--- a/drivers/dma/mv_xor_v2.c
++++ b/drivers/dma/mv_xor_v2.c
+@@ -708,9 +708,6 @@ static int mv_xor_v2_descq_init(struct mv_xor_v2_device *xor_dev)
+ 	writel((xor_dev->hw_desq & 0xFFFF00000000) >> 32,
+ 	       xor_dev->dma_base + DMA_DESQ_BAHR_OFF);
+ 
+-	/* enable the DMA engine */
+-	writel(0, xor_dev->dma_base + DMA_DESQ_STOP_OFF);
+-
+ 	/*
+ 	 * This is a temporary solution, until we activate the
+ 	 * SMMU. Set the attributes for reading & writing data buffers
+@@ -748,6 +745,9 @@ static int mv_xor_v2_descq_init(struct mv_xor_v2_device *xor_dev)
+ 	reg |= GLOB_PAUSE_AXI_TIME_DIS_VAL;
+ 	writel(reg, xor_dev->glob_base + GLOB_PAUSE);
+ 
++	/* enable the DMA engine */
++	writel(0, xor_dev->dma_base + DMA_DESQ_STOP_OFF);
++
+ 	return 0;
+ }
+ 
+-- 
+2.7.4
+

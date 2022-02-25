@@ -1,0 +1,33 @@
+From e0aebf4fbbd23f50b9b226d1dcf5d63cc39b9a3a Mon Sep 17 00:00:00 2001
+From: Grzegorz Jaszczyk <jaz@semihalf.com>
+Date: Fri, 3 Mar 2017 16:44:08 +0100
+Subject: [PATCH 1409/2241] tools: configs: add arm64's kdump defconfig
+ modification
+
+Because the new CI feature allows to get needed defconfig modification
+from a file, add required for kdump one.
+
+Change-Id: Idc9e02e392de356933b70fb5510e9758f280e35d
+Signed-off-by: Grzegorz Jaszczyk <jaz@semihalf.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/37198
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+---
+ tools/configs/kdump_arm64 | 4 ++++
+ 1 file changed, 4 insertions(+)
+ create mode 100644 tools/configs/kdump_arm64
+
+diff --git a/tools/configs/kdump_arm64 b/tools/configs/kdump_arm64
+new file mode 100644
+index 0000000..189ddba
+--- /dev/null
++++ b/tools/configs/kdump_arm64
+@@ -0,0 +1,4 @@
++CONFIG_KEXEC_CORE=y
++CONFIG_KEXEC=y
++CONFIG_CRASH_DUMP=y
++CONFIG_PROC_VMCORE=y
+-- 
+2.7.4
+

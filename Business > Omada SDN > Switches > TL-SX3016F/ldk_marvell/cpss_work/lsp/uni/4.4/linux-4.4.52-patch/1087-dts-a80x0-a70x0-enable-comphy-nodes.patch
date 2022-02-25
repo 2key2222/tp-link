@@ -1,0 +1,111 @@
+From 7b97e235ec97a6719c4ad13be043c95f0d0cedcf Mon Sep 17 00:00:00 2001
+From: Igal Liberman <igall@marvell.com>
+Date: Tue, 1 Nov 2016 18:01:13 +0200
+Subject: [PATCH 1087/2241] dts: a80x0: a70x0: enable comphy nodes
+
+Change-Id: I4c2fc96523d8dcb908b1406edec829a2a78ed5c1
+Signed-off-by: Igal Liberman <igall@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/33529
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-7040-db-all-pcie.dts | 3 +++
+ arch/arm64/boot/dts/marvell/armada-7040-db-nand.dts     | 3 +++
+ arch/arm64/boot/dts/marvell/armada-7040-db-router.dts   | 3 +++
+ arch/arm64/boot/dts/marvell/armada-8040-db-A.dts        | 6 ++++++
+ arch/arm64/boot/dts/marvell/armada-8040-db-router.dts   | 6 ++++++
+ 5 files changed, 21 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-7040-db-all-pcie.dts b/arch/arm64/boot/dts/marvell/armada-7040-db-all-pcie.dts
+index ec2c2c8..de7fd70 100644
+--- a/arch/arm64/boot/dts/marvell/armada-7040-db-all-pcie.dts
++++ b/arch/arm64/boot/dts/marvell/armada-7040-db-all-pcie.dts
+@@ -151,6 +151,9 @@
+ 			eip197: eip197@800000 {
+ 				status = "okay";
+ 			};
++			comphy {
++				status = "okay";
++			};
+ 		};
+ 		pcie@0x600000 {
+ 			status = "okay";
+diff --git a/arch/arm64/boot/dts/marvell/armada-7040-db-nand.dts b/arch/arm64/boot/dts/marvell/armada-7040-db-nand.dts
+index 8942690..ef818ed 100644
+--- a/arch/arm64/boot/dts/marvell/armada-7040-db-nand.dts
++++ b/arch/arm64/boot/dts/marvell/armada-7040-db-nand.dts
+@@ -151,6 +151,9 @@
+ 			eip197: eip197@800000 {
+ 				status = "okay";
+ 			};
++			comphy {
++				status = "okay";
++			};
+ 		};
+ 		pcie@0x600000 {
+ 			status = "okay";
+diff --git a/arch/arm64/boot/dts/marvell/armada-7040-db-router.dts b/arch/arm64/boot/dts/marvell/armada-7040-db-router.dts
+index 03e3747..095d5c6 100644
+--- a/arch/arm64/boot/dts/marvell/armada-7040-db-router.dts
++++ b/arch/arm64/boot/dts/marvell/armada-7040-db-router.dts
+@@ -151,6 +151,9 @@
+ 			eip197: eip197@800000 {
+ 				status = "okay";
+ 			};
++			comphy {
++				status = "okay";
++			};
+ 		};
+ 
+ 		pcie@0x640000 {
+diff --git a/arch/arm64/boot/dts/marvell/armada-8040-db-A.dts b/arch/arm64/boot/dts/marvell/armada-8040-db-A.dts
+index 665286b..42040d6 100644
+--- a/arch/arm64/boot/dts/marvell/armada-8040-db-A.dts
++++ b/arch/arm64/boot/dts/marvell/armada-8040-db-A.dts
+@@ -108,6 +108,9 @@
+ 			eip197@800000 {
+ 				status = "okay";
+ 			};
++			comphy {
++				status = "okay";
++			};
+ 		};
+ 		pcie@0x600000 {
+ 			status = "okay";
+@@ -151,6 +154,9 @@
+ 					status = "disabled";
+ 				};
+ 			};
++			comphy {
++				status = "okay";
++			};
+ 		};
+ 		pcie@0x600000 {
+ 			status = "okay";
+diff --git a/arch/arm64/boot/dts/marvell/armada-8040-db-router.dts b/arch/arm64/boot/dts/marvell/armada-8040-db-router.dts
+index 69b1f0b..ffbefb4 100644
+--- a/arch/arm64/boot/dts/marvell/armada-8040-db-router.dts
++++ b/arch/arm64/boot/dts/marvell/armada-8040-db-router.dts
+@@ -110,6 +110,9 @@
+ 			eip197@800000 {
+ 				status = "okay";
+ 			};
++			comphy {
++				status = "okay";
++			};
+ 		};
+ 
+ 		pcie@0x640000 {
+@@ -157,6 +160,9 @@
+ 					status = "disabled";
+ 				};
+ 			};
++			comphy {
++				status = "okay";
++			};
+ 		};
+ 		pcie@0x640000 {
+ 			status = "okay";
+-- 
+2.7.4
+

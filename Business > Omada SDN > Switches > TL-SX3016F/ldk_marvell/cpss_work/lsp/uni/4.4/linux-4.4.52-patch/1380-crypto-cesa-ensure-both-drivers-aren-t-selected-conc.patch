@@ -1,0 +1,38 @@
+From 57fb356d6a632618a793cc4e11a60afc49d27755 Mon Sep 17 00:00:00 2001
+From: Igal Liberman <igall@marvell.com>
+Date: Mon, 20 Feb 2017 18:56:34 +0200
+Subject: [PATCH 1380/2241] crypto: cesa: ensure both drivers aren't selected
+ concurrently
+
+The are two cesa drivers in the Kernel:
+- /driver/crypto/marvell/* - latest driver
+- /driver/crypto/mv_cesa*  - legacy driver
+
+This patches ensures that both drivers aren't selected
+concurrently because both drivers use the same hardware
+resources.
+
+Change-Id: I33eaddf18e3a6c9924c19bb2ca7924f0f2393dbf
+Signed-off-by: Igal Liberman <igall@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/36895
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Neta Zur Hershkovits <neta@marvell.com>
+---
+ drivers/crypto/Kconfig | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/crypto/Kconfig b/drivers/crypto/Kconfig
+index 2569e04..925db57 100644
+--- a/drivers/crypto/Kconfig
++++ b/drivers/crypto/Kconfig
+@@ -162,6 +162,7 @@ config CRYPTO_GHASH_S390
+ config CRYPTO_DEV_MV_CESA
+ 	tristate "Marvell's Cryptographic Engine"
+ 	depends on PLAT_ORION
++	depends on !CRYPTO_DEV_MARVELL_CESA
+ 	select CRYPTO_AES
+ 	select CRYPTO_BLKCIPHER
+ 	select CRYPTO_HASH
+-- 
+2.7.4
+

@@ -1,0 +1,41 @@
+ocamlcocci_aux.cmi : ../parsing_c/ast_c.cmo
+prepare_ocamlcocci.cmi : ../parsing_cocci/ast_cocci.cmi
+run_ocamlcocci.cmi : ../parsing_cocci/ast_cocci.cmi ../parsing_c/ast_c.cmo
+coccilib.cmo : ../globals/flag.cmo ../engine/externalanalysis.cmi \
+    exposed_modules.cmo ../parsing_c/ast_c.cmo
+coccilib.cmx : ../globals/flag.cmx ../engine/externalanalysis.cmx \
+    exposed_modules.cmx ../parsing_c/ast_c.cmx
+exposed_modules.cmo : ../parsing_c/visitor_c.cmi \
+    ../parsing_cocci/type_cocci.cmi ../globals/regexp.cmo \
+    ../parsing_c/pretty_print_c.cmi ../parsing_c/parser_c.cmi \
+    ../parsing_c/lib_parsing_c.cmo ../parsing_c/lexer_c.cmo \
+    ../globals/iteration.cmi ../globals/flag.cmo ../globals/config.cmo \
+    ../commons/common.cmi ../parsing_cocci/ast_cocci.cmi \
+    ../parsing_c/ast_c.cmo ../parsing_cocci/ast0_cocci.cmi
+exposed_modules.cmx : ../parsing_c/visitor_c.cmx \
+    ../parsing_cocci/type_cocci.cmx ../globals/regexp.cmx \
+    ../parsing_c/pretty_print_c.cmx ../parsing_c/parser_c.cmx \
+    ../parsing_c/lib_parsing_c.cmx ../parsing_c/lexer_c.cmx \
+    ../globals/iteration.cmx ../globals/flag.cmx ../globals/config.cmx \
+    ../commons/common.cmx ../parsing_cocci/ast_cocci.cmx \
+    ../parsing_c/ast_c.cmx ../parsing_cocci/ast0_cocci.cmx
+no_prepare_ocamlcocci.cmo : ../parsing_cocci/ast_cocci.cmi
+no_prepare_ocamlcocci.cmx : ../parsing_cocci/ast_cocci.cmx
+ocamlcocci_aux.cmo : ../parsing_c/pretty_print_c.cmi ../commons/common.cmi \
+    ../parsing_cocci/ast_cocci.cmi ../parsing_c/ast_c.cmo ocamlcocci_aux.cmi
+ocamlcocci_aux.cmx : ../parsing_c/pretty_print_c.cmx ../commons/common.cmx \
+    ../parsing_cocci/ast_cocci.cmx ../parsing_c/ast_c.cmx ocamlcocci_aux.cmi
+prepare_ocamlcocci.cmo : no_prepare_ocamlcocci.cmo prepare_ocamlcocci.cmi
+prepare_ocamlcocci.cmx : no_prepare_ocamlcocci.cmx prepare_ocamlcocci.cmi
+run_ocamlcocci.cmo : ocamlcocci_aux.cmi ../commons/common.cmi coccilib.cmo \
+    ../parsing_c/ast_c.cmo run_ocamlcocci.cmi
+run_ocamlcocci.cmx : ocamlcocci_aux.cmx ../commons/common.cmx coccilib.cmx \
+    ../parsing_c/ast_c.cmx run_ocamlcocci.cmi
+yes_prepare_ocamlcocci.cmo : ../globals/iteration.cmi \
+    ../parsing_cocci/flag_parsing_cocci.cmo ../globals/flag.cmo \
+    ../globals/config.cmo ../commons/common.cmi coccilib.cmo \
+    ../parsing_cocci/ast_cocci.cmi
+yes_prepare_ocamlcocci.cmx : ../globals/iteration.cmx \
+    ../parsing_cocci/flag_parsing_cocci.cmx ../globals/flag.cmx \
+    ../globals/config.cmx ../commons/common.cmx coccilib.cmx \
+    ../parsing_cocci/ast_cocci.cmx

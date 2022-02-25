@@ -1,0 +1,38 @@
+From 3244b1e04e9dc98f09e739403d8d8a37167ded58 Mon Sep 17 00:00:00 2001
+From: Andrew Lunn <andrew@lunn.ch>
+Date: Wed, 6 Jan 2016 20:11:06 +0100
+Subject: [PATCH 0723/2241] phy: Consistently use addr for address on an MII
+ bus
+
+Upstream-commit: ccaa953e9fc7ebb90fba4e4815966683bef4866f
+
+Within phy.h, an address on an MII bus has been called both addr and
+phy_id. phy_id is particularly confusion, since it also means the ID
+found in register 3, if the device on the bus is a phy. Consistently
+use addr.
+
+Signed-off-by: Andrew Lunn <andrew@lunn.ch>
+Reviewed-by: Florian Fainelli <f.fainelli@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+---
+ include/linux/phy.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/include/linux/phy.h b/include/linux/phy.h
+index b61b6ca..bde8712 100644
+--- a/include/linux/phy.h
++++ b/include/linux/phy.h
+@@ -167,8 +167,8 @@ struct mii_bus {
+ 	const char *name;
+ 	char id[MII_BUS_ID_SIZE];
+ 	void *priv;
+-	int (*read)(struct mii_bus *bus, int phy_id, int regnum);
+-	int (*write)(struct mii_bus *bus, int phy_id, int regnum, u16 val);
++	int (*read)(struct mii_bus *bus, int addr, int regnum);
++	int (*write)(struct mii_bus *bus, int addr, int regnum, u16 val);
+ 	int (*reset)(struct mii_bus *bus);
+ 
+ 	/*
+-- 
+2.7.4
+

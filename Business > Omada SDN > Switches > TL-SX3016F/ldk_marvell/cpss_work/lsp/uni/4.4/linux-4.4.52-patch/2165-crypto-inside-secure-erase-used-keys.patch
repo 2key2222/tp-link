@@ -1,0 +1,48 @@
+From 97f35e9146e80a6b53b7b27bba7ee85431978201 Mon Sep 17 00:00:00 2001
+From: Ofer Heifetz <oferh@marvell.com>
+Date: Thu, 11 Jan 2018 14:53:52 +0200
+Subject: [PATCH 2165/2241] crypto: inside-secure: erase used keys
+
+Clear sensative data like used key which could be a security
+vulnerability when leaked
+
+Change-Id: Idcd05000f25f98a4af2f692cfab76425a0045282
+Signed-off-by: Ofer Heifetz <oferh@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/48872
+Reviewed-by: Igal Liberman <igall@marvell.com>
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/crypto/inside-secure/cipher.c | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/drivers/crypto/inside-secure/cipher.c b/drivers/crypto/inside-secure/cipher.c
+index 8c3fe48..035f6f8 100644
+--- a/drivers/crypto/inside-secure/cipher.c
++++ b/drivers/crypto/inside-secure/cipher.c
+@@ -90,6 +90,7 @@ static int safexcel_aes_setkey(struct crypto_ablkcipher *ctfm, const u8 *key,
+ 
+ 	ctx->key_len = len;
+ 
++	memzero_explicit(&aes, sizeof(aes));
+ 	return 0;
+ }
+ 
+@@ -537,10 +538,14 @@ static void safexcel_ablkcipher_cra_exit(struct crypto_tfm *tfm)
+ 	struct safexcel_crypto_priv *priv = ctx->priv;
+ 	int ret;
+ 
++	memzero_explicit(ctx->key, ctx->key_len);
++
+ 	/* context not allocated, skip invalidation */
+ 	if (!ctx->base.ctxr)
+ 		return;
+ 
++	memzero_explicit(ctx->base.ctxr->data, ctx->key_len);
++
+ 	/*
+ 	 * EIP197 has internal cache which needs to be invalidated
+ 	 * when the context is closed.
+-- 
+2.7.4
+

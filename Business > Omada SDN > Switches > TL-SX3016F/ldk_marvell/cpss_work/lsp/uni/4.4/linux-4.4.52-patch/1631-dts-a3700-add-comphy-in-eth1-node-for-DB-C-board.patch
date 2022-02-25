@@ -1,0 +1,37 @@
+From 74428e2bb346c66e6eae2e43212e774ee6f34deb Mon Sep 17 00:00:00 2001
+From: Ken Ma <make@marvell.com>
+Date: Thu, 18 May 2017 16:15:53 +0800
+Subject: [PATCH 1631/2241] dts: a3700: add comphy in eth1 node for DB-C board
+
+DB-C board enables eth1 to work in SGMII mode with 1g or 2.5g
+fixed-link, SGMII1 comphy should be initialized either during
+cold boot and PM resume.
+This patch adds the SGMII1 comphy to be referenced by eth1 node
+for DB-C board.
+
+Change-Id: I8715f55d01b1f7c4c40102f957f31ab4b02199d4
+Signed-off-by: Ken Ma <make@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/39623
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Victor Gu <xigu@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/39674
+---
+ arch/arm64/boot/dts/marvell/armada-3720-db-C.dts | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-3720-db-C.dts b/arch/arm64/boot/dts/marvell/armada-3720-db-C.dts
+index d7008b7..7964b26 100644
+--- a/arch/arm64/boot/dts/marvell/armada-3720-db-C.dts
++++ b/arch/arm64/boot/dts/marvell/armada-3720-db-C.dts
+@@ -53,6 +53,8 @@
+ 		internal-regs {
+ 			eth1: ethernet@40000 {
+ 				phy-mode = "sgmii";
++				phys = <&a3700_comphy 0 COMPHY_SGMII1>;
++				phy-names = "comphy";
+ 				status = "okay";
+ 				fixed-link {
+ 					/* Here "speed" is set to 1000, GBE MAC is running in 1G mode, */
+-- 
+2.7.4
+

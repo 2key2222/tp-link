@@ -1,0 +1,63 @@
+From ddd1ab96ef4cf651e755fbb8b1d10baa73d6e1c0 Mon Sep 17 00:00:00 2001
+From: Victor Gu <xigu@marvell.com>
+Date: Tue, 5 Jan 2016 16:52:29 +0800
+Subject: [PATCH 0168/2241] arm64: dts: add eMMC support in Armada 3700 DT
+ files
+
+Add Xenon SDHC DT node and enable it for A3720 DB board.
+
+Change-Id: Idb9ca9c568596e2e9ff2a9e6d7883f655dcdd60e
+Signed-off-by: Victor Gu <xigu@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/27683
+Reviewed-by: Nadav Haklai <nadavh@marvell.com>
+Tested-by: Nadav Haklai <nadavh@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-3720-db.dts |  8 ++++++++
+ arch/arm64/boot/dts/marvell/armada-37xx.dtsi   | 12 ++++++++++++
+ 2 files changed, 20 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-3720-db.dts b/arch/arm64/boot/dts/marvell/armada-3720-db.dts
+index 3590501..d27342b 100644
+--- a/arch/arm64/boot/dts/marvell/armada-3720-db.dts
++++ b/arch/arm64/boot/dts/marvell/armada-3720-db.dts
+@@ -76,6 +76,14 @@
+ 				status = "okay";
+ 			};
+ 
++			sdhci0: sdhci@d8000 {
++				xenon,emmc;
++				non-removable;
++				bus-width = <8>;
++				tuning-count = <6>;
++				status = "okay";
++			};
++
+ 			/* CON3 */
+ 			sata@e0000 {
+ 			       status = "okay";
+diff --git a/arch/arm64/boot/dts/marvell/armada-37xx.dtsi b/arch/arm64/boot/dts/marvell/armada-37xx.dtsi
+index b87dd6a..60e8481 100644
+--- a/arch/arm64/boot/dts/marvell/armada-37xx.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-37xx.dtsi
+@@ -130,6 +130,18 @@
+ 				};
+ 			};
+ 
++			sdhci0: sdhci@d8000 {
++				compatible = "marvell,xenon-sdhci";
++				reg = <0xd8000 0x300>;
++				interrupts = <GIC_SPI 26 IRQ_TYPE_LEVEL_HIGH>;
++				mmc-ddr-1_8v;
++				mmc-hs200-1_8v;
++				mmc-hs400-1_8v;
++				xenon,slotno = <0>;
++				auto-cmd12;
++				status = "disabled";
++			};
++
+ 			sata@e0000 {
+ 				compatible = "marvell,armada-3700-ahci";
+ 				reg = <0xe0000 0x2000>;
+-- 
+2.7.4
+

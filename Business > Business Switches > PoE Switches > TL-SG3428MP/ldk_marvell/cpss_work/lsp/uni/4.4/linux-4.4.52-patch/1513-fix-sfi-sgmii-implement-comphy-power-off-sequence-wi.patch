@@ -1,0 +1,73 @@
+From 0ad1af10a64ddb7a77882d20f01348a048b6bcc5 Mon Sep 17 00:00:00 2001
+From: Igal Liberman <igall@marvell.com>
+Date: Wed, 15 Mar 2017 16:31:02 +0200
+Subject: [PATCH 1513/2241] fix: sfi, sgmii: implement comphy power-off
+ sequence with hard-reset
+
+Currently, when comphy power off/on sequence is executed while
+traffic is transmitted to the corresponding physical port
+we get data corruption.
+
+This is caused by incorrect handling of comphy power off flow.
+This patch fixes the comphy power off flow (for network modes)
+by setting the comphy into hard-reset during power-off.
+
+Change-Id: If3b48c2976374dee095a611b32ceb899c030f221
+Signed-off-by: Igal Liberman <igall@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/37826
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+---
+ drivers/phy/phy-comphy-cp110.c | 28 ++++++++++++++++++++++++++--
+ 1 file changed, 26 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/phy/phy-comphy-cp110.c b/drivers/phy/phy-comphy-cp110.c
+index 9e7b2d5..e092ad9 100644
+--- a/drivers/phy/phy-comphy-cp110.c
++++ b/drivers/phy/phy-comphy-cp110.c
+@@ -941,16 +941,40 @@ static int mvebu_cp110_comphy_power_off(struct phy *phy)
+ {
+ 	struct mvebu_comphy *comphy = phy_get_drvdata(phy);
+ 	struct mvebu_comphy_priv *priv = to_mvebu_comphy_priv(comphy);
++	int mode = COMPHY_GET_MODE(priv->lanes[comphy->index].mode);
++	void __iomem *sd_ip_addr;
++	u32 mask, data;
+ 
+ 	dev_dbg(priv->dev, "%s: Enter\n", __func__);
+ 
+ 	spin_lock(&priv->lock);
+ 
++	switch (mode) {
++	case(COMPHY_SGMII_MODE):
++	case(COMPHY_HS_SGMII_MODE):
++	case(COMPHY_RXAUI_MODE):
++	case(COMPHY_XFI_MODE):
++	case(COMPHY_SFI_MODE):
++		sd_ip_addr = SD_ADDR(priv->comphy_pipe_regs, comphy->index);
++
++		/* Hard reset the comphy */
++		mask = SD_EXTERNAL_CONFIG1_RESET_IN_MASK;
++		data = 0x0 << SD_EXTERNAL_CONFIG1_RESET_IN_OFFSET;
++		mask |= SD_EXTERNAL_CONFIG1_RESET_CORE_MASK;
++		data |= 0x0 << SD_EXTERNAL_CONFIG1_RESET_CORE_OFFSET;
++		mask |= SD_EXTERNAL_CONFIG1_RF_RESET_IN_MASK;
++		data |= 0x0 << SD_EXTERNAL_CONFIG1_RF_RESET_IN_OFFSET;
++		reg_set(sd_ip_addr + SD_EXTERNAL_CONFIG1_REG, data, mask);
++		break;
++	default:
++		dev_dbg(priv->dev, "comphy%d: power down is not implemented for 0x%x mode\n",
++			comphy->index, mode);
++		break;
++	}
++
+ 	/* Clear comphy selector, can't rely on u-boot */
+ 	mvebu_cp110_comphy_clr_phy_selector(priv, comphy);
+ 
+-	dev_dbg(priv->dev, "power off is not implemented\n");
+-
+ 	spin_unlock(&priv->lock);
+ 
+ 	dev_dbg(priv->dev, "%s: Exit\n", __func__);
+-- 
+2.7.4
+

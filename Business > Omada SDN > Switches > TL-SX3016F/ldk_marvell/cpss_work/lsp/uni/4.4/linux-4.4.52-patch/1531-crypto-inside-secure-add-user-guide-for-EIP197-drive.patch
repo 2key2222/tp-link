@@ -1,0 +1,116 @@
+From d1795e5ce08ab32e6bbef5f50f403e694afcff96 Mon Sep 17 00:00:00 2001
+From: Igal Liberman <igall@marvell.com>
+Date: Thu, 23 Mar 2017 15:13:45 +0200
+Subject: [PATCH 1531/2241] crypto: inside-secure: add user-guide for EIP197
+ driver
+
+Change-Id: I4e174da51287c6da7f8e13f0916a154ad2685bb6
+Signed-off-by: Igal Liberman <igall@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/37901
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ Documentation/mvebu/user_guide.txt          |  2 +-
+ drivers/crypto/inside-secure/user-guide.txt | 79 +++++++++++++++++++++++++++++
+ 2 files changed, 80 insertions(+), 1 deletion(-)
+ create mode 100644 drivers/crypto/inside-secure/user-guide.txt
+
+diff --git a/Documentation/mvebu/user_guide.txt b/Documentation/mvebu/user_guide.txt
+index 0c604d8..2eb8550 100644
+--- a/Documentation/mvebu/user_guide.txt
++++ b/Documentation/mvebu/user_guide.txt
+@@ -7,4 +7,4 @@ Driver's guide for Marvell LSP
+ 	mv_xor, mv_xor2		| DMA Engine			| Documentation/dmaengine/00-INDEX
+ 	Telephony		| Marvell proprietary		| drivers/telephony/mvebu_phone/telephony_user_guide.txt
+ 	cpufreq			| generic cpufreq-dt		| Documentation/cpu-freq/user-guide.txt
+-
++	EIP197			| Kernel crypto API		| drivers/crypto/inside-secure/user-guide.txt
+diff --git a/drivers/crypto/inside-secure/user-guide.txt b/drivers/crypto/inside-secure/user-guide.txt
+new file mode 100644
+index 0000000..3d917d3
+--- /dev/null
++++ b/drivers/crypto/inside-secure/user-guide.txt
+@@ -0,0 +1,79 @@
++Inside-Secure EIP197 user guide
++===============================
++
++Introduction
++------------
++The EIP197 is a hybrid packet engine designed to off-load various security
++protocols such as IPsec ESP, IPsec AH, SRTP, SSL, TLS,
++DTLS and MACsec.
++
++The EIP197 uses firmware, which should be loaded by the driver during
++the probe process.
++
++The EIP197 engine has 4 hardware rings which can be used for
++cryptographic operations.
++
++This document provides a brief EIP197 driver usage.
++
++Kernel infrastructure
++---------------------
++The EIP197 driver uses Kernel crypto infrastructure, for more information
++refer to: http://www.chronox.de/crypto-API/
++
++Linux Kernel Image
++------------------
++As mentioned above, EIP197 driver loads firmware into the engine.
++Due to that fact, the EIP197 driver should be compiled as a module (The
++driver should be probed only after the file system is mounted).
++
++
++The kernel object file (named crypto_safexcel) is generated in:
++./drivers/crypto/inside-secure/crypto_safexcel.ko
++
++Device-Tree
++-----------
++Refer to: Documentation/devicetree/bindings/crypto/inside_secure_eip.txt
++
++Firmware
++--------
++The EIP197 driver, loads two firmware images in to the engine:
++	- ipue.bin:	Input Pull-Up micro-Engine
++	- ifpp.bin:	Input Flow Post-Processor micro-Engine
++The driver expects to find the firmware images in /lib/firmware/eip197,
++if the firmware images aren't present there, the probe process of
++the EIP197 driver will fail.
++
++Basic usage
++-----------
++Currently EIP197 engine available on Marvell Aramada8040/7040 devices.
++Armada8040 - 2 engines.
++Armada7040 - 1 engine.
++Currently, due to Kernel crypto API limitations, the EIP197 driver
++operates only with one engine in the Kernel (support of multiple engines
++is planned as future work).
++
++The user can request a number of rings (up to 4 per engine) using module
++param called "rings":
++	insmode crypto_safexcel.ko rings=x,y
++		x - number of rings on EIP197-0 engine
++		y - number of rings on EIP197-1 engin (For device with
++		    more than one engine, such as Aramada8040)
++
++In Armada8040, due to the Kernel limitation stated above, the first
++engine with rings!=0 will be used.
++
++------------|---------------|----------|----------|-------------|
++   device   |     rings	    | EIP197-0 | EIP197-1 |  Operating  |
++	    |		    |	       |	  |    engine	|
++------------|---------------|----------|----------|-------------|
++ Armada7040 |   rings=4	    |	  4    |    N/A   |      0	|
++------------|---------------|----------|----------|-------------|
++	    |   rings=4,0   |	  4    |     0	  |	 0	|
++	    |   rings=0,4   |     0    |     4    |	 1	|
++ Armada8040 |   rings=4,4   |     4    |     4    |	 0	|
++	    |   rings=3,4   |     3    |     4    |	 0	|
++	    |   rings=4,3   |     4    |     3    |	 0      |
++------------|---------------|----------|----------|-------------|
++If "rings" is not provided, the default value is:
++	Armada7040:	rings=4
++	Armada8040:	rings=4,4 (Operating engine is engine 0)
+-- 
+2.7.4
+

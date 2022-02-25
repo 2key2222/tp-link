@@ -1,0 +1,30 @@
+From 13466cb6fe3e942066bbe1fec1321247468956a2 Mon Sep 17 00:00:00 2001
+From: Nadav Haklai <nadavh@marvell.com>
+Date: Tue, 13 Dec 2016 17:43:16 +0200
+Subject: [PATCH 1165/2241] doc: kernel: documents fixes following review
+
+Change-Id: I6883be5b453179e4d34eee73503a8c26383119d8
+Signed-off-by: Nadav Haklai <nadavh@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/34624
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ Documentation/mvebu/porting_guide.txt | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/Documentation/mvebu/porting_guide.txt b/Documentation/mvebu/porting_guide.txt
+index 903a36f..4941e85 100644
+--- a/Documentation/mvebu/porting_guide.txt
++++ b/Documentation/mvebu/porting_guide.txt
+@@ -46,7 +46,7 @@ Porting procedure
+ 		- "/arch/arm64/boot/dts/marvell/armada-8040-<new_name>.dts"
+ 		- "./arch/arm/boot/dts/armada-38x-<new_name>.dts"
+ 
+-	2. Add the new device-tree file to the corrisponding Makefile:
++	2. Add the new device-tree file to the corresponding Makefile:
+ 		- ./arch/arm64/boot/dts/marvell/Makefile (A80x0, A70x0, A37x0)
+ 		- ./arch/arm/boot/dts/Makefile		 (A38x, A39x)
+ 
+-- 
+2.7.4
+

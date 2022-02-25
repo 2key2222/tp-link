@@ -1,0 +1,52 @@
+From 1792dd7d5f42f329b3c1675152c9b4ef69d7c980 Mon Sep 17 00:00:00 2001
+From: Igal Liberman <igall@marvell.com>
+Date: Tue, 21 Mar 2017 13:21:37 +0200
+Subject: [PATCH 1517/2241] crypto: inside-secure: fix incorrect rd_cache and
+ wr_cache settings
+
+rd_cache - Read cache type control
+wr_cache - Write cache type control
+
+In A8040/7040, The recommended configuration is non-allocate Cacheable.
+This patch sets rd_cache/wr_cache to the correct values, optimizing
+the DMA reads.
+
+Change-Id: I1ec010f3580c3cbf43d47a40d785ffaa345c0af6
+Signed-off-by: Igal Liberman <igall@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/37850
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+---
+ drivers/crypto/inside-secure/safexcel.c | 2 +-
+ drivers/crypto/inside-secure/safexcel.h | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/crypto/inside-secure/safexcel.c b/drivers/crypto/inside-secure/safexcel.c
+index 0a03a9c..121f12d 100644
+--- a/drivers/crypto/inside-secure/safexcel.c
++++ b/drivers/crypto/inside-secure/safexcel.c
+@@ -532,7 +532,7 @@ static int eip197_hw_init(struct device *dev, struct safexcel_crypto_priv *priv)
+ 	/* DMA transfer size to use */
+ 	val = EIP197_HIA_DSE_CFG_DIS_DEBUG;
+ 	val |= EIP197_HIA_DxE_CFG_MIN_DATA_SIZE(7) | EIP197_HIA_DxE_CFG_MAX_DATA_SIZE(8);
+-	val |= EIP197_HIA_DxE_CFG_DATA_CACHE_CTRL(RD_CACHE_3BITS);
++	val |= EIP197_HIA_DxE_CFG_DATA_CACHE_CTRL(WR_CACHE_3BITS);
+ 	val |= EIP197_HIA_DSE_CFG_BUFFER_CTRL(2);
+ 	writel(val, EIP197_HIA_DSE(priv) + EIP197_HIA_DSE_CFG);
+ 
+diff --git a/drivers/crypto/inside-secure/safexcel.h b/drivers/crypto/inside-secure/safexcel.h
+index b9bdb62..b13ec84 100644
+--- a/drivers/crypto/inside-secure/safexcel.h
++++ b/drivers/crypto/inside-secure/safexcel.h
+@@ -197,7 +197,7 @@
+ #define EIP197_HIA_xDR_WR_RES_BUF			BIT(22)
+ #define EIP197_HIA_xDR_WR_CTRL_BUG			BIT(23)
+ #define EIP197_HIA_xDR_WR_OWN_BUF			BIT(24)
+-#define EIP197_HIA_xDR_CFG_WR_CACHE(n)			(((n) & 0x7) << 23)
++#define EIP197_HIA_xDR_CFG_WR_CACHE(n)			(((n) & 0x7) << 25)
+ #define EIP197_HIA_xDR_CFG_RD_CACHE(n)			(((n) & 0x7) << 29)
+ 
+ /* EIP197_HIA_CDR_THRESH */
+-- 
+2.7.4
+

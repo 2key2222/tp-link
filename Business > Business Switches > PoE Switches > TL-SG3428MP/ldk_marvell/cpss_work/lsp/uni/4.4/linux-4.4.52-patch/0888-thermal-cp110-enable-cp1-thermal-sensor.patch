@@ -1,0 +1,50 @@
+From 408c4dbabb3ce6850a8a7e748dc44462c80cf71e Mon Sep 17 00:00:00 2001
+From: David Sniatkiwicz <davidsn@marvell.com>
+Date: Wed, 10 Aug 2016 08:39:14 +0300
+Subject: [PATCH 0888/2241] thermal: cp110: enable cp1 thermal sensor
+
+- updated device tree thermal node with thermal sensor data
+- ICU interrupt assignment supports only single thermal sensor interrupt.
+  to enable CP1(Slave) overheat interrupt,
+  need to disable CP0(Master) overheat interrupt.
+
+Change-Id: Ifcd0309d05711f7b606f7d7520d50edc4a0b83b7
+Signed-off-by: David Sniatkiwicz <davidsn@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/31823
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-cp110-1.dtsi | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-cp110-1.dtsi b/arch/arm64/boot/dts/marvell/armada-cp110-1.dtsi
+index d60095b..2702f08 100644
+--- a/arch/arm64/boot/dts/marvell/armada-cp110-1.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-cp110-1.dtsi
+@@ -142,6 +142,22 @@ cpxor1@6c0000 {
+ 	status = "disabled";
+ };
+ 
++thermal@400078 {
++	compatible = "marvell,armada-cp110-thermal";
++	reg = <0x400078 0x4>,
++		<0x400070 0x8>,
++		<0x400100 0x20>;
++	/* interrupt assignment by ICU supports single thermal sensor unit,
++	 * currently cp0 thermal sensor irq is enabled.
++	 * To enable cp1 thermal sensor interrupt,
++	 * first disable cp0 thermal sensor interrupt.
++	 */
++	/* interrupts-extended = <&sei 37>;*/
++	threshold = <100>;
++	hysteresis = <2>;
++	status = "okay";
++};
++
+ mdio@12a200 {
+ 	#address-cells = <1>;
+ 	#size-cells = <0>;
+-- 
+2.7.4
+

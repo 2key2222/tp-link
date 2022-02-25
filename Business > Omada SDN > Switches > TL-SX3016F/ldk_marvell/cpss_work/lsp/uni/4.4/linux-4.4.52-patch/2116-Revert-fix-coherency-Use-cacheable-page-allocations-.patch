@@ -1,0 +1,137 @@
+From d2eb559782913a3ce911e7229e849cb354eca515 Mon Sep 17 00:00:00 2001
+From: Igal Liberman <igall@marvell.com>
+Date: Wed, 30 Aug 2017 14:54:16 +0300
+Subject: [PATCH 2116/2241] Revert "fix: coherency: Use cacheable page
+ allocations for I/O buffers"
+
+This reverts commit 8ac0bd95cf739bf0016a6aff985835124713e245.
+
+Change-Id: I16529abd271a29d005269dc61461612371e314e7
+Reviewed-on: http://vgitil04.il.marvell.com:8080/43557
+Reviewed-by: Neta Zur Hershkovits <neta@marvell.com>
+Tested-by: Neta Zur Hershkovits <neta@marvell.com>
+---
+ arch/arm/include/asm/dma-mapping.h |  6 ------
+ arch/arm/mach-mvebu/coherency.c    |  8 ++++----
+ arch/arm/mm/dma-mapping.c          | 34 +++++++++++++++++++++-------------
+ 3 files changed, 25 insertions(+), 23 deletions(-)
+
+diff --git a/arch/arm/include/asm/dma-mapping.h b/arch/arm/include/asm/dma-mapping.h
+index 163d729..b91a2d1 100644
+--- a/arch/arm/include/asm/dma-mapping.h
++++ b/arch/arm/include/asm/dma-mapping.h
+@@ -185,9 +185,6 @@ extern int arm_dma_set_mask(struct device *dev, u64 dma_mask);
+ extern void *arm_dma_alloc(struct device *dev, size_t size, dma_addr_t *handle,
+ 			   gfp_t gfp, struct dma_attrs *attrs);
+ 
+-extern void *arm_coherent_dma_alloc(struct device *dev, size_t size,
+-				    dma_addr_t *handle, gfp_t gfp, struct dma_attrs *attrs);
+-
+ /**
+  * arm_dma_free - free memory allocated by arm_dma_alloc
+  * @dev: valid struct device pointer, or NULL for ISA and EISA-like devices
+@@ -205,9 +202,6 @@ extern void *arm_coherent_dma_alloc(struct device *dev, size_t size,
+ extern void arm_dma_free(struct device *dev, size_t size, void *cpu_addr,
+ 			 dma_addr_t handle, struct dma_attrs *attrs);
+ 
+-extern void arm_coherent_dma_free(struct device *dev, size_t size, void *cpu_addr,
+-				  dma_addr_t handle, struct dma_attrs *attrs);
+-
+ /**
+  * arm_dma_mmap - map a coherent DMA allocation into user space
+  * @dev: valid struct device pointer, or NULL for ISA and EISA-like devices
+diff --git a/arch/arm/mach-mvebu/coherency.c b/arch/arm/mach-mvebu/coherency.c
+index 443c445..7f03115 100644
+--- a/arch/arm/mach-mvebu/coherency.c
++++ b/arch/arm/mach-mvebu/coherency.c
+@@ -125,9 +125,9 @@ static void mvebu_hwcc_dma_sync(struct device *dev, dma_addr_t dma_handle,
+ 		mvebu_hwcc_sync_io_barrier();
+ }
+ 
+-static struct dma_map_ops mvebu_hwcc_dma_ops = {
+-	.alloc			= arm_coherent_dma_alloc,
+-	.free			= arm_coherent_dma_free,
++static const struct dma_map_ops mvebu_hwcc_dma_ops = {
++	.alloc			= arm_dma_alloc,
++	.free			= arm_dma_free,
+ 	.mmap			= arm_dma_mmap,
+ 	.map_page		= mvebu_hwcc_dma_map_page,
+ 	.unmap_page		= mvebu_hwcc_dma_unmap_page,
+@@ -138,7 +138,7 @@ static struct dma_map_ops mvebu_hwcc_dma_ops = {
+ 	.sync_single_for_device	= mvebu_hwcc_dma_sync,
+ 	.sync_sg_for_cpu	= arm_dma_sync_sg_for_cpu,
+ 	.sync_sg_for_device	= arm_dma_sync_sg_for_device,
+-	.set_dma_mask		= arm_dma_set_mask,
++	.set_dma_mask	= arm_dma_set_mask,
+ };
+ 
+ static int mvebu_hwcc_notifier(struct notifier_block *nb,
+diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
+index d43ecdc..4154196 100644
+--- a/arch/arm/mm/dma-mapping.c
++++ b/arch/arm/mm/dma-mapping.c
+@@ -145,6 +145,25 @@ struct dma_map_ops arm_dma_ops = {
+ };
+ EXPORT_SYMBOL(arm_dma_ops);
+ 
++static void *arm_coherent_dma_alloc(struct device *dev, size_t size,
++	dma_addr_t *handle, gfp_t gfp, struct dma_attrs *attrs);
++static void arm_coherent_dma_free(struct device *dev, size_t size, void *cpu_addr,
++				  dma_addr_t handle, struct dma_attrs *attrs);
++static int arm_coherent_dma_mmap(struct device *dev, struct vm_area_struct *vma,
++		 void *cpu_addr, dma_addr_t dma_addr, size_t size,
++		 struct dma_attrs *attrs);
++
++struct dma_map_ops arm_coherent_dma_ops = {
++	.alloc			= arm_coherent_dma_alloc,
++	.free			= arm_coherent_dma_free,
++	.mmap			= arm_coherent_dma_mmap,
++	.get_sgtable		= arm_dma_get_sgtable,
++	.map_page		= arm_coherent_dma_map_page,
++	.map_sg			= arm_dma_map_sg,
++	.set_dma_mask		= arm_dma_set_mask,
++};
++EXPORT_SYMBOL(arm_coherent_dma_ops);
++
+ static int __dma_supported(struct device *dev, u64 mask, bool warn)
+ {
+ 	unsigned long max_dma_pfn;
+@@ -676,7 +695,7 @@ void *arm_dma_alloc(struct device *dev, size_t size, dma_addr_t *handle,
+ 			   attrs, __builtin_return_address(0));
+ }
+ 
+-void *arm_coherent_dma_alloc(struct device *dev, size_t size,
++static void *arm_coherent_dma_alloc(struct device *dev, size_t size,
+ 	dma_addr_t *handle, gfp_t gfp, struct dma_attrs *attrs)
+ {
+ 	return __dma_alloc(dev, size, handle, gfp, PAGE_KERNEL, true,
+@@ -763,7 +782,7 @@ void arm_dma_free(struct device *dev, size_t size, void *cpu_addr,
+ 	__arm_dma_free(dev, size, cpu_addr, handle, attrs, false);
+ }
+ 
+-void arm_coherent_dma_free(struct device *dev, size_t size, void *cpu_addr,
++static void arm_coherent_dma_free(struct device *dev, size_t size, void *cpu_addr,
+ 				  dma_addr_t handle, struct dma_attrs *attrs)
+ {
+ 	__arm_dma_free(dev, size, cpu_addr, handle, attrs, true);
+@@ -2163,17 +2182,6 @@ static void arm_teardown_iommu_dma_ops(struct device *dev) { }
+ 
+ #endif	/* CONFIG_ARM_DMA_USE_IOMMU */
+ 
+-struct dma_map_ops arm_coherent_dma_ops = {
+-	.alloc		= arm_coherent_dma_alloc,
+-	.free		= arm_coherent_dma_free,
+-	.mmap		= arm_coherent_dma_mmap,
+-	.get_sgtable	= arm_dma_get_sgtable,
+-	.map_page	= arm_coherent_dma_map_page,
+-	.map_sg		= arm_dma_map_sg,
+-	.set_dma_mask	= arm_dma_set_mask,
+-};
+-EXPORT_SYMBOL(arm_coherent_dma_ops);
+-
+ static struct dma_map_ops *arm_get_dma_map_ops(bool coherent)
+ {
+ 	return coherent ? &arm_coherent_dma_ops : &arm_dma_ops;
+-- 
+2.7.4
+

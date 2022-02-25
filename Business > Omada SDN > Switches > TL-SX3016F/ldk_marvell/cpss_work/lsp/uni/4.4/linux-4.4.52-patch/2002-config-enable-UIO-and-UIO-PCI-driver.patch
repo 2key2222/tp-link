@@ -1,0 +1,30 @@
+From 11cdb2a6d41ffa193e2ed8cb1f7e4a6153e02751 Mon Sep 17 00:00:00 2001
+From: Yehuda Yitschak <yehuday@marvell.com>
+Date: Thu, 31 Aug 2017 23:46:44 +0300
+Subject: [PATCH 2002/2241] config: enable UIO and UIO PCI driver
+
+Change-Id: I7eeee3fdea17fa9893d5021c680d62371ab84b65
+Signed-off-by: Yehuda Yitschak <yehuday@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/43630
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+---
+ arch/arm64/configs/mvebu_v8_lsp_defconfig | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/arch/arm64/configs/mvebu_v8_lsp_defconfig b/arch/arm64/configs/mvebu_v8_lsp_defconfig
+index 24f6de2..b08ce48 100644
+--- a/arch/arm64/configs/mvebu_v8_lsp_defconfig
++++ b/arch/arm64/configs/mvebu_v8_lsp_defconfig
+@@ -217,6 +217,8 @@ CONFIG_MV_XOR=y
+ CONFIG_MV_XOR_V2=y
+ CONFIG_ASYNC_TX_DMA=y
+ CONFIG_DMATEST=y
++CONFIG_UIO=y
++CONFIG_UIO_PCI_EP=y
+ CONFIG_VFIO=y
+ CONFIG_VFIO_PCI=y
+ CONFIG_VFIO_PLATFORM=y
+-- 
+2.7.4
+

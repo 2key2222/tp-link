@@ -1,0 +1,37 @@
+From 65c5897e9a61a801a1754315fe09088d39179c7b Mon Sep 17 00:00:00 2001
+From: Stefan Chulski <stefanc@marvell.com>
+Date: Thu, 27 Apr 2017 10:34:30 +0300
+Subject: [PATCH 1583/2241] fix: net: mvpp2x: fix RSS for IPv6 packets with
+ different DA
+
+Issue:
+Wrong classifier field ID for IPv6 DA were set and RSS doesn't
+worked for IPv6 packets with different DA.
+
+Change-Id: Ic27a87f12cda412caff78fa8a9820c9cffa42e35
+Signed-off-by: Stefan Chulski <stefanc@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/38962
+Reviewed-by: Ehud Naim <ehudn@marvell.com>
+Reviewed-by: Yuval Caduri <cyuval@marvell.com>
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw_type.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw_type.h b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw_type.h
+index 1781d81..9e33d1d 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw_type.h
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw_type.h
+@@ -1709,7 +1709,7 @@ enum mv_pp2x_cls_filed_id {
+ 	MVPP2_CLS_FIELD_IP4SA = 0x10,
+ 	MVPP2_CLS_FIELD_IP4DA = 0x11,
+ 	MVPP2_CLS_FIELD_IP6SA = 0x17,
+-	MVPP2_CLS_FIELD_IP6DA = 0x18,
++	MVPP2_CLS_FIELD_IP6DA = 0x1A,
+ 	MVPP2_CLS_FIELD_L4SIP = 0x1D,
+ 	MVPP2_CLS_FIELD_L4DIP = 0x1E,
+ };
+-- 
+2.7.4
+

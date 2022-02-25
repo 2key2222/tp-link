@@ -1,0 +1,71 @@
+From 711aafd0f121de6c2af62a4fb65f2e98e679c033 Mon Sep 17 00:00:00 2001
+From: Marcin Wojtas <mw@semihalf.com>
+Date: Wed, 11 Jan 2017 02:14:02 +0100
+Subject: [PATCH 1301/2241] telephony: mvebu: spi: Replace misleading line_id
+ from API
+
+External SLIC drivers use their own mapping of channels (lines)
+and particular devices. Each one can comprise from one to 32 channels,
+depending on model. When mv_phone SPI API is called from upper layers
+the device logical ID is passed - it's neither chip select, nor
+the actual channel (chosen e.g. in mv_voice_tool).
+
+This patch replaces 'line_id' with 'dev_id' in order to achieve
+consistency and it's a preparation for adding multiple SLIC support
+by mv_phone_spi driver.
+
+Change-Id: I0d64ae0a536911c54985a25ae677ae72daa0f9a4
+Signed-off-by: Marcin Wojtas <mw@semihalf.com>
+Signed-off-by: Igal Liberman <igall@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/35871
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/telephony/mvebu_phone/mv_phone_spi.c | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/telephony/mvebu_phone/mv_phone_spi.c b/drivers/telephony/mvebu_phone/mv_phone_spi.c
+index 7cb3a32..3cda17d 100644
+--- a/drivers/telephony/mvebu_phone/mv_phone_spi.c
++++ b/drivers/telephony/mvebu_phone/mv_phone_spi.c
+@@ -104,14 +104,14 @@
+ struct spi_device *slic_spi;
+ 
+ /* Telephony register read via SPI interface. */
+-void mv_phone_spi_read(u16 line_id, u8 *cmd_buff, u8 cmd_size,
++void mv_phone_spi_read(u16 dev_id, u8 *cmd_buff, u8 cmd_size,
+ 		       u8 *data_buff, u8 data_size, u32 spi_type)
+ {
+ 	int err;
+ 
+ #ifdef MVEBU_PHONE_SPI_DEBUG
+-	pr_info("%s():line(%d) Spi ID=%d line_id=%d Spi CS=%d Spi type=%d\n",
+-		__func__, __LINE__, slic_spi->master->bus_num, line_id,
++	pr_info("%s():line(%d) Spi ID=%d dev_id=%d Spi CS=%d Spi type=%d\n",
++		__func__, __LINE__, slic_spi->master->bus_num, dev_id,
+ 		slic_spi->chip_select, spi_type);
+ #endif
+ 
+@@ -127,7 +127,7 @@ void mv_phone_spi_read(u16 line_id, u8 *cmd_buff, u8 cmd_size,
+ }
+ 
+ /* Telephony register write via SPI interface. */
+-void mv_phone_spi_write(u16 line_id, u8 *cmd_buff, u8 cmd_size,
++void mv_phone_spi_write(u16 dev_id, u8 *cmd_buff, u8 cmd_size,
+ 			u8 *data_buff, u8 data_size, u32 spi_type)
+ {
+ 	int err;
+@@ -138,8 +138,8 @@ void mv_phone_spi_write(u16 line_id, u8 *cmd_buff, u8 cmd_size,
+ 				       .len = data_size, }, };
+ 
+ #ifdef MVEBU_PHONE_SPI_DEBUG
+-	pr_info("%s():line(%d) Spi ID=%d line_id=%d Spi CS=%d Spi type=%d\n",
+-		__func__, __LINE__, slic_spi->master->bus_num, line_id,
++	pr_info("%s():line(%d) Spi ID=%d dev_id=%d Spi CS=%d Spi type=%d\n",
++		__func__, __LINE__, slic_spi->master->bus_num, dev_id,
+ 		slic_spi->chip_select, spi_type);
+ 	pr_info("CMD = 0x%x, cmd_size = 0x%x, DATA = 0x%x, data_size = 0x%x\n",
+ 		*cmd_buff, cmd_size, *data_buff, data_size);
+-- 
+2.7.4
+

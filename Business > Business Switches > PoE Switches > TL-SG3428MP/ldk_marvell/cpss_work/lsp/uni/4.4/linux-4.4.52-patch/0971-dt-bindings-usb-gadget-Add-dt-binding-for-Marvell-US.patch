@@ -1,0 +1,94 @@
+From aa6b37a6bce6fc82d41ace840200647e90522884 Mon Sep 17 00:00:00 2001
+From: Omri Itach <omrii@marvell.com>
+Date: Wed, 14 Sep 2016 16:02:32 +0300
+Subject: [PATCH 0971/2241] dt-bindings: usb: gadget: Add dt-binding for
+ Marvell USB Device controller
+
+add DT binding documentation for the Marvell USB device controller.
+This controller is composed of 2 separate controllers
+for USB2 device and USB3 device.
+
+Change-Id: Ia6382b16f9231d134faec4ec2872b81859de0ab3
+Signed-off-by: Omri Itach <omrii@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/32803
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+Reviewed-by: Gina Tadmore <gina@marvell.com>
+---
+ .../devicetree/bindings/usb/marvell-u3d.txt        | 28 ++++++++++++++++++++++
+ .../devicetree/bindings/usb/marvell-udc.txt        | 28 ++++++++++++++++++++++
+ 2 files changed, 56 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/usb/marvell-u3d.txt
+ create mode 100644 Documentation/devicetree/bindings/usb/marvell-udc.txt
+
+diff --git a/Documentation/devicetree/bindings/usb/marvell-u3d.txt b/Documentation/devicetree/bindings/usb/marvell-u3d.txt
+new file mode 100644
+index 0000000..adcae2e
+--- /dev/null
++++ b/Documentation/devicetree/bindings/usb/marvell-u3d.txt
+@@ -0,0 +1,28 @@
++Marvell USB3 device controller
++
++This controller is integrated in Armada 38x/3700/8K.
++
++Required properties:
++- compatible	: Must be "marvell,mvebu-u3d"
++- reg		: Physical base address and size of the USB3 device registers map.
++- interrupts	: Should contain single irq line of USB3 device controller
++- clocks	: the clock associated to this controller
++- dma-coherent	: if controller is DMA coherent
++
++Optional properties :
++- vbus-gpio	: VBUS interrupt GPIO pin
++		  set to trigger VBUS event notification to PHY/controller
++		  whether VBUS was powered or not
++
++Example:
++	u3d@520000 {
++		compatible = "marvell,mvebu-u3d";
++		reg = <0x520000 0x2000>;
++		interrupts = <GIC_SPI 60 IRQ_TYPE_LEVEL_HIGH>;
++		clocks = <&gateclk 24>, <&gateclk 16>;
++		dma-coherent;
++		vbus-gpio = <&gpio1 19 GPIO_ACTIVE_HIGH>;
++		status = "disabled";
++	};
++
++
+diff --git a/Documentation/devicetree/bindings/usb/marvell-udc.txt b/Documentation/devicetree/bindings/usb/marvell-udc.txt
+new file mode 100644
+index 0000000..ea858eb
+--- /dev/null
++++ b/Documentation/devicetree/bindings/usb/marvell-udc.txt
+@@ -0,0 +1,28 @@
++Marvell USB2 device controller
++
++This controller is integrated in Armada 38x/3700/8K.
++
++Required properties:
++- compatible	: Must be "marvell,mv-udc"
++- reg		: Physical base address and size of the USB2 device registers map.
++- interrupts	: Should contain single irq line of USB2 device controller
++- clocks	: the clock associated to this controller
++- dma-coherent	: if controller is DMA coherent
++
++Optional properties :
++- vbus-gpio	: VBUS interrupt GPIO pin
++		  set to trigger VBUS event notification to PHY/controller
++		  whether VBUS was powered or not
++
++Example:
++	udc@524100 {
++		compatible = "marvell,mv-udc";
++		reg = <0x524100 0x2000>;
++		interrupts = <GIC_SPI 60 IRQ_TYPE_LEVEL_HIGH>;
++		clocks = <&gateclk 24>, <&gateclk 16>;
++ 		dma-coherent;
++		vbus-gpio = <&gpio1 19 GPIO_ACTIVE_HIGH>;
++		status = "disabled";
++	};
++
++
+-- 
+2.7.4
+

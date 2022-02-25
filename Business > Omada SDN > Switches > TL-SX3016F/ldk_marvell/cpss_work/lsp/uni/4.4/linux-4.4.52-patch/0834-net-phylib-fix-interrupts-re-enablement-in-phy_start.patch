@@ -1,0 +1,43 @@
+From 5806887dc90c27daa435fa9cf1477d40c0359962 Mon Sep 17 00:00:00 2001
+From: Shaohui Xie <Shaohui.Xie@nxp.com>
+Date: Tue, 10 May 2016 17:42:26 +0800
+Subject: [PATCH 0834/2241] net: phylib: fix interrupts re-enablement in
+ phy_start
+
+Upstream-commit: 84a527a41f38a80353f185d05e41b021e1ff672b
+
+If phy was suspended and is starting, current driver always enable
+phy's interrupts, if phy works in polling, phy can raise unexpected
+interrupt which will not be handled, the interrupt will block system
+enter suspend again. So interrupts should only be re-enabled if phy
+works in interrupt.
+
+Signed-off-by: Shaohui Xie <Shaohui.Xie@nxp.com>
+Reviewed-by: Florian Fainelli <f.fainelli@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+---
+ drivers/net/phy/phy.c | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/net/phy/phy.c b/drivers/net/phy/phy.c
+index ab4b651..30b500e 100644
+--- a/drivers/net/phy/phy.c
++++ b/drivers/net/phy/phy.c
+@@ -792,9 +792,11 @@ void phy_start(struct phy_device *phydev)
+ 		break;
+ 	case PHY_HALTED:
+ 		/* make sure interrupts are re-enabled for the PHY */
+-		err = phy_enable_interrupts(phydev);
+-		if (err < 0)
+-			break;
++		if (phydev->irq != PHY_POLL) {
++			err = phy_enable_interrupts(phydev);
++			if (err < 0)
++				break;
++		}
+ 
+ 		phydev->state = PHY_RESUMING;
+ 		do_resume = true;
+-- 
+2.7.4
+

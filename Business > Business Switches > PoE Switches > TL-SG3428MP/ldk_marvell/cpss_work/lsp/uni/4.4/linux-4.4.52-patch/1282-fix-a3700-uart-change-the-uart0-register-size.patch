@@ -1,0 +1,48 @@
+From 4e7294e1727245581cf48bedbb83eea2ab78c889 Mon Sep 17 00:00:00 2001
+From: allen yan <yanwei@marvell.com>
+Date: Wed, 28 Dec 2016 21:48:22 +0800
+Subject: [PATCH 1282/2241] fix: a3700: uart: change the uart0 register size
+
+- Modify the uart0 register size, because the uart0 only
+  use 0x12000-0x12200 accroding the function spec, but in
+  the old dtsi uart0 occupy 0x12000-0x12400.
+- Update the examples in dt-binding document accordingly.
+
+Change-Id: I14821a9ad8950a89451ee9d8340fd0fd4616af5c
+Signed-off-by: allen yan <yanwei@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/35094
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Wilson Ding <dingwei@marvell.com>
+---
+ Documentation/devicetree/bindings/tty/serial/mvebu-uart.txt | 2 +-
+ arch/arm64/boot/dts/marvell/armada-37xx.dtsi                | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/tty/serial/mvebu-uart.txt b/Documentation/devicetree/bindings/tty/serial/mvebu-uart.txt
+index 6087def..d37fabe 100644
+--- a/Documentation/devicetree/bindings/tty/serial/mvebu-uart.txt
++++ b/Documentation/devicetree/bindings/tty/serial/mvebu-uart.txt
+@@ -8,6 +8,6 @@ Required properties:
+ Example:
+ 	serial@12000 {
+ 		compatible = "marvell,armada-3700-uart";
+-		reg = <0x12000 0x400>;
++		reg = <0x12000 0x200>;
+ 		interrupts = <43>;
+ 	};
+diff --git a/arch/arm64/boot/dts/marvell/armada-37xx.dtsi b/arch/arm64/boot/dts/marvell/armada-37xx.dtsi
+index aea0672..924f84f 100644
+--- a/arch/arm64/boot/dts/marvell/armada-37xx.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-37xx.dtsi
+@@ -140,7 +140,7 @@
+ 
+ 			uart0: serial@12000 {
+ 				compatible = "marvell,armada-3700-uart";
+-				reg = <0x12000 0x400>;
++				reg = <0x12000 0x200>;
+ 				interrupts = <GIC_SPI 11 IRQ_TYPE_LEVEL_HIGH>;
+ 				status = "disabled";
+ 			};
+-- 
+2.7.4
+

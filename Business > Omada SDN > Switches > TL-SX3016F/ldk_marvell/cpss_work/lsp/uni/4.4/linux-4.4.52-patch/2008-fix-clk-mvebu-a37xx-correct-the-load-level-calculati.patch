@@ -1,0 +1,42 @@
+From 76eb4287a5410a691fa55db59b39f4c59217878d Mon Sep 17 00:00:00 2001
+From: Evan Wang <xswang@marvell.com>
+Date: Wed, 13 Sep 2017 17:29:49 +0800
+Subject: [PATCH 2008/2241] fix: clk: mvebu: a37xx: correct the load level
+ calculation
+
+There is an issue when calculating load level that the
+load level width is 2 bits, so its valid value calculation
+shoudl be (level & 0x3) not (level * 0x3).
+
+The issue will cause DVFS set scaling frequency does not
+work because there is possiblity that the target CPU load
+level exceeds limitation.
+
+The patch correct the typo issue for calculation of load
+level.
+
+Change-Id: Ida29b3894a79b50491ceefef032be1e5ce5c489c
+Signed-off-by: Evan Wang <xswang@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/44327
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Victor Gu <xigu@marvell.com>
+---
+ drivers/clk/mvebu/armada-37xx-pm-clk.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/clk/mvebu/armada-37xx-pm-clk.c b/drivers/clk/mvebu/armada-37xx-pm-clk.c
+index c08a15b..4da10a7 100644
+--- a/drivers/clk/mvebu/armada-37xx-pm-clk.c
++++ b/drivers/clk/mvebu/armada-37xx-pm-clk.c
+@@ -229,7 +229,7 @@ static unsigned long armada_3700_clk_recalc_rate(struct clk_hw *hw, unsigned lon
+ 	unsigned long rate = 0;
+ 	struct armada_a3700_clk_pm_info *clk_pm_info = NULL;
+ 	struct armada_3700_clk_pm *clk = to_clk(hw);
+-	int load_level = readl(clk->reg + A3700_PM_NB_CPU_LOAD_REG) * A3700_PM_NB_CPU_LOAD_MASK;
++	int load_level = readl(clk->reg + A3700_PM_NB_CPU_LOAD_REG) & A3700_PM_NB_CPU_LOAD_MASK;
+ 
+ 	if (armada3700_clk_pm_dvfs_is_enabled(clk)) {
+ 		clk_pm_info = armada_3700_clk_pm_info_get(clk->max_cpu_freq);
+-- 
+2.7.4
+

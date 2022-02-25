@@ -1,0 +1,87 @@
+From bd6b042909571f8c5ddce384e95bdd2c104ca93c Mon Sep 17 00:00:00 2001
+From: David Sniatkiwicz <davidsn@marvell.com>
+Date: Mon, 30 Oct 2017 15:58:34 +0200
+Subject: [PATCH 2083/2241] arm64: mvebu: dts: Add pin controls to SDHC entries
+
+Extend the A7K/A8K DB DTS by adding pin control nodes to SDHC
+controller entries.
+This change ensures that the pin configuration for AP/CPM SDHC controller
+is done by the Linux driver regardless the configuration that is done
+by the boot loader.
+
+Change-Id: Ide347a2979914d69aa291c40fcd0e49cf4f14991
+Signed-off-by: David Sniatkiwicz <davidsn@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/45687
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Marcin Wojtas <mw@semihalf.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-7040-pcac.dts  | 2 ++
+ arch/arm64/boot/dts/marvell/armada-8040-db.dtsi   | 3 +++
+ arch/arm64/boot/dts/marvell/armada-8040-mcbin.dts | 2 ++
+ arch/arm64/boot/dts/marvell/armada-8040-ocp.dts   | 2 ++
+ 4 files changed, 9 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-7040-pcac.dts b/arch/arm64/boot/dts/marvell/armada-7040-pcac.dts
+index 5bad8be..9cb60bc 100644
+--- a/arch/arm64/boot/dts/marvell/armada-7040-pcac.dts
++++ b/arch/arm64/boot/dts/marvell/armada-7040-pcac.dts
+@@ -84,6 +84,8 @@
+ 				bus-width = <4>;
+ 				no-1-8-v;
+ 				non-removable; /* For now, need to configure the GPIO for card detect */
++				pinctrl-names = "default";
++				pinctrl-0 = <&ap_emmc_pins>;
+ 				status = "okay";
+ 			};
+ 		};
+diff --git a/arch/arm64/boot/dts/marvell/armada-8040-db.dtsi b/arch/arm64/boot/dts/marvell/armada-8040-db.dtsi
+index 02050c4..95597d4 100644
+--- a/arch/arm64/boot/dts/marvell/armada-8040-db.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-8040-db.dtsi
+@@ -62,6 +62,8 @@
+ 				marvell,xenon-emmc;
+ 				bus-width = <8>;
+ 				non-removable;
++				pinctrl-names = "default";
++				pinctrl-0 = <&ap_emmc_pins>;
+ 			};
+ 			spi0: spi@510600 {
+ 				status = "disabled";
+@@ -172,6 +174,7 @@
+ 			sdhci@780000 {
+ 				bus-width = <4>;
+ 				non-removable;
++				pinctrl-0 = <&cpm_sdhci_pins>;
+ 			};
+ 		};
+ 
+diff --git a/arch/arm64/boot/dts/marvell/armada-8040-mcbin.dts b/arch/arm64/boot/dts/marvell/armada-8040-mcbin.dts
+index e9a731e..8f5c0c6 100644
+--- a/arch/arm64/boot/dts/marvell/armada-8040-mcbin.dts
++++ b/arch/arm64/boot/dts/marvell/armada-8040-mcbin.dts
+@@ -74,6 +74,8 @@
+ 				no-1-8-v;
+ 				non-removable;
+ 				marvell,xenon-emmc;
++				pinctrl-names = "default";
++				pinctrl-0 = <&ap_emmc_pins>;
+ 				status = "okay";
+ 			};
+ 			vccq_mmc_reg: regulator@0 {
+diff --git a/arch/arm64/boot/dts/marvell/armada-8040-ocp.dts b/arch/arm64/boot/dts/marvell/armada-8040-ocp.dts
+index 3523ddc..c6dcb07 100644
+--- a/arch/arm64/boot/dts/marvell/armada-8040-ocp.dts
++++ b/arch/arm64/boot/dts/marvell/armada-8040-ocp.dts
+@@ -72,6 +72,8 @@
+ 				no-1-8-v;
+ 				non-removable;
+ 				marvell,xenon-emmc;
++				pinctrl-names = "default";
++				pinctrl-0 = <&ap_emmc_pins>;
+ 				status = "okay";
+ 			};
+ 			vccq_mmc_reg: regulator@0 {
+-- 
+2.7.4
+

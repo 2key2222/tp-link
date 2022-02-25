@@ -1,0 +1,36 @@
+From 2f3d824056dc06fee1edfca36708978180cb4e50 Mon Sep 17 00:00:00 2001
+From: Ofer Heifetz <oferh@marvell.com>
+Date: Sun, 22 Nov 2015 11:53:39 +0200
+Subject: [PATCH 0233/2241] fix: thermal: armada: band gap circuit curve errata
+ #132698 update
+
+The errata fix was performed before an errata number was ready,
+this commit adds the errata number to source code only.
+
+Change-Id: I4043a40455cf4ee3f1bebee645b569b59f7643eb
+Signed-off-by: Ofer Heifetz <oferh@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/25130
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/28002
+Reviewed-by: Lior Amsalem <alior@marvell.com>
+---
+ drivers/thermal/armada_thermal.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/thermal/armada_thermal.c b/drivers/thermal/armada_thermal.c
+index c2d27d0..eef35d5 100644
+--- a/drivers/thermal/armada_thermal.c
++++ b/drivers/thermal/armada_thermal.c
+@@ -235,7 +235,7 @@ static void armada380_init_sensor(struct platform_device *pdev,
+ 		mdelay(10);
+ 	}
+ 
+-	/* set Tsen Tc Trim value */
++	/* set Tsen Tc Trim to correct default value (errata #132698) */
+ 	reg = readl_relaxed(priv->control);
+ 	reg &= ~A380_TSEN_TC_TRIM_MASK;
+ 	reg |= 0x3;
+-- 
+2.7.4
+

@@ -1,0 +1,39 @@
+From 4370844f8e917a70ac8c90dae4dbb84b8e278a57 Mon Sep 17 00:00:00 2001
+From: Yehuda Yitschak <yehuday@marvell.com>
+Date: Sun, 20 Mar 2016 16:17:40 +0200
+Subject: [PATCH 0257/2241] trace: etm4: add support for CA-72 ETM4 id
+
+Add support for the CA-72 identification code for the
+embedded trace macrocell (ETM). This enables the driver
+to identify the ETM device by reading the peripheral id
+register.
+
+Change-Id: I7156bc73a7343e8eeafb7704645b0cd6272399ce
+Signed-off-by: Yehuda Yitschak <yehuday@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/28366
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+Reviewed-by: Shadi Ammouri <shadi@marvell.com>
+---
+ drivers/hwtracing/coresight/coresight-etm4x.c | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/drivers/hwtracing/coresight/coresight-etm4x.c b/drivers/hwtracing/coresight/coresight-etm4x.c
+index a670764..e0c1406 100644
+--- a/drivers/hwtracing/coresight/coresight-etm4x.c
++++ b/drivers/hwtracing/coresight/coresight-etm4x.c
+@@ -2706,6 +2706,11 @@ static struct amba_id etm4_ids[] = {
+ 		.mask	= 0x000fffff,
+ 		.data	= "ETM 4.0",
+ 	},
++	{       /* ETM 4.0 - CA-72 ID */
++		.id	= 0x000bb95a,
++		.mask	= 0x000fffff,
++		.data	= "ETM 4.0",
++	},
+ 	{ 0, 0},
+ };
+ 
+-- 
+2.7.4
+

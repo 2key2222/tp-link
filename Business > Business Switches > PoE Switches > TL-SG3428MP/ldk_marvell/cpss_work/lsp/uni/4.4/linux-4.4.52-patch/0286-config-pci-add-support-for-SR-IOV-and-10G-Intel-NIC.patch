@@ -1,0 +1,43 @@
+From 8b13e1e8a681dde1f531391976d798b5017f2844 Mon Sep 17 00:00:00 2001
+From: Yehuda Yitschak <yehuday@marvell.com>
+Date: Wed, 30 Mar 2016 16:25:04 +0300
+Subject: [PATCH 0286/2241] config: pci: add support for SR-IOV and 10G Intel
+ NIC
+
+This is required for enabling and testing SR-IOV
+
+Change-Id: Ic26f568cbffbbcb6cfa3572a82942b2ad2490f68
+Signed-off-by: Yehuda Yitschak <yehuday@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/28672
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Shadi Ammouri <shadi@marvell.com>
+---
+ arch/arm64/configs/mvebu_v8_lsp_defconfig | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/arch/arm64/configs/mvebu_v8_lsp_defconfig b/arch/arm64/configs/mvebu_v8_lsp_defconfig
+index 472c317..7d0e2e9 100644
+--- a/arch/arm64/configs/mvebu_v8_lsp_defconfig
++++ b/arch/arm64/configs/mvebu_v8_lsp_defconfig
+@@ -33,6 +33,7 @@ CONFIG_MODULE_UNLOAD=y
+ CONFIG_ARCH_MVEBU=y
+ CONFIG_PCI=y
+ CONFIG_PCI_MSI=y
++CONFIG_PCI_IOV=y
+ CONFIG_IGNORE_ASYNC_ABORT=y
+ CONFIG_PCI_HOST_GENERIC=y
+ CONFIG_PCIE_IPROC=y
+@@ -106,6 +107,10 @@ CONFIG_VHOST_NET=y
+ CONFIG_E1000=y
+ CONFIG_E1000E=y
+ CONFIG_IGB=y
++CONFIG_IGBVF=y
++CONFIG_IXGB=y
++CONFIG_IXGBE=y
++CONFIG_IXGBEVF=y
+ CONFIG_MVNETA=y
+ CONFIG_MVPP2X=y
+ CONFIG_SKY2=y
+-- 
+2.7.4
+

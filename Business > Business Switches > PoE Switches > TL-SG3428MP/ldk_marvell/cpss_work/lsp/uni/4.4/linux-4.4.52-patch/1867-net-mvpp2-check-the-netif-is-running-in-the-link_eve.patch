@@ -1,0 +1,35 @@
+From 7ee6ec0a351353f837d2a8de0ea6e570db3e52e0 Mon Sep 17 00:00:00 2001
+From: Antoine Tenart <antoine.tenart@free-electrons.com>
+Date: Mon, 17 Jul 2017 15:36:43 +0200
+Subject: [PATCH 1867/2241] net: mvpp2: check the netif is running in the
+ link_event function
+
+This patch adds an extra check when the link_event function is called,
+so that it won't do anything when the netif isn't running.
+
+Change-Id: I6430d1212c9958beda9c9756ff85cbad11b93aac
+Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/42835
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2.c b/drivers/net/ethernet/marvell/mvpp2.c
+index 84755b0..c714ff8 100644
+--- a/drivers/net/ethernet/marvell/mvpp2.c
++++ b/drivers/net/ethernet/marvell/mvpp2.c
+@@ -5828,6 +5828,9 @@ static void mvpp2_link_event(struct net_device *dev)
+ 	struct mvpp2_port *port = netdev_priv(dev);
+ 	struct phy_device *phydev = dev->phydev;
+ 
++	if (!netif_running(dev))
++		return;
++
+ 	if (phydev->link) {
+ 		if ((port->speed != phydev->speed) ||
+ 		    (port->duplex != phydev->duplex)) {
+-- 
+2.7.4
+

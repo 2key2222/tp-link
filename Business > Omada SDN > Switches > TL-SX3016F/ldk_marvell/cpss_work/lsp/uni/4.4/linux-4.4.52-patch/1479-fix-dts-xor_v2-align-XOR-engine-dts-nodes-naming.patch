@@ -1,0 +1,140 @@
+From d51926c98dd3a5cef4e4fc7ff9af61525620d7f1 Mon Sep 17 00:00:00 2001
+From: Omri Itach <omrii@marvell.com>
+Date: Mon, 20 Mar 2017 14:04:31 +0200
+Subject: [PATCH 1479/2241] fix: dts: xor_v2: align XOR engine dts nodes naming
+
+align all XOR engine's nodes to use same naming convention
+(e.g ap_xor0:dma_xor@XX, cp1_xor1:dma_xor@XX, etc)
+
+Change-Id: I8fbdf994f12f95ac8ec23f4b4f32a5590df34a22
+Signed-off-by: Omri Itach <omrii@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/37658
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-ap806.dtsi        | 8 ++++----
+ arch/arm64/boot/dts/marvell/armada-cp110-1.dtsi      | 4 ++--
+ arch/arm64/boot/dts/marvell/armada-cp110-master.dtsi | 7 +++++++
+ arch/arm64/boot/dts/marvell/armada-cp110-slave.dtsi  | 7 +++++++
+ arch/arm64/boot/dts/marvell/armada-cp110.dtsi        | 4 ++--
+ 5 files changed, 22 insertions(+), 8 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-ap806.dtsi b/arch/arm64/boot/dts/marvell/armada-ap806.dtsi
+index 7c10692..3372c0a 100644
+--- a/arch/arm64/boot/dts/marvell/armada-ap806.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-ap806.dtsi
+@@ -363,7 +363,7 @@
+ 				reg = <0x6f4000 0x1000>;
+ 			};
+ 
+-			xor0@400000 {
++			ap_xor0: dma_xor@400000 {
+ 				compatible = "marvell,mv-xor-v2";
+ 				reg = <0x400000 0x1000>,
+ 				      <0x410000 0x1000>;
+@@ -373,7 +373,7 @@
+ 				status = "okay";
+ 			};
+ 
+-			xor1@420000 {
++			ap_xor1: dma_xor@420000 {
+ 				compatible = "marvell,mv-xor-v2";
+ 				reg = <0x420000 0x1000>,
+ 				      <0x430000 0x1000>;
+@@ -383,7 +383,7 @@
+ 				status = "okay";
+ 			};
+ 
+-			xor2@440000 {
++			ap_xor2: dma_xor@440000 {
+ 				compatible = "marvell,mv-xor-v2";
+ 				reg = <0x440000 0x1000>,
+ 				      <0x450000 0x1000>;
+@@ -393,7 +393,7 @@
+ 				status = "okay";
+ 			};
+ 
+-			xor3@460000 {
++			ap_xor3: dma_xor@460000 {
+ 				compatible = "marvell,mv-xor-v2";
+ 				reg = <0x460000 0x1000>,
+ 				      <0x470000 0x1000>;
+diff --git a/arch/arm64/boot/dts/marvell/armada-cp110-1.dtsi b/arch/arm64/boot/dts/marvell/armada-cp110-1.dtsi
+index 6f3ddfc..73157b0 100644
+--- a/arch/arm64/boot/dts/marvell/armada-cp110-1.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-cp110-1.dtsi
+@@ -172,7 +172,7 @@ tdm@7a0000 {
+ 	status = "disabled";
+ };
+ 
+-cpxor0@6a0000 {
++dma_xor@6a0000 {
+ 	compatible = "marvell,mv-xor-v2";
+ 	reg = <0x6a0000 0x1000>,
+ 	      <0x6b0000 0x1000>;
+@@ -182,7 +182,7 @@ cpxor0@6a0000 {
+ 	status = "okay";
+ };
+ 
+-cpxor1@6c0000 {
++dma_xor@6c0000 {
+ 	compatible = "marvell,mv-xor-v2";
+ 	reg = <0x6c0000 0x1000>,
+ 	      <0x6d0000 0x1000>;
+diff --git a/arch/arm64/boot/dts/marvell/armada-cp110-master.dtsi b/arch/arm64/boot/dts/marvell/armada-cp110-master.dtsi
+index 5715144..7f79e79 100644
+--- a/arch/arm64/boot/dts/marvell/armada-cp110-master.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-cp110-master.dtsi
+@@ -104,4 +104,11 @@
+ 			status = "disabled";
+ 		};
+ 	};
++
++	cpn-110-master {
++		config-space {
++			cp0_xor0: dma_xor@6a0000 { };
++			cp0_xor1: dma_xor@6c0000 { };
++		};
++	};
+ };
+diff --git a/arch/arm64/boot/dts/marvell/armada-cp110-slave.dtsi b/arch/arm64/boot/dts/marvell/armada-cp110-slave.dtsi
+index 967c9af..832fad9 100644
+--- a/arch/arm64/boot/dts/marvell/armada-cp110-slave.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-cp110-slave.dtsi
+@@ -102,4 +102,11 @@
+ 			status = "disabled";
+ 		};
+ 	};
++
++	cpn-110-slave {
++		config-space {
++			cp1_xor0: dma_xor@6a0000 { };
++			cp1_xor1: dma_xor@6c0000 { };
++		};
++	};
+ };
+diff --git a/arch/arm64/boot/dts/marvell/armada-cp110.dtsi b/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
+index bf7abe8..ff12d05 100644
+--- a/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
+@@ -264,7 +264,7 @@ nand@720000 {
+ 	status = "disabled";
+ };
+ 
+-cp_xor0: cpxor0@6a0000 {
++dma_xor@6a0000 {
+ 	compatible = "marvell,mv-xor-v2";
+ 	reg = <0x6a0000 0x1000>,
+ 	      <0x6b0000 0x1000>;
+@@ -274,7 +274,7 @@ cp_xor0: cpxor0@6a0000 {
+ 	status = "okay";
+ };
+ 
+-cp_xor1: cpxor1@6c0000 {
++dma_xor@6c0000 {
+ 	compatible = "marvell,mv-xor-v2";
+ 	reg = <0x6c0000 0x1000>,
+ 	      <0x6d0000 0x1000>;
+-- 
+2.7.4
+

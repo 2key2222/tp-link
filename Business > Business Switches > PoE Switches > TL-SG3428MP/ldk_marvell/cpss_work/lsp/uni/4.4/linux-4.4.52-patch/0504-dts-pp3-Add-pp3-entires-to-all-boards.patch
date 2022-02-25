@@ -1,0 +1,576 @@
+From a63d8bbb27d6ec9815b90aabfb96e0a208c0ebd0 Mon Sep 17 00:00:00 2001
+From: Dmitri Epshtein <dima@marvell.com>
+Date: Thu, 9 Jun 2016 14:24:12 +0300
+Subject: [PATCH 0504/2241] dts: pp3: Add pp3 entires to all boards
+
+- armada-395-amc.dts
+- armada-395-gp.dts
+- armada-398-db.dts
+- armada-390-db.dts
+
+Change-Id: I836a61df5c589e5eb92aaaeea9e3358c68262cbe
+Signed-off-by: Dmitri Epshtein <dima@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/30391
+Reviewed-by: Yelena Krivosheev <yelena@marvell.com>
+Tested-by: Star_Automation <star@marvell.com>
+---
+ arch/arm/boot/dts/armada-390-db.dts  |   6 +-
+ arch/arm/boot/dts/armada-390.dtsi    | 103 -----------------------------
+ arch/arm/boot/dts/armada-395-amc.dts |  53 ++++++++++++++-
+ arch/arm/boot/dts/armada-395-gp.dts  |  50 +++++++++++++-
+ arch/arm/boot/dts/armada-398-db.dts  |  69 ++++++++++++++++++-
+ arch/arm/boot/dts/armada-39x.dtsi    | 124 +++++++++++++++++++++++++++++++----
+ 6 files changed, 283 insertions(+), 122 deletions(-)
+
+diff --git a/arch/arm/boot/dts/armada-390-db.dts b/arch/arm/boot/dts/armada-390-db.dts
+index 12155f2..61682ec 100644
+--- a/arch/arm/boot/dts/armada-390-db.dts
++++ b/arch/arm/boot/dts/armada-390-db.dts
+@@ -170,11 +170,7 @@
+ 				status = "okay";
+ 			};
+ 		};
+-		nss_complex {
+-			status = "okay";
+-			pinctrl-0 = <&smi_nss_pins>;
+-			pinctrl-names="default";
+-		};
++
+ 		nss_complex {
+ 			status = "okay";
+ 			pinctrl-0 = <&smi_nss_pins>;
+diff --git a/arch/arm/boot/dts/armada-390.dtsi b/arch/arm/boot/dts/armada-390.dtsi
+index 2465fc8..6cd18d8 100644
+--- a/arch/arm/boot/dts/armada-390.dtsi
++++ b/arch/arm/boot/dts/armada-390.dtsi
+@@ -45,7 +45,6 @@
+  */
+ 
+ #include "armada-39x.dtsi"
+-#include <dt-bindings/mvebu_nss/nss39x.h>
+ 
+ / {
+ 	compatible = "marvell,armada390";
+@@ -55,109 +54,7 @@
+ 			pinctrl@18000 {
+ 				compatible = "marvell,mv88f6920-pinctrl";
+ 				reg = <0x18000 0x20>;
+-				smi_nss_pins: smi_nss_pins {
+-					marvell,pins = "mpp4", "mpp5";
+-					marvell,function = "smi";
+-				};
+-				rgmii_pins: rgmii_pins {
+-					marvell,pins = "mpp21", "mpp27", "mpp28",
+-							"mpp29", "mpp30", "mpp31",
+-							"mpp32", "mpp37", "mpp38",
+-							"mpp39", "mpp40", "mpp41";
+-					marvell,function = "ge";
+-				};
+-				ptp_event_pin_gpio: ptp_event_pin_gpio {
+-					marvell,pins = "mpp10";
+-					marvell,function = "gpio";
+-				};
+-				ptp_event_pin_ptp: ptp_event_pin_ptp {
+-					marvell,pins = "mpp10";
+-					marvell,function = "ptp";
+-				};
+ 			};
+-			mdio {
+-				#address-cells = <1>;
+-				#size-cells = <0>;
+-				compatible = "marvell,pp3-mdio";
+-				smi_reg = <0x5000000>;
+-			};
+-		};
+-
+-		gop {
+-			status = "disabled";
+-			mg_base: mg_base {
+-				gop-base = <0xf7000000>;
+-				gop-size = <0x400000>;
+-				mg-target-id = <0xb>;
+-				mg-attr = <4>;
+-				mg-remap-base = <0>;
+-			};
+-
+-			emac0: mac0 {
+-				interrupts = <GIC_SPI 49 IRQ_TYPE_LEVEL_HIGH>;  /* Link IRQ */
+-				mac-address = [ 00 00 00 00 00 00 ];
+-			};
+-
+-			emac1: mac1 {
+-				interrupts = <GIC_SPI 50 IRQ_TYPE_LEVEL_HIGH>;  /* Link IRQ */
+-				mac-address = [ 00 00 00 00 00 00 ];
+-			};
+-
+-			emac2: mac2 {
+-				interrupts = <GIC_SPI 51 IRQ_TYPE_LEVEL_HIGH>;  /* Link IRQ */
+-				mac-address = [ 00 00 00 00 00 00 ];
+-			};
+-			emac3: mac3 {
+-				interrupts = <GIC_SPI 52 IRQ_TYPE_LEVEL_HIGH>;  /* Link IRQ */
+-				mac-address = [ 00 00 00 00 00 00 ];
+-			};
+-		};
+-
+-		pp3_platform {
+-			compatible = "marvell,armada-390-pp3";
+-			status = "disabled";
+-			reg = <MBUS_ID(0xf0, 0x01) 0x70000 0x1000>,    /* A2M Master 0 */
+-			      <MBUS_ID(0xf0, 0x01) 0x30000 0x1000>,    /* A2M Master 1 */
+-			      <MBUS_ID(0xf0, 0x01) 0x18a00 0x1000>,    /* AMB registers */
+-			      <MBUS_ID(NSS_TARGET_ID, NSS_REGS_ATTR)  0 NSS_REGS_SIZE>, /* NSS IP registers */
+-			      <MBUS_ID(NSS_TARGET_ID, NSS_SPACE_ATTR) 0 NSS_SPACE_SIZE>; /* NSS IP space */
+-			clock-frequency = <250000000>;
+-			ptp-event-pin = <10>;
+-			gop_access = <&mg_base>;
+-			msi-parent = <&odmi>;
+-
+-			nic@0 {
+-				status = "disabled";
+-				id = <0>;
+-			};
+-
+-			nic@1 {
+-				status = "disabled";
+-				id = <1>;
+-			};
+-
+-			nic@2 {
+-				status = "disabled";
+-				id = <2>;
+-			};
+-
+-			nic@3 {
+-				status = "disabled";
+-				id = <3>;
+-			};
+-
+-			nss@0 {
+-				status = "disabled";
+-				id = <0>;
+-			};
+-		};
+-
+-		pp3_ptp_event: ptp-event {
+-			compatible = "marvell,ptp-event";
+-			status = "okay";
+-			pinctrl-0 = <&ptp_event_pin_gpio>;
+-			pinctrl-1 = <&ptp_event_pin_ptp>;
+-			pinctrl-names = "gpio", "ptp";
+ 		};
+ 	};
+ };
+diff --git a/arch/arm/boot/dts/armada-395-amc.dts b/arch/arm/boot/dts/armada-395-amc.dts
+index 59d4541..2be4424 100644
+--- a/arch/arm/boot/dts/armada-395-amc.dts
++++ b/arch/arm/boot/dts/armada-395-amc.dts
+@@ -58,7 +58,11 @@
+ 
+ 	soc {
+ 		ranges = <MBUS_ID(0xf0, 0x01) 0 0xf1000000 0x100000
+-			  MBUS_ID(0x01, 0x1d) 0 0xfff00000 0x100000>;
++			  MBUS_ID(0x01, 0x1d) 0 0xfff00000 0x100000
++				/* nss window, 16M */
++			  MBUS_ID(NSS_TARGET_ID, NSS_REGS_ATTR)  0 0xf5000000 NSS_REGS_SIZE
++				/* mac_nic window, (nss internal window) 128M */
++			  MBUS_ID(NSS_TARGET_ID, NSS_SPACE_ATTR) 0 0xD0000000 NSS_SPACE_SIZE>;
+ 
+ 		internal-regs {
+ 			spi@10680 {
+@@ -116,6 +120,12 @@
+ 				clock-frequency = <100000>;
+ 			};
+ 
++			mdio {
++				phy2: ethernet-phy@2 {
++					reg = <0>;
++				};
++			};
++
+ 			serial@12000 {
+ 				status = "okay";
+ 			};
+@@ -131,6 +141,47 @@
+ 			pinctrl-names="default";
+ 		};
+ 
++		gop {
++			emac0: mac0 {
++				phy-mode = "sgmii";
++				phy-speed = <2500>;
++				force-link = "yes";
++			};
++
++			emac2: mac2 {
++				phy = <&phy2>;
++				phy-mode = "sgmii";
++				phy-speed = <1000>;
++				force-link = "no";
++			};
++		};
++
++		pp3_platform {
++			status = "okay";
++
++			nic@0 {
++				status = "okay";
++				emac-data = <&emac0>;
++			};
++
++			nic@1 {
++				status = "disabled";
++			};
++
++			nic@2 {
++				status = "okay";
++				emac-data = <&emac2>;
++			};
++
++			nic@3 {
++				status = "disabled";
++			};
++
++			nss@0 {
++				status = "okay";
++			};
++		};
++
+ 		pcie-controller {
+ 			status = "okay";
+ 
+diff --git a/arch/arm/boot/dts/armada-395-gp.dts b/arch/arm/boot/dts/armada-395-gp.dts
+index e8ba968..9bc6082 100644
+--- a/arch/arm/boot/dts/armada-395-gp.dts
++++ b/arch/arm/boot/dts/armada-395-gp.dts
+@@ -57,7 +57,11 @@
+ 
+ 	soc {
+ 		ranges = <MBUS_ID(0xf0, 0x01) 0 0xf1000000 0x100000
+-			  MBUS_ID(0x01, 0x1d) 0 0xfff00000 0x100000>;
++			  MBUS_ID(0x01, 0x1d) 0 0xfff00000 0x100000
++				/* nss window, 16M */
++			  MBUS_ID(NSS_TARGET_ID, NSS_REGS_ATTR)  0 0xf5000000 NSS_REGS_SIZE
++				/* mac_nic window, (nss internal window) 128M */
++			  MBUS_ID(NSS_TARGET_ID, NSS_SPACE_ATTR) 0 0xD0000000 NSS_SPACE_SIZE>;
+ 
+ 		internal-regs {
+ 			spi0: spi@10600 {
+@@ -92,6 +96,20 @@
+ 				clock-frequency = <100000>;
+ 			};
+ 
++			mdio {
++				phy1: ethernet-phy@1 {
++					reg = <5>;
++				};
++
++				phy2: ethernet-phy@2 {
++					reg = <4>;
++				};
++
++				phy3: ethernet-phy@3 {
++					reg = <16>;
++				};
++			};
++
+ 			pinctrl@18000 {
+ 				spi0_pins: spi0_pins {
+ 					marvell,pins = "mpp15", "mpp16", "mpp17",
+@@ -161,6 +179,36 @@
+ 			pinctrl-names="default";
+ 		};
+ 
++		gop {
++			emac0: mac0 {
++				phy-mode = "rxaui";
++			};
++
++			emac3: mac3 {
++				phy = <&phy3>;
++				phy-mode = "sgmii";
++				force-link = "yes";
++			};
++		};
++
++		pp3_platform {
++			status = "okay";
++
++			nic@0 {
++				status = "okay";
++				emac-data = <&emac0>;
++			};
++
++			nic@3 {
++				status = "okay";
++				emac-data = <&emac3>;
++			};
++
++			nss@0 {
++				status = "okay";
++			};
++		};
++
+ 		pcie-controller {
+ 			status = "okay";
+ 			/*
+diff --git a/arch/arm/boot/dts/armada-398-db.dts b/arch/arm/boot/dts/armada-398-db.dts
+index 01a305c..cb591a6 100644
+--- a/arch/arm/boot/dts/armada-398-db.dts
++++ b/arch/arm/boot/dts/armada-398-db.dts
+@@ -62,7 +62,11 @@
+ 
+ 	soc {
+ 		ranges = <MBUS_ID(0xf0, 0x01) 0 0xf1000000 0x100000
+-			  MBUS_ID(0x01, 0x1d) 0 0xfff00000 0x100000>;
++			  MBUS_ID(0x01, 0x1d) 0 0xfff00000 0x100000
++				/* nss window, 16M */
++			  MBUS_ID(NSS_TARGET_ID, NSS_REGS_ATTR)  0 0xf5000000 NSS_REGS_SIZE
++				/* mac_nic window, (nss internal window) 128M */
++			  MBUS_ID(NSS_TARGET_ID, NSS_SPACE_ATTR) 0 0xD0000000 NSS_SPACE_SIZE>;
+ 
+ 		internal-regs {
+ 			spi@10680 {
+@@ -111,6 +115,20 @@
+ 				clock-frequency = <100000>;
+ 			};
+ 
++			mdio {
++				phy1: ethernet-phy@1 {
++					reg = <1>;
++				};
++
++				phy2: ethernet-phy@2 {
++					reg = <2>;
++				};
++
++				phy3: ethernet-phy@3 {
++					reg = <0>;
++				};
++			};
++
+ 			serial@12000 {
+ 				pinctrl-0 = <&uart0_pins>;
+ 				pinctrl-names = "default";
+@@ -172,6 +190,55 @@
+ 			pinctrl-names="default";
+ 		};
+ 
++		gop {
++			emac0: mac0 {
++				phy-mode = "rxaui";
++			};
++
++			emac1: mac1 {
++				phy = <&phy1>;
++				phy-mode = "sgmii";
++			};
++
++			emac2: mac2 {
++				phy = <&phy2>;
++				phy-mode = "sgmii";
++			};
++
++			emac3: mac3 {
++				phy = <&phy3>;
++				phy-mode = "sgmii";
++			};
++		};
++
++		pp3_platform {
++			status = "okay";
++
++			nic@0 {
++				status = "okay";
++				emac-data = <&emac0>;
++			};
++
++			nic@1 {
++				status = "okay";
++				emac-data = <&emac1>;
++			};
++
++			nic@2 {
++				status = "okay";
++				emac-data = <&emac2>;
++			};
++
++			nic@3 {
++				status = "okay";
++				emac-data = <&emac3>;
++			};
++
++			nss@0 {
++				status = "okay";
++			};
++		};
++
+ 		pcie-controller {
+ 			status = "okay";
+ 
+diff --git a/arch/arm/boot/dts/armada-39x.dtsi b/arch/arm/boot/dts/armada-39x.dtsi
+index fe26569f..f380aba 100644
+--- a/arch/arm/boot/dts/armada-39x.dtsi
++++ b/arch/arm/boot/dts/armada-39x.dtsi
+@@ -47,6 +47,7 @@
+ #include "skeleton.dtsi"
+ #include <dt-bindings/interrupt-controller/arm-gic.h>
+ #include <dt-bindings/interrupt-controller/irq.h>
++#include <dt-bindings/mvebu_nss/nss39x.h>
+ 
+ #define MBUS_ID(target,attributes) (((target) << 24) | ((attributes) << 16))
+ 
+@@ -100,16 +101,6 @@
+ 			reg = <MBUS_ID(0x01, 0x1d) 0 0x200000>;
+ 		};
+ 
+-		nss_complex {
+-			compatible = "marvell,armada-390-nss_complex";
+-			status = "disabled";
+-			reg = <MBUS_ID(0xf0, 0x01) 0x18200 0x100>,     /* netcomplex_misc */
+-			      <MBUS_ID(0xf0, 0x01) 0x18300 0x200>,     /* netcomplex_phy */
+-			      <MBUS_ID(0xf0, 0x01) 0x18a00 0x1000>,    /* netcomplex_base */
+-			      <MBUS_ID(0xf0, 0x01) 0xE4000 0x500>,     /* DFX server */
+-			      <MBUS_ID(0xf0, 0x01) 0x0 0x100000>;      /* AXI bus */
+-		};
+-
+ 		internal-regs {
+ 			compatible = "simple-bus";
+ 			#address-cells = <1>;
+@@ -273,7 +264,7 @@
+ 				status = "disabled";
+ 			};
+ 
+-			pinctrl@18000 {
++			pinctrl: pinctrl@18000 {
+ 				i2c0_pins: i2c0-pins {
+ 					marvell,pins = "mpp2", "mpp3";
+ 					marvell,function = "i2c0";
+@@ -301,6 +292,36 @@
+ 						       "mpp32";
+ 					marvell,function = "dev";
+ 				};
++
++				smi_nss_pins: smi_nss_pins {
++					marvell,pins = "mpp4", "mpp5";
++					marvell,function = "smi";
++				};
++
++				rgmii_pins: rgmii_pins {
++					marvell,pins = "mpp21", "mpp27", "mpp28",
++							"mpp29", "mpp30", "mpp31",
++							"mpp32", "mpp37", "mpp38",
++							"mpp39", "mpp40", "mpp41";
++					marvell,function = "ge";
++				};
++
++				ptp_event_pin_gpio: ptp_event_pin_gpio {
++					marvell,pins = "mpp10";
++					marvell,function = "gpio";
++				};
++
++				ptp_event_pin_ptp: ptp_event_pin_ptp {
++					marvell,pins = "mpp10";
++					marvell,function = "ptp";
++				};
++			};
++
++			mdio: mdio {
++				#address-cells = <1>;
++				#size-cells = <0>;
++				compatible = "marvell,pp3-mdio";
++				smi_reg = <0x5000000>;
+ 			};
+ 
+ 			gpio0: gpio@18100 {
+@@ -611,6 +632,87 @@
+ 				status = "disabled";
+ 			};
+ 		};
++
++		nss_complex {
++			compatible = "marvell,armada-390-nss_complex";
++			status = "disabled";
++			reg = <MBUS_ID(0xf0, 0x01) 0x18200 0x100>,     /* netcomplex_misc */
++			      <MBUS_ID(0xf0, 0x01) 0x18300 0x200>,     /* netcomplex_phy */
++			      <MBUS_ID(0xf0, 0x01) 0x18a00 0x1000>,    /* netcomplex_base */
++			      <MBUS_ID(0xf0, 0x01) 0xE4000 0x500>,     /* DFX server */
++			      <MBUS_ID(0xf0, 0x01) 0x0 0x100000>;      /* AXI bus */
++		};
++
++		gop {
++			status = "disabled";
++			mg_base: mg_base {
++				gop-base = <0xf7000000>;
++				gop-size = <0x400000>;
++				mg-target-id = <0xb>;
++				mg-attr = <4>;
++				mg-remap-base = <0>;
++			};
++
++			emac0: mac0 {
++				interrupts = <GIC_SPI 49 IRQ_TYPE_LEVEL_HIGH>;  /* Link IRQ */
++				mac-address = [ 00 00 00 00 00 00 ];
++			};
++
++			emac1: mac1 {
++				interrupts = <GIC_SPI 50 IRQ_TYPE_LEVEL_HIGH>;  /* Link IRQ */
++				mac-address = [ 00 00 00 00 00 00 ];
++			};
++
++			emac2: mac2 {
++				interrupts = <GIC_SPI 51 IRQ_TYPE_LEVEL_HIGH>;  /* Link IRQ */
++				mac-address = [ 00 00 00 00 00 00 ];
++			};
++
++			emac3: mac3 {
++				interrupts = <GIC_SPI 52 IRQ_TYPE_LEVEL_HIGH>;  /* Link IRQ */
++				mac-address = [ 00 00 00 00 00 00 ];
++			};
++		};
++
++		pp3_platform {
++			compatible = "marvell,armada-390-pp3";
++			status = "disabled";
++			reg = <MBUS_ID(0xf0, 0x01) 0x70000 0x1000>,    /* A2M Master 0 */
++			      <MBUS_ID(0xf0, 0x01) 0x30000 0x1000>,    /* A2M Master 1 */
++			      <MBUS_ID(0xf0, 0x01) 0x18a00 0x1000>,    /* AMB registers */
++				  <MBUS_ID(NSS_TARGET_ID, NSS_REGS_ATTR)  0 NSS_REGS_SIZE>, /* NSS IP registers */
++			      <MBUS_ID(NSS_TARGET_ID, NSS_SPACE_ATTR) 0 NSS_SPACE_SIZE>; /* NSS IP space */
++			clock-frequency = <250000000>;
++			ptp-event-pin = <10>;
++			gop_access = <&mg_base>;
++			msi-parent = <&odmi>;
++			nic@0 {
++				status = "disabled";
++				id = <0>;
++			};
++
++			nic@1 {
++				status = "disabled";
++				id = <1>;
++			};
++
++			nic@2 {
++				status = "disabled";
++				id = <2>;
++			};
++
++			nic@3 {
++				status = "disabled";
++				id = <3>;
++			};
++		};
++		pp3_ptp_event: ptp-event {
++			compatible = "marvell,ptp-event";
++			status = "okay";
++			pinctrl-0 = <&ptp_event_pin_gpio>;
++			pinctrl-1 = <&ptp_event_pin_ptp>;
++			pinctrl-names = "gpio", "ptp";
++		};
+ 	};
+ 
+ 	clocks {
+-- 
+2.7.4
+

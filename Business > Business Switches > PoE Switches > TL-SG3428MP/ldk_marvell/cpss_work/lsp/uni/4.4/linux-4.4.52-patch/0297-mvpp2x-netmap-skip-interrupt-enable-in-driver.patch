@@ -1,0 +1,95 @@
+From e4e9fa460fff970b6a1bafeb3efea906c9daab30 Mon Sep 17 00:00:00 2001
+From: Yuval Caduri <cyuval@marvell.com>
+Date: Wed, 6 Apr 2016 00:01:29 +0300
+Subject: [PATCH 0297/2241] mvpp2x: netmap: skip interrupt enable in driver.
+
+- Make some required functions non-static.
+- Skip interrupt-enable in driver for netmap port.
+
+Change-Id: I607f9cf1c0d9f75e15096e0f32b3dd0b41820e41
+Signed-off-by: Yuval Caduri <cyuval@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/28806
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+Tested-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h      | 10 ++++++++++
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c | 15 +++++++++------
+ 2 files changed, 19 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h
+index aab670c..1628566 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h
+@@ -757,6 +757,11 @@ void mv_pp2x_bm_bufs_free(struct mv_pp2x *priv,
+ int mv_pp2x_bm_bufs_add(struct mv_pp2x_port *port,
+ 			struct mv_pp2x_bm_pool *bm_pool, int buf_num);
+ int mv_pp2x_open(struct net_device *dev);
++int mv_pp2x_stop(struct net_device *dev);
++void mv_pp2x_txq_inc_put(enum mvppv2_version pp2_ver,
++			 struct mv_pp2x_txq_pcpu *txq_pcpu,
++			 struct sk_buff *skb,
++			 struct mv_pp2x_tx_desc *tx_desc);
+ int mv_pp2x_check_ringparam_valid(struct net_device *dev,
+ 				  struct ethtool_ringparam *ring);
+ void mv_pp2x_start_dev(struct mv_pp2x_port *port);
+@@ -776,5 +781,10 @@ int mv_pp2x_cos_default_value_set(struct mv_pp2x_port *port, int cos_value);
+ int mv_pp2x_cos_default_value_get(struct mv_pp2x_port *port);
+ int mv_pp22_rss_mode_set(struct mv_pp2x_port *port, int rss_mode);
+ int mv_pp22_rss_default_cpu_set(struct mv_pp2x_port *port, int default_cpu);
++int mv_pp2x_txq_reserved_desc_num_proc(struct mv_pp2x *priv,
++				       struct mv_pp2x_tx_queue *txq,
++				       struct mv_pp2x_txq_pcpu *txq_pcpu,
++				       int num);
++
+ #endif /*_MVPP2_H_*/
+ 
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+index 2077e08..7493be2 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+@@ -196,10 +196,10 @@ static void mv_pp2x_txq_inc_get(struct mv_pp2x_txq_pcpu *txq_pcpu)
+ 		txq_pcpu->txq_get_index = 0;
+ }
+ 
+-static void mv_pp2x_txq_inc_put(enum mvppv2_version pp2_ver,
+-			      struct mv_pp2x_txq_pcpu *txq_pcpu,
+-			      struct sk_buff *skb,
+-			      struct mv_pp2x_tx_desc *tx_desc)
++void mv_pp2x_txq_inc_put(enum mvppv2_version pp2_ver,
++			 struct mv_pp2x_txq_pcpu *txq_pcpu,
++			 struct sk_buff *skb,
++			 struct mv_pp2x_tx_desc *tx_desc)
+ {
+ 	txq_pcpu->tx_skb[txq_pcpu->txq_put_index] = skb;
+ 	if (skb)
+@@ -705,7 +705,7 @@ static void mv_pp2x_defaults_set(struct mv_pp2x_port *port)
+ /* Check if there are enough reserved descriptors for transmission.
+  * If not, request chunk of reserved descriptors and check again.
+  */
+-static int mv_pp2x_txq_reserved_desc_num_proc(
++int mv_pp2x_txq_reserved_desc_num_proc(
+ 					struct mv_pp2x *priv,
+ 					struct mv_pp2x_tx_queue *txq,
+ 					struct mv_pp2x_txq_pcpu *txq_pcpu,
+@@ -2387,6 +2387,9 @@ static inline int mv_pp2x_cause_rx_handle(struct mv_pp2x_port *port,
+ 	if (budget > 0) {
+ 		cause_rx = 0;
+ 		napi_complete(napi);
++#ifdef DEV_NETMAP
++	if (!(port->flags & MVPP2_F_IFCAP_NETMAP))
++#endif
+ 		mv_pp2x_qvector_interrupt_enable(q_vec);
+ 	}
+ 	q_vec->pending_cause_rx = cause_rx;
+@@ -2908,7 +2911,7 @@ err_cleanup_rxqs:
+ 	return err;
+ }
+ 
+-static int mv_pp2x_stop(struct net_device *dev)
++int mv_pp2x_stop(struct net_device *dev)
+ {
+ 	struct mv_pp2x_port *port = netdev_priv(dev);
+ 	struct mv_pp2x_port_pcpu *port_pcpu;
+-- 
+2.7.4
+

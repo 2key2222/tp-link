@@ -1,0 +1,31 @@
+From 9b0075e4d00ae115d0f199421b9d6991bdd37cf9 Mon Sep 17 00:00:00 2001
+From: Yan Markman <ymarkman@marvell.com>
+Date: Thu, 2 Jun 2016 21:05:08 +0300
+Subject: [PATCH 0489/2241] pp3: mv_ptp_uio warning fix
+
+Change-Id: I651af7d921cc4b5588f362ae0094439d90a0832c
+Signed-off-by: Yan Markman <ymarkman@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/30310
+Reviewed-by: Dmitri Epshtein <dima@marvell.com>
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Lior Amsalem <alior@marvell.com>
+---
+ drivers/net/ethernet/marvell/pp3/net_dev/mv_ptp_uio.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/net/ethernet/marvell/pp3/net_dev/mv_ptp_uio.c b/drivers/net/ethernet/marvell/pp3/net_dev/mv_ptp_uio.c
+index 979d0b1..2b26d0a 100644
+--- a/drivers/net/ethernet/marvell/pp3/net_dev/mv_ptp_uio.c
++++ b/drivers/net/ethernet/marvell/pp3/net_dev/mv_ptp_uio.c
+@@ -67,7 +67,7 @@ static int read_show_cmd(char *buf, const struct kernel_param *kp)
+ 	if (p) {
+ 		sprintf(buf, "region=%d region_offs=%x size=%lx",
+ 			p->dedicated_mg_region, p->dedicated_mg_region_offs,
+-			p->uio_info.mem[0].size);
++			(unsigned long)p->uio_info.mem[0].size);
+ 		pr_debug("%s device is used with parameters: %s\n", kp->name, buf);
+ 	}
+ 	return strlen(buf);
+-- 
+2.7.4
+

@@ -1,0 +1,64 @@
+From 715f1adcd6da15199054207f0cfe093c49319dcd Mon Sep 17 00:00:00 2001
+From: jinghua <xigu@marvell.com>
+Date: Tue, 2 Jan 2018 18:12:23 +0800
+Subject: [PATCH 2159/2241] dts: a7k: replace usb3_host0 with sata0 for a7k db
+ setup c
+
+For Armada7040 DB Setup C, in order to have two SATA ports for NAS
+use cases benchmarks, this patche changes serdes Lane1 from USB3_H0 to
+SATA0.
+
+Change-Id: Icfbcb0328b82efd21505809f5981c62c5952ce62
+Signed-off-by: jinghua <xigu@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/48376
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+---
+ Documentation/mvebu/a7k-a8k/armada7040-db-setup.txt |  2 +-
+ arch/arm64/boot/dts/marvell/armada-7040-db-C.dts    | 10 ++++------
+ 2 files changed, 5 insertions(+), 7 deletions(-)
+
+diff --git a/Documentation/mvebu/a7k-a8k/armada7040-db-setup.txt b/Documentation/mvebu/a7k-a8k/armada7040-db-setup.txt
+index d04d02f..eaa35eb 100644
+--- a/Documentation/mvebu/a7k-a8k/armada7040-db-setup.txt
++++ b/Documentation/mvebu/a7k-a8k/armada7040-db-setup.txt
+@@ -69,7 +69,7 @@ SerDes Configuration
+ | CP0 Lane 	| 	1: default (A)	|   2: B	| 3: C            | 4:D		  | 5:E		  |
+ |---------------|-----------------------|---------------|-----------------|---------------|---------------|
+ | 0		| SGMII2		| PICE0 (x4)	| PCIE0 (x1)      |  PCIE0 (x1)   | PCIE0 (x1)	  |
+-| 1		| USB3_HOST0		| PCIE0 (x4)	| USB3_HOST0      |  USB3_DEVICE0 | SATA0	  |
++| 1		| USB3_HOST0		| PCIE0 (x4)	| SATA0		  |  USB3_DEVICE0 | SATA0	  |
+ | 2		| SFI (10G)		| PCIE0 (x4)	| SFI (10G)       |  SFI (1G)  	  | SGMII0 (1G)   |
+ | 3		| SATA1			| PCIE0 (x4)	| SATA1		  |  SATA1        | SATA1	  |
+ | 4		| USB3_HOST1		| USB3_HOST1	| USB3_HOST1      |  USB3_HOST1   | USB_HOST1	  |
+diff --git a/arch/arm64/boot/dts/marvell/armada-7040-db-C.dts b/arch/arm64/boot/dts/marvell/armada-7040-db-C.dts
+index 2f100b9..8a45833 100644
+--- a/arch/arm64/boot/dts/marvell/armada-7040-db-C.dts
++++ b/arch/arm64/boot/dts/marvell/armada-7040-db-C.dts
+@@ -94,7 +94,9 @@
+ 				status = "okay";
+ 
+ 				sata-port@0 {
+-					status = "disabled";
++					phys = <&cp0_comphy 1 COMPHY_SATA0>;
++					phy-names = "comphy";
++					status = "okay";
+ 				};
+ 				sata-port@1 {
+ 					phys = <&cp0_comphy 3 COMPHY_SATA1>;
+@@ -103,11 +105,7 @@
+ 				};
+ 			};
+ 			cp0_usb3h0: usb3@500000 {
+-				separated-phys-for-usb2-usb3;
+-				phys = <&cp0_utmi0>,
+-				       <&cp0_comphy 1 COMPHY_USB3H0>;
+-				phy-names = "usb2", "usb3";
+-				status = "okay";
++				status = "disabled";
+ 			};
+ 			cp0_usb3h1: usb3@510000 {
+ 				separated-phys-for-usb2-usb3;
+-- 
+2.7.4
+

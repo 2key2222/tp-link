@@ -1,0 +1,74 @@
+From d08a5ae20e6a9d41cbdfddc5a68877f057b33725 Mon Sep 17 00:00:00 2001
+From: Stefan Chulski <stefanc@marvell.com>
+Date: Thu, 6 Jul 2017 17:33:15 +0300
+Subject: [PATCH 1807/2241] fix: net: mvpp2x: skip buffer release procedure if
+ address equal to NULL
+
+This patch is WA for SAMBA stuck issue.
+
+Issue:
+- During SAMBA read/write tests driver xmit transmit function receive
+  illegal 0xffffc00000000 skb_frag pointer.
+- Issues is not related to mvpp2x driver and reproduced with ixgbe Intel
+  driver, but could cause crashes due to illegal buffer released in TX
+  done procedure.
+
+WA:
+- Clear all released buffers in TX done ring.
+- Skip release procedure if buffer address is equal to NULL.
+
+Change-Id: Ide2d14caa277df7f93c9b81e857849c3b4f25197
+Signed-off-by: Stefan Chulski <stefanc@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/41278
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Yuval Caduri <cyuval@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c | 15 ++++++++++++---
+ 1 file changed, 12 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+index 1294eb8..758fead 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+@@ -1068,6 +1068,15 @@ static void mv_pp2x_txq_bufs_free(struct mv_pp2x_port *port,
+ 		int data_size = txq_pcpu->data_size[txq_pcpu->txq_get_index];
+ 		struct sk_buff *skb_rec;
+ 
++		txq_pcpu->tx_buffs[txq_pcpu->txq_get_index] = 0;
++		txq_pcpu->tx_skb[txq_pcpu->txq_get_index] = 0;
++		txq_pcpu->data_size[txq_pcpu->txq_get_index] = 0;
++
++		if (unlikely(!buf_phys_addr)) {
++			mv_pp2x_txq_inc_get(txq_pcpu);
++			continue;
++		}
++
+ 		if (skb & MVPP2_ETH_SHADOW_EXT) {
+ 			/* Refill TSO external pool */
+ 			skb &= ~MVPP2_ETH_SHADOW_EXT;
+@@ -1415,18 +1424,18 @@ static int mv_pp2x_txq_init(struct mv_pp2x_port *port,
+ 	for_each_present_cpu(cpu) {
+ 		txq_pcpu = per_cpu_ptr(txq->pcpu, cpu);
+ 		txq_pcpu->size = txq->size;
+-		txq_pcpu->tx_skb = kmalloc(txq_pcpu->size *
++		txq_pcpu->tx_skb = kcalloc(txq_pcpu->size,
+ 					   sizeof(*txq_pcpu->tx_skb),
+ 					   GFP_KERNEL);
+ 		if (!txq_pcpu->tx_skb)
+ 			goto error;
+ 
+-		txq_pcpu->tx_buffs = kmalloc(txq_pcpu->size *
++		txq_pcpu->tx_buffs = kcalloc(txq_pcpu->size,
+ 					     sizeof(dma_addr_t), GFP_KERNEL);
+ 		if (!txq_pcpu->tx_buffs)
+ 			goto error;
+ 
+-		txq_pcpu->data_size = kmalloc(txq_pcpu->size *
++		txq_pcpu->data_size = kcalloc(txq_pcpu->size,
+ 						sizeof(int), GFP_KERNEL);
+ 		if (!txq_pcpu->data_size)
+ 			goto error;
+-- 
+2.7.4
+

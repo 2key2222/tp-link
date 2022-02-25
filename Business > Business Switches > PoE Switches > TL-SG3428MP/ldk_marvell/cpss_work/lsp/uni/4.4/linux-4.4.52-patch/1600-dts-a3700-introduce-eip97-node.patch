@@ -1,0 +1,85 @@
+From 5aca57e3d3a1e8688912e07909c4ff160d75ee7b Mon Sep 17 00:00:00 2001
+From: Igal Liberman <igall@marvell.com>
+Date: Sun, 5 Mar 2017 14:51:13 +0200
+Subject: [PATCH 1600/2241] dts: a3700: introduce eip97 node
+
+The PacketEngine-IP-97 (EIP-97) is IP for accelerating IPSec,
+SSL/TLS, SRTP and MACsec up to 2000Mbps in multi-core SoCs
+offering a large selection of cipher algorithms.
+
+This patch adds eip97 node and enables it in the following boards:
+	- Marvell Armada 3720 Development board
+	- Marvell Armada 3720 Community Board
+
+Change-Id: I2cfd24e4732c56595eca7b8a5825a9fbe7baab7f
+Signed-off-by: Igal Liberman <igall@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/37213
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Dmitri Epshtein <dima@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-3720-community.dts |  3 +++
+ arch/arm64/boot/dts/marvell/armada-3720-db.dts        |  3 +++
+ arch/arm64/boot/dts/marvell/armada-37xx.dtsi          | 17 +++++++++++++++++
+ 3 files changed, 23 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-3720-community.dts b/arch/arm64/boot/dts/marvell/armada-3720-community.dts
+index 52960fd..7444d82 100644
+--- a/arch/arm64/boot/dts/marvell/armada-3720-community.dts
++++ b/arch/arm64/boot/dts/marvell/armada-3720-community.dts
+@@ -159,6 +159,9 @@
+ 				phys = <&a3700_comphy 2 COMPHY_SATA0>;
+ 				status = "okay";
+ 			};
++			eip97: eip97@90000 {
++				status = "okay";
++			};
+ 		};
+ 	};
+ 	dsa@0 {
+diff --git a/arch/arm64/boot/dts/marvell/armada-3720-db.dts b/arch/arm64/boot/dts/marvell/armada-3720-db.dts
+index 2d46266..b63c0b5 100644
+--- a/arch/arm64/boot/dts/marvell/armada-3720-db.dts
++++ b/arch/arm64/boot/dts/marvell/armada-3720-db.dts
+@@ -239,6 +239,9 @@
+ 			bm_bppi: bm-bppi {
+ 				status = "okay";
+ 			};
++			eip97: eip97@90000 {
++				status = "okay";
++			};
+ 		};
+ 
+ 		reg_sata: pwr-sata {
+diff --git a/arch/arm64/boot/dts/marvell/armada-37xx.dtsi b/arch/arm64/boot/dts/marvell/armada-37xx.dtsi
+index 0e29c0f..b152894 100644
+--- a/arch/arm64/boot/dts/marvell/armada-37xx.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-37xx.dtsi
+@@ -476,6 +476,23 @@
+ 				no-memory-wc;
+ 				status = "disabled";
+ 			};
++
++			eip97: eip97@90000 {
++				compatible = "inside-secure,safexcel-eip97";
++				reg = <0x90000 0x20000>;
++				interrupt-names = "eip_out", "ring0", "ring1",
++						  "ring2", "ring3", "eip_addr";
++				interrupts = <GIC_SPI 19 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 20 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 21 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 22 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 23 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 24 IRQ_TYPE_LEVEL_HIGH>;
++				dma-coherent;
++				dma-bus-width = <32>;
++				cell-index = <0>;
++				status = "disabled";
++			};
+ 		};
+ 
+ 		pcie0: pcie@d0070000 {
+-- 
+2.7.4
+

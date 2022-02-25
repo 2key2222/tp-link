@@ -1,0 +1,48 @@
+From d8d7d3436c9240b143702f39343667a016f8fae0 Mon Sep 17 00:00:00 2001
+From: Yan Markman <ymarkman@marvell.com>
+Date: Wed, 24 Aug 2016 20:42:40 +0300
+Subject: [PATCH 0883/2241] pp3: update emac-port shaper according to port-type
+
+Setting shaper's dev-defaults for VPort (in addition to VQueue).
+
+Update the default for emac-port according to hw port type,
+which is set from the DTS/DTB board configuration.
+
+Change-Id: Idf463f709295074e2b9775371470ab0aee1c57ea
+Signed-off-by: Yan Markman <ymarkman@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/32186
+Reviewed-by: Yelena Krivosheev <yelena@marvell.com>
+Reviewed-by: Dmitri Epshtein <dima@marvell.com>
+Tested-by: Star_Automation <star@marvell.com>
+---
+ drivers/net/ethernet/marvell/pp3/net_dev/mv_dev_vq.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/net/ethernet/marvell/pp3/net_dev/mv_dev_vq.c b/drivers/net/ethernet/marvell/pp3/net_dev/mv_dev_vq.c
+index 1a0e300..d32905d 100644
+--- a/drivers/net/ethernet/marvell/pp3/net_dev/mv_dev_vq.c
++++ b/drivers/net/ethernet/marvell/pp3/net_dev/mv_dev_vq.c
+@@ -727,8 +727,9 @@ int mv_pp3_dev_egress_vport_shaper_set(struct net_device *dev, struct mv_nss_met
+ 
+ 	return rc;
+ }
+-/*---------------------------------------------------------------------------*/
+ 
++/*---------------------------------------------------------------------------*/
++/* Set/init defaults for Queues and for Ports */
+ int mv_pp3_dev_egress_vqs_defaults_set(struct net_device *dev)
+ {
+ 	int vq, vqs_num, prio;
+@@ -776,6 +777,9 @@ int mv_pp3_dev_egress_vqs_defaults_set(struct net_device *dev)
+ 			meter.cbs = 16;
+ 			meter.ebs = 16;
+ 		}
++
++		if (mv_pp3_egress_vport_shaper_set(emac_vp, &meter))
++			return -1;
+ 	}
+ 
+ 	for (vq = 0; vq < vqs_num; vq++) {
+-- 
+2.7.4
+

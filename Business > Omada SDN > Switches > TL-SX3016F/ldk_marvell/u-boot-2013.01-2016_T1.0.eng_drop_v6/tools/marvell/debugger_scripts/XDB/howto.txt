@@ -1,0 +1,149 @@
+How to use XDB for Debug and for recovering and programming U-Boot image:
+--------------------------------------------------------------------------
+
+Assumptions:
+------------
+
+- This documentation refers to XDB scripts located under <u_boot root dir>/tools/marvell/debugger_scripts/XDB/
+- This documentation refer to Armada XP, Armada 370, AvantaLP, Armada 375, MSYS Alleycat3, MSYS Bobcat2, Armada 38x
+   and Armada 39x platforms
+
+The <u_boot root dir>/tools/marvell/debugger_scripts/XDB/ includes the following files:
+
+SoC configuration files:
+	- ARMADA_3XX.xsf - covers all Cortex A9 based SoCs: Armada 37x/38x/39x
+	- AXP_MSYS.xsf - covers all PJ4B based SoCs: Armada XP and Armada 370, BobCat2 and AlleyCat3
+
+Common startup script
+	- startup.xdb - the script is common for all platforms and responsible for DRAM initialisation
+	  buttons creation and obtaining the target device ID.
+
+Dynamic DRAM initialization script
+	- bin_hdr_init.xdb - suitable for all above SoC families
+
+Static DRAM initialization scripts
+	- xxx_static.xdb - family-specific static DRAM initialization scripts.
+			   Note that not all SoC families are covered.
+
+howto.txt
+	- This file.
+
+bin_hdr.elf
+	- A bin_hdr.elf file located at::
+	- <u_boot root directory>/tools/marvell/bin_hdr/
+	- <release directory>/binaries[release number][board name]/bin_hdr/bin_hdr.elf
+
+
+XDB configuration steps to load U-Boot Image:
+--------------------------------------------------------
+Requirements:
+- A valid serial connection is configured between the host and target.
+- XDB software version 5.7 or later is installed and running.
+
+JTAG Connection:
+----------------
+
+1.	Connect Marvell JTAG POD to the target board.
+
+2.	Copy SoC configuration files (*.xsf) into configuration folder inside the XDB installation directory:
+	<XDB_installation_directory>/xdb/configurations/jtag/SoC/ARMADA_3XX_XP
+	If the XDB 5.7 is installed through wine, the default installation directory is:
+		~/.wine/drive_c/Marvell/XDB5.7
+	For Windows the typical installation directory is:
+		C:/Marvell/XDB5.7
+
+3.	Open the copied configuration file (*.xsf) with text editor or change the configuration
+	using "settings" window within the Marvell(R) eXtreme Debugger 5.7 "Start up" form.
+	When using the GUI application Marvell(R) eXtreme Debugger 5.7 "Start up" form,
+	first select the related  configuration file *.xsf (copied to ARMADA_3XX_XP directory as explained above)
+	Then press the "Setting" button above in the upper level
+	of the form.
+	a) Edit the "Working Directory" field to point to the U-Boot HOME directory.
+	   In case editing the XSF file manually, refer to "-W" argument:
+		For instance, the Linux work folder may be:
+			-W "/home/user/work/u-boot"
+		Example of Windows working directory:
+			-W "C:/Projects/u-boot"
+	b) Ensure the CPU core connection type is suitable for the desired platform:
+		Linux JTAG probe connection type:
+			-L "tcp:127.0.0.1:3020:usb:"
+		Windows JTAG probe connection type:
+			-L "usb:"
+	c) Update the correct number of cores available in your SoC device.
+	   Within the GUI form: "CS-JTAG" tabs and for the manual TXT mode:
+	   CS$2/ CS$3/ CS$4
+	d) Save your changes into configuration file
+
+4.	Start the XDB GUI.
+	In Linux use the command "startxdb gui&". Once the startup dialogue box appears on the screen,
+	select the required configuration file edited in previous step.
+	In Windows double-click the previously edited configuration file.
+
+5.	Make sure that "connection type" of the first core is set to "Reset SOC & stop".
+	The "connection type" is located under the most left "CS-JTAG" tab in the settings window
+	of the startup menu (it appears when "settings" button is pressed in the start-up dialogue box).
+	Please note that this is needed to be done only once.
+
+6.	In the start-up dialogue box click the Start button for launching the main XDB window.
+
+7.	Wait for a connection to be established. The Command window in the main interface is shown by default
+	and provides a CLI to XDB core. The connection status will be shown in this window:
+
+	- If the connection was successful a "xdb>" prompt will appear at the bottom of the command window.
+	- If "xdb_HeldInReset>" / "xdb_nocomm>" prompt appears at the bottom of the command window,
+	  this is an indication that the system is in failure state. Make sure the board is powered,
+	  the POD is properly connected, and the correct .xsf script is used.
+
+Note: If a reset is not desired when connecting to a platform, choose the "Try Hot Connect & Stop"
+	  option at step 3. This mode assumes that the system has a valid running image.
+
+DRAM Initialization:
+--------------------
+
+8.	If the target was stopped on a reset vector ("Reset SOC & stop" connection was selected on start),
+	the XDB startup script will try to read the device ID from the SoC.
+	If the Device ID obtained successfully, the command window will show a message "Running on XXXX platform",
+	where XXXX is one of supported Marvell platforms like "Armada 38x", "Armada XP", etc.
+	Following the device detection, the startup script creates user interface buttons to be used for running
+	dynamic or static DRAM initialization
+	If the script is unable to obtain the device ID, the "Unknown device ID" message is printed in the command
+	window and a button for static DRAM initialization is not created in GUI.
+
+
+9.	Press either "DynamicInitDDR" or "StaticInitDDR" button for running the DRAM initialization.
+	The dynamic initialization process uses binary header ELF file created in tools/marvell/bin_hdr
+	during u-boot compilation.
+	The static initialization does not rely on the binary header and brings up DDR controller using
+	direct registers writes
+
+10.	Once the DRAM initialization complete and an appropriate message is printed in XDB command window, the u-boot
+	image can be loaded into the target DRAM.
+
+11.	To load the u-Boot do the following:
+
+-	From the XDB tool main menu Click on the File -> Load.
+-	The "Load" menu will appear.
+-	Click the "Symbols And Data" option.
+-	Click the Browse button and under u-boot root folder select the "u-boot" file (without any extension)
+-	Check the "Download", and "initfile" options in the "Load" menu, and click "Ok"
+-	Wait until the download completed. The download progress is presented in percentage in the bottom right
+	corner (appears only when download in progress).
+
+Note: to load the symbols to spesific address(after u-boot relocation need to upload the symbols again), in load
+	window need to add "-sa <address>" in BD option.
+	for example the code relocated to 0x7fecd000, need to add "-sa 0x7fecd000"
+
+Running / Recovering u-Boot
+----------------------------------
+To Recover/ burn a u-Boot image to the flash DRAM Initialization:
+
+12.	Press the Run icon (the green traffic light), or press "Ctrl +r".
+	The u-Boot image loaded into target RAM will be executed.
+	The u-boot will run, and a normal u-boot plot will appear on the Serial connection.
+
+13.	Configure IP parameters (ipaddr, serverip, netmask, gatewayip) and use a "bubt" command to flashing
+	the new u-boot image into target boot device.
+	Please refer to the "How to upgrade to a new version of U-Boot" in the u-boot release notes.
+
+Note: refer to XDB documentation for the full tool capabilities.
+

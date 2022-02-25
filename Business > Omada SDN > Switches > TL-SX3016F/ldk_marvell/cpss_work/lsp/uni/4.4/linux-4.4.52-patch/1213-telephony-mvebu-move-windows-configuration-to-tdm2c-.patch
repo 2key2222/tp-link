@@ -1,0 +1,199 @@
+From ff2f556c59413ce434d6ed98886aa8fcfa2fd508 Mon Sep 17 00:00:00 2001
+From: Marcin Wojtas <mw@semihalf.com>
+Date: Thu, 22 Dec 2016 13:04:18 +0100
+Subject: [PATCH 1213/2241] telephony: mvebu: move windows configuration to
+ tdm2c/tdmmc and align naming
+
+Windows configuration is done in registers and should be placed along with
+other low-level code in tdm2c/tdmmc.
+
+Change-Id: I5ccf46492cd95e59394c30b28c7eea23f133233f
+Signed-off-by: Marcin Wojtas <mw@semihalf.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/35046
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/telephony/mvebu_phone/mv_phone_dev.c | 56 +++-------------------------
+ drivers/telephony/mvebu_phone/tdm2c/tdm2c.c  | 31 +++++++++++++++
+ drivers/telephony/mvebu_phone/tdm2c/tdm2c.h  |  2 +
+ drivers/telephony/mvebu_phone/tdmmc/tdmmc.c  | 14 +++++++
+ drivers/telephony/mvebu_phone/tdmmc/tdmmc.h  |  1 +
+ 5 files changed, 53 insertions(+), 51 deletions(-)
+
+diff --git a/drivers/telephony/mvebu_phone/mv_phone_dev.c b/drivers/telephony/mvebu_phone/mv_phone_dev.c
+index 06c6060..845a7ff 100644
+--- a/drivers/telephony/mvebu_phone/mv_phone_dev.c
++++ b/drivers/telephony/mvebu_phone/mv_phone_dev.c
+@@ -989,52 +989,6 @@ static int mv_phone_dco_post_div_config(struct platform_device *pdev,
+ 	return 0;
+ }
+ 
+-/* Initialize decoding windows */
+-static int mv_tdm2c_mbus_windows(struct device *dev, void __iomem *regs,
+-				 const struct mbus_dram_target_info *dram)
+-{
+-	int i;
+-
+-	if (!dram) {
+-		dev_err(dev, "no mbus dram info\n");
+-		return -EINVAL;
+-	}
+-
+-	for (i = 0; i < TDM_MBUS_MAX_WIN; i++) {
+-		writel(0, regs + TDM_WIN_CTRL_REG(i));
+-		writel(0, regs + TDM_WIN_BASE_REG(i));
+-	}
+-
+-	for (i = 0; i < dram->num_cs; i++) {
+-		const struct mbus_dram_window *cs = dram->cs + i;
+-
+-		/* Write size, attributes and target id to control register */
+-		writel(((cs->size - 1) & 0xffff0000) |
+-			(cs->mbus_attr << 8) |
+-			(dram->mbus_dram_target_id << 4) | 1,
+-			regs + TDM_WIN_CTRL_REG(i));
+-		/* Write base address to base register */
+-		writel(cs->base, regs + TDM_WIN_BASE_REG(i));
+-	}
+-
+-	return 0;
+-}
+-
+-/* Initialize decoding windows */
+-static int mv_tdmmc_a8k_windows(struct device *dev, void __iomem *regs)
+-{
+-	int i;
+-
+-	for (i = 0; i < COMM_UNIT_MBUS_MAX_WIN; i++) {
+-		writel(0xce00, regs + COMM_UNIT_WIN_CTRL_REG(i));
+-		writel(0xffff0000, regs + COMM_UNIT_WIN_SIZE_REG(i));
+-		if (i > 0)
+-			writel(0x0, regs + COMM_UNIT_WIN_ENABLE_REG(i));
+-	}
+-
+-	return 0;
+-}
+-
+ static int mvebu_phone_probe(struct platform_device *pdev)
+ {
+ 	struct device_node *np = pdev->dev.of_node;
+@@ -1088,8 +1042,8 @@ static int mvebu_phone_probe(struct platform_device *pdev)
+ 		priv->tdm_type = MV_TDM_UNIT_TDM2C;
+ 		err = mv_phone_tdm_clk_pll_config(pdev);
+ 		err |= mv_phone_dco_post_div_config(pdev, priv->pclk_freq_mhz);
+-		err |= mv_tdm2c_mbus_windows(&pdev->dev, priv->tdm_base,
+-					     mv_mbus_dram_info());
++		err |= tdm2c_set_mbus_windows(&pdev->dev, priv->tdm_base,
++					      mv_mbus_dram_info());
+ 		if (err < 0)
+ 			goto err_clk;
+ 
+@@ -1111,7 +1065,7 @@ static int mvebu_phone_probe(struct platform_device *pdev)
+ 
+ 	if (of_device_is_compatible(priv->np, "marvell,armada-a8k-tdm")) {
+ 		priv->tdm_type = MV_TDM_UNIT_TDMMC;
+-		mv_tdmmc_a8k_windows(&pdev->dev, priv->tdm_base);
++		tdmmc_set_a8k_windows(&pdev->dev, priv->tdm_base);
+ 
+ 		priv->irq_count = 3;
+ 
+@@ -1172,8 +1126,8 @@ static int mvebu_phone_resume(struct device *dev)
+ 	struct platform_device *pdev = priv->parent;
+ 	int err, i;
+ 
+-	err = mv_tdm2c_mbus_windows(dev, priv->tdm_base,
+-				    mv_mbus_dram_info());
++	err = tdm2c_set_mbus_windows(dev, priv->tdm_base,
++				     mv_mbus_dram_info());
+ 	if (err < 0)
+ 		return err;
+ 
+diff --git a/drivers/telephony/mvebu_phone/tdm2c/tdm2c.c b/drivers/telephony/mvebu_phone/tdm2c/tdm2c.c
+index da9cdc2..6ea6e5a 100644
+--- a/drivers/telephony/mvebu_phone/tdm2c/tdm2c.c
++++ b/drivers/telephony/mvebu_phone/tdm2c/tdm2c.c
+@@ -990,3 +990,34 @@ void tdm2c_ext_stats_get(struct mv_phone_extended_stats *tdmExtStats)
+ 	tdmExtStats->pcm_restart_count = pcm_restart_count;
+ }
+ #endif
++
++/* Initialize decoding windows */
++int tdm2c_set_mbus_windows(struct device *dev, void __iomem *regs,
++			   const struct mbus_dram_target_info *dram)
++{
++	int i;
++
++	if (!dram) {
++		dev_err(dev, "no mbus dram info\n");
++		return -EINVAL;
++	}
++
++	for (i = 0; i < TDM_MBUS_MAX_WIN; i++) {
++		writel(0, regs + TDM_WIN_CTRL_REG(i));
++		writel(0, regs + TDM_WIN_BASE_REG(i));
++	}
++
++	for (i = 0; i < dram->num_cs; i++) {
++		const struct mbus_dram_window *cs = dram->cs + i;
++
++		/* Write size, attributes and target id to control register */
++		writel(((cs->size - 1) & 0xffff0000) |
++			(cs->mbus_attr << 8) |
++			(dram->mbus_dram_target_id << 4) | 1,
++			regs + TDM_WIN_CTRL_REG(i));
++		/* Write base address to base register */
++		writel(cs->base, regs + TDM_WIN_BASE_REG(i));
++	}
++
++	return 0;
++}
+diff --git a/drivers/telephony/mvebu_phone/tdm2c/tdm2c.h b/drivers/telephony/mvebu_phone/tdm2c/tdm2c.h
+index b124b51..2ab135f 100644
+--- a/drivers/telephony/mvebu_phone/tdm2c/tdm2c.h
++++ b/drivers/telephony/mvebu_phone/tdm2c/tdm2c.h
+@@ -328,5 +328,7 @@ void tdm2c_regs_dump(void);
+ void tdm2c_intr_enable(void);
+ void tdm2c_intr_disable(void);
+ void tdm2c_pcm_if_reset(void);
++int tdm2c_set_mbus_windows(struct device *dev, void __iomem *regs,
++			   const struct mbus_dram_target_info *dram);
+ 
+ #endif /* _TDM2C_H_ */
+diff --git a/drivers/telephony/mvebu_phone/tdmmc/tdmmc.c b/drivers/telephony/mvebu_phone/tdmmc/tdmmc.c
+index eebd635..50c05ab 100644
+--- a/drivers/telephony/mvebu_phone/tdmmc/tdmmc.c
++++ b/drivers/telephony/mvebu_phone/tdmmc/tdmmc.c
+@@ -984,3 +984,17 @@ int tdmmc_set_mbus_windows(struct device *dev, void __iomem *regs)
+ 	return 0;
+ }
+ 
++/* Initialize decoding windows for Armada 8k SoC */
++int tdmmc_set_a8k_windows(struct device *dev, void __iomem *regs)
++{
++	int i;
++
++	for (i = 0; i < COMM_UNIT_MBUS_MAX_WIN; i++) {
++		writel(0xce00, regs + COMM_UNIT_WIN_CTRL_REG(i));
++		writel(0xffff0000, regs + COMM_UNIT_WIN_SIZE_REG(i));
++		if (i > 0)
++			writel(0x0, regs + COMM_UNIT_WIN_ENABLE_REG(i));
++	}
++
++	return 0;
++}
+diff --git a/drivers/telephony/mvebu_phone/tdmmc/tdmmc.h b/drivers/telephony/mvebu_phone/tdmmc/tdmmc.h
+index 8534196..b1c2700 100644
+--- a/drivers/telephony/mvebu_phone/tdmmc/tdmmc.h
++++ b/drivers/telephony/mvebu_phone/tdmmc/tdmmc.h
+@@ -396,6 +396,7 @@ void tdmmc_intr_enable(u8 device_id);
+ void tdmmc_intr_disable(u8 device_id);
+ int tdmmc_reset_slic(void);
+ int tdmmc_set_mbus_windows(struct device *dev, void __iomem *regs);
++int tdmmc_set_a8k_windows(struct device *dev, void __iomem *regs);
+ 
+ #endif /* _TDMMC_H_ */
+ 
+-- 
+2.7.4
+

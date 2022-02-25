@@ -1,0 +1,104 @@
+From 8735edf663a5f33fb8a16f791963c6ff06a47f55 Mon Sep 17 00:00:00 2001
+From: Hanna Hawa <hannah@marvell.com>
+Date: Wed, 13 Apr 2016 15:25:52 +0300
+Subject: [PATCH 0375/2241] fix: dts: add UART nodes for CP-110
+
+Add missing UART nodes for CP-110
+
+Change-Id: Id945c8e5c69724bfd3fab68c949d440b93ee7676
+Signed-off-by: Hanna Hawa <hannah@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/28998
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Shadi Ammouri <shadi@marvell.com>
+(cherry picked from commit 2ebe26d9359cb2a73d020b02fbbdbd2061b5261e)
+Reviewed-on: http://vgitil04.il.marvell.com:8080/29567
+---
+ .../boot/dts/marvell/armada-7040-db-router.dts     | 13 +++++++
+ arch/arm64/boot/dts/marvell/armada-cp110.dtsi      | 40 ++++++++++++++++++++++
+ 2 files changed, 53 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-7040-db-router.dts b/arch/arm64/boot/dts/marvell/armada-7040-db-router.dts
+index 6eeb854..9a34950 100644
+--- a/arch/arm64/boot/dts/marvell/armada-7040-db-router.dts
++++ b/arch/arm64/boot/dts/marvell/armada-7040-db-router.dts
+@@ -57,6 +57,18 @@
+ 
+ 	cpn-110-master {
+ 		config-space {
++			serial@702000 {
++				status = "disabled";
++			};
++			serial@702100 {
++				status = "disabled";
++			};
++			serial@702200 {
++				status = "disabled";
++			};
++			serial@702300 {
++				status = "disabled";
++			};
+ 			sata: sata@540000 {
+ 				status = "okay";
+ 			};
+@@ -69,6 +81,7 @@
+ 			spi@700680 {
+ 				status = "okay";
+ 			};
++
+ 			mdio@12a200 {
+ 				#address-cells = <1>;
+ 				#size-cells = <0>;
+diff --git a/arch/arm64/boot/dts/marvell/armada-cp110.dtsi b/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
+index caf53c3..3a2ee1d 100644
+--- a/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
+@@ -30,6 +30,46 @@ gateclk: clock-gating-control@440220 {
+ 	#clock-cells = <1>;
+ };
+ 
++serial@702000 {
++	compatible = "snps,dw-apb-uart";
++	reg = <0x702000 0x100>;
++	reg-shift = <2>;
++	interrupts = <GIC_SPI 88 IRQ_TYPE_LEVEL_HIGH>;
++	reg-io-width = <1>;
++	clocks = <&cp110_clk 3>;
++	status = "disabled";
++};
++
++serial@702100 {
++	compatible = "snps,dw-apb-uart";
++	reg = <0x702100 0x100>;
++	reg-shift = <2>;
++	interrupts = <GIC_SPI 89 IRQ_TYPE_LEVEL_HIGH>;
++	reg-io-width = <1>;
++	clocks = <&cp110_clk 3>;
++	status = "disabled";
++};
++
++serial@702200 {
++	compatible = "snps,dw-apb-uart";
++	reg = <0x702200 0x100>;
++	reg-shift = <2>;
++	interrupts = <GIC_SPI 90 IRQ_TYPE_LEVEL_HIGH>;
++	reg-io-width = <1>;
++	clocks = <&cp110_clk 3>;
++	status = "disabled";
++};
++
++serial@702300 {
++	compatible = "snps,dw-apb-uart";
++	reg = <0x702300 0x100>;
++	reg-shift = <2>;
++	interrupts = <GIC_SPI 91 IRQ_TYPE_LEVEL_HIGH>;
++	reg-io-width = <1>;
++	clocks = <&cp110_clk 3>;
++	status = "disabled";
++};
++
+ sata: sata@540000 {
+ 	compatible = "marvell,armada-3700-ahci";
+ 	reg = <0x540000 0x30000>;
+-- 
+2.7.4
+

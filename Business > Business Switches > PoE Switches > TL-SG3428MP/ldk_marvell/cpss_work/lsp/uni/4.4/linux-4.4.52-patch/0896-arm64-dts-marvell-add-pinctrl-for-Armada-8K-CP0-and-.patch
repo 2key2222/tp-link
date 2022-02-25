@@ -1,0 +1,98 @@
+From 5ce9b757f3d64994a201163f3dc3a85311582827 Mon Sep 17 00:00:00 2001
+From: Grzegorz Jaszczyk <jaz@semihalf.com>
+Date: Thu, 11 Aug 2016 10:30:49 +0200
+Subject: [PATCH 0896/2241] arm64: dts: marvell: add pinctrl for Armada 8K CP0
+ and for CP1
+
+The base addresses for pinctrl are the same for Armada 8K and Armada 7K but
+different compatible strings need to be used. Therefore introduce the
+pinctrl node in the lowest dtsi layer - armada-cp110-1.dtsi and
+armada-cp110.dtsi, but define compatible property in upper dtsi layers.
+
+Also it is worth recalling once again that Armada 8K contains two CP110
+blocks (CP0 and CP1), while Armada 7K contains only one CP110 block.
+
+Change-Id: Id3a99f04da8403950f8ce257234d760c28201624
+Signed-off-by: Grzegorz Jaszczyk <jaz@semihalf.com>
+Signed-off-by: Igal Liberman <igall@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/32375
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+Tested-by: Star_Automation <star@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-7040.dtsi    | 2 ++
+ arch/arm64/boot/dts/marvell/armada-8040.dtsi    | 6 ++++++
+ arch/arm64/boot/dts/marvell/armada-cp110-1.dtsi | 5 +++++
+ arch/arm64/boot/dts/marvell/armada-cp110.dtsi   | 3 +--
+ 4 files changed, 14 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-7040.dtsi b/arch/arm64/boot/dts/marvell/armada-7040.dtsi
+index f73472b..f75c87f 100644
+--- a/arch/arm64/boot/dts/marvell/armada-7040.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-7040.dtsi
+@@ -69,6 +69,8 @@
+ 	cpn-110-master {
+ 		config-space {
+ 			pinctrl@440000 {
++			compatible = "marvell,a70x0-pinctrl";
++
+ 				i2c0_pins: i2c-pins-0 {
+ 					marvell,pins = "mpp37", "mpp38";
+ 					marvell,function = "i2c0";
+diff --git a/arch/arm64/boot/dts/marvell/armada-8040.dtsi b/arch/arm64/boot/dts/marvell/armada-8040.dtsi
+index cce0839..fff514f 100644
+--- a/arch/arm64/boot/dts/marvell/armada-8040.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-8040.dtsi
+@@ -133,6 +133,9 @@
+ 			ppv22@000000 {
+ 				dma-coherent;
+ 			};
++			pinctrl@440000 {
++				compatible = "marvell,a80x0-cp0-pinctrl";
++			};
+ 			usb3h0: usb3@500000 {
+ 				#stream-id-cells = <1>;
+ 			};
+@@ -174,6 +177,9 @@
+ 			ppv22@000000 {
+ 				dma-coherent;
+ 			};
++			pinctrl@440000 {
++				compatible = "marvell,a80x0-cp1-pinctrl";
++			};
+ 		};
+ 		pcie@0x600000 {
+ 			msi-parent = <&gic_v2m0>;
+diff --git a/arch/arm64/boot/dts/marvell/armada-cp110-1.dtsi b/arch/arm64/boot/dts/marvell/armada-cp110-1.dtsi
+index 2702f08..a170533 100644
+--- a/arch/arm64/boot/dts/marvell/armada-cp110-1.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-cp110-1.dtsi
+@@ -37,6 +37,11 @@ gateclk_1: clock-gating-control@440220 {
+ 	#clock-cells = <1>;
+ };
+ */
++
++pinctrl@440000 {
++	reg = <0x440000 0x10>;
++};
++
+ sata@540000 {
+ 	compatible = "marvell,armada-3700-ahci";
+ 	reg = <0x540000 0x30000>;
+diff --git a/arch/arm64/boot/dts/marvell/armada-cp110.dtsi b/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
+index 6561083..ce1d60b 100644
+--- a/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
+@@ -37,8 +37,7 @@ gateclk: clock-gating-control@440220 {
+ };
+ 
+ pinctrl@440000 {
+-	compatible = "marvell,a70x0-pinctrl";
+-	reg = <0x440000 0x10>;
++	reg = <0x440000 0x20>;
+ };
+ 
+ gpio@440100 {
+-- 
+2.7.4
+

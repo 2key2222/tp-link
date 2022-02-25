@@ -1,0 +1,128 @@
+From 10ae711940606fc5cf9c60d7a8dee9768c72bfe6 Mon Sep 17 00:00:00 2001
+From: Igal Liberman <igall@marvell.com>
+Date: Sun, 5 Mar 2017 14:52:24 +0200
+Subject: [PATCH 1448/2241] dts: a80x0: enable eip197 node
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+This patch enables eip197 nodes in the following boards:
+	- Marvell 8040 MACHIATOBin.
+	- Marvell Armada-8040 development board
+	  (setups A, B, C, D and E).
+
+Important note:
+A8040 has 2 EIP engines (one on each CP).
+Kernel Crypto API doesn’t allow to register 2 (and more) crypto engines.
+Currently, the basic driver introduced in this patch-set doesn’t do any
+registration to Kernel crypto API so we can enable 2 engine in A8040.
+Later on, when the complete driver will be introduced, we need to handle
+this issue (working with 2 engines).
+
+Change-Id: If13d10ecd04abe0f7bd6c8fd79f49debc2aa2584
+Signed-off-by: Igal Liberman <igall@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/37215
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-8040-db-B.dts     | 3 +++
+ arch/arm64/boot/dts/marvell/armada-8040-db-C.dts     | 3 +++
+ arch/arm64/boot/dts/marvell/armada-8040-db-E.dts     | 3 +++
+ arch/arm64/boot/dts/marvell/armada-8040-mcbin.dts    | 6 ++++++
+ arch/arm64/boot/dts/marvell/armada-80x0-customer.dts | 6 ++++++
+ 5 files changed, 21 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-8040-db-B.dts b/arch/arm64/boot/dts/marvell/armada-8040-db-B.dts
+index a2389af..6c27d55 100644
+--- a/arch/arm64/boot/dts/marvell/armada-8040-db-B.dts
++++ b/arch/arm64/boot/dts/marvell/armada-8040-db-B.dts
+@@ -202,6 +202,9 @@
+ 				pinctrl-names = "default";
+ 				pinctrl-0 = <&cps_spi1_pins>;
+ 			};
++			eip197@800000 {
++				status = "okay";
++			};
+ 		};
+ 		pcie@0x600000 {
+ 			status = "okay";
+diff --git a/arch/arm64/boot/dts/marvell/armada-8040-db-C.dts b/arch/arm64/boot/dts/marvell/armada-8040-db-C.dts
+index 77bf863..0d5348c 100644
+--- a/arch/arm64/boot/dts/marvell/armada-8040-db-C.dts
++++ b/arch/arm64/boot/dts/marvell/armada-8040-db-C.dts
+@@ -232,6 +232,9 @@
+ 				pclk-freq-mhz = <8>;
+ 				status = "okay";
+ 			};
++			eip197@800000 {
++				status = "okay";
++			};
+ 		};
+ 		pcie@0x600000 {
+ 			status = "okay";
+diff --git a/arch/arm64/boot/dts/marvell/armada-8040-db-E.dts b/arch/arm64/boot/dts/marvell/armada-8040-db-E.dts
+index 8d30144..8632d4d 100644
+--- a/arch/arm64/boot/dts/marvell/armada-8040-db-E.dts
++++ b/arch/arm64/boot/dts/marvell/armada-8040-db-E.dts
+@@ -224,6 +224,9 @@
+ 				pinctrl-names = "default";
+ 				pinctrl-0 = <&cps_spi1_pins>;
+ 			};
++			eip197@800000 {
++				status = "okay";
++			};
+ 		};
+ 		pcie@0x600000 {
+ 			status = "okay";
+diff --git a/arch/arm64/boot/dts/marvell/armada-8040-mcbin.dts b/arch/arm64/boot/dts/marvell/armada-8040-mcbin.dts
+index 87ce8f3..e8244c6 100644
+--- a/arch/arm64/boot/dts/marvell/armada-8040-mcbin.dts
++++ b/arch/arm64/boot/dts/marvell/armada-8040-mcbin.dts
+@@ -141,6 +141,9 @@
+ 					status = "okay";
+ 				};
+ 			};
++			eip197@800000 {
++				status = "okay";
++			};
+ 		};
+ 		pcie@0x600000 {
+ 			num-lanes = <4>;
+@@ -224,6 +227,9 @@
+ 					status = "okay";
+ 				};
+ 			};
++			eip197@800000 {
++				status = "okay";
++			};
+ 		};
+ 	};
+ };
+diff --git a/arch/arm64/boot/dts/marvell/armada-80x0-customer.dts b/arch/arm64/boot/dts/marvell/armada-80x0-customer.dts
+index 5f2301c..53f3468 100644
+--- a/arch/arm64/boot/dts/marvell/armada-80x0-customer.dts
++++ b/arch/arm64/boot/dts/marvell/armada-80x0-customer.dts
+@@ -223,6 +223,9 @@
+ 					marvell,function = "gpio";
+ 				};
+ 			};
++			eip197@800000 {
++				status = "okay";
++			};
+ 		};
+ 
+ 		pcie@0x640000 {
+@@ -323,6 +326,9 @@
+ 				pclk-freq-mhz = <8>;
+ 				status = "disabled";
+ 			};
++			eip197@800000 {
++				status = "okay";
++			};
+ 		};
+ 		pcie@0x640000 {
+ 			status = "disabled";
+-- 
+2.7.4
+

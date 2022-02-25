@@ -1,0 +1,37 @@
+From dc8a1e87dbd378c598ab8c9c814f55d2428baedb Mon Sep 17 00:00:00 2001
+From: Yehuda Yitschak <yehuday@marvell.com>
+Date: Sun, 21 Feb 2016 14:49:52 +0200
+Subject: [PATCH 0142/2241] config: spi: added support for spi-orion and mtd
+ devices
+
+Change-Id: I902d905633cb14f190df61316606672d43e4a71c
+Signed-off-by: Yehuda Yitschak <yehuday@marvell.com>
+---
+ arch/arm64/configs/mvebu_v8_lsp_defconfig | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/arch/arm64/configs/mvebu_v8_lsp_defconfig b/arch/arm64/configs/mvebu_v8_lsp_defconfig
+index 7464e41..ef32da3 100644
+--- a/arch/arm64/configs/mvebu_v8_lsp_defconfig
++++ b/arch/arm64/configs/mvebu_v8_lsp_defconfig
+@@ -64,6 +64,9 @@ CONFIG_DEVTMPFS=y
+ CONFIG_DEVTMPFS_MOUNT=y
+ CONFIG_DMA_CMA=y
+ CONFIG_VEXPRESS_CONFIG=y
++CONFIG_MTD=y
++CONFIG_MTD_M25P80=y
++CONFIG_MTD_SPI_NOR=y
+ CONFIG_BLK_DEV_LOOP=y
+ CONFIG_BLK_DEV_RAM=y
+ CONFIG_BLK_DEV_RAM_COUNT=1
+@@ -107,6 +110,7 @@ CONFIG_SERIAL_XILINX_PS_UART_CONSOLE=y
+ CONFIG_VIRTIO_CONSOLE=y
+ # CONFIG_HW_RANDOM is not set
+ CONFIG_SPI=y
++CONFIG_SPI_ORION=y
+ CONFIG_SPI_PL022=y
+ CONFIG_GPIOLIB=y
+ CONFIG_GPIO_PL061=y
+-- 
+2.7.4
+

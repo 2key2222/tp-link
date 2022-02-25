@@ -1,0 +1,36 @@
+From 96fc4f09cd9cecef09f40077ce259014a8ad4d0e Mon Sep 17 00:00:00 2001
+From: Stefan Chulski <stefanc@marvell.com>
+Date: Wed, 28 Jun 2017 16:38:30 +0300
+Subject: [PATCH 1790/2241] fix: net: mvpp2x: fix memory leakage during TXQ
+ init
+
+Wrong memory size were released by dma_free_coherent in TXQ init
+procedure.
+
+Change-Id: I994c35da67601e9f5b8e8d84d82f22e2e5b6a69d
+Signed-off-by: Stefan Chulski <stefanc@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/40963
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Yuval Caduri <cyuval@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+index c10f972..31b2b09 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+@@ -1447,7 +1447,7 @@ error:
+ 	}
+ 
+ 	dma_free_coherent(port->dev->dev.parent,
+-			  txq->size * MVPP2_DESC_ALIGNED_SIZE,
++			  MVPP2_DESCQ_MEM_SIZE(txq->size),
+ 			  txq->first_desc, txq->descs_phys);
+ 
+ 	return -ENOMEM;
+-- 
+2.7.4
+

@@ -1,0 +1,45 @@
+From bf29bbdfc4c5707695d8e7d3cb8f8d74d708ccb8 Mon Sep 17 00:00:00 2001
+From: Yuval Caduri <cyuval@marvell.com>
+Date: Mon, 11 Jul 2016 11:40:00 +0300
+Subject: [PATCH 0602/2241] dts: mvpp2x: Fix Packet Processor register space
+ size.
+
+Change-Id: I7060e3e0ef5a38ed8a54f563b9b635f018d9922a
+Signed-off-by: Yuval Caduri <cyuval@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/31037
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-cp110-1.dtsi | 2 +-
+ arch/arm64/boot/dts/marvell/armada-cp110.dtsi   | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-cp110-1.dtsi b/arch/arm64/boot/dts/marvell/armada-cp110-1.dtsi
+index 97ff53a..d60095b 100644
+--- a/arch/arm64/boot/dts/marvell/armada-cp110-1.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-cp110-1.dtsi
+@@ -230,7 +230,7 @@ gop {
+ 
+ ppv22@000000 {
+ 	compatible = "marvell,mv-pp22";
+-	reg = <0x000000 0x80000>, /* Packet Processor regs */
++	reg = <0x000000 0x90000>, /* Packet Processor regs */
+ 	      <0x120000 0x9000>, /* SERDES regs */
+ 	      <0x129000 0x0600>, /* XMIB regs */
+ 	      <0x12a000 0x200>,  /* LED regs */
+diff --git a/arch/arm64/boot/dts/marvell/armada-cp110.dtsi b/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
+index eeb82f7..8067fe6 100644
+--- a/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
+@@ -310,7 +310,7 @@ gop {
+ 
+ ppv22@000000 {
+ 	compatible = "marvell,mv-pp22";
+-	reg = <0x000000 0x80000>, /* Packet Processor regs */
++	reg = <0x000000 0x90000>, /* Packet Processor regs */
+ 	      <0x120000 0x9000>, /* SERDES regs */
+ 	      <0x129000 0x0600>, /* XMIB regs */
+ 	      <0x12a000 0x200>,  /* LED regs */
+-- 
+2.7.4
+

@@ -1,0 +1,435 @@
+From cd767fbe6994ff15b2cd1409d3292552ebf7520e Mon Sep 17 00:00:00 2001
+From: Christine Gharzuzi <chrisg@marvell.com>
+Date: Thu, 5 Jan 2017 15:10:36 +0200
+Subject: [PATCH 1262/2241] dts: a70x0: align Armada 7040-DB device tree with
+ setup A
+
+A7040 DB board is a modular board,
+which supports multiple possible configurations.
+This patch aligns the existing router board topology with setup A.
+
+- Align device tree for A setup
+SerDes:
+	- lane0: SGMII1
+	- lane1: USB0
+	- lane2: SFI (10G)
+	- lane3: SATA1
+	- lane4: USB1
+	- lane5: PCIe1
+AP-MPPs:
+	- SDIO, UART
+CP-MPPs:
+	- RGMII1, SPI, SDIO
+
+Note: This patch actual change is only for ETH0,wq
+to set it as SFI instead of SGMI.
+Signed-off-by: Christine Gharzuzi <chrisg@marvell.com>
+
+Change-Id: I71e36fafd6fb095e94668e24e36f9565e458c40c
+Reviewed-on: http://vgitil04.il.marvell.com:8080/35360
+Reviewed-by: Stefan Chulski <stefanc@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+Tested-by: Hanna Hawa <hannah@marvell.com>
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+---
+ .../bindings/arm/marvell/armada-7k-8k.txt          |   2 +-
+ arch/arm64/boot/dts/marvell/Makefile               |   2 +-
+ arch/arm64/boot/dts/marvell/armada-7040-db-A.dts   | 176 +++++++++++++++++++++
+ .../boot/dts/marvell/armada-7040-db-router.dts     | 176 ---------------------
+ 4 files changed, 178 insertions(+), 178 deletions(-)
+ create mode 100644 arch/arm64/boot/dts/marvell/armada-7040-db-A.dts
+ delete mode 100644 arch/arm64/boot/dts/marvell/armada-7040-db-router.dts
+
+diff --git a/Documentation/devicetree/bindings/arm/marvell/armada-7k-8k.txt b/Documentation/devicetree/bindings/arm/marvell/armada-7k-8k.txt
+index 10e9cbf..6896e10 100644
+--- a/Documentation/devicetree/bindings/arm/marvell/armada-7k-8k.txt
++++ b/Documentation/devicetree/bindings/arm/marvell/armada-7k-8k.txt
+@@ -20,7 +20,7 @@ SoC:
+       when the SoC being used is the Armada 8040
+ 
+ Boards:
+-   - "marvell,armada7040-db-router", "marvell,armada7040-db"
++   - "marvell,armada7040-db-A", "marvell,armada7040-db"
+       when the board being used is the Armada 7040 Development board
+ 
+    - "marvell,armada7040-db-nand", "marvell,armada7040-db"
+diff --git a/arch/arm64/boot/dts/marvell/Makefile b/arch/arm64/boot/dts/marvell/Makefile
+index e2896fe..f87132b 100644
+--- a/arch/arm64/boot/dts/marvell/Makefile
++++ b/arch/arm64/boot/dts/marvell/Makefile
+@@ -8,7 +8,7 @@ dtb-$(CONFIG_ARCH_MVEBU) += armada-3720-db-sgmii1.dtb
+ dtb-$(CONFIG_ARCH_MVEBU) += armada-3720-db-sfp.dtb
+ dtb-$(CONFIG_ARCH_MVEBU) += armada-3720-community.dtb
+ dtb-$(CONFIG_ARCH_MVEBU) += armada-37x0-customer.dtb
+-dtb-$(CONFIG_ARCH_MVEBU) += armada-7040-db-router.dtb
++dtb-$(CONFIG_ARCH_MVEBU) += armada-7040-db-A.dtb
+ dtb-$(CONFIG_ARCH_MVEBU) += armada-7040-db-nand.dtb
+ dtb-$(CONFIG_ARCH_MVEBU) += armada-7040-db-all-pcie.dtb
+ dtb-$(CONFIG_ARCH_MVEBU) += armada-70x0-customer.dtb
+diff --git a/arch/arm64/boot/dts/marvell/armada-7040-db-A.dts b/arch/arm64/boot/dts/marvell/armada-7040-db-A.dts
+new file mode 100644
+index 0000000..3822741
+--- /dev/null
++++ b/arch/arm64/boot/dts/marvell/armada-7040-db-A.dts
+@@ -0,0 +1,176 @@
++/*
++ * Copyright (C) 2016 Marvell Technology Group Ltd.
++ *
++ * This file is dual-licensed: you can use it either under the terms
++ * of the GPLv2 or the X11 license, at your option. Note that this dual
++ * licensing only applies to this file, and not this project as a
++ * whole.
++ *
++ *  a) This library is free software; you can redistribute it and/or
++ *     modify it under the terms of the GNU General Public License as
++ *     published by the Free Software Foundation; either version 2 of the
++ *     License, or (at your option) any later version.
++ *
++ *     This library is distributed in the hope that it will be useful,
++ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *     GNU General Public License for more details.
++ *
++ * Or, alternatively,
++ *
++ *  b) Permission is hereby granted, free of charge, to any person
++ *     obtaining a copy of this software and associated documentation
++ *     files (the "Software"), to deal in the Software without
++ *     restriction, including without limitation the rights to use,
++ *     copy, modify, merge, publish, distribute, sublicense, and/or
++ *     sell copies of the Software, and to permit persons to whom the
++ *     Software is furnished to do so, subject to the following
++ *     conditions:
++ *
++ *     The above copyright notice and this permission notice shall be
++ *     included in all copies or substantial portions of the Software.
++ *
++ *     THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
++ *     EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
++ *     OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
++ *     NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
++ *     HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
++ *     WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++ *     FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
++ *     OTHER DEALINGS IN THE SOFTWARE.
++ */
++
++/*
++ * Device Tree file for Marvell Armada 7040 development board
++ * This board file supports the A configuration of the board
++ */
++
++#include "armada-7040-db.dtsi"
++
++/ {
++	model = "Marvell Armada-7040 development board A setup";
++	compatible = "marvell,armada7040-db-A", "marvell,armada7040-db", "marvell,armada7040",
++			"marvell,armada-ap806-quad", "marvell,armada-ap806";
++	#address-cells = <2>;
++	#size-cells = <2>;
++
++	chosen { };
++
++	ap806 {
++		config-space {
++			sdhci@6e0000 {
++				status = "okay";
++			};
++			serial@512000 {
++				status = "okay";
++			};
++			i2c@511000 {
++				status = "disabled";
++				clock-frequency = <100000>;
++			};
++		};
++	};
++
++	cpn-110-master {
++		config-space {
++			serial@702000 {
++				status = "disabled";
++			};
++			serial@702100 {
++				status = "disabled";
++			};
++			serial@702200 {
++				status = "disabled";
++			};
++			serial@702300 {
++				status = "disabled";
++			};
++			sata: sata@540000 {
++				status = "okay";
++
++				sata-port@0 {
++					status = "disabled";
++				};
++				sata-port@1 {
++					phys = <&comphy0 3 COMPHY_SATA1>;
++					phy-names = "comphy";
++					status = "okay";
++				};
++			};
++			usb3h0: usb3@500000 {
++				status = "okay";
++			};
++			usb3h1: usb3@510000 {
++				status = "okay";
++			};
++			u3d@520000 {
++				status = "disabled";
++			};
++			udc@524100 {
++				status = "disabled";
++			};
++			sdhci@780000 {
++				status = "okay";
++			};
++			spi@700680 {
++				status = "okay";
++			};
++			i2c1: i2c@701000 {
++				status = "okay";
++				clock-frequency = <100000>;
++			};
++			i2c2: i2c@701100 {
++				status = "disabled";
++			};
++
++			mdio@12a200 {
++				#address-cells = <1>;
++				#size-cells = <0>;
++				phy2: ethernet-phy@2 {
++					reg = <0>;
++				};
++				phy3: ethernet-phy@3 {
++					reg = <1>;
++				};
++			};
++			gop {
++				emac0: mac0 {
++					phy-mode = "sfi"; /* lane-2 */
++					phys = <&comphy0 2 COMPHY_SFI>;
++					phy-names = "comphy";
++				};
++				emac2: mac2 {
++					phy-mode = "sgmii"; /* lane-0 */
++					phy = <&phy2>;
++					phys = <&comphy0 0 COMPHY_SGMII1>;
++					phy-names = "comphy";
++				};
++				emac3: mac3 {
++					phy-mode = "rgmii"; /* rgmii-1 */
++					phy = <&phy3>;
++				};
++			};
++			ppv22@000000 {
++				eth0: eth0@010000 {
++					status = "okay";
++				};
++				eth1: eth1@020000 {
++					status = "okay";
++				};
++				eth2: eth2@030000 {
++					status = "okay";
++				};
++			};
++			eip197: eip197@800000 {
++				status = "okay";
++			};
++			comphy {
++				status = "okay";
++			};
++		};
++
++		pcie@0x640000 {
++			status = "okay";
++		};
++	};
++};
+diff --git a/arch/arm64/boot/dts/marvell/armada-7040-db-router.dts b/arch/arm64/boot/dts/marvell/armada-7040-db-router.dts
+deleted file mode 100644
+index 01dcf74..0000000
+--- a/arch/arm64/boot/dts/marvell/armada-7040-db-router.dts
++++ /dev/null
+@@ -1,176 +0,0 @@
+-/*
+- * Copyright (C) 2016 Marvell Technology Group Ltd.
+- *
+- * This file is dual-licensed: you can use it either under the terms
+- * of the GPLv2 or the X11 license, at your option. Note that this dual
+- * licensing only applies to this file, and not this project as a
+- * whole.
+- *
+- *  a) This library is free software; you can redistribute it and/or
+- *     modify it under the terms of the GNU General Public License as
+- *     published by the Free Software Foundation; either version 2 of the
+- *     License, or (at your option) any later version.
+- *
+- *     This library is distributed in the hope that it will be useful,
+- *     but WITHOUT ANY WARRANTY; without even the implied warranty of
+- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- *     GNU General Public License for more details.
+- *
+- * Or, alternatively,
+- *
+- *  b) Permission is hereby granted, free of charge, to any person
+- *     obtaining a copy of this software and associated documentation
+- *     files (the "Software"), to deal in the Software without
+- *     restriction, including without limitation the rights to use,
+- *     copy, modify, merge, publish, distribute, sublicense, and/or
+- *     sell copies of the Software, and to permit persons to whom the
+- *     Software is furnished to do so, subject to the following
+- *     conditions:
+- *
+- *     The above copyright notice and this permission notice shall be
+- *     included in all copies or substantial portions of the Software.
+- *
+- *     THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+- *     EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+- *     OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+- *     NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+- *     HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+- *     WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+- *     FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+- *     OTHER DEALINGS IN THE SOFTWARE.
+- */
+-
+-/*
+- * Device Tree file for Marvell Armada 7040 development board
+- * This board file supports the router configuration of the board
+- */
+-
+-#include "armada-7040-db.dtsi"
+-
+-/ {
+-	model = "Marvell Armada-7040 development board router setup";
+-	compatible = "marvell,armada7040-db-router", "marvell,armada7040-db", "marvell,armada7040",
+-			"marvell,armada-ap806-quad", "marvell,armada-ap806";
+-	#address-cells = <2>;
+-	#size-cells = <2>;
+-
+-	chosen { };
+-
+-	ap806 {
+-		config-space {
+-			sdhci@6e0000 {
+-				status = "okay";
+-			};
+-			serial@512000 {
+-				status = "okay";
+-			};
+-			i2c@511000 {
+-				status = "disabled";
+-				clock-frequency = <100000>;
+-			};
+-		};
+-	};
+-
+-	cpn-110-master {
+-		config-space {
+-			serial@702000 {
+-				status = "disabled";
+-			};
+-			serial@702100 {
+-				status = "disabled";
+-			};
+-			serial@702200 {
+-				status = "disabled";
+-			};
+-			serial@702300 {
+-				status = "disabled";
+-			};
+-			sata: sata@540000 {
+-				status = "okay";
+-
+-				sata-port@0 {
+-					status = "disabled";
+-				};
+-				sata-port@1 {
+-					phys = <&comphy0 3 COMPHY_SATA1>;
+-					phy-names = "comphy";
+-					status = "okay";
+-				};
+-			};
+-			usb3h0: usb3@500000 {
+-				status = "okay";
+-			};
+-			usb3h1: usb3@510000 {
+-				status = "okay";
+-			};
+-			u3d@520000 {
+-				status = "disabled";
+-			};
+-			udc@524100 {
+-				status = "disabled";
+-			};
+-			sdhci@780000 {
+-				status = "okay";
+-			};
+-			spi@700680 {
+-				status = "okay";
+-			};
+-			i2c1: i2c@701000 {
+-				status = "okay";
+-				clock-frequency = <100000>;
+-			};
+-			i2c2: i2c@701100 {
+-				status = "disabled";
+-			};
+-
+-			mdio@12a200 {
+-				#address-cells = <1>;
+-				#size-cells = <0>;
+-				phy2: ethernet-phy@2 {
+-					reg = <0>;
+-				};
+-				phy3: ethernet-phy@3 {
+-					reg = <1>;
+-				};
+-			};
+-			gop {
+-				emac0: mac0 {
+-					phy-mode = "sgmii"; /* lane-2 */
+-					phys = <&comphy0 2 COMPHY_SGMII0>;
+-					phy-names = "comphy";
+-				};
+-				emac2: mac2 {
+-					phy-mode = "sgmii"; /* lane-0 */
+-					phy = <&phy2>;
+-					phys = <&comphy0 0 COMPHY_SGMII1>;
+-					phy-names = "comphy";
+-				};
+-				emac3: mac3 {
+-					phy-mode = "rgmii"; /* rgmii-1 */
+-					phy = <&phy3>;
+-				};
+-			};
+-			ppv22@000000 {
+-				eth0: eth0@010000 {
+-					status = "okay";
+-				};
+-				eth1: eth1@020000 {
+-					status = "okay";
+-				};
+-				eth2: eth2@030000 {
+-					status = "okay";
+-				};
+-			};
+-			eip197: eip197@800000 {
+-				status = "okay";
+-			};
+-			comphy {
+-				status = "okay";
+-			};
+-		};
+-
+-		pcie@0x640000 {
+-			status = "okay";
+-		};
+-	};
+-};
+-- 
+2.7.4
+

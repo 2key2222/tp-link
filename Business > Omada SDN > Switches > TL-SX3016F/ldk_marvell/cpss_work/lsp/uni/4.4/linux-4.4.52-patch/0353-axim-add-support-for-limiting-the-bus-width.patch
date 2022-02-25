@@ -1,0 +1,227 @@
+From 31184e24e269a5a9c418d95848d1ad8c55c3ed27 Mon Sep 17 00:00:00 2001
+From: Yehuda Yitschak <yehuday@marvell.com>
+Date: Wed, 13 Apr 2016 15:21:17 +0300
+Subject: [PATCH 0353/2241] axim: add support for limiting the bus width
+
+Change-Id: If0bd6dddac3b5a90331f30b0ec7e2397b56ba1ed
+Signed-off-by: Yehuda Yitschak <yehuday@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/28996
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ .../devicetree/bindings/arm/coresight.txt          |  3 +++
+ arch/arm64/boot/dts/marvell/armada-ap806.dtsi      |  4 +++
+ arch/arm64/boot/dts/marvell/armada-cp110.dtsi      |  6 +++++
+ .../hwtracing/coresight/coresight-axi-monitor.c    | 31 ++++++++++++++++++++--
+ .../hwtracing/coresight/coresight-axi-monitor.h    |  2 ++
+ 5 files changed, 44 insertions(+), 2 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/arm/coresight.txt b/Documentation/devicetree/bindings/arm/coresight.txt
+index 42367e8..347486b4 100644
+--- a/Documentation/devicetree/bindings/arm/coresight.txt
++++ b/Documentation/devicetree/bindings/arm/coresight.txt
+@@ -59,6 +59,9 @@ its hardware characteristcs.
+ 	* arm,buffer-size: size of contiguous buffer space for TMC ETR
+ 	 (embedded trace router)
+ 
++* Optional property for AXIM:
++
++	* bus-width: size of bus monitored by AXI monitor
+ 
+ Example:
+ 
+diff --git a/arch/arm64/boot/dts/marvell/armada-ap806.dtsi b/arch/arm64/boot/dts/marvell/armada-ap806.dtsi
+index 9c478cc..700611e 100644
+--- a/arch/arm64/boot/dts/marvell/armada-ap806.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-ap806.dtsi
+@@ -157,6 +157,7 @@
+ 				reg = <0x840000 0x1000>;
+ 				clocks = <&syscon 3>;
+ 				clock-names = "apb_pclk";
++				bus-width = <40>;
+ 			};
+ 
+ 			axim-ddr-wr@841000 {
+@@ -164,6 +165,7 @@
+ 				reg = <0x841000 0x1000>;
+ 				clocks = <&syscon 3>;
+ 				clock-names = "apb_pclk";
++				bus-width = <40>;
+ 			};
+ 
+ 			axim-ihb-rd@848000 {
+@@ -171,6 +173,7 @@
+ 				reg = <0x848000 0x1000>;
+ 				clocks = <&syscon 3>;
+ 				clock-names = "apb_pclk";
++				bus-width = <40>;
+ 			};
+ 
+ 			axim-ihb-rd@849000 {
+@@ -178,6 +181,7 @@
+ 				reg = <0x849000 0x1000>;
+ 				clocks = <&syscon 3>;
+ 				clock-names = "apb_pclk";
++				bus-width = <40>;
+ 			};
+ 
+ 			odmi: odmi@300000 {
+diff --git a/arch/arm64/boot/dts/marvell/armada-cp110.dtsi b/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
+index a6ffae8..caf53c3 100644
+--- a/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
+@@ -152,6 +152,7 @@ axim-cp-rd@3c5000 {
+ 	reg = <0x3c5000 0x1000>;
+ 	clocks = <&syscon 3>;
+ 	clock-names = "apb_pclk";
++	bus-width = <40>;
+ };
+ 
+ axim-cp-wr@3c6000 {
+@@ -159,6 +160,7 @@ axim-cp-wr@3c6000 {
+ 	reg = <0x3c6000 0x1000>;
+ 	clocks = <&syscon 3>;
+ 	clock-names = "apb_pclk";
++	bus-width = <40>;
+ };
+ 
+ axim-ppv2-rd@3c0000 {
+@@ -166,6 +168,7 @@ axim-ppv2-rd@3c0000 {
+ 	reg = <0x3c0000 0x1000>;
+ 	clocks = <&syscon 3>;
+ 	clock-names = "apb_pclk";
++	bus-width = <40>;
+ };
+ 
+ axim-ppv2-wr@3c1000 {
+@@ -173,6 +176,7 @@ axim-ppv2-wr@3c1000 {
+ 	reg = <0x3c1000 0x1000>;
+ 	clocks = <&syscon 3>;
+ 	clock-names = "apb_pclk";
++	bus-width = <40>;
+ };
+ 
+ axim-hb1-rd@3c8000 {
+@@ -180,6 +184,7 @@ axim-hb1-rd@3c8000 {
+ 	reg = <0x3c8000 0x1000>;
+ 	clocks = <&syscon 3>;
+ 	clock-names = "apb_pclk";
++	bus-width = <40>;
+ };
+ 
+ axim-hb1-wr@3c9000 {
+@@ -187,6 +192,7 @@ axim-hb1-wr@3c9000 {
+ 	reg = <0x3c9000 0x1000>;
+ 	clocks = <&syscon 3>;
+ 	clock-names = "apb_pclk";
++	bus-width = <40>;
+ };
+ 
+ aliases {
+diff --git a/drivers/hwtracing/coresight/coresight-axi-monitor.c b/drivers/hwtracing/coresight/coresight-axi-monitor.c
+index c310712..8a0a793 100644
+--- a/drivers/hwtracing/coresight/coresight-axi-monitor.c
++++ b/drivers/hwtracing/coresight/coresight-axi-monitor.c
+@@ -17,6 +17,7 @@
+ #include <linux/device.h>
+ #include <linux/module.h>
+ #include <linux/io.h>
++#include <linux/of.h>
+ #include <linux/err.h>
+ #include <linux/coresight.h>
+ #include <linux/amba/bus.h>
+@@ -41,7 +42,7 @@ static void axim_enable_channel(struct axim_drvdata *axim, int chan_nr)
+ {
+ 	struct axim_chan_data *chan = &axim->channel[chan_nr];
+ 	u32 reg;
+-	u64 addr_mask;
++	u64 addr_mask, bus_mask;
+ 	int order, offset;
+ 	u32 reload;
+ 
+@@ -52,7 +53,14 @@ static void axim_enable_channel(struct axim_drvdata *axim, int chan_nr)
+ 	else
+ 		addr_mask = ~((1 << (order + 1)) - 1);
+ 
+-	offset = max(0, order - 31);
++	/* Limit the address mask and comperator offset to bus width */
++	if (axim->bus_width < 32)
++		bus_mask = (1 << axim->bus_width) - 1;
++	else
++		bus_mask = (0x100000000ULL << (axim->bus_width - 32)) - 1;
++	addr_mask &= bus_mask;
++
++	offset = clamp(order - 31, 0, (int)axim->bus_width - 32);
+ 
+ 	/* First define the power of 2 aligned window
+ 	 * This is a coarse window for address comparison
+@@ -245,6 +253,16 @@ static ssize_t version_show(struct device *dev,
+ }
+ static DEVICE_ATTR_RO(version);
+ 
++static ssize_t bus_width_show(struct device *dev,
++			      struct device_attribute *attr,
++			      char *buf)
++{
++	struct axim_drvdata *axim = dev_get_drvdata(dev->parent);
++
++	return scnprintf(buf, PAGE_SIZE, "%d\n", axim->bus_width);
++}
++static DEVICE_ATTR_RO(bus_width);
++
+ static ssize_t curr_chan_show(struct device *dev,
+ 		       struct device_attribute *attr,
+ 		       char *buf)
+@@ -367,6 +385,7 @@ static struct attribute *coresight_axim_attrs[] = {
+ 	&dev_attr_nr_chan.attr,
+ 	&dev_attr_nr_prof_reg.attr,
+ 	&dev_attr_version.attr,
++	&dev_attr_bus_width.attr,
+ 	&dev_attr_curr_chan.attr,
+ 	&dev_attr_reset.attr,
+ 	&dev_attr_counters.attr,
+@@ -542,6 +561,7 @@ static int axim_probe(struct amba_device *adev, const struct amba_id *id)
+ 	struct resource *res = &adev->res;
+ 	struct coresight_desc *desc;
+ 	struct device_node *np = adev->dev.of_node;
++	int ret;
+ 
+ 	desc = devm_kzalloc(dev, sizeof(*desc), GFP_KERNEL);
+ 	if (!desc)
+@@ -568,6 +588,13 @@ static int axim_probe(struct amba_device *adev, const struct amba_id *id)
+ 
+ 	axim->base = base;
+ 
++	ret = of_property_read_u32(np, "bus-width", &axim->bus_width);
++	if ((ret) || (axim->bus_width > AXI_MON_MAX_BUS_WIDTH)) {
++		dev_warn(dev, "Bad or missing bus-width property. assuming %d bit width\n",
++				AXI_MON_MAX_BUS_WIDTH);
++		axim->bus_width = AXI_MON_MAX_BUS_WIDTH;
++	}
++
+ 	if (axim_check_version(axim))
+ 		return -EINVAL;
+ 
+diff --git a/drivers/hwtracing/coresight/coresight-axi-monitor.h b/drivers/hwtracing/coresight/coresight-axi-monitor.h
+index 40b9afb..1d937b2 100644
+--- a/drivers/hwtracing/coresight/coresight-axi-monitor.h
++++ b/drivers/hwtracing/coresight/coresight-axi-monitor.h
+@@ -97,6 +97,7 @@
+ #define AXI_MON_REV_2			(0x01)
+ 
+ #define AXI_MON_MAX_CHANNELS		(12)
++#define AXI_MON_MAX_BUS_WIDTH		(48)
+ 
+ 
+ /* Address comparator access types */
+@@ -174,6 +175,7 @@ struct axim_drvdata {
+ 	u8				nr_prof_reg;
+ 	u8				major;
+ 	u8				minor;
++	u32				bus_width;
+ 	struct axim_chan_data		channel[AXI_MON_MAX_CHANNELS];
+ };
+ 
+-- 
+2.7.4
+

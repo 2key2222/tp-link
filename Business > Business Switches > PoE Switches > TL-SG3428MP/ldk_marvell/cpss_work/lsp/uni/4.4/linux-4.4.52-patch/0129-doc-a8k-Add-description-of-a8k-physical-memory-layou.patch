@@ -1,0 +1,81 @@
+From ccf0692c0b40bf43ee6d585f5460dbd541917f22 Mon Sep 17 00:00:00 2001
+From: Shadi Ammouri <shadi@marvell.com>
+Date: Sun, 13 Dec 2015 11:36:07 +0200
+Subject: [PATCH 0129/2241] doc: a8k: Add description of a8k physical memory
+ layout.
+
+Change-Id: Ia83e6048b2b134aa6a65d9fcbe595204f6c8d79f
+Signed-off-by: Shadi Ammouri <shadi@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/25814
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Yehuda Yitschak <yehuday@marvell.com>
+---
+ Documentation/arm64/mvebu/armada-8k-memory.txt | 56 ++++++++++++++++++++++++++
+ 1 file changed, 56 insertions(+)
+ create mode 100644 Documentation/arm64/mvebu/armada-8k-memory.txt
+
+diff --git a/Documentation/arm64/mvebu/armada-8k-memory.txt b/Documentation/arm64/mvebu/armada-8k-memory.txt
+new file mode 100644
+index 0000000..064518e
+--- /dev/null
++++ b/Documentation/arm64/mvebu/armada-8k-memory.txt
+@@ -0,0 +1,56 @@
++		     Memory Layout on Armada-8k SoC's
++		     ================================
++
++The below desribes the physical memory layout for Marvell's Armada-8k SoC's.
++
++This assumes that the SoC includes Dual CP configuration, in case the flavor is using
++a single CP configuration, then all secondary-CP mappings are invalid.
++
++All "Reserved" areas below, are kept for future usage.
++
++Start		End			Use
++--------------------------------------------------------------------------
++0x00000000	0xEFFFFFFF		DRAM
++
++0xF0000000	0xF0FFFFFF		AP Internal registers space
++
++0xF1000000	0xF1FFFFFF		Reserved.
++
++0xF2000000	0xF3FFFFFF		CP-0 Internal (configuration) registers
++					space.
++
++0xF4000000	0xF5FFFFFF		CP-1 Internal (configuration) registers
++					space.
++
++0xF6000000	0xF6FFFFFF		CP-0 / PCIe#0 Memory space.
++
++0xF7000000	0xF7FFFFFF		CP-0 / PCIe#1 Memory space.
++
++0xF8000000	0xF8FFFFFF		CP-0 / PCIe#2 Memory space.
++
++0xF9000000	0xF900FFFF		CP-0 / PCIe#0 IO space.
++
++0xF9010000	0xF901FFFF		CP-0 / PCIe#1 IO space.
++
++0xF9020000	0xF902FFFF		CP-0 / PCIe#2 IO space.
++
++0xF9030000	0xF9FFFFFF		Reserved.
++
++0xFA000000	0xFAFFFFFF		CP-1 / PCIe#0 Memory space.
++
++0xFB000000	0xFBFFFFFF		CP-1 / PCIe#1 Memory space.
++
++0xFC000000	0xFCFFFFFF		CP-1 / PCIe#2 Memory space.
++
++0xFD000000	0xFD00FFFF		CP-1 / PCIe#0 IO space.
++
++0xFD010000	0xFD01FFFF		CP-1 / PCIe#1 IO space.
++
++0xFD020000	0xFD02FFFF		CP-1 / PCIe#2 IO space.
++
++0xFD030000	0xFFEFFFFF		Reserved.
++
++0xFFF00000	0xFFFFFFFF		Bootrom
++
++0x100000000	<DRAM Size>-1		DRAM
++
+-- 
+2.7.4
+

@@ -1,0 +1,45 @@
+From 6f9a3f0223d0b5de4b736cac33da6d3f54efd07f Mon Sep 17 00:00:00 2001
+From: Romain Perier <romain.perier@free-electrons.com>
+Date: Thu, 8 Dec 2016 15:58:46 +0100
+Subject: [PATCH 1760/2241] arm64: dts: marvell: Add definition of SPI
+ controller for Armada 3700
+
+Armada 3700 SoC has an SPI Controller, this commit adds the definition
+of the SPI device node at the SoC level.
+
+Change-Id: I2e8df688160408376f0920ed63e5fa0cb51a346a
+Signed-off-by: Romain Perier <romain.perier@free-electrons.com>
+Tested-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/40886
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Victor Gu <xigu@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-37xx.dtsi | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-37xx.dtsi b/arch/arm64/boot/dts/marvell/armada-37xx.dtsi
+index 0d4a590..14854a0 100644
+--- a/arch/arm64/boot/dts/marvell/armada-37xx.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-37xx.dtsi
+@@ -158,6 +158,17 @@
+ 				status = "disabled";
+ 			};
+ 
++			spi0: spi@10600 {
++				compatible = "marvell,armada-3700-spi";
++				#address-cells = <1>;
++				#size-cells = <0>;
++				reg = <0x10600 0xA00>;
++				clocks = <&nb_periph_clk 7>;
++				interrupts = <GIC_SPI 0 IRQ_TYPE_LEVEL_HIGH>;
++				num-cs = <4>;
++				status = "disabled";
++			};
++
+ 			uart0: serial@12000 {
+ 				compatible = "marvell,armada-3700-uart";
+ 				reg = <0x12000 0x200>;
+-- 
+2.7.4
+

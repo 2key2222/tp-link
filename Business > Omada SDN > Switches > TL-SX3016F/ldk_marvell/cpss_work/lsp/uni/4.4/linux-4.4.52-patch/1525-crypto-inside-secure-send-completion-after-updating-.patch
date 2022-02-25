@@ -1,0 +1,56 @@
+From 6f63005152401b4fe17acf33de2077252ec0543f Mon Sep 17 00:00:00 2001
+From: Ofer Heifetz <oferh@marvell.com>
+Date: Wed, 22 Mar 2017 05:49:02 +0200
+Subject: [PATCH 1525/2241] crypto: inside-secure: send completion after
+ updating the packet count
+
+When performing completion before updating the processed packet count
+tcrypt tests fail.
+In order to fix these tests the completion is performed after
+the processed packet count update.
+
+The use of EIP197_HIA_RDR_THRESH_PKT_MODE in the code a mistake,
+this flag is used in another configuration register, the correct value
+of EIP197_HIA_xDR_PROC_COUNT register should be the:
+Processed_packet_count | (Processed_result_descr_count *
+result_desc_offset)
+
+
+
+Change-Id: I8b8889a16a026529cc6d7163fb9a9deee10ad602
+Signed-off-by: Ofer Heifetz <oferh@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/37852
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+---
+ drivers/crypto/inside-secure/safexcel.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/crypto/inside-secure/safexcel.c b/drivers/crypto/inside-secure/safexcel.c
+index c35346d..7228901 100644
+--- a/drivers/crypto/inside-secure/safexcel.c
++++ b/drivers/crypto/inside-secure/safexcel.c
+@@ -865,6 +865,9 @@ static inline void safexcel_handle_result_descriptor(struct safexcel_crypto_priv
+ 			return;
+ 		}
+ 
++		writel(EIP197_xDR_PROC_xD_PKT(1) | EIP197_xDR_PROC_xD_COUNT(ndesc * priv->config.rd_offset),
++		       EIP197_HIA_AIC_xDR(priv) + EIP197_HIA_RDR(ring) + EIP197_HIA_xDR_PROC_COUNT);
++
+ 		if (should_complete) {
+ 			local_bh_disable();
+ 			sreq->req->complete(sreq->req, ret);
+@@ -873,9 +876,6 @@ static inline void safexcel_handle_result_descriptor(struct safexcel_crypto_priv
+ 
+ 		kfree(sreq);
+ 	}
+-
+-	writel(EIP197_HIA_RDR_THRESH_PKT_MODE | EIP197_xDR_PROC_xD_PKT(i),
+-	       EIP197_HIA_AIC_xDR(priv) + EIP197_HIA_RDR(ring) + EIP197_HIA_xDR_PROC_COUNT);
+ }
+ 
+ /* Result worker routine */
+-- 
+2.7.4
+

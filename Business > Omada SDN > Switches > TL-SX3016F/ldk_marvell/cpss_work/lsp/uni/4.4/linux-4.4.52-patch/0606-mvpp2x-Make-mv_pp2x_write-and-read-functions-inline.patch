@@ -1,0 +1,139 @@
+From 2580905e714443fe94d4da3e075ee934472b9bd1 Mon Sep 17 00:00:00 2001
+From: Alan Winkowski <walan@marvell.com>
+Date: Mon, 18 Jul 2016 00:35:27 +0300
+Subject: [PATCH 0606/2241] mvpp2x: Make mv_pp2x_write and read functions
+ inline.
+
+Change-Id: Idc9f4c99f57c12a41cfe138fcb49f34ea56c742d
+Signed-off-by: Alan Winkowski <walan@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/31197
+Reviewed-by: Yuval Caduri <cyuval@marvell.com>
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.c | 40 --------------------
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.h | 47 +++++++++++-------------
+ 2 files changed, 22 insertions(+), 65 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.c
+index cc2a584..2780531 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.c
+@@ -55,46 +55,6 @@ int mv_pp2x_range_validate(int value, int min, int max)
+ }
+ EXPORT_SYMBOL(mv_pp2x_range_validate);
+ 
+-void mv_pp2x_write(struct mv_pp2x_hw *hw, u32 offset, u32 data)
+-{
+-	void *reg_ptr = hw->cpu_base[smp_processor_id()] + offset;
+-
+-	writel(data, reg_ptr);
+-}
+-EXPORT_SYMBOL(mv_pp2x_write);
+-
+-
+-void mv_pp2x_relaxed_write(struct mv_pp2x_hw *hw, u32 offset, u32 data)
+-{
+-	void *reg_ptr = hw->cpu_base[smp_processor_id()] + offset;
+-
+-	writel_relaxed(data, reg_ptr);
+-}
+-EXPORT_SYMBOL(mv_pp2x_relaxed_write);
+-
+-
+-u32 mv_pp2x_read(struct mv_pp2x_hw *hw, u32 offset)
+-{
+-	void *reg_ptr = hw->cpu_base[smp_processor_id()] + offset;
+-	u32 val;
+-
+-	val = readl(reg_ptr);
+-	return val;
+-}
+-EXPORT_SYMBOL(mv_pp2x_read);
+-
+-
+-u32 mv_pp2x_relaxed_read(struct mv_pp2x_hw *hw, u32 offset)
+-{
+-	void *reg_ptr = hw->cpu_base[smp_processor_id()] + offset;
+-	u32 val;
+-
+-	val = readl_relaxed(reg_ptr);
+-	return val;
+-}
+-EXPORT_SYMBOL(mv_pp2x_relaxed_read);
+-
+-
+ /* Parser configuration routines */
+ 
+ /* Flow ID definetion array */
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.h b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.h
+index 4202df1..388efbd 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.h
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.h
+@@ -25,41 +25,38 @@
+ 
+ #include <linux/platform_device.h>
+ 
+-#if 1
+-void mv_pp2x_write(struct mv_pp2x_hw *hw, u32 offset, u32 data);
+-u32 mv_pp2x_read(struct mv_pp2x_hw *hw, u32 offset);
+-
+-#else
+ static inline void mv_pp2x_write(struct mv_pp2x_hw *hw, u32 offset, u32 data)
+ {
+-#if 1
+-	if (smp_processor_id() != 0)
+-		pr_emerg_once("Received mv_pp2x_write(%d) from CPU1 !!\n",
+-			offset);
+-#endif
+-	pr_debug("mv_pp2x_write(%p)\n", hw->cpu_base[smp_processor_id()] +
+-		offset);
+-	writel(data, hw->cpu_base[smp_processor_id()] + offset);
++	void *reg_ptr = hw->cpu_base[smp_processor_id()] + offset;
++
++	writel(data, reg_ptr);
+ }
+ 
+-static inline u32 mv_pp2x_read(struct mv_pp2x_hw *hw, u32 offset)
++static inline void mv_pp2x_relaxed_write(struct mv_pp2x_hw *hw, u32 offset, u32 data)
+ {
+-#if 1
+-	if (smp_processor_id() != 0)
+-		pr_emerg_once("Received mv_pp2x_read(%d) from CPU1 !!\n",
+-			offset);
+-#endif
+-	pr_debug("mv_pp2x_read(%p)\n", hw->cpu_base[smp_processor_id()] +
+-		offset);
++	void *reg_ptr = hw->cpu_base[smp_processor_id()] + offset;
+ 
+-	return readl(hw->cpu_base[smp_processor_id()] + offset);
++	writel_relaxed(data, reg_ptr);
+ }
+-#endif
+ 
+-void mv_pp2x_relaxed_write(struct mv_pp2x_hw *hw, u32 offset, u32 data);
+-u32 mv_pp2x_relaxed_read(struct mv_pp2x_hw *hw, u32 offset);
++static inline u32 mv_pp2x_read(struct mv_pp2x_hw *hw, u32 offset)
++{
++	void *reg_ptr = hw->cpu_base[smp_processor_id()] + offset;
++	u32 val;
++
++	val = readl(reg_ptr);
++
++	return val;
++}
+ 
++static inline u32 mv_pp2x_relaxed_read(struct mv_pp2x_hw *hw, u32 offset)
++{
++	void *reg_ptr = hw->cpu_base[smp_processor_id()] + offset;
++	u32 val;
+ 
++	val = readl_relaxed(reg_ptr);
++	return val;
++}
+ 
+ static inline void mv_pp22_thread_write(struct mv_pp2x_hw *hw, u32 sw_thread,
+ 					     u32 offset, u32 data)
+-- 
+2.7.4
+

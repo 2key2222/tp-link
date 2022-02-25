@@ -1,0 +1,59 @@
+From affdef1782f8ffb2cde9d6398aae1685bef12957 Mon Sep 17 00:00:00 2001
+From: Igal Liberman <igall@marvell.com>
+Date: Tue, 1 Aug 2017 15:07:36 +0300
+Subject: [PATCH 1842/2241] fix: comphy: cp110: fix comphy selector for comphy4
+
+Comphy 4 can be configured into several network modes:
+	0x1 = SGMII/HS-SGMII Port1
+	0x2 = SGMII/HS-SGMII Port0: XFI/SFI, RXAUI_Lane0
+
+Currently, we check if priv->lanes[comphy->index].mode equals to
+COMPHY_SGMII1 or COMPHY_HS_SGMII1 which might be incorrect.
+
+priv->lanes[comphy->index].mode comes from the device-tree,
+for example, for SGMII1, we expect the user to use COMPHY_SGMII1 which
+represents SGMII, ID=1, No polarity invert, default speed.
+
+However, the user might build his own definition which will be:
+SGMII, ID=1, No polarity invert, 1.25G speed.
+This is legitimate comphy definition.
+
+This patch removes the testing of the speed from comphy4 configuration,
+relying only on mode and id.
+
+Change-Id: Ibeaa29c2772ca671e0efff950763fb71135e2c94
+Signed-off-by: Igal Liberman <igall@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/42475
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Yoav Gvili <ygvili@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Reviewed-by: Stefan Chulski <stefanc@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/phy/phy-comphy-cp110.c | 9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/phy/phy-comphy-cp110.c b/drivers/phy/phy-comphy-cp110.c
+index e092ad9..cbc5d71 100644
+--- a/drivers/phy/phy-comphy-cp110.c
++++ b/drivers/phy/phy-comphy-cp110.c
+@@ -91,9 +91,14 @@ static void mvebu_cp110_comphy_set_phy_selector(struct mvebu_comphy_priv *priv,
+ 			 /* For comphy 4:
+ 			  * 0x1 = SGMII/HS-SGMII Port1
+ 			  * 0x2 = SGMII/HS-SGMII Port0: XFI/SFI, RXAUI_Lane0
++			  *
++			  * We want to check if SGMII1/HS_SGMII1 is the requested mode in order to
++			  * determine which value should be set (all other modes use the same value)
++			  * so we need to strip the mode, and check the ID because we might handle
++			  * SGMII0/HS_SGMII0 too.
+ 			  */
+-			if (priv->lanes[comphy->index].mode == COMPHY_SGMII1 ||
+-			    priv->lanes[comphy->index].mode == COMPHY_HS_SGMII1)
++			if ((mode == COMPHY_SGMII_MODE || mode == COMPHY_HS_SGMII_MODE) &&
++			    COMPHY_GET_ID(priv->lanes[comphy->index].mode) == 1)
+ 				reg |= COMMON_SELECTOR_COMPHY4_SGMII1 << comphy_offset;
+ 			else
+ 				reg |= COMMON_SELECTOR_COMPHY4_ALL_OTHERS << comphy_offset;
+-- 
+2.7.4
+

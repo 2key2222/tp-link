@@ -1,0 +1,38 @@
+From c20479aee3994115dbba51b4d7ed74038634908e Mon Sep 17 00:00:00 2001
+From: Yan Markman <ymarkman@marvell.com>
+Date: Mon, 25 Jul 2016 14:14:28 +0300
+Subject: [PATCH 0651/2241] pp3: stop upon bad cfh detection
+
+Make the debug_stop_rx=true
+if pp3_dbg_cfh_rx_checker() returns error
+
+Add commentary.
+
+Change-Id: I2362445b43f5fbc0c0cc79ef10df27b6b670aaa4
+Signed-off-by: Yan Markman <ymarkman@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/31417
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Dmitri Epshtein <dima@marvell.com>
+---
+ drivers/net/ethernet/marvell/pp3/net_dev/mv_netdev.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/net/ethernet/marvell/pp3/net_dev/mv_netdev.c b/drivers/net/ethernet/marvell/pp3/net_dev/mv_netdev.c
+index 608cd08..4c1c43c 100644
+--- a/drivers/net/ethernet/marvell/pp3/net_dev/mv_netdev.c
++++ b/drivers/net/ethernet/marvell/pp3/net_dev/mv_netdev.c
+@@ -1625,7 +1625,10 @@ static int mv_pp3_rx(struct net_device *dev, struct pp3_vport *cpu_vp, struct pp
+ 
+ #ifdef PP3_INTERNAL_DEBUG
+ 		if (pp3_dbg_cfh_rx_checker(dev_priv, (u32 *)cfh) < 0) {
+-			/*debug_stop_rx = true;*/
++			/* BUG situation: can't handle bad packet,
++			 *  queue/buffer/skb are never released
++			 */
++			debug_stop_rx = true;
+ 			break;
+ 		}
+ #endif
+-- 
+2.7.4
+

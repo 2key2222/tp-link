@@ -1,0 +1,153 @@
+From 21401be263e4cc4ae43172c2e5c6af60c34f3e05 Mon Sep 17 00:00:00 2001
+From: Stefan Chulski <stefanc@marvell.com>
+Date: Tue, 14 Feb 2017 18:17:13 +0200
+Subject: [PATCH 1432/2241] net: mvpp2x: add 5G port speed support
+
+- This patch add 5G port speed support.
+- Speed could be set by device tree and ethtool.
+- Set mac speed for SFI/KR mode to differ between 10G and 5G.
+
+Change-Id: I962496cb484b33fee73afeced223e00c3897595b
+Signed-off-by: Stefan Chulski <stefanc@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/37130
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h      |  2 ++
+ .../net/ethernet/marvell/mvpp2x/mv_pp2x_ethtool.c  | 11 +++++-
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c | 41 +++++++++++++++++-----
+ 3 files changed, 44 insertions(+), 10 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h
+index 6fffb57..95420e5 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h
+@@ -264,11 +264,13 @@ struct mv_mac_data {
+ #define MV_EMAC_F_INIT_BIT	1
+ #define MV_EMAC_F_SGMII2_5_BIT	2
+ #define MV_EMAC_F_PORT_UP_BIT	3
++#define MV_EMAC_F_5G_BIT	4
+ 
+ #define MV_EMAC_F_LINK_UP	BIT(MV_EMAC_F_LINK_UP_BIT)
+ #define MV_EMAC_F_INIT		BIT(MV_EMAC_F_INIT_BIT)
+ #define MV_EMAC_F_SGMII2_5	BIT(MV_EMAC_F_SGMII2_5_BIT)
+ #define MV_EMAC_F_PORT_UP	BIT(MV_EMAC_F_PORT_UP_BIT)
++#define MV_EMAC_F_5G		BIT(MV_EMAC_F_5G_BIT)
+ 
+ #define MVPP2_NO_LINK_IRQ	0
+ 
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_ethtool.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_ethtool.c
+index 696a1b5..a7bfc88 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_ethtool.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_ethtool.c
+@@ -546,6 +546,9 @@ int mv_pp2x_get_new_comphy_mode(struct ethtool_cmd *cmd, int port_id)
+ 	if (cmd->speed == SPEED_10000 && port_id == 0)
+ 		return COMPHY_DEF(COMPHY_SFI_MODE, port_id,
+ 				  COMPHY_SPEED_10_3125G, COMPHY_POLARITY_NO_INVERT);
++	else if (cmd->speed == SPEED_5000 && port_id == 0)
++		return COMPHY_DEF(COMPHY_SFI_MODE, port_id,
++				  COMPHY_SPEED_5_15625G, COMPHY_POLARITY_NO_INVERT);
+ 	else if (cmd->speed == SPEED_2500)
+ 		return COMPHY_DEF(COMPHY_HS_SGMII_MODE, port_id,
+ 				  COMPHY_SPEED_3_125G, COMPHY_POLARITY_NO_INVERT);
+@@ -559,8 +562,15 @@ int mv_pp2x_get_new_comphy_mode(struct ethtool_cmd *cmd, int port_id)
+ 
+ void mv_pp2x_set_new_phy_mode(struct ethtool_cmd *cmd, struct mv_mac_data *mac)
+ {
++	mac->flags &= ~(MV_EMAC_F_SGMII2_5 | MV_EMAC_F_5G);
++
+ 	if (cmd->speed == SPEED_10000) {
+ 		mac->phy_mode = PHY_INTERFACE_MODE_SFI;
++		mac->speed = SPEED_10000;
++	} else if (cmd->speed == SPEED_5000) {
++		mac->phy_mode = PHY_INTERFACE_MODE_SFI;
++		mac->speed = SPEED_5000;
++		mac->flags |= MV_EMAC_F_5G;
+ 	} else if (cmd->speed == SPEED_2500) {
+ 		mac->phy_mode = PHY_INTERFACE_MODE_SGMII;
+ 		mac->speed = SPEED_2500;
+@@ -568,7 +578,6 @@ void mv_pp2x_set_new_phy_mode(struct ethtool_cmd *cmd, struct mv_mac_data *mac)
+ 	} else {
+ 		mac->phy_mode = PHY_INTERFACE_MODE_SGMII;
+ 		mac->speed = SPEED_1000;
+-		mac->flags &= ~MV_EMAC_F_SGMII2_5;
+ 	}
+ }
+ 
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+index 1125d79..63dc24d 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+@@ -3214,13 +3214,22 @@ static void mv_serdes_port_init(struct mv_pp2x_port *port)
+ 	break;
+ 	case PHY_INTERFACE_MODE_KR:
+ 	case PHY_INTERFACE_MODE_SFI:
+-		mode = COMPHY_DEF(COMPHY_SFI_MODE, port->id,
+-				  COMPHY_SPEED_10_3125G, COMPHY_POLARITY_NO_INVERT);
++		if (port->mac_data.flags & MV_EMAC_F_5G)
++			mode = COMPHY_DEF(COMPHY_SFI_MODE, port->id,
++					  COMPHY_SPEED_5_15625G, COMPHY_POLARITY_NO_INVERT);
++		else
++			mode = COMPHY_DEF(COMPHY_SFI_MODE, port->id,
++					  COMPHY_SPEED_10_3125G, COMPHY_POLARITY_NO_INVERT);
+ 		phy_set_mode(port->comphy, mode);
+ 	break;
+ 	case PHY_INTERFACE_MODE_XFI:
+-		mode = COMPHY_DEF(COMPHY_XFI_MODE, port->id,
+-				  COMPHY_SPEED_10_3125G, COMPHY_POLARITY_NO_INVERT);
++		if (port->mac_data.flags & MV_EMAC_F_5G)
++			mode = COMPHY_DEF(COMPHY_XFI_MODE, port->id,
++					  COMPHY_SPEED_5_15625G, COMPHY_POLARITY_NO_INVERT);
++		else
++			mode = COMPHY_DEF(COMPHY_XFI_MODE, port->id,
++					  COMPHY_SPEED_10_3125G, COMPHY_POLARITY_NO_INVERT);
++
+ 		phy_set_mode(port->comphy, mode);
+ 	break;
+ 	default:
+@@ -4227,15 +4236,15 @@ static int mv_pp2_init_emac_data(struct mv_pp2x_port *port,
+ 			/* check phy speed */
+ 			of_property_read_u32(emac_node, "phy-speed", &speed);
+ 			switch (speed) {
+-			case 1000:
+-				port->mac_data.speed = 1000; /* sgmii */
++			case SPEED_1000:
++				port->mac_data.speed = SPEED_1000; /* sgmii */
+ 				break;
+-			case 2500:
+-				port->mac_data.speed = 2500; /* sgmii */
++			case SPEED_2500:
++				port->mac_data.speed = SPEED_2500; /* sgmii */
+ 				port->mac_data.flags |= MV_EMAC_F_SGMII2_5;
+ 				break;
+ 			default:
+-				port->mac_data.speed = 1000; /* sgmii */
++				port->mac_data.speed = SPEED_1000; /* sgmii */
+ 			}
+ 			break;
+ 		case PHY_INTERFACE_MODE_RXAUI:
+@@ -4247,6 +4256,20 @@ static int mv_pp2_init_emac_data(struct mv_pp2x_port *port,
+ 		case PHY_INTERFACE_MODE_KR:
+ 		case PHY_INTERFACE_MODE_SFI:
+ 		case PHY_INTERFACE_MODE_XFI:
++			speed = 0;
++			/* check phy speed */
++			of_property_read_u32(emac_node, "phy-speed", &speed);
++			switch (speed) {
++			case SPEED_10000:
++				port->mac_data.speed = SPEED_10000;
++				break;
++			case SPEED_5000:
++				port->mac_data.speed = SPEED_5000;
++				port->mac_data.flags |= MV_EMAC_F_5G;
++				break;
++			default:
++				port->mac_data.speed = SPEED_10000;
++			}
+ 			break;
+ 
+ 		default:
+-- 
+2.7.4
+

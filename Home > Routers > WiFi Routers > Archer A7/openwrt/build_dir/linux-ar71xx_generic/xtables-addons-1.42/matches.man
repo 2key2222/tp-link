@@ -1,0 +1,421 @@
+.SS condition
+This matches if a specific condition variable is (un)set.
+.TP
+[\fB!\fP] \fB\-\-condition\fP \fIname\fP
+Match on boolean value stored in /proc/net/nf_condition/\fIname\fP.
+.SS dhcpmac
+.TP
+\fB\-\-mac\fP \fIaa:bb:cc:dd:ee:ff\fP[\fB/\fP\fImask\fP]
+Matches the DHCP "Client Host" address (a MAC address) in a DHCP message.
+\fImask\fP specifies the prefix length of the initial portion to match.
+.SS fuzzy
+This module matches a rate limit based on a fuzzy logic controller (FLC).
+.TP
+\fB\-\-lower\-limit\fP \fInumber\fP
+Specifies the lower limit, in packets per second.
+.TP
+\fB\-\-upper\-limit\fP \fInumber\fP
+Specifies the upper limit, also in packets per second.
+.SS geoip
+Match a packet by its source or destination country.
+.TP
+[\fB!\fP] \fB\-\-src\-cc\fP, \fB\-\-source\-country\fP \fIcountry\fP[\fB,\fP\fIcountry\fP\fB...\fP]
+Match packet coming from (one of) the specified country(ies)
+.TP
+[\fB!\fP] \fB\-\-dst\-cc\fP, \fB\-\-destination\-country\fP \fIcountry\fP[\fB,\fP\fIcountry\fP\fB...\fP]
+Match packet going to (one of) the specified country(ies)
+.TP
+NOTE:
+The country is inputed by its ISO-3166 code.
+.PP
+The extra files you will need is the binary database files. They are generated
+from a country-subnet database with the geoip_build_db.pl tool that is shipped
+with the source package, and which should be available in compiled packages in
+/usr/lib(exec)/xtables-addons/. The first command retrieves CSV files from
+MaxMind, while the other two build packed bisectable range files:
+.PP
+mkdir -p /usr/share/xt_geoip; cd /tmp; $path/to/xt_geoip_dl;
+.PP
+$path/to/xt_geoip_build -D /usr/share/xt_geoip GeoIP*.csv;
+.PP
+The shared library is hardcoded to look in these paths, so use them.
+.SS gradm
+This module matches packets based on grsecurity RBAC status.
+.TP
+[\fB!\fP] \fB\-\-enabled\fP
+Matches packets if grsecurity RBAC is enabled.
+.TP
+[\fB!\fP] \fB\-\-disabled\fP
+Matches packets if grsecurity RBAC is disabled.
+.SS iface
+Allows you to check interface states. First, an interface needs to be selected
+for comparison. Exactly one option of the following three must be specified:
+.TP
+\fB\-\-iface\fP \fIname\fP
+Check the states on the given interface.
+.TP
+\fB\-\-dev\-in\fP
+Check the states on the interface on which the packet came in. If the input
+device is not set, because for example you are using \-m iface in the OUTPUT
+chain, this submatch returns false.
+.TP
+\fB\-\-dev\-out\fP
+Check the states on the interface on which the packet will go out. If the
+output device is not set, because for example you are using \-m iface in the
+INPUT chain, this submatch returns false.
+.PP
+Following that, one can select the interface properties to check for:
+.TP
+[\fB!\fP] \fB\-\-up\fP, [\fB!\fP] \fB\-\-down\fP
+Check the UP flag.
+.TP
+[\fB!\fP] \fB\-\-broadcast\fP
+Check the BROADCAST flag.
+.TP
+[\fB!\fP] \fB\-\-loopback\fP
+Check the LOOPBACK flag.
+.TP
+[\fB!\fP] \fB\-\-pointtopoint\fP
+Check the POINTTOPOINT flag.
+.TP
+[\fB!\fP] \fB\-\-running\fP
+Check the RUNNING flag. Do NOT rely on it!
+.TP
+[\fB!\fP] \fB\-\-noarp\fP, [\fB!\fP] \fB\-\-arp\fP
+Check the NOARP flag.
+.TP
+[\fB!\fP] \fB\-\-promisc\fP
+Check the PROMISC flag.
+.TP
+[\fB!\fP] \fB\-\-multicast\fP
+Check the MULTICAST flag.
+.TP
+[\fB!\fP] \fB\-\-dynamic\fP
+Check the DYNAMIC flag.
+.TP
+[\fB!\fP] \fB\-\-lower\-up\fP
+Check the LOWER_UP flag.
+.TP
+[\fB!\fP] \fB\-\-dormant\fP
+Check the DORMANT flag.
+.SS ipp2p
+This module matches certain packets in P2P flows. It is not
+designed to match all packets belonging to a P2P connection \(em
+use IPP2P together with CONNMARK for this purpose.
+.PP
+Use it together with \-p tcp or \-p udp to search these protocols
+only or without \-p switch to search packets of both protocols.
+.PP
+IPP2P provides the following options, of which one or more may be specified
+on the command line:
+.TP
+\fB\-\-edk\fP
+Matches as many eDonkey/eMule packets as possible.
+.TP
+\fB\-\-kazaa\fP
+Matches as many KaZaA packets as possible.
+.TP
+\fB\-\-gnu\fP
+Matches as many Gnutella packets as possible.
+.TP
+\fB\-\-dc\fP
+Matches as many Direct Connect packets as possible.
+.TP
+\fB\-\-bit\fP
+Matches BitTorrent packets.
+.TP
+\fB\-\-apple\fP
+Matches AppleJuice packets.
+.TP
+\fB\-\-soul\fP
+Matches some SoulSeek packets. Considered as beta, use careful!
+.TP
+\fB\-\-winmx\fP
+Matches some WinMX packets. Considered as beta, use careful!
+.TP
+\fB\-\-ares\fP
+Matches Ares and AresLite packets. Use together with \-j DROP only.
+.TP
+\fB\-\-debug\fP
+Prints some information about each hit into kernel logfile. May 
+produce huge logfiles so beware!
+.PP
+Note that ipp2p may not (and often, does not) identify all packets that are
+exchanged as a result of running filesharing programs.
+.PP
+There is more information on http://ipp2p.org/ , but it has not been updated
+since September 2006, and the syntax there is different from the ipp2p.c
+provided in Xtables-addons; most importantly, the \-\-ipp2p flag was removed
+due to its ambiguity to match "all known" protocols.
+.SS ipv4options
+The "ipv4options" module allows to match against a set of IPv4 header options.
+.TP
+\fB\-\-flags\fP [\fB!\fP]\fIsymbol\fP[\fB,\fP[\fB!\fP]\fIsymbol...\fP]
+Specify the options that shall appear or not appear in the header. Each
+symbol specification is delimited by a comma, and a '!' can be prefixed to
+a symbol to negate its presence. Symbols are either the name of an IPv4 option
+or its number. See examples below.
+.TP
+\fB\-\-any\fP
+By default, all of the flags specified must be present/absent, that is, they
+form an AND condition. Use the \-\-any flag instead to use an OR condition
+where only at least one symbol spec must be true.
+.PP
+Known symbol names (and their number):
+.PP
+1 \(em \fBnop\fP
+.PP
+2 \(em \fBsecurity\fP \(em RFC 1108
+.PP
+3 \(em \fBlsrr\fP \(em Loose Source Routing, RFC 791
+.PP
+4 \(em \fBtimestamp\fP \(em RFC 781, 791
+.PP
+7 \(em \fBrecord\-route\fP \(em RFC 791
+.PP
+9 \(em \fBssrr\fP \(em Strict Source Routing, RFC 791
+.PP
+11 \(em \fBmtu\-probe\fP \(em RFC 1063
+.PP
+12 \(em \fBmtu\-reply\fP \(em RFC 1063
+.PP
+18 \(em \fBtraceroute\fP \(em RFC 1393
+.PP
+20 \(em \fBrouter-alert\fP \(em RFC 2113
+.PP
+Examples:
+.PP
+Match packets that have both Timestamp and NOP:
+\-m ipv4options \-\-flags nop,timestamp
+.PP
+~ that have either of Timestamp or NOP, or both:
+\-\-flags nop,timestamp \-\-any
+.PP
+~ that have Timestamp and no NOP: \-\-flags '!nop,timestamp'
+.PP
+~ that have either no NOP or a timestamp (or both conditions):
+\-\-flags '!nop,timestamp' \-\-any
+.SS length2
+This module matches the length of a packet against a specific value or range of
+values.
+.TP
+[\fB!\fR] \fB\-\-length\fR \fIlength\fR[\fB:\fR\fIlength\fR]
+Match exact length or length range.
+.TP
+\fB\-\-layer3\fR
+Match the layer3 frame size (e.g. IPv4/v6 header plus payload).
+.TP
+\fB\-\-layer4\fR
+Match the layer4 frame size (e.g. TCP/UDP header plus payload).
+.TP
+\fB\-\-layer5\fR
+Match the layer5 frame size (e.g. TCP/UDP payload, often called layer7).
+.PP
+If no \-\-layer* option is given, \-\-layer3 is assumed by default. Note that
+using \-\-layer5 may not match a packet if it is not one of the recognized
+types (currently TCP, UDP, UDPLite, ICMP, AH and ESP) or which has no 5th
+layer.
+.SS lscan
+Detects simple low-level scan attemps based upon the packet's contents.
+(This is
+different from other implementations, which also try to match the rate of new
+connections.) Note that an attempt is only discovered after it has been carried
+out, but this information can be used in conjunction with other rules to block
+the remote host's future connections. So this match module will match on the
+(probably) last packet the remote side will send to your machine.
+.TP
+\fB\-\-stealth\fR
+Match if the packet did not belong to any known TCP connection
+(Stealth/FIN/XMAS/NULL scan).
+.TP
+\fB\-\-synscan\fR
+Match if the connection was a TCP half-open discovery (SYN scan), i.e. the
+connection was torn down after the 2nd packet in the 3-way handshake.
+.TP
+\fB\-\-cnscan\fR
+Match if the connection was a TCP full open discovery (connect scan), i.e. the
+connection was torn down after completion of the 3-way handshake.
+.TP
+\fB\-\-grscan\fR
+Match if data in the connection only flew in the direction of the remote side,
+e.g. if the connection was terminated after a locally running daemon sent its
+identification. (E.g. openssh, smtp, ftpd.) This may falsely trigger on
+warranted single-direction data flows, usually bulk data transfers such as
+FTP DATA connections or IRC DCC. Grab Scan Detection should only be used on
+ports where a protocol runs that is guaranteed to do a bidirectional exchange
+of bytes.
+.PP
+NOTE: Some clients (Windows XP for example) may do what looks like a SYN scan,
+so be advised to carefully use xt_lscan in conjunction with blocking rules,
+as it may lock out your very own internal network.
+.SS psd
+Attempt to detect TCP and UDP port scans. This match was derived from
+Solar Designer's scanlogd.
+.TP
+\fB\-\-psd\-weight\-threshold\fP \fIthreshold\fP
+Total weight of the latest TCP/UDP packets with different
+destination ports coming from the same host to be treated as port
+scan sequence.
+.TP
+\fB\-\-psd\-delay\-threshold\fP \fIdelay\fP
+Delay (in hundredths of second) for the packets with different
+destination ports coming from the same host to be treated as
+possible port scan subsequence.
+.TP
+\fB\-\-psd\-lo\-ports\-weight\fP \fIweight\fP
+Weight of the packet with privileged (<=1024) destination port.
+.TP
+\fB\-\-psd\-hi\-ports\-weight\fP \fIweight\fP
+Weight of the packet with non-priviliged destination port.
+.SS quota2
+The "quota2" implements a named counter which can be increased or decreased
+on a per-match basis. Available modes are packet counting or byte counting.
+The value of the counter can be read and reset through procfs, thereby making
+this match a minimalist accounting tool.
+.PP
+When counting down from the initial quota, the counter will stop at 0 and
+the match will return false, just like the original "quota" match. In growing
+(upcounting) mode, it will always return true.
+.TP
+\fB\-\-grow\fP
+Count upwards instead of downwards.
+.TP
+\fB\-\-no\-change\fP
+Makes it so the counter or quota amount is never changed by packets matching
+this rule. This is only really useful in "quota" mode, as it will allow you to
+use complex prerouting rules in association with the quota system, without
+counting a packet twice.
+.TP
+\fB\-\-name\fP \fIname\fP
+Assign the counter a specific name. This option must be present, as an empty
+name is not allowed. Names starting with a dot or names containing a slash are
+prohibited.
+.TP
+[\fB!\fP] \fB\-\-quota\fP \fIiq\fP
+Specify the initial quota for this counter. If the counter already exists,
+it is not reset. An "!" may be used to invert the result of the match. The
+negation has no effect when \fB\-\-grow\fP is used.
+.TP
+\fB\-\-packets\fP
+Count packets instead of bytes that passed the quota2 match.
+.PP
+Because counters in quota2 can be shared, you can combine them for various
+purposes, for example, a bytebucket filter that only lets as much traffic go
+out as has come in:
+.PP
+\-A INPUT \-p tcp \-\-dport 6881 \-m quota \-\-name bt \-\-grow;
+\-A OUTPUT \-p tcp \-\-sport 6881 \-m quota \-\-name bt;
+.SS pknock
+Pknock match implements so-called "port knocking", a stealthy system
+for network authentication: a client sends packets to selected
+ports in a specific sequence (= simple mode, see example 1 below), or a HMAC
+payload to a single port (= complex mode, see example 2 below),
+to a target machine that has pknock rule(s) installed. The target machine
+then decides whether to unblock or block (again) the pknock-protected port(s).
+This can be used, for instance, to avoid brute force
+attacks on ssh or ftp services.
+.PP
+Example prerequisites:
+.IP
+modprobe cn
+.IP
+modprobe xt_pknock
+.PP
+Example 1 (TCP mode, manual closing of opened port not possible):
+.IP
+iptables -P INPUT DROP
+.IP
+iptables -A INPUT -p tcp -m pknock --knockports 4002,4001,4004 --strict
+--name SSH --time 10 --autoclose 60 --dport 22 -j ACCEPT
+.PP
+The rule will allow tcp port 22 for the attempting IP address after the successful reception of TCP SYN packets
+to ports 4002, 4001 and 4004, in this order (a.k.a. port-knocking).
+Port numbers in the connect sequence must follow the exact specification, no
+other ports may be "knocked" inbetween. The rule is named '\fBSSH\fP' \(em a file of
+the same name for tracking port knocking states will be created in
+\fB/proc/net/xt_pknock\fP .
+Successive port knocks must occur with delay of at most 10 seconds. Port 22 (from the example) will
+be automatiaclly dropped after 60 minutes after it was previously allowed.
+.PP
+Example 2 (UDP mode \(em non-replayable and non-spoofable, manual closing
+of opened port possible, secure, also called "SPA" = Secure Port
+Authorization):
+.IP
+iptables -A INPUT -p udp -m pknock --knockports 4000 --name FTP
+--opensecret foo --closesecret bar --autoclose 240 -j DROP
+.IP
+iptables -A INPUT -p tcp -m pknock --checkip --name FTP --dport 21 -j ACCEPT
+.PP
+The first rule will create an "ALLOWED" record in /proc/net/xt_pknock/FTP after
+the successful reception of an UDP packet to port 4000. The packet payload must be
+constructed as a HMAC256 using "foo" as a key. The HMAC content is the particular client's IP address as a 32-bit network byteorder quantity,
+plus the number of minutes since the Unix epoch, also as a 32-bit value.
+(This is known as Simple Packet Authorization, also called "SPA".)
+In such case, any subsequent attempt to connect to port 21 from the client's IP
+address will cause such packets to be accepted in the second rule.
+.PP
+Similarly, upon reception of an UDP packet constructed the same way, but with
+the key "bar", the first rule will remove a previously installed "ALLOWED" state
+record from /proc/net/xt_pknock/FTP, which means that the second rule will
+stop matching for subsequent connection attempts to port 21.
+In case no close-secret packet is received within 4 hours, the first rule
+will remove "ALLOWED" record from /proc/net/xt_pknock/FTP itself.
+.PP
+Things worth noting:
+.PP
+\fBGeneral\fP:
+.PP
+Specifying \fB--autoclose 0\fP means that no automatic close will be performed at all.
+.PP
+xt_pknock is capable of sending information about successful matches
+via a netlink socket to userspace, should you need to implement your own
+way of receiving and handling portknock notifications.
+Be sure to read the documentation in the doc/pknock/ directory,
+or visit the original site \(em http://portknocko.berlios.de/ .
+.PP
+\fBTCP mode\fP:
+.PP
+This mode is not immune against eavesdropping, spoofing and
+replaying of the port knock sequence by someone else (but its use may still
+be sufficient for scenarios where these factors are not necessarily
+this important, such as bare shielding of the SSH port from brute-force attacks).
+However, if you need these features, you should use UDP mode.
+.PP
+It is always wise to specify three or more ports that are not monotonically
+increasing or decreasing with a small stepsize (e.g. 1024,1025,1026)
+to avoid accidentally triggering
+the rule by a portscan.
+.PP
+Specifying the inter-knock timeout with \fB--time\fP is mandatory in TCP mode,
+to avoid permanent denial of services by clogging up the peer knock-state tracking table
+that xt_pknock internally keeps, should there be a DDoS on the
+first-in-row knock port from more hostile IP addresses than what the actual size
+of this table is (defaults to 16, can be changed via the "peer_hasht_ents" module parameter).
+It is also wise to use as short a time as possible (1 second) for \fB--time\fP
+for this very reason. You may also consider increasing the size
+of the peer knock-state tracking table. Using \fB--strict\fP also helps,
+as it requires the knock sequence to be exact. This means that if the
+hostile client sends more knocks to the same port, xt_pknock will
+mark such attempt as failed knock sequence and will forget it immediately.
+To completely thwart this kind of DDoS, knock-ports would need to have
+an additional rate-limit protection. Or you may consider using UDP mode.
+.PP
+\fBUDP mode\fP:
+.PP
+This mode is immune against eavesdropping, replaying and spoofing attacks.
+It is also immune against DDoS attack on the knockport.
+.PP
+For this mode to work, the clock difference on the client and on the server
+must be below 1 minute. Synchronizing time on both ends by means
+of NTP or rdate is strongly suggested.
+.PP
+There is a rate limiter built into xt_pknock which blocks any subsequent
+open attempt in UDP mode should the request arrive within less than one
+minute since the first successful open. This is intentional;
+it thwarts eventual spoofing attacks.
+.PP
+Because the payload value of an UDP knock packet is influenced by client's IP address,
+UDP mode cannot be used across NAT.
+.PP
+For sending UDP "SPA" packets, you may use either \fBknock.sh\fP or
+\fBknock-orig.sh\fP. These may be found in doc/pknock/util.

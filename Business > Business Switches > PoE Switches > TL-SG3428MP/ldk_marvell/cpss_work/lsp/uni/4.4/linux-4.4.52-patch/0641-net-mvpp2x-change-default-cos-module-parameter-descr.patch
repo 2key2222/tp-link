@@ -1,0 +1,32 @@
+From 21c83cc720554fcc3ef12fb8d52d688a365883b5 Mon Sep 17 00:00:00 2001
+From: Stefan Chulski <stefanc@marvell.com>
+Date: Tue, 26 Jul 2016 14:34:10 +0300
+Subject: [PATCH 0641/2241] net: mvpp2x: change default cos module parameter
+ description
+
+Change-Id: I872f290908deb494dba968653eac154b478947d1
+Signed-off-by: Stefan Chulski <stefanc@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/31462
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Yuval Caduri <cyuval@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+index d02f3d7..bc9d630 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+@@ -109,7 +109,8 @@ module_param(pri_map, uint, S_IRUGO);
+ MODULE_PARM_DESC(pri_map, "Set priority_map, nibble for each cos.");
+ 
+ module_param(default_cos, byte, S_IRUGO);
+-MODULE_PARM_DESC(default_cos, "Set default cos (0-(num_cose_queues-1)).");
++MODULE_PARM_DESC(default_cos,
++		 "Set default cos value(0-7) for unclassified traffic");
+ 
+ module_param(rx_queue_size, ushort, S_IRUGO);
+ MODULE_PARM_DESC(rx_queue_size, "Rx queue size");
+-- 
+2.7.4
+

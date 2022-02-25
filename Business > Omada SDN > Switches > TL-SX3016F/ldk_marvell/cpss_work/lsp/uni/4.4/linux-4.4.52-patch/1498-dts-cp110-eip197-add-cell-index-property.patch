@@ -1,0 +1,48 @@
+From 2aad2d5b330c0284119be9dd593fbeb98279a04c Mon Sep 17 00:00:00 2001
+From: Igal Liberman <igall@marvell.com>
+Date: Sun, 12 Mar 2017 13:57:38 +0200
+Subject: [PATCH 1498/2241] dts: cp110: eip197: add cell index property
+
+This patch adds cell-index property which allows to distinguish
+between multiple engines in devices with 2 EIP197 engines.
+
+Binding document was updated accordingly.
+
+Change-Id: I13a69cf25eb7f1ee0545f9db98bf243375da6a10
+Signed-off-by: Igal Liberman <igall@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/37580
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-cp110-1.dtsi | 1 +
+ arch/arm64/boot/dts/marvell/armada-cp110.dtsi   | 1 +
+ 2 files changed, 2 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-cp110-1.dtsi b/arch/arm64/boot/dts/marvell/armada-cp110-1.dtsi
+index 73157b0..073fbf6 100644
+--- a/arch/arm64/boot/dts/marvell/armada-cp110-1.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-cp110-1.dtsi
+@@ -364,6 +364,7 @@ cps_eip197: eip197@800000 {
+ 	interrupt-names = "eip_addr", "ring0", "ring1",
+ 			  "ring2", "ring3", "eip_out";
+ 	clocks = <&cps_syscon0 1 26>;
++	cell-index = <1>;
+ 	status = "disabled";
+ };
+ 
+diff --git a/arch/arm64/boot/dts/marvell/armada-cp110.dtsi b/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
+index ff12d05..62a46d0 100644
+--- a/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
+@@ -462,6 +462,7 @@ cpm_eip197: eip197@800000 {
+ 	interrupt-names = "eip_addr", "ring0", "ring1",
+ 			  "ring2", "ring3", "eip_out";
+ 	clocks = <&cpm_syscon0 1 26>;
++	cell-index = <0>;
+ 	status = "disabled";
+ };
+ 
+-- 
+2.7.4
+

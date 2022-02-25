@@ -1,0 +1,95 @@
+From 2904e62718ac1b5bb2636b39f7d6638a0250c08d Mon Sep 17 00:00:00 2001
+From: Ken Ma <make@marvell.com>
+Date: Wed, 6 Jul 2016 00:02:07 +0800
+Subject: [PATCH 0583/2241] fix: spi: a3700: fix the data integrity issue in
+ fifo mode
+
+- When writing data to SPI device by cpu, if the instruction in
+  SPI_INSTR does not require data to be written to the SPI device,
+  process should wait until SPI_RDY is 1 for the SPI interface to be
+  in idle.
+- Flush FIFOs before reading&writing operations according to
+  specification document.
+- SYSTEMSW-2607: SPI flash data corrupt occurs when enabling the SPI
+  FIFO mode.
+
+Change-Id: Id3f498d4b99392e97221edad9e9118f9c506bc89
+Signed-off-by: Ken Ma <make@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/30968
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Wilson Ding <dingwei@marvell.com>
+---
+ drivers/spi/spi-armada-3700.c | 36 +++++++++++++++++++++++++++++++++---
+ 1 file changed, 33 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/spi/spi-armada-3700.c b/drivers/spi/spi-armada-3700.c
+index b58aead..b62e689 100644
+--- a/drivers/spi/spi-armada-3700.c
++++ b/drivers/spi/spi-armada-3700.c
+@@ -117,6 +117,7 @@ enum a3700_spi_pin_mode {
+ struct a3700_spi_status {
+ 	bool                    cs_active;
+ 	bool                    last_xfer;
++	bool                    xmit_data;	/* whether there are data to be written to the SPI device */
+ 	const u8               *tx_buf;
+ 	u8                     *rx_buf;
+ 	unsigned int			buf_len;
+@@ -682,6 +683,9 @@ static int a3700_spi_transfer_start_non_legacy(struct spi_device *spi,
+ 	a3700_spi->status.rx_buf  = xfer->rx_buf;
+ 	a3700_spi->status.buf_len = xfer->len;
+ 
++	/* Flush the FIFOs */
++	a3700_spi_fifo_flush(a3700_spi);
++
+ 	/* Transfer headers */
+ 	a3700_spi_header_set(a3700_spi);
+ 
+@@ -699,6 +703,16 @@ static int a3700_spi_transfer_start_non_legacy(struct spi_device *spi,
+ 		val = spireg_read(a3700_spi, A3700_SPI_IF_CFG_REG);
+ 		val |= (A3700_SPI_XFER_START | A3700_SPI_RW_EN);
+ 		spireg_write(a3700_spi, A3700_SPI_IF_CFG_REG, val);
++
++		/*
++		 * If there are data to be written to the SPI device, xmit_data flag is set true;
++		 * otherwise the instruction in SPI_INSTR does not require data to be written
++		 * to the SPI device, then xmit_data flag is set false
++		 */
++		if (a3700_spi->status.buf_len)
++			a3700_spi->status.xmit_data = true;
++		else
++			a3700_spi->status.xmit_data = false;
+ 	}
+ 
+ 	return 0;
+@@ -863,9 +877,25 @@ static int a3700_spi_transfer_finish_non_legacy(struct spi_device *spi,
+ 	 *	- just wait XFER_START bit clear
+ 	 */
+ 	if (a3700_spi->status.tx_buf) {
+-		if (!a3700_spi_transfer_wait(spi, A3700_SPI_WFIFO_EMPTY)) {
+-			dev_err(&spi->dev, "wait write fifo empty timed out\n");
+-			return -ETIMEDOUT;
++		if (a3700_spi->status.xmit_data) {
++			/*
++			 * If there are data written to the SPI device, wait until SPI_WFIFO_EMPTY is 1
++			 * to wait for all data to transfer out of write FIFO.
++			 */
++			if (!a3700_spi_transfer_wait(spi, A3700_SPI_WFIFO_EMPTY)) {
++				dev_err(&spi->dev, "wait write fifo empty timed out\n");
++				return -ETIMEDOUT;
++			}
++		} else {
++			/*
++			 * If the instruction in SPI_INSTR does not require data to be
++			 * written to the SPI device, wait until SPI_RDY is 1 for the
++			 * SPI interface to be in idle.
++			 */
++			if (!a3700_spi_transfer_wait(spi, A3700_SPI_XFER_RDY)) {
++				dev_err(&spi->dev, "wait transfer ready timed out\n");
++				return -ETIMEDOUT;
++			}
+ 		}
+ 
+ 		val = spireg_read(a3700_spi, A3700_SPI_IF_CFG_REG);
+-- 
+2.7.4
+

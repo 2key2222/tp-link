@@ -1,0 +1,65 @@
+From f88544c3c5f08163df4d433e0b242be707d0d9a2 Mon Sep 17 00:00:00 2001
+From: Ken Ma <make@marvell.com>
+Date: Fri, 10 Mar 2017 23:27:26 +0800
+Subject: [PATCH 1487/2241] dts: a3700: add phys' reference to usb3 node
+
+- Armada 3700 usb32 controller uses a utmi dedicated phy for USB 2.0
+  and uses a comphy for USB 3.0, add these 2 phys' reference to its
+  usb3 node.
+- Set property "separated-phys-for-usb2-usb3" for Armada 3700.
+
+Change-Id: Ia4457c59987e644b3e467fea6f2467f6789ba5df
+Signed-off-by: Ken Ma <make@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/37392
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+Reviewed-by: Victor Gu <xigu@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-3720-community.dts | 3 +++
+ arch/arm64/boot/dts/marvell/armada-3720-db.dts        | 3 +++
+ arch/arm64/boot/dts/marvell/armada-37xx.dtsi          | 1 +
+ 3 files changed, 7 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-3720-community.dts b/arch/arm64/boot/dts/marvell/armada-3720-community.dts
+index c9f5d03..b75e269 100644
+--- a/arch/arm64/boot/dts/marvell/armada-3720-community.dts
++++ b/arch/arm64/boot/dts/marvell/armada-3720-community.dts
+@@ -112,6 +112,9 @@
+ 
+ 			usb3@58000 {
+ 				status = "okay";
++				phys = <&utmi_usb32>, /* utmi usb32 dedicated phy */
++				       <&a3700_comphy 1 COMPHY_USB3>; /* usb3 comphy */
++				phy-names = "usb2", "usb3";
+ 			};
+ 
+ 			usb@5e000 {
+diff --git a/arch/arm64/boot/dts/marvell/armada-3720-db.dts b/arch/arm64/boot/dts/marvell/armada-3720-db.dts
+index e4bc50b0..7b7d82b 100644
+--- a/arch/arm64/boot/dts/marvell/armada-3720-db.dts
++++ b/arch/arm64/boot/dts/marvell/armada-3720-db.dts
+@@ -158,6 +158,9 @@
+ 			usb3@58000 {
+ 				status = "okay";
+ 				usb-phy = <&usb3_phy>;
++				phys = <&utmi_usb32>, /* utmi usb32 dedicated phy */
++				       <&a3700_comphy 1 COMPHY_USB3>; /* usb3 comphy */
++				phy-names = "usb2", "usb3";
+ 			};
+ 
+ 			usb@5e000 {
+diff --git a/arch/arm64/boot/dts/marvell/armada-37xx.dtsi b/arch/arm64/boot/dts/marvell/armada-37xx.dtsi
+index 24c3a3b..ac3b0ed 100644
+--- a/arch/arm64/boot/dts/marvell/armada-37xx.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-37xx.dtsi
+@@ -339,6 +339,7 @@
+ 				reg = <0x58000 0x4000>;
+ 				interrupts = <GIC_SPI 3 IRQ_TYPE_LEVEL_HIGH>;
+ 				clocks = <&sgateclk 17>;
++				separated-phys-for-usb2-usb3;
+ 				status = "disabled";
+ 			};
+ 
+-- 
+2.7.4
+

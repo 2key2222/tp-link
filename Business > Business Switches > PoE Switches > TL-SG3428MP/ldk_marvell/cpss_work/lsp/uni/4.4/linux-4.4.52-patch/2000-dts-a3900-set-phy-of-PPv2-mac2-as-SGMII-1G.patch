@@ -1,0 +1,36 @@
+From e34ea3bf4e171f3fe360532ca88db6ce5b994eea Mon Sep 17 00:00:00 2001
+From: Kevin Shi <kshi@marvell.com>
+Date: Thu, 7 Sep 2017 16:36:30 +0800
+Subject: [PATCH 2000/2241] dts: a3900: set phy of PPv2 mac2 as SGMII 1G
+
+Change the comphy setting used by PPv2 mac2 according to what has
+been configured in u-boot in order to prevent 2.5Gbps initial port
+speed link problem on A3900 VD/AXIS boards.
+
+Change-Id: Id73e9bb4b6bdfbc5afb4695f16f5e5325f4d7d3a
+Signed-off-by: Kevin Shi <kshi@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/43931
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-3900-db.dtsi | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-3900-db.dtsi b/arch/arm64/boot/dts/marvell/armada-3900-db.dtsi
+index dbc62a4..8b41f13 100644
+--- a/arch/arm64/boot/dts/marvell/armada-3900-db.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-3900-db.dtsi
+@@ -166,8 +166,8 @@
+ 				};
+ 				emac2: mac2 {
+ 					phy-mode = "sgmii";
+-					phy-speed = <2500>;
+-					phys = <&comphy0 3 COMPHY_HS_SGMII1>;
++					phy-speed = <1000>;
++					phys = <&comphy0 3 COMPHY_SGMII1>;
+ 					phy-names = "comphy";
+ 					phy = <&phy1>;
+ 				};
+-- 
+2.7.4
+

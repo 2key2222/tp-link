@@ -1,0 +1,37 @@
+From c7e5e35a7a0ae824db224fbd24ef247c9b1d875c Mon Sep 17 00:00:00 2001
+From: jinghua <xigu@marvell.com>
+Date: Sun, 18 Sep 2016 10:54:56 +0800
+Subject: [PATCH 0985/2241] Revert "dts: a3700: update usb3 vbus gpio pin
+ number for rev2 devel-board"
+
+- On Armada3700 rev2 devel-board, usb3 vbus is still connected to
+  IO Expander, just as rev1.
+- This reverts commit 8b5725755782 ("dts: a3700: update usb3 vbus
+  gpio pin number for rev2 devel-board").
+
+Change-Id: I5cbfde60f69ecbe82007785ecda48b3eb4ecf0db
+Reviewed-on: http://vgitil04.il.marvell.com:8080/32827
+Reviewed-by: Wilson Ding <dingwei@marvell.com>
+Tested-by: Wilson Ding <dingwei@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/32919
+Tested-by: Star_Automation <star@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-3720-db.dts | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-3720-db.dts b/arch/arm64/boot/dts/marvell/armada-3720-db.dts
+index 33c9b82..70fae3b 100644
+--- a/arch/arm64/boot/dts/marvell/armada-3720-db.dts
++++ b/arch/arm64/boot/dts/marvell/armada-3720-db.dts
+@@ -233,7 +233,7 @@
+ 		regulator-max-microvolt = <5000000>;
+ 		enable-active-high;
+ 		regulator-always-on;
+-		gpios = <&gpio_sb 0 GPIO_ACTIVE_HIGH>;
++		gpio = <&expander0 1 GPIO_ACTIVE_HIGH>;
+ 	};
+ };
+ 
+-- 
+2.7.4
+

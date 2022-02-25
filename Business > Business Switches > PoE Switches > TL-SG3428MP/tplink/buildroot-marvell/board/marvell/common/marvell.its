@@ -1,0 +1,60 @@
+/dts-v1/;
+
+/ {
+	description = "Linux kernel and FDT blob";
+	#address-cells = <1>;
+	
+	images {
+		kernel@1 {
+			description = "Marvell Linux";
+			data = /incbin/("./zImage");
+			type = "kernel";
+			arch = "arm";
+			os = "linux";
+			compression = "none";
+			load = <0x02a00000>;
+			entry = <0x02a00000>;
+			hash@1 {
+				algo = "crc32";
+			};
+		};
+		
+		fdt@1 {
+			description = "Flattened Device Tree blob - msys-ac3-rd.dtb";
+			data = /incbin/("./msys-ac3-rd.dtb");
+			type = "flat_dt";
+			arch = "arm";
+			compression = "none";
+			hash@1 {
+				algo = "crc32";
+			};
+		};
+		
+		fdt@2 {
+			description = "Flattened Device Tree blob - msys-ac3_tl-sg2210hp-m2.dtb";
+			data = /incbin/("./msys-ac3_tl-sg2210hp-m2.dtb");
+			type = "flat_dt";
+			arch = "arm";
+			compression = "none";
+			hash@1 {
+				algo = "crc32";
+			};
+		};
+	};	
+	
+	configurations {
+		default = "conf@1";
+		conf@1 {
+			description = "Boot Linux kernel with FDT blob 1";
+			kernel = "kernel@1";
+			fdt = "fdt@1";
+		};
+		
+		conf@2 {
+			description = "Boot Linux kernel with FDT blob 1";
+			kernel = "kernel@1";
+			fdt = "fdt@2";
+		};		
+	};
+};
+			

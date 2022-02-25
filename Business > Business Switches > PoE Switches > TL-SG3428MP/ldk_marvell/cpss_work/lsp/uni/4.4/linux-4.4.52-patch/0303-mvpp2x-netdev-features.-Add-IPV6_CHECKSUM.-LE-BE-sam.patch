@@ -1,0 +1,68 @@
+From 789fe8412f90ab3235692353eede5cfc65daa9b9 Mon Sep 17 00:00:00 2001
+From: Yuval Caduri <cyuval@marvell.com>
+Date: Wed, 6 Apr 2016 02:52:19 +0300
+Subject: [PATCH 0303/2241] mvpp2x: netdev features. Add IPV6_CHECKSUM. LE/BE
+ same feature set.
+
+- Add HW IPV6_CHECKSUM capability.
+- LE and BE now have same features.
+
+Change-Id: I7a1b62fda102d91a3806ba6f995d9bd8ecc10006
+Signed-off-by: Yuval Caduri <cyuval@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/28812
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+Tested-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c | 18 ++++++++----------
+ 1 file changed, 8 insertions(+), 10 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+index a4ed8ad..8bf866a 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+@@ -3157,7 +3157,7 @@ int mv_pp2x_of_irq_count(struct device_node *dev)
+ static int mv_pp2x_netdev_set_features(struct net_device *dev,
+ 	netdev_features_t features)
+ {
+-	u32 changed = dev->features ^ features;
++	netdev_features_t changed = dev->features ^ features;
+ 	struct mv_pp2x_port *port = netdev_priv(dev);
+ 
+ 	/* dev->features is not changed */
+@@ -3774,13 +3774,9 @@ static int mv_pp2x_port_probe(struct platform_device *pdev,
+ 				mv_pp2x_tx_proc_cb, (unsigned long)dev);
+ 		}
+ 	}
+-	features = NETIF_F_SG ;
+-#if defined(__BIG_ENDIAN)
+-	dev->features = features | NETIF_F_RXCSUM;
+-#else
+-	dev->features = features | NETIF_F_RXCSUM | NETIF_F_IP_CSUM;
+-#endif
+-	dev->hw_features |= features | NETIF_F_RXCSUM | NETIF_F_GRO | NETIF_F_IP_CSUM;
++	features = NETIF_F_SG;
++	dev->features = features | NETIF_F_RXCSUM | NETIF_F_IP_CSUM | NETIF_F_IPV6_CSUM;
++	dev->hw_features |= features | NETIF_F_RXCSUM | NETIF_F_GRO | NETIF_F_IP_CSUM | NETIF_F_IPV6_CSUM;
+ 	/* Only when multi queue mode, rxhash is supported */
+ 	if (mv_pp2x_queue_mode)
+ 		dev->hw_features |= NETIF_F_RXHASH;
+@@ -3796,12 +3792,14 @@ static int mv_pp2x_port_probe(struct platform_device *pdev,
+ 
+ 	priv->port_list[priv->num_ports] = port;
+ 	priv->num_ports++;
+-	return 0;
+-	dev_err(&pdev->dev, "%s failed for port_id(%d)\n", __func__, id);
++
+ #ifdef DEV_NETMAP
+ 	mv_pp2x_netmap_attach(port);
+ #endif /* DEV_NETMAP */
+ 
++	return 0;
++	dev_err(&pdev->dev, "%s failed for port_id(%d)\n", __func__, id);
++
+ err_free_port_pcpu:
+ 	free_percpu(port->pcpu);
+ err_free_txq_pcpu:
+-- 
+2.7.4
+

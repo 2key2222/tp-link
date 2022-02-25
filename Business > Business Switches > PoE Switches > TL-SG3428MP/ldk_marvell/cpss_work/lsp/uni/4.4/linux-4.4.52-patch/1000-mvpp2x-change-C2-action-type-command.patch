@@ -1,0 +1,31 @@
+From 011b305930adfdb53d948e12eee8d726e9e6082e Mon Sep 17 00:00:00 2001
+From: Stefan Chulski <stefanc@marvell.com>
+Date: Thu, 22 Sep 2016 15:46:33 +0300
+Subject: [PATCH 1000/2241] mvpp2x: change C2 action type command
+
+- return error if HWF LOW LATENCY LOCK command set
+
+Change-Id: I3e5ca12629f6c5316b61a869c7e1cccd83436f6a
+Signed-off-by: Stefan Chulski <stefanc@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/33080
+Tested-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.c
+index 3ee56d1..c4e612e 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.c
+@@ -5529,7 +5529,7 @@ EXPORT_SYMBOL(mv_pp2x_cls_c2_queue_high_set);
+ 
+ int mv_pp2x_cls_c2_forward_set(struct mv_pp2x_cls_c2_entry *c2, int cmd)
+ {
+-	if (!c2 || cmd > MVPP2_ACTION_TYPE_UPDT_LOCK)
++	if (!c2 || cmd > MVPP2_FRWD_ACTION_TYPE_HWF_LOW_LATENCY_LOCK)
+ 		return -EINVAL;
+ 
+ 	c2->sram.regs.actions &= ~MVPP2_CLS2_ACT_FRWD_MASK;
+-- 
+2.7.4
+

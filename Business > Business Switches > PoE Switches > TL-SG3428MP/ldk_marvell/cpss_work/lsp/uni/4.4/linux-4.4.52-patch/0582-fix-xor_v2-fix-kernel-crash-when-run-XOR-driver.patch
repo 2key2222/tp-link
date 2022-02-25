@@ -1,0 +1,53 @@
+From 172483348551264cb054ab73e46459a78f4b15d0 Mon Sep 17 00:00:00 2001
+From: Hanna Hawa <hannah@marvell.com>
+Date: Thu, 7 Jul 2016 11:28:02 +0300
+Subject: [PATCH 0582/2241] fix: xor_v2: fix kernel crash when run XOR driver
+
+While running DMA-Test the kernel will crash
+Found the loop in the tasklet increase the pending pointer with
+no update of HW descriptor pointer, this will cause NULL pointer
+in SW descriptor, and when the driver will delete the SW descriptor
+from the list, it'll crash.
+
+Change-Id: Ic0386402b6d562eaa9759002d1733689e3c593d1
+Signed-off-by: Hanna Hawa <hannah@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/30996
+Reviewed-by: Neta Zur Hershkovits <neta@marvell.com>
+Reviewed-by: Lior Amsalem <alior@marvell.com>
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Nadav Haklai <nadavh@marvell.com>
+---
+ drivers/dma/mv_xor_v2.c | 12 ++++--------
+ 1 file changed, 4 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/dma/mv_xor_v2.c b/drivers/dma/mv_xor_v2.c
+index 4a7c622..f724bf2 100644
+--- a/drivers/dma/mv_xor_v2.c
++++ b/drivers/dma/mv_xor_v2.c
+@@ -621,19 +621,15 @@ static void mv_xor_v2_tasklet(unsigned long data)
+ 	/* get thepending descriptors parameters */
+ 	num_of_pending = mv_xor_v2_get_pending_params(xor_dev, &pending_ptr);
+ 
+-	/* next HW descriptor */
+-	next_pending_hw_desc = (struct mv_xor_v2_descriptor *)
+-		((void *)xor_dev->hw_desq_virt +
+-		 (xor_dev->desc_size * (pending_ptr)));
+-
+ 	/* loop over free descriptors */
+ 	for (i = 0; i < num_of_pending; i++) {
+ 
+-		if (pending_ptr > MV_XOR_V2_MAX_DESC_NUM)
++		if (pending_ptr >= MV_XOR_V2_MAX_DESC_NUM)
+ 			pending_ptr = 0;
+ 
+-		if (next_pending_sw_desc != NULL)
+-			next_pending_hw_desc++;
++		next_pending_hw_desc = (struct mv_xor_v2_descriptor *)
++			((void *)xor_dev->hw_desq_virt +
++			 (xor_dev->desc_size * (pending_ptr)));
+ 
+ 		/* get the SW descriptor related to the HW descriptor */
+ 		next_pending_sw_desc =
+-- 
+2.7.4
+

@@ -1,0 +1,68 @@
+From cbcd3158b9a7ff090b8dd8ca24ef8fae87f95c53 Mon Sep 17 00:00:00 2001
+From: Amitoj Kaur Chawla <amitoj1606@gmail.com>
+Date: Thu, 4 Feb 2016 19:25:26 +0530
+Subject: [PATCH 1649/2241] net: mvpp2: Return correct error codes
+
+The return value of kzalloc on failure of allocation of memory should
+be -ENOMEM and not -1.
+
+Found using Coccinelle. A simplified version of the semantic patch
+used is:
+
+//<smpl>
+@@
+expression *e;
+position p,q;
+@@
+
+e@q = kzalloc(...);
+if@p (e == NULL) {
+...
+return
+- -1
++ -ENOMEM
+;
+}
+//</smpl>
+
+This function may also return -1 after calling mpp2_prs_tcam_port_map_get.
+So that the function consistently returns meaningful error values on
+failure, the -1 is changed to -EINVAL.
+
+Patch cherry-picked from mainline 4.12_rc5.
+
+Change-Id: Ie02d7c86525f170c4cec931fe1cb0dd3f295ee74
+Signed-off-by: Amitoj Kaur Chawla <amitoj1606@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/40353
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2.c b/drivers/net/ethernet/marvell/mvpp2.c
+index 25aba98..e2d9acf 100644
+--- a/drivers/net/ethernet/marvell/mvpp2.c
++++ b/drivers/net/ethernet/marvell/mvpp2.c
+@@ -3070,7 +3070,7 @@ static int mvpp2_prs_mac_da_accept(struct mvpp2 *priv, int port,
+ 
+ 		pe = kzalloc(sizeof(*pe), GFP_KERNEL);
+ 		if (!pe)
+-			return -1;
++			return -ENOMEM;
+ 		mvpp2_prs_tcam_lu_set(pe, MVPP2_PRS_LU_MAC);
+ 		pe->index = tid;
+ 
+@@ -3086,7 +3086,7 @@ static int mvpp2_prs_mac_da_accept(struct mvpp2 *priv, int port,
+ 	if (pmap == 0) {
+ 		if (add) {
+ 			kfree(pe);
+-			return -1;
++			return -EINVAL;
+ 		}
+ 		mvpp2_prs_hw_inv(priv, pe->index);
+ 		priv->prs_shadow[pe->index].valid = false;
+-- 
+2.7.4
+

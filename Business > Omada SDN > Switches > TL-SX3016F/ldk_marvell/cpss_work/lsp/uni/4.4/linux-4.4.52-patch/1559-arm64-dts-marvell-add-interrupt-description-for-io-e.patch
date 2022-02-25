@@ -1,0 +1,62 @@
+From d42d878d09bba9abe44866d43456c538d048c475 Mon Sep 17 00:00:00 2001
+From: Grzegorz Jaszczyk <jaz@semihalf.com>
+Date: Tue, 17 Jan 2017 16:34:19 +0100
+Subject: [PATCH 1559/2241] arm64: dts: marvell: add interrupt description for
+ io-expander in armada-8040-db
+
+The MPP62 have to be configured as an GPIO, which is already done and by
+setting pinctrl with help of 'pca0_pins' phandle. The GPIO 62 is used as
+an interrupt source for both io-expanders on armada-8040-db board.
+
+Change-Id: I1a8179600c694014b38539af820dd26dbe9a1477
+Signed-off-by: Grzegorz Jaszczyk <jaz@semihalf.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/38542
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-8040-db.dtsi | 21 +++++++++++++++++++++
+ 1 file changed, 21 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-8040-db.dtsi b/arch/arm64/boot/dts/marvell/armada-8040-db.dtsi
+index 879dd43..ad1e2bd 100644
+--- a/arch/arm64/boot/dts/marvell/armada-8040-db.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-8040-db.dtsi
+@@ -104,6 +104,15 @@
+ 					gpio-controller;
+ 					#gpio-cells = <2>;
+ 					reg = <0x21>;
++					/*
++					 * Support USB-DEVICE with SD in 8040
++					 * To enable IO expander interrupts, SD/MMC on CP
++					 * Must be disabled in U-Boot & Linux
++					 * interrupt-parent = <&cpm_gpio1>;
++					 * interrupts = <7 IRQ_TYPE_EDGE_FALLING>;
++					 * interrupt-controller;
++					 * #interrupt-cells = <2>;
++					 */
+ 				};
+ 
+ 				/* U25 */
+@@ -113,6 +122,18 @@
+ 					gpio-controller;
+ 					#gpio-cells = <2>;
+ 					reg = <0x25>;
++					/*
++					 * Support USB-DEVICE with SD in 8040
++					 * To enable IO expander interrupts, SD/MMC on CP
++					 * Must be disabled in U-Boot & Linux
++					 * interrupt-parent = <&cpm_gpio1>;
++					 * interrupts = <7 IRQ_TYPE_EDGE_FALLING>;
++					 * gpio-controller;
++					 * #gpio-cells = <2>;
++					 * interrupt-controller;
++					 * #interrupt-cells = <2>;
++					 * reg = <0x25>;
++					 */
+ 				};
+ 
+ 				eeprom@57 {
+-- 
+2.7.4
+

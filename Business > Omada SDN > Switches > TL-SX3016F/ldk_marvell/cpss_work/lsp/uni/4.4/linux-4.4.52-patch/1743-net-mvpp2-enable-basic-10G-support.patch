@@ -1,0 +1,110 @@
+From ae25ce2b1acc071509c79b5fbe8be856334604e2 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Antoine=20T=C3=A9nart?= <antoine.tenart@free-electrons.com>
+Date: Mon, 12 Jun 2017 16:01:39 +0200
+Subject: [PATCH 1743/2241] net: mvpp2: enable basic 10G support
+
+On GOP port 0 two MAC modes are available: GMAC and XLG. The XLG MAC is
+used for 10G connectivity. This patch adds a basic 10G support by
+allowing to use the XLG MAC on port 0 and by reworking the
+port_enable/disable functions so that the XLG MAC is configured when
+using 10G.
+
+Patch cherry-picked from mainline 4.13
+
+Change-Id: Id6e011216c578d607c67159ddf95738730372c72
+Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Stefan Chulski <stefanc@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/40795
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Tested-by: Omri Itach <omrii@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2.c | 49 ++++++++++++++++++++++++++++++------
+ 1 file changed, 41 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2.c b/drivers/net/ethernet/marvell/mvpp2.c
+index eebbe8b..4854dff 100644
+--- a/drivers/net/ethernet/marvell/mvpp2.c
++++ b/drivers/net/ethernet/marvell/mvpp2.c
+@@ -345,9 +345,15 @@
+ /* Per-port XGMAC registers. PPv2.2 only, only for GOP port 0,
+  * relative to port->base.
+  */
++#define MVPP22_XLG_CTRL0_REG			0x100
++#define      MVPP22_XLG_CTRL0_PORT_EN		BIT(0)
++#define      MVPP22_XLG_CTRL0_MAC_RESET_DIS	BIT(1)
++#define      MVPP22_XLG_CTRL0_MIB_CNT_DIS	BIT(14)
++
+ #define MVPP22_XLG_CTRL3_REG			0x11c
+ #define      MVPP22_XLG_CTRL3_MACMODESELECT_MASK	(7 << 13)
+ #define      MVPP22_XLG_CTRL3_MACMODESELECT_GMAC	(0 << 13)
++#define      MVPP22_XLG_CTRL3_MACMODESELECT_10G		(1 << 13)
+ 
+ /* SMI registers. PPv2.2 only, relative to priv->iface_base. */
+ #define MVPP22_SMI_MISC_CFG_REG			0x1204
+@@ -4186,7 +4192,13 @@ static void mvpp22_port_mii_set(struct mvpp2_port *port)
+ 	if (port->gop_id == 0) {
+ 		val = readl(port->base + MVPP22_XLG_CTRL3_REG);
+ 		val &= ~MVPP22_XLG_CTRL3_MACMODESELECT_MASK;
+-		val |= MVPP22_XLG_CTRL3_MACMODESELECT_GMAC;
++
++		if (port->phy_interface == PHY_INTERFACE_MODE_XAUI ||
++		    port->phy_interface == PHY_INTERFACE_MODE_SFI)
++			val |= MVPP22_XLG_CTRL3_MACMODESELECT_10G;
++		else
++			val |= MVPP22_XLG_CTRL3_MACMODESELECT_GMAC;
++
+ 		writel(val, port->base + MVPP22_XLG_CTRL3_REG);
+ 	}
+ 
+@@ -4236,19 +4248,40 @@ static void mvpp2_port_enable(struct mvpp2_port *port)
+ {
+ 	u32 val;
+ 
+-	val = readl(port->base + MVPP2_GMAC_CTRL_0_REG);
+-	val |= MVPP2_GMAC_PORT_EN_MASK;
+-	val |= MVPP2_GMAC_MIB_CNTR_EN_MASK;
+-	writel(val, port->base + MVPP2_GMAC_CTRL_0_REG);
++	/* Only GOP port 0 has an XLG MAC */
++	if (port->gop_id == 0 &&
++	    (port->phy_interface == PHY_INTERFACE_MODE_XAUI ||
++	     port->phy_interface == PHY_INTERFACE_MODE_SFI)) {
++		val = readl(port->base + MVPP22_XLG_CTRL0_REG);
++		val |= MVPP22_XLG_CTRL0_PORT_EN |
++		       MVPP22_XLG_CTRL0_MAC_RESET_DIS;
++		val &= ~MVPP22_XLG_CTRL0_MIB_CNT_DIS;
++		writel(val, port->base + MVPP22_XLG_CTRL0_REG);
++	} else {
++		val = readl(port->base + MVPP2_GMAC_CTRL_0_REG);
++		val |= MVPP2_GMAC_PORT_EN_MASK;
++		val |= MVPP2_GMAC_MIB_CNTR_EN_MASK;
++		writel(val, port->base + MVPP2_GMAC_CTRL_0_REG);
++	}
+ }
+ 
+ static void mvpp2_port_disable(struct mvpp2_port *port)
+ {
+ 	u32 val;
+ 
+-	val = readl(port->base + MVPP2_GMAC_CTRL_0_REG);
+-	val &= ~(MVPP2_GMAC_PORT_EN_MASK);
+-	writel(val, port->base + MVPP2_GMAC_CTRL_0_REG);
++	/* Only GOP port 0 has an XLG MAC */
++	if (port->gop_id == 0 &&
++	    (port->phy_interface == PHY_INTERFACE_MODE_XAUI ||
++	     port->phy_interface == PHY_INTERFACE_MODE_SFI)) {
++		val = readl(port->base + MVPP22_XLG_CTRL0_REG);
++		val &= ~(MVPP22_XLG_CTRL0_PORT_EN |
++			 MVPP22_XLG_CTRL0_MAC_RESET_DIS);
++		writel(val, port->base + MVPP22_XLG_CTRL0_REG);
++	} else {
++		val = readl(port->base + MVPP2_GMAC_CTRL_0_REG);
++		val &= ~(MVPP2_GMAC_PORT_EN_MASK);
++		writel(val, port->base + MVPP2_GMAC_CTRL_0_REG);
++	}
+ }
+ 
+ /* Set IEEE 802.3x Flow Control Xon Packet Transmission Mode */
+-- 
+2.7.4
+

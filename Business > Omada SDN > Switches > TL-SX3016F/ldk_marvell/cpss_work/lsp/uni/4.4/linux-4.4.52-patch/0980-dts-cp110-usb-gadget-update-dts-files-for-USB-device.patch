@@ -1,0 +1,123 @@
+From 2d5891d5bae1e4ab0b6beb3442ff7b612d3b4555 Mon Sep 17 00:00:00 2001
+From: Omri Itach <omrii@marvell.com>
+Date: Thu, 7 Jul 2016 10:00:12 +0300
+Subject: [PATCH 0980/2241] dts: cp110: usb: gadget: update dts files for USB
+ device support
+
+- Added u3d (USB3) and udc (USB2) nodes in dts for USB device.
+- 'udc' and 'u3d' nodes added to all A7k-DB DTS files (disabled by default)
+
+To enable USB device in board level:
+  1. enable both 'u3d' and 'udc' nodes
+  2. disable relevant USB3 host node
+
+Example (replace USB3 Host0 with USB Device):
+
+usb3h0: usb3@500000 {
+	status = "disabled";
+};
+u3d@520000 {
+	status = "okay";
+};
+udc@524100 {
+	status = "okay";
+};
+
+Change-Id: Ib1db26c412457f690e04ea483ab0b42dbcc70487
+Signed-off-by: Omri Itach <omrii@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/32813
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ .../boot/dts/marvell/armada-7040-db-all-pcie.dts    |  6 ++++++
+ arch/arm64/boot/dts/marvell/armada-7040-db-nand.dts |  6 ++++++
+ .../boot/dts/marvell/armada-7040-db-router.dts      |  6 ++++++
+ arch/arm64/boot/dts/marvell/armada-cp110.dtsi       | 21 +++++++++++++++++++++
+ 4 files changed, 39 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-7040-db-all-pcie.dts b/arch/arm64/boot/dts/marvell/armada-7040-db-all-pcie.dts
+index a59de02..b3c06e9 100644
+--- a/arch/arm64/boot/dts/marvell/armada-7040-db-all-pcie.dts
++++ b/arch/arm64/boot/dts/marvell/armada-7040-db-all-pcie.dts
+@@ -93,6 +93,12 @@
+ 			usb3h1: usb3@510000 {
+ 				status = "disabled";
+ 			};
++			u3d@520000 {
++				status = "disabled";
++			};
++			udc@524100 {
++				status = "disabled";
++			};
+ 			spi@700680 {
+ 				status = "okay";
+ 			};
+diff --git a/arch/arm64/boot/dts/marvell/armada-7040-db-nand.dts b/arch/arm64/boot/dts/marvell/armada-7040-db-nand.dts
+index a8c1f12..d349ccc 100644
+--- a/arch/arm64/boot/dts/marvell/armada-7040-db-nand.dts
++++ b/arch/arm64/boot/dts/marvell/armada-7040-db-nand.dts
+@@ -93,6 +93,12 @@
+ 			usb3h1: usb3@510000 {
+ 				status = "okay";
+ 			};
++			u3d@520000 {
++				status = "disabled";
++			};
++			udc@524100 {
++				status = "disabled";
++			};
+ 			nand@720000 {
+ 				status = "okay";
+ 			};
+diff --git a/arch/arm64/boot/dts/marvell/armada-7040-db-router.dts b/arch/arm64/boot/dts/marvell/armada-7040-db-router.dts
+index 844e689..cf4e378 100644
+--- a/arch/arm64/boot/dts/marvell/armada-7040-db-router.dts
++++ b/arch/arm64/boot/dts/marvell/armada-7040-db-router.dts
+@@ -93,6 +93,12 @@
+ 			usb3h1: usb3@510000 {
+ 				status = "okay";
+ 			};
++			u3d@520000 {
++				status = "disabled";
++			};
++			udc@524100 {
++				status = "disabled";
++			};
+ 			spi@700680 {
+ 				status = "okay";
+ 			};
+diff --git a/arch/arm64/boot/dts/marvell/armada-cp110.dtsi b/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
+index 57b5029..86f854b 100644
+--- a/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
+@@ -145,6 +145,27 @@ usb3h1: usb3@510000 {
+ 	status = "disabled";
+ };
+ 
++u3d@520000 {
++	compatible = "marvell,mvebu-u3d";
++	/* 0: 0x520000: USB 3.0 Device port 0: DEV_INFO_REG(0:15 - version_id)
++	 * 1: 0x121F10: Clock Source High reg: VBUS present indication in PHY SerDes lane#1
++	 */
++	reg = <0x520000 0x2000>;
++	interrupts = <GIC_SPI 60 IRQ_TYPE_LEVEL_HIGH>;
++	clocks = <&cpm_syscon0 1 24>;
++	dma-coherent;
++	status = "disabled";
++};
++
++udc@524100 {
++	compatible = "marvell,mv-udc";
++	reg = <0x524100 0x2000>;
++	interrupts = <GIC_SPI 60 IRQ_TYPE_LEVEL_HIGH>;
++	clocks = <&cpm_syscon0 1 24>;
++	dma-coherent;
++	status = "disabled";
++};
++
+ spi@700600 {
+ 	compatible = "marvell,armada-380-spi";
+ 	reg = <0x700600 0x50>;
+-- 
+2.7.4
+

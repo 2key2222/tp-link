@@ -1,0 +1,181 @@
+/*
+ * Copyright (C) 2016 Marvell Technology Group Ltd.
+ *
+ * This file is dual-licensed: you can use it either under the terms
+ * of the GPLv2 or the X11 license, at your option. Note that this dual
+ * licensing only applies to this file, and not this project as a
+ * whole.
+ *
+ *  a) This library is free software; you can redistribute it and/or
+ *     modify it under the terms of the GNU General Public License as
+ *     published by the Free Software Foundation; either version 2 of the
+ *     License, or (at your option) any later version.
+ *
+ *     This library is distributed in the hope that it will be useful,
+ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *     GNU General Public License for more details.
+ *
+ * Or, alternatively,
+ *
+ *  b) Permission is hereby granted, free of charge, to any person
+ *     obtaining a copy of this software and associated documentation
+ *     files (the "Software"), to deal in the Software without
+ *     restriction, including without limitation the rights to use,
+ *     copy, modify, merge, publish, distribute, sublicense, and/or
+ *     sell copies of the Software, and to permit persons to whom the
+ *     Software is furnished to do so, subject to the following
+ *     conditions:
+ *
+ *     The above copyright notice and this permission notice shall be
+ *     included in all copies or substantial portions of the Software.
+ *
+ *     THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ *     EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ *     OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ *     NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ *     HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ *     WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ *     FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+ *     OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+/*
+ * Device Tree file for the Armada 7020 SoC, made of an AP806 Dual and
+ * one CP110.
+ */
+
+#include "armada-common.dtsi"
+#include <dt-bindings/phy/phy-comphy-mvebu.h>
+#include "armada-8k.dtsi"
+#include "armada-ap806-dual.dtsi"
+
+/* CP110-0 Settings */
+#define CP110_NAME				cp0
+#define CP110_NUM				0
+
+#include "armada-cp110.dtsi"
+
+#undef CP110_NAME
+#undef CP110_NUM
+
+&cp0_thermal {
+	/* interrupt assignment by ICU supports single thermal sensor unit,
+	* currently cp0 thermal sensor irq only is enabled.
+	* To enable cp1 thermal sensor interrupt,
+	* first disable cp0 thermal sensor interrupt.
+	*/
+	interrupts-extended = <&sei 37>;
+};
+
+&cp0_emac0 {
+	mac-address = [00 00 00 00 00 01];
+};
+
+&cp0_emac2 {
+	mac-address = [00 00 00 00 00 02];
+};
+
+&cp0_emac3 {
+	mac-address = [00 00 00 00 00 03];
+};
+
+/ {
+	model = "Marvell Armada 7020";
+	compatible = "marvell,armada7020", "marvell,armada-ap806-dual",
+	             "marvell,armada-ap806";
+
+	aliases {
+		gpio1 = &cp0_gpio0;
+		gpio2 = &cp0_gpio1;
+	};
+
+	ap806 {
+		config-space {
+			smmu: iommu@5000000 {
+				mmu-masters = <&cp0_usb3h0 0x483>,
+					      <&cp0_usb3h1 0x484>,
+					      <&cp0_sata 0x485>,
+					      <&cp0_xor0 0x489>,
+					      <&cp0_xor1 0x48a>;
+			};
+			pinctrl@6f4000 {
+				ap_emmc_pins: emmc-pins-0 {
+					marvell,pins = "mpp0", "mpp1", "mpp2",
+					"mpp3", "mpp4", "mpp5";
+					marvell,function = "sdio";
+				};
+			};
+		};
+	};
+
+	cp0 {
+		config-space {
+			pinctrl@440000 {
+			compatible = "marvell,a70x0-pinctrl";
+				cp0_tdm_pins: tdm-pins {
+					marvell,pins = "mpp0", "mpp1", "mpp2",
+					"mpp3", "mpp4", "mpp5";
+					marvell,function = "tdm";
+				};
+				i2c0_pins: i2c-pins-0 {
+					marvell,pins = "mpp37", "mpp38";
+					marvell,function = "i2c0";
+				};
+				cp0_sdhci_pins: cp0-sdhi-pins {
+					marvell,pins = "mpp56", "mpp57", "mpp58",
+						       "mpp59", "mpp60", "mpp61";
+					marvell,function = "sdio";
+				};
+				/* following VBUS IN/OUT GPIO entries is not used
+				 * (for reference only) GPIO is not connected
+				 * in default A7040-DB board
+				 */
+				xhci0_vbus_pins: xhci0-vbus-pins {
+					marvell,pins = "mpp12";
+					marvell,function = "gpio";
+				};
+			};
+			rtc@284000 {
+				status = "okay";
+			};
+			cp0_sata: sata@540000 {
+				#stream-id-cells = <1>;
+			};
+			cp0_usb3h0: usb3@500000 {
+				#stream-id-cells = <1>;
+			};
+			cp0_usb3h1: usb3@510000 {
+				#stream-id-cells = <1>;
+			};
+			cp0_xor0: dma_xor@6a0000 {
+				#stream-id-cells = <1>;
+			};
+			cp0_xor1: dma_xor@6c0000 {
+				#stream-id-cells = <1>;
+			};
+			/* AXI bus of IHB1 is not connected in Armada-7040 package. */
+			axim-hb1-rd@3c8000 {
+				status = "disabled";
+			};
+			axim-hb1-wr@3c9000 {
+				status = "disabled";
+			};
+			sar@400200 {
+				compatible = "marvell,a70x0-sample-at-reset";
+			};
+			cp0_eip197: eip197@800000 {
+				status = "okay";
+			};
+		};
+		pcie0@600000 {
+			msi-parent = <&gic_v2m0>;
+		};
+		pcie1@620000 {
+			msi-parent = <&gic_v2m0>;
+		};
+		pcie2@640000 {
+			msi-parent = <&gic_v2m0>;
+		};
+	};
+};

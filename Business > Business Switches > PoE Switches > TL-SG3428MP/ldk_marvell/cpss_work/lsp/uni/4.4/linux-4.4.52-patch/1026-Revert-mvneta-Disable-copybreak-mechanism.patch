@@ -1,0 +1,34 @@
+From b81be229aaacf3164e5668aa71b7bec7026faf30 Mon Sep 17 00:00:00 2001
+From: Evan Wang <xswang@marvell.com>
+Date: Fri, 5 Aug 2016 16:55:43 +0800
+Subject: [PATCH 1026/2241] Revert "mvneta: Disable copybreak mechanism"
+
+commit 4bdf41a1b6ec8 ("mvneta: Disable copybreak mechanism")
+
+Change-Id: I3991d45e6a8e1820535c8fc023f20e04bf804d5b
+Signed-off-by: Evan Wang <xswang@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/31748
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Dmitri Epshtein <dima@marvell.com>
+Tested-by: Dmitri Epshtein <dima@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvneta.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvneta.c b/drivers/net/ethernet/marvell/mvneta.c
+index 9141aef..ecce666 100644
+--- a/drivers/net/ethernet/marvell/mvneta.c
++++ b/drivers/net/ethernet/marvell/mvneta.c
+@@ -596,8 +596,7 @@ static int txq_number = 8;
+ 
+ static int rxq_def;
+ 
+-/* Default value is 0 - no copybreak */
+-static int rx_copybreak __read_mostly;
++static int rx_copybreak __read_mostly = 256;
+ 
+ #define MVNETA_DRIVER_NAME "mvneta"
+ #define MVNETA_DRIVER_VERSION "1.0"
+-- 
+2.7.4
+

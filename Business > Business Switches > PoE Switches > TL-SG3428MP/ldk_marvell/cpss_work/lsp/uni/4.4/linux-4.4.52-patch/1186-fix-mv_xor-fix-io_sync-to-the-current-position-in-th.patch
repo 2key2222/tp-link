@@ -1,0 +1,53 @@
+From a09494de46bf5faa26bc93fb8018818ede7ccc73 Mon Sep 17 00:00:00 2001
+From: Lior Amsalem <alior@marvell.com>
+Date: Wed, 14 May 2014 14:38:11 +0300
+Subject: [PATCH 1186/2241] fix: mv_xor: fix io_sync to the current position in
+ the cleanup sequence
+
+	IO sync must be after reading the current_desc to unsure all descriptors
+	are updated correctly in DRAM, and no XOR -> DRAM transactions are
+	buffered this ensure all descriptors are synced to the current_desc
+	position
+
+Signed-off-by: Lior Amsalem <alior@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/8010
+Reviewed-by: Nadav Haklai <nadavh@marvell.com>
+Tested-by: Nadav Haklai <nadavh@marvell.com>
+(cherry picked from commit 4c9d70da2d76928e72bde1fa197a3786c4313049)
+Reviewed-on: http://vgitil04.il.marvell.com:8080/8266
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/16146
+
+Change-Id: I20887d1a4748e7fbc6ec4bfe30aafe1269fea167
+Signed-off-by: Neta Zur <neta@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/34961
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+---
+ drivers/dma/mv_xor.c | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
+
+diff --git a/drivers/dma/mv_xor.c b/drivers/dma/mv_xor.c
+index 6914aed..1f92bed 100644
+--- a/drivers/dma/mv_xor.c
++++ b/drivers/dma/mv_xor.c
+@@ -259,6 +259,17 @@ static void mv_chan_slot_cleanup(struct mv_xor_chan *mv_chan)
+ 	u32 current_desc = mv_chan_get_current_desc(mv_chan);
+ 	int current_cleaned = 0;
+ 	struct mv_xor_desc *hw_desc;
++	struct dma_chan *dma_chan;
++
++	dma_chan = &mv_chan->dmachan;
++
++	/* IO sync must be after reading the current_desc to unsure all
++	 * descriptors are updated currectly in DRAM, and no XOR -> DRAM
++	 * transactions are buffered. This ensure all descriptors are synced
++	 * to the current_desc position
++	 */
++	dma_sync_single_for_cpu(dma_chan->device->dev, (dma_addr_t) NULL,
++				(size_t) NULL, DMA_FROM_DEVICE);
+ 
+ 	dev_dbg(mv_chan_to_devp(mv_chan), "%s %d\n", __func__, __LINE__);
+ 	dev_dbg(mv_chan_to_devp(mv_chan), "current_desc %x\n", current_desc);
+-- 
+2.7.4
+

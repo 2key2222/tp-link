@@ -1,0 +1,41 @@
+From 4b911b4beafd38618aea2e3bd28fc6d906462524 Mon Sep 17 00:00:00 2001
+From: Romain Perier <romain.perier@free-electrons.com>
+Date: Tue, 21 Jun 2016 10:08:40 +0200
+Subject: [PATCH 1335/2241] crypto: marvell - Increase the size of the crypto
+ queue
+
+Now that crypto requests are chained together at the DMA level, we
+increase the size of the crypto queue for each engine. The result is
+that as the backlog list is reached later, it does not stop the crypto
+stack from sending asychronous requests, so more cryptographic tasks
+are processed by the engines.
+
+This patch was back-ported from Linux 4.9.7.
+
+Change-Id: I877e1b35e16a50fa0a70cc339ac3dd5eafbae110
+Signed-off-by: Romain Perier <romain.perier@free-electrons.com>
+Acked-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/36370
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Neta Zur Hershkovits <neta@marvell.com>
+---
+ drivers/crypto/marvell/cesa.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/crypto/marvell/cesa.c b/drivers/crypto/marvell/cesa.c
+index 218c497..e373cc6 100644
+--- a/drivers/crypto/marvell/cesa.c
++++ b/drivers/crypto/marvell/cesa.c
+@@ -32,7 +32,7 @@
+ #include "cesa.h"
+ 
+ /* Limit of the crypto queue before reaching the backlog */
+-#define CESA_CRYPTO_DEFAULT_MAX_QLEN 50
++#define CESA_CRYPTO_DEFAULT_MAX_QLEN 128
+ 
+ static int allhwsupport = !IS_ENABLED(CONFIG_CRYPTO_DEV_MV_CESA);
+ module_param_named(allhwsupport, allhwsupport, int, 0444);
+-- 
+2.7.4
+

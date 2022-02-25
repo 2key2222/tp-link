@@ -1,0 +1,43 @@
+From 0bd7fd764bfda3d33a3fee235797e9cd22640431 Mon Sep 17 00:00:00 2001
+From: Yelena <yelena@marvell.com>
+Date: Mon, 12 Dec 2016 13:30:43 +0200
+Subject: [PATCH 1187/2241] mvneta: clear interface link status through port
+ disable
+
+	Fix SYSTEMSW-2883:run nas_init.sh on an enabled
+        eth will cause eth connection down
+
+	When port connect to PHY in polling mode (1 sec), port and
+        pny link status must be synchronize in order don't loss link
+        change event.
+
+Change-Id: I6fa4048e5791cf56a6f7acbcbde7e02b7723fa5a
+Signed-off-by: Yelena <yelena@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/34596
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Wilson Ding <dingwei@marvell.com>
+Reviewed-by: Dmitri Epshtein <dima@marvell.com>
+Reviewed-by: Neta Zur Hershkovits <neta@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvneta.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/drivers/net/ethernet/marvell/mvneta.c b/drivers/net/ethernet/marvell/mvneta.c
+index b17d112..afb08f1 100644
+--- a/drivers/net/ethernet/marvell/mvneta.c
++++ b/drivers/net/ethernet/marvell/mvneta.c
+@@ -997,6 +997,10 @@ static void mvneta_port_disable(struct mvneta_port *pp)
+ 	val &= ~MVNETA_GMAC0_PORT_ENABLE;
+ 	mvreg_write(pp, MVNETA_GMAC_CTRL_0, val);
+ 
++	pp->link = 0;
++	pp->duplex = -1;
++	pp->speed = 0;
++
+ 	udelay(200);
+ }
+ 
+-- 
+2.7.4
+

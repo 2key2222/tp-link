@@ -1,0 +1,76 @@
+From 505efe34e54c2fa612062126125352678338e1ce Mon Sep 17 00:00:00 2001
+From: Stefan Chulski <stefanc@marvell.com>
+Date: Thu, 22 Dec 2016 11:48:05 +0200
+Subject: [PATCH 1250/2241] fix: net: mvpp2x: fix no traffic with
+ auto-negotiation off issue
+
+- Fixes no "traffic with auto-negotiation off" issue.
+  Traffic stuck due to fail to establish FC auto-negation by GoP.
+
+Fix:
+- disable/enable GoP FC auto-negotiation during GMAC ethtool
+  auto-negotiation set procedure.
+- Configure PHY, after the GoP auto-negotiation reconfiguration.
+
+Change-Id: I934cb1d4fb25232069ce4ed1225cb1c08fab2c72
+Signed-off-by: Stefan Chulski <stefanc@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/34908
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+---
+ .../net/ethernet/marvell/mvpp2x/mv_pp2x_ethtool.c   | 21 +++++++++++++++------
+ 1 file changed, 15 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_ethtool.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_ethtool.c
+index 542d1de..e75f2dd 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_ethtool.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_ethtool.c
+@@ -531,10 +531,13 @@ void mv_pp2x_ethtool_set_gmac_config(struct mv_port_link_status status, struct g
+ {
+ 	mv_gop110_force_link_mode_set(gop, mac, false, true);
+ 	mv_gop110_gmac_set_autoneg(gop, mac, cmd->autoneg);
+-	if (cmd->autoneg)
++	if (cmd->autoneg) {
+ 		mv_gop110_autoneg_restart(gop, mac);
+-	else
++		mv_gop110_gmac_fc_set(gop, gop_port, MV_PORT_FC_AN_SYM);
++	} else {
+ 		mv_gop110_gmac_speed_duplex_set(gop, gop_port, status.speed, status.duplex);
++		mv_gop110_gmac_fc_set(gop, gop_port, MV_PORT_FC_AN_NO);
++	}
+ 	mv_gop110_force_link_mode_set(gop, mac, false, false);
+ }
+ 
+@@ -578,12 +581,15 @@ static int mv_pp2x_ethtool_set_settings(struct net_device *dev,
+ 	int gop_port = mac->gop_index;
+ 	bool phy_mode_update = false;
+ 
+-	if (port->priv->pp2_version == PPV21)
++	/* PPv21 - only PHY should be configured
++	*  PPv22 - set Serdes&GoP configuration and then configure PHY
++	*/
++	if (port->priv->pp2_version == PPV21) {
+ 		if (!port->mac_data.phy_dev)
+ 			return -ENODEV;
+-
+-	if (port->mac_data.phy_dev)
+-		return phy_ethtool_sset(port->mac_data.phy_dev, cmd);
++		else
++			return phy_ethtool_sset(port->mac_data.phy_dev, cmd);
++	}
+ 
+ 	if (port->comphy)  {
+ 		int comphy_old_mode, comphy_new_mode;
+@@ -654,6 +660,9 @@ static int mv_pp2x_ethtool_set_settings(struct net_device *dev,
+ 		return -1;
+ 	}
+ 
++	if (port->mac_data.phy_dev)
++		return phy_ethtool_sset(port->mac_data.phy_dev, cmd);
++
+ 	return 0;
+ }
+ 
+-- 
+2.7.4
+

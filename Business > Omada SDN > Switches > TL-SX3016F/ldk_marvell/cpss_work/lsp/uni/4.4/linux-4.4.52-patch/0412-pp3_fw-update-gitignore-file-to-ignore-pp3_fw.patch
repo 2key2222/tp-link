@@ -1,0 +1,34 @@
+From 9648e630bac9c242faafcd46ba15c4417da5b0fb Mon Sep 17 00:00:00 2001
+From: Uri Eliyahu <uriel@marvell.com>
+Date: Thu, 19 May 2016 15:45:48 +0300
+Subject: [PATCH 0412/2241] pp3_fw: update gitignore file to ignore pp3_fw
+
+Change-Id: I80ff6078b04a1647c11c0435364be04127932ce0
+Signed-off-by: Uri Eliyahu <uriel@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/29819
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Lior Amsalem <alior@marvell.com>
+Reviewed-by: Dmitri Epshtein <dima@marvell.com>
+Tested-by: Dmitri Epshtein <dima@marvell.com>
+---
+ .gitignore | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/.gitignore b/.gitignore
+index fd3a355..b55c5ee 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -68,6 +68,10 @@ Module.symvers
+ !.mailmap
+ 
+ #
++# GIT Submodules
++#
++firmware/pp3_gnss/*
++#
+ # Generated include files
+ #
+ include/config
+-- 
+2.7.4
+

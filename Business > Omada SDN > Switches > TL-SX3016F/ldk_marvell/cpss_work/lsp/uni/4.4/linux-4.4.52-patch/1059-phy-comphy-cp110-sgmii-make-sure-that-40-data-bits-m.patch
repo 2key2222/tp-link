@@ -1,0 +1,60 @@
+From eac6a2b17b2bbf83322f4b51d3458aca77f0b75a Mon Sep 17 00:00:00 2001
+From: Igal Liberman <igall@marvell.com>
+Date: Wed, 2 Nov 2016 15:37:00 +0200
+Subject: [PATCH 1059/2241] phy: comphy: cp110: sgmii: make sure that 40 data
+ bits mode is disabled
+
+- 40 data bits mode should be enabled only for SATA
+- 40 data bits mode isn't cleared by hard reset (HW issue)
+- Need to make sure that this mode is disabled (can't rely on u-boot).
+
+When support to all modes will be added, this can be done in power-off
+execution.
+
+Change-Id: Ib6da448f9078fe50a58f42323a9de9ad3eed87fb
+Signed-off-by: Igal Liberman <igall@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/33623
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+---
+ drivers/phy/phy-mvebu-comphy.c | 7 +++++++
+ drivers/phy/phy-mvebu-comphy.h | 4 ++++
+ 2 files changed, 11 insertions(+)
+
+diff --git a/drivers/phy/phy-mvebu-comphy.c b/drivers/phy/phy-mvebu-comphy.c
+index 03159dd..2a0e516 100644
+--- a/drivers/phy/phy-mvebu-comphy.c
++++ b/drivers/phy/phy-mvebu-comphy.c
+@@ -265,6 +265,13 @@ static int mvebu_comphy_sgmii_power_on(struct mvebu_comphy_priv *priv,
+ 	/* Wait 1ms - until band gap and ref clock ready */
+ 	mdelay(1);
+ 
++	/* Make sure that 40 data bits is disabled
++	 * This bit is not cleared by reset
++	 */
++	mask = COMMON_PHY_CFG6_IF_40_SEL_MASK;
++	data = 0 << COMMON_PHY_CFG6_IF_40_SEL_OFFSET;
++	reg_set(comphy_addr + COMMON_PHY_CFG6_REG, data, mask);
++
+ 	/* Start comphy Configuration */
+ 	dev_dbg(priv->dev, "stage: Comphy configuration\n");
+ 	/* set reference clock */
+diff --git a/drivers/phy/phy-mvebu-comphy.h b/drivers/phy/phy-mvebu-comphy.h
+index c104c1b..a07978b 100644
+--- a/drivers/phy/phy-mvebu-comphy.h
++++ b/drivers/phy/phy-mvebu-comphy.h
+@@ -12,6 +12,10 @@
+ #define COMMON_PHY_CFG1_PIPE_SELECT_OFFSET	2
+ #define COMMON_PHY_CFG1_PIPE_SELECT_MASK	(0x1 << COMMON_PHY_CFG1_PIPE_SELECT_OFFSET)
+ 
++#define COMMON_PHY_CFG6_REG			0x14
++#define COMMON_PHY_CFG6_IF_40_SEL_OFFSET	18
++#define COMMON_PHY_CFG6_IF_40_SEL_MASK		(0x1 << COMMON_PHY_CFG6_IF_40_SEL_OFFSET)
++
+ #define COMMON_SELECTOR_PHY_REG_OFFSET		0x140
+ #define COMMON_SELECTOR_PIPE_REG_OFFSET		0x144
+ #define COMMON_SELECTOR_COMPHY_MASK		0xf
+-- 
+2.7.4
+

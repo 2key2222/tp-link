@@ -1,0 +1,706 @@
+From b36b4cdcb08b1a189df4767ea9b066f5400d4939 Mon Sep 17 00:00:00 2001
+From: Evan Wang <xswang@marvell.com>
+Date: Wed, 28 Jun 2017 15:33:26 +0800
+Subject: [PATCH 1959/2241] dts: utmi: cp110: add utmi node and connect it to
+ A7/8K USB
+
+UTMI node is not exist currently which is required by UTMI
+driver.
+The patch added the UTMI dts node in CP110 master and
+slave, and connect the USB node to correct UTMI node.
+
+Change-Id: Ifa93f438bbdc59e71bc985389745493b03b9ac2f
+Signed-off-by: Evan Wang <xswang@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/40912
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-7020-amc.dts    |  5 +++--
+ arch/arm64/boot/dts/marvell/armada-7040-db-B.dts   |  8 +++++--
+ arch/arm64/boot/dts/marvell/armada-7040-db-C.dts   | 16 ++++++++++----
+ arch/arm64/boot/dts/marvell/armada-7040-db-D.dts   | 10 +++++++--
+ arch/arm64/boot/dts/marvell/armada-7040-db-E.dts   |  8 +++++--
+ .../arm64/boot/dts/marvell/armada-7040-db-nand.dts | 16 ++++++++++----
+ arch/arm64/boot/dts/marvell/armada-7040-db.dts     | 16 ++++++++++----
+ arch/arm64/boot/dts/marvell/armada-7040-pcac.dts   |  9 ++++++--
+ arch/arm64/boot/dts/marvell/armada-7040-pd.dts     | 17 +++++++++++----
+ arch/arm64/boot/dts/marvell/armada-8040-db-B.dts   | 19 ++++++++++++++--
+ arch/arm64/boot/dts/marvell/armada-8040-db-C.dts   | 18 ++++++++++++++--
+ arch/arm64/boot/dts/marvell/armada-8040-db-D.dts   | 18 ++++++++++++++--
+ arch/arm64/boot/dts/marvell/armada-8040-db-E.dts   | 18 ++++++++++++++--
+ arch/arm64/boot/dts/marvell/armada-8040-db.dts     | 18 ++++++++++++++--
+ arch/arm64/boot/dts/marvell/armada-8040-mcbin.dts  |  8 +++++--
+ arch/arm64/boot/dts/marvell/armada-8040-ocp.dts    |  5 +++--
+ arch/arm64/boot/dts/marvell/armada-cp110-1.dtsi    | 13 +++++++++++
+ arch/arm64/boot/dts/marvell/armada-cp110.dtsi      | 25 ++++++++++++++++++++++
+ 18 files changed, 207 insertions(+), 40 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-7020-amc.dts b/arch/arm64/boot/dts/marvell/armada-7020-amc.dts
+index 709400d..8604534 100644
+--- a/arch/arm64/boot/dts/marvell/armada-7020-amc.dts
++++ b/arch/arm64/boot/dts/marvell/armada-7020-amc.dts
+@@ -110,8 +110,9 @@
+ 
+ 			usb3h0: usb3@500000 {
+ 				separated-phys-for-usb2-usb3;
+-				phys = <&comphy0 1 COMPHY_USB3H0>;
+-				phy-names = "usb3";
++				phys = <&utmi0>,
++				       <&comphy0 1 COMPHY_USB3H0>;
++				phy-names = "usb2", "usb3";
+ 				status = "okay";
+ 			};
+ 
+diff --git a/arch/arm64/boot/dts/marvell/armada-7040-db-B.dts b/arch/arm64/boot/dts/marvell/armada-7040-db-B.dts
+index 5b71994..c7a0cfd 100644
+--- a/arch/arm64/boot/dts/marvell/armada-7040-db-B.dts
++++ b/arch/arm64/boot/dts/marvell/armada-7040-db-B.dts
+@@ -105,8 +105,9 @@
+ 			};
+ 			usb3h1: usb3@510000 {
+ 				separated-phys-for-usb2-usb3;
+-				phys = <&comphy0 4 COMPHY_USB3H1>;
+-				phy-names = "usb3";
++				phys = <&utmi1>,
++				       <&comphy0 4 COMPHY_USB3H1>;
++				phy-names = "usb2", "usb3";
+ 				status = "okay";
+ 			};
+ 			u3d@520000 {
+@@ -166,6 +167,9 @@
+ 			comphy {
+ 				status = "okay";
+ 			};
++			utmi1: utmi@581000 {
++				status = "okay";
++			};
+ 		};
+ 		pcie@0x600000 {
+ 			status = "okay";
+diff --git a/arch/arm64/boot/dts/marvell/armada-7040-db-C.dts b/arch/arm64/boot/dts/marvell/armada-7040-db-C.dts
+index dfa6ea6..60f219f 100644
+--- a/arch/arm64/boot/dts/marvell/armada-7040-db-C.dts
++++ b/arch/arm64/boot/dts/marvell/armada-7040-db-C.dts
+@@ -104,14 +104,16 @@
+ 			};
+ 			usb3h0: usb3@500000 {
+ 				separated-phys-for-usb2-usb3;
+-				phys = <&comphy0 1 COMPHY_USB3H0>;
+-				phy-names = "usb3";
++				phys = <&utmi0>,
++				       <&comphy0 1 COMPHY_USB3H0>;
++				phy-names = "usb2", "usb3";
+ 				status = "okay";
+ 			};
+ 			usb3h1: usb3@510000 {
+ 				separated-phys-for-usb2-usb3;
+-				phys = <&comphy0 4 COMPHY_USB3H1>;
+-				phy-names = "usb3";
++				phys = <&utmi1>,
++				       <&comphy0 4 COMPHY_USB3H1>;
++				phy-names = "usb2", "usb3";
+ 				status = "okay";
+ 			};
+ 			u3d@520000 {
+@@ -188,6 +190,12 @@
+ 			comphy {
+ 				status = "okay";
+ 			};
++			utmi0: utmi@580000 {
++				status = "okay";
++			};
++			utmi1: utmi@581000 {
++				status = "okay";
++			};
+ 		};
+ 
+ 		pcie@0x640000 {
+diff --git a/arch/arm64/boot/dts/marvell/armada-7040-db-D.dts b/arch/arm64/boot/dts/marvell/armada-7040-db-D.dts
+index 60d77d6..73beaa1 100644
+--- a/arch/arm64/boot/dts/marvell/armada-7040-db-D.dts
++++ b/arch/arm64/boot/dts/marvell/armada-7040-db-D.dts
+@@ -114,8 +114,9 @@
+ 			};
+ 			usb3h1: usb3@510000 {
+ 				separated-phys-for-usb2-usb3;
+-				phys = <&comphy0 4 COMPHY_USB3H1>;
+-				phy-names = "usb3";
++				phys = <&utmi1>,
++				       <&comphy0 4 COMPHY_USB3H1>;
++				phy-names = "usb2", "usb3";
+ 				status = "okay";
+ 			};
+ 			u3d@520000 {
+@@ -125,6 +126,8 @@
+ 				status = "okay";
+ 			};
+ 			udc@524100 {
++				phys = <&utmi0>;
++				phy-names = "usb";
+ 				status = "okay";
+ 			};
+ 			nand@720000 {
+@@ -194,6 +197,9 @@
+ 			comphy {
+ 				status = "okay";
+ 			};
++			utmi1: utmi@581000 {
++				status = "okay";
++			};
+ 		};
+ 
+ 		pcie@0x600000 {
+diff --git a/arch/arm64/boot/dts/marvell/armada-7040-db-E.dts b/arch/arm64/boot/dts/marvell/armada-7040-db-E.dts
+index c8a7f57..e151717 100644
+--- a/arch/arm64/boot/dts/marvell/armada-7040-db-E.dts
++++ b/arch/arm64/boot/dts/marvell/armada-7040-db-E.dts
+@@ -104,8 +104,9 @@
+ 			};
+ 			usb3h1: usb3@510000 {
+ 				separated-phys-for-usb2-usb3;
+-				phys = <&comphy0 4 COMPHY_USB3H1>;
+-				phy-names = "usb3";
++				phys = <&utmi1>,
++				       <&comphy0 4 COMPHY_USB3H1>;
++				phy-names = "usb2", "usb3";
+ 				status = "okay";
+ 			};
+ 			u3d@520000 {
+@@ -164,6 +165,9 @@
+ 			comphy {
+ 				status = "okay";
+ 			};
++			utmi1: utmi@581000 {
++				status = "okay";
++			};
+ 		};
+ 
+ 		pcie@0x640000 {
+diff --git a/arch/arm64/boot/dts/marvell/armada-7040-db-nand.dts b/arch/arm64/boot/dts/marvell/armada-7040-db-nand.dts
+index 2afb79b..635d282 100644
+--- a/arch/arm64/boot/dts/marvell/armada-7040-db-nand.dts
++++ b/arch/arm64/boot/dts/marvell/armada-7040-db-nand.dts
+@@ -99,14 +99,16 @@
+ 			};
+ 			usb3h0: usb3@500000 {
+ 				separated-phys-for-usb2-usb3;
+-				phys = <&comphy0 1 COMPHY_USB3H0>;
+-				phy-names = "usb3";
++				phys = <&utmi0>,
++				       <&comphy0 1 COMPHY_USB3H0>;
++				phy-names = "usb2", "usb3";
+ 				status = "okay";
+ 			};
+ 			usb3h1: usb3@510000 {
+ 				separated-phys-for-usb2-usb3;
+-				phys = <&comphy0 4 COMPHY_USB3H1>;
+-				phy-names = "usb3";
++				phys = <&utmi1>,
++				       <&comphy0 4 COMPHY_USB3H1>;
++				phy-names = "usb2", "usb3";
+ 				status = "okay";
+ 			};
+ 			u3d@520000 {
+@@ -169,6 +171,12 @@
+ 			comphy {
+ 				status = "okay";
+ 			};
++			utmi0: utmi@580000 {
++				status = "okay";
++			};
++			utmi1: utmi@581000 {
++				status = "okay";
++			};
+ 		};
+ 		pcie@0x600000 {
+ 			status = "okay";
+diff --git a/arch/arm64/boot/dts/marvell/armada-7040-db.dts b/arch/arm64/boot/dts/marvell/armada-7040-db.dts
+index baf2e2f..d88100e 100644
+--- a/arch/arm64/boot/dts/marvell/armada-7040-db.dts
++++ b/arch/arm64/boot/dts/marvell/armada-7040-db.dts
+@@ -99,14 +99,16 @@
+ 			};
+ 			usb3h0: usb3@500000 {
+ 				separated-phys-for-usb2-usb3;
+-				phys = <&comphy0 1 COMPHY_USB3H0>;
+-				phy-names = "usb3";
++				phys = <&utmi0>,
++				       <&comphy0 1 COMPHY_USB3H0>;
++				phy-names = "usb2", "usb3";
+ 				status = "okay";
+ 			};
+ 			usb3h1: usb3@510000 {
+ 				separated-phys-for-usb2-usb3;
+-				phys = <&comphy0 4 COMPHY_USB3H1>;
+-				phy-names = "usb3";
++				phys = <&utmi1>,
++				       <&comphy0 4 COMPHY_USB3H1>;
++				phy-names = "usb2", "usb3";
+ 				status = "okay";
+ 			};
+ 			u3d@520000 {
+@@ -171,6 +173,12 @@
+ 			comphy {
+ 				status = "okay";
+ 			};
++			utmi0: utmi@580000 {
++				status = "okay";
++			};
++			utmi1: utmi@581000 {
++				status = "okay";
++			};
+ 		};
+ 
+ 		pcie@0x640000 {
+diff --git a/arch/arm64/boot/dts/marvell/armada-7040-pcac.dts b/arch/arm64/boot/dts/marvell/armada-7040-pcac.dts
+index 9b055e0..b2d21bd 100644
+--- a/arch/arm64/boot/dts/marvell/armada-7040-pcac.dts
++++ b/arch/arm64/boot/dts/marvell/armada-7040-pcac.dts
+@@ -129,8 +129,9 @@
+ 			usb3h0: usb3@500000 {
+ 				usb-phy = <&usb3h0_phy>;
+ 				separated-phys-for-usb2-usb3;
+-				phys = <&comphy0 1 COMPHY_USB3H0>;
+-				phy-names = "usb3";
++				phys = <&utmi0>,
++				       <&comphy0 1 COMPHY_USB3H0>;
++				phy-names = "usb2", "usb3";
+ 				status = "okay";
+ 			};
+ 			usb3h1: usb3@510000 {
+@@ -210,6 +211,10 @@
+ 					status = "disabled";
+ 				};
+ 			};
++
++			utmi0: utmi@580000 {
++				status = "okay";
++			};
+ 		};
+ 
+ 		pcie-ep@0x600000 {
+diff --git a/arch/arm64/boot/dts/marvell/armada-7040-pd.dts b/arch/arm64/boot/dts/marvell/armada-7040-pd.dts
+index c4ccb6c..b6fbfdf 100644
+--- a/arch/arm64/boot/dts/marvell/armada-7040-pd.dts
++++ b/arch/arm64/boot/dts/marvell/armada-7040-pd.dts
+@@ -150,14 +150,16 @@
+ 			};
+ 			usb3h0: usb3@500000 {
+ 				separated-phys-for-usb2-usb3;
+-				phys = <&comphy0 1 COMPHY_USB3H0>;
+-				phy-names = "usb3";
++				phys = <&utmi0>,
++				       <&comphy0 1 COMPHY_USB3H0>;
++				phy-names = "usb2", "usb3";
+ 				status = "okay";
+ 			};
+ 			usb3h1: usb3@510000 {
+ 				separated-phys-for-usb2-usb3;
+-				phys = <&comphy0 4 COMPHY_USB3H1>;
+-				phy-names = "usb3";
++				phys = <&utmi1>,
++				       <&comphy0 4 COMPHY_USB3H1>;
++				phy-names = "usb2", "usb3";
+ 				status = "okay";
+ 			};
+ 			spi@700680 {
+@@ -259,6 +261,13 @@
+ 					status = "okay";
+ 				};
+ 			};
++
++			utmi0: utmi@580000 {
++				status = "okay";
++			};
++			utmi1: utmi@581000 {
++				status = "okay";
++			};
+ 		};
+ 
+ 		pcie@0x640000 {
+diff --git a/arch/arm64/boot/dts/marvell/armada-8040-db-B.dts b/arch/arm64/boot/dts/marvell/armada-8040-db-B.dts
+index 09beb6b8..6d2d1a0 100644
+--- a/arch/arm64/boot/dts/marvell/armada-8040-db-B.dts
++++ b/arch/arm64/boot/dts/marvell/armada-8040-db-B.dts
+@@ -85,11 +85,14 @@
+ 			/* usb3h0 is USB2 only (UTMI) */
+ 			usb3h0: usb3@500000 {
+ 				status = "okay";
++				phys = <&utmi0>;
++				phy-names = "usb";
+ 			};
+ 			usb3h1: usb3@510000 {
+ 				separated-phys-for-usb2-usb3;
+-				phys = <&comphy0 4 COMPHY_USB3H1>;
+-				phy-names = "usb3";
++				phys = <&utmi1>,
++				       <&comphy0 4 COMPHY_USB3H1>;
++				phy-names = "usb2", "usb3";
+ 				status = "okay";
+ 			};
+ 			sdhci@780000 {
+@@ -138,6 +141,12 @@
+ 			comphy {
+ 				status = "okay";
+ 			};
++			utmi0: utmi@580000 {
++				status = "okay";
++			};
++			utmi1: utmi@581000 {
++				status = "okay";
++			};
+ 		};
+ 		pcie@0x600000 {
+ 			status = "okay";
+@@ -160,6 +169,8 @@
+ 			/* usb3h0_1 is USB2 only (UTMI) */
+ 			usb3h0_1: usb3@500000 {
+ 				status = "okay";
++				phys = <&utmi0_1>;
++				phy-names = "usb";
+ 			};
+ 			serial@702000 {
+ 				status = "okay";
+@@ -216,6 +227,10 @@
+ 				pinctrl-names = "default";
+ 				pinctrl-0 = <&cps_spi1_pins>;
+ 			};
++
++			utmi0_1: utmi@580000 {
++				status = "okay";
++			};
+ 		};
+ 		pcie@0x600000 {
+ 			status = "okay";
+diff --git a/arch/arm64/boot/dts/marvell/armada-8040-db-C.dts b/arch/arm64/boot/dts/marvell/armada-8040-db-C.dts
+index 85fa1f2..25efd58 100644
+--- a/arch/arm64/boot/dts/marvell/armada-8040-db-C.dts
++++ b/arch/arm64/boot/dts/marvell/armada-8040-db-C.dts
+@@ -98,11 +98,14 @@
+ 			/* usb3h0 is USB2 only (UTMI) */
+ 			usb3h0: usb3@500000 {
+ 				status = "okay";
++				phys = <&utmi0>;
++				phy-names = "usb";
+ 			};
+ 			usb3h1: usb3@510000 {
+ 				separated-phys-for-usb2-usb3;
+-				phys = <&comphy0 4 COMPHY_USB3H1>;
+-				phy-names = "usb3";
++				phys = <&utmi1>,
++				       <&comphy0 4 COMPHY_USB3H1>;
++				phy-names = "usb2", "usb3";
+ 				status = "okay";
+ 			};
+ 			sdhci@780000 {
+@@ -153,6 +156,12 @@
+ 			comphy {
+ 				status = "okay";
+ 			};
++			utmi0: utmi@580000 {
++				status = "okay";
++			};
++			utmi1: utmi@581000 {
++				status = "okay";
++			};
+ 		};
+ 		pcie@0x600000 {
+ 			status = "okay";
+@@ -170,6 +179,8 @@
+ 			/* usb3h0_1 is USB2 only (UTMI) */
+ 			usb3h0_1: usb3@500000 {
+ 				status = "okay";
++				phys = <&utmi0_1>;
++				phy-names = "usb";
+ 			};
+ 			serial@702000 {
+ 				status = "okay";
+@@ -242,6 +253,9 @@
+ 				pclk-freq-mhz = <8>;
+ 				status = "okay";
+ 			};
++			utmi0_1: utmi@580000 {
++				status = "okay";
++			};
+ 		};
+ 		pcie@0x600000 {
+ 			status = "okay";
+diff --git a/arch/arm64/boot/dts/marvell/armada-8040-db-D.dts b/arch/arm64/boot/dts/marvell/armada-8040-db-D.dts
+index db4a036..87978d1 100644
+--- a/arch/arm64/boot/dts/marvell/armada-8040-db-D.dts
++++ b/arch/arm64/boot/dts/marvell/armada-8040-db-D.dts
+@@ -99,11 +99,14 @@
+ 			/* usb3h0 is USB2 only (UTMI) */
+ 			usb3h0: usb3@500000 {
+ 				status = "okay";
++				phys = <&utmi0>;
++				phy-names = "usb";
+ 			};
+ 			usb3h1: usb3@510000 {
+ 				separated-phys-for-usb2-usb3;
+-				phys = <&comphy0 4 COMPHY_USB3H1>;
+-				phy-names = "usb3";
++				phys = <&utmi1>,
++				       <&comphy0 4 COMPHY_USB3H1>;
++				phy-names = "usb2", "usb3";
+ 				status = "okay";
+ 			};
+ 			sdhci@780000 {
+@@ -154,6 +157,12 @@
+ 			comphy {
+ 				status = "okay";
+ 			};
++			utmi0: utmi@580000 {
++				status = "okay";
++			};
++			utmi1: utmi@581000 {
++				status = "okay";
++			};
+ 		};
+ 		pcie@0x600000 {
+ 			status = "okay";
+@@ -171,6 +180,8 @@
+ 			/* usb3h0_1 is USB2 only (UTMI) */
+ 			usb3h0_1: usb3@500000 {
+ 				status = "okay";
++				phys = <&utmi0_1>;
++				phy-names = "usb";
+ 			};
+ 			sata@540000 {
+ 				status = "okay";
+@@ -219,6 +230,9 @@
+ 			comphy {
+ 				status = "okay";
+ 			};
++			utmi0_1: utmi@580000 {
++				status = "okay";
++			};
+ 		};
+ 		pcie@0x600000 {
+ 			status = "okay";
+diff --git a/arch/arm64/boot/dts/marvell/armada-8040-db-E.dts b/arch/arm64/boot/dts/marvell/armada-8040-db-E.dts
+index a3dda87..4c722e8 100644
+--- a/arch/arm64/boot/dts/marvell/armada-8040-db-E.dts
++++ b/arch/arm64/boot/dts/marvell/armada-8040-db-E.dts
+@@ -106,11 +106,14 @@
+ 			/* usb3h0 is USB2 only (UTMI) */
+ 			usb3h0: usb3@500000 {
+ 				status = "okay";
++				phys = <&utmi0>;
++				phy-names = "usb";
+ 			};
+ 			usb3h1: usb3@510000 {
+ 				separated-phys-for-usb2-usb3;
+-				phys = <&comphy0 4 COMPHY_USB3H1>;
+-				phy-names = "usb3";
++				phys = <&utmi1>,
++				       <&comphy0 4 COMPHY_USB3H1>;
++				phy-names = "usb2", "usb3";
+ 				status = "okay";
+ 			};
+ 			sdhci@780000 {
+@@ -156,6 +159,12 @@
+ 			comphy {
+ 				status = "okay";
+ 			};
++			utmi0: utmi@580000 {
++				status = "okay";
++			};
++			utmi1: utmi@581000 {
++				status = "okay";
++			};
+ 		};
+ 		pcie@0x600000 {
+ 			status = "okay";
+@@ -173,6 +182,8 @@
+ 			/* usb3h0_1 is USB2 only (UTMI) */
+ 			usb3h0_1: usb3@500000 {
+ 				status = "okay";
++				phys = <&utmi0_1>;
++				phy-names = "usb";
+ 			};
+ 			serial@702000 {
+ 				status = "okay";
+@@ -234,6 +245,9 @@
+ 				pinctrl-names = "default";
+ 				pinctrl-0 = <&cps_spi1_pins>;
+ 			};
++			utmi0_1: utmi@580000 {
++				status = "okay";
++			};
+ 		};
+ 		pcie@0x600000 {
+ 			status = "okay";
+diff --git a/arch/arm64/boot/dts/marvell/armada-8040-db.dts b/arch/arm64/boot/dts/marvell/armada-8040-db.dts
+index 5cbb5b5..0035c4d 100644
+--- a/arch/arm64/boot/dts/marvell/armada-8040-db.dts
++++ b/arch/arm64/boot/dts/marvell/armada-8040-db.dts
+@@ -99,11 +99,14 @@
+ 			/* usb3h0 is USB2 only (UTMI) */
+ 			usb3h0: usb3@500000 {
+ 				status = "okay";
++				phys = <&utmi0>;
++				phy-names = "usb";
+ 			};
+ 			usb3h1: usb3@510000 {
+ 				separated-phys-for-usb2-usb3;
+-				phys = <&comphy0 4 COMPHY_USB3H1>;
+-				phy-names = "usb3";
++				phys = <&utmi1>,
++				       <&comphy0 4 COMPHY_USB3H1>;
++				phy-names = "usb2", "usb3";
+ 				status = "okay";
+ 			};
+ 			sdhci@780000 {
+@@ -154,6 +157,12 @@
+ 			comphy {
+ 				status = "okay";
+ 			};
++			utmi0: utmi@580000 {
++				status = "okay";
++			};
++			utmi1: utmi@581000 {
++				status = "okay";
++			};
+ 		};
+ 		pcie@0x600000 {
+ 			status = "okay";
+@@ -171,6 +180,8 @@
+ 			/* usb3h0_1 is USB2 only (UTMI) */
+ 			usb3h0_1: usb3@500000 {
+ 				status = "okay";
++				phys = <&utmi0_1>;
++				phy-names = "usb";
+ 			};
+ 			serial@702000 {
+ 				status = "okay";
+@@ -232,6 +243,9 @@
+ 				pinctrl-names = "default";
+ 				pinctrl-0 = <&cps_spi1_pins>;
+ 			};
++			utmi0_1: utmi@580000 {
++				status = "okay";
++			};
+ 		};
+ 		pcie@0x600000 {
+ 			status = "okay";
+diff --git a/arch/arm64/boot/dts/marvell/armada-8040-mcbin.dts b/arch/arm64/boot/dts/marvell/armada-8040-mcbin.dts
+index a1759320..6a17584 100644
+--- a/arch/arm64/boot/dts/marvell/armada-8040-mcbin.dts
++++ b/arch/arm64/boot/dts/marvell/armada-8040-mcbin.dts
+@@ -206,8 +206,9 @@
+ 			usb3h0_1: usb3@500000 {
+ 				usb-phy = <&usb3h0_phy>;
+ 				separated-phys-for-usb2-usb3;
+-				phys = <&comphy1 2 COMPHY_USB3H0>;
+-				phy-names = "usb3";
++				phys = <&utmi0_1>,
++				       <&comphy1 2 COMPHY_USB3H0>;
++				phy-names = "usb2", "usb3";
+ 				status = "okay";
+ 			};
+ 			usb3h0_phy: usb3_phy0 {
+@@ -261,6 +262,9 @@
+ 					status = "okay";
+ 				};
+ 			};
++			utmi0_1: utmi@580000 {
++				status = "okay";
++			};
+ 		};
+ 	};
+ };
+diff --git a/arch/arm64/boot/dts/marvell/armada-8040-ocp.dts b/arch/arm64/boot/dts/marvell/armada-8040-ocp.dts
+index d050daa..e9e62d1 100644
+--- a/arch/arm64/boot/dts/marvell/armada-8040-ocp.dts
++++ b/arch/arm64/boot/dts/marvell/armada-8040-ocp.dts
+@@ -144,8 +144,9 @@
+ 			usb3h0_1: usb3@500000 {
+ 				usb-phy = <&usb3h0_phy>;
+ 				separated-phys-for-usb2-usb3;
+-				phys = <&comphy1 2 COMPHY_USB3H0>;
+-				phy-names = "usb3";
++				phys = <&utmi0_1>,
++				       <&comphy1 2 COMPHY_USB3H0>;
++				phy-names = "usb2", "usb3";
+ 				status = "okay";
+ 			};
+ 			usb3h0_phy: usb3_phy0 {
+diff --git a/arch/arm64/boot/dts/marvell/armada-cp110-1.dtsi b/arch/arm64/boot/dts/marvell/armada-cp110-1.dtsi
+index d104550..972dddd 100644
+--- a/arch/arm64/boot/dts/marvell/armada-cp110-1.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-cp110-1.dtsi
+@@ -17,6 +17,7 @@
+  * Generic Device Tree describing Marvell Armada CP-110 device
+  */
+ #include <dt-bindings/interrupt-controller/mvebu-icu.h>
++#include <dt-bindings/phy/phy-utmi-mvebu.h>
+ 
+ rtc@284000 {
+ 	compatible = "marvell,armada8k-rtc";
+@@ -105,6 +106,18 @@ usb3h1_1: usb3@510000 {
+ 	status = "disabled";
+ };
+ 
++utmi0_1: utmi@580000 {
++	compatible = "marvell,cp110-utmi-phy";
++	reg = <0x580000 0x1000>,
++	      <0x440420 0x4>,
++	      <0x440440 0x4>;
++	reg-names = "utmi", "usb-cfg-reg", "utmi-cfg-reg";
++	utmi-port = <UTMI_PHY_TO_USB3_HOST0>;
++	utmi-index = <0>;
++	#phy-cells = <0>;
++	status = "disabled";
++};
++
+ spi@700600 {
+ 	compatible = "marvell,armada-380-spi";
+ 	reg = <0x700600 0x50>;
+diff --git a/arch/arm64/boot/dts/marvell/armada-cp110.dtsi b/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
+index 8729b28..67dd74e 100644
+--- a/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
+@@ -17,6 +17,7 @@
+  * Generic Device Tree describing Marvell Armada CP-110 device
+  */
+ #include <dt-bindings/interrupt-controller/mvebu-icu.h>
++#include <dt-bindings/phy/phy-utmi-mvebu.h>
+ 
+ cpm_syscon0: system-controller@440000 {
+ 	compatible = "marvell,cp110-system-controller0",
+@@ -209,6 +210,30 @@ udc@524100 {
+ 	status = "disabled";
+ };
+ 
++utmi0: utmi@580000 {
++	compatible = "marvell,cp110-utmi-phy";
++	reg = <0x580000 0x1000>,
++	      <0x440420 0x4>,
++	      <0x440440 0x4>;
++	reg-names = "utmi", "usb-cfg-reg", "utmi-cfg-reg";
++	utmi-port = <UTMI_PHY_TO_USB3_HOST0>;
++	utmi-index = <0>;
++	#phy-cells = <0>;
++	status = "disabled";
++};
++
++utmi1: utmi@581000 {
++	compatible = "marvell,cp110-utmi-phy";
++	reg = <0x581000 0x1000>,
++	      <0x440420 0x4>,
++	      <0x440444 0x4>;
++	reg-names = "utmi", "usb-cfg-reg", "utmi-cfg-reg";
++	utmi-port = <UTMI_PHY_TO_USB3_HOST1>;
++	utmi-index = <1>;
++	#phy-cells = <0>;
++	status = "disabled";
++};
++
+ spi@700600 {
+ 	compatible = "marvell,armada-380-spi";
+ 	reg = <0x700600 0x50>;
+-- 
+2.7.4
+

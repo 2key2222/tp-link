@@ -1,0 +1,41 @@
+From 13f2190869c860b0176add8089e171be24123ae1 Mon Sep 17 00:00:00 2001
+From: Igal Liberman <igall@marvell.com>
+Date: Wed, 30 Aug 2017 14:51:41 +0300
+Subject: [PATCH 2104/2241] Revert "fix: mv_xor: fix io_sync to the current
+ position in the cleanup sequence"
+
+This reverts commit a09494de46bf5faa26bc93fb8018818ede7ccc73.
+
+Change-Id: Ic0c3a742b5dca2945f9229fe4ffeb515dc4c73c8
+Reviewed-on: http://vgitil04.il.marvell.com:8080/43555
+Reviewed-by: Neta Zur Hershkovits <neta@marvell.com>
+Tested-by: Neta Zur Hershkovits <neta@marvell.com>
+---
+ drivers/dma/mv_xor.c | 11 -----------
+ 1 file changed, 11 deletions(-)
+
+diff --git a/drivers/dma/mv_xor.c b/drivers/dma/mv_xor.c
+index 64ac7c1..4bb3460 100644
+--- a/drivers/dma/mv_xor.c
++++ b/drivers/dma/mv_xor.c
+@@ -291,17 +291,6 @@ static void mv_chan_slot_cleanup(struct mv_xor_chan *mv_chan)
+ 	u32 current_desc = mv_chan_get_current_desc(mv_chan);
+ 	int current_cleaned = 0;
+ 	struct mv_xor_desc *hw_desc;
+-	struct dma_chan *dma_chan;
+-
+-	dma_chan = &mv_chan->dmachan;
+-
+-	/* IO sync must be after reading the current_desc to unsure all
+-	 * descriptors are updated currectly in DRAM, and no XOR -> DRAM
+-	 * transactions are buffered. This ensure all descriptors are synced
+-	 * to the current_desc position
+-	 */
+-	dma_sync_single_for_cpu(dma_chan->device->dev, (dma_addr_t) NULL,
+-				(size_t) NULL, DMA_FROM_DEVICE);
+ 
+ 	dev_dbg(mv_chan_to_devp(mv_chan), "%s %d\n", __func__, __LINE__);
+ 	dev_dbg(mv_chan_to_devp(mv_chan), "current_desc %x\n", current_desc);
+-- 
+2.7.4
+

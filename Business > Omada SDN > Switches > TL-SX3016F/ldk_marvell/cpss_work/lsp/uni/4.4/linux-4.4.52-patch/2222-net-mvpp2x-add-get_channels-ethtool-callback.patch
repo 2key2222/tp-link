@@ -1,0 +1,58 @@
+From f8691bad585cbd51801ef2be5a640ce3724ea5ba Mon Sep 17 00:00:00 2001
+From: Stefan Chulski <stefanc@marvell.com>
+Date: Sun, 4 Feb 2018 11:37:48 +0200
+Subject: [PATCH 2222/2241] net: mvpp2x: add get_channels ethtool callback
+
+Callback add to retrieve rx_count and other_count.
+
+Only multi queue mode support rx_count(# of Hot CPU's) and
+other_count(# of adreess spaces used by cold CPU's).
+
+Change-Id: I958648c62c87f7f1c2d9b71d1fa5ef06d1ea71ba
+Signed-off-by: Stefan Chulski <stefanc@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/49980
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_ethtool.c | 18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_ethtool.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_ethtool.c
+index 8280b2a..fc8835e 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_ethtool.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_ethtool.c
+@@ -1190,6 +1190,23 @@ static void mv_pp2x_eth_tool_diag_test(struct net_device *netdev,
+ 	msleep_interruptible(4 * 1000);
+ }
+ 
++static void mv_pp2x_get_channels(struct net_device *netdev,
++				 struct ethtool_channels *ch)
++{
++	struct mv_pp2x_port *port = netdev_priv(netdev);
++
++	if (port->priv->pp2_version == PPV21)
++		return;
++	/* Only multi queue mode support rx_count(# of Hot CPU's) and
++	 * other_count(# of adreess spaces used by cold CPU's)
++	 */
++	if (port->priv->pp2_cfg.queue_mode != MVPP2_QDIST_MULTI_MODE)
++		return;
++
++	ch->rx_count = port->priv->rx_count;
++	ch->other_count = port->priv->other_count;
++}
++
+ static const struct ethtool_ops mv_pp2x_eth_tool_ops = {
+ 	.get_link		= ethtool_op_get_link,
+ 	.get_settings		= mv_pp2x_ethtool_get_settings,
+@@ -1213,6 +1230,7 @@ static const struct ethtool_ops mv_pp2x_eth_tool_ops = {
+ 	.get_regs_len           = mv_pp2x_ethtool_get_regs_len,
+ 	.get_regs		= mv_pp2x_ethtool_get_regs,
+ 	.self_test		= mv_pp2x_eth_tool_diag_test,
++	.get_channels		= mv_pp2x_get_channels,
+ };
+ 
+ void mv_pp2x_set_ethtool_ops(struct net_device *netdev)
+-- 
+2.7.4
+

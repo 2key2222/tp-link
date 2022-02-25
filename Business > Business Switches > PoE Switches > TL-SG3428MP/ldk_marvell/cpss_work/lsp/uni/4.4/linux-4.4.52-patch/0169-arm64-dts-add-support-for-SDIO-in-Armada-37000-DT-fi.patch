@@ -1,0 +1,59 @@
+From b8d67960411771b32d6cdef6e1e31291fd2054ea Mon Sep 17 00:00:00 2001
+From: Victor Gu <xigu@marvell.com>
+Date: Sat, 23 Jan 2016 00:13:07 +0800
+Subject: [PATCH 0169/2241] arm64: dts: add support for SDIO in Armada 37000 DT
+ files
+
+Add south bridge SDIO node in DT files and enable it for DB board.
+Card detection is done by SW polling "broken_cd" mode.
+
+Change-Id: Iaba1a5b9edf27905ec80ab3d8ecc80713ea36c1f
+Signed-off-by: Victor Gu <xigu@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/27684
+Reviewed-by: Nadav Haklai <nadavh@marvell.com>
+Tested-by: Nadav Haklai <nadavh@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-3720-db.dts | 6 ++++++
+ arch/arm64/boot/dts/marvell/armada-37xx.dtsi   | 9 +++++++++
+ 2 files changed, 15 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-3720-db.dts b/arch/arm64/boot/dts/marvell/armada-3720-db.dts
+index d27342b..284d639 100644
+--- a/arch/arm64/boot/dts/marvell/armada-3720-db.dts
++++ b/arch/arm64/boot/dts/marvell/armada-3720-db.dts
+@@ -76,6 +76,12 @@
+ 				status = "okay";
+ 			};
+ 
++			sdhci1: sdhci@d0000 {
++				broken-cd;
++				bus-width = <4>;
++				status = "okay";
++			};
++
+ 			sdhci0: sdhci@d8000 {
+ 				xenon,emmc;
+ 				non-removable;
+diff --git a/arch/arm64/boot/dts/marvell/armada-37xx.dtsi b/arch/arm64/boot/dts/marvell/armada-37xx.dtsi
+index 60e8481..16a7f3c 100644
+--- a/arch/arm64/boot/dts/marvell/armada-37xx.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-37xx.dtsi
+@@ -130,6 +130,15 @@
+ 				};
+ 			};
+ 
++			sdhci1: sdhci@d0000 {
++				compatible = "marvell,xenon-sdhci";
++				reg = <0xd0000 0x300>;
++				interrupts = <GIC_SPI 25 IRQ_TYPE_LEVEL_HIGH>;
++				xenon,slotno = <0>;
++				auto-cmd12;
++				status = "disabled";
++			};
++
+ 			sdhci0: sdhci@d8000 {
+ 				compatible = "marvell,xenon-sdhci";
+ 				reg = <0xd8000 0x300>;
+-- 
+2.7.4
+

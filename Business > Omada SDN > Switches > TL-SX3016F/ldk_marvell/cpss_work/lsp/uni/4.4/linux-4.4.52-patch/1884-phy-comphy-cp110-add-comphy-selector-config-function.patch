@@ -1,0 +1,141 @@
+From 75caf87e72dfce199c52f669abf6dba5ee953cf1 Mon Sep 17 00:00:00 2001
+From: Evan Wang <xswang@marvell.com>
+Date: Mon, 19 Jun 2017 14:45:01 +0800
+Subject: [PATCH 1884/2241] phy: comphy: cp110: add comphy selector config
+ function
+
+For CP-110 there are 2 Selector registers "PHY Selectors"
+and "PIPE Selectors". PIPE selector set/clear functions
+are missing in the driver, which are needed by USB3 and
+PCIe comphy configuration.
+The patch added the PIPE selector configuration function
+for PCIe and USB3, including USB host and device mode.
+
+Change-Id: Ifc9324e510003c02a9ce8592569c33e2dfc36a78
+Signed-off-by: Evan Wang <xswang@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/40616
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/phy/phy-comphy-a3700.h |  6 ------
+ drivers/phy/phy-comphy-cp110.c | 49 ++++++++++++++++++++++++++++++++++++++++++
+ drivers/phy/phy-comphy-cp110.h |  4 ++++
+ drivers/phy/phy-comphy-mvebu.h | 10 +++++++++
+ 4 files changed, 63 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/phy/phy-comphy-a3700.h b/drivers/phy/phy-comphy-a3700.h
+index becf697..51184cb 100644
+--- a/drivers/phy/phy-comphy-a3700.h
++++ b/drivers/phy/phy-comphy-a3700.h
+@@ -7,12 +7,6 @@ extern const struct mvebu_comphy_soc_info a3700_comphy;
+ #define A3700_COMPHY_PLL_LOCK_TIMEOUT		1000
+ #define REG_16_BIT_MASK				0xFFFF
+ 
+-enum {
+-	COMPHY_LANE0 = 0,
+-	COMPHY_LANE1,
+-	COMPHY_LANE2,
+-	COMPHY_LANE_MAX,
+-};
+ #define COMPHY_SELECTOR_PHY_REG_OFFSET		0xFC
+ /* bit0: 0: Lane0 is GBE0; 1: Lane1 is PCIE */
+ #define COMPHY_SELECTOR_PCIE_GBE0_SEL_BIT	BIT(0)
+diff --git a/drivers/phy/phy-comphy-cp110.c b/drivers/phy/phy-comphy-cp110.c
+index 8ec4356..61e1771 100644
+--- a/drivers/phy/phy-comphy-cp110.c
++++ b/drivers/phy/phy-comphy-cp110.c
+@@ -120,6 +120,55 @@ static void mvebu_cp110_comphy_set_phy_selector(struct mvebu_comphy_priv *priv,
+ 
+ }
+ 
++/* PIPE selector configures for PCIe, USB 3.0 Host, and USB 3.0 Device mode */
++void mvebu_cp110_comphy_set_pipe_selector(struct mvebu_comphy_priv *priv,
++					  struct mvebu_comphy *comphy)
++{
++	u32 reg;
++	u32 shift = COMMON_SELECTOR_COMPHYN_FIELD_WIDTH * comphy->index;
++	int mode = COMPHY_GET_MODE(priv->lanes[comphy->index].mode);
++	u32 mask = COMMON_SELECTOR_COMPHY_MASK << shift;
++	u32 pipe_sel = 0x0;
++
++	reg = readl(priv->comphy_regs + COMMON_SELECTOR_PIPE_REG_OFFSET);
++	reg &= ~mask;
++
++	switch (mode) {
++	case (COMPHY_PCIE_MODE):
++		/* For lanes support PCIE, selector value are all same */
++		pipe_sel = COMMON_SELECTOR_PIPE_COMPHY_PCIE;
++		break;
++
++	case (COMPHY_USB3H_MODE):
++		/* Only lane 1-4 support USB host, selector value is same */
++		if (comphy->index == COMPHY_LANE0 ||
++		    comphy->index == COMPHY_LANE5)
++			dev_err(priv->dev, "COMPHY[%d] mode[%d] is invalid\n",
++				comphy->index, mode);
++		else
++			pipe_sel = COMMON_SELECTOR_PIPE_COMPHY_USBH;
++		break;
++
++	case (COMPHY_USB3D_MODE):
++		/* Lane 1 and 4 support USB device, selector value is same */
++		if (comphy->index == COMPHY_LANE1 ||
++		    comphy->index == COMPHY_LANE4)
++			pipe_sel = COMMON_SELECTOR_PIPE_COMPHY_USBD;
++		else
++			dev_err(priv->dev, "COMPHY[%d] mode[%d] is invalid\n",
++				comphy->index, mode);
++		break;
++
++	default:
++		dev_err(priv->dev, "COMPHY[%d] mode[%d] is invalid\n",
++			comphy->index, mode);
++		break;
++	}
++
++	writel(reg | (pipe_sel << shift),
++	       priv->comphy_regs + COMMON_SELECTOR_PIPE_REG_OFFSET);
++}
++
+ static int mvebu_cp110_comphy_sata_power_on(struct mvebu_comphy_priv *priv,
+ 					    struct mvebu_comphy *comphy)
+ {
+diff --git a/drivers/phy/phy-comphy-cp110.h b/drivers/phy/phy-comphy-cp110.h
+index c523bef..9d861f1 100644
+--- a/drivers/phy/phy-comphy-cp110.h
++++ b/drivers/phy/phy-comphy-cp110.h
+@@ -31,6 +31,10 @@ extern const struct mvebu_comphy_soc_info cp110_comphy;
+ #define COMMON_SELECTOR_COMPHY_MASK		0xf
+ #define COMMON_SELECTOR_COMPHYN_FIELD_WIDTH	4
+ #define COMMON_SELECTOR_COMPHYN_SATA		0x4
++#define COMMON_SELECTOR_PIPE_COMPHY_PCIE	0x4
++#define COMMON_SELECTOR_PIPE_COMPHY_USBH	0x1
++#define COMMON_SELECTOR_PIPE_COMPHY_USBD	0x2
++
+ /* SGMII/HS-SGMII/SFI/RXAUI */
+ #define COMMON_SELECTOR_COMPHY0_1_2_NETWORK	0x1
+ #define COMMON_SELECTOR_COMPHY3_RXAUI		0x1
+diff --git a/drivers/phy/phy-comphy-mvebu.h b/drivers/phy/phy-comphy-mvebu.h
+index 0e7620b..c93edb6 100644
+--- a/drivers/phy/phy-comphy-mvebu.h
++++ b/drivers/phy/phy-comphy-mvebu.h
+@@ -7,6 +7,16 @@
+ #define to_mvebu_comphy_priv(lane) \
+ 	container_of((lane), struct mvebu_comphy_priv, lanes[(lane)->index])
+ 
++enum {
++	COMPHY_LANE0 = 0,
++	COMPHY_LANE1,
++	COMPHY_LANE2,
++	COMPHY_LANE3,
++	COMPHY_LANE4,
++	COMPHY_LANE5,
++	COMPHY_LANE_MAX,
++};
++
+ enum reg_width_type {
+ 	REG_16BIT = 0,
+ 	REG_32BIT,
+-- 
+2.7.4
+

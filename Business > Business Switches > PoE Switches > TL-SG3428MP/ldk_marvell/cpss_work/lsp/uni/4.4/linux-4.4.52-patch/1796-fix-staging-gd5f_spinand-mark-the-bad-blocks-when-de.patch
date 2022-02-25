@@ -1,0 +1,37 @@
+From f7d4be0a1a6866116ee707931a241c88f606ae35 Mon Sep 17 00:00:00 2001
+From: allen yan <yanwei@marvell.com>
+Date: Tue, 18 Jul 2017 17:45:46 +0800
+Subject: [PATCH 1796/2241] fix: staging: gd5f_spinand: mark the bad blocks
+ when detect ECC errors in read operation
+
+Currently, all the bad blocks won't be marked bad blocks
+and never write to BBT. It is because of when ECC errors
+occurs, spi nand driver won't compelete the read operation
+just return -1, it will cause the mtd driver can't read
+oob data and won't do bad block marking.
+This patch fixed this issue.
+
+Change-Id: I48c99e9ef382d030be0d1093a58559222dab0f35
+Signed-off-by: allen yan <yanwei@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/41763
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Victor Gu <xigu@marvell.com>
+---
+ drivers/staging/gd5f_spinand/gd5f_spinand.c | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/drivers/staging/gd5f_spinand/gd5f_spinand.c b/drivers/staging/gd5f_spinand/gd5f_spinand.c
+index fb92765..370bd9f 100644
+--- a/drivers/staging/gd5f_spinand/gd5f_spinand.c
++++ b/drivers/staging/gd5f_spinand/gd5f_spinand.c
+@@ -483,7 +483,6 @@ static int spinand_read_page(struct spi_device *spi_nand, u32 page_id,
+ 	if (status  == SPI_NAND_ECC_UNABLE_TO_CORRECT) {
+ 		dev_err(&spi_nand->dev, "ECC error reading page %d.\n",
+ 			page_id);
+-		return -1;
+ 	}
+ 
+ 	/* Read page from internal cache to our buffers */
+-- 
+2.7.4
+

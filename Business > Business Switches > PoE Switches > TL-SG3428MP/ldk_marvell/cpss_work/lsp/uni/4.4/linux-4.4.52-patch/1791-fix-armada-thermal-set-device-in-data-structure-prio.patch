@@ -1,0 +1,51 @@
+From dbc9b21cbdd093134631061cc4edec72e22225c6 Mon Sep 17 00:00:00 2001
+From: David Sniatkiwicz <davidsn@marvell.com>
+Date: Wed, 5 Jul 2017 16:31:15 +0300
+Subject: [PATCH 1791/2241] fix: armada: thermal: set device in data structure
+ prior to thermal zone registration
+
+After registering thermal sensor with thermal zone framework,
+temperature is being polled every polling interval (from device tree),
+and due to that, we must register device in thermal data structure prior
+to calling thermal_zone_of_sensor_register.
+This patch moves the registration prior to thermal zone framework
+registration, and avoid kernel crash that occurs because of this.
+(the dev_err in armada_ap806_get_temp was called with a NULL parameter,
+before priv->pdev initialization).
+
+Change-Id: I3b15798b9cce56509940fc37fcbef4ea04bed29c
+Signed-off-by: David Sniatkiwicz <davidsn@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/41196
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+---
+ drivers/thermal/armada_thermal.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/thermal/armada_thermal.c b/drivers/thermal/armada_thermal.c
+index aefcb52..1a20a75 100644
+--- a/drivers/thermal/armada_thermal.c
++++ b/drivers/thermal/armada_thermal.c
+@@ -732,6 +732,9 @@ static int armada_thermal_probe(struct platform_device *pdev)
+ 	if (!priv)
+ 		return -ENOMEM;
+ 
++	/* Register device in thermal data structure */
++	priv->pdev = pdev;
++
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	priv->sensor = devm_ioremap_resource(&pdev->dev, res);
+ 	if (IS_ERR(priv->sensor))
+@@ -772,9 +775,6 @@ static int armada_thermal_probe(struct platform_device *pdev)
+ 		return PTR_ERR(thermal);
+ 	}
+ 
+-	/* Register device in thermal data structure */
+-	priv->pdev = pdev;
+-
+ 	/* Register overheat interrupt */
+ 	irq = platform_get_irq(pdev, 0);
+ 	if (irq >= 0) {
+-- 
+2.7.4
+

@@ -1,0 +1,32 @@
+From 17861e71bb9535d861e3d3895563eaa7665fc5ac Mon Sep 17 00:00:00 2001
+From: Shadi Ammouri <shadi@marvell.com>
+Date: Mon, 7 Mar 2016 17:21:52 +0200
+Subject: [PATCH 0241/2241] mvebu: Select gic-v2m for ARCH_MVEBU
+
+This is needed by some of MVEBU drivers for interrupt signalling -
+xor-v2, ppv2.1...
+
+Change-Id: Ib4daefaf3c9d05ea8f1e68a67838a61621b92b99
+Signed-off-by: Shadi Ammouri <shadi@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/28091
+Reviewed-by: Yehuda Yitschak <yehuday@marvell.com>
+Tested-by: Star_Automation <star@marvell.com>
+---
+ arch/arm64/Kconfig.platforms | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm64/Kconfig.platforms b/arch/arm64/Kconfig.platforms
+index 9beb0c0..66774e1 100644
+--- a/arch/arm64/Kconfig.platforms
++++ b/arch/arm64/Kconfig.platforms
+@@ -3,6 +3,7 @@ menu "Platform selection"
+ config ARCH_MVEBU
+ 	bool "Marvell EBU SoC Family"
+ 	select ARM_GIC_ODMI
++	select ARM_GIC_V2M
+ 	select MVEBU_PIC
+ 	select MVEBU_CLK_COMMON
+ 	select ARMADA_3700_CLK
+-- 
+2.7.4
+

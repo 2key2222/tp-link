@@ -1,0 +1,72 @@
+From 574f815c2ace39fe0153965ce3eda0fbbc365e41 Mon Sep 17 00:00:00 2001
+From: Victor Gu <xigu@marvell.com>
+Date: Tue, 22 Mar 2016 02:19:59 +0800
+Subject: [PATCH 0308/2241] arm64: mmc: armada3700: separate delag edge setting
+
+This patch separates the delay edge setting for
+SD and eMMC. It is because the SD and eMMC might
+have different delay edge settings.
+
+Change-Id: I49d05303e1010892dbd2d7e5286d8daebe3ee8e3
+Signed-off-by: Victor Gu <xigu@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/28404
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Shadi Ammouri <shadi@marvell.com>
+---
+ drivers/mmc/host/sdhci-xenon.c | 28 ++++++++++++++++++++++++----
+ 1 file changed, 24 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/mmc/host/sdhci-xenon.c b/drivers/mmc/host/sdhci-xenon.c
+index fea0c80..ab7fe62 100644
+--- a/drivers/mmc/host/sdhci-xenon.c
++++ b/drivers/mmc/host/sdhci-xenon.c
+@@ -546,22 +546,42 @@ static int sdhci_xenon_fix_delay_adj(struct sdhci_host *host,
+ 	unsigned int delay;
+ 	unsigned int min_delay, max_delay;
+ 	u32 reg;
++	struct sdhci_pltfm_host *pltfm_host =
++				    (struct sdhci_pltfm_host *)sdhci_priv(host);
++	struct sdhci_xenon_priv *priv =
++				 (struct sdhci_xenon_priv *)pltfm_host->private;
+ 	/* Pairs to set the delay edge.
+ 	 * First column is the inversion sequence.
+ 	 * Second column indicates delay 90 degree or not.
++	 * Different type of boards may have different preferred delay edge setting,
++	 * it is even different between eMMC and SD modes.
++	 * According to the test result, below two edge pair sequences are defined
++	 * for mmc and SD modes.
+ 	 */
+-	bool delay_edge_pair[][2] = {
++	bool mmc_delay_edge_pair[][2] = {
+ 			{ true,		false},
+ 			{ true,		true},
+ 			{ false,	false},
+ 			{ false,	true }
+ 	};
++	bool sd_delay_edge_pair[][2] = {
++			{ false,	false},
++			{ false,	true},
++			{ true,		false},
++			{ true,		true }
++	};
++	bool (*delay_edge_pair_p)[2];
++
++	nr_pair = sizeof(mmc_delay_edge_pair) / ARRAY_SIZE(mmc_delay_edge_pair);
+ 
+-	nr_pair = sizeof(delay_edge_pair) / ARRAY_SIZE(delay_edge_pair);
++	if (priv->quirks & SDHCI_QUIRK_XENON_EMMC_SLOT)
++		delay_edge_pair_p = mmc_delay_edge_pair;
++	else
++		delay_edge_pair_p = sd_delay_edge_pair;
+ 
+ 	for (idx = 0; idx < nr_pair; idx++) {
+-		invert = delay_edge_pair[idx][0];
+-		phase = delay_edge_pair[idx][1];
++		invert = delay_edge_pair_p[idx][0];
++		phase = delay_edge_pair_p[idx][1];
+ 
+ 		/* Increase delay value to get min fix delay */
+ 		for (min_delay = 0; min_delay <= TUNING_PROG_FIXED_DELAY_MASK;
+-- 
+2.7.4
+

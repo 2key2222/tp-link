@@ -1,0 +1,32 @@
+From e699513d933d3d8ea05c080e47df92a5c02414ab Mon Sep 17 00:00:00 2001
+From: Stefan Chulski <stefanc@marvell.com>
+Date: Tue, 16 Aug 2016 14:21:58 +0300
+Subject: [PATCH 0687/2241] fix: mvpp2x: fix duplicate GOP clock deactivation
+
+- fix kernel panic in case of init error
+
+Change-Id: I642d2bf0d23a8725109bc15071bacc5b94ca154e
+Signed-off-by: Stefan Chulski <stefanc@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/31973
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Yuval Caduri <cyuval@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+index 3e1cb79..81506dd 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+@@ -4602,7 +4602,6 @@ static int mv_pp2x_probe(struct platform_device *pdev)
+ err_clk:
+ 	clk_disable_unprepare(hw->gop_clk);
+ 	clk_disable_unprepare(hw->pp_clk);
+-	clk_disable_unprepare(hw->gop_clk);
+ 	clk_disable_unprepare(hw->gop_core_clk);
+ 	clk_disable_unprepare(hw->mg_clk);
+ 	clk_disable_unprepare(hw->mg_core_clk);
+-- 
+2.7.4
+

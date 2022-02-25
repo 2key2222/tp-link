@@ -1,0 +1,42 @@
+From 0bec57bdf6719bb3f1f137c7edc994493611143b Mon Sep 17 00:00:00 2001
+From: Ofer Heifetz <oferh@marvell.com>
+Date: Thu, 11 Jan 2018 15:02:42 +0200
+Subject: [PATCH 2157/2241] crypto: inside-secure: invalidation check for
+ eip197 only
+
+invalidation check should be done only for eip197, it is
+not needed for eip97.
+
+Change-Id: Ief9361ed8f1e86b934bd16a688e513c576c01898
+Signed-off-by: Ofer Heifetz <oferh@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/48873
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/crypto/inside-secure/cipher.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/crypto/inside-secure/cipher.c b/drivers/crypto/inside-secure/cipher.c
+index a0f51b9..8c3fe48 100644
+--- a/drivers/crypto/inside-secure/cipher.c
++++ b/drivers/crypto/inside-secure/cipher.c
+@@ -65,6 +65,7 @@ static int safexcel_aes_setkey(struct crypto_ablkcipher *ctfm, const u8 *key,
+ {
+ 	struct crypto_tfm *tfm = crypto_ablkcipher_tfm(ctfm);
+ 	struct safexcel_cipher_ctx *ctx = crypto_tfm_ctx(tfm);
++	struct safexcel_crypto_priv *priv = ctx->priv;
+ 	struct crypto_aes_ctx aes;
+ 	int ret, i;
+ 
+@@ -75,7 +76,7 @@ static int safexcel_aes_setkey(struct crypto_ablkcipher *ctfm, const u8 *key,
+ 	}
+ 
+ 	/* if context exits and key changed, need to invalidate it */
+-	if (ctx->base.ctxr_dma) {
++	if (priv->eip_type == EIP197 && ctx->base.ctxr_dma) {
+ 		for (i = 0; i < len / sizeof(u32); i++) {
+ 			if (ctx->key[i] != cpu_to_le32(aes.key_enc[i])) {
+ 				ctx->base.needs_inv = true;
+-- 
+2.7.4
+

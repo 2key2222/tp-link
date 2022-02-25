@@ -1,0 +1,33 @@
+From 7fc13e687eb191f24e3cbd19271287e89b39816e Mon Sep 17 00:00:00 2001
+From: Ken Ma <make@marvell.com>
+Date: Wed, 15 Mar 2017 01:25:27 +0800
+Subject: [PATCH 1489/2241] dts: a3700: force xhci reset after resume
+
+- Armada 3700 must force XHCI reset after resume, otherwise its XHCI
+  reset will get stuck so add the property "needs-reset-on-resume" to
+  its usb3 node.
+
+Change-Id: I72bd6267beffbd12bbc654427627a79de42c627c
+Signed-off-by: Ken Ma <make@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/37444
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Victor Gu <xigu@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-37xx.dtsi | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-37xx.dtsi b/arch/arm64/boot/dts/marvell/armada-37xx.dtsi
+index ac3b0ed..7e4a489 100644
+--- a/arch/arm64/boot/dts/marvell/armada-37xx.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-37xx.dtsi
+@@ -340,6 +340,7 @@
+ 				interrupts = <GIC_SPI 3 IRQ_TYPE_LEVEL_HIGH>;
+ 				clocks = <&sgateclk 17>;
+ 				separated-phys-for-usb2-usb3;
++				needs-reset-on-resume;
+ 				status = "disabled";
+ 			};
+ 
+-- 
+2.7.4
+

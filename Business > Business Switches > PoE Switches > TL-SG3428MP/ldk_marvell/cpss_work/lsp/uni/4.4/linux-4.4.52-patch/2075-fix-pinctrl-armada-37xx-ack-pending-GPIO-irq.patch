@@ -1,0 +1,47 @@
+From 9e467150d90473e6be6a9a701177a4edc3b6e288 Mon Sep 17 00:00:00 2001
+From: Victor Gu <xigu@marvell.com>
+Date: Thu, 14 Sep 2017 17:06:06 +0800
+Subject: [PATCH 2075/2241] fix: pinctrl: armada-37xx: ack pending GPIO irq
+
+The GPIO polarity registers are saved during system suspend and
+restored during resume. If there is pending GPIO irq during the
+resume, the GPIO interrupt will be triggered when re-config the
+GPIO interrupt enable and polarity registers.
+That time the system infrastructure modules are already initialized
+including GICv3, but the IO drivers are still not resumed, it
+will lead to unexpected system stuck if gets IO interrupt that time.
+In order to fix this issue, need to ack the pending GPIO irq
+during resume before restoring the enable and polarity setting.
+
+Change-Id: I2dde3b1492f1d45d3430b695dda65bcc51afb264
+Signed-off-by: Victor Gu <xigu@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/44381
+Reviewed-by: Marcin Wojtas <mw@semihalf.com>
+---
+ drivers/pinctrl/mvebu/pinctrl-armada-37xx.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+diff --git a/drivers/pinctrl/mvebu/pinctrl-armada-37xx.c b/drivers/pinctrl/mvebu/pinctrl-armada-37xx.c
+index b429a7e..7d3bb4a 100644
+--- a/drivers/pinctrl/mvebu/pinctrl-armada-37xx.c
++++ b/drivers/pinctrl/mvebu/pinctrl-armada-37xx.c
+@@ -1156,6 +1156,16 @@ static void armada_3700_pinctrl_resume(void)
+ 			}
+ 		}
+ 
++		/*
++		 * Ack to clear the GPIO interrupt status register, otherwise GPIO interrupt will
++		 * be triggered when re-config the GPIO interrupt enable and polarity registers.
++		 * That time the system infrastructure modules are already initialized including
++		 * GICv3, but the IO drivers are still not resumed, it will lead to unexpected system
++		 * stuck if gets IO interrupt that time.
++		 */
++		for (i = 0; i <= d->revmap_size / GPIO_PER_REG; i++)
++			writel(readl(info->base + IRQ_STATUS + 4 * i), info->base + IRQ_STATUS + 4 * i);
++
+ 		writel(info->irq_en_reg, info->base + IRQ_EN);
+ 		writel(info->irq_en_reg_hi, info->base + IRQ_EN + sizeof(u32));
+ 		writel(info->irq_pol_reg, info->base + IRQ_POL);
+-- 
+2.7.4
+

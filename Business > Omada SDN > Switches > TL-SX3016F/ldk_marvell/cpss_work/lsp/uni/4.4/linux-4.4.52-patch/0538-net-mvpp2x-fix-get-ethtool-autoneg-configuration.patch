@@ -1,0 +1,81 @@
+From 049031b6b7faa4cac3f125ad0ea85e1cfe74cacf Mon Sep 17 00:00:00 2001
+From: Stefan Chulski <stefanc@marvell.com>
+Date: Tue, 28 Jun 2016 15:50:12 +0300
+Subject: [PATCH 0538/2241] net: mvpp2x: fix: get ethtool autoneg configuration
+
+Change-Id: I01670c9c1401a25362d0568de16bf62b5b27a8ea
+Signed-off-by: Stefan Chulski <stefanc@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/30782
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+Reviewed-by: Yuval Caduri <cyuval@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2x/mv_gop110_hw.c    | 13 +++++++++++++
+ drivers/net/ethernet/marvell/mvpp2x/mv_gop110_hw.h    |  1 +
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_ethtool.c |  7 ++++---
+ 3 files changed, 18 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_gop110_hw.c b/drivers/net/ethernet/marvell/mvpp2x/mv_gop110_hw.c
+index 22220e8..65d458a 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_gop110_hw.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_gop110_hw.c
+@@ -1157,6 +1157,19 @@ int mv_gop110_port_link_status(struct gop_hw *gop, struct mv_mac_data *mac,
+ 	return 0;
+ }
+ 
++bool mv_gop110_port_autoneg_status(struct gop_hw *gop, struct mv_mac_data *mac)
++{
++	u32 reg_val;
++
++		reg_val = mv_gop110_gmac_read(gop, mac->gop_index, MV_GMAC_PORT_AUTO_NEG_CFG_REG);
++
++		if (reg_val & MV_GMAC_PORT_AUTO_NEG_CFG_EN_FDX_AN_OFFS &&
++			reg_val & MV_GMAC_PORT_AUTO_NEG_CFG_EN_AN_SPEED_MASK)
++			return true;
++		else
++			return false;
++}
++
+ int mv_gop110_port_regs(struct gop_hw *gop, struct mv_mac_data *mac)
+ {
+ 	int port_num = mac->gop_index;
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_gop110_hw.h b/drivers/net/ethernet/marvell/mvpp2x/mv_gop110_hw.h
+index 1588f6d1..12d5fdb 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_gop110_hw.h
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_gop110_hw.h
+@@ -143,6 +143,7 @@ void mv_gop110_port_periodic_xon_set(struct gop_hw *gop,
+ bool mv_gop110_port_is_link_up(struct gop_hw *gop, struct mv_mac_data *mac);
+ int mv_gop110_port_link_status(struct gop_hw *gop, struct mv_mac_data *mac,
+ 			       struct mv_port_link_status *pstatus);
++bool mv_gop110_port_autoneg_status(struct gop_hw *gop, struct mv_mac_data *mac);
+ int mv_gop110_port_regs(struct gop_hw *gop, struct mv_mac_data *mac);
+ int mv_gop110_port_events_mask(struct gop_hw *gop, struct mv_mac_data *mac);
+ int mv_gop110_port_events_unmask(struct gop_hw *gop, struct mv_mac_data *mac);
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_ethtool.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_ethtool.c
+index d66884e..9d201ae 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_ethtool.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_ethtool.c
+@@ -89,7 +89,8 @@ static int mv_pp2x_ethtool_get_settings(struct net_device *dev,
+ 
+ 		phy_mode = port->mac_data.phy_mode;
+ 		if ((phy_mode == PHY_INTERFACE_MODE_XAUI) ||
+-		    (phy_mode == PHY_INTERFACE_MODE_RXAUI)) {
++		    (phy_mode == PHY_INTERFACE_MODE_RXAUI) ||
++		    (phy_mode == PHY_INTERFACE_MODE_KR)) {
+ 			cmd->autoneg = AUTONEG_DISABLE;
+ 			cmd->supported = (SUPPORTED_10000baseT_Full |
+ 				SUPPORTED_FIBRE);
+@@ -108,8 +109,8 @@ static int mv_pp2x_ethtool_get_settings(struct net_device *dev,
+ 			cmd->port = PORT_MII;
+ 
+ 			/* check if speed and duplex are AN */
+-			if (status.speed == MV_PORT_SPEED_AN &&
+-			    status.duplex == MV_PORT_DUPLEX_AN) {
++			if (mv_gop110_port_autoneg_status(&port->priv->hw.gop,
++					   &port->mac_data)) {
+ 				cmd->lp_advertising = cmd->advertising = 0;
+ 				cmd->autoneg = AUTONEG_ENABLE;
+ 			} else {
+-- 
+2.7.4
+

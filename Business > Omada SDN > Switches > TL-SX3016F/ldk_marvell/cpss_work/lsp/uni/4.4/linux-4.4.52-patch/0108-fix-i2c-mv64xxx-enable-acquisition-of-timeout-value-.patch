@@ -1,0 +1,93 @@
+From 9561d07002dcd139ae1632848a31ebcf1d2a955d Mon Sep 17 00:00:00 2001
+From: Neta Zur <neta@marvell.com>
+Date: Sun, 18 Jan 2015 13:44:48 +0200
+Subject: [PATCH 0108/2241] fix: i2c: mv64xxx: enable acquisition of timeout
+ value from Device Tree
+
+	This commit fixes obtaining timeout value in miliseconds by using
+	from timeout-ms property. If it doesn't succeed, a default value
+	of 1000ms is set.
+
+	The Device Tree binding documentation is updated accordingly.
+
+(ported from linux-3.10.39-15t1)
+Signed-off-by: Marcin Wojtas <mw@semihalf.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/15039
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Nadav Haklai <nadavh@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/15107
+Signed-off-by: Neta Zur <neta@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/16059
+
+Conflicts:
+	drivers/i2c/busses/i2c-mv64xxx.c
+
+Change-Id: Ibb32979dc4ddb1b5256934da9bcb5aa5e8626e97
+Reviewed-on: http://vgitil04.il.marvell.com:8080/27484
+Reviewed-by: Lior Amsalem <alior@marvell.com>
+Tested-by: Lior Amsalem <alior@marvell.com>
+---
+ Documentation/devicetree/bindings/i2c/i2c-mv64xxx.txt |  5 +++++
+ drivers/i2c/busses/i2c-mv64xxx.c                      | 10 +++++-----
+ 2 files changed, 10 insertions(+), 5 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/i2c/i2c-mv64xxx.txt b/Documentation/devicetree/bindings/i2c/i2c-mv64xxx.txt
+index 5c30026..68f88b6 100644
+--- a/Documentation/devicetree/bindings/i2c/i2c-mv64xxx.txt
++++ b/Documentation/devicetree/bindings/i2c/i2c-mv64xxx.txt
+@@ -20,6 +20,9 @@ Optional properties :
+ 
+  - clock-frequency : Desired I2C bus clock frequency in Hz. If not set the
+ default frequency is 100kHz
++ - timeout-ms      : timeout value in miliseconds. If not set the default
++                     timeout is 1000ms
++
+ 
+  - resets          : phandle to the parent reset controller. Mandatory
+                      whenever you're using the "allwinner,sun6i-a31-i2c"
+@@ -31,6 +34,7 @@ Examples:
+ 		compatible = "marvell,mv64xxx-i2c";
+ 		reg = <0x11000 0x20>;
+ 		interrupts = <29>;
++		timeout-ms = <1000>;
+ 		clock-frequency = <100000>;
+ 	};
+ 
+@@ -40,5 +44,6 @@ For the Armada XP:
+ 		compatible = "marvell,mv78230-i2c", "marvell,mv64xxx-i2c";
+ 		reg = <0x11000 0x100>;
+ 		interrupts = <29>;
++		timeout-ms = <1000>;
+ 		clock-frequency = <100000>;
+ 	};
+diff --git a/drivers/i2c/busses/i2c-mv64xxx.c b/drivers/i2c/busses/i2c-mv64xxx.c
+index 43207f5..c68bddc 100644
+--- a/drivers/i2c/busses/i2c-mv64xxx.c
++++ b/drivers/i2c/busses/i2c-mv64xxx.c
+@@ -807,7 +807,7 @@ mv64xxx_of_config(struct mv64xxx_i2c_data *drv_data,
+ #else
+ 	const struct of_device_id *device;
+ 	struct device_node *np = dev->of_node;
+-	u32 bus_freq, tclk;
++	u32 bus_freq, tclk, timeout;
+ 	int rc = 0;
+ 
+ 	if (IS_ERR(drv_data->clk)) {
+@@ -839,10 +839,10 @@ mv64xxx_of_config(struct mv64xxx_i2c_data *drv_data,
+ 		reset_control_deassert(drv_data->rstc);
+ 	}
+ 
+-	/* Its not yet defined how timeouts will be specified in device tree.
+-	 * So hard code the value to 1 second.
+-	 */
+-	drv_data->adapter.timeout = HZ;
++	if (of_property_read_u32(np, "timeout-ms", &timeout))
++		timeout = 1000; /* 1000ms by default */
++	drv_data->adapter.timeout = msecs_to_jiffies(timeout);
++
+ 
+ 	device = of_match_device(mv64xxx_i2c_of_match_table, dev);
+ 	if (!device)
+-- 
+2.7.4
+

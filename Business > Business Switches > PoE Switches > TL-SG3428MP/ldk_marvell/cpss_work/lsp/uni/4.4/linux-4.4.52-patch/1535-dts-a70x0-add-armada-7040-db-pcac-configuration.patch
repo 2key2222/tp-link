@@ -1,0 +1,295 @@
+From 82b5dd40b8f7e90ee2efe23aded09504e87b2921 Mon Sep 17 00:00:00 2001
+From: Ofir Fedida <ofedida@marvell.com>
+Date: Mon, 6 Mar 2017 17:32:05 +0200
+Subject: [PATCH 1535/2241] dts: a70x0: add armada-7040 db-pcac configuration
+
+add device tree for Armada 7040 DB-PCAC board (SLM-1553)
+
+Change-Id: I4bc0b14bd9ac63b78e66ad17d0c07178dc9354be
+Signed-off-by: Ofir Fedida <ofedida@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/37256
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+Tested-by: Omri Itach <omrii@marvell.com>
+---
+ .../bindings/arm/marvell/armada-7k-8k.txt          |   3 +
+ arch/arm64/boot/dts/marvell/Makefile               |   1 +
+ arch/arm64/boot/dts/marvell/armada-7040-pcac.dts   | 241 +++++++++++++++++++++
+ 3 files changed, 245 insertions(+)
+ create mode 100644 arch/arm64/boot/dts/marvell/armada-7040-pcac.dts
+
+diff --git a/Documentation/devicetree/bindings/arm/marvell/armada-7k-8k.txt b/Documentation/devicetree/bindings/arm/marvell/armada-7k-8k.txt
+index 27ae408..23cc480 100644
+--- a/Documentation/devicetree/bindings/arm/marvell/armada-7k-8k.txt
++++ b/Documentation/devicetree/bindings/arm/marvell/armada-7k-8k.txt
+@@ -41,6 +41,9 @@ Boards:
+    - "marvell,armada7040-pd"
+       when the board being used is the Armada 7040 emulation platform
+ 
++   - "marvell,armada7040-pcac"
++      when the board being used is the Armada 7040 pcac-db emulation platform
++
+    - "marvell,armada8040-db-A", "marvell,armada8040-db"
+       when the board being used is the Armada 8040 Development board
+ 
+diff --git a/arch/arm64/boot/dts/marvell/Makefile b/arch/arm64/boot/dts/marvell/Makefile
+index d69ac6f..5ec8f61 100644
+--- a/arch/arm64/boot/dts/marvell/Makefile
++++ b/arch/arm64/boot/dts/marvell/Makefile
+@@ -15,6 +15,7 @@ dtb-$(CONFIG_ARCH_MVEBU) += armada-7040-db-E.dtb
+ dtb-$(CONFIG_ARCH_MVEBU) += armada-7040-db-nand.dtb
+ dtb-$(CONFIG_ARCH_MVEBU) += armada-7040-db-all-pcie.dtb
+ dtb-$(CONFIG_ARCH_MVEBU) += armada-70x0-customer.dtb
++dtb-$(CONFIG_ARCH_MVEBU) += armada-7040-pcac.dtb
+ dtb-$(CONFIG_ARCH_MVEBU_PD) += armada-7040-pd.dtb
+ dtb-$(CONFIG_ARCH_MVEBU) += armada-8040-db-A.dtb
+ dtb-$(CONFIG_ARCH_MVEBU) += armada-8040-db-B.dtb
+diff --git a/arch/arm64/boot/dts/marvell/armada-7040-pcac.dts b/arch/arm64/boot/dts/marvell/armada-7040-pcac.dts
+new file mode 100644
+index 0000000..6232208
+--- /dev/null
++++ b/arch/arm64/boot/dts/marvell/armada-7040-pcac.dts
+@@ -0,0 +1,241 @@
++/*
++ * Copyright (C) 2016 Marvell Technology Group Ltd.
++ *
++ * This file is dual-licensed: you can use it either under the terms
++ * of the GPLv2 or the X11 license, at your option. Note that this dual
++ * licensing only applies to this file, and not this project as a
++ * whole.
++ *
++ *  a) This library is free software; you can redistribute it and/or
++ *     modify it under the terms of the GNU General Public License as
++ *     published by the Free Software Foundation; either version 2 of the
++ *     License, or (at your option) any later version.
++ *
++ *     This library is distributed in the hope that it will be useful,
++ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *     GNU General Public License for more details.
++ *
++ * Or, alternatively,
++ *
++ *  b) Permission is hereby granted, free of charge, to any person
++ *     obtaining a copy of this software and associated documentation
++ *     files (the "Software"), to deal in the Software without
++ *     restriction, including without limitation the rights to use,
++ *     copy, modify, merge, publish, distribute, sublicense, and/or
++ *     sell copies of the Software, and to permit persons to whom the
++ *     Software is furnished to do so, subject to the following
++ *     conditions:
++ *
++ *     The above copyright notice and this permission notice shall be
++ *     included in all copies or substantial portions of the Software.
++ *
++ *     THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
++ *     EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
++ *     OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
++ *     NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
++ *     HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
++ *     WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++ *     FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
++ *     OTHER DEALINGS IN THE SOFTWARE.
++ */
++
++/*
++ * Device Tree file for Marvell Armada 7040 Pcac Development board platform
++ */
++
++#include "armada-7040.dtsi"
++
++/ {
++	model = "Marvell Armada 7040 PCAC board";
++	compatible = "marvell,armada7040-pcac", "marvell,armada7040",
++			"marvell,armada-ap806-quad", "marvell,armada-ap806";
++	#address-cells = <2>;
++	#size-cells = <2>;
++
++	memory@00000000 {
++		device_type = "memory";
++		reg = <0x0 0x0 0x0 0x80000000>;
++	};
++
++	chosen { };
++
++	ap806 {
++		config-space {
++			spi0: spi@510600 {
++				status = "disabled";
++			};
++			serial@512000 {
++				status = "okay";
++			};
++			i2c@511000 {
++				status = "disabled";
++				clock-frequency = <100000>;
++			};
++			sd_mmc_reg0: regulator@0 {
++				gpios = <&gpio0 11 GPIO_ACTIVE_HIGH>;
++				gpios-states = <0>;
++				states = <1800000 0x1
++					3300000 0x0>;
++				enable-active-high;
++				status = "disabled";
++			};
++			sdhci@6e0000 {
++				bus-width = <4>;
++				no-1-8-v;
++				non-removable; /* For now, need to configure the GPIO for card detect */
++				status = "okay";
++			};
++		};
++	};
++
++	cpn-110-master {
++		config-space {
++			sata: sata@540000 {
++				status = "okay";
++				sata-port@0 {
++					status = "disabled";
++				};
++				sata-port@1 {
++					status = "okay";
++				};
++			};
++			i2c2: i2c@701100 {
++				status = "disabled";
++			};
++			i2c1: i2c@701000 {
++				status = "okay";
++				clock-frequency = <100000>;
++				pinctrl-names = "default";
++				pinctrl-0 = <&i2c0_pins>;
++				eeprom@57 {
++					compatible = "at24,24c64";
++					reg = <0x57>;
++					pagesize = <32>;
++				};
++				eeprom@50 {
++					compatible = "at24,24c64";
++					reg = <0x50>;
++					pagesize = <32>;
++				};
++				expander0: pca9555@21 {
++					compatible = "nxp,pca9555";
++					pinctrl-names = "default";
++					gpio-controller;
++					#gpio-cells = <2>;
++					reg = <0x21>;
++				};
++			};
++			usb3h0: usb3@500000 {
++				status = "okay";
++				usb-phy = <&usb3h0_phy>;
++			};
++			usb3h1: usb3@510000 {
++				status = "disabled";
++				usb-phy = <&usb3h1_phy>;
++			};
++			spi@700680 {
++				status = "okay";
++				spi-flash@0 {
++					#address-cells = <0x1>;
++					#size-cells = <0x1>;
++					compatible = "jedec,spi-nor";
++					reg = <0x0>;
++					spi-max-frequency = <20000000>;
++					partition@0 {
++						label = "boot";
++						reg = <0x0 0x200000>;
++					};
++					partition@200000 {
++						label = "Filesystem";
++						reg = <0x200000 0xd00000>;
++					};
++				};
++			};
++
++			nand@720000 {
++				nand-ecc-strength = <4>;
++				nand-ecc-step-size = <512>;
++				status = "disabled";
++				partition@0 {
++					label = "U-Boot";
++					reg = <0 0x200000>;
++				};
++				partition@200000 {
++					label = "Linux";
++					reg = <0x200000 0xd00000>;
++				};
++				partition@1000000 {
++					label = "Filesystem";
++					reg = <0x1000000 0x3f000000>;
++				};
++			};
++
++			mdio@12a200 {
++				#address-cells = <1>;
++				#size-cells = <0>;
++				phy1: ethernet-phy@1 {
++					reg = <1>;
++				};
++			};
++
++			gop {
++				emac0: mac0 {
++					phy-mode = "sfi"; /* lane-2 */
++				};
++				emac2: mac2 {
++					phy-mode = "rgmii"; /* lane-0 */
++					phy = <&phy1>;
++				};
++				emac3: mac3 {
++					phy-mode = "none"; /* rgmii-1 */
++				};
++			};
++			ppv22@000000 {
++				l4_chksum_jumbo_port = <0>;
++				eth0: eth0@010000 {
++					status = "okay";
++				};
++				eth1: eth1@020000 {
++					status = "okay";
++				};
++				eth2: eth2@030000 {
++					status = "disabled";
++				};
++			};
++			eip197: eip197@800000 {
++				status = "okay";
++			};
++		};
++
++		pcie-ep@0x600000 {
++			status = "okay";
++		};
++	};
++	usb3h0_phy: usb3-h0-phy {
++		compatible = "usb-nop-xceiv";
++		vcc-supply = <&exp_usb3h0_vbus>;
++	};
++	usb3h1_phy: usb3-h1-phy {
++		compatible = "usb-nop-xceiv";
++		vcc-supply = <&exp_usb3h1_vbus>;
++	};
++	exp_usb3h0_vbus: usb3-0-vbus {
++		compatible = "regulator-fixed";
++		regulator-name = "usb3-0-vbus";
++		regulator-min-microvolt = <5000000>;
++		regulator-max-microvolt = <5000000>;
++		enable-active-high;
++		regulator-always-on;
++		gpio = <&expander0 0 GPIO_ACTIVE_HIGH>;
++	};
++	exp_usb3h1_vbus: usb3-1-vbus {
++		compatible = "regulator-fixed";
++		regulator-name = "usb3-1-vbus";
++		regulator-min-microvolt = <5000000>;
++		regulator-max-microvolt = <5000000>;
++		enable-active-high;
++		regulator-always-on;
++		gpio = <&expander0 1 GPIO_ACTIVE_HIGH>;
++	};
++};
+-- 
+2.7.4
+

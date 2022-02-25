@@ -1,0 +1,71 @@
+From fc8f7013178bd807027c965933ed0f2dabdf9f8a Mon Sep 17 00:00:00 2001
+From: allen yan <yanwei@marvell.com>
+Date: Thu, 9 Feb 2017 23:34:49 +0800
+Subject: [PATCH 1429/2241] mtd: spi-nand: add configuration for 1GB GIGA
+ SPI-NAND device
+
+- In the original driver, we only have the configuration
+  for 4GB device. This patch add new configuration for
+  1GB device.
+
+Change-Id: If273d633d5db6b308611a8f1ce0a763034827ddd
+Signed-off-by: allen yan <yanwei@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/37181
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hua Jing <jinghua@marvell.com>
+---
+ drivers/mtd/nand/nand_ids.c                 |  3 +++
+ drivers/staging/gd5f_spinand/gd5f_spinand.c | 10 ++++++++++
+ include/linux/mtd/nand.h                    |  1 +
+ 3 files changed, 14 insertions(+)
+
+diff --git a/drivers/mtd/nand/nand_ids.c b/drivers/mtd/nand/nand_ids.c
+index d9f1e9e..39282fb 100644
+--- a/drivers/mtd/nand/nand_ids.c
++++ b/drivers/mtd/nand/nand_ids.c
+@@ -52,6 +52,9 @@ struct nand_flash_dev nand_flash_ids[] = {
+ 		{ .id = {0xad, 0xde, 0x94, 0xda, 0x74, 0xc4} },
+ 		  SZ_8K, SZ_8K, SZ_2M, 0, 6, 640, NAND_ECC_INFO(40, SZ_1K),
+ 		  4 },
++	{"GD5F 1G 1.8V 8-bit",
++		{ .id = {0xc8, 0xa1, 0x48} },
++		  SZ_2K, SZ_128, SZ_128K, 0, 3, 128, NAND_ECC_INFO(8, SZ_512) },
+ 	{"MT29F 1G 1.8V 8-bit",
+ 		{ .id = {0x2c, 0x15} },
+ 		  SZ_2K, SZ_128, SZ_128K, 0, 2, 128, NAND_ECC_INFO(8, SZ_512)},
+diff --git a/drivers/staging/gd5f_spinand/gd5f_spinand.c b/drivers/staging/gd5f_spinand/gd5f_spinand.c
+index 1df4959..93fe5e8 100644
+--- a/drivers/staging/gd5f_spinand/gd5f_spinand.c
++++ b/drivers/staging/gd5f_spinand/gd5f_spinand.c
+@@ -881,6 +881,16 @@ static int gd5f_ecc_init(struct nand_ecc_ctrl *ecc, int strength,
+ 		ecc->read_page = spinand_read_page_hwecc;
+ 		ecc->write_page = spinand_write_page_hwecc;
+ 		ecc->layout = &ecc_layout_4KB_8bit;
++	} else if (strength == 8 && ecc_stepsize == 512 && page_size == 2048) {
++		ecc->mode = NAND_ECC_HW;
++		ecc->size = 512;
++		ecc->bytes = 32;
++		ecc->steps = 4;
++		ecc->strength = 8;
++		ecc->total = ecc->steps * ecc->bytes;
++		ecc->read_page = spinand_read_page_hwecc;
++		ecc->write_page = spinand_write_page_hwecc;
++		ecc->layout = &ecc_layout_4KB_8bit;
+ 	} else {
+ 		pr_err("ECC strength %d at page size %d is not supported\n",
+ 		       strength, page_size);
+diff --git a/include/linux/mtd/nand.h b/include/linux/mtd/nand.h
+index b614ed2..b159b81 100644
+--- a/include/linux/mtd/nand.h
++++ b/include/linux/mtd/nand.h
+@@ -759,6 +759,7 @@ static inline struct mtd_info *nand_to_mtd(struct nand_chip *chip)
+ #define NAND_MFR_SANDISK	0x45
+ #define NAND_MFR_INTEL		0x89
+ #define NAND_MFR_ATO		0x9b
++#define NAND_MFR_GIGA		0xc8
+ 
+ /* The maximum expected count of bytes in the NAND ID sequence */
+ #define NAND_MAX_ID_LEN 8
+-- 
+2.7.4
+

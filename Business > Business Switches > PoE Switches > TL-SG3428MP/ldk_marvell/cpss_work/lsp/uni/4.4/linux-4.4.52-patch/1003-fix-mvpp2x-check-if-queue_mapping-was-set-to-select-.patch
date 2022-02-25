@@ -1,0 +1,33 @@
+From d4ac3e46f092ab73f21d042e63ac35c3c5e64912 Mon Sep 17 00:00:00 2001
+From: Stefan Chulski <stefanc@marvell.com>
+Date: Sun, 25 Sep 2016 19:17:38 +0300
+Subject: [PATCH 1003/2241] fix: mvpp2x: check if queue_mapping was set to
+ select queue, if not use fallback function
+
+- use .ndo_select_queue only if queue_mapping was set
+
+Change-Id: I50b9d1d6fd12e4156a994f119884c4ed0fadd92c
+Signed-off-by: Stefan Chulski <stefanc@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/33118
+Reviewed-by: Yuval Caduri <cyuval@marvell.com>
+Tested-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+index ad395ff..ea6435d 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+@@ -3784,7 +3784,7 @@ u16 mv_pp2x_select_queue(struct net_device *dev, struct sk_buff *skb,
+ 		       void *accel_priv, select_queue_fallback_t fallback)
+ 
+ {
+-	if (skb->napi_id)
++	if (skb->queue_mapping)
+ 		return skb->napi_id - 1;
+ 
+ 	return fallback(dev, skb) % mv_pp2x_txq_number;
+-- 
+2.7.4
+

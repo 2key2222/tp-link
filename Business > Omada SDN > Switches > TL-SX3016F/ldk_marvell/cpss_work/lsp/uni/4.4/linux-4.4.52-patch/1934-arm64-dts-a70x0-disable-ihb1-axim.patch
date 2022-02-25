@@ -1,0 +1,44 @@
+From 1b61c55dc5ca80630fc1bfa7be708c9ccc3ec67c Mon Sep 17 00:00:00 2001
+From: David Sniatkiwicz <davidsn@marvell.com>
+Date: Sun, 20 Aug 2017 10:45:45 +0300
+Subject: [PATCH 1934/2241] arm64: dts: a70x0: disable ihb1 axim
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+This monitor is connected to the AXI bus of IHB1,
+which is not connected in A7040 package.
+Accessing this monitor when there’s no clock on the AXI bus,
+will cause the access to stuck.
+This patch disable the ihb1 axim in order to avoid the stuck.
+
+Change-Id: Id063e9960cc09a3315899f3d1e6536f0b30540c9
+Signed-off-by: David Sniatkiwicz <davidsn@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/43202
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-7040.dtsi | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-7040.dtsi b/arch/arm64/boot/dts/marvell/armada-7040.dtsi
+index 1aa8bc8..43560aa 100644
+--- a/arch/arm64/boot/dts/marvell/armada-7040.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-7040.dtsi
+@@ -127,6 +127,13 @@
+ 			cp_xor1: cpxor1@6c0000 {
+ 				#stream-id-cells = <1>;
+ 			};
++			/* AXI bus of IHB1 is not connected in Armada-7040 package. */
++			axim-hb1-rd@3c8000 {
++				status = "disabled";
++			};
++			axim-hb1-wr@3c9000 {
++				status = "disabled";
++			};
+ 		};
+ 		pcie@0x600000 {
+ 			msi-parent = <&gic_v2m0>;
+-- 
+2.7.4
+

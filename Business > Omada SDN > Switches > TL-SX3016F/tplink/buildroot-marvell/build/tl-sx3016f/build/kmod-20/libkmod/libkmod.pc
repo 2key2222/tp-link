@@ -1,0 +1,11 @@
+prefix=/usr
+exec_prefix=/usr
+libdir=/usr/lib
+includedir=/usr/include
+
+Name: libkmod
+Description: Library to deal with kernel modules
+Version: 20
+Libs: -L${libdir} -lkmod
+Libs.private:  -L/home/ubuntu/tp-link/TL-SX3016F_trunk/tplink/buildroot-marvell/build/tl-sx3016f/host/usr/arm-buildroot-linux-gnueabi/sysroot/usr/lib -lz  
+Cflags: -I${includedir}

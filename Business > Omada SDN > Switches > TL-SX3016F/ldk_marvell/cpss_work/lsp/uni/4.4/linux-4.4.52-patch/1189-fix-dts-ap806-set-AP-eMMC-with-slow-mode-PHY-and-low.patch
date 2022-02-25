@@ -1,0 +1,47 @@
+From 5a75e38fed2d452801376d20f972368939975c61 Mon Sep 17 00:00:00 2001
+From: Konstantin Porotchkin <kostap@marvell.com>
+Date: Wed, 21 Dec 2016 16:12:08 +0200
+Subject: [PATCH 1189/2241] fix: dts: ap806: set AP eMMC with slow-mode PHY and
+ lower clock
+
+Fixed AP eMMC operations by:
+1. Reducing the AP eMMC clock to 50MHz and preventing it from
+trying the higher clock modes regardless the type of connected
+eMMC card.
+2. Select slow mode property for AP MMC PHY preventing the Xenon
+driver from fail during initialization.
+
+The AP SDIO interface should work in PHY slow mode
+and clock not higher than 50MHz due to AP806 HW limitation.
+Fix bug SYSTEMSW-3091
+
+Change-Id: I58ad41692bf828154d83b17e82ab31c41ecd8fea
+Signed-off-by: Konstantin Porotchkin <kostap@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/34860
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-ap806.dtsi | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-ap806.dtsi b/arch/arm64/boot/dts/marvell/armada-ap806.dtsi
+index e6b6570..325e596 100644
+--- a/arch/arm64/boot/dts/marvell/armada-ap806.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-ap806.dtsi
+@@ -347,6 +347,12 @@
+ 				clock-names = "core";
+ 				clocks = <&syscon 4>;
+ 				xenon,slotno = <0>;
++				/*
++				 * The AP SDIO interface should work in PHY slow mode
++				 * and clock not higher than 50MHz due to HW limitation
++				 */
++				xenon,phy-slow-mode;
++				max-frequency = <50000000>;
+ 				dma-coherent;
+ 				status = "disabled";
+ 			};
+-- 
+2.7.4
+

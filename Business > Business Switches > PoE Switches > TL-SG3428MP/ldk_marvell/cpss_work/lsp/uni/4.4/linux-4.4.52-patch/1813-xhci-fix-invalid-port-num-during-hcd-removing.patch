@@ -1,0 +1,80 @@
+From 37ea181b7ca7d3b8af79f8bfc1f04a797ee2dd6a Mon Sep 17 00:00:00 2001
+From: Leo Liang <lliang@marvell.com>
+Date: Sat, 24 Jun 2017 13:55:21 +0800
+Subject: [PATCH 1813/2241] xhci: fix invalid port num during hcd removing
+
+Firstly, in function xhci_free_virt_devices_depth_first, should check
+real_port is valid or not before use it. The valid range is from 1 to
+127.
+
+Problem:
+  If USB3 drive plug/unplug quickly, usb phy driver calls usb_add_hcd and
+  usb_remove_hcd to start host. Maybe have below oops:
+  Call trace:
+  [<ffffffc00069a12c>] xhci_free_virt_devices_depth_first+0x74/0x120
+  [<ffffffc00069a57c>] xhci_mem_cleanup+0x1ac/0x558
+  [<ffffffc0006939dc>] xhci_stop+0x134/0x1c0
+  [<ffffffc000679d98>] a3700_otg_start_host+0x90/0x108
+  [<ffffffc000679ee0>] a3700_otg_work+0x60/0x68
+  [<ffffffc0000ccc3c>] process_one_work+0x11c/0x378
+  [<ffffffc0000ccfbc>] worker_thread+0x124/0x498
+  [<ffffffc0000d2bac>] kthread+0xdc/0xf0
+  [<ffffffc000085dd0>] ret_from_fork+0x10/0x40
+
+Root cause:
+  When usb drive plugged, usb phy calls usb_add_hcd in bottom half of
+  interrupt. And then usb hub kick off an event for state change that run
+  in hub_event worker. This worker will starting the device recognize
+  procedure, reset, get descriptors and set device address. After set
+  address completed, xhci sets the port number in function
+  xhci_setup_addressable_virt_dev. If usb phy driver calls xhci_stop
+  before hub_event worker running, xhci driver will call xhci_mem_cleanup
+  to cleanup memory. But at this time, the real_port is still zero.
+
+Fix:
+  Use the same way of xhci_free_tt_info to check real_port if valid.
+
+Change-Id: I5e4db4785c472c805bbbb242684d97a944362a6f
+Signed-off-by: Leo Liang <lliang@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/40857
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+(cherry picked from commit 5595500bf75462f05b2c1d967475ad89c0ef3151)
+Reviewed-on: http://vgitil04.il.marvell.com:8080/41907
+---
+ drivers/usb/host/xhci-mem.c | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
+
+diff --git a/drivers/usb/host/xhci-mem.c b/drivers/usb/host/xhci-mem.c
+index 998a738..85f5bb9 100644
+--- a/drivers/usb/host/xhci-mem.c
++++ b/drivers/usb/host/xhci-mem.c
+@@ -981,6 +981,15 @@ void xhci_free_virt_devices_depth_first(struct xhci_hcd *xhci, int slot_id)
+ 	if (!vdev)
+ 		return;
+ 
++	/* If the device never made it past the Set Address stage,
++	 * it may not have the real_port set correctly.
++	 */
++	if (vdev->real_port == 0 ||
++			vdev->real_port > HCS_MAX_PORTS(xhci->hcs_params1)) {
++		xhci_dbg(xhci, "Bad real port.\n");
++		goto free_vd;
++	}
++
+ 	tt_list_head = &(xhci->rh_bw[vdev->real_port - 1].tts);
+ 	list_for_each_entry_safe(tt_info, next, tt_list_head, tt_list) {
+ 		/* is this a hub device that added a tt_info to the tts list */
+@@ -994,6 +1003,8 @@ void xhci_free_virt_devices_depth_first(struct xhci_hcd *xhci, int slot_id)
+ 			}
+ 		}
+ 	}
++
++free_vd:
+ 	/* we are now at a leaf device */
+ 	xhci_free_virt_device(xhci, slot_id);
+ }
+-- 
+2.7.4
+

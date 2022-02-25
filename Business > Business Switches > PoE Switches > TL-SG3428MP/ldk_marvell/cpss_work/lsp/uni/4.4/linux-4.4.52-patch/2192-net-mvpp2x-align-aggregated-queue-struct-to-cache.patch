@@ -1,0 +1,113 @@
+From 42a2cce51b02ce221513788d4f2955f980b58e63 Mon Sep 17 00:00:00 2001
+From: Yan Markman <ymarkman@marvell.com>
+Date: Wed, 27 Dec 2017 12:01:19 +0200
+Subject: [PATCH 2192/2241] net: mvpp2x: align aggregated queue struct to cache
+
+This patch is FIX and Optimization.
+
+The Aggregated TX queue descriptors are allocated and
+referenced as array of descriptors/structures "per CPU".
+The size of an entry in the array is 56B.
+To avoid "cache line interference " on array's entry
+the descriptor address and size should be be aligned to the
+cache-line-size.
+This alignment also improves the performance since 1 cache-line
+used by CPU instead of 2 cache-lines.
+
+Change-Id: I10f9ab1f2607bbc233fec69e7fe25a05cac3c4b8
+Signed-off-by: Yan Markman <ymarkman@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/48161
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Tested-by: Omri Itach <omrii@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h      |  3 ++-
+ .../net/ethernet/marvell/mvpp2x/mv_pp2x_hw_type.h  |  3 +++
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c | 28 +++++++++++++++++-----
+ 3 files changed, 27 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h
+index 63d8bc0..65d3564 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h
+@@ -394,7 +394,7 @@ struct mv_pp2x_aggr_tx_queue {
+ 
+ 	/* XPS mask */
+ 	cpumask_t affinity_mask;
+-};
++} __aligned(MVPP2_CACHE_LINE_SIZE);
+ 
+ struct mv_pp2x_rx_queue {
+ 	/* RX queue number, in the range 0-31 for physical RXQs */
+@@ -557,6 +557,7 @@ struct mv_pp2x {
+ 	/* Aggregated TXQs */
+ 	u16 num_aggr_qs;
+ 	struct mv_pp2x_aggr_tx_queue *aggr_txqs;
++	u16 aggr_txqs_align_offs;
+ 
+ 	/* BM pools */
+ 	u16 num_pools;
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw_type.h b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw_type.h
+index 2d662fb..73d9f9d 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw_type.h
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw_type.h
+@@ -1183,6 +1183,9 @@
+ /* Lbtd 802.3 type */
+ #define MVPP2_IP_LBDT_TYPE		0xfffa
+ 
++#define MVPP2_CACHE_LINE_SIZE		L1_CACHE_BYTES
++#define MVPP2_CACHE_LINE_MASK		(L1_CACHE_BYTES - 1)
++
+ #define MVPP2_CPU_D_CACHE_LINE_SIZE	32
+ #define MVPP2_TX_CSUM_MAX_SIZE		9800
+ 
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+index 2a75614..352e441 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+@@ -5596,13 +5596,27 @@ static int mv_pp2x_init(struct platform_device *pdev, struct mv_pp2x *priv)
+ 		       hw->lms_base + MVPP2_MNG_EXTENDED_GLOBAL_CTRL_REG);
+ 	}
+ 
+-	/* Allocate and initialize aggregated TXQs */
+-	priv->aggr_txqs = devm_kcalloc(&pdev->dev, num_active_cpus(),
+-				       sizeof(struct mv_pp2x_aggr_tx_queue),
+-				       GFP_KERNEL);
+-
++	/* Allocate and initialize aggregated TXQs
++	 * The aggr_txqs area should be aligned onto cache-line-size.
++	 * So allocate cache-line-size more than needed, round-up the pointer
++	 * but keep the offset between aligned and original pointers
++	 * for further usage in free(aligned - offset).
++	 * (offset is used instead of origin-ptr since it is more compact)
++	 */
++	val = sizeof(struct mv_pp2x_aggr_tx_queue) * num_active_cpus() +
++		MVPP2_CACHE_LINE_SIZE;
++	priv->aggr_txqs = devm_kcalloc(&pdev->dev, 1, val, GFP_KERNEL);
+ 	if (!priv->aggr_txqs)
+ 		return -ENOMEM;
++	val = (dma_addr_t)priv->aggr_txqs & MVPP2_CACHE_LINE_MASK;
++	if (!val) {
++		priv->aggr_txqs_align_offs = 0;
++	} else {
++		priv->aggr_txqs_align_offs = sizeof(struct mv_pp2x_aggr_tx_queue) - val;
++		priv->aggr_txqs = (void *)((u8 *)priv->aggr_txqs +
++			priv->aggr_txqs_align_offs);
++	}
++
+ 	priv->num_aggr_qs = num_active_cpus();
+ 
+ 	i = 0;
+@@ -6416,7 +6430,9 @@ static int mvpp2x_suspend(struct device *dev)
+ 	devm_kfree(&pdev->dev, priv->hw.prs_shadow);
+ 	devm_kfree(&pdev->dev, priv->hw.cls_shadow);
+ 	devm_kfree(&pdev->dev, priv->hw.c2_shadow);
+-	devm_kfree(&pdev->dev, priv->aggr_txqs);
++	/* aggr_txqs is aligned round-up; restore the original by -offset */
++	devm_kfree(&pdev->dev, ((u8 *)priv->aggr_txqs - priv->aggr_txqs_align_offs));
++
+ 	num_of_pools = priv->num_pools;
+ 	for (i = 0; i < num_of_pools; i++) {
+ 		struct mv_pp2x_bm_pool *bm_pool = &priv->bm_pools[i];
+-- 
+2.7.4
+

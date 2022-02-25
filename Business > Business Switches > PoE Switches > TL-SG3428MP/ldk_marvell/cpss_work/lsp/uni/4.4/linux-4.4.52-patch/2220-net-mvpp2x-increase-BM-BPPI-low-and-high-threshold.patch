@@ -1,0 +1,61 @@
+From 8a07e83f31709df5d3fbc0d2ac7e9c7e10248766 Mon Sep 17 00:00:00 2001
+From: Stefan Chulski <stefanc@marvell.com>
+Date: Sun, 4 Feb 2018 11:31:03 +0200
+Subject: [PATCH 2220/2241] net: mvpp2x: increase BM BPPI low and high
+ threshold
+
+This configuration improve A8KP performance.
+
+The buffer pointers are saved in DRAM (BPPE), in areas defined by the
+BPPE_ADDR and BPPE_SIZE configuration registers. The block contains for
+each pool an internal memory (BPPI) used for buffer pointers storage.
+When the number of buffer pointers in BPPI is less
+than BPPILowThreshold field of the BM_POOL_CTRL register buffer pointers
+are transferred from BPPE to BPPI. When the number of buffer pointers
+in BPPI is more than BPPIHighThreshold field of the BM_POOL_CTRL
+register buffer pointers are transferred from BPPI to BPPE.
+
+This thresholds improve A8KP performance.
+
+Change-Id: I3aeb69a5524e7773e5e9cee2dc8529bf8bf2c3fa
+Signed-off-by: Stefan Chulski <stefanc@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/49978
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.h      | 5 +++++
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw_type.h | 2 ++
+ 2 files changed, 7 insertions(+)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.h b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.h
+index ac233af..10c49a4 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.h
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.h
+@@ -229,6 +229,11 @@ static inline void mv_pp2x_bm_hw_pool_create(struct mv_pp2x_hw *hw,
+ 
+ 	val = mv_pp2x_read(hw, MVPP2_BM_POOL_CTRL_REG(pool));
+ 	val |= MVPP2_BM_START_MASK;
++	val &= ~MVPP2_BM_LOW_THRESH_MASK;
++	val &= ~MVPP2_BM_HIGH_THRESH_MASK;
++	val |= MVPP2_BM_LOW_THRESH_VALUE(MVPP2_BM_BPPI_LOW_THRESH);
++	val |= MVPP2_BM_HIGH_THRESH_VALUE(MVPP2_BM_BPPI_HIGH_THRESH);
++
+ 	mv_pp2x_write(hw, MVPP2_BM_POOL_CTRL_REG(pool), val);
+ }
+ 
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw_type.h b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw_type.h
+index 2552324..7068da2 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw_type.h
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw_type.h
+@@ -957,6 +957,8 @@
+ #define MVPP2_BM_HIGH_THRESH_MASK		0x7f0000
+ #define MVPP2_BM_HIGH_THRESH_VALUE(val)		((val) << \
+ 						MVPP2_BM_HIGH_THRESH_OFFS)
++#define MVPP2_BM_BPPI_HIGH_THRESH		0x1D
++#define MVPP2_BM_BPPI_LOW_THRESH		0x1B
+ #define MVPP2_BM_INTR_CAUSE_REG(pool)		(0x6240 + ((pool) * 4))
+ #define MVPP2_BM_RELEASED_DELAY_MASK		BIT(0)
+ #define MVPP2_BM_ALLOC_FAILED_MASK		BIT(1)
+-- 
+2.7.4
+

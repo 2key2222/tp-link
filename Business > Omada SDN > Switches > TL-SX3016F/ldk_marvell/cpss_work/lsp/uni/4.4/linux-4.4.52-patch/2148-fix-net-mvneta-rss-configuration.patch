@@ -1,0 +1,65 @@
+From 69e41ac04b732d6ad3b4d3a791788a2aff7bf149 Mon Sep 17 00:00:00 2001
+From: Yelena Krivosheev <yelena@marvell.com>
+Date: Wed, 3 Jan 2018 15:16:02 +0200
+Subject: [PATCH 2148/2241] fix: net: mvneta: rss configuration
+
+RSS configuration command was stucked for "not running" interface.
+Add interface status verification and call to napi_disable() /
+napi_enable() only for running interface.
+
+Change-Id: I5ee9efe146daa83347861d1290c664ad7e6421a0
+Signed-off-by: Yelena Krivosheev <yelena@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/48480
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Dmitri Epshtein <dima@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvneta.c | 23 +++++++++++++----------
+ 1 file changed, 13 insertions(+), 10 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvneta.c b/drivers/net/ethernet/marvell/mvneta.c
+index 6db1469..ac5f47a 100644
+--- a/drivers/net/ethernet/marvell/mvneta.c
++++ b/drivers/net/ethernet/marvell/mvneta.c
+@@ -4117,14 +4117,15 @@ static int  mvneta_config_rss(struct mvneta_port *pp)
+ 	on_each_cpu(mvneta_percpu_mask_interrupt, pp, true);
+ 
+ 	/* We have to synchronise on the napi of each CPU */
+-	for_each_online_cpu(cpu) {
+-		struct mvneta_pcpu_port *pcpu_port =
+-			per_cpu_ptr(pp->ports, cpu);
++	if (netif_running(pp->dev)) {
++		for_each_online_cpu(cpu) {
++			struct mvneta_pcpu_port *pcpu_port =
++				per_cpu_ptr(pp->ports, cpu);
+ 
+-		napi_synchronize(&pcpu_port->napi);
+-		napi_disable(&pcpu_port->napi);
++			napi_synchronize(&pcpu_port->napi);
++			napi_disable(&pcpu_port->napi);
++		}
+ 	}
+-
+ 	pp->rxq_def = pp->indir[0];
+ 
+ 	/* Update unicast mapping */
+@@ -4140,11 +4141,13 @@ static int  mvneta_config_rss(struct mvneta_port *pp)
+ 	spin_unlock(&pp->lock);
+ 
+ 	/* We have to synchronise on the napi of each CPU */
+-	for_each_online_cpu(cpu) {
+-		struct mvneta_pcpu_port *pcpu_port =
+-			per_cpu_ptr(pp->ports, cpu);
++	if (netif_running(pp->dev)) {
++		for_each_online_cpu(cpu) {
++			struct mvneta_pcpu_port *pcpu_port =
++				per_cpu_ptr(pp->ports, cpu);
+ 
+-		napi_enable(&pcpu_port->napi);
++			napi_enable(&pcpu_port->napi);
++		}
+ 	}
+ 
+ 	netif_tx_start_all_queues(pp->dev);
+-- 
+2.7.4
+

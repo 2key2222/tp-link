@@ -1,0 +1,11 @@
+prefix=/usr
+exec_prefix=/usr
+libdir=/usr/lib
+includedir=/usr/include
+
+Name: libkmod
+Description: Library to deal with kernel modules
+Version: 20
+Libs: -L${libdir} -lkmod
+Libs.private:  -L/project/trunk/MV-AC3_GPL/tplink/buildroot-marvell/build/mv-ac3/host/usr/arm-buildroot-linux-gnueabi/sysroot/usr/lib -lz  
+Cflags: -I${includedir}

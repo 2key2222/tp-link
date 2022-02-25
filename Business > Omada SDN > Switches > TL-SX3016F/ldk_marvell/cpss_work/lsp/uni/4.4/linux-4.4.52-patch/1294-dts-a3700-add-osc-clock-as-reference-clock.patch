@@ -1,0 +1,40 @@
+From 9ca52001dc1406a69c1f0154febf388af736e874 Mon Sep 17 00:00:00 2001
+From: allen yan <yanwei@marvell.com>
+Date: Wed, 18 Jan 2017 03:24:23 +0800
+Subject: [PATCH 1294/2241] dts: a3700: add osc clock as reference clock
+
+- Armada3700 uses a oscillator clock of 25MHz as the reference clock.
+  This patch exported the fixed clock for the IO drivers,
+  e.g., UART driver, as the clock source.
+
+Change-Id: Ia2bf47d0b5e9caf40837ee4ec4c27964d7b75492
+Signed-off-by: allen yan <yanwei@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/35730
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Wilson Ding <dingwei@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-37xx.dtsi | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-37xx.dtsi b/arch/arm64/boot/dts/marvell/armada-37xx.dtsi
+index c86ce13..1a5c21b 100644
+--- a/arch/arm64/boot/dts/marvell/armada-37xx.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-37xx.dtsi
+@@ -73,6 +73,14 @@
+ 		};
+ 	};
+ 
++	clocks {
++		osc: osc {
++			compatible = "fixed-clock";
++			#clock-cells = <0>;
++			clock-frequency = <25000000>;
++		};
++	};
++
+ 	psci {
+ 		compatible = "arm,psci-0.2";
+ 		method = "smc";
+-- 
+2.7.4
+

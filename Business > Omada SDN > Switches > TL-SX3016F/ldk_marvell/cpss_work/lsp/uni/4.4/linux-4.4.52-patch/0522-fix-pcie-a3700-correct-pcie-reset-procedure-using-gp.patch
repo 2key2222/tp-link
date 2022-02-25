@@ -1,0 +1,42 @@
+From cbefdd301d557971d5e1af0ec75b83e7658e12c5 Mon Sep 17 00:00:00 2001
+From: jinghua <jinghua@marvell.com>
+Date: Wed, 23 Mar 2016 23:15:27 +0800
+Subject: [PATCH 0522/2241] fix: pcie: a3700: correct pcie reset procedure
+ using gpio
+
+To reset PCIe with gpio, the procedure should be:
+1. set gpio to 0 to apply reset
+2. delay
+3. set gpio to 1 to release reset
+
+Change-Id: I8dbac847e88d45e2dbc8b1c12dc52f1c84b89c42
+Signed-off-by: jinghua <jinghua@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/29627
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Wilson Ding <dingwei@marvell.com>
+---
+ drivers/pci/host/pci-advk-arm64.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/pci/host/pci-advk-arm64.c b/drivers/pci/host/pci-advk-arm64.c
+index c1ab4b5..1564ee1 100644
+--- a/drivers/pci/host/pci-advk-arm64.c
++++ b/drivers/pci/host/pci-advk-arm64.c
+@@ -1166,9 +1166,13 @@ static int advk_pcie_probe(struct platform_device *pdev)
+ 				continue;
+ 			}
+ 
++			/* apply reset by setting GPIO */
+ 			gpio_set_value(port->reset_gpio,
+-				       (port->reset_active_low) ? 1 : 0);
++				       (port->reset_active_low) ? 0 : 1);
+ 			msleep(reset_udelay/1000);
++			/* release reset by setting GPIO */
++			gpio_set_value(port->reset_gpio,
++				       (port->reset_active_low) ? 1 : 0);
+ 		}
+ 
+ 		port->clk = of_clk_get_by_name(child, NULL);
+-- 
+2.7.4
+

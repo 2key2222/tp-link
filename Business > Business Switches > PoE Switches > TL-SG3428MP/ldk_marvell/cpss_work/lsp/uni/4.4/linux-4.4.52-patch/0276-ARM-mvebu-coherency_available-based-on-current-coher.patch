@@ -1,0 +1,31 @@
+From 9f8a6a059dc259825f587ddea64bb4a9339f2fb1 Mon Sep 17 00:00:00 2001
+From: Ofer Heifetz <oferh@marvell.com>
+Date: Sun, 13 Mar 2016 11:12:40 +0200
+Subject: [PATCH 0276/2241] ARM: mvebu: coherency_available based on current
+ coherency_type
+
+Change-Id: I3d6247637558df5a1c3a3998747db2e2d049d7a9
+Signed-off-by: Ofer Heifetz <oferh@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/28262
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Lior Amsalem <alior@marvell.com>
+---
+ arch/arm/mach-mvebu/coherency.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm/mach-mvebu/coherency.c b/arch/arm/mach-mvebu/coherency.c
+index 3285d0e..7f03115 100644
+--- a/arch/arm/mach-mvebu/coherency.c
++++ b/arch/arm/mach-mvebu/coherency.c
+@@ -321,7 +321,7 @@ int set_cpu_coherent(void)
+ 
+ int coherency_available(void)
+ {
+-	return false;
++	return coherency_type() != COHERENCY_FABRIC_TYPE_NONE;
+ }
+ 
+ int __init coherency_init(void)
+-- 
+2.7.4
+

@@ -1,0 +1,868 @@
+From a9888d22a23cb20b012eb19c7bd2e3fac870c541 Mon Sep 17 00:00:00 2001
+From: Nir Erez <nerez@marvell.com>
+Date: Sat, 26 Aug 2017 18:08:41 +0300
+Subject: [PATCH 1939/2241] Adjusted documentation files to new Sphinx tool.
+
+Change-Id: I84725579fc656053ee1c647ac072004d13c03b0c
+Signed-off-by: Nir Erez <nerez@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/43406
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+---
+ Documentation/mvebu/build_guide.txt                |  37 +++--
+ Documentation/mvebu/porting_guide.txt              | 185 +++++++++++++--------
+ Documentation/networking/dsa/dsa.txt               | 111 +++++--------
+ drivers/crypto/inside-secure/user-guide.txt        |  79 +++++----
+ .../telephony/mvebu_phone/telephony_user_guide.txt |  73 ++++----
+ 5 files changed, 265 insertions(+), 220 deletions(-)
+
+diff --git a/Documentation/mvebu/build_guide.txt b/Documentation/mvebu/build_guide.txt
+index 9018a95..50402e0 100644
+--- a/Documentation/mvebu/build_guide.txt
++++ b/Documentation/mvebu/build_guide.txt
+@@ -1,34 +1,35 @@
+ Kernel Build Instructions
+ =========================
+ 
+-ARMv8
+------
++ARMv8 Platforms
++---------------
+ 
+-	$ export CROSS_COMPILE=<path/to/cross/compiler/>
++Follow the following sequence to build ARMv8 platforms::
++
++	> export CROSS_COMPILE=<path/to/cross/compiler/>
+ 	  (Path to gcc compiler, without the gcc suffix. e.g. CROSS_COMPILE=/my_compilers/gcc-5.2/bin/aarch64-marvell-linux-gnu-)
+-	$ export ARCH=arm64
+-	$ make mvebu_v8_lsp_defconfig
+-	$ make - for build kernel image and device tree images.
++	> export ARCH=arm64
++	> make mvebu_v8_lsp_defconfig
++	> make - for build kernel image and device tree images.
+ 
+ - Linux image is under: 'arch/arm64/boot/Image'.
+ - Device tree images are generated under: 'arch/arm64/boot/dts/marvell'.
+-  For example (more device-trees are available in the folder):
+-	- arch/arm64/boot/dts/marvell/armada-3720-community.dtb
+-	- arch/arm64/boot/dts/marvell/armada-8040-mcbin.dtb
+ 
+-ARMv7
+------
+ 
+-	$ export CROSS_COMPILE=<path/to/cross/compiler/>
++ARMv7 Platforms
++---------------
++
++Follow the following sequence to build ARMv7 platforms::
++
++	> export CROSS_COMPILE=<path/to/cross/compiler/>
+ 	  (Path to gcc compiler, without the gcc suffix. e.g. CROSS_COMPILE=/my_compilers/gcc-5.2/bin/aarch64-marvell-linux-gnu-)
+-	$ export ARCH=arm
+-	$ make mvebu_v7_lsp_defconfig
+-	$ make - for build kernel image and device tree images.
+-	$ make zImage - for build kernel image
++	> export ARCH=arm
++	> make mvebu_v7_lsp_defconfig
++	> make - for build kernel image and device tree images.
++	> make zImage - for build kernel image
++
+ 
+ - Linux image is under: 'arch/arm/boot/zImage'.
+ - Device tree images are generated under: 'arch/arm/boot/dts'.
+-  For example (more device-trees are available in the folder):
+-	- arch/arm/boot/dts/marvell/armada-388-clearfog.dtb
+ 
+ 
+diff --git a/Documentation/mvebu/porting_guide.txt b/Documentation/mvebu/porting_guide.txt
+index 7ee2d44..2b2b23f 100644
+--- a/Documentation/mvebu/porting_guide.txt
++++ b/Documentation/mvebu/porting_guide.txt
+@@ -1,8 +1,7 @@
+-Porting Guide for Marvell SoCs
+-==============================
++Kernel Porting Guide
++====================
+ 
+-This document provides instructions for porting Marvell Linux package
+-to a customer's board.
++This document provides instructions for porting Marvell Linux package to a customer's board.
+ 
+ Relevant Devices
+ ----------------
+@@ -12,6 +11,7 @@ Relevant Devices
+ 	- Armada-38x
+ 	- Armada-39x
+ 
++
+ Introduction
+ ------------
+ The device-tree includes runtime configuration for the Linux Kernel.
+@@ -20,41 +20,40 @@ In addition, the device-tree enables passing configuration parameters to drivers
+ For general information about the device-tree please refer to:
+ http://elinux.org/Device_Tree
+ 
+-Device-tree files
++
++Device-Tree Files
+ -----------------
+ Marvell's device-tree files are located in the following locations:
+ - arch/arm64/boot/dts/marvell for 64-bit devices (A37x0, A80x0 and A70x0)
+ - arch/arm/boot/dts for 32-bit devices (A38x and A39x).
+ 
+ Marvell device-trees consists of 2 types of file:
+-	- *.dtsi - These files represents the SoC. Each available interface
+-		   has a node which holds the SoC information.
+-	- *.dts  - These files holds the configuration of the board itself,
+-		   enabling/disabling nodes from SoCs, adding board information
+-		   to each node (if required).
++	- ``*.dtsi`` -	These files represents the SoC. Each available interface
++			has a node which holds the SoC information.
++	- ``*.dts``  -	These files holds the configuration of the board itself,
++			enabling/disabling nodes from SoCs, adding board information
++			to each node (if required).
+ 
+-Porting procedure
++Porting Procedure
+ -----------------
+ 	1. Choose one of the following example device-trees (for the SoC in use):
+ 		- arch/arm64/boot/dts/marvell/armada-80x0-customer.dts
+ 		- arch/arm64/boot/dts/marvell/armada-70x0-customer.dts
+ 		- arch/arm64/boot/dts/marvell/armada-37x0-customer.dts
+-		- arch/arm/boot/dts/marvell/armada-38x-customer.dts	/* TODO - generate */
+-		- arch/arm/boot/dts/marvell/armada-39x-customer.dts	/* TODO - generate */
++		- arch/arm/boot/dts/marvell/armada-38x-customer.dts
++		- arch/arm/boot/dts/marvell/armada-39x-customer.dts
+ 
+ 		Copy the selected file, change the name and place the file in the correct folder, for example:
+-		- "/arch/arm64/boot/dts/marvell/armada-8040-<new_name>.dts"
+-		- "./arch/arm/boot/dts/armada-38x-<new_name>.dts"
++		- arch/arm64/boot/dts/marvell/armada-8040-<new_name>.dts
++		- arch/arm/boot/dts/armada-38x-<new_name>.dts
+ 
+ 	2. Add the new device-tree file to the corresponding Makefile:
+-		- ./arch/arm64/boot/dts/marvell/Makefile (A80x0, A70x0, A37x0)
+-		- ./arch/arm/boot/dts/Makefile		 (A38x, A39x)
++		- arch/arm64/boot/dts/marvell/Makefile (A80x0, A70x0, A37x0)
++		- arch/arm/boot/dts/Makefile		 (A38x, A39x)
+ 
+-		For example:
+-		"dtb-$(CONFIG_ARCH_MVEBU) += armada-8040-<new_name>.dtb"
++		For example: ``dtb-$(CONFIG_ARCH_MVEBU) += armada-8040-<new_name>.dtb``
+ 
+-	3. Look for "UPDATE" comments in the device tree and update board
+-	   specific information:
++	3. Look for "UPDATE" comments in the device tree and update board specific information:
+ 		- Model: "Customer board model"
+ 		- Compatible: "customer-board-compatible"
+ 		- Memory size: Update "memory" node properties
+@@ -66,7 +65,7 @@ Porting procedure
+ 
+ 
+ Device-Tree Bindings
+-====================
++--------------------
+ In order to make the porting of the drivers easier, each Linux driver
+ has a device tree binding document which explains the usage of the driver.
+ All binding documents are located in: Documentation/devicetree/bindings.
+@@ -74,61 +73,103 @@ All binding documents are located in: Documentation/devicetree/bindings.
+ The tables below list the binding documents for Marvell's drivers.
+ 
+ Common Drivers
+---------------
+-	Driver				| Binding file
+-	--------------------------------|---------------------------------------
+-	Marvell SATA driver		| ata/ahci-platform.txt
+-	USB xHCI controller		| usb/usb-xhci.txt
+-	USB device controller		| usb/marvell-u3d.txt, usb/marvell-udc.txt
+-	Marvell Xenon SDHCI driver	| mmc/marvell,xenon-sdhci.txt
+-	Marvell MDIO ethernet driver	| net/marvell-orion-mdio.txt
+-	Marvell PCIe driver		| pci/armada8k-pcie.txt
+-	Marvell eHCI driver		| usb/ehci-orion.txt
+-	Marvell XOR engines driver	| dma/mv-xor.txt
++~~~~~~~~~~~~~~
++	+---------------------------------------+-----------------------------------------------+
++	| Driver				| Binding file					|
++	+=======================================+===============================================+
++	| Marvell SATA driver			| ata/ahci-platform.txt				|
++	+---------------------------------------+-----------------------------------------------+
++	| USB xHCI controller			| usb/usb-xhci.txt				|
++	+---------------------------------------+-----------------------------------------------+
++	| USB device controller			| usb/marvell-u3d.txt, usb/marvell-udc.txt	|
++	+---------------------------------------+-----------------------------------------------+
++	| Marvell Xenon SDHCI driver		| mmc/marvell,xenon-sdhci.txt			|
++	+---------------------------------------+-----------------------------------------------+
++	| Marvell MDIO ethernet driver		| net/marvell-orion-mdio.txt			|
++	+---------------------------------------+-----------------------------------------------+
++	| Marvell PCIe driver			| pci/armada8k-pcie.txt				|
++	+---------------------------------------+-----------------------------------------------+
++	| Marvell eHCI driver			| usb/ehci-orion.txt				|
++	+---------------------------------------+-----------------------------------------------+
++	| Marvell XOR engines driver		| dma/mv-xor.txt				|
++	+---------------------------------------+-----------------------------------------------+
+ 
+ A80x0/A70x0
+-----------
+-	Driver				| Binding file
+-	--------------------------------|---------------------------------------
+-	Marvell A80x0/A70x0 Pinctrl driver| pinctrl/marvell,armada-ap806-pinctrl.txt, pinctrl/marvell,armada-cp110-pinctrl.txt
+-	Marvell Comphy driver		| phy/phy-mvebu-comphy.txt
+-	Marvell Telephony driver	| telephony/mvebu-phone.txt
+-	Marvell PPv2x ethernet driver	| net/marvell-pp2x.txt
+-	Marvell EIP197 security driver	| crypto/mv_eip197.txt
+-	Marvell AP806 CPU Clock Driver	| clock/mvebu-armada-ap806-cpu-clock.txt
+-	Marvell SPI driver		| spi/spi-orion.txt
+-	Marvell I2c driver		| i2c/i2c-mv64xxx.txt
+-	Marvell EIP197 crypto driver	| crypto/inside_secure_eip.txt
++~~~~~~~~~~~
++	+---------------------------------------+-----------------------------------------------+
++	| Driver				| Binding file					|
++	+=======================================+===============================================+
++	| Marvell A80x0/A70x0 Pinctrl driver	| pinctrl/marvell,armada-ap806-pinctrl.txt	|
++	|					|						|
++	|					| pinctrl/marvell,armada-cp110-pinctrl.txt	|
++	+---------------------------------------+-----------------------------------------------+
++	| Marvell Comphy driver			| phy/phy-mvebu-comphy.txt			|
++	+---------------------------------------+-----------------------------------------------+
++	| Marvell Telephony driver		| telephony/mvebu-phone.txt			|
++	+---------------------------------------+-----------------------------------------------+
++	| Marvell PPv2x ethernet driver		| net/marvell-pp2x.txt				|
++	+---------------------------------------+-----------------------------------------------+
++	| Marvell EIP197 security driver	| crypto/mv_eip197.txt				|
++	+---------------------------------------+-----------------------------------------------+
++	| Marvell AP806 CPU Clock Driver	| clock/mvebu-armada-ap806-cpu-clock.txt	|
++	+---------------------------------------+-----------------------------------------------+
++	| Marvell SPI driver			| spi/spi-orion.txt				|
++	+---------------------------------------+-----------------------------------------------+
++	| Marvell I2c driver			| i2c/i2c-mv64xxx.txt				|
++	+---------------------------------------+-----------------------------------------------+
++	| Marvell EIP197 crypto driver		| crypto/inside_secure_eip.txt			|
++	+---------------------------------------+-----------------------------------------------+
+ 
+ A37x0
+------
+-	Driver				| Binding file
+-	--------------------------------|---------------------------------------
+-	Marvell A37x0 Pinctrl driver	| pinctrl/marvell,armada-3700-pinctrl.txt
+-	Marvell Neta Ethernet controller| net/marvell-armada-370-neta.txt
+-	Marvell A37x0 i2c driver	| i2c/i2c-pxa.txt
+-	Marvell A37x0 SPI driver	| spi/spi-armada-3700.txt
+-	Marvell A37x0 UART driver	| tty/serial/mvebu-uart.txt
+-	Marvell A37x0 Clock driver	| clock/mvebu-armada3700-clock.txt
+-	Marvell A37x0 GPIO driver	| gpio/gpio-armada-3700.txt
+-	Marvell A37x0 PCIe driver	| pci/aardvark-pci.txt
+-	Marvell A37x0 USB OTG PHY driver| usb/armada3700-otg-phy.txt
++~~~~~
++	+---------------------------------------+-----------------------------------------------+
++	| Driver				| Binding file					|
++	+=======================================+===============================================+
++	| Marvell A37x0 Pinctrl driver		| pinctrl/marvell,armada-3700-pinctrl.txt	|
++	+---------------------------------------+-----------------------------------------------+
++	| Marvell Neta Ethernet controller	| net/marvell-armada-370-neta.txt		|
++	+---------------------------------------+-----------------------------------------------+
++	| Marvell A37x0 i2c driver		| i2c/i2c-pxa.txt				|
++	+---------------------------------------+-----------------------------------------------+
++	| Marvell A37x0 SPI driver		| spi/spi-armada-3700.txt			|
++	+---------------------------------------+-----------------------------------------------+
++	| Marvell A37x0 UART driver		| tty/serial/mvebu-uart.txt			|
++	+---------------------------------------+-----------------------------------------------+
++	| Marvell A37x0 Clock driver		| clock/mvebu-armada3700-clock.txt		|
++	+---------------------------------------+-----------------------------------------------+
++	| Marvell A37x0 GPIO driver		| gpio/gpio-armada-3700.txt			|
++	+---------------------------------------+-----------------------------------------------+
++	| Marvell A37x0 PCIe driver		| pci/aardvark-pci.txt				|
++	+---------------------------------------+-----------------------------------------------+
++	| Marvell A37x0 USB OTG PHY driver	| usb/armada3700-otg-phy.txt			|
++	+---------------------------------------+-----------------------------------------------+
+ 
+ A39x
+-----
+-	Driver				| Binding file
+-	--------------------------------|---------------------------------------
+-	Marvell A39x Pinctrl driver	| pinctrl/marvell,armada-39x-pinctrl.txt
+-	Marvell PP3 Ethernet controller	| net/marvell-pp3-platform.txt
+-	Marvell SPI driver		| spi/spi-orion.txt
+-	Marvell I2c driver		| i2c/i2c-mv64xxx.txt
++~~~~
++	+---------------------------------------+-----------------------------------------------+
++	| Driver				| Binding file					|
++	+=======================================+===============================================+
++	| Marvell A39x Pinctrl driver		| pinctrl/marvell,armada-39x-pinctrl.txt	|
++	+---------------------------------------+-----------------------------------------------+
++	| Marvell PP3 Ethernet controller	| net/marvell-pp3-platform.txt			|
++	+---------------------------------------+-----------------------------------------------+
++	| Marvell SPI driver			| spi/spi-orion.txt				|
++	+---------------------------------------+-----------------------------------------------+
++	| Marvell I2c driver			| i2c/i2c-mv64xxx.txt				|
++	+---------------------------------------+-----------------------------------------------+
+ 
+ A38x
+-----
+-	Driver				| Binding file
+-	--------------------------------|---------------------------------------
+-	Marvell A38x Pinctrl driver	| pinctrl/marvell,armada-38x-pinctrl.txt
+-	Marvell Telephony driver	| telephony/mvebu-phone.txt
+-	Marvell Neta Ethernet controller| marvell-armada-370-neta.txt
+-	Marvell SPI driver		| spi/spi-orion.txt
+-	Marvell I2c driver		| i2c/i2c-mv64xxx.txt
++~~~~
++	+---------------------------------------+-----------------------------------------------+
++	| Driver				| Binding file					|
++	+=======================================+===============================================+
++	| Marvell A38x Pinctrl driver		| pinctrl/marvell,armada-38x-pinctrl.txt	|
++	+---------------------------------------+-----------------------------------------------+
++	| Marvell Telephony driver		| telephony/mvebu-phone.txt			|
++	+---------------------------------------+-----------------------------------------------+
++	| Marvell Neta Ethernet controller	| marvell-armada-370-neta.txt			|
++	+---------------------------------------+-----------------------------------------------+
++	| Marvell SPI driver			| spi/spi-orion.txt				|
++	+---------------------------------------+-----------------------------------------------+
++	| Marvell I2c driver			| i2c/i2c-mv64xxx.txt				|
++	+---------------------------------------+-----------------------------------------------+
+diff --git a/Documentation/networking/dsa/dsa.txt b/Documentation/networking/dsa/dsa.txt
+index b3b2ba1..3985544 100644
+--- a/Documentation/networking/dsa/dsa.txt
++++ b/Documentation/networking/dsa/dsa.txt
+@@ -2,7 +2,7 @@ Distributed Switch Architecture
+ ===============================
+ 
+ Introduction
+-============
++------------
+ 
+ This document describes the Distributed Switch Architecture (DSA) subsystem
+ design principles, limitations, interactions with other subsystems, and how to
+@@ -10,7 +10,7 @@ develop drivers for this subsystem as well as a TODO for developers interested
+ in joining the effort.
+ 
+ Design principles
+-=================
++-----------------
+ 
+ The Distributed Switch Architecture is a subsystem which was primarily designed
+ to support Marvell Ethernet switches (MV88E6xxx, a.k.a Linkstreet product line)
+@@ -65,8 +65,7 @@ Note that DSA does not currently create network interfaces for the "cpu" and
+   downstream, or the top-most upstream interface makes sense with that model
+ 
+ Switch tagging protocols
+-------------------------
+-
++~~~~~~~~~~~~~~~~~~~~~~~~
+ DSA currently supports 4 different tagging protocols, and a tag-less mode as
+ well. The different protocols are implemented in:
+ 
+@@ -82,8 +81,7 @@ all contain something which:
+ - provides a reason why this frame was forwarded to the management interface
+ 
+ Master network devices
+-----------------------
+-
++~~~~~~~~~~~~~~~~~~~~~~
+ Master network devices are regular, unmodified Linux network device drivers for
+ the CPU/management Ethernet interface. Such a driver might occasionally need to
+ know whether DSA is enabled (e.g.: to enable/disable specific offload features),
+@@ -94,8 +92,7 @@ devices since they act as a pipe between the host processor and the hardware
+ Ethernet switch.
+ 
+ Networking stack hooks
+-----------------------
+-
++~~~~~~~~~~~~~~~~~~~~~~
+ When a master netdev is used with DSA, a small hook is placed in in the
+ networking stack is in order to have the DSA subsystem process the Ethernet
+ switch specific tagging protocol. DSA accomplishes this by registering a
+@@ -138,8 +135,7 @@ Past this point, the DSA slave network devices get delivered regular Ethernet
+ frames that can be processed by the networking stack.
+ 
+ Slave network devices
+----------------------
+-
++~~~~~~~~~~~~~~~~~~~~~
+ Slave network devices created by DSA are stacked on top of their master network
+ device, each of these network interfaces will be responsible for being a
+ controlling and data-flowing end-point for each front-panel port of the switch.
+@@ -166,30 +162,28 @@ Ethernet switch will be able to process these incoming frames from the
+ management interface and delivers these frames to the physical switch port.
+ 
+ Graphical representation
+-------------------------
+-
++~~~~~~~~~~~~~~~~~~~~~~~~
+ Summarized, this is basically how DSA looks like from a network device
+-perspective:
++perspective::
+ 
+ 
+-			|---------------------------
++			+--------------------------+
+ 			| CPU network device (eth0)|
+-			----------------------------
+-			| <tag added by switch     |
++			+--------------------------+
++			| <- tag added by switch   |
+ 			|                          |
+ 			|                          |
+-			|        tag added by CPU> |
+-		|--------------------------------------------|
++			|      tag added by CPU -> |
++		+-------+--------------------------+---------+
+ 		| Switch driver                              |
+-		|--------------------------------------------|
+-            ||        ||         ||
+-		|-------|  |-------|  |-------|
++		+--++---------++---------++------------------+
++		   ||         ||         ||
++		+--++---+  +--++---+  +--++---+
+ 		| sw0p0 |  | sw0p1 |  | sw0p2 |
+-		|-------|  |-------|  |-------|
++		+-------+  +-------+  +-------+
+ 
+ Slave MDIO bus
+---------------
+-
++~~~~~~~~~~~~~~
+ In order to be able to read to/from a switch PHY built into it, DSA creates a
+ slave MDIO bus which allows a specific switch driver to divert and intercept
+ MDIO reads/writes towards specific PHY addresses. In most MDIO-connected
+@@ -204,8 +198,7 @@ internal or external MDIO devices this switch might be connected to: internal
+ PHYs, external PHYs, or even external switches.
+ 
+ Data structures
+----------------
+-
++~~~~~~~~~~~~~~~
+ DSA data structures are defined in include/net/dsa.h as well as
+ net/dsa/dsa_priv.h.
+ 
+@@ -232,12 +225,12 @@ and a reference to the backing dsa_switch_driver
+ dsa_switch_driver: structure referencing function pointers, see below for a full
+ description.
+ 
+-Design limitations
+-==================
+ 
+-DSA is a platform device driver
+--------------------------------
++Design limitations
++------------------
+ 
++DSA as a platform device driver
++~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ DSA is implemented as a DSA platform device driver which is convenient because
+ it will register the entire DSA switch tree attached to a master network device
+ in one-shot, facilitating the device creation and simplifying the device driver
+@@ -249,16 +242,14 @@ model a bit, this comes however with a number of limitations:
+ - supporting non-MDIO and non-MMIO (platform) switches is not possible
+ 
+ Limits on the number of devices and ports
+------------------------------------------
+-
++~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ DSA currently limits the number of maximum switches within a tree to 4
+ (DSA_MAX_SWITCHES), and the number of ports per switch to 12 (DSA_MAX_PORTS).
+ These limits could be extended to support larger configurations would this need
+ arise.
+ 
+ Lack of CPU/DSA network devices
+--------------------------------
+-
++~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ DSA does not currently create slave network devices for the CPU or DSA ports, as
+ described before. This might be an issue in the following cases:
+ 
+@@ -272,8 +263,7 @@ described before. This might be an issue in the following cases:
+   when using a cascaded setup
+ 
+ Common pitfalls using DSA setups
+---------------------------------
+-
++~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ Once a master network device is configured to use DSA (dev->dsa_ptr becomes
+ non-NULL), and the switch behind it expects a tagging protocol, this network
+ interface can only exclusively be used as a conduit interface. Sending packets
+@@ -286,8 +276,9 @@ Slave network devices check that the master network device is UP before allowing
+ you to administratively bring UP these slave network devices. A common
+ configuration mistake is forgetting to bring UP the master network device first.
+ 
+-Interactions with other subsystems
+-==================================
++
++Interactions with Other Subsystems
++----------------------------------
+ 
+ DSA currently leverages the following subsystems:
+ 
+@@ -297,8 +288,7 @@ DSA currently leverages the following subsystems:
+ - HWMON: drivers/hwmon/*
+ 
+ MDIO/PHY library
+-----------------
+-
++~~~~~~~~~~~~~~~~
+ Slave network devices exposed by DSA may or may not be interfacing with PHY
+ devices (struct phy_device as defined in include/linux/phy.h), but the DSA
+ subsystem deals with all possible combinations:
+@@ -327,8 +317,7 @@ logic basically looks like this:
+ 
+ 
+ SWITCHDEV
+----------
+-
++~~~~~~~~~
+ DSA directly utilizes SWITCHDEV when interfacing with the bridge layer, and
+ more specifically with its VLAN filtering portion when configuring VLANs on top
+ of per-port slave network devices. Since DSA primarily deals with
+@@ -341,8 +330,7 @@ As of today, the only SWITCHDEV objects supported by DSA are the FDB and VLAN
+ objects.
+ 
+ Device Tree
+------------
+-
++~~~~~~~~~~~
+ DSA features a standardized binding which is documented in
+ Documentation/devicetree/bindings/net/dsa/dsa.txt. PHY/MDIO library helper
+ functions such as of_get_phy_mode(), of_phy_connect() are also used to query
+@@ -354,8 +342,9 @@ HWMON
+ Some switch drivers feature internal temperature sensors which are exposed as
+ regular HWMON devices in /sys/class/hwmon/.
+ 
++
+ Driver development
+-==================
++------------------
+ 
+ DSA switch drivers need to implement a dsa_switch_driver structure which will
+ contain the various members described below.
+@@ -367,8 +356,7 @@ Unless requested differently by setting the priv_size member accordingly, DSA
+ does not allocate any driver private context space.
+ 
+ Switch configuration
+---------------------
+-
++~~~~~~~~~~~~~~~~~~~~
+ - priv_size: additional size needed by the switch driver for its private context
+ 
+ - tag_protocol: this is to indicate what kind of tagging protocol is supported,
+@@ -399,8 +387,7 @@ Switch configuration
+   CPU/management interface as an optimization
+ 
+ PHY devices and link management
+--------------------------------
+-
++~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ - get_phy_flags: Some switches are interfaced to various kinds of Ethernet PHYs,
+   if the PHY library PHY driver needs to know about information it cannot obtain
+   on its own (e.g.: coming from switch memory mapped registers), this function
+@@ -434,8 +421,7 @@ PHY devices and link management
+   information is obtained
+ 
+ Ethtool operations
+-------------------
+-
++~~~~~~~~~~~~~~~~~~
+ - get_strings: ethtool function used to query the driver's strings, will
+   typically return statistics strings, private flags strings etc.
+ 
+@@ -478,8 +464,7 @@ Ethtool operations
+   pretty-print register values and registers
+ 
+ Power management
+-----------------
+-
++~~~~~~~~~~~~~~~~
+ - suspend: function invoked by the DSA platform device when the system goes to
+   suspend, should quiesce all Ethernet switch activities, but keep ports
+   participating in Wake-on-LAN active as well as additional wake-up logic if
+@@ -502,8 +487,7 @@ Power management
+   disabled while being a bridge member
+ 
+ Hardware monitoring
+--------------------
+-
++~~~~~~~~~~~~~~~~~~~
+ These callbacks are only available if CONFIG_NET_DSA_HWMON is enabled:
+ 
+ - get_temp: this function queries the given switch for its temperature
+@@ -519,8 +503,7 @@ These callbacks are only available if CONFIG_NET_DSA_HWMON is enabled:
+ See Documentation/hwmon/sysfs-interface for details.
+ 
+ Bridge layer
+-------------
+-
++~~~~~~~~~~~~
+ - port_bridge_join: bridge layer function invoked when a given switch port is
+   added to a bridge, this function should be doing the necessary at the switch
+   level to permit the joining port from being added to the relevant logical
+@@ -540,8 +523,7 @@ Bridge layer
+   the relevant ageing based on the intersection results
+ 
+ Bridge VLAN filtering
+----------------------
+-
++~~~~~~~~~~~~~~~~~~~~~
+ - port_vlan_add: bridge layer function invoked when a VLAN is configured
+   (tagged or untagged) for the given switch port
+ 
+@@ -565,11 +547,12 @@ of DSA, would be the its port-based VLAN, used by the associated bridge device.
+   the specified MAC address from the specified VLAN ID if it was mapped into
+   this port forwarding database
+ 
++
+ TODO
+-====
++----
+ 
+ The platform device problem
+----------------------------
++~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ DSA is currently implemented as a platform device driver which is far from ideal
+ as was discussed in this thread:
+ 
+@@ -589,8 +572,7 @@ Attempts of reworking this has been done here:
+ https://lwn.net/Articles/643149/
+ 
+ Making SWITCHDEV and DSA converge towards an unified codebase
+--------------------------------------------------------------
+-
++~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ SWITCHDEV properly takes care of abstracting the networking stack with offload
+ capable hardware, but does not enforce a strict switch device driver model. On
+ the other DSA enforces a fairly strict device driver model, and deals with most
+@@ -598,8 +580,7 @@ of the switch specific. At some point we should envision a merger between these
+ two subsystems and get the best of both worlds.
+ 
+ Other hanging fruits
+---------------------
+-
++~~~~~~~~~~~~~~~~~~~~
+ - making the number of ports fully dynamic and not dependent on DSA_MAX_PORTS
+ - allowing more than one CPU/management interface:
+   http://comments.gmane.org/gmane.linux.network/365657
+diff --git a/drivers/crypto/inside-secure/user-guide.txt b/drivers/crypto/inside-secure/user-guide.txt
+index 6ed0dc8..9b07e05 100644
+--- a/drivers/crypto/inside-secure/user-guide.txt
++++ b/drivers/crypto/inside-secure/user-guide.txt
+@@ -1,21 +1,20 @@
+-Inside-Secure EIP197/97 user guide
+-===============================
++EIP197/97 Crypto Driver
++=======================
+ 
+ Introduction
+ ------------
+ The EIP197/97 is a hybrid packet engine designed to off-load various security
+-protocols such as IPsec ESP, IPsec AH, SRTP, SSL, TLS,
+-DTLS and MACsec.
++protocols such as IPsec ESP, IPsec AH, SRTP, SSL, TLS, DTLS and MACsec.
+ 
+-The EIP197 uses firmware, which should be loaded by the driver during
+-the probe process (EIP97 has no firmware support).
++The EIP197 uses firmware, which is loaded by the driver during the probe process.
++EIP97 has no firmware support.
+ 
+-Both EIP197 and EIP97 have 4 hardware rings which can be used for
++Both EIP197 and EIP97 have 4 hardware rings that can be used for
+ cryptographic operations.
+ 
+-This document provides a brief EIP197/97 driver usage.
++This document provides a brief overview on EIP197/97 driver usage.
+ 
+-Kernel infrastructure
++Kernel Infrastructure
+ ---------------------
+ The EIP197/97 driver uses Kernel crypto infrastructure, for more information
+ refer to: http://www.chronox.de/crypto-API/
+@@ -35,16 +34,17 @@ Refer to: Documentation/devicetree/bindings/crypto/inside_secure_eip.txt
+ 
+ Firmware (for EIP197 only)
+ --------------------------
+-The EIP197 driver, loads two firmware images in to the engine:
++The EIP197 driver loads two firmware images into the engine:
+ 	- ipue.bin:	Input Pull-Up micro-Engine
+ 	- ifpp.bin:	Input Flow Post-Processor micro-Engine
++
+ The driver expects to find the firmware images in /lib/firmware/eip197,
+ if the firmware images aren't present there, the probe process of
+-the EIP197 driver will fail.
++the EIP197 driver fails.
+ 
+-Basic usage
++Basic Usage
+ -----------
+-Currently EIP197/97  are avaialble on several Marvell SoC:
++Currently EIP197/97 are avaialble on several Marvell SoC:
+ Armada8040 - 2 EIP197 engines.
+ Armada7040 - 1 EIP197 engine.
+ Armada3700 - 1 EIP97 engine.
+@@ -53,31 +53,38 @@ Currently, due to Kernel crypto API limitations, the EIP197 driver
+ operates only with one engine in the Kernel (support of multiple engines
+ is planned as future work).
+ 
+-The user can request a number of rings (up to 4 per engine) using module
+-param called "rings":
+-	insmode crypto_safexcel.ko rings=x,y
+-		x - number of rings on EIP197-0 engine
+-		y - number of rings on EIP197-1 engin (For device with
+-		    more than one engine, such as Aramada8040)
++The user may select the number of rings (up to 4 per engine) using a module
++parameter named "rings"::
++
++		> insmode crypto_safexcel.ko rings=x,y
++
++	- x: number of rings on EIP197-0 engine
++	- y: number of rings on EIP197-1 engine
++	     (For device with more than one engine, such as Armada8040)
+ 
+ In Armada8040, due to the Kernel limitation stated above, the first
+ engine with rings!=0 will be used.
+ 
+-------------|---------------|----------|----------|-------------|
+-   device   |     rings	    | EIP197-0 | EIP197-1 |  Operating  |
+-	    |		    | EIP97-0  |          |    engine	|
+-------------|---------------|----------|----------|-------------|
+- Armada3700 |   rings=4	    |     4    |    N/A   |      0      |
+-------------|---------------|----------|----------|-------------|
+- Armada7040 |   rings=4	    |	  4    |    N/A   |      0	|
+-------------|---------------|----------|----------|-------------|
+-	    |   rings=4,0   |	  4    |     0	  |	 0	|
+-	    |   rings=0,4   |     0    |     4    |	 1	|
+- Armada8040 |   rings=4,4   |     4    |     4    |	 0	|
+-	    |   rings=3,4   |     3    |     4    |	 0	|
+-	    |   rings=4,3   |     4    |     3    |	 0      |
+-------------|---------------|----------|----------|-------------|
+++---------------+---------------+----------+----------+-----------------+
++| Device	|   rings	| EIP197-0 | EIP197-1 | Operating 	|
++|		|		| EIP97-0  |          | Engine		|
+++===============+===============+==========+==========+=================+
++| Armada3700	|   rings=4	|     4    |    N/A   |      0		|
+++---------------+---------------+----------+----------+-----------------+
++| Armada7040	|   rings=4	|     4    |    N/A   |      0		|
+++---------------+---------------+----------+----------+-----------------+
++| Armada8040	|   rings=4,0   |     4    |     0    |      0		|
++|		+---------------+----------+----------+-----------------+
++|		|   rings=0,4   |     0    |     4    |      1		|
++|		+---------------+----------+----------+-----------------+
++|		|   rings=4,4   |     4    |     4    |      0		|
++|		+---------------+----------+----------+-----------------+
++|		|   rings=3,4   |     3    |     4    |      0		|
++|		+---------------+----------+----------+-----------------+
++|		|   rings=4,3   |     4    |     3    |      0		|
+++---------------+---------------+----------+----------+-----------------+
++
+ If "rings" is not provided, the default value is:
+-	Armada3700:	rings=4
+-	Armada7040:	rings=4
+-	Armada8040:	rings=4,4 (Operating engine is engine 0)
++	- Armada3700: rings=4
++	- Armada7040: rings=4
++	- Armada8040: rings=4,4 (Operating engine is engine 0)
+diff --git a/drivers/telephony/mvebu_phone/telephony_user_guide.txt b/drivers/telephony/mvebu_phone/telephony_user_guide.txt
+index 9ce9f0e..849e37a 100644
+--- a/drivers/telephony/mvebu_phone/telephony_user_guide.txt
++++ b/drivers/telephony/mvebu_phone/telephony_user_guide.txt
+@@ -1,5 +1,5 @@
+-Marvell TDM telephony user guide
+-================================
++TDM Telephony
++==============
+ 
+ Introduction
+ ------------
+@@ -9,6 +9,7 @@ There are 2 telephony controllers in Marvell SoCs:
+ 
+ In order to use telephony drivers the following SW modules are required
+ (Explanation will be provided later is this document):
++
+ 	- Linux Kernel Image with telephony support
+ 	- Linux Kernel device-tree with telephony support
+ 	- SLIC (Subscriber line interface card) Linux Kernel module
+@@ -27,46 +28,60 @@ Refer to: Documentation/devicetree/bindings/telephony/mvebu-phone.txt
+ 
+ SLIC
+ ----
+-There are pre-compiled Linux Kernel modules for supported SLIC devices
+-located in the LSP release (rootfs/lib/modules/slic/):
+-- Silabs SLICs:
+-	- silabs-si3217x.ko
+-	- silabs-si3226x.ko
+-- Zarlink SLICs:
+-	- zarlink-ve792.ko
+-	- zarlink-ve880.ko
+-	- zarlink-ve886.ko
+-	- zarlink-ve888.ko
+-	- zarlink-ve890.ko
++The LSP release contains pre-compiled Kernel modules for supported SLIC devices,
++located in: rootfs/lib/modules/slic/:
++
++	- Silabs SLICs:
++		- silabs-si3217x.ko
++		- silabs-si3226x.ko
++	- Zarlink SLICs:
++		- zarlink-ve792.ko
++		- zarlink-ve880.ko
++		- zarlink-ve886.ko
++		- zarlink-ve888.ko
++		- zarlink-ve890.ko
++
++The corresponding Kernel module should be inserted after boot using::
+ 
+-The corresponding Kernel module should be inserted after boot using:
++	> insmod <Kernel_module_name>
+ 
+-	insmod <Kernel_module_name>
++For example::
++
++	> insmod silabs-si3226x.ko
+ 
+-For example: insmod silabs-si3226x.ko
+ 
+ mv-voice-tool
+ -------------
+ User-space application which communicates via ioctl with the telephony driver.
+ The application is located in the LSP release (rootfs/usr/local/voice-tool).
+ mv-voice-tool must suit the SLIC which is used:
+-	SLIC			|	mv-voice-tool
+-	------------------------|------------------------
+-	silabs-si3226x.ko	|	mv_voice_tool-si3217x
+-	silabs-si3217x.ko	|	mv_voice_tool-si3217x
+-	zarlink-ve792.ko	|	mv_voice_tool-ve792
+-	zarlink-ve880.ko	|	mv_voice_tool-ve880
+-	zarlink-ve886.ko	|	mv_voice_tool-ve886
+-	zarlink-ve888.ko	|	mv_voice_tool-ve888
+-	zarlink-ve890.ko	|	mv_voice_tool-ve890
+ 
+-In order to run mv-voice tool, run the following command:
++	+-----------------------+-----------------------+
++	| SLIC			| mv-voice-tool		|
++	+=======================+=======================+
++	| silabs-si3226x.ko	| mv_voice_tool-si3217x	|
++	+-----------------------+-----------------------+
++	| silabs-si3217x.ko	| mv_voice_tool-si3217x	|
++	+-----------------------+-----------------------+
++	| zarlink-ve792.ko	| mv_voice_tool-ve792	|
++	+-----------------------+-----------------------+
++	| zarlink-ve880.ko	| mv_voice_tool-ve880	|
++	+-----------------------+-----------------------+
++	| zarlink-ve886.ko	| mv_voice_tool-ve886	|
++	+-----------------------+-----------------------+
++	| zarlink-ve888.ko	| mv_voice_tool-ve888	|
++	+-----------------------+-----------------------+
++	| zarlink-ve890.ko	| mv_voice_tool-ve890	|
++	+-----------------------+-----------------------+
++
++
++In order to run mv-voice tool, run the following command::
+ 
+-	./mv_voice_tool-<version>
++	> ./mv_voice_tool-<version>
+ 
+-Example for connecting 2 phones using mv-voice-tool:
++Example for connecting 2 phones using mv-voice-tool::
+ 
+-	# ./mv_voice_tool-si3226x
++	> ./mv_voice_tool-si3226x
+ 
+ 	>>  Please enter total lines number: 2
+ 	>>  Please enter PCM sample size(1/2/4): 1
+-- 
+2.7.4
+

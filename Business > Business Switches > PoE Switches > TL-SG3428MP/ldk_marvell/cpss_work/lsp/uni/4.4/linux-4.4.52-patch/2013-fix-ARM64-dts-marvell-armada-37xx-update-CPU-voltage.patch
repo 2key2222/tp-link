@@ -1,0 +1,38 @@
+From b7776043817ccc97797a84344989382d357b2083 Mon Sep 17 00:00:00 2001
+From: Victor Gu <xigu@marvell.com>
+Date: Wed, 20 Sep 2017 10:12:22 +0800
+Subject: [PATCH 2013/2241] fix: ARM64: dts: marvell: armada-37xx: update CPU
+ voltages for EspressoBin
+
+The original CPU voltage values from load 1 to load 3 are too low for
+EspressoBin board with Armada-37xx SoC when CPU is 1000MHZ, which leads
+to instability that CPU gets stuck soon during dynamic voltage scaling.
+In order to fix this issue, this patch overwrites the AVS regulator
+compatible string for EspressoBin board, thus the CPU voltage values
+from load 1 to load 3 in 1000MHZ mode will be updated from original
+1.05v to 1.108v.
+
+Change-Id: Icb17f67dd9131157bb93989f3015ddfff505df5c
+Signed-off-by: Victor Gu <xigu@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/44547
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Evan Wang <xswang@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-3720-community.dts | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-3720-community.dts b/arch/arm64/boot/dts/marvell/armada-3720-community.dts
+index 992c4c9..bf50d9a 100644
+--- a/arch/arm64/boot/dts/marvell/armada-3720-community.dts
++++ b/arch/arm64/boot/dts/marvell/armada-3720-community.dts
+@@ -73,6 +73,7 @@
+ 			};
+ 
+ 			reg_avs: avs@11500 {
++				compatible = "marvell,armada-3700-espressobin-avs";
+ 				status = "okay";
+ 			};
+ 
+-- 
+2.7.4
+

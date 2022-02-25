@@ -1,0 +1,39 @@
+From 18c490cb288734c61ae5e1b698073f82d805d449 Mon Sep 17 00:00:00 2001
+From: Stefan Chulski <stefanc@marvell.com>
+Date: Mon, 14 Aug 2017 15:08:56 +0300
+Subject: [PATCH 1883/2241] net: mvpp2: free port link IRQ during .ndo_stop
+ procedure
+
+Patch fix port stop working after ifconfig down/up sequence
+issue.
+Since IRQ wasn't released in .ndo_stop procedure, .ndo_open
+second call fails in IRQ request.
+
+Change-Id: I64af3b1cb46f94f3cf7b278387c9f3e540f64f91
+Signed-off-by: Stefan Chulski <stefanc@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/42986
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2.c | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2.c b/drivers/net/ethernet/marvell/mvpp2.c
+index 65f05fc..f23ace7 100644
+--- a/drivers/net/ethernet/marvell/mvpp2.c
++++ b/drivers/net/ethernet/marvell/mvpp2.c
+@@ -6900,6 +6900,11 @@ static int mvpp2_stop(struct net_device *dev)
+ 	mvpp2_shared_interrupt_mask_unmask(port, true);
+ 
+ 	mvpp2_irqs_deinit(port);
++
++	/* Free link IRQ */
++	if (port->priv->hw_version == MVPP22 && !port->phy_node && port->link_irq)
++		free_irq(port->link_irq, port);
++
+ 	if (!port->has_tx_irqs) {
+ 		for_each_present_cpu(cpu) {
+ 			port_pcpu = per_cpu_ptr(port->pcpu, cpu);
+-- 
+2.7.4
+

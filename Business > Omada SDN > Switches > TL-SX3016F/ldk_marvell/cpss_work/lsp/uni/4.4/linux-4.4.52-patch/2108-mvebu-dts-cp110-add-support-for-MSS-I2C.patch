@@ -1,0 +1,45 @@
+From e276abeeb6a425123ef21da5767ed1e3e11cd8c4 Mon Sep 17 00:00:00 2001
+From: Victor Gu <xigu@marvell.com>
+Date: Fri, 17 Nov 2017 12:23:38 +0800
+Subject: [PATCH 2108/2241] mvebu: dts: cp110: add support for MSS I2C
+
+The CP MSS i2c0 node is added which is used by some
+boards such as Armada7040 AMC board and other customer boards.
+The CP MSS i2c0 uses the ICU 0 entry as defined in function
+specification.
+
+Change-Id: I931ea26b4e5b645f0e7728619f1dd8fc66a85cb8
+Signed-off-by: Victor Gu <xigu@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/46435
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-cp110.dtsi | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-cp110.dtsi b/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
+index fe7c9a5..d17c4e8 100644
+--- a/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
+@@ -315,6 +315,17 @@
+ 				status = "disabled";
+ 			};
+ 
++			CP110_LABEL(mss_i2c0): i2c@211000 {
++				compatible = "marvell,mv78230-i2c";
++				reg = <0x211000 0x20>;
++				#address-cells = <1>;
++				#size-cells = <0>;
++				interrupts = <ICU_GRP_NSR 0 IRQ_TYPE_LEVEL_HIGH>;
++				timeout-ms = <1000>;
++				clocks = <&CP110_LABEL(syscon0) 1 29>;
++				status = "disabled";
++			};
++
+ 			CP110_LABEL(nand): nand@720000 {
+ 				compatible = "marvell,armada370-nand";
+ 				reg = <0x720000 0x54>;
+-- 
+2.7.4
+

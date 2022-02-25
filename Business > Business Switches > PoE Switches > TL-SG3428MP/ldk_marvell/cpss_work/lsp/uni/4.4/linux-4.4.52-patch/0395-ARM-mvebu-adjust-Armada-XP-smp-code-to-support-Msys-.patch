@@ -1,0 +1,166 @@
+From 4e8a1d854197bf5a23e40e341e273aefc7372e75 Mon Sep 17 00:00:00 2001
+From: Terry Zhou <bjzhou@marvell.com>
+Date: Tue, 3 May 2016 16:24:06 +0800
+Subject: [PATCH 0395/2241] ARM: mvebu: adjust Armada XP smp code to support
+ Msys SoC
+
+Msys SoC has same CPU's as Armada XP (Sheeva v7). It can therefore use
+same smp support, however with some adjustments:
+
+- Enable proper setting of boot address redirect for Msys SoCs:
+Msys SoCs address of boot address redirect register is different than in
+other mvebu machines. Its offset is out of common pmsu address range and
+should be obtained from second memory resource.
+
+- Disable setting secondary CPU clock:
+Msys SoC's secondary CPU clock is fixed (sample at reset dependent)
+and does not require any additional configuration nor enabling.
+
+Change-Id: Id6983f616aa067a954f70701e360621fae6bf0e9
+Signed-off-by: Terry Zhou <bjzhou@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/29693
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Wilson Ding <dingwei@marvell.com>
+Reviewed-by: Lior Amsalem <alior@marvell.com>
+---
+ .../bindings/arm/marvell/armada-370-xp-pmsu.txt    |  3 +-
+ arch/arm/mach-mvebu/platsmp.c                      |  4 ++
+ arch/arm/mach-mvebu/pmsu.c                         | 55 +++++++++++++++++++++-
+ 3 files changed, 60 insertions(+), 2 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/arm/marvell/armada-370-xp-pmsu.txt b/Documentation/devicetree/bindings/arm/marvell/armada-370-xp-pmsu.txt
+index 26799ef..cd8e2a1 100644
+--- a/Documentation/devicetree/bindings/arm/marvell/armada-370-xp-pmsu.txt
++++ b/Documentation/devicetree/bindings/arm/marvell/armada-370-xp-pmsu.txt
+@@ -1,12 +1,13 @@
+ Power Management Service Unit(PMSU)
+ -----------------------------------
+-Available on Marvell SOCs: Armada 370, Armada 38x and Armada XP
++Available on Marvell SOCs: Armada 370, Armada 38x, Armada XP and Msys family
+ 
+ Required properties:
+ 
+ - compatible: should be one of:
+   - "marvell,armada-370-pmsu" for Armada 370 or Armada XP
+   - "marvell,armada-380-pmsu" for Armada 38x
++  - "marvell,msys-pmsu" for Msys family
+   - "marvell,armada-370-xp-pmsu" was used for Armada 370/XP but is now
+     deprecated and will be removed
+ 
+diff --git a/arch/arm/mach-mvebu/platsmp.c b/arch/arm/mach-mvebu/platsmp.c
+index 58cc8c1..0e7100d 100644
+--- a/arch/arm/mach-mvebu/platsmp.c
++++ b/arch/arm/mach-mvebu/platsmp.c
+@@ -54,6 +54,10 @@ static void set_secondary_cpu_clock(unsigned int cpu)
+ 	unsigned long rate;
+ 	struct clk *cpu_clk;
+ 
++	/* Do not configure Msys SoC's secondary CPU clock */
++	if (of_machine_is_compatible("marvell,msys"))
++		return;
++
+ 	thiscpu = get_cpu();
+ 
+ 	cpu_clk = get_cpu_clk(thiscpu);
+diff --git a/arch/arm/mach-mvebu/pmsu.c b/arch/arm/mach-mvebu/pmsu.c
+index 63040868..932e27c 100644
+--- a/arch/arm/mach-mvebu/pmsu.c
++++ b/arch/arm/mach-mvebu/pmsu.c
+@@ -113,6 +113,7 @@ extern void armada_38x_cpu_resume(void);
+ static phys_addr_t pmsu_mp_phys_base;
+ static void __iomem *pmsu_mp_base;
+ static void __iomem *cib_control;
++static void __iomem *pmsu_msys_ba_redirect_reg;
+ 
+ static void *mvebu_cpu_resume;
+ static int (*mvebu_pmsu_dfs_request_ptr)(int cpu);
+@@ -121,11 +122,17 @@ static const struct of_device_id of_pmsu_table[] = {
+ 	{ .compatible = "marvell,armada-370-pmsu", },
+ 	{ .compatible = "marvell,armada-370-xp-pmsu", },
+ 	{ .compatible = "marvell,armada-380-pmsu", },
++	{ .compatible = "marvell,msys-pmsu", },
+ 	{ /* end of list */ },
+ };
+ 
+ void mvebu_pmsu_set_cpu_boot_addr(int hw_cpu, void *boot_addr)
+ {
++	if (pmsu_msys_ba_redirect_reg) {
++		writel(virt_to_phys(boot_addr), pmsu_msys_ba_redirect_reg);
++		return;
++	}
++
+ 	writel(virt_to_phys(boot_addr), pmsu_mp_base +
+ 		PMSU_BOOT_ADDR_REDIRECT_OFFSET(hw_cpu));
+ }
+@@ -172,6 +179,35 @@ int mvebu_setup_boot_addr_wa(unsigned int crypto_eng_target,
+ 	return 0;
+ }
+ 
++/* Msys SoCs address of boot address redirect register is different than in
++ * other mvebu machines. Its offset is out of common pmsu address range.
++ */
++static int msys_ba_redirect_quirk(struct device_node *np)
++{
++	struct resource res;
++
++	if (of_address_to_resource(np, 1, &res)) {
++		pr_err("unable to get resource\n");
++		return -ENOENT;
++	}
++
++	if (!request_mem_region(res.start, resource_size(&res),
++				np->full_name)) {
++		pr_err("unable to request region\n");
++		return -EBUSY;
++	}
++
++	pmsu_msys_ba_redirect_reg = ioremap(res.start, resource_size(&res));
++	if (!pmsu_mp_base) {
++		pr_err("unable to map register\n");
++		release_mem_region(res.start, resource_size(&res));
++		return -ENOMEM;
++	}
++
++	return 0;
++}
++
++
+ static int __init mvebu_v7_pmsu_init(void)
+ {
+ 	struct device_node *np;
+@@ -221,6 +257,12 @@ static int __init mvebu_v7_pmsu_init(void)
+ 		goto out;
+ 	}
+ 
++	if (of_device_is_compatible(np, "marvell,msys-pmsu")) {
++		ret = msys_ba_redirect_quirk(np);
++		if (ret)
++			iounmap(pmsu_mp_base);
++	}
++
+  out:
+ 	of_node_put(np);
+ 	return ret;
+@@ -530,7 +572,18 @@ static int __init mvebu_v7_cpu_pm_init(void)
+ 		return 0;
+ 	of_node_put(np);
+ 
+-	if (of_machine_is_compatible("marvell,armadaxp"))
++	/*
++	 * Currently the CPU idle support for Armada 38x is broken, as
++	 * the CPU hotplug uses some of the CPU idle functions it is
++	 * broken too, so let's disable it
++	 */
++	if (of_machine_is_compatible("marvell,armada380")) {
++		cpu_hotplug_disable();
++		pr_warn("CPU hotplug support is currently broken on Armada 38x: disabling\n");
++	}
++
++	if (of_machine_is_compatible("marvell,armadaxp") ||
++	    of_machine_is_compatible("marvell,msys"))
+ 		ret = armada_xp_cpuidle_init();
+ 	else if (of_machine_is_compatible("marvell,armada370"))
+ 		ret = armada_370_cpuidle_init();
+-- 
+2.7.4
+

@@ -1,0 +1,52 @@
+From 68dd484378a514cb56683aa74f6e2b4154a2e1f2 Mon Sep 17 00:00:00 2001
+From: Omri Itach <omrii@marvell.com>
+Date: Wed, 7 Feb 2018 14:15:28 +0200
+Subject: [PATCH 2238/2241] marvell: dts: ppv2: disable reserved cma memory for
+ AP1
+
+Armada 8162 & Armada 8164 boards supports only DRAM on AP0,
+so reserving CMA memory on DRAM of AP1 is failing.
+this patch temporarily disables this region, until DRAM
+on AP1 is properly supported.
+
+Change-Id: I06b87314b92d1d8e46d2caf1d9c5ecc1ae4ba694
+Signed-off-by: Omri Itach <omrii@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/50170
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-8162-db.dts | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-8162-db.dts b/arch/arm64/boot/dts/marvell/armada-8162-db.dts
+index 7b7ad06..e0cd543 100644
+--- a/arch/arm64/boot/dts/marvell/armada-8162-db.dts
++++ b/arch/arm64/boot/dts/marvell/armada-8162-db.dts
+@@ -61,11 +61,15 @@
+ 		ranges;
+ 
+ 		/* global autoconfigured region for contiguous allocations */
++
++	/*
++	 * Temporarily disable CMA on AP1, until DRAM on AP1 is supported
+ 		ap1_mem: ap1-area@4230000000 {
+ 			compatible = "shared-dma-pool";
+ 			reusable;
+ 			reg = <0x42 0x30000000 0 0x10000000>;
+ 		};
++	*/
+ 	};
+ 	aliases {
+ 		ethernet0 = &cp0_emac0;
+@@ -154,7 +158,8 @@
+ &cp4_ppv22 {
+ 	l4_chksum_jumbo_port = <0>;
+ 	pinctrl-names = "default";
+-	memory-region = <&ap1_mem>;
++	/* memory-region = <&ap1_mem>; */
++
+ };
+ 
+ &cp4_eth0 {
+-- 
+2.7.4
+

@@ -1,0 +1,54 @@
+From 34230aa78ce0faeb4230ea15007070c3c6aa666c Mon Sep 17 00:00:00 2001
+From: Ofer Heifetz <oferh@marvell.com>
+Date: Mon, 20 Mar 2017 09:02:07 +0200
+Subject: [PATCH 1504/2241] crypto: inside-secure: apply quota on dequeue
+ operation
+
+in some cases when TCP is used, a high pressure connection
+may suffacate other requests thus causing the TCP to drop,
+this commit limits the driver de-queue to a predefined quota.
+
+Change-Id: I909740b1d911f8017e0b84a1a4242ea5231985ad
+Signed-off-by: Ofer Heifetz <oferh@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/37738
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+---
+ drivers/crypto/inside-secure/safexcel.c | 6 +++++-
+ drivers/crypto/inside-secure/safexcel.h | 2 +-
+ 2 files changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/crypto/inside-secure/safexcel.c b/drivers/crypto/inside-secure/safexcel.c
+index 0d8f393..7a2b157 100644
+--- a/drivers/crypto/inside-secure/safexcel.c
++++ b/drivers/crypto/inside-secure/safexcel.c
+@@ -669,7 +669,11 @@ void safexcel_dequeue(struct safexcel_crypto_priv *priv, int ring)
+ 
+ 		cdesc += commands;
+ 		rdesc += results;
+-		nreq++;
++
++		if (++nreq > EIP197_MAX_BATCH_SZ) {
++			priv->ring[ring].need_dequeue = true;
++			goto finalize;
++		}
+ 	} while (true);
+ 
+ resource_fail:
+diff --git a/drivers/crypto/inside-secure/safexcel.h b/drivers/crypto/inside-secure/safexcel.h
+index a304925..a39a843 100644
+--- a/drivers/crypto/inside-secure/safexcel.h
++++ b/drivers/crypto/inside-secure/safexcel.h
+@@ -39,7 +39,7 @@
+ #define EIP197_MAX_RINGS				4
+ 
+ #define EIP197_FETCH_COUNT				1
+-#define EIP197_MAX_BATCH_SZ				8
++#define EIP197_MAX_BATCH_SZ				32
+ 
+ #define EIP197_GFP_FLAGS(base)	((base).flags & CRYPTO_TFM_REQ_MAY_SLEEP ? \
+ 				 GFP_KERNEL : GFP_ATOMIC)
+-- 
+2.7.4
+

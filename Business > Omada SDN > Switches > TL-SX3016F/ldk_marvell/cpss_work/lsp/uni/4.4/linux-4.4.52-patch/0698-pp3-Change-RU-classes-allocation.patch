@@ -1,0 +1,110 @@
+From 0f2cc4a5082697c7e578868ce6acd48975273f3b Mon Sep 17 00:00:00 2001
+From: Dmitri Epshtein <dima@marvell.com>
+Date: Mon, 15 Aug 2016 13:25:36 +0300
+Subject: [PATCH 0698/2241] pp3: Change RU classes allocation
+
+- Fix bug in the function: "qm_ru_port_to_class_set"
+- HMAC: can use 40 classes: 8..47
+It means only 40 TX SWQs can be used with reorder
+	HFrame #0: TXQs 0..15
+	HFrame #1: TXQs 0..15
+	HFrame #2: TXQs 0..7
+FW: can use 16 classes: 48..63
+-------------------------------------
+ |SOURCE | source port | class range |
+ -------------------------------------
+ | EMAC  |   0 - 5     |   0 - 5     |
+ -------------------------------------
+ | CMAC  |   6 - 7     |   6 - 7     |
+ -------------------------------------
+ | HMAC  |   8 - 71    |   8 - 47    |  Wrap around every 40
+ -------------------------------------
+ | FW    |   72 - 119  |   48 - 63   |  Wrap around every 16
+ -------------------------------------
+
+Change-Id: Icb2b2617d47dcfd26bf68dbfdc36d528cb2e1ec7
+Signed-off-by: Dmitri Epshtein <dima@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/31932
+Reviewed-by: Yan Markman <ymarkman@marvell.com>
+Tested-by: Star_Automation <star@marvell.com>
+---
+ drivers/net/ethernet/marvell/pp3/qm/mv_qm.c | 15 +++++++--------
+ drivers/net/ethernet/marvell/pp3/qm/mv_qm.h |  9 +++------
+ 2 files changed, 10 insertions(+), 14 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/pp3/qm/mv_qm.c b/drivers/net/ethernet/marvell/pp3/qm/mv_qm.c
+index 343add4..0ec0957 100644
+--- a/drivers/net/ethernet/marvell/pp3/qm/mv_qm.c
++++ b/drivers/net/ethernet/marvell/pp3/qm/mv_qm.c
+@@ -1490,7 +1490,7 @@ static int qm_port_default_set(int port, enum mv_tm_source_type type)
+ 	return 0;
+ }
+ 
+-static int qm_ru_port_to_class_set(int port, int class, int sid_pool)
++int qm_ru_port_to_class_set(int port, int class, int sid_pool)
+ {
+ 	u32 port2class_entry;
+ 
+@@ -1510,7 +1510,7 @@ static int qm_ru_port_to_class_set(int port, int class, int sid_pool)
+ 	}
+ 
+ 	port2class_entry = class | (sid_pool << 6);
+-	qm_register_write(qm.reorder.ru_port2class, port * 4, 4, &port2class_entry);
++	qm_register_write(qm.reorder.ru_port2class, port * 4, 1, &port2class_entry);
+ 	return 0;
+ }
+ 
+@@ -1524,9 +1524,9 @@ static int qm_ru_port_to_class_set(int port, int class, int sid_pool)
+  -------------------------------------
+  | CMAC  |   6 - 7     |   6 - 7     |
+  -------------------------------------
+- | HMAC  |   8 - 71    |   8 - 15    |  Warp around every 8
++ | HMAC  |   8 - 71    |   8 - 47    |  Wrap around every 40
+  -------------------------------------
+- | FW    |   72 - 119  |   16 - 63   |
++ | FW    |   72 - 119  |   48 - 63   |  Wrap around every 16
+  -------------------------------------
+ */
+ 
+@@ -1552,15 +1552,14 @@ static int qm_ru_port_to_class_default_set(void)
+ 
+ 	class = 8;
+ 	for (port = 8; port < 72; port++) {
+-		if (qm_ru_port_to_class_set(port, class + (port % 8), 0) < 0)
++		if (qm_ru_port_to_class_set(port, class + ((port - 8) % 40), 0) < 0)
+ 			goto err;
+ 	}
+ 
+-	class = 16;
++	class += 40;
+ 	for (port = 72; port < 120; port++) {
+-		if (qm_ru_port_to_class_set(port, class, 0) < 0)
++		if (qm_ru_port_to_class_set(port, class + ((port - 72) % 16), 0) < 0)
+ 			goto err;
+-		class++;
+ 	}
+ 
+ 	return 0;
+diff --git a/drivers/net/ethernet/marvell/pp3/qm/mv_qm.h b/drivers/net/ethernet/marvell/pp3/qm/mv_qm.h
+index 4bb2cd6..11b5c79 100644
+--- a/drivers/net/ethernet/marvell/pp3/qm/mv_qm.h
++++ b/drivers/net/ethernet/marvell/pp3/qm/mv_qm.h
+@@ -259,12 +259,9 @@ int qm_queue_len_get(int queue, u32 *length, u32 *status);
+ */
+ void qm_idle_status_get(u32 *status);
+ 
+-/**
+- * Configure REORDER with class command when permission is granted.
+- *  Return values:
+- *		0 - success
+- */
+-int qm_ru_class_cmd_set(u32 host, u32 host_class, u32 host_sid, u32 cmd);
++/* Set port to class mapping */
++int qm_ru_port_to_class_set(int port, int class, int sid_pool);
++
+ /*
+  *  Check error bits.
+  *  If set to 1, and print the error that occurred.
+-- 
+2.7.4
+

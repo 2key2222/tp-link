@@ -1,0 +1,47 @@
+From 64c1447ced9c87289ae83110ff588d5df4ce1c17 Mon Sep 17 00:00:00 2001
+From: Markus Elfring <elfring@users.sourceforge.net>
+Date: Mon, 17 Apr 2017 10:40:32 +0200
+Subject: [PATCH 1698/2241] net: mvpp2: Improve a size determination in two
+ functions
+
+Replace the specification of two data structures by pointer dereferences
+as the parameter for the operator "sizeof" to make the corresponding size
+determination a bit safer according to the Linux coding style convention.
+
+Patch cherry-picked from mainline 4.12_rc5
+
+Change-Id: Ia6524e25d1e1992b5958c656a9251d298e5c299c
+Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/40448
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2.c b/drivers/net/ethernet/marvell/mvpp2.c
+index afd327f..6620300 100644
+--- a/drivers/net/ethernet/marvell/mvpp2.c
++++ b/drivers/net/ethernet/marvell/mvpp2.c
+@@ -1945,7 +1945,7 @@ static int mvpp2_prs_vlan_add(struct mvpp2 *priv, unsigned short tpid, int ai,
+ 			goto error;
+ 		}
+ 
+-		memset(pe, 0 , sizeof(struct mvpp2_prs_entry));
++		memset(pe, 0, sizeof(*pe));
+ 		mvpp2_prs_tcam_lu_set(pe, MVPP2_PRS_LU_VLAN);
+ 		pe->index = tid;
+ 
+@@ -2086,7 +2086,7 @@ static int mvpp2_prs_double_vlan_add(struct mvpp2 *priv, unsigned short tpid1,
+ 			goto error;
+ 		}
+ 
+-		memset(pe, 0, sizeof(struct mvpp2_prs_entry));
++		memset(pe, 0, sizeof(*pe));
+ 		mvpp2_prs_tcam_lu_set(pe, MVPP2_PRS_LU_VLAN);
+ 		pe->index = tid;
+ 
+-- 
+2.7.4
+

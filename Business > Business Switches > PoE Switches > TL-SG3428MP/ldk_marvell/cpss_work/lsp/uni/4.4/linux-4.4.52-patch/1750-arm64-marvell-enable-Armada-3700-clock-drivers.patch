@@ -1,0 +1,33 @@
+From 85b1b549c95ea187e4ac3b600e2ece51971c389d Mon Sep 17 00:00:00 2001
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Date: Fri, 10 Jun 2016 15:23:29 +0200
+Subject: [PATCH 1750/2241] arm64: marvell: enable Armada 3700 clock drivers
+
+This patch enables the support for the clocks drivers used on the
+Armada 3700.
+
+Change-Id: I25d18ccf83b90cf7d301ed52d795e7f28efe9270
+Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Signed-off-by: allen yan <yanwei@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/40827
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Victor Gu <xigu@marvell.com>
+---
+ arch/arm64/Kconfig.platforms | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm64/Kconfig.platforms b/arch/arm64/Kconfig.platforms
+index 187ab049..ad2e5f4 100644
+--- a/arch/arm64/Kconfig.platforms
++++ b/arch/arm64/Kconfig.platforms
+@@ -8,6 +8,7 @@ config ARCH_MVEBU
+ 	select MVEBU_ICU_IRQ
+ 	select MVEBU_CLK_COMMON
+ 	select ARMADA_3700_CLK
++	select ARMADA_37XX_CLK
+ 	select PINCTRL
+ 	select PINCTRL_ARMADA_3700
+ 	select ARMADA_AP806_CORE_CLK
+-- 
+2.7.4
+

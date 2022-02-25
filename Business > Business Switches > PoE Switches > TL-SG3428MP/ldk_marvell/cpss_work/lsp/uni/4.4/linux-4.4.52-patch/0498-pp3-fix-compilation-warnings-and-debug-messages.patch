@@ -1,0 +1,97 @@
+From 22317cd365f92b5ba3c6981470fb952354622a6c Mon Sep 17 00:00:00 2001
+From: Dmitri Epshtein <dima@marvell.com>
+Date: Tue, 14 Jun 2016 11:42:15 +0300
+Subject: [PATCH 0498/2241] pp3: fix compilation warnings and debug messages
+
+Change-Id: I65df20ae6ef649929867b4fb3dfc8f9eeca4dfc3
+Signed-off-by: Dmitri Epshtein <dima@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/30449
+Reviewed-by: Lior Amsalem <alior@marvell.com>
+Tested-by: Lior Amsalem <alior@marvell.com>
+---
+ drivers/net/ethernet/marvell/pp3/net_dev/mv_dev_dbg.c |  2 +-
+ drivers/net/ethernet/marvell/pp3/net_dev/mv_netdev.c  | 14 ++++++++++----
+ drivers/net/ethernet/marvell/pp3/net_dev/mv_ptp_uio.c |  2 +-
+ drivers/net/ethernet/marvell/pp3/platform/mv_pp3.c    |  1 +
+ 4 files changed, 13 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/pp3/net_dev/mv_dev_dbg.c b/drivers/net/ethernet/marvell/pp3/net_dev/mv_dev_dbg.c
+index 8abbbf5..f6701a3 100644
+--- a/drivers/net/ethernet/marvell/pp3/net_dev/mv_dev_dbg.c
++++ b/drivers/net/ethernet/marvell/pp3/net_dev/mv_dev_dbg.c
+@@ -699,7 +699,7 @@ static void pp3_dbg_dev_nic_stats_dump(struct pp3_dev_priv *dev_priv)
+ /*---------------------------------------------------------------------------*/
+ 
+ /* Calculate SUM of single counter from TXQ statistics for all TXQs in virtual port */
+-static int pp3_dbg_sum_txqs_cnt_get(struct pp3_vport *vp, int cnt_index)
++int pp3_dbg_sum_txqs_cnt_get(struct pp3_vport *vp, int cnt_index)
+ {
+ 	int q, sum = 0;
+ 	unsigned int *stats;
+diff --git a/drivers/net/ethernet/marvell/pp3/net_dev/mv_netdev.c b/drivers/net/ethernet/marvell/pp3/net_dev/mv_netdev.c
+index 5548f63..20d8917 100644
+--- a/drivers/net/ethernet/marvell/pp3/net_dev/mv_netdev.c
++++ b/drivers/net/ethernet/marvell/pp3/net_dev/mv_netdev.c
+@@ -154,7 +154,7 @@ bool mv_pp3_is_nic_skb_recycle(void)
+ 	return mv_pp3_skb_recycle;
+ }
+ #else
+-static bool mv_pp3_skb_recycle;
++bool mv_pp3_skb_recycle;
+ #endif /* CONFIG_MV_PP3_SKB_RECYCLE */
+ 
+ int mv_pp3_dev_num_get(void)
+@@ -1114,9 +1114,10 @@ int mv_pp3_poll(struct napi_struct *napi, int budget)
+ 	struct pp3_vport *cpu_vp = dev_priv->cpu_vp[cpu];
+ 
+ #ifdef CONFIG_MV_PP3_DEBUG_CODE
+-	if (dev_priv->flags & MV_PP3_F_DBG_POLL)
+-		pr_info("%s: ENTER: netif:%s, cpu=%d, budget=%d\n",
+-				__func__, napi->dev->name, cpu, budget);
++	if (dev_priv->flags & MV_PP3_F_DBG_POLL) {
++		pr_info("%s: poll ENTER: cpu=%d, budget=%d\n",
++			napi->dev->name, cpu, budget);
++	}
+ #endif
+ 
+ 	STAT_INFO(cpu_vp->port.cpu.stats.napi_enter++);
+@@ -1155,6 +1156,11 @@ int mv_pp3_poll(struct napi_struct *napi, int budget)
+ 			mv_pp3_hmac_group_event_unmask(frame, irq_group);
+ 		}
+ 	}
++#ifdef CONFIG_MV_PP3_DEBUG_CODE
++	if (dev_priv->flags & MV_PP3_F_DBG_POLL)
++		pr_info("%s: poll EXIT: cpu=%d, budget=%u, pkts_done=%u\n",
++			napi->dev->name, cpu, budget, rx_pkt_done);
++#endif /* CONFIG_MV_PP3_DEBUG_CODE */
+ 	return rx_pkt_done;
+ }
+ 
+diff --git a/drivers/net/ethernet/marvell/pp3/net_dev/mv_ptp_uio.c b/drivers/net/ethernet/marvell/pp3/net_dev/mv_ptp_uio.c
+index 2b26d0a..545450a 100644
+--- a/drivers/net/ethernet/marvell/pp3/net_dev/mv_ptp_uio.c
++++ b/drivers/net/ethernet/marvell/pp3/net_dev/mv_ptp_uio.c
+@@ -65,7 +65,7 @@ static int read_show_cmd(char *buf, const struct kernel_param *kp)
+ {
+ 	struct ts_ptp_uio *p = (void *)(*(u32 *)(kp->arg));
+ 	if (p) {
+-		sprintf(buf, "region=%d region_offs=%x size=%lx",
++		sprintf(buf, "region=%d region_offs=%x size=%x",
+ 			p->dedicated_mg_region, p->dedicated_mg_region_offs,
+ 			(unsigned long)p->uio_info.mem[0].size);
+ 		pr_debug("%s device is used with parameters: %s\n", kp->name, buf);
+diff --git a/drivers/net/ethernet/marvell/pp3/platform/mv_pp3.c b/drivers/net/ethernet/marvell/pp3/platform/mv_pp3.c
+index 533700b..b3e9176 100644
+--- a/drivers/net/ethernet/marvell/pp3/platform/mv_pp3.c
++++ b/drivers/net/ethernet/marvell/pp3/platform/mv_pp3.c
+@@ -997,6 +997,7 @@ int mv_pp3_fdt_mac_address_get(struct device_node *np, unsigned char *mac_addr)
+ static int mv_pp3_shared_remove(struct platform_device *pdev)
+ {
+ 	/* free all shared resources */
++	pp3_sysfs_exit(pp3_device);
+ 	pr_err("%s:: called", __func__);
+ 	return 0;
+ }
+-- 
+2.7.4
+

@@ -1,0 +1,42 @@
+From 4cdc46ec437d93d3affa9f88fc1aba601f1c17ba Mon Sep 17 00:00:00 2001
+From: Yan Markman <ymarkman@marvell.com>
+Date: Thu, 28 Jul 2016 18:37:41 +0300
+Subject: [PATCH 0638/2241] pp3: txdone timer 1ms for TCP performance
+
+Under iperf test
+TCP performance degradation found on Kernel-4.4 vs K-3.14
+   186 Mbit/s  vs  936 Mbit/s
+The txdone timer to TX-buffer-release is too long (10msec).
+Set MV_PP3_TXDONE_TIMER_USEC_PERIOD=1msec restore stable 936 Mbit/s
+
+The IP routing also tested with new 1 msec and
+no degradation caused by frequent timer has been found.
+
+Change-Id: I32f30ce57a54d822185edbfb18c01ee4304828a8
+Signed-off-by: Yan Markman <ymarkman@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/31522
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Dovrat Zifroni <dovrat@marvell.com>
+Tested-by: Dovrat Zifroni <dovrat@marvell.com>
+Reviewed-by: Dmitri Epshtein <dima@marvell.com>
+Tested-by: Dmitri Epshtein <dima@marvell.com>
+---
+ drivers/net/ethernet/marvell/pp3/net_dev/mv_netdev.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/net/ethernet/marvell/pp3/net_dev/mv_netdev.h b/drivers/net/ethernet/marvell/pp3/net_dev/mv_netdev.h
+index 84d22ce..2777627 100644
+--- a/drivers/net/ethernet/marvell/pp3/net_dev/mv_netdev.h
++++ b/drivers/net/ethernet/marvell/pp3/net_dev/mv_netdev.h
+@@ -112,7 +112,7 @@ int mv_pp3_ctrl_nic_skb_recycle(int en);
+ bool mv_pp3_is_nic_skb_recycle(void);
+ #endif
+ 
+-#define MV_PP3_TXDONE_TIMER_USEC_PERIOD (10000)
++#define MV_PP3_TXDONE_TIMER_USEC_PERIOD (1000)
+ #define MV_PP3_BUF_REQUEST_SIZE	(8)
+ 
+ #if 0
+-- 
+2.7.4
+

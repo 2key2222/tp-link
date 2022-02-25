@@ -1,0 +1,181 @@
+From 06fbc40466a7d357c650ee66daa067c046428668 Mon Sep 17 00:00:00 2001
+From: Yelena Krivosheev <yelena@marvell.com>
+Date: Wed, 28 Jun 2017 13:47:02 +0300
+Subject: [PATCH 1815/2241] net: mvneta: disable HW BM pool realloc during MTU
+ change
+
+Allocate long pool with max buffer size.
+Default buffer size is 9K bytes can be overwrite by DTS file:
+"pool%d,pkt-size".
+This patch required due to HW limitation, for more details, please refer
+the Errata document.
+
+Change-Id: I3681c803ad3ff99deacbe28d26fe2366d937c41a
+Signed-off-by: Yelena Krivosheev <yelena@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/40956
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Neta Zur Hershkovits <neta@marvell.com>
+---
+ .../devicetree/bindings/net/marvell-neta-bm.txt    |  4 +-
+ drivers/net/ethernet/marvell/mvneta.c              | 60 ++++------------------
+ drivers/net/ethernet/marvell/mvneta_bm.c           |  5 +-
+ drivers/net/ethernet/marvell/mvneta_bm.h           |  1 +
+ 4 files changed, 15 insertions(+), 55 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/net/marvell-neta-bm.txt b/Documentation/devicetree/bindings/net/marvell-neta-bm.txt
+index 50f8d33..8e37465 100644
+--- a/Documentation/devicetree/bindings/net/marvell-neta-bm.txt
++++ b/Documentation/devicetree/bindings/net/marvell-neta-bm.txt
+@@ -16,8 +16,8 @@ Optional properties (port):
+   not set.
+ - pool<0 : 3>,pkt-size: maximum size of a packet accepted by a given buffer
+   pointers' pool (id 0 : 3). It will be taken into consideration only when pool
+-  type is 'short'. For 'long' ones it would be overridden by port's MTU.
+-  If not set a driver will choose a default value.
++  type is 'long'. For 'short' ones it would be overridden by MVNETA_BM_SHORT_PKT_SIZE.
++  If not set a driver will set a default value MVNETA_BM_LONG_PKT_SIZE.
+ 
+ In order to see how to hook the BM to a given ethernet port, please
+ refer to Documentation/devicetree/bindings/net/marvell-armada-370-neta.txt.
+diff --git a/drivers/net/ethernet/marvell/mvneta.c b/drivers/net/ethernet/marvell/mvneta.c
+index 2fdb4b7..1cca121 100644
+--- a/drivers/net/ethernet/marvell/mvneta.c
++++ b/drivers/net/ethernet/marvell/mvneta.c
+@@ -1120,46 +1120,6 @@ static int mvneta_bm_port_init(struct platform_device *pdev,
+ 	return 0;
+ }
+ 
+-/* Update settings of a pool for bigger packets */
+-static void mvneta_bm_update_mtu(struct mvneta_port *pp, int mtu)
+-{
+-	struct mvneta_bm_pool *bm_pool = pp->pool_long;
+-	struct hwbm_pool *hwbm_pool = &bm_pool->hwbm_pool;
+-	int num;
+-
+-	/* Release all buffers from long pool */
+-	mvneta_bm_bufs_free(pp->bm_priv, bm_pool, 1 << pp->id);
+-	if (hwbm_pool->buf_num) {
+-		WARN(1, "cannot free all buffers in pool %d\n",
+-		     bm_pool->id);
+-		goto bm_mtu_err;
+-	}
+-
+-	bm_pool->pkt_size = MVNETA_RX_PKT_SIZE(mtu);
+-	bm_pool->buf_size = MVNETA_RX_BUF_SIZE(bm_pool->pkt_size);
+-	hwbm_pool->frag_size = SKB_DATA_ALIGN(sizeof(struct skb_shared_info)) +
+-			SKB_DATA_ALIGN(MVNETA_RX_BUF_SIZE(bm_pool->pkt_size));
+-
+-	/* Fill entire long pool */
+-	num = hwbm_pool_add(hwbm_pool, hwbm_pool->size, GFP_ATOMIC);
+-	if (num != hwbm_pool->size) {
+-		WARN(1, "pool %d: %d of %d allocated\n",
+-		     bm_pool->id, num, hwbm_pool->size);
+-		goto bm_mtu_err;
+-	}
+-	mvneta_bm_pool_bufsize_set(pp, bm_pool->buf_size, bm_pool->id);
+-
+-	return;
+-
+-bm_mtu_err:
+-	mvneta_bm_pool_destroy(pp->bm_priv, pp->pool_long, 1 << pp->id);
+-	mvneta_bm_pool_destroy(pp->bm_priv, pp->pool_short, 1 << pp->id);
+-
+-	pp->bm_priv = NULL;
+-	mvreg_write(pp, MVNETA_ACC_MODE, MVNETA_ACC_MODE_EXT1);
+-	netdev_info(pp->dev, "fail to update MTU, fall back to software BM\n");
+-}
+-
+ /* Start the Ethernet port RX and TX activity */
+ static void mvneta_port_up(struct mvneta_port *pp)
+ {
+@@ -2397,7 +2357,7 @@ err_drop_frame:
+ 		/* Refill processing */
+ 		err = hwbm_pool_refill(&bm_pool->hwbm_pool, GFP_ATOMIC);
+ 		if (err) {
+-			netdev_err(dev, "Linux processing - Can't refill\n");
++			netdev_dbg(dev, "Linux processing - Can't refill\n");
+ 			goto err_drop_frame_ret_pool;
+ 		}
+ 
+@@ -3415,15 +3375,19 @@ static void mvneta_stop_dev(struct mvneta_port *pp)
+ /* Return positive if MTU is valid */
+ static int mvneta_check_mtu_valid(struct net_device *dev, int mtu)
+ {
++	struct mvneta_port *pp = netdev_priv(dev);
++
+ 	if (mtu < 68) {
+ 		netdev_err(dev, "cannot change mtu to less than 68\n");
+ 		return -EINVAL;
+ 	}
+ 
+-	/* 9676 == 9700 - 20 and rounding to 8 */
+-	if (mtu > 9676) {
+-		netdev_info(dev, "Illegal MTU value %d, round to 9676\n", mtu);
+-		mtu = 9676;
++	if (MVNETA_RX_PKT_SIZE(mtu) > pp->pool_long->pkt_size) {
++		netdev_info(dev, "Illegal MTU value %d\n", mtu);
++		mtu = pp->pool_long->pkt_size -
++		      (MVNETA_MH_SIZE + MVNETA_VLAN_TAG_LEN + ETH_HLEN + ETH_FCS_LEN);
++		netdev_info(dev, "Round to %d to fit in buffer size %d\n",
++			    mtu, pp->pool_long->pkt_size);
+ 	}
+ 
+ 	if (!IS_ALIGNED(MVNETA_RX_PKT_SIZE(mtu), 8)) {
+@@ -3462,9 +3426,6 @@ static int mvneta_change_mtu(struct net_device *dev, int mtu)
+ 	dev->mtu = mtu;
+ 
+ 	if (!netif_running(dev)) {
+-		if (pp->bm_priv)
+-			mvneta_bm_update_mtu(pp, mtu);
+-
+ 		netdev_update_features(dev);
+ 		return 0;
+ 	}
+@@ -3479,9 +3440,6 @@ static int mvneta_change_mtu(struct net_device *dev, int mtu)
+ 	mvneta_cleanup_txqs(pp);
+ 	mvneta_cleanup_rxqs(pp);
+ 
+-	if (pp->bm_priv)
+-		mvneta_bm_update_mtu(pp, mtu);
+-
+ 	pp->pkt_size = MVNETA_RX_PKT_SIZE(dev->mtu);
+ 	pp->frag_size = SKB_DATA_ALIGN(MVNETA_RX_BUF_SIZE(pp->pkt_size)) +
+ 	                SKB_DATA_ALIGN(sizeof(struct skb_shared_info));
+diff --git a/drivers/net/ethernet/marvell/mvneta_bm.c b/drivers/net/ethernet/marvell/mvneta_bm.c
+index 8425624..af02a93 100644
+--- a/drivers/net/ethernet/marvell/mvneta_bm.c
++++ b/drivers/net/ethernet/marvell/mvneta_bm.c
+@@ -188,7 +188,7 @@ struct mvneta_bm_pool *mvneta_bm_pool_use(struct mvneta_bm *priv, u8 pool_id,
+ 		return NULL;
+ 	}
+ 
+-	if (new_pool->pkt_size == 0 || type != MVNETA_BM_SHORT)
++	if (type == MVNETA_BM_SHORT)
+ 		new_pool->pkt_size = pkt_size;
+ 
+ 	/* Allocate buffers in case BM pool hasn't been used yet */
+@@ -344,7 +344,8 @@ static void mvneta_bm_pools_init(struct mvneta_bm *priv)
+ 		/* Obtain custom pkt_size from DT */
+ 		sprintf(prop, "pool%d,pkt-size", i);
+ 		if (of_property_read_u32(dn, prop, &bm_pool->pkt_size))
+-			bm_pool->pkt_size = 0;
++			/* if not specified by DT, set default buffer size to support Jumbo */
++			bm_pool->pkt_size = MVNETA_BM_LONG_PKT_SIZE;
+ 	}
+ }
+ 
+diff --git a/drivers/net/ethernet/marvell/mvneta_bm.h b/drivers/net/ethernet/marvell/mvneta_bm.h
+index 21284b9..20fa9ea 100644
+--- a/drivers/net/ethernet/marvell/mvneta_bm.h
++++ b/drivers/net/ethernet/marvell/mvneta_bm.h
+@@ -78,6 +78,7 @@
+ 
+ /* Other definitions */
+ #define MVNETA_BM_SHORT_PKT_SIZE		256
++#define MVNETA_BM_LONG_PKT_SIZE			(9 * 1024)
+ #define MVNETA_BM_POOLS_NUM			4
+ #define MVNETA_BM_POOL_CAP_MIN			128
+ #define MVNETA_BM_POOL_CAP_DEF			2048
+-- 
+2.7.4
+

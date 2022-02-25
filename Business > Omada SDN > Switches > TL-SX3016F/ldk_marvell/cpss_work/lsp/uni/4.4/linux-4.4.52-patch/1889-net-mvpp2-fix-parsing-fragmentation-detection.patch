@@ -1,0 +1,90 @@
+From b79c542020bfd4e6cb5fae3b1f90f3a91f12750c Mon Sep 17 00:00:00 2001
+From: Stefan Chulski <stefanc@marvell.com>
+Date: Wed, 16 Aug 2017 15:53:15 +0300
+Subject: [PATCH 1889/2241] net: mvpp2: fix parsing fragmentation detection
+
+Parsing fragmentation detection failed due to wrong configured
+parser TCAM entry's.
+
+Issue caused:
+ - Some traffic was marked as fragmented in RX descriptor, even it wasn't
+   IP fragmented.
+ - HW failed to calculate checksum. SW checksum caused 50% performance
+   degradation in L3 routing benchmarks.
+
+Fix:
+Set correct parser TCAM entry's for IP fragmentation detection.
+
+Change-Id: Id7b0259916d6cb34a0a2458383fa02cbc5265325
+Signed-off-by: Stefan Chulski <stefanc@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/43113
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2.c | 20 +++++++++++++++-----
+ 1 file changed, 15 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2.c b/drivers/net/ethernet/marvell/mvpp2.c
+index 88dde94..e76f070 100644
+--- a/drivers/net/ethernet/marvell/mvpp2.c
++++ b/drivers/net/ethernet/marvell/mvpp2.c
+@@ -681,6 +681,8 @@ enum mvpp2_tag_type {
+ #define MVPP2_PRS_RI_L3_MCAST			BIT(15)
+ #define MVPP2_PRS_RI_L3_BCAST			(BIT(15) | BIT(16))
+ #define MVPP2_PRS_RI_IP_FRAG_MASK		0x20000
++#define MVPP2_PRS_RI_IP_FRAG_FALSE		0x0
++#define MVPP2_PRS_RI_IP_FRAG_TRUE		BIT(17)
+ #define MVPP2_PRS_RI_UDF3_MASK			0x300000
+ #define MVPP2_PRS_RI_UDF3_RX_SPECIAL		BIT(21)
+ #define MVPP2_PRS_RI_L4_PROTO_MASK		0x1c00000
+@@ -2347,7 +2349,7 @@ static int mvpp2_prs_ip4_proto(struct mvpp2 *priv, unsigned short proto,
+ 	    (proto != IPPROTO_IGMP))
+ 		return -EINVAL;
+ 
+-	/* Fragmented packet */
++	/* Not fragmented packet */
+ 	tid = mvpp2_prs_tcam_first_free(priv, MVPP2_PE_FIRST_FREE_TID,
+ 					MVPP2_PE_LAST_FREE_TID);
+ 	if (tid < 0)
+@@ -2366,9 +2368,14 @@ static int mvpp2_prs_ip4_proto(struct mvpp2 *priv, unsigned short proto,
+ 				  MVPP2_PRS_SRAM_OP_SEL_UDF_ADD);
+ 	mvpp2_prs_sram_ai_update(&pe, MVPP2_PRS_IPV4_DIP_AI_BIT,
+ 				 MVPP2_PRS_IPV4_DIP_AI_BIT);
+-	mvpp2_prs_sram_ri_update(&pe, ri | MVPP2_PRS_RI_IP_FRAG_MASK,
++	mvpp2_prs_sram_ri_update(&pe, ri | MVPP2_PRS_RI_IP_FRAG_FALSE,
+ 				 ri_mask | MVPP2_PRS_RI_IP_FRAG_MASK);
+ 
++	mvpp2_prs_tcam_data_byte_set(&pe, 2, 0x00,
++				     MVPP2_PRS_TCAM_PROTO_MASK_L);
++	mvpp2_prs_tcam_data_byte_set(&pe, 3, 0x00,
++				     MVPP2_PRS_TCAM_PROTO_MASK);
++
+ 	mvpp2_prs_tcam_data_byte_set(&pe, 5, proto, MVPP2_PRS_TCAM_PROTO_MASK);
+ 	mvpp2_prs_tcam_ai_update(&pe, 0, MVPP2_PRS_IPV4_DIP_AI_BIT);
+ 	/* Unmask all ports */
+@@ -2378,7 +2385,7 @@ static int mvpp2_prs_ip4_proto(struct mvpp2 *priv, unsigned short proto,
+ 	mvpp2_prs_shadow_set(priv, pe.index, MVPP2_PRS_LU_IP4);
+ 	mvpp2_prs_hw_write(priv, &pe);
+ 
+-	/* Not fragmented packet */
++	/* Fragmented packet */
+ 	tid = mvpp2_prs_tcam_first_free(priv, MVPP2_PE_FIRST_FREE_TID,
+ 					MVPP2_PE_LAST_FREE_TID);
+ 	if (tid < 0)
+@@ -2390,8 +2397,11 @@ static int mvpp2_prs_ip4_proto(struct mvpp2 *priv, unsigned short proto,
+ 	pe.sram.word[MVPP2_PRS_SRAM_RI_CTRL_WORD] = 0x0;
+ 	mvpp2_prs_sram_ri_update(&pe, ri, ri_mask);
+ 
+-	mvpp2_prs_tcam_data_byte_set(&pe, 2, 0x00, MVPP2_PRS_TCAM_PROTO_MASK_L);
+-	mvpp2_prs_tcam_data_byte_set(&pe, 3, 0x00, MVPP2_PRS_TCAM_PROTO_MASK);
++	mvpp2_prs_sram_ri_update(&pe, ri | MVPP2_PRS_RI_IP_FRAG_TRUE,
++				 ri_mask | MVPP2_PRS_RI_IP_FRAG_MASK);
++
++	mvpp2_prs_tcam_data_byte_set(&pe, 2, 0x00, 0x0);
++	mvpp2_prs_tcam_data_byte_set(&pe, 3, 0x00, 0x0);
+ 
+ 	/* Update shadow table and hw entry */
+ 	mvpp2_prs_shadow_set(priv, pe.index, MVPP2_PRS_LU_IP4);
+-- 
+2.7.4
+

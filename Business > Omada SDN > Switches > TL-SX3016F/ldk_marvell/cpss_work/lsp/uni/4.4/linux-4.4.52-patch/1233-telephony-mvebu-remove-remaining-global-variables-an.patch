@@ -1,0 +1,150 @@
+From 0d27edafd5b6eef1502ab04a449464030b497a5f Mon Sep 17 00:00:00 2001
+From: Marcin Wojtas <mw@semihalf.com>
+Date: Tue, 27 Dec 2016 19:38:00 +0100
+Subject: [PATCH 1233/2241] telephony: mvebu: remove remaining global variables
+ and externs
+
+* Remove unused tdm_base and mv_phone_enabled global variables.
+* Move use_pclk_external to mv_phone_dev structure and modify
+  tdm2c_init() to accept it as an argument.
+* Improve obtaining use_pclk_external value from DT and do it
+  only for tdm2c.
+
+Change-Id: I8f5308cac36b8bb46b34df757faff0932e6f9fa3
+Signed-off-by: Marcin Wojtas <mw@semihalf.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/35156
+Reviewed-by: Igal Liberman <igall@marvell.com>
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/telephony/mvebu_phone/mv_phone.h     |  8 ++++----
+ drivers/telephony/mvebu_phone/mv_phone_dev.c | 24 +++++++-----------------
+ drivers/telephony/mvebu_phone/tdm2c/tdm2c.c  |  2 +-
+ 3 files changed, 12 insertions(+), 22 deletions(-)
+
+diff --git a/drivers/telephony/mvebu_phone/mv_phone.h b/drivers/telephony/mvebu_phone/mv_phone.h
+index 9ea6be7..47dc2d2 100644
+--- a/drivers/telephony/mvebu_phone/mv_phone.h
++++ b/drivers/telephony/mvebu_phone/mv_phone.h
+@@ -123,9 +123,6 @@
+ /****************************************************************/
+ /*************** Telephony configuration ************************/
+ /****************************************************************/
+-extern int use_pclk_external;
+-extern long int tdm_base;
+-#define MV_TDM_REGS_BASE	(tdm_base)
+ 
+ /* Core DivClk Control Register */
+ 
+@@ -269,6 +266,8 @@ struct mv_phone_dev {
+ 
+ 	/* TDM2C SPI operation mode */
+ 	enum mv_phone_spi_mode tdm2c_spi_mode;
++	/* TDM2C PCLK source */
++	bool use_pclk_external;
+ 
+ 	/* TDMMC silicon revision */
+ 	enum tdmmc_ip_version tdmmc_ip_ver;
+@@ -322,7 +321,8 @@ void mv_phone_intr_disable(u8 device_id);
+ int tdm2c_init(void __iomem *base, struct device *dev,
+ 	       struct mv_phone_params *tdm_params,
+ 	       enum mv_phone_frame_ts frame_ts,
+-	       enum mv_phone_spi_mode spi_mode);
++	       enum mv_phone_spi_mode spi_mode,
++	       bool use_pclk_external);
+ int tdm2c_intr_low(struct mv_phone_intr_info *tdm_intr_info);
+ #ifdef CONFIG_MV_TDM_EXT_STATS
+ void tdm2c_ext_stats_get(struct mv_phone_extended_stats *tdm_ext_stats);
+diff --git a/drivers/telephony/mvebu_phone/mv_phone_dev.c b/drivers/telephony/mvebu_phone/mv_phone_dev.c
+index d69dfa2..e657f97 100644
+--- a/drivers/telephony/mvebu_phone/mv_phone_dev.c
++++ b/drivers/telephony/mvebu_phone/mv_phone_dev.c
+@@ -107,11 +107,6 @@
+ 
+ #define DRV_NAME "mvebu_phone"
+ 
+-long int tdm_base;
+-int use_pclk_external;
+-int mv_phone_enabled;
+-struct mv_phone_dev *priv;
+-
+ /* TDM Interrupt Service Routine */
+ static irqreturn_t tdm_if_isr(int irq, void *dev_id);
+ 
+@@ -123,6 +118,7 @@ static void tdmmc_if_pcm_tx_process(unsigned long arg);
+ static void tdm2c_if_reset_channels(unsigned long arg);
+ 
+ /* Globals */
++static struct mv_phone_dev *priv;
+ static DECLARE_TASKLET(tdm2c_if_rx_tasklet, tdm2c_if_pcm_rx_process, 0);
+ static DECLARE_TASKLET(tdmmc_if_rx_tasklet, tdmmc_if_pcm_rx_process, 0);
+ static DECLARE_TASKLET(tdm2c_if_tx_tasklet, tdm2c_if_pcm_tx_process, 0);
+@@ -314,7 +310,8 @@ static int tdm_hw_init(struct mv_phone_params *tdm_params)
+ 	switch (priv->tdm_type) {
+ 	case MV_TDM_UNIT_TDM2C:
+ 		ret = tdm2c_init(priv->tdm_base, priv->dev, tdm_params,
+-				 frame_ts, priv->tdm2c_spi_mode);
++				 frame_ts, priv->tdm2c_spi_mode,
++				 priv->use_pclk_external);
+ 
+ 		/* Soft reset to PCM I/F */
+ 		tdm2c_pcm_if_reset();
+@@ -991,7 +988,6 @@ static int mvebu_phone_probe(struct platform_device *pdev)
+ 	priv->tdm_base = devm_ioremap_resource(&pdev->dev, mem);
+ 	if (IS_ERR(priv->tdm_base))
+ 		return PTR_ERR(priv->tdm_base);
+-	tdm_base = (long int)priv->tdm_base;
+ 
+ 	priv->clk = devm_clk_get(&pdev->dev, "gateclk");
+ 	if (PTR_ERR(priv->clk) == -EPROBE_DEFER)
+@@ -1006,14 +1002,6 @@ static int mvebu_phone_probe(struct platform_device *pdev)
+ 	if (err)
+ 		return err;
+ 
+-	if (of_property_read_bool(np, "use-external-pclk")) {
+-		dev_info(&pdev->dev, "using external pclk\n");
+-		use_pclk_external = 1;
+-	} else {
+-		dev_info(&pdev->dev, "using internal pclk\n");
+-		use_pclk_external = 0;
+-	}
+-
+ 	if (of_property_read_u32(np, "pclk-freq-mhz", &priv->pclk_freq_mhz) ||
+ 	    (priv->pclk_freq_mhz != 8 && priv->pclk_freq_mhz != 4 &&
+ 	     priv->pclk_freq_mhz != 2)) {
+@@ -1070,6 +1058,10 @@ static int mvebu_phone_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	if (priv->tdm_type == MV_TDM_UNIT_TDM2C) {
++		priv->use_pclk_external = of_property_read_bool(np, "use-external-pclk");
++		dev_info(&pdev->dev, "using %s pclk\n",
++			 priv->use_pclk_external ? "external" : "internal");
++
+ 		if (of_property_read_u32(np, "spi-mode", &priv->tdm2c_spi_mode) ||
+ 		    (priv->tdm2c_spi_mode != 0 && priv->tdm2c_spi_mode != 1))
+ 			priv->tdm2c_spi_mode = 0;
+@@ -1080,8 +1072,6 @@ static int mvebu_phone_probe(struct platform_device *pdev)
+ 
+ 	spin_lock_init(&priv->lock);
+ 
+-	mv_phone_enabled = 1;
+-
+ 	priv->dev = &pdev->dev;
+ 	return 0;
+ 
+diff --git a/drivers/telephony/mvebu_phone/tdm2c/tdm2c.c b/drivers/telephony/mvebu_phone/tdm2c/tdm2c.c
+index f5ec581..42637f2 100644
+--- a/drivers/telephony/mvebu_phone/tdm2c/tdm2c.c
++++ b/drivers/telephony/mvebu_phone/tdm2c/tdm2c.c
+@@ -379,7 +379,7 @@ static void tdm2c_reset(void)
+ 
+ int tdm2c_init(void __iomem *base, struct device *dev,
+ 	       struct mv_phone_params *tdm_params, enum mv_phone_frame_ts frame_ts,
+-	       enum mv_phone_spi_mode spi_mode)
++	       enum mv_phone_spi_mode spi_mode, bool use_pclk_external)
+ {
+ 	u8 ch;
+ 	u32 pcm_ctrl_reg, nb_delay = 0, wb_delay = 0;
+-- 
+2.7.4
+

@@ -1,0 +1,49 @@
+From ecd30b4bc95e622cb5039574d22ee784d074b0fd Mon Sep 17 00:00:00 2001
+From: Stefan Chulski <stefanc@marvell.com>
+Date: Thu, 1 Feb 2018 19:54:27 +0200
+Subject: [PATCH 2211/2241] net: mvpp2x: rename MVPP2_MAX_RXQ to
+ MVPP2_MAX_RXQ_PER_CPU
+
+Define represent only max number of queues per cpu.
+
+Change-Id: If6bb029b5154b5fc3edc8800bb12e4b5d237f875
+Signed-off-by: Stefan Chulski <stefanc@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/49973
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h         | 2 +-
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw_type.h | 4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h
+index 22ce6d9..3b88032 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h
+@@ -193,7 +193,7 @@ extern  u32 debug_param;
+ 
+ #define MVPP2_EXTRA_BUF_SIZE	120
+ #define MVPP2_EXTRA_BUF_NUM	(MVPP2_MAX_TXD * MVPP2_MAX_TXQ)
+-#define MVPP2_SKB_NUM		(MVPP2_MAX_RXD * MVPP2_MAX_RXQ * MVPP2_MAX_PORTS)
++#define MVPP2_SKB_NUM		(MVPP2_MAX_RXD * MVPP2_MAX_RXQ_PER_CPU * MVPP2_MAX_PORTS)
+ 
+ enum mvppv2_version {
+ 	PPV21 = 21,
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw_type.h b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw_type.h
+index 5a7122e..f09e716 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw_type.h
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw_type.h
+@@ -1207,8 +1207,8 @@
+ /* Maximum number of TXQs used by single port */
+ #define MVPP2_MAX_TXQ			8
+ 
+-/* Maximum number of RXQs used by single port */
+-#define MVPP2_MAX_RXQ			8
++/* Maximum number of RXQs used by single port per CPU */
++#define MVPP2_MAX_RXQ_PER_CPU	8
+ 
+ /* Dfault number of RXQs in use */
+ #define MVPP2_DEFAULT_RXQ		4
+-- 
+2.7.4
+

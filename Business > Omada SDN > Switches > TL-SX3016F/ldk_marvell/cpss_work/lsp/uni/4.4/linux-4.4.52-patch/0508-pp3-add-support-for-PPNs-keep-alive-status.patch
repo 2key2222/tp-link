@@ -1,0 +1,399 @@
+From 02b78cd2daf1190a399e07a122eeae3d51d48dfb Mon Sep 17 00:00:00 2001
+From: Vitaly Ginzburg <vitgin@marvell.com>
+Date: Wed, 15 Jun 2016 18:02:34 +0300
+Subject: [PATCH 0508/2241] pp3: add support for PPNs keep alive status
+
+- fix compilation warnings
+
+Change-Id: Ic7ab1ef6c6b48a30f1e07be5baace6c085e30e39
+Reviewed-on: http://vgitil04.il.marvell.com:8080/30504
+Reviewed-by: Dmitri Epshtein <dima@marvell.com>
+Tested-by: Dmitri Epshtein <dima@marvell.com>
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Yan Markman <ymarkman@marvell.com>
+---
+ drivers/net/ethernet/marvell/pp3/fw/mv_fw.c        |  84 ++++++++++++++-
+ drivers/net/ethernet/marvell/pp3/fw/mv_fw.h        |   1 +
+ drivers/net/ethernet/marvell/pp3/fw/mv_fw_shared.h |  11 +-
+ drivers/net/ethernet/marvell/pp3/fw/mv_fw_sysfs.c  | 114 ++++++++++++---------
+ .../ethernet/marvell/pp3/gnss/mv_pp3_gnss_api.c    |  19 ++++
+ .../ethernet/marvell/pp3/gnss/mv_pp3_gnss_api.h    |   2 +
+ 6 files changed, 174 insertions(+), 57 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/pp3/fw/mv_fw.c b/drivers/net/ethernet/marvell/pp3/fw/mv_fw.c
+index 8319848..e3884c2f 100644
+--- a/drivers/net/ethernet/marvell/pp3/fw/mv_fw.c
++++ b/drivers/net/ethernet/marvell/pp3/fw/mv_fw.c
+@@ -166,7 +166,8 @@ int mv_pp3_fw_request_file(char *path, struct mem_image *img)
+ static int mv_pp3_ppc_fw_image_load(struct mem_image *ptr_to_image, int ppc)
+ {
+ 	unsigned int data, size, curr_val, mask;
+-	void __iomem *curr_apb_address, *addr = NULL;
++	void __iomem *curr_apb_address;
++	u32 *addr = NULL;
+ 	enum ppc_mem_type type;
+ 
+ 	size = ptr_to_image->size;
+@@ -183,7 +184,7 @@ static int mv_pp3_ppc_fw_image_load(struct mem_image *ptr_to_image, int ppc)
+ 
+ 	for (curr_val = 0; curr_val < size; curr_val++)	{
+ 		data = ptr_to_image->rows[curr_val].data;
+-		addr =  curr_apb_address + (ptr_to_image->rows[curr_val].address & mask);
++		addr = (u32 *)(curr_apb_address + (ptr_to_image->rows[curr_val].address & mask));
+ 		mv_pp3_hw_reg_write(addr, data);
+ 	}
+ 
+@@ -486,7 +487,7 @@ void mv_fw_keep_alive_dump(int ppc)
+ 	dram_offset = host_to_nss_dram_addr[ppc][KEEP_ALIVE_BUFFER];
+ 
+ 	ptr_to_keep_alive_array = (u32 *)dram_offset;
+-	for (i = 0; i < NUMBER_OF_PPNs; i++) {
++	for (i = 0; i < MV_NUM_OF_PPN; i++) {
+ 		num = cpu_to_be32(*(ptr_to_keep_alive_array + i));
+ 		pr_info("PPN #%2d:   0x%08x\n", i, num);
+ 	}
+@@ -791,3 +792,80 @@ int mv_pp3_ppc_idle_wait_all(void)
+ 
+ 	return err;
+ }
++
++static u32 mv_pp3_ppn_deq_status_get(int ppc)
++{
++	return	mv_pp3_hw_reg_read(mv_pp3_nss_regs_vaddr_get() +
++		MV_DP_PPC_BASE(ppc) +
++		MV_PPC_WAIT_FOR_DEQ_REG);
++}
++
++static void mv_pp3_sram_ppn_status_set(int ppc, u8 val)
++{
++	u32 words[MV_NUM_OF_PPN / sizeof(u32)];
++	u8 *buffer = (u8 *)words;
++	u32 *shared_sram_addr;
++	int i;
++
++	for (i = 0; i < MV_NUM_OF_PPN; i++)
++		*buffer++ = val;
++
++	shared_sram_addr = (u32 *)(apb_base_addr +
++				MV_DP_PPC_BASE(ppc) +
++				MV_PPC_SHARED_MEM_OFFS +
++				PPN_KEEPALIVE_SRAM_OFFSET);
++
++	mv_pp3_hw_write(shared_sram_addr, (MV_NUM_OF_PPN / 4), words);
++}
++
++static void mv_pp3_sram_ppn_status_get(int ppc, u32 *buffer)
++{
++	u32 *shared_sram_addr;
++
++	shared_sram_addr = (u32 *)(apb_base_addr +
++				MV_DP_PPC_BASE(ppc) +
++				MV_PPC_SHARED_MEM_OFFS +
++				PPN_KEEPALIVE_SRAM_OFFSET);
++
++	mv_pp3_hw_read(shared_sram_addr, (MV_NUM_OF_PPN / 4), buffer);
++}
++
++bool mv_fw_keep_alive_get(int ppc)
++{
++	int i;
++	u32 deq_status;
++	u8  sram_status[MV_NUM_OF_PPN];
++
++	if ((ppc < 0) || (ppc >= active_ppc_num)) {
++		pr_err("%s: Unexpected ppc number %d\n", __func__, ppc);
++		return false;
++	}
++
++	if (ppc_ppn_mask[ppc] <= 2) /* don't check fw debug versions with 1-2 PPNs only */
++		return true;
++
++	deq_status = mv_pp3_ppn_deq_status_get(ppc); /* all 16 */
++
++	mv_pp3_sram_ppn_status_get(ppc, (u32 *)sram_status);   /* all 16 - store in sram_status */
++
++	for (i = 0; i < MV_NUM_OF_PPN; i++) {
++		if (((deq_status & (1 << i)) == 0)  && (sram_status[i] != 0)) {
++			/* second check */
++			udelay(30);
++
++			deq_status = mv_pp3_ppn_deq_status_get(ppc); /* all 16 */
++
++			mv_pp3_sram_ppn_status_get(ppc, (u32 *)sram_status);
++
++			if (((deq_status & (1 << i)) == 0)  && (sram_status[i] != 0)) {
++				pr_info("keep alive: ppc=%d ppn=%d  failed\n", ppc, i);
++				return false; /* BAD */
++			}
++		}
++	}
++
++	mv_pp3_sram_ppn_status_set(ppc, 0x1); /* all 16 */
++
++	return true; /* GOOD */
++}
++
+diff --git a/drivers/net/ethernet/marvell/pp3/fw/mv_fw.h b/drivers/net/ethernet/marvell/pp3/fw/mv_fw.h
+index 79ea228..b6a6f7a 100644
+--- a/drivers/net/ethernet/marvell/pp3/fw/mv_fw.h
++++ b/drivers/net/ethernet/marvell/pp3/fw/mv_fw.h
+@@ -102,6 +102,7 @@ int mv_fw_sp_dump(int ppc, u32 ppn_numb, u32 buf_index, u32 start_sp_adr, u32 si
+ int mv_fw_inf_logger_dump(int ppc, u32 ppn_numb, u32 start_lg_entry, int size);
+ int mv_fw_critical_logger_dump(int ppc, u32 ppn_numb, u32 start_lg_entry, int size);
+ void mv_fw_keep_alive_dump(int ppc);
++bool mv_fw_keep_alive_get(int ppc);
+ 
+ int mv_pp3_fw_ppc_num_set(int ppc_num);
+ int mv_pp3_fw_ppc_num_get(void);
+diff --git a/drivers/net/ethernet/marvell/pp3/fw/mv_fw_shared.h b/drivers/net/ethernet/marvell/pp3/fw/mv_fw_shared.h
+index 253aa6a..5aa5329 100644
+--- a/drivers/net/ethernet/marvell/pp3/fw/mv_fw_shared.h
++++ b/drivers/net/ethernet/marvell/pp3/fw/mv_fw_shared.h
+@@ -51,7 +51,7 @@ enum mv_fw_dram_blocks {
+ 	LAST_DRAM_BUFFER = 4
+ };
+ 
+-#define NUMBER_OF_PPNs    16
++#define MV_NUM_OF_PPN                    16
+ 
+ #define DRAM_FOR_FW_SHARED_SRAM_OFFSET   0x10
+ 
+@@ -64,22 +64,23 @@ enum mv_fw_dram_blocks {
+ #define MAX_CRITICAL_LOG_ENTRY_NUMB        64
+ 
+ #define SP_MIRRORING_PER_PPN_DRAM_BUFFER_SIZE        (SP_SIZE * MAX_SP_MIRROR_BUF_NUMB)
+-#define SP_MIRRORING_DRAM_BUFFER_SIZE                (SP_MIRRORING_PER_PPN_DRAM_BUFFER_SIZE * NUMBER_OF_PPNs)
++#define SP_MIRRORING_DRAM_BUFFER_SIZE                (SP_MIRRORING_PER_PPN_DRAM_BUFFER_SIZE * MV_NUM_OF_PPN)
+ 
+ #define PACKET_RECORDING_DRAM_BUFFER_SIZE            (MAX_INF_LOG_ENTRY_NUMB * 1024)
+-#define KEEP_ALIVE_BUFFER_SIZE                       (NUMBER_OF_PPNs * KEEP_ALIVE_ENTRY_SIZE)
++#define KEEP_ALIVE_BUFFER_SIZE                       (MV_NUM_OF_PPN * KEEP_ALIVE_ENTRY_SIZE)
+ 
+ #define INFORMATION_LOGGER_PER_PPN_DRAM_BUFFER_SIZE  (LOGGER_ENTRY_SIZE * MAX_INF_LOG_ENTRY_NUMB)
+-#define INFORMATION_LOGGER_DRAM_BUFFER_SIZE          (INFORMATION_LOGGER_PER_PPN_DRAM_BUFFER_SIZE * NUMBER_OF_PPNs)
++#define INFORMATION_LOGGER_DRAM_BUFFER_SIZE          (INFORMATION_LOGGER_PER_PPN_DRAM_BUFFER_SIZE * MV_NUM_OF_PPN)
+ 
+ #define CRITICAL_LOGGER_PER_PPN_DRAM_BUFFER_SIZE     (LOGGER_ENTRY_SIZE * MAX_CRITICAL_LOG_ENTRY_NUMB)
+-#define CRITICAL_LOGGER_DRAM_BUFFER_SIZE             (CRITICAL_LOGGER_PER_PPN_DRAM_BUFFER_SIZE * NUMBER_OF_PPNs)
++#define CRITICAL_LOGGER_DRAM_BUFFER_SIZE             (CRITICAL_LOGGER_PER_PPN_DRAM_BUFFER_SIZE * MV_NUM_OF_PPN)
+ 
+ #define LOGGER_BUFFER_SIZE                        \
+ 			(INFORMATION_LOGGER_DRAM_BUFFER_SIZE + CRITICAL_LOGGER_DRAM_BUFFER_SIZE)
+ 
+ #define LOGGER_CRITICAL_DRAM_OFFSET           (INFORMATION_LOGGER_DRAM_BUFFER_SIZE)
+ 
++#define PPN_KEEPALIVE_SRAM_OFFSET 0x20	/* 16 bytes (1 per PPN): Host sets 0x1, PPN sets 0 */
+ 
+ /* CFH related */
+ #define MV_CFH_MSG_OFFS		(32)	/* bytes */
+diff --git a/drivers/net/ethernet/marvell/pp3/fw/mv_fw_sysfs.c b/drivers/net/ethernet/marvell/pp3/fw/mv_fw_sysfs.c
+index f430e14..3b1100c 100644
+--- a/drivers/net/ethernet/marvell/pp3/fw/mv_fw_sysfs.c
++++ b/drivers/net/ethernet/marvell/pp3/fw/mv_fw_sysfs.c
+@@ -34,38 +34,41 @@ disclaimer.
+ static ssize_t mv_fw_help(char *b)
+ {
+ 	int o = 0;
+-
+-	o += scnprintf(b+o, PAGE_SIZE-o, "\n");
+-
+-	o += scnprintf(b+o, PAGE_SIZE-o, "cat                               version         - show FW version\n");
+-	o += scnprintf(b+o, PAGE_SIZE-o, "echo [path]                     > fw_path         - define FW images folder\n");
+-	o += scnprintf(b+o, PAGE_SIZE-o, "echo [num]                      > ppc_active      - number of active PPCs\n");
+-	o += scnprintf(b+o, PAGE_SIZE-o, "echo [ppc] [ppn] [entry] [numb] > inf_lg_dump     - informational logger dump\n");
+-	o += scnprintf(b+o, PAGE_SIZE-o, "echo [ppc] [ppn] [entry] [numb] > cr_lg_dump      - critical logger dump\n");
+-	o += scnprintf(b+o, PAGE_SIZE-o, "echo [ppc]                      > keep_alive_dump - show Keep Alive array\n");
+-	o += scnprintf(b+o, PAGE_SIZE-o, "echo [port]                     > emac_vp_show    - show EMAC virtual port status\n");
+-	o += scnprintf(b+o, PAGE_SIZE-o, "echo [port]                     > vp_stats        - show virtual port FW statistics\n");
+-	o += scnprintf(b+o, PAGE_SIZE-o, "echo [queue]                    > hwq_stats       - show HW queue FW statistics\n");
+-	o += scnprintf(b+o, PAGE_SIZE-o, "echo [queue]                    > swq_stats       - show SW queue FW statistics\n");
+-	o += scnprintf(b+o, PAGE_SIZE-o, "echo [pool]                     > bmpool_stats    - show BM pool FW statistics\n");
+-	o += scnprintf(b+o, PAGE_SIZE-o, "echo [channel]                  > chan_stats      - show message channel FW statistics\n");
+-	o += scnprintf(b+o, PAGE_SIZE-o, "echo [st] [ind]                 > clear_stats     - clear FW statistics by type, 0 - all\n");
+-
+-	o += scnprintf(b+o, PAGE_SIZE-o, "\n");
+-	o += scnprintf(b+o, PAGE_SIZE-o, "parameters:\n");
+-	o += scnprintf(b+o, PAGE_SIZE-o, "      [ppc]     - PPC number (decimal)\n");
+-	o += scnprintf(b+o, PAGE_SIZE-o, "      [ppn]     - PPN number in current PPC (decimal)\n");
+-	o += scnprintf(b+o, PAGE_SIZE-o, "      [entry]   - start entry number (decimal)\n");
+-	o += scnprintf(b+o, PAGE_SIZE-o, "      [numb]    - number of entries to print (decimal)\n");
+-	o += scnprintf(b+o, PAGE_SIZE-o, "      [port]    - virtual port number\n");
+-	o += scnprintf(b+o, PAGE_SIZE-o, "      [queue]   - queue number\n");
+-	o += scnprintf(b+o, PAGE_SIZE-o, "      [pool]    - pool number\n");
+-	o += scnprintf(b+o, PAGE_SIZE-o, "      [channel] - message channel number\n");
+-	o += scnprintf(b+o, PAGE_SIZE-o, "      [st]      - statistics type: 0-all, 1-vport, 2-hwq, 3-swq, 4-bm pool, 5-channel\n");
+-	o += scnprintf(b+o, PAGE_SIZE-o, "      [ind]     - index according to statistics type\n");
+-	o += scnprintf(b+o, PAGE_SIZE-o, "      [num]     - number of active PPCs (decimal)\n");
+-
+-	o += scnprintf(b+o, PAGE_SIZE-o, "\n");
++	int p = PAGE_SIZE;
++
++	o += scnprintf(b + o, p - o, "\n");
++
++	o += scnprintf(b + o, p - o, "cat                        version      - show FW version\n");
++	o += scnprintf(b + o, p - o, "echo [path]              > fw_path      - define FW images folder\n");
++	o += scnprintf(b + o, p - o, "echo [num]               > ppc_active   - number of active PPCs\n");
++	o += scnprintf(b + o, p - o, "echo [ppc] [ppn] [e] [n] > inf_lg_dump  - informational logger dump\n");
++	o += scnprintf(b + o, p - o, "echo [ppc] [ppn] [e] [n] > cr_lg_dump   - critical logger dump\n");
++	o += scnprintf(b + o, p - o, "echo [ppc]               > ka_dump      - dump keep alive array\n");
++	o += scnprintf(b + o, p - o, "echo [ppc_map]           > ka_get       - get keep alive status\n");
++	o += scnprintf(b + o, p - o, "echo [port]              > emac_vp_show - show EMAC virtual port status\n");
++	o += scnprintf(b + o, p - o, "echo [port]              > vp_stats     - show virtual port FW statistics\n");
++	o += scnprintf(b + o, p - o, "echo [queue]             > hwq_stats    - show HW queue FW statistics\n");
++	o += scnprintf(b + o, p - o, "echo [queue]             > swq_stats    - show SW queue FW statistics\n");
++	o += scnprintf(b + o, p - o, "echo [pool]              > bmpool_stats - show BM pool FW statistics\n");
++	o += scnprintf(b + o, p - o, "echo [channel]           > chan_stats   - show message channel FW statistics\n");
++	o += scnprintf(b + o, p - o, "echo [st] [ind]          > clear_stats  - clear FW statistics by type, 0-all\n");
++
++	o += scnprintf(b + o, p - o, "\n");
++	o += scnprintf(b + o, p - o, "parameters:\n");
++	o += scnprintf(b + o, p - o, "      [ppc_map] - bit map of PPC clusters (decimal)\n");
++	o += scnprintf(b + o, p - o, "      [ppc]     - PPC number (decimal)\n");
++	o += scnprintf(b + o, p - o, "      [ppn]     - PPN number in current PPC (decimal)\n");
++	o += scnprintf(b + o, p - o, "      [entry]   - start entry number (decimal)\n");
++	o += scnprintf(b + o, p - o, "      [numb]    - number of entries to print (decimal)\n");
++	o += scnprintf(b + o, p - o, "      [port]    - virtual port number\n");
++	o += scnprintf(b + o, p - o, "      [queue]   - queue number\n");
++	o += scnprintf(b + o, p - o, "      [pool]    - pool number\n");
++	o += scnprintf(b + o, p - o, "      [channel] - message channel number\n");
++	o += scnprintf(b + o, p - o, "      [st]      - stats type: 0-all, 1-vport, 2-hwq, 3-swq, 4-bm pool, 5-chan\n");
++	o += scnprintf(b + o, p - o, "      [ind]     - index according to statistics type\n");
++	o += scnprintf(b + o, p - o, "      [num]     - number of active PPCs (decimal)\n");
++
++	o += scnprintf(b + o, p - o, "\n");
+ 
+ 	return o;
+ }
+@@ -133,12 +136,22 @@ static ssize_t mv_fw_store(struct device *dev,
+ 			mv_fw_critical_logger_dump(a, b, c, d);
+ 		else
+ 			err = 1;
+-	} else if (!strcmp(name, "keep_alive_dump")) {
+-		fields = sscanf(buf, "%d", &a);
+-		if (fields == 1)
++	} else if (!strcmp(name, "ka_dump")) {
++		if (!kstrtoint(buf, 10, &a))
+ 			mv_fw_keep_alive_dump(a);
+ 		else
+ 			err = 1;
++	} else if (!strcmp(name, "ka_get")) {
++		if (!kstrtoint(buf, 10, &a)) {
++			int ppc;
++
++			for (ppc = 0; ppc < MV_PP3_PPC_MAX_NUM; ppc++) {
++				if ((a & (1 << ppc)) && mv_fw_keep_alive_get(ppc))
++					pr_info("ppc #%d: keep alive is OK\n", ppc);
++			}
++		} else {
++			err = 1;
++		}
+ 	} else if (!strcmp(name, "emac_vp_show")) {
+ 		int i;
+ 		unsigned char valid_macs;
+@@ -223,7 +236,8 @@ static DEVICE_ATTR(fw_path,		S_IWUSR, NULL, mv_fw_store);
+ static DEVICE_ATTR(inf_lg_dump,		S_IWUSR, NULL, mv_fw_store);
+ static DEVICE_ATTR(ppc_active,		S_IWUSR, NULL, mv_fw_store);
+ static DEVICE_ATTR(cr_lg_dump,		S_IWUSR, NULL, mv_fw_store);
+-static DEVICE_ATTR(keep_alive_dump,	S_IWUSR, NULL, mv_fw_store);
++static DEVICE_ATTR(ka_dump,		S_IWUSR, NULL, mv_fw_store);
++static DEVICE_ATTR(ka_get,		S_IWUSR, NULL, mv_fw_store);
+ static DEVICE_ATTR(emac_vp_show,	S_IWUSR, NULL, mv_fw_store);
+ static DEVICE_ATTR(vp_stats,		S_IWUSR, NULL, mv_fw_store);
+ static DEVICE_ATTR(hwq_stats,		S_IWUSR, NULL, mv_fw_store);
+@@ -240,7 +254,8 @@ static struct attribute *mv_fw_attrs[] = {
+ 	&dev_attr_inf_lg_dump.attr,
+ 	&dev_attr_ppc_active.attr,
+ 	&dev_attr_cr_lg_dump.attr,
+-	&dev_attr_keep_alive_dump.attr,
++	&dev_attr_ka_dump.attr,
++	&dev_attr_ka_get.attr,
+ 	&dev_attr_emac_vp_show.attr,
+ 	&dev_attr_vp_stats.attr,
+ 	&dev_attr_hwq_stats.attr,
+@@ -260,25 +275,26 @@ static struct attribute_group mv_fw_group = {
+ static ssize_t mv_fw_debug_help(char *b)
+ {
+ 	int o = 0;
++	int p = PAGE_SIZE;
+ 
+-	o += scnprintf(b + o, PAGE_SIZE - o,
++	o += scnprintf(b + o, p - o,
+ 		       "echo [ppc] [path]                > imem_dnld     - Download PPC IMEM from file\n");
+-	o += scnprintf(b + o, PAGE_SIZE - o,
++	o += scnprintf(b + o, p - o,
+ 		       "echo [ppc] [path]                > profile_dnld  - Download PPC profile table from file\n");
+-	o += scnprintf(b + o, PAGE_SIZE - o,
++	o += scnprintf(b + o, p - o,
+ 		       "echo [path]                      > se_dnld       - Download SE from file\n");
+-	o += scnprintf(b + o, PAGE_SIZE - o,
++	o += scnprintf(b + o, p - o,
+ 		       "echo                             > ppn_run       - Run PPN\n");
+-	o += sprintf(b + o,
++	o += scnprintf(b + o, p - o,
+ 		       "echo [ppc][ppn][ind][adr][words] > sp_dump       - Print SP contents\n");
+-	o += sprintf(b + o,
++	o += scnprintf(b + o, p - o,
+ 		       "echo [ppc][adr][words]           > rec_dump      - Print messages/packets buffer contents\n");
+-	o += scnprintf(b+o, PAGE_SIZE-o, "\nparameters:\n");
+-	o += scnprintf(b+o, PAGE_SIZE-o, "      [ppc]   - PPC number (decimal)\n");
+-	o += scnprintf(b+o, PAGE_SIZE-o, "      [ppn]   - PPN number in current PPC (decimal)\n");
+-	o += scnprintf(b+o, PAGE_SIZE-o, "      [ind]   - index of SP_image array (decimal)\n");
+-	o += scnprintf(b+o, PAGE_SIZE-o, "      [adr]   - offset to print (hex)\n");
+-	o += scnprintf(b+o, PAGE_SIZE-o, "      [words] - words number to print (decimal)\n");
++	o += scnprintf(b + o, p - o, "parameters:\n");
++	o += scnprintf(b + o, p - o, "      [ppc]   - PPC number (decimal)\n");
++	o += scnprintf(b + o, p - o, "      [ppn]   - PPN number in current PPC (decimal)\n");
++	o += scnprintf(b + o, p - o, "      [ind]   - index of SP_image array (decimal)\n");
++	o += scnprintf(b + o, p - o, "      [adr]   - offset to print (hex)\n");
++	o += scnprintf(b + o, p - o, "      [words] - words number to print (decimal)\n");
+ 
+ 
+ 	return o;
+diff --git a/drivers/net/ethernet/marvell/pp3/gnss/mv_pp3_gnss_api.c b/drivers/net/ethernet/marvell/pp3/gnss/mv_pp3_gnss_api.c
+index ea22113..4382069 100644
+--- a/drivers/net/ethernet/marvell/pp3/gnss/mv_pp3_gnss_api.c
++++ b/drivers/net/ethernet/marvell/pp3/gnss/mv_pp3_gnss_api.c
+@@ -17,6 +17,7 @@
+ */
+ #include "platform/mv_pp3.h"
+ #include "fw/mv_pp3_fw_msg.h"
++#include "fw/mv_fw.h"
+ #include "net_dev/mv_dev_vq.h"
+ #include "net_dev/mv_netdev.h"
+ 
+@@ -843,4 +844,22 @@ int mv_pp3_gnss_egress_vq_rate_limit_get(unsigned short vport, int vq, struct mv
+ 	return rc;
+ }
+ EXPORT_SYMBOL(mv_pp3_gnss_egress_vq_rate_limit_get);
++/*---------------------------------------------------------------------------*/
++
++int  mv_pp3_gnss_state_get(bool *state)
++{
++	int ppc;
++
++	for (ppc = 0; ppc < MV_PP3_PPC_MAX_NUM; ppc++) {
++		if (!mv_fw_keep_alive_get(ppc)) {
++			*state = false;
++			return 0;
++		}
++	}
++
++	*state = true;
++
++	return 0;
++}
++EXPORT_SYMBOL(mv_pp3_gnss_state_get);
+ 
+diff --git a/drivers/net/ethernet/marvell/pp3/gnss/mv_pp3_gnss_api.h b/drivers/net/ethernet/marvell/pp3/gnss/mv_pp3_gnss_api.h
+index 92190a1..c618adf 100644
+--- a/drivers/net/ethernet/marvell/pp3/gnss/mv_pp3_gnss_api.h
++++ b/drivers/net/ethernet/marvell/pp3/gnss/mv_pp3_gnss_api.h
+@@ -94,3 +94,5 @@ int mv_pp3_gnss_ingress_vport_ext_stats_clean(int vport);
+ int mv_pp3_gnss_ingress_vport_stats_clean(int vport);
+ int mv_pp3_gnss_ext_vport_msec_get(void);
+ 
++int mv_pp3_gnss_state_get(bool *state);
++
+-- 
+2.7.4
+

@@ -1,0 +1,35 @@
+From 993adea7ef8aeb0e5d2e819fb0afa3852b7e78c3 Mon Sep 17 00:00:00 2001
+From: Ofer Heifetz <oferh@marvell.com>
+Date: Sun, 14 Jan 2018 09:07:25 +0200
+Subject: [PATCH 2167/2241] crypto: inside-secure: align hash request state to
+ 32bit
+
+State must be 32bit aligned since it is copied using the cpu_to_le32
+macro.
+
+Change-Id: I647084d7c674fdfa9964bffbd8810f521bc14621
+Signed-off-by: Ofer Heifetz <oferh@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/48929
+Reviewed-by: Igal Liberman <igall@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+Tested-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/crypto/inside-secure/hash.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/crypto/inside-secure/hash.c b/drivers/crypto/inside-secure/hash.c
+index d085e52..39754d0 100644
+--- a/drivers/crypto/inside-secure/hash.c
++++ b/drivers/crypto/inside-secure/hash.c
+@@ -32,7 +32,7 @@ struct safexcel_ahash_req {
+ 	bool needs_inv;
+ 
+ 	u8 state_sz;	/* expected sate size, only set once */
+-	u32 state[SHA256_DIGEST_SIZE / sizeof(u32)];
++	u32 state[SHA256_DIGEST_SIZE / sizeof(u32)] __aligned(sizeof(u32));
+ 
+ 	u64 len;
+ 
+-- 
+2.7.4
+

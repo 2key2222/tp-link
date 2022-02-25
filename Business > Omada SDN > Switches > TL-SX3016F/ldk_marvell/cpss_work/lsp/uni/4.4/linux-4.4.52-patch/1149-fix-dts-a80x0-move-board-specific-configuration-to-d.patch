@@ -1,0 +1,165 @@
+From 243dc8f9a7c332b0387eefed3ec4c4de8b3e62e5 Mon Sep 17 00:00:00 2001
+From: Hanna Hawa <hannah@marvell.com>
+Date: Mon, 28 Nov 2016 13:27:42 +0200
+Subject: [PATCH 1149/2241] fix: dts: a80x0: move board specific configuration
+ to dts
+
+- move specific configuration of router to be in board dts file,
+instead of in shared SoC dtsi file.
+- disable I2C and SPI on AP for armada-8040-db-A configuration.
+  (both I2C & SPI are not connected on AP on A1 board)
+
+Change-Id: I22ba030e6ac81423e45f949afcb28d1409798b19
+Signed-off-by: Hanna Hawa <hannah@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/34129
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Tested-by: Omri Itach <omrii@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-8040-db-A.dts   | 14 +++++++
+ .../boot/dts/marvell/armada-8040-db-router.dts     | 46 +++++++++++++++++++++
+ arch/arm64/boot/dts/marvell/armada-8040-db.dtsi    | 47 ----------------------
+ 3 files changed, 60 insertions(+), 47 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-8040-db-A.dts b/arch/arm64/boot/dts/marvell/armada-8040-db-A.dts
+index d9bfeb6..dc33678 100644
+--- a/arch/arm64/boot/dts/marvell/armada-8040-db-A.dts
++++ b/arch/arm64/boot/dts/marvell/armada-8040-db-A.dts
+@@ -56,6 +56,20 @@
+ 
+ 	chosen { };
+ 
++	ap806 {
++		config-space {
++			serial@512000 {
++				status = "okay";
++			};
++			i2c@511000 {
++				status = "disabled";
++			};
++			spi0: spi@510600 {
++				status = "disabled";
++			};
++		};
++	};
++
+ 	cpn-110-master {
+ 		config-space {
+ 			sata@540000 {
+diff --git a/arch/arm64/boot/dts/marvell/armada-8040-db-router.dts b/arch/arm64/boot/dts/marvell/armada-8040-db-router.dts
+index b6e9113..3924e1c 100644
+--- a/arch/arm64/boot/dts/marvell/armada-8040-db-router.dts
++++ b/arch/arm64/boot/dts/marvell/armada-8040-db-router.dts
+@@ -56,6 +56,52 @@
+ 
+ 	chosen { };
+ 
++	ap806 {
++		config-space {
++			serial@512000 {
++				status = "okay";
++			};
++			i2c@511000 {
++				status = "okay";
++				clock-frequency = <100000>;
++				pinctrl-names = "default";
++				pinctrl-0 = <&ap_i2c0_pins>;
++				eeprom@57 {
++					compatible = "at24,24c64";
++					reg = <0x57>;
++					pagesize = <32>;
++				};
++				eeprom@50 {
++					compatible = "at24,24c64";
++					reg = <0x50>;
++					pagesize = <32>;
++				};
++			};
++			spi0: spi@510600 {
++				status = "okay";
++				spi-flash@0 {
++					#address-cells = <0x1>;
++					#size-cells = <0x1>;
++					compatible = "jedec,spi-nor";
++					reg = <0x0>;
++					spi-max-frequency = <20000000>;
++					partition@0 {
++						label = "boot";
++						reg = <0x0 0x200000>;
++					};
++					partition@200000 {
++						label = "Filesystem";
++						reg = <0x200000 0xd00000>;
++					};
++					partition@d00000 {
++						label = "boot_2nd";
++						reg = <0xf00000 0x100000>;
++					};
++				};
++			};
++		};
++	};
++
+ 	cpn-110-master {
+ 		config-space {
+ 			sata@540000 {
+diff --git a/arch/arm64/boot/dts/marvell/armada-8040-db.dtsi b/arch/arm64/boot/dts/marvell/armada-8040-db.dtsi
+index 158431b..4bbe03d 100644
+--- a/arch/arm64/boot/dts/marvell/armada-8040-db.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-8040-db.dtsi
+@@ -56,53 +56,6 @@
+ 		reg = <0x0 0x0 0x0 0x80000000>;
+ 	};
+ 
+-	ap806 {
+-		config-space {
+-			serial@512000 {
+-				status = "okay";
+-			};
+-			i2c@511000 {
+-				status = "okay";
+-				clock-frequency = <100000>;
+-				pinctrl-names = "default";
+-				pinctrl-0 = <&ap_i2c0_pins>;
+-				eeprom@57 {
+-					compatible = "at24,24c64";
+-					reg = <0x57>;
+-					pagesize = <32>;
+-				};
+-				eeprom@50 {
+-					compatible = "at24,24c64";
+-					reg = <0x50>;
+-					pagesize = <32>;
+-				};
+-			};
+-			spi0: spi@510600 {
+-				status = "okay";
+-				spi-flash@0 {
+-					#address-cells = <0x1>;
+-					#size-cells = <0x1>;
+-					compatible = "jedec,spi-nor";
+-					reg = <0x0>;
+-					spi-max-frequency = <20000000>;
+-					partition@0 {
+-						label = "boot";
+-						reg = <0x0 0x200000>;
+-					};
+-					partition@200000 {
+-						label = "Filesystem";
+-						reg = <0x200000 0xd00000>;
+-					};
+-					partition@d00000 {
+-						label = "boot_2nd";
+-						reg = <0xf00000 0x100000>;
+-					};
+-				};
+-			};
+-
+-		};
+-	};
+-
+ 	cpn-110-master {
+ 		config-space {
+ 			i2c@701000 {
+-- 
+2.7.4
+

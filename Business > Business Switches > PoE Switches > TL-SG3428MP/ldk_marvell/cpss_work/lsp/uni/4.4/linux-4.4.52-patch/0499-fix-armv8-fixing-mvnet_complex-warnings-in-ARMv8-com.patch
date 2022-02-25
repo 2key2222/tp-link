@@ -1,0 +1,47 @@
+From 40fedefb9698bc5a05ff7bbcc3ad69b09bf96f15 Mon Sep 17 00:00:00 2001
+From: Lior Amsalem <alior@marvell.com>
+Date: Wed, 15 Jun 2016 18:18:19 +0300
+Subject: [PATCH 0499/2241] fix: armv8: fixing mvnet_complex warnings in ARMv8
+ compilation
+
+Change-Id: Ia71ed365252c0612c70cfa0c5697609a747e6d89
+Signed-off-by: Lior Amsalem <alior@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/30492
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Dmitri Epshtein <dima@marvell.com>
+---
+ drivers/net/ethernet/marvell/Kconfig     | 1 -
+ drivers/net/ethernet/marvell/pp3/Kconfig | 3 ++-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/Kconfig b/drivers/net/ethernet/marvell/Kconfig
+index 21a5ba4..83ad740 100644
+--- a/drivers/net/ethernet/marvell/Kconfig
++++ b/drivers/net/ethernet/marvell/Kconfig
+@@ -163,7 +163,6 @@ config SKY2_DEBUG
+ config MVNET_COMPLEX
+ 	bool "Choose to compile Marvell Net Complex support"
+ 	depends on ARCH_MVEBU
+-	default y
+ 	---help---
+ 	Use Marvell propriotary netcomplex driver for A390.
+ 	The driver located uner directory mvebu_net/a390_nc.
+diff --git a/drivers/net/ethernet/marvell/pp3/Kconfig b/drivers/net/ethernet/marvell/pp3/Kconfig
+index a9d96b7..d585317 100644
+--- a/drivers/net/ethernet/marvell/pp3/Kconfig
++++ b/drivers/net/ethernet/marvell/pp3/Kconfig
+@@ -1,9 +1,10 @@
+ config MVPP3
+ 	tristate "Marvell Armada 390 network interface support"
+-	depends on MACH_ARMADA_38X
++	depends on ARCH_MVEBU
+ 	select MVMDIO
+ 	select MV_GNSS_SUPPORT
+ 	select MVEBU_ODMI
++	select MVNET_COMPLEX
+ 	---help---
+ 		Add support for PP3 driver.
+ 		This driver supports the network
+-- 
+2.7.4
+

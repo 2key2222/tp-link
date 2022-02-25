@@ -1,0 +1,334 @@
+From 6cc93e5edb91a3ec3168c0407957a13cfe136a37 Mon Sep 17 00:00:00 2001
+From: Igal Liberman <igall@marvell.com>
+Date: Tue, 21 Mar 2017 17:17:00 +0200
+Subject: [PATCH 1516/2241] crypto: inside-secure: improve coding style
+
+- Add functions description
+- Remove unsued code
+- Improve eip197_trc_cache_init coding style
+- Improve eip197_hw_init coding style
+
+No functional change.
+
+Change-Id: I1e476dd53049ce69a27656e46fc5b30eb6547491
+Signed-off-by: Igal Liberman <igall@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/37786
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+---
+ drivers/crypto/inside-secure/safexcel.c | 72 ++++++++++++++++-----------------
+ drivers/crypto/inside-secure/safexcel.h | 67 +++++++++++++++---------------
+ 2 files changed, 71 insertions(+), 68 deletions(-)
+
+diff --git a/drivers/crypto/inside-secure/safexcel.c b/drivers/crypto/inside-secure/safexcel.c
+index b240fd1..0a03a9c 100644
+--- a/drivers/crypto/inside-secure/safexcel.c
++++ b/drivers/crypto/inside-secure/safexcel.c
+@@ -27,6 +27,7 @@ static int eip_in_use = -1;
+ /* Module param to save the assigned rings to the Kernel */
+ static uint rings[MAX_EIP_ENGINE] = {RINGS_UNINITIALIZED, RINGS_UNINITIALIZED};
+ 
++/* Initialize pseudo random generator */
+ static void eip197_prng_init(struct safexcel_crypto_priv *priv)
+ {
+ 	/* disable PRNG and set to manual mode */
+@@ -59,21 +60,14 @@ static void eip197_prng_init(struct safexcel_crypto_priv *priv)
+ 	       EIP197_PE(priv) + EIP197_PE_EIP96_PRNG_CTRL);
+ }
+ 
++/* Initialize transform record cache */
+ static int eip197_trc_cache_init(struct device *dev,
+ 				 struct safexcel_crypto_priv *priv)
+ {
+-	u32 i, reg, reg_addr,
+-		rc_rec_wc,
+-		rc_rec1_wc,
+-		rc_rec2_wc,
+-		rc_record_cnt,
+-		rc_ht_wc,
+-		rc_ht_byte_offset,
+-		rc_ht_sz,
+-		rc_ht_factor,
+-		rc_ht_entry_cnt,
+-		rc_admn_ram_wc,
+-		rc_admn_ram_entry_cnt;
++	u32 i, reg, reg_addr, rc_rec_wc, rc_rec1_wc, rc_rec2_wc,
++	    rc_record_cnt, rc_ht_wc, rc_ht_byte_offset, rc_ht_sz,
++	    rc_ht_factor, rc_ht_entry_cnt, rc_admn_ram_wc,
++	    rc_admn_ram_entry_cnt;
+ 
+ 	rc_rec1_wc = EIP197_CS_TRC_REC_WC;
+ 	rc_rec2_wc = EIP197_CS_TRC_LG_REC_WC;
+@@ -183,8 +177,8 @@ static int eip197_trc_cache_init(struct device *dev,
+ 		reg_addr = EIP197_CLASSIF_RAM_ACCESS_SPACE + i * EIP197_RC_HEADER_WC * sizeof(u32);
+ 
+ 		/* Write word 0 */
+-		writel((EIP197_RC_NULL << 20) |		/* Hash_Collision_Prev */
+-			 (EIP197_RC_NULL << 10),	/* Hash_Collision_Next */
++		writel((EIP197_RC_NULL << EIP197_RC_HASH_COLLISION_PREV) | /* Hash_Collision_Prev */
++		       (EIP197_RC_NULL << EIP197_RC_HASH_COLLISION_NEXT),  /* Hash_Collision_Next */
+ 			 priv->base + reg_addr);
+ 
+ 		/* Write word 1 */
+@@ -192,18 +186,18 @@ static int eip197_trc_cache_init(struct device *dev,
+ 
+ 		if (i == rc_record_cnt - 1) {
+ 			/* last record */
+-			writel(((i - 1) << 10) |	/* Free_List_Prev */
+-				 EIP197_RC_NULL,	/* Free_List_Prev */
++			writel(((i - 1) << EIP197_RC_FREE_LIST_PREV) |	/* Free_List_Prev */
++				 EIP197_RC_NULL,			/* Free_List_Prev */
+ 				 priv->base + reg_addr);
+ 		} else if (!i) {
+ 			/* first record */
+-			writel((EIP197_RC_NULL << 10) |	/* Free_List_Prev */
+-			       (i + 1),			/* Free_List_Prev */
++			writel((EIP197_RC_NULL << EIP197_RC_FREE_LIST_PREV) |	/* Free_List_Prev */
++			       (i + 1),						/* Free_List_Prev */
+ 			       priv->base + reg_addr);
+ 		} else {
+ 			/* All other records */
+-			writel(((i - 1) << 10) |	/* Free_List_Prev */
+-			       (i + 1),			/* Free_List_Prev */
++			writel(((i - 1) << EIP197_RC_FREE_LIST_PREV) |	/* Free_List_Prev */
++			       (i + 1),					/* Free_List_Prev */
+ 			       priv->base + reg_addr);
+ 		}
+ 
+@@ -222,20 +216,21 @@ static int eip197_trc_cache_init(struct device *dev,
+ 
+ 	/* Clear all hash table words */
+ 	for (i = 0; i < rc_ht_wc; i++)
+-		writel(GENMASK(29, 0),
++		writel(EIP197_RC_HASH_TABLE_MASK,
+ 		       priv->base + rc_ht_byte_offset + i * sizeof(u32));
+ 
+ 	/* Disable Record Cache RAM access */
+ 	writel(0, priv->base + EIP197_CS_RAM_CTRL);
+ 
+ 	/* Write head and tail pointers to the RC Free Chain */
+-	writel(((rc_record_cnt - 1) & GENMASK(9, 0)) << 16,
+-		 priv->base + EIP197_TRC_FREECHAIN);
++	writel(((rc_record_cnt - 1) & EIP197_TRC_TAIL_PTR_MASK) <<
++	       EIP197_TRC_TAIL_PTR_OFFSET,
++	       priv->base + EIP197_TRC_FREECHAIN);
+ 
+ 	/* Set Hash Table start */
+-	reg = ((EIP197_CS_TRC_REC_WC << 18) |
+-		(EIP197_RC_DMA_WR_COMB_DLY << 10) |
+-		(rc_record_cnt & GENMASK(9, 0)));
++	reg = ((EIP197_CS_TRC_REC_WC << EIP197_TRC_RECORD_SIZE2_OFFSET)		|
++		(EIP197_RC_DMA_WR_COMB_DLY << EIP197_TRC_DMA_WR_COMB_DLY_OFFSET)|
++		(rc_record_cnt & EIP197_TRC_HASH_TABLE_START_MASK));
+ 	writel(reg, priv->base + EIP197_TRC_PARAMS2);
+ 
+ 	/* Select the highest clock count as specified by
+@@ -243,14 +238,17 @@ static int eip197_trc_cache_init(struct device *dev,
+ 	 */
+ 
+ 	/* Take Record Cache out of reset */
+-	reg = ((rc_rec2_wc & GENMASK(8, 0)) << 18)	| /* large record_size */
+-	       (1 << 10)				| /* block_timebase */
+-	       ((rc_ht_sz & GENMASK(2, 0)) << 4);	  /* hash_table_size */
++	reg = ((rc_rec2_wc & EIP197_TRC_RECORD_SIZE_MASK) <<
++	       EIP197_TRC_RECORD_SIZE_OFFSET)			| /* large record_size */
++	       (1 << EIP197_TRC_BLCOK_TIMEBASE_OFFSET)		| /* block_timebase */
++	       ((rc_ht_sz & EIP197_TRC_HASH_TABLE_SIZE_MASK) <<
++	       EIP197_TRC_HASH_TABLE_SIZE_OFFSET);		  /* hash_table_size */
+ 	writel(reg, priv->base + EIP197_TRC_PARAMS);
+ 
+ 	return 0;
+ }
+ 
++/* Load EIP197 firmare into the engine */
+ static int eip197_load_fw(struct device *dev, struct safexcel_crypto_priv *priv)
+ {
+ 	const struct firmware	*fw[MAX_FW_NR] = {0};
+@@ -352,6 +350,7 @@ release_fw:
+ 	return ret;
+ }
+ 
++/* Store offset of each configurable unit in the engine */
+ static void eip_priv_unit_offset_init(struct safexcel_crypto_priv *priv)
+ {
+ 	struct safexcel_unit_offset *unit_off = &priv->unit_off;
+@@ -453,7 +452,7 @@ static int eip_hw_setup_rdesc_rings(struct safexcel_crypto_priv *priv)
+ 	return 0;
+ }
+ 
+-static int eip_hw_init(struct device *dev, struct safexcel_crypto_priv *priv)
++static int eip197_hw_init(struct device *dev, struct safexcel_crypto_priv *priv)
+ {
+ 	u32 version, val;
+ 	int i, ret;
+@@ -482,7 +481,7 @@ static int eip_hw_init(struct device *dev, struct safexcel_crypto_priv *priv)
+ 	writel(0, EIP197_HIA_AIC_G(priv) + EIP197_HIA_AIC_G_ENABLE_CTRL);
+ 
+ 	/* Clear any pending interrupt */
+-	writel(GENMASK(31, 0), EIP197_HIA_AIC_G(priv) + EIP197_HIA_AIC_G_ACK);
++	writel(EIP197_AIC_G_ACK_ALL_MASK, EIP197_HIA_AIC_G(priv) + EIP197_HIA_AIC_G_ACK);
+ 
+ 	/*
+ 	 * Data Fetch Engine configuration
+@@ -527,7 +526,7 @@ static int eip_hw_init(struct device *dev, struct safexcel_crypto_priv *priv)
+ 
+ 	/* Wait for all DSE threads to complete */
+ 	while ((readl(EIP197_HIA_DSE_THRD(priv) + EIP197_HIA_DSE_THR_STAT) &
+-	       GENMASK(15, 12)) != GENMASK(15, 12))
++	       EIP197_DSE_THR_RDR_ID_MASK) != EIP197_DSE_THR_RDR_ID_MASK)
+ 		;
+ 
+ 	/* DMA transfer size to use */
+@@ -553,7 +552,7 @@ static int eip_hw_init(struct device *dev, struct safexcel_crypto_priv *priv)
+ 	 */
+ 	for (i = 0; i < priv->config.hw_rings; i++) {
+ 		/* Clear interrupts for this ring */
+-		writel(GENMASK(31, 0),
++		writel(EIP197_HIA_AIC_R_ENABLE_CLR_ALL_MASK,
+ 		       EIP197_HIA_AIC_R(priv) + EIP197_HIA_AIC_R_ENABLE_CLR(i));
+ 
+ 		/* disable external triggering */
+@@ -607,7 +606,7 @@ static int eip_hw_init(struct device *dev, struct safexcel_crypto_priv *priv)
+ 	       EIP197_HIA_DSE_THRD(priv) + EIP197_HIA_DSE_THR_CTRL);
+ 
+ 	/* Clear any HIA interrupt */
+-	writel(GENMASK(30, 20), EIP197_HIA_AIC_G(priv) + EIP197_HIA_AIC_G_ACK);
++	writel(EIP197_AIC_G_ACK_HIA_MASK, EIP197_HIA_AIC_G(priv) + EIP197_HIA_AIC_G_ACK);
+ 
+ 	/* init PRNG */
+ 	eip197_prng_init(priv);
+@@ -1057,6 +1056,7 @@ static void safexcel_unregister_algorithms(struct safexcel_crypto_priv *priv)
+ 	}
+ }
+ 
++/* Configure rings basic parameters */
+ static void safexcel_configure(struct safexcel_crypto_priv *priv)
+ {
+ 	u32 val, mask;
+@@ -1067,7 +1067,7 @@ static void safexcel_configure(struct safexcel_crypto_priv *priv)
+ 
+ 	/* Read number of rings from the engine */
+ 	val = readl(EIP197_HIA_AIC_G(priv) + EIP197_HIA_OPTIONS);
+-	priv->config.hw_rings = (val & GENMASK(3, 0));
++	priv->config.hw_rings = val & EIP197_N_RINGS_MASK;
+ 
+ 	/* Check the requested number of rings given in the module param.
+ 	 * If the module param is uninitialized, use all available rings
+@@ -1203,7 +1203,7 @@ static int safexcel_probe(struct platform_device *pdev)
+ 
+ 	platform_set_drvdata(pdev, priv);
+ 
+-	ret = eip_hw_init(dev, priv);
++	ret = eip197_hw_init(dev, priv);
+ 	if (ret) {
+ 		dev_err(dev, "EIP h/w init failed (%d)\n", ret);
+ 		goto err_pool;
+diff --git a/drivers/crypto/inside-secure/safexcel.h b/drivers/crypto/inside-secure/safexcel.h
+index 9f773b0..b9bdb62 100644
+--- a/drivers/crypto/inside-secure/safexcel.h
++++ b/drivers/crypto/inside-secure/safexcel.h
+@@ -64,10 +64,34 @@
+ #define EIP197_RC_HASH_TABLE_SIZE_POWER_FACTOR		5
+ #define EIP197_RC_DMA_WR_COMB_DLY			0x07
+ #define EIP197_RC_NULL					0x3FF
++#define EIP197_RC_HASH_TABLE_MASK			(GENMASK(29, 0))
+ /* transformation */
+ #define EIP197_TRC_ADMIN_RAM_WC				320
+ #define EIP197_TRC_RAM_WC				3840
+ 
++/* Record administration */
++#define EIP197_RC_HASH_COLLISION_PREV			20
++#define EIP197_RC_HASH_COLLISION_NEXT			10
++#define EIP197_RC_FREE_LIST_PREV			10
++
++/* EIP197_TRC_PARAMS */
++#define EIP197_TRC_HASH_TABLE_SIZE_OFFSET		4
++#define EIP197_TRC_HASH_TABLE_SIZE_MASK			(GENMASK(2, 0))
++#define EIP197_TRC_BLCOK_TIMEBASE_OFFSET		10
++#define EIP197_TRC_RECORD_SIZE_OFFSET			18
++#define EIP197_TRC_RECORD_SIZE_MASK			(GENMASK(8, 0))
++
++
++
++/* EIP197_TRC_PARAMS2 */
++#define EIP197_TRC_HASH_TABLE_START_MASK		(GENMASK(9, 0))
++#define EIP197_TRC_DMA_WR_COMB_DLY_OFFSET		10
++#define EIP197_TRC_RECORD_SIZE2_OFFSET			18
++
++/* EIP197_TRC_FREECHAIN */
++#define EIP197_TRC_TAIL_PTR_OFFSET			16
++#define EIP197_TRC_TAIL_PTR_MASK			(GENMASK(9, 0))
++
+ /* Transformation Record Cache address */
+ #define EIP197_TRC_CTRL					0xf0800
+ #define EIP197_TRC_LASTRES				0xf0804
+@@ -256,9 +280,13 @@
+ #define EIP197_IP_VERSION			0x1fffc
+ #define EIP197_MST_CTRL				0xfff4
+ 
++/* EIP197_HIA_DSE_THR_STAT */
++#define EIP197_DSE_THR_RDR_ID_MASK		(GENMASK(15, 12))
++
+ /* EIP197_HIA_OPTIONS */
+ #define EIP197_xDR_HDW_OFFSET			25
+ #define EIP197_xDR_HDW_MASK			(GENMASK(27, 25))
++#define EIP197_N_RINGS_MASK			(GENMASK(3, 0))
+ 
+ /* EIP197_HIA_AIC_R_ENABLE_CTRL */
+ #define EIP197_CDR_IRQ(n)			BIT((n) * 2)
+@@ -286,7 +314,7 @@
+ #define EIP197_G_IRQ_PE(n)			BIT((n) + 20)
+ 
+ /* EIP197_HIA_MST_CTRL */
+-#define EIP197_HIA_SLAVE_BYTE_SWAP			BIT(24)
++#define EIP197_HIA_SLAVE_BYTE_SWAP		BIT(24)
+ #define EIP197_HIA_SLAVE_NO_BYTE_SWAP		BIT(25)
+ 
+ /* EIP197_PE_IN_DBUF/TBUF_THRES */
+@@ -297,37 +325,12 @@
+ #define EIP197_PE_OUT_DBUF_THRES_MIN(n)		((n) << 0)
+ #define EIP197_PE_OUT_DBUF_THRES_MAX(n)		((n) << 4)
+ 
+-/* Remove */
+-/* EIP197_FUNCTION_EN */
+-#define EIP197_FUNCTION_RSVD			(BIT(6) | BIT(15) | BIT(20) | BIT(23))
+-#define EIP197_PROTOCOL_HASH_ONLY		BIT(0)
+-#define EIP197_PROTOCOL_ENCRYPT_ONLY		BIT(1)
+-#define EIP197_PROTOCOL_HASH_ENCRYPT		BIT(2)
+-#define EIP197_PROTOCOL_HASH_DECRYPT		BIT(3)
+-#define EIP197_PROTOCOL_ENCRYPT_HASH		BIT(4)
+-#define EIP197_PROTOCOL_DECRYPT_HASH		BIT(5)
+-#define EIP197_ALG_ARC4				BIT(7)
+-#define EIP197_ALG_AES_ECB			BIT(8)
+-#define EIP197_ALG_AES_CBC			BIT(9)
+-#define EIP197_ALG_AES_CTR_ICM			BIT(10)
+-#define EIP197_ALG_AES_OFB			BIT(11)
+-#define EIP197_ALG_AES_CFB			BIT(12)
+-#define EIP197_ALG_DES_ECB			BIT(13)
+-#define EIP197_ALG_DES_CBC			BIT(14)
+-#define EIP197_ALG_DES_OFB			BIT(16)
+-#define EIP197_ALG_DES_CFB			BIT(17)
+-#define EIP197_ALG_3DES_ECB			BIT(18)
+-#define EIP197_ALG_3DES_CBC			BIT(19)
+-#define EIP197_ALG_3DES_OFB			BIT(21)
+-#define EIP197_ALG_3DES_CFB			BIT(22)
+-#define EIP197_ALG_MD5				BIT(24)
+-#define EIP197_ALG_HMAC_MD5			BIT(25)
+-#define EIP197_ALG_SHA1				BIT(26)
+-#define EIP197_ALG_HMAC_SHA1			BIT(27)
+-#define EIP197_ALG_SHA2				BIT(28)
+-#define EIP197_ALG_HMAC_SHA2			BIT(29)
+-#define EIP197_ALG_AES_XCBC_MAC			BIT(30)
+-#define EIP197_ALG_GCM_HASH			BIT(31)
++/* EIP197_HIA_AIC_G_ACK */
++#define EIP197_AIC_G_ACK_ALL_MASK		(GENMASK(31, 0))
++#define EIP197_AIC_G_ACK_HIA_MASK		(GENMASK(30, 20))
++
++/* EIP197_HIA_AIC_R_ENABLE_CLR */
++#define EIP197_HIA_AIC_R_ENABLE_CLR_ALL_MASK	(GENMASK(31, 0))
+ 
+ /* EIP197_CONTEXT_CTRL */
+ #define EIP197_CONTEXT_SIZE(n)			(n)
+-- 
+2.7.4
+

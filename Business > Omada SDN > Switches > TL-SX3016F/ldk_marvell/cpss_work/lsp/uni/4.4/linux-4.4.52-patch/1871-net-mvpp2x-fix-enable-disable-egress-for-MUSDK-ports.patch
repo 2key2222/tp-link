@@ -1,0 +1,51 @@
+From 60a0d975244d23d86dc4469d38b9f6a46249c2f0 Mon Sep 17 00:00:00 2001
+From: nsamsono <nsamsono@marvell.com>
+Date: Thu, 27 Jul 2017 19:49:15 +0300
+Subject: [PATCH 1871/2241] net: mvpp2x: fix enable/disable egress for MUSDK
+ ports
+
+In case of MUSDK port egress enable actually disables Tx queues
+by writing 0 (kernal qmap) to MVPP2_TXP_SCHED_Q_CMD_REG
+
+Change-Id: Ib25f4a6839a0fb4481a14cbb457f283aca7e19d9
+Signed-off-by: nsamsono <nsamsono@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/42297
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.c | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.c
+index 7c561f0..064ed08 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.c
+@@ -4153,6 +4153,12 @@ void mv_pp2x_egress_enable(struct mv_pp2x_port *port)
+ 	int tx_port_num = mv_pp2x_egress_port(port);
+ 	struct mv_pp2x_hw *hw = &port->priv->hw;
+ 
++	/* Don't do nothing for MUSDK ports since MUSDK manages
++	 * its own queues
++	 */
++	if (port->flags & MVPP2_F_IF_MUSDK)
++		return;
++
+ 	/* Enable all initialized TXs. */
+ 	qmap = 0;
+ 	for (queue = 0; queue < port->num_tx_queues; queue++) {
+@@ -4178,6 +4184,12 @@ void mv_pp2x_egress_disable(struct mv_pp2x_port *port)
+ 	int tx_port_num = mv_pp2x_egress_port(port);
+ 	struct mv_pp2x_hw *hw = &port->priv->hw;
+ 
++	/* Don't do nothing for MUSDK ports since MUSDK manages
++	 * its own queues
++	 */
++	if (port->flags & MVPP2_F_IF_MUSDK)
++		return;
++
+ 	/* Issue stop command for active channels only */
+ 	mv_pp2x_write(hw, MVPP2_TXP_SCHED_PORT_INDEX_REG, tx_port_num);
+ 	reg_data = (mv_pp2x_read(hw, MVPP2_TXP_SCHED_Q_CMD_REG)) &
+-- 
+2.7.4
+

@@ -1,0 +1,43 @@
+From 664388426be7642de616186b894d266c61efbe3c Mon Sep 17 00:00:00 2001
+From: Neta Zur <neta@marvell.com>
+Date: Thu, 17 Nov 2016 15:06:50 +0200
+Subject: [PATCH 1117/2241] fix: dts: cp110-1: update i2c to use master bridge
+
+Update i2c compatible from mv64xxx-i2c to mv78230-i2c
+The mv78230-i2c activate i2c errata delay and enable I2C Master Bridge
+cp110 mater is already configure to use the master bridge.
+
+Change-Id: I0365f703d22d3ef0b1350db71a5b52c56543bebe
+Signed-off-by: Neta Zur <neta@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/33930
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+Tested-by: Hanna Hawa <hannah@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-cp110-1.dtsi | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-cp110-1.dtsi b/arch/arm64/boot/dts/marvell/armada-cp110-1.dtsi
+index 888b8a0..830b22a 100644
+--- a/arch/arm64/boot/dts/marvell/armada-cp110-1.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-cp110-1.dtsi
+@@ -97,7 +97,7 @@ spi@700680 {
+ };
+ 
+ i2c@701000 {
+-	compatible = "marvell,mv64xxx-i2c";
++	compatible = "marvell,mv78230-i2c";
+ 	reg = <0x701000 0x20>;
+ 	#address-cells = <1>;
+ 	#size-cells = <0>;
+@@ -108,7 +108,7 @@ i2c@701000 {
+ };
+ 
+ i2c@701100 {
+-	compatible = "marvell,mv64xxx-i2c";
++	compatible = "marvell,mv78230-i2c";
+ 	reg = <0x701100 0x20>;
+ 	#address-cells = <1>;
+ 	#size-cells = <0>;
+-- 
+2.7.4
+

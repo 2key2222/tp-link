@@ -1,0 +1,153 @@
+From f6de03a45cd7df9623513d72033fb4f329a82208 Mon Sep 17 00:00:00 2001
+From: Marcin Wojtas <mw@semihalf.com>
+Date: Mon, 14 Mar 2016 09:39:00 +0100
+Subject: [PATCH 1072/2241] ARM: dts: armada-xp: enable buffer manager support
+ on Armada XP boards
+
+Since mvneta driver supports using hardware buffer management (BM), in
+order to use it, board files have to be adjusted accordingly. This commit
+enables BM on AXP-DB and AXP-GP in same manner - because number of ports
+on those boards is the same as number of possible pools, each port is
+supposed to use single pool for all kind of packets.
+
+Moreover appropriate entry is added to 'soc' node ranges, as well as "okay"
+status for 'bm' and 'bm-bppi' (internal SRAM) nodes.
+
+Change-Id: I162ba1c0c23d007e4be12399d37b322daa5275fe
+Signed-off-by: Marcin Wojtas <mw@semihalf.com>
+Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Neta Zur <neta@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/33704
+Tested-by: Star_Automation <star@marvell.com>
+---
+ arch/arm/boot/dts/armada-xp-db.dts | 19 ++++++++++++++++++-
+ arch/arm/boot/dts/armada-xp-gp.dts | 19 ++++++++++++++++++-
+ 2 files changed, 36 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/boot/dts/armada-xp-db.dts b/arch/arm/boot/dts/armada-xp-db.dts
+index ebe1d26..cca3665 100644
+--- a/arch/arm/boot/dts/armada-xp-db.dts
++++ b/arch/arm/boot/dts/armada-xp-db.dts
+@@ -77,7 +77,8 @@
+ 			  MBUS_ID(0x01, 0x1d) 0 0 0xfff00000 0x100000
+ 			  MBUS_ID(0x01, 0x2f) 0 0 0xf0000000 0x1000000
+ 			  MBUS_ID(0x09, 0x09) 0 0 0xf1100000 0x10000
+-			  MBUS_ID(0x09, 0x05) 0 0 0xf1110000 0x10000>;
++			  MBUS_ID(0x09, 0x05) 0 0 0xf1110000 0x10000
++			  MBUS_ID(0x0c, 0x04) 0 0 0xf1200000 0x100000>;
+ 
+ 		devbus-bootcs {
+ 			status = "okay";
+@@ -181,21 +182,33 @@
+ 				status = "okay";
+ 				phy = <&phy0>;
+ 				phy-mode = "rgmii-id";
++				buffer-manager = <&bm>;
++				bm,pool-long = <0>;
+ 			};
+ 			ethernet@74000 {
+ 				status = "okay";
+ 				phy = <&phy1>;
+ 				phy-mode = "rgmii-id";
++				buffer-manager = <&bm>;
++				bm,pool-long = <1>;
+ 			};
+ 			ethernet@30000 {
+ 				status = "okay";
+ 				phy = <&phy2>;
+ 				phy-mode = "sgmii";
++				buffer-manager = <&bm>;
++				bm,pool-long = <2>;
+ 			};
+ 			ethernet@34000 {
+ 				status = "okay";
+ 				phy = <&phy3>;
+ 				phy-mode = "sgmii";
++				buffer-manager = <&bm>;
++				bm,pool-long = <3>;
++			};
++
++			bm@c0000 {
++				status = "okay";
+ 			};
+ 
+ 			mvsdio@d4000 {
+@@ -230,5 +243,9 @@
+ 				};
+ 			};
+ 		};
++
++		bm-bppi {
++			status = "okay";
++		};
+ 	};
+ };
+diff --git a/arch/arm/boot/dts/armada-xp-gp.dts b/arch/arm/boot/dts/armada-xp-gp.dts
+index 5730b87..061f423 100644
+--- a/arch/arm/boot/dts/armada-xp-gp.dts
++++ b/arch/arm/boot/dts/armada-xp-gp.dts
+@@ -96,7 +96,8 @@
+ 			  MBUS_ID(0x01, 0x1d) 0 0 0xfff00000 0x100000
+ 			  MBUS_ID(0x01, 0x2f) 0 0 0xf0000000 0x1000000
+ 			  MBUS_ID(0x09, 0x09) 0 0 0xf1100000 0x10000
+-			  MBUS_ID(0x09, 0x05) 0 0 0xf1110000 0x10000>;
++			  MBUS_ID(0x09, 0x05) 0 0 0xf1110000 0x10000
++			  MBUS_ID(0x0c, 0x04) 0 0 0xf1200000 0x100000>;
+ 
+ 		devbus-bootcs {
+ 			status = "okay";
+@@ -196,21 +197,29 @@
+ 				status = "okay";
+ 				phy = <&phy0>;
+ 				phy-mode = "qsgmii";
++				buffer-manager = <&bm>;
++				bm,pool-long = <0>;
+ 			};
+ 			ethernet@74000 {
+ 				status = "okay";
+ 				phy = <&phy1>;
+ 				phy-mode = "qsgmii";
++				buffer-manager = <&bm>;
++				bm,pool-long = <1>;
+ 			};
+ 			ethernet@30000 {
+ 				status = "okay";
+ 				phy = <&phy2>;
+ 				phy-mode = "qsgmii";
++				buffer-manager = <&bm>;
++				bm,pool-long = <2>;
+ 			};
+ 			ethernet@34000 {
+ 				status = "okay";
+ 				phy = <&phy3>;
+ 				phy-mode = "qsgmii";
++				buffer-manager = <&bm>;
++				bm,pool-long = <3>;
+ 			};
+ 
+ 			/* Front-side USB slot */
+@@ -235,6 +244,10 @@
+ 				};
+ 			};
+ 
++			bm@c0000 {
++				status = "okay";
++			};
++
+ 			nand@d0000 {
+ 				status = "okay";
+ 				num-cs = <1>;
+@@ -243,5 +256,9 @@
+ 				nand-on-flash-bbt;
+ 			};
+ 		};
++
++		bm-bppi {
++			status = "okay";
++		};
+ 	};
+ };
+-- 
+2.7.4
+

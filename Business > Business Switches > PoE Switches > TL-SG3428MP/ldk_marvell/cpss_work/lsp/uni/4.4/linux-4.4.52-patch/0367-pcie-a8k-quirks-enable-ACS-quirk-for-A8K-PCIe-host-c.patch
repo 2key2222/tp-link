@@ -1,0 +1,81 @@
+From 187df0279d1c8053d0bcdd701ddfa64f16d0acfc Mon Sep 17 00:00:00 2001
+From: Yehuda Yitschak <yehuday@marvell.com>
+Date: Tue, 3 May 2016 09:46:42 +0300
+Subject: [PATCH 0367/2241] pcie-a8k: quirks: enable ACS quirk for A8K PCIe
+ host controller
+
+Access Control Services (ACS) is a PCIe capability that enables
+controlling and limiting peer-to-peer (P2P) access, meaninig PCI devices
+directly accessing other PCI devices on the same bus. This capability is
+required in order to securely assign PCIe devices to a guest OS without
+breaching guest isolation.
+Armada-8k PCIe host controller doesn't support ACS, however it also
+doesn't allow P2P transactions. So practically it can be considered as
+having a sort of ACS support.
+This patch adds the Armada-8K PCIe host device ID to the list of devices
+that exhibit ACS capabilities without actual ACS support.
+
+Change-Id: Ifdb9ade1f5d3f245b8f23a7c120383371682ca37
+Signed-off-by: Yehuda Yitschak <yehuday@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/29438
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/pci/quirks.c | 27 +++++++++++++++++++++++++++
+ 1 file changed, 27 insertions(+)
+
+diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+index 254192b..e794158 100644
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -3863,6 +3863,16 @@ static const u16 pci_quirk_intel_pch_acs_ids[] = {
+ 	0x8c90, 0x8c92, 0x8c94, 0x8c96, 0x8c98, 0x8c9a, 0x8c9c, 0x8c9e,
+ };
+ 
++/*
++ * Some of Marvell's PCIe ports do not support ACS capability
++ * but also do not enable peer-to-peer transactions so allow them
++ * to safely use the ACS quirk
++ */
++static const u16 pci_quirk_marvell_acs_ids[] = {
++	/* Marvell CP-110 south bridge */
++	0x0110,
++};
++
+ static bool pci_quirk_intel_pch_acs_match(struct pci_dev *dev)
+ {
+ 	int i;
+@@ -3891,6 +3901,21 @@ static int pci_quirk_intel_pch_acs(struct pci_dev *dev, u16 acs_flags)
+ 	return acs_flags & ~flags ? 0 : 1;
+ }
+ 
++static int pci_quirk_marvell_acs(struct pci_dev *dev, u16 acs_flags)
++{
++	int i;
++
++	/* Filter out a few obvious non-matches first */
++	if (!pci_is_pcie(dev) || pci_pcie_type(dev) != PCI_EXP_TYPE_ROOT_PORT)
++		return false;
++
++	for (i = 0; i < ARRAY_SIZE(pci_quirk_marvell_acs_ids); i++)
++		if (pci_quirk_marvell_acs_ids[i] == dev->device)
++			return true;
++
++	return false;
++}
++
+ static int pci_quirk_mf_endpoint_acs(struct pci_dev *dev, u16 acs_flags)
+ {
+ 	/*
+@@ -3981,6 +4006,8 @@ static const struct pci_dev_acs_enabled {
+ 	{ PCI_VENDOR_ID_INTEL, PCI_ANY_ID, pci_quirk_intel_pch_acs },
+ 	{ 0x19a2, 0x710, pci_quirk_mf_endpoint_acs }, /* Emulex BE3-R */
+ 	{ 0x10df, 0x720, pci_quirk_mf_endpoint_acs }, /* Emulex Skyhawk-R */
++	/* Marvell PCIe root port */
++	{ PCI_VENDOR_ID_MARVELL, PCI_ANY_ID, pci_quirk_marvell_acs },
+ 	{ 0 }
+ };
+ 
+-- 
+2.7.4
+

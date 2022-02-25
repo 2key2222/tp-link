@@ -1,0 +1,38 @@
+From 0fdd26623ba57451d95744d23d7d49a42e02cd0f Mon Sep 17 00:00:00 2001
+From: Markus Elfring <elfring@users.sourceforge.net>
+Date: Mon, 17 Apr 2017 09:12:34 +0200
+Subject: [PATCH 1696/2241] net: mvpp2: Improve another size determination in
+ mvpp2_prs_default_init()
+
+Replace the specification of a data structure by a pointer dereference
+as the parameter for the operator "sizeof" to make the corresponding size
+determination a bit safer according to the Linux coding style convention.
+
+Patch cherry-picked from mainline 4.12_rc5
+
+Change-Id: I82bc87003c75250cb515dbe2b3aa5496a409098a
+Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/40446
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2.c b/drivers/net/ethernet/marvell/mvpp2.c
+index 070eae7..d0eac6c 100644
+--- a/drivers/net/ethernet/marvell/mvpp2.c
++++ b/drivers/net/ethernet/marvell/mvpp2.c
+@@ -3126,7 +3126,7 @@ static int mvpp2_prs_default_init(struct platform_device *pdev,
+ 		mvpp2_prs_hw_inv(priv, index);
+ 
+ 	priv->prs_shadow = devm_kcalloc(&pdev->dev, MVPP2_PRS_TCAM_SRAM_SIZE,
+-					sizeof(struct mvpp2_prs_shadow),
++					sizeof(*priv->prs_shadow),
+ 					GFP_KERNEL);
+ 	if (!priv->prs_shadow)
+ 		return -ENOMEM;
+-- 
+2.7.4
+

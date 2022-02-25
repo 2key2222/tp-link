@@ -1,0 +1,247 @@
+From 2f0d228dc257d578dc48531cb46abe4d8bd91620 Mon Sep 17 00:00:00 2001
+From: Ido Schimmel <idosch@mellanox.com>
+Date: Tue, 15 Dec 2015 16:03:35 +0100
+Subject: [PATCH 2061/2241] switchdev: Pass original device to port netdev
+ driver
+
+switchdev drivers need to know the netdev on which the switchdev op was
+invoked. For example, the STP state of a VLAN interface configured on top
+of a port can change while being member in a bridge. In this case, the
+underlying driver should only change the STP state of that particular
+VLAN and not of all the VLANs configured on the port.
+
+However, current switchdev infrastructure only passes the port netdev down
+to the driver. Solve that by passing the original device down to the
+driver as part of the required switchdev object / attribute.
+
+This doesn't entail any change in current switchdev drivers. It simply
+enables those supporting stacked devices to know the originating device
+and act accordingly.
+
+Change-Id: I365d84d3c4dc054f1f123713951b0991a3f868b7
+Signed-off-by: Ido Schimmel <idosch@mellanox.com>
+Signed-off-by: Jiri Pirko <jiri@mellanox.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/42115
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Yuval Caduri <cyuval@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+---
+ include/net/switchdev.h   |  2 ++
+ net/bridge/br_fdb.c       |  1 +
+ net/bridge/br_stp.c       |  2 ++
+ net/bridge/br_stp_if.c    |  1 +
+ net/bridge/br_vlan.c      |  2 ++
+ net/core/net-sysfs.c      |  1 +
+ net/core/rtnetlink.c      |  1 +
+ net/switchdev/switchdev.c | 12 ++++++++++++
+ 8 files changed, 22 insertions(+)
+
+diff --git a/include/net/switchdev.h b/include/net/switchdev.h
+index 6f5ea20..8ba151c 100644
+--- a/include/net/switchdev.h
++++ b/include/net/switchdev.h
+@@ -51,6 +51,7 @@ enum switchdev_attr_id {
+ };
+ 
+ struct switchdev_attr {
++	struct net_device *orig_dev;
+ 	enum switchdev_attr_id id;
+ 	u32 flags;
+ 	union {
+@@ -70,6 +71,7 @@ enum switchdev_obj_id {
+ };
+ 
+ struct switchdev_obj {
++	struct net_device *orig_dev;
+ 	enum switchdev_obj_id id;
+ 	u32 flags;
+ };
+diff --git a/net/bridge/br_fdb.c b/net/bridge/br_fdb.c
+index 09442e0..7333433 100644
+--- a/net/bridge/br_fdb.c
++++ b/net/bridge/br_fdb.c
+@@ -135,6 +135,7 @@ static void fdb_del_external_learn(struct net_bridge_fdb_entry *f)
+ {
+ 	struct switchdev_obj_port_fdb fdb = {
+ 		.obj = {
++			.orig_dev = f->dst->dev,
+ 			.id = SWITCHDEV_OBJ_ID_PORT_FDB,
+ 			.flags = SWITCHDEV_F_DEFER,
+ 		},
+diff --git a/net/bridge/br_stp.c b/net/bridge/br_stp.c
+index 93796f3..9cb7044 100644
+--- a/net/bridge/br_stp.c
++++ b/net/bridge/br_stp.c
+@@ -33,6 +33,7 @@ static const char *const br_port_state_names[] = {
+ void br_set_state(struct net_bridge_port *p, unsigned int state)
+ {
+ 	struct switchdev_attr attr = {
++		.orig_dev = p->dev,
+ 		.id = SWITCHDEV_ATTR_ID_PORT_STP_STATE,
+ 		.flags = SWITCHDEV_F_DEFER,
+ 		.u.stp_state = state,
+@@ -572,6 +573,7 @@ int br_set_max_age(struct net_bridge *br, unsigned long val)
+ int br_set_ageing_time(struct net_bridge *br, u32 ageing_time)
+ {
+ 	struct switchdev_attr attr = {
++		.orig_dev = br->dev,
+ 		.id = SWITCHDEV_ATTR_ID_BRIDGE_AGEING_TIME,
+ 		.flags = SWITCHDEV_F_SKIP_EOPNOTSUPP,
+ 		.u.ageing_time = ageing_time,
+diff --git a/net/bridge/br_stp_if.c b/net/bridge/br_stp_if.c
+index 38b6534..984d462 100644
+--- a/net/bridge/br_stp_if.c
++++ b/net/bridge/br_stp_if.c
+@@ -37,6 +37,7 @@ static inline port_id br_make_port_id(__u8 priority, __u16 port_no)
+ void br_init_port(struct net_bridge_port *p)
+ {
+ 	struct switchdev_attr attr = {
++		.orig_dev = p->dev,
+ 		.id = SWITCHDEV_ATTR_ID_BRIDGE_AGEING_TIME,
+ 		.flags = SWITCHDEV_F_SKIP_EOPNOTSUPP | SWITCHDEV_F_DEFER,
+ 		.u.ageing_time = jiffies_to_clock_t(p->br->ageing_time),
+diff --git a/net/bridge/br_vlan.c b/net/bridge/br_vlan.c
+index dd3a145..77edbbb 100644
+--- a/net/bridge/br_vlan.c
++++ b/net/bridge/br_vlan.c
+@@ -73,6 +73,7 @@ static int __vlan_vid_add(struct net_device *dev, struct net_bridge *br,
+ 			  u16 vid, u16 flags)
+ {
+ 	struct switchdev_obj_port_vlan v = {
++		.obj.orig_dev = dev,
+ 		.obj.id = SWITCHDEV_OBJ_ID_PORT_VLAN,
+ 		.flags = flags,
+ 		.vid_begin = vid,
+@@ -120,6 +121,7 @@ static int __vlan_vid_del(struct net_device *dev, struct net_bridge *br,
+ 			  u16 vid)
+ {
+ 	struct switchdev_obj_port_vlan v = {
++		.obj.orig_dev = dev,
+ 		.obj.id = SWITCHDEV_OBJ_ID_PORT_VLAN,
+ 		.vid_begin = vid,
+ 		.vid_end = vid,
+diff --git a/net/core/net-sysfs.c b/net/core/net-sysfs.c
+index f88a62a..bca8c35 100644
+--- a/net/core/net-sysfs.c
++++ b/net/core/net-sysfs.c
+@@ -471,6 +471,7 @@ static ssize_t phys_switch_id_show(struct device *dev,
+ 
+ 	if (dev_isalive(netdev)) {
+ 		struct switchdev_attr attr = {
++			.orig_dev = netdev,
+ 			.id = SWITCHDEV_ATTR_ID_PORT_PARENT_ID,
+ 			.flags = SWITCHDEV_F_NO_RECURSE,
+ 		};
+diff --git a/net/core/rtnetlink.c b/net/core/rtnetlink.c
+index fae1cd4..c7b49cf 100644
+--- a/net/core/rtnetlink.c
++++ b/net/core/rtnetlink.c
+@@ -1025,6 +1025,7 @@ static int rtnl_phys_switch_id_fill(struct sk_buff *skb, struct net_device *dev)
+ {
+ 	int err;
+ 	struct switchdev_attr attr = {
++		.orig_dev = dev,
+ 		.id = SWITCHDEV_ATTR_ID_PORT_PARENT_ID,
+ 		.flags = SWITCHDEV_F_NO_RECURSE,
+ 	};
+diff --git a/net/switchdev/switchdev.c b/net/switchdev/switchdev.c
+index 1b58866..84c07b8 100644
+--- a/net/switchdev/switchdev.c
++++ b/net/switchdev/switchdev.c
+@@ -724,6 +724,7 @@ static int switchdev_port_vlan_fill(struct sk_buff *skb, struct net_device *dev,
+ 				    u32 filter_mask)
+ {
+ 	struct switchdev_vlan_dump dump = {
++		.vlan.obj.orig_dev = dev,
+ 		.vlan.obj.id = SWITCHDEV_OBJ_ID_PORT_VLAN,
+ 		.skb = skb,
+ 		.filter_mask = filter_mask,
+@@ -758,6 +759,7 @@ int switchdev_port_bridge_getlink(struct sk_buff *skb, u32 pid, u32 seq,
+ 				  int nlflags)
+ {
+ 	struct switchdev_attr attr = {
++		.orig_dev = dev,
+ 		.id = SWITCHDEV_ATTR_ID_PORT_BRIDGE_FLAGS,
+ 	};
+ 	u16 mode = BRIDGE_MODE_UNDEF;
+@@ -779,6 +781,7 @@ static int switchdev_port_br_setflag(struct net_device *dev,
+ 				     unsigned long brport_flag)
+ {
+ 	struct switchdev_attr attr = {
++		.orig_dev = dev,
+ 		.id = SWITCHDEV_ATTR_ID_PORT_BRIDGE_FLAGS,
+ 	};
+ 	u8 flag = nla_get_u8(nlattr);
+@@ -854,6 +857,7 @@ static int switchdev_port_br_afspec(struct net_device *dev,
+ 	struct nlattr *attr;
+ 	struct bridge_vlan_info *vinfo;
+ 	struct switchdev_obj_port_vlan vlan = {
++		.obj.orig_dev = dev,
+ 		.obj.id = SWITCHDEV_OBJ_ID_PORT_VLAN,
+ 	};
+ 	int rem;
+@@ -976,6 +980,7 @@ int switchdev_port_fdb_add(struct ndmsg *ndm, struct nlattr *tb[],
+ 			   u16 vid, u16 nlm_flags)
+ {
+ 	struct switchdev_obj_port_fdb fdb = {
++		.obj.orig_dev = dev,
+ 		.obj.id = SWITCHDEV_OBJ_ID_PORT_FDB,
+ 		.vid = vid,
+ 	};
+@@ -1001,6 +1006,7 @@ int switchdev_port_fdb_del(struct ndmsg *ndm, struct nlattr *tb[],
+ 			   u16 vid)
+ {
+ 	struct switchdev_obj_port_fdb fdb = {
++		.obj.orig_dev = dev,
+ 		.obj.id = SWITCHDEV_OBJ_ID_PORT_FDB,
+ 		.vid = vid,
+ 	};
+@@ -1078,6 +1084,7 @@ int switchdev_port_fdb_dump(struct sk_buff *skb, struct netlink_callback *cb,
+ 			    struct net_device *filter_dev, int idx)
+ {
+ 	struct switchdev_fdb_dump dump = {
++		.fdb.obj.orig_dev = dev,
+ 		.fdb.obj.id = SWITCHDEV_OBJ_ID_PORT_FDB,
+ 		.dev = dev,
+ 		.skb = skb,
+@@ -1136,6 +1143,7 @@ static struct net_device *switchdev_get_dev_by_nhs(struct fib_info *fi)
+ 		if (!dev)
+ 			return NULL;
+ 
++		attr.orig_dev = dev;
+ 		if (switchdev_port_attr_get(dev, &attr))
+ 			return NULL;
+ 
+@@ -1194,6 +1202,7 @@ int switchdev_fib_ipv4_add(u32 dst, int dst_len, struct fib_info *fi,
+ 	if (!dev)
+ 		return 0;
+ 
++	ipv4_fib.obj.orig_dev = dev;
+ 	err = switchdev_port_obj_add(dev, &ipv4_fib.obj);
+ 	if (!err)
+ 		fi->fib_flags |= RTNH_F_OFFLOAD;
+@@ -1237,6 +1246,7 @@ int switchdev_fib_ipv4_del(u32 dst, int dst_len, struct fib_info *fi,
+ 	if (!dev)
+ 		return 0;
+ 
++	ipv4_fib.obj.orig_dev = dev;
+ 	err = switchdev_port_obj_del(dev, &ipv4_fib.obj);
+ 	if (!err)
+ 		fi->fib_flags &= ~RTNH_F_OFFLOAD;
+@@ -1269,10 +1279,12 @@ static bool switchdev_port_same_parent_id(struct net_device *a,
+ 					  struct net_device *b)
+ {
+ 	struct switchdev_attr a_attr = {
++		.orig_dev = a,
+ 		.id = SWITCHDEV_ATTR_ID_PORT_PARENT_ID,
+ 		.flags = SWITCHDEV_F_NO_RECURSE,
+ 	};
+ 	struct switchdev_attr b_attr = {
++		.orig_dev = b,
+ 		.id = SWITCHDEV_ATTR_ID_PORT_PARENT_ID,
+ 		.flags = SWITCHDEV_F_NO_RECURSE,
+ 	};
+-- 
+2.7.4
+

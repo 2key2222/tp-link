@@ -1,0 +1,117 @@
+From be64189c0505dc2b0dbefcb878c60ae3a0a126ea Mon Sep 17 00:00:00 2001
+From: Marcin Wojtas <mw@semihalf.com>
+Date: Tue, 23 Aug 2016 16:41:32 +0200
+Subject: [PATCH 0707/2241] PCI: aardvark: enable clock support in the driver
+
+Since Marvell Armada 3700 SoC supports gated clock for both north and
+south bridges, PCI controller driver requires appropriate extension.
+This patch enables handling of the PCI controller's reference clock.
+According documentation is updated, as well as Armada 3700 DT.
+
+Change-Id: I1fb45e9c16fa7f7aa11df200365457f4af1e3530
+Signed-off-by: Marcin Wojtas <mw@semihalf.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/32143
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Wilson Ding <dingwei@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-37xx.dtsi |  1 +
+ drivers/pci/host/pci-aardvark.c              | 27 +++++++++++++++++++++++----
+ 2 files changed, 24 insertions(+), 4 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-37xx.dtsi b/arch/arm64/boot/dts/marvell/armada-37xx.dtsi
+index 3e3e257..f9f540d 100644
+--- a/arch/arm64/boot/dts/marvell/armada-37xx.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-37xx.dtsi
+@@ -356,6 +356,7 @@
+ 			#interrupt-cells = <1>;
+ 			msi-parent = <&pcie0>;
+ 			msi-controller;
++			clocks = <&sgateclk 14>;
+ 			ranges = <0x82000000 0 0xe8000000   0 0xe8000000 0 0x1000000 /* Port 0 MEM */
+ 				  0x81000000 0 0xe9000000   0 0xe9000000 0 0x10000>; /* Port 0 IO*/
+ 			interrupt-map-mask = <0 0 0 7>;
+diff --git a/drivers/pci/host/pci-aardvark.c b/drivers/pci/host/pci-aardvark.c
+index 642583d..db332ee 100644
+--- a/drivers/pci/host/pci-aardvark.c
++++ b/drivers/pci/host/pci-aardvark.c
+@@ -9,6 +9,7 @@
+  * warranty of any kind, whether express or implied.
+  */
+ 
++#include <linux/clk.h>
+ #include <linux/delay.h>
+ #include <linux/interrupt.h>
+ #include <linux/irq.h>
+@@ -920,6 +921,7 @@ static int advk_pcie_probe(struct platform_device *pdev)
+ 	struct pci_bus *bus, *child;
+ 	struct msi_controller *msi;
+ 	struct device_node *msi_node;
++	struct clk *clk;
+ 	int ret, irq;
+ 
+ 	pcie = devm_kzalloc(&pdev->dev, sizeof(struct advk_pcie),
+@@ -946,10 +948,22 @@ static int advk_pcie_probe(struct platform_device *pdev)
+ 		return ret;
+ 	}
+ 
++	clk = devm_clk_get(&pdev->dev, NULL);
++	if (IS_ERR(clk)) {
++		dev_err(&pdev->dev, "Failed to obtain clock from DT\n");
++		return PTR_ERR(clk);
++	}
++
++	ret = clk_prepare_enable(clk);
++	if (ret) {
++		dev_err(&pdev->dev, "Failed to enable clock\n");
++		return ret;
++	}
++
+ 	ret = advk_pcie_parse_request_of_pci_ranges(pcie);
+ 	if (ret) {
+ 		dev_err(&pdev->dev, "Failed to parse resources\n");
+-		return ret;
++		goto err_clk;
+ 	}
+ 
+ 	advk_pcie_setup_hw(pcie);
+@@ -957,14 +971,14 @@ static int advk_pcie_probe(struct platform_device *pdev)
+ 	ret = advk_pcie_init_irq_domain(pcie);
+ 	if (ret) {
+ 		dev_err(&pdev->dev, "Failed to initialize irq\n");
+-		return ret;
++		goto err_clk;
+ 	}
+ 
+ 	ret = advk_pcie_init_msi_irq_domain(pcie);
+ 	if (ret) {
+ 		dev_err(&pdev->dev, "Failed to initialize irq\n");
+ 		advk_pcie_remove_irq_domain(pcie);
+-		return ret;
++		goto err_clk;
+ 	}
+ 
+ 	msi_node = of_parse_phandle(pdev->dev.of_node, "msi-parent", 0);
+@@ -978,7 +992,8 @@ static int advk_pcie_probe(struct platform_device *pdev)
+ 	if (!bus) {
+ 		advk_pcie_remove_msi_irq_domain(pcie);
+ 		advk_pcie_remove_irq_domain(pcie);
+-		return -ENOMEM;
++		ret = -ENOMEM;
++		goto err_clk;
+ 	}
+ 
+ 	pci_bus_assign_resources(bus);
+@@ -989,6 +1004,10 @@ static int advk_pcie_probe(struct platform_device *pdev)
+ 	pci_bus_add_devices(bus);
+ 
+ 	return 0;
++
++err_clk:
++	clk_disable_unprepare(clk);
++	return ret;
+ }
+ 
+ static const struct of_device_id advk_pcie_of_match_table[] = {
+-- 
+2.7.4
+

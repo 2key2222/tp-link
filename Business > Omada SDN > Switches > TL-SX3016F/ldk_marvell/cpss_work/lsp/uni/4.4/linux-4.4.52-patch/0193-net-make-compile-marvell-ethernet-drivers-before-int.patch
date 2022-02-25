@@ -1,0 +1,37 @@
+From b6f2bbe21d2a8de06de9b72d19371725995a6753 Mon Sep 17 00:00:00 2001
+From: Yehuda Yitschak <yehuday@marvell.com>
+Date: Tue, 23 Feb 2016 17:09:32 +0200
+Subject: [PATCH 0193/2241] net: make: compile marvell ethernet drivers before
+ intel
+
+This ensures marvell's ehternet devices will recive eth ports
+starting from eth0 onwards
+
+Change-Id: Ia00a898ad05b6ceb49cd88ef4456022cd45a9194
+Signed-off-by: Yehuda Yitschak <yehuday@marvell.com>
+---
+ drivers/net/ethernet/Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/net/ethernet/Makefile b/drivers/net/ethernet/Makefile
+index 071f84e..b4a1381 100644
+--- a/drivers/net/ethernet/Makefile
++++ b/drivers/net/ethernet/Makefile
+@@ -39,13 +39,13 @@ obj-$(CONFIG_NET_VENDOR_FUJITSU) += fujitsu/
+ obj-$(CONFIG_NET_VENDOR_HISILICON) += hisilicon/
+ obj-$(CONFIG_NET_VENDOR_HP) += hp/
+ obj-$(CONFIG_NET_VENDOR_IBM) += ibm/
++obj-$(CONFIG_NET_VENDOR_MARVELL) += marvell/
+ obj-$(CONFIG_NET_VENDOR_INTEL) += intel/
+ obj-$(CONFIG_NET_VENDOR_I825XX) += i825xx/
+ obj-$(CONFIG_NET_VENDOR_XSCALE) += xscale/
+ obj-$(CONFIG_JME) += jme.o
+ obj-$(CONFIG_KORINA) += korina.o
+ obj-$(CONFIG_LANTIQ_ETOP) += lantiq_etop.o
+-obj-$(CONFIG_NET_VENDOR_MARVELL) += marvell/
+ obj-$(CONFIG_NET_VENDOR_MELLANOX) += mellanox/
+ obj-$(CONFIG_NET_VENDOR_MICREL) += micrel/
+ obj-$(CONFIG_NET_VENDOR_MICROCHIP) += microchip/
+-- 
+2.7.4
+

@@ -1,0 +1,93 @@
+From c99d16df0e8eccdfb95f7006a9140c366e859361 Mon Sep 17 00:00:00 2001
+From: Stefan Chulski <stefanc@marvell.com>
+Date: Wed, 20 Jul 2016 10:59:44 +0300
+Subject: [PATCH 0613/2241] fix: net: mvpp2x: Update cpu_id retrieval in
+ preemptable context.
+
+- use get_cpu() & put_cpu() to get CPU ID instead of smp_processor_id()
+  in read, write registers functions.
+- for relaxed_write & relaxed_read, that are done in preempt context,
+   preempt_disable/enable are added around the register_calls.
+
+Change-Id: I5230a7cc65fb05d52f37353b04d01f9ede543d1d
+Signed-off-by: Stefan Chulski <stefanc@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/31269
+Reviewed-by: Yuval Caduri <cyuval@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+Tested-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.h   | 8 ++++++--
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c | 6 ++++++
+ 2 files changed, 12 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.h b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.h
+index 1ac3ef2..e13553b 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.h
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.h
+@@ -27,9 +27,11 @@
+ 
+ static inline void mv_pp2x_write(struct mv_pp2x_hw *hw, u32 offset, u32 data)
+ {
+-	void *reg_ptr = hw->cpu_base[smp_processor_id()] + offset;
++	int cpu = get_cpu();
++	void *reg_ptr = hw->cpu_base[cpu] + offset;
+ 
+ 	writel(data, reg_ptr);
++	put_cpu();
+ }
+ 
+ static inline void mv_pp2x_relaxed_write(struct mv_pp2x_hw *hw, u32 offset, u32 data)
+@@ -41,10 +43,12 @@ static inline void mv_pp2x_relaxed_write(struct mv_pp2x_hw *hw, u32 offset, u32
+ 
+ static inline u32 mv_pp2x_read(struct mv_pp2x_hw *hw, u32 offset)
+ {
+-	void *reg_ptr = hw->cpu_base[smp_processor_id()] + offset;
++	int cpu = get_cpu();
++	void *reg_ptr = hw->cpu_base[cpu] + offset;
+ 	u32 val;
+ 
+ 	val = readl(reg_ptr);
++	put_cpu();
+ 
+ 	return val;
+ }
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+index 42abffa..b1c0684 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+@@ -535,8 +535,10 @@ int mv_pp2x_bm_bufs_add(struct mv_pp2x_port *port,
+ 		return 0;
+ 	}
+ 
++	preempt_disable();
+ 	for (i = 0; i < buf_num; i++)
+ 		mv_pp2x_rx_refill_new(port, bm_pool, (u32)bm_pool->id, 0);
++	preempt_enable();
+ 
+ 	/* Update BM driver with number of buffers added to pool */
+ 	bm_pool->buf_num += i;
+@@ -1022,10 +1024,13 @@ static void mv_pp2x_rxq_drop_pkts(struct mv_pp2x_port *port,
+ 	u8 *buf_cookie;
+ 	dma_addr_t buf_phys_addr;
+ 
++	preempt_disable();
+ 	rx_received = mv_pp2x_rxq_received(port, rxq->id);
++	preempt_enable();
+ 	if (!rx_received)
+ 		return;
+ 
++	preempt_disable();
+ 	for (i = 0; i < rx_received; i++) {
+ 		struct mv_pp2x_rx_desc *rx_desc =
+ 			mv_pp2x_rxq_next_desc_get(rxq);
+@@ -1040,6 +1045,7 @@ static void mv_pp2x_rxq_drop_pkts(struct mv_pp2x_port *port,
+ 		mv_pp2x_pool_refill(port->priv, MVPP2_RX_DESC_POOL(rx_desc),
+ 			buf_phys_addr, buf_cookie);
+ 	}
++	preempt_enable();
+ 	mv_pp2x_rxq_status_update(port, rxq->id, rx_received, rx_received);
+ }
+ 
+-- 
+2.7.4
+

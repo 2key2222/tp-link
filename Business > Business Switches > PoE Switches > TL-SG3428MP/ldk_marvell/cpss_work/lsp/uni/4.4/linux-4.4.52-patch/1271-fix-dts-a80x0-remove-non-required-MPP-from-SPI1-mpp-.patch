@@ -1,0 +1,34 @@
+From faecca393fa6747554e477b8440cf05b5a7faa84 Mon Sep 17 00:00:00 2001
+From: David Sniatkiwicz <davidsn@marvell.com>
+Date: Sun, 8 Jan 2017 10:41:10 +0200
+Subject: [PATCH 1271/2241] fix: dts: a80x0: remove non-required MPP from SPI1
+ mpp pins in CP1
+
+remove mpp17 that doesn't belong to CP1_SPI1 from cps_spi1_pins.
+
+Change-Id: I94fa56d1c24fa19a026619054958a3f92ae071e9
+Signed-off-by: David Sniatkiwicz <davidsn@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/35528
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/35375
+---
+ arch/arm64/boot/dts/marvell/armada-8040.dtsi | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-8040.dtsi b/arch/arm64/boot/dts/marvell/armada-8040.dtsi
+index 2e125de..1bebc27 100644
+--- a/arch/arm64/boot/dts/marvell/armada-8040.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-8040.dtsi
+@@ -236,7 +236,7 @@
+ 				};
+ 				cps_spi1_pins: spi-pins-1 {
+ 					marvell,pins = "mpp13", "mpp14", "mpp15",
+-						       "mpp16", "mpp17";
++						       "mpp16";
+ 					marvell,function = "spi1";
+ 				};
+ 			};
+-- 
+2.7.4
+

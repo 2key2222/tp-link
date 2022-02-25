@@ -1,0 +1,32 @@
+From a905381bd3c35fe9620ba6d737b68e36087ed22c Mon Sep 17 00:00:00 2001
+From: Igal Liberman <igall@marvell.com>
+Date: Thu, 23 Mar 2017 12:13:33 +0200
+Subject: [PATCH 1530/2241] arm: defconfig: change CESA driver to module
+
+This will allow the use to be able to decide rather
+to use CESA driver or not without re-compiling the
+Kernel.
+
+Change-Id: Idf3f915388465a0a3f88598b4a4d407268ef3fe2
+Signed-off-by: Igal Liberman <igall@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/37889
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Neta Zur Hershkovits <neta@marvell.com>
+---
+ arch/arm/configs/mvebu_v7_lsp_defconfig | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/configs/mvebu_v7_lsp_defconfig b/arch/arm/configs/mvebu_v7_lsp_defconfig
+index 1e6c9e1..dccc749 100644
+--- a/arch/arm/configs/mvebu_v7_lsp_defconfig
++++ b/arch/arm/configs/mvebu_v7_lsp_defconfig
+@@ -184,4 +184,5 @@ CONFIG_TIMER_STATS=y
+ # CONFIG_DEBUG_BUGVERBOSE is not set
+ CONFIG_DEBUG_USER=y
+ CONFIG_CRYPTO_TEST=m
+-CONFIG_CRYPTO_DEV_MARVELL_CESA=y
++CONFIG_CRYPTO_DES=y
++CONFIG_CRYPTO_DEV_MARVELL_CESA=m
+-- 
+2.7.4
+

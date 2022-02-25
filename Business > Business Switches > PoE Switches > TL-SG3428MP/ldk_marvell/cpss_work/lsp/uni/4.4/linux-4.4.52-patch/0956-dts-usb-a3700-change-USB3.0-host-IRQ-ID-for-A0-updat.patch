@@ -1,0 +1,51 @@
+From 695f62a1a7aca23b5945fa7ed622e6871e3fe10c Mon Sep 17 00:00:00 2001
+From: Victor Gu <xigu@marvell.com>
+Date: Tue, 6 Sep 2016 17:46:25 +0800
+Subject: [PATCH 0956/2241] dts: usb: a3700: change USB3.0 host IRQ ID for A0
+ update
+
+The USB3.0 host and device IRQ ID are separated for
+Armada 3700 A0 chip.
+The SPI 35 is used for USB3.0 host mode.
+
+Change-Id: I72f4be4e27fb7701b5e8d5848e886a1731718915
+Signed-off-by: Victor Gu <xigu@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/32572
+Reviewed-by: Wilson Ding <dingwei@marvell.com>
+Tested-by: Wilson Ding <dingwei@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-37xx-rz.dtsi | 4 ++++
+ arch/arm64/boot/dts/marvell/armada-37xx.dtsi    | 2 +-
+ 2 files changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-37xx-rz.dtsi b/arch/arm64/boot/dts/marvell/armada-37xx-rz.dtsi
+index a45e9ed..0273b7d 100644
+--- a/arch/arm64/boot/dts/marvell/armada-37xx-rz.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-37xx-rz.dtsi
+@@ -58,6 +58,10 @@
+ 			spinctrl: south-bridge-pinctrl@18830 {
+ 				compatible = "marvell,armada-3700-z1-sb-pinctrl";
+ 			};
++
++			usb3@58000 {
++				interrupts = <GIC_SPI 15 IRQ_TYPE_LEVEL_HIGH>;
++			};
+ 		};
+ 	};
+ };
+diff --git a/arch/arm64/boot/dts/marvell/armada-37xx.dtsi b/arch/arm64/boot/dts/marvell/armada-37xx.dtsi
+index 2cc3851..5c614b8 100644
+--- a/arch/arm64/boot/dts/marvell/armada-37xx.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-37xx.dtsi
+@@ -275,7 +275,7 @@
+ 			usb3@58000 {
+ 				compatible = "generic-xhci";
+ 				reg = <0x58000 0x4000>;
+-				interrupts = <GIC_SPI 15 IRQ_TYPE_LEVEL_HIGH>;
++				interrupts = <GIC_SPI 3 IRQ_TYPE_LEVEL_HIGH>;
+ 				clocks = <&sgateclk 17>;
+ 				status = "disabled";
+ 			};
+-- 
+2.7.4
+

@@ -1,0 +1,500 @@
+From bb072175f9e0b66ed30c384ba4e1930ba37f04c2 Mon Sep 17 00:00:00 2001
+From: Andrew Lunn <andrew@lunn.ch>
+Date: Wed, 6 Jan 2016 20:11:10 +0100
+Subject: [PATCH 0726/2241] phy: add phydev_name() wrapper
+
+Upstream-commit: 84eff6d194df442bee62c129f2f47efb0dbd0468
+
+Add a phydev_name() function, to help with moving some structure members
+from phy_device.
+
+Signed-off-by: Andrew Lunn <andrew@lunn.ch>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+---
+ drivers/net/ethernet/8390/ax88796.c               | 2 +-
+ drivers/net/ethernet/adi/bfin_mac.c               | 4 ++--
+ drivers/net/ethernet/agere/et131x.c               | 4 ++--
+ drivers/net/ethernet/amd/au1000_eth.c             | 4 ++--
+ drivers/net/ethernet/broadcom/b44.c               | 2 +-
+ drivers/net/ethernet/broadcom/tg3.c               | 4 ++--
+ drivers/net/ethernet/cadence/macb.c               | 2 +-
+ drivers/net/ethernet/dnet.c                       | 6 +++---
+ drivers/net/ethernet/faraday/ftgmac100.c          | 2 +-
+ drivers/net/ethernet/lantiq_etop.c                | 4 ++--
+ drivers/net/ethernet/nxp/lpc_eth.c                | 4 ++--
+ drivers/net/ethernet/rdc/r6040.c                  | 4 ++--
+ drivers/net/ethernet/renesas/ravb_main.c          | 2 +-
+ drivers/net/ethernet/renesas/sh_eth.c             | 2 +-
+ drivers/net/ethernet/samsung/sxgbe/sxgbe_mdio.c   | 2 +-
+ drivers/net/ethernet/smsc/smsc911x.c              | 2 +-
+ drivers/net/ethernet/smsc/smsc9420.c              | 4 ++--
+ drivers/net/ethernet/stmicro/stmmac/stmmac_mdio.c | 2 +-
+ drivers/net/ethernet/ti/davinci_emac.c            | 2 +-
+ drivers/net/ethernet/ti/davinci_mdio.c            | 2 +-
+ drivers/net/ethernet/ti/netcp_ethss.c             | 4 ++--
+ drivers/net/ethernet/toshiba/tc35815.c            | 4 ++--
+ drivers/net/phy/bcm7xxx.c                         | 2 +-
+ drivers/net/phy/phy_device.c                      | 2 +-
+ drivers/staging/netlogic/xlr_net.c                | 6 +++---
+ include/linux/phy.h                               | 5 +++++
+ 26 files changed, 44 insertions(+), 39 deletions(-)
+
+diff --git a/drivers/net/ethernet/8390/ax88796.c b/drivers/net/ethernet/8390/ax88796.c
+index 0443654..90b540a 100644
+--- a/drivers/net/ethernet/8390/ax88796.c
++++ b/drivers/net/ethernet/8390/ax88796.c
+@@ -372,7 +372,7 @@ static int ax_mii_probe(struct net_device *dev)
+ 	ax->phy_dev = phy_dev;
+ 
+ 	netdev_info(dev, "PHY driver [%s] (mii_bus:phy_addr=%s, irq=%d)\n",
+-		    phy_dev->drv->name, dev_name(&phy_dev->dev), phy_dev->irq);
++		    phy_dev->drv->name, phydev_name(phy_dev), phy_dev->irq);
+ 
+ 	return 0;
+ }
+diff --git a/drivers/net/ethernet/adi/bfin_mac.c b/drivers/net/ethernet/adi/bfin_mac.c
+index 096531a..926753f 100644
+--- a/drivers/net/ethernet/adi/bfin_mac.c
++++ b/drivers/net/ethernet/adi/bfin_mac.c
+@@ -419,7 +419,7 @@ static int mii_probe(struct net_device *dev, int phy_mode)
+ 		return -EINVAL;
+ 	}
+ 
+-	phydev = phy_connect(dev, dev_name(&phydev->dev),
++	phydev = phy_connect(dev, phydev_name(phydev),
+ 			     &bfin_mac_adjust_link, phy_mode);
+ 
+ 	if (IS_ERR(phydev)) {
+@@ -446,7 +446,7 @@ static int mii_probe(struct net_device *dev, int phy_mode)
+ 
+ 	pr_info("attached PHY driver [%s] "
+ 	        "(mii_bus:phy_addr=%s, irq=%d, mdc_clk=%dHz(mdc_div=%d)@sclk=%dMHz)\n",
+-	        phydev->drv->name, dev_name(&phydev->dev), phydev->irq,
++		phydev->drv->name, phydev_name(phydev), phydev->irq,
+ 	        MDC_CLK, mdc_div, sclk/1000000);
+ 
+ 	return 0;
+diff --git a/drivers/net/ethernet/agere/et131x.c b/drivers/net/ethernet/agere/et131x.c
+index e0f3d19..80b706f 100644
+--- a/drivers/net/ethernet/agere/et131x.c
++++ b/drivers/net/ethernet/agere/et131x.c
+@@ -3265,7 +3265,7 @@ static int et131x_mii_probe(struct net_device *netdev)
+ 		return -ENODEV;
+ 	}
+ 
+-	phydev = phy_connect(netdev, dev_name(&phydev->dev),
++	phydev = phy_connect(netdev, phydev_name(phydev),
+ 			     &et131x_adjust_link, PHY_INTERFACE_MODE_MII);
+ 
+ 	if (IS_ERR(phydev)) {
+@@ -3291,7 +3291,7 @@ static int et131x_mii_probe(struct net_device *netdev)
+ 
+ 	dev_info(&adapter->pdev->dev,
+ 		 "attached PHY driver [%s] (mii_bus:phy_addr=%s)\n",
+-		 phydev->drv->name, dev_name(&phydev->dev));
++		 phydev->drv->name, phydev_name(phydev));
+ 
+ 	return 0;
+ }
+diff --git a/drivers/net/ethernet/amd/au1000_eth.c b/drivers/net/ethernet/amd/au1000_eth.c
+index 5330bcb..8a8d6f2 100644
+--- a/drivers/net/ethernet/amd/au1000_eth.c
++++ b/drivers/net/ethernet/amd/au1000_eth.c
+@@ -558,7 +558,7 @@ static int au1000_mii_probe(struct net_device *dev)
+ 	/* now we are supposed to have a proper phydev, to attach to... */
+ 	BUG_ON(phydev->attached_dev);
+ 
+-	phydev = phy_connect(dev, dev_name(&phydev->dev),
++	phydev = phy_connect(dev, phydev_name(phydev),
+ 			     &au1000_adjust_link, PHY_INTERFACE_MODE_MII);
+ 
+ 	if (IS_ERR(phydev)) {
+@@ -585,7 +585,7 @@ static int au1000_mii_probe(struct net_device *dev)
+ 
+ 	netdev_info(dev, "attached PHY driver [%s] "
+ 	       "(mii_bus:phy_addr=%s, irq=%d)\n",
+-	       phydev->drv->name, dev_name(&phydev->dev), phydev->irq);
++	       phydev->drv->name, phydev_name(phydev), phydev->irq);
+ 
+ 	return 0;
+ }
+diff --git a/drivers/net/ethernet/broadcom/b44.c b/drivers/net/ethernet/broadcom/b44.c
+index a3b1c07..928a221 100644
+--- a/drivers/net/ethernet/broadcom/b44.c
++++ b/drivers/net/ethernet/broadcom/b44.c
+@@ -2316,7 +2316,7 @@ static int b44_register_phy_one(struct b44 *bp)
+ 	bp->phy_addr = phydev->addr;
+ 
+ 	dev_info(sdev->dev, "attached PHY driver [%s] (mii_bus:phy_addr=%s)\n",
+-		 phydev->drv->name, dev_name(&phydev->dev));
++		 phydev->drv->name, phydev_name(phydev));
+ 
+ 	return 0;
+ 
+diff --git a/drivers/net/ethernet/broadcom/tg3.c b/drivers/net/ethernet/broadcom/tg3.c
+index 49056c3..b4e1289 100644
+--- a/drivers/net/ethernet/broadcom/tg3.c
++++ b/drivers/net/ethernet/broadcom/tg3.c
+@@ -2096,7 +2096,7 @@ static int tg3_phy_init(struct tg3 *tp)
+ 	phydev = tp->mdio_bus->phy_map[tp->phy_addr];
+ 
+ 	/* Attach the MAC to the PHY. */
+-	phydev = phy_connect(tp->dev, dev_name(&phydev->dev),
++	phydev = phy_connect(tp->dev, phydev_name(phydev),
+ 			     tg3_adjust_link, phydev->interface);
+ 	if (IS_ERR(phydev)) {
+ 		dev_err(&tp->pdev->dev, "Could not attach to PHY\n");
+@@ -17916,7 +17916,7 @@ static int tg3_init_one(struct pci_dev *pdev,
+ 		phydev = tp->mdio_bus->phy_map[tp->phy_addr];
+ 		netdev_info(dev,
+ 			    "attached PHY driver [%s] (mii_bus:phy_addr=%s)\n",
+-			    phydev->drv->name, dev_name(&phydev->dev));
++			    phydev->drv->name, phydev_name(phydev));
+ 	} else {
+ 		char *ethtype;
+ 
+diff --git a/drivers/net/ethernet/cadence/macb.c b/drivers/net/ethernet/cadence/macb.c
+index 8d54e7b..e04d525 100644
+--- a/drivers/net/ethernet/cadence/macb.c
++++ b/drivers/net/ethernet/cadence/macb.c
+@@ -2939,7 +2939,7 @@ static int macb_probe(struct platform_device *pdev)
+ 
+ 	phydev = bp->phy_dev;
+ 	netdev_info(dev, "attached PHY driver [%s] (mii_bus:phy_addr=%s, irq=%d)\n",
+-		    phydev->drv->name, dev_name(&phydev->dev), phydev->irq);
++		    phydev->drv->name, phydev_name(phydev), phydev->irq);
+ 
+ 	return 0;
+ 
+diff --git a/drivers/net/ethernet/dnet.c b/drivers/net/ethernet/dnet.c
+index 13d00a3..136b601 100644
+--- a/drivers/net/ethernet/dnet.c
++++ b/drivers/net/ethernet/dnet.c
+@@ -274,11 +274,11 @@ static int dnet_mii_probe(struct net_device *dev)
+ 
+ 	/* attach the mac to the phy */
+ 	if (bp->capabilities & DNET_HAS_RMII) {
+-		phydev = phy_connect(dev, dev_name(&phydev->dev),
++		phydev = phy_connect(dev, phydev_name(phydev),
+ 				     &dnet_handle_link_change,
+ 				     PHY_INTERFACE_MODE_RMII);
+ 	} else {
+-		phydev = phy_connect(dev, dev_name(&phydev->dev),
++		phydev = phy_connect(dev, phydev_name(phydev),
+ 				     &dnet_handle_link_change,
+ 				     PHY_INTERFACE_MODE_MII);
+ 	}
+@@ -894,7 +894,7 @@ static int dnet_probe(struct platform_device *pdev)
+ 	phydev = bp->phy_dev;
+ 	dev_info(&pdev->dev, "attached PHY driver [%s] "
+ 	       "(mii_bus:phy_addr=%s, irq=%d)\n",
+-	       phydev->drv->name, dev_name(&phydev->dev), phydev->irq);
++	       phydev->drv->name, phydev_name(phydev), phydev->irq);
+ 
+ 	return 0;
+ 
+diff --git a/drivers/net/ethernet/faraday/ftgmac100.c b/drivers/net/ethernet/faraday/ftgmac100.c
+index 6d0c5d5..c2e2ac6 100644
+--- a/drivers/net/ethernet/faraday/ftgmac100.c
++++ b/drivers/net/ethernet/faraday/ftgmac100.c
+@@ -854,7 +854,7 @@ static int ftgmac100_mii_probe(struct ftgmac100 *priv)
+ 		return -ENODEV;
+ 	}
+ 
+-	phydev = phy_connect(netdev, dev_name(&phydev->dev),
++	phydev = phy_connect(netdev, phydev_name(phydev),
+ 			     &ftgmac100_adjust_link, PHY_INTERFACE_MODE_GMII);
+ 
+ 	if (IS_ERR(phydev)) {
+diff --git a/drivers/net/ethernet/lantiq_etop.c b/drivers/net/ethernet/lantiq_etop.c
+index 581928c..274a3ce 100644
+--- a/drivers/net/ethernet/lantiq_etop.c
++++ b/drivers/net/ethernet/lantiq_etop.c
+@@ -390,7 +390,7 @@ ltq_etop_mdio_probe(struct net_device *dev)
+ 		return -ENODEV;
+ 	}
+ 
+-	phydev = phy_connect(dev, dev_name(&phydev->dev),
++	phydev = phy_connect(dev, phydev_name(phydev),
+ 			     &ltq_etop_mdio_link, priv->pldata->mii_mode);
+ 
+ 	if (IS_ERR(phydev)) {
+@@ -410,7 +410,7 @@ ltq_etop_mdio_probe(struct net_device *dev)
+ 	priv->phydev = phydev;
+ 	pr_info("%s: attached PHY [%s] (phy_addr=%s, irq=%d)\n",
+ 	       dev->name, phydev->drv->name,
+-	       dev_name(&phydev->dev), phydev->irq);
++	       phydev_name(phydev), phydev->irq);
+ 
+ 	return 0;
+ }
+diff --git a/drivers/net/ethernet/nxp/lpc_eth.c b/drivers/net/ethernet/nxp/lpc_eth.c
+index 0576651..5801aa1 100644
+--- a/drivers/net/ethernet/nxp/lpc_eth.c
++++ b/drivers/net/ethernet/nxp/lpc_eth.c
+@@ -797,7 +797,7 @@ static int lpc_mii_probe(struct net_device *ndev)
+ 		netdev_info(ndev, "using MII interface\n");
+ 	else
+ 		netdev_info(ndev, "using RMII interface\n");
+-	phydev = phy_connect(ndev, dev_name(&phydev->dev),
++	phydev = phy_connect(ndev, phydev_name(phydev),
+ 			     &lpc_handle_link_change,
+ 			     lpc_phy_interface_mode(&pldat->pdev->dev));
+ 
+@@ -818,7 +818,7 @@ static int lpc_mii_probe(struct net_device *ndev)
+ 
+ 	netdev_info(ndev,
+ 		"attached PHY driver [%s] (mii_bus:phy_addr=%s, irq=%d)\n",
+-		phydev->drv->name, dev_name(&phydev->dev), phydev->irq);
++		phydev->drv->name, phydev_name(phydev), phydev->irq);
+ 	return 0;
+ }
+ 
+diff --git a/drivers/net/ethernet/rdc/r6040.c b/drivers/net/ethernet/rdc/r6040.c
+index 9a37247..86a0887 100644
+--- a/drivers/net/ethernet/rdc/r6040.c
++++ b/drivers/net/ethernet/rdc/r6040.c
+@@ -1039,7 +1039,7 @@ static int r6040_mii_probe(struct net_device *dev)
+ 		return -ENODEV;
+ 	}
+ 
+-	phydev = phy_connect(dev, dev_name(&phydev->dev), &r6040_adjust_link,
++	phydev = phy_connect(dev, phydev_name(phydev), &r6040_adjust_link,
+ 			     PHY_INTERFACE_MODE_MII);
+ 
+ 	if (IS_ERR(phydev)) {
+@@ -1063,7 +1063,7 @@ static int r6040_mii_probe(struct net_device *dev)
+ 
+ 	dev_info(&lp->pdev->dev, "attached PHY driver [%s] "
+ 		"(mii_bus:phy_addr=%s)\n",
+-		phydev->drv->name, dev_name(&phydev->dev));
++		phydev->drv->name, phydev_name(phydev));
+ 
+ 	return 0;
+ }
+diff --git a/drivers/net/ethernet/renesas/ravb_main.c b/drivers/net/ethernet/renesas/ravb_main.c
+index 549ad20..8a01c60 100644
+--- a/drivers/net/ethernet/renesas/ravb_main.c
++++ b/drivers/net/ethernet/renesas/ravb_main.c
+@@ -909,7 +909,7 @@ static int ravb_phy_init(struct net_device *ndev)
+ 	phydev->supported &= ~PHY_10BT_FEATURES;
+ 
+ 	netdev_info(ndev, "attached PHY %d (IRQ %d) to driver %s\n",
+-		    phydev->addr, phydev->irq, phydev->drv->name);
++		    phydev->addr, phydev->irq, phydev_name(phydev));
+ 
+ 	priv->phydev = phydev;
+ 
+diff --git a/drivers/net/ethernet/renesas/sh_eth.c b/drivers/net/ethernet/renesas/sh_eth.c
+index 480f3da..1d129d0 100644
+--- a/drivers/net/ethernet/renesas/sh_eth.c
++++ b/drivers/net/ethernet/renesas/sh_eth.c
+@@ -1880,7 +1880,7 @@ static int sh_eth_phy_init(struct net_device *ndev)
+ 	}
+ 
+ 	netdev_info(ndev, "attached PHY %d (IRQ %d) to driver %s\n",
+-		    phydev->addr, phydev->irq, phydev->drv->name);
++		    phydev->addr, phydev->irq, phydev_name(phydev));
+ 
+ 	mdp->phydev = phydev;
+ 
+diff --git a/drivers/net/ethernet/samsung/sxgbe/sxgbe_mdio.c b/drivers/net/ethernet/samsung/sxgbe/sxgbe_mdio.c
+index 43ccb4a..5b13b8c 100644
+--- a/drivers/net/ethernet/samsung/sxgbe/sxgbe_mdio.c
++++ b/drivers/net/ethernet/samsung/sxgbe/sxgbe_mdio.c
+@@ -216,7 +216,7 @@ int sxgbe_mdio_register(struct net_device *ndev)
+ 			}
+ 			netdev_info(ndev, "PHY ID %08x at %d IRQ %s (%s)%s\n",
+ 				    phy->phy_id, phy_addr, irq_str,
+-				    dev_name(&phy->dev), act ? " active" : "");
++				    phydev_name(phy), act ? " active" : "");
+ 			phy_found = true;
+ 		}
+ 	}
+diff --git a/drivers/net/ethernet/smsc/smsc911x.c b/drivers/net/ethernet/smsc/smsc911x.c
+index 219a99b..067346d 100644
+--- a/drivers/net/ethernet/smsc/smsc911x.c
++++ b/drivers/net/ethernet/smsc/smsc911x.c
+@@ -1033,7 +1033,7 @@ static int smsc911x_mii_probe(struct net_device *dev)
+ 
+ 	netdev_info(dev,
+ 		    "attached PHY driver [%s] (mii_bus:phy_addr=%s, irq=%d)\n",
+-		    phydev->drv->name, dev_name(&phydev->dev), phydev->irq);
++		    phydev->drv->name, phydev_name(phydev), phydev->irq);
+ 
+ 	/* mask with MAC supported features */
+ 	phydev->supported &= (PHY_BASIC_FEATURES | SUPPORTED_Pause |
+diff --git a/drivers/net/ethernet/smsc/smsc9420.c b/drivers/net/ethernet/smsc/smsc9420.c
+index 4a90cda..a02ed6b 100644
+--- a/drivers/net/ethernet/smsc/smsc9420.c
++++ b/drivers/net/ethernet/smsc/smsc9420.c
+@@ -1167,7 +1167,7 @@ static int smsc9420_mii_probe(struct net_device *dev)
+ 	netif_info(pd, probe, pd->dev, "PHY addr %d, phy_id 0x%08X\n",
+ 		   phydev->addr, phydev->phy_id);
+ 
+-	phydev = phy_connect(dev, dev_name(&phydev->dev),
++	phydev = phy_connect(dev, phydev_name(phydev),
+ 			     smsc9420_phy_adjust_link, PHY_INTERFACE_MODE_MII);
+ 
+ 	if (IS_ERR(phydev)) {
+@@ -1176,7 +1176,7 @@ static int smsc9420_mii_probe(struct net_device *dev)
+ 	}
+ 
+ 	netdev_info(dev, "attached PHY driver [%s] (mii_bus:phy_addr=%s, irq=%d)\n",
+-		    phydev->drv->name, dev_name(&phydev->dev), phydev->irq);
++		    phydev->drv->name, phydev_name(phydev), phydev->irq);
+ 
+ 	/* mask with MAC supported features */
+ 	phydev->supported &= (PHY_BASIC_FEATURES | SUPPORTED_Pause |
+diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_mdio.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_mdio.c
+index bba670c..62a2bc3 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/stmmac_mdio.c
++++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_mdio.c
+@@ -278,7 +278,7 @@ int stmmac_mdio_register(struct net_device *ndev)
+ 			}
+ 			pr_info("%s: PHY ID %08x at %d IRQ %s (%s)%s\n",
+ 				ndev->name, phydev->phy_id, addr,
+-				irq_str, dev_name(&phydev->dev),
++				irq_str, phydev_name(phydev),
+ 				act ? " active" : "");
+ 			found = 1;
+ 		}
+diff --git a/drivers/net/ethernet/ti/davinci_emac.c b/drivers/net/ethernet/ti/davinci_emac.c
+index 33bd3b9..5a40b02 100644
+--- a/drivers/net/ethernet/ti/davinci_emac.c
++++ b/drivers/net/ethernet/ti/davinci_emac.c
+@@ -1646,7 +1646,7 @@ static int emac_dev_open(struct net_device *ndev)
+ 
+ 		dev_info(emac_dev, "attached PHY driver [%s] "
+ 			"(mii_bus:phy_addr=%s, id=%x)\n",
+-			priv->phydev->drv->name, dev_name(&priv->phydev->dev),
++			priv->phydev->drv->name, phydev_name(priv->phydev),
+ 			priv->phydev->phy_id);
+ 	}
+ 
+diff --git a/drivers/net/ethernet/ti/davinci_mdio.c b/drivers/net/ethernet/ti/davinci_mdio.c
+index c00084d..88e8e60 100644
+--- a/drivers/net/ethernet/ti/davinci_mdio.c
++++ b/drivers/net/ethernet/ti/davinci_mdio.c
+@@ -396,7 +396,7 @@ static int davinci_mdio_probe(struct platform_device *pdev)
+ 		phy = data->bus->phy_map[addr];
+ 		if (phy) {
+ 			dev_info(dev, "phy[%d]: device %s, driver %s\n",
+-				 phy->addr, dev_name(&phy->dev),
++				 phy->addr, phydev_name(phy),
+ 				 phy->drv ? phy->drv->name : "unknown");
+ 		}
+ 	}
+diff --git a/drivers/net/ethernet/ti/netcp_ethss.c b/drivers/net/ethernet/ti/netcp_ethss.c
+index 4e70e75..d543298 100644
+--- a/drivers/net/ethernet/ti/netcp_ethss.c
++++ b/drivers/net/ethernet/ti/netcp_ethss.c
+@@ -2178,7 +2178,7 @@ static int gbe_slave_open(struct gbe_intf *gbe_intf)
+ 			return -ENODEV;
+ 		}
+ 		dev_dbg(priv->dev, "phy found: id is: 0x%s\n",
+-			dev_name(&slave->phy->dev));
++			phydev_name(slave->phy));
+ 		phy_start(slave->phy);
+ 		phy_read_status(slave->phy);
+ 	}
+@@ -2681,7 +2681,7 @@ static void init_secondary_ports(struct gbe_priv *gbe_dev,
+ 			slave->phy = NULL;
+ 		} else {
+ 			dev_dbg(dev, "phy found: id is: 0x%s\n",
+-				dev_name(&slave->phy->dev));
++				phydev_name(slave->phy));
+ 			phy_start(slave->phy);
+ 			phy_read_status(slave->phy);
+ 		}
+diff --git a/drivers/net/ethernet/toshiba/tc35815.c b/drivers/net/ethernet/toshiba/tc35815.c
+index 45ac38d..8df6072 100644
+--- a/drivers/net/ethernet/toshiba/tc35815.c
++++ b/drivers/net/ethernet/toshiba/tc35815.c
+@@ -631,7 +631,7 @@ static int tc_mii_probe(struct net_device *dev)
+ 	}
+ 
+ 	/* attach the mac to the phy */
+-	phydev = phy_connect(dev, dev_name(&phydev->dev),
++	phydev = phy_connect(dev, phydev_name(phydev),
+ 			     &tc_handle_link_change,
+ 			     lp->chiptype == TC35815_TX4939 ? PHY_INTERFACE_MODE_RMII : PHY_INTERFACE_MODE_MII);
+ 	if (IS_ERR(phydev)) {
+@@ -640,7 +640,7 @@ static int tc_mii_probe(struct net_device *dev)
+ 	}
+ 	printk(KERN_INFO "%s: attached PHY driver [%s] "
+ 		"(mii_bus:phy_addr=%s, id=%x)\n",
+-		dev->name, phydev->drv->name, dev_name(&phydev->dev),
++		dev->name, phydev->drv->name, phydev_name(phydev),
+ 		phydev->phy_id);
+ 
+ 	/* mask with MAC supported features */
+diff --git a/drivers/net/phy/bcm7xxx.c b/drivers/net/phy/bcm7xxx.c
+index 03d4809..1a5b20e 100644
+--- a/drivers/net/phy/bcm7xxx.c
++++ b/drivers/net/phy/bcm7xxx.c
+@@ -170,7 +170,7 @@ static int bcm7xxx_28nm_config_init(struct phy_device *phydev)
+ 	int ret = 0;
+ 
+ 	pr_info_once("%s: %s PHY revision: 0x%02x, patch: %d\n",
+-		     dev_name(&phydev->dev), phydev->drv->name, rev, patch);
++		     phydev_name(phydev), phydev->drv->name, rev, patch);
+ 
+ 	/* Dummy read to a register to workaround an issue upon reset where the
+ 	 * internal inverter may not allow the first MDIO transaction to pass
+diff --git a/drivers/net/phy/phy_device.c b/drivers/net/phy/phy_device.c
+index 0bfbaba..0f17970 100644
+--- a/drivers/net/phy/phy_device.c
++++ b/drivers/net/phy/phy_device.c
+@@ -114,7 +114,7 @@ EXPORT_SYMBOL(phy_register_fixup_for_id);
+  */
+ static int phy_needs_fixup(struct phy_device *phydev, struct phy_fixup *fixup)
+ {
+-	if (strcmp(fixup->bus_id, dev_name(&phydev->dev)) != 0)
++	if (strcmp(fixup->bus_id, phydev_name(phydev)) != 0)
+ 		if (strcmp(fixup->bus_id, PHY_ANY_ID) != 0)
+ 			return 0;
+ 
+diff --git a/drivers/staging/netlogic/xlr_net.c b/drivers/staging/netlogic/xlr_net.c
+index 8ae0175..b939c4b 100644
+--- a/drivers/staging/netlogic/xlr_net.c
++++ b/drivers/staging/netlogic/xlr_net.c
+@@ -838,8 +838,8 @@ static int xlr_mii_probe(struct xlr_net_priv *priv)
+ 	}
+ 
+ 	/* Attach MAC to PHY */
+-	phydev = phy_connect(priv->ndev, dev_name(&phydev->dev),
+-			&xlr_gmac_link_adjust, priv->nd->phy_interface);
++	phydev = phy_connect(priv->ndev, phydev_name(phydev),
++			     &xlr_gmac_link_adjust, priv->nd->phy_interface);
+ 
+ 	if (IS_ERR(phydev)) {
+ 		pr_err("could not attach PHY\n");
+@@ -855,7 +855,7 @@ static int xlr_mii_probe(struct xlr_net_priv *priv)
+ 
+ 	phydev->advertising = phydev->supported;
+ 	pr_info("attached PHY driver [%s] (mii_bus:phy_addr=%s\n",
+-		phydev->drv->name, dev_name(&phydev->dev));
++		phydev->drv->name, phydev_name(phydev));
+ 	return 0;
+ }
+ 
+diff --git a/include/linux/phy.h b/include/linux/phy.h
+index 78a4728..7bc7574 100644
+--- a/include/linux/phy.h
++++ b/include/linux/phy.h
+@@ -792,6 +792,11 @@ static inline int phy_read_status(struct phy_device *phydev)
+ #define phydev_dbg(_phydev, format, args...)	\
+ 	dev_dbg(&_phydev->dev, format, ##args)
+ 
++static inline const char *phydev_name(const struct phy_device *phydev)
++{
++	return dev_name(&phydev->dev);
++}
++
+ int genphy_config_init(struct phy_device *phydev);
+ int genphy_setup_forced(struct phy_device *phydev);
+ int genphy_restart_aneg(struct phy_device *phydev);
+-- 
+2.7.4
+

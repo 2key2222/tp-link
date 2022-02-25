@@ -1,0 +1,111 @@
+From 7b539f755deab14ce52364b6bf625ebf90ea0957 Mon Sep 17 00:00:00 2001
+From: Marcin Wojtas <mw@semihalf.com>
+Date: Wed, 28 Dec 2016 11:07:40 +0100
+Subject: [PATCH 1234/2241] telephony: mvebu: cleanup configs
+
+* Rename main config to CONFIG_MVEBU_PHONE.
+* Remove obsolete CONFIG_MV_TDMMC_SUPPORT and CONFIG_MV_TDM2C_SUPPORT,
+  tdm2c and tdmmc are always built anyway.
+* Update user guide accordingly.
+
+Change-Id: Ia94081840a13dba0071b170d9d6bfe8e91e0e36d
+Signed-off-by: Marcin Wojtas <mw@semihalf.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/35157
+Reviewed-by: Igal Liberman <igall@marvell.com>
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/telephony/Kconfig                          |  5 +++--
+ drivers/telephony/Makefile                         |  2 +-
+ drivers/telephony/mvebu_phone/Kconfig              | 22 +---------------------
+ .../telephony/mvebu_phone/telephony_user_guide.txt |  9 ++++-----
+ 4 files changed, 9 insertions(+), 29 deletions(-)
+
+diff --git a/drivers/telephony/Kconfig b/drivers/telephony/Kconfig
+index 0ba3c89..dd62590 100644
+--- a/drivers/telephony/Kconfig
++++ b/drivers/telephony/Kconfig
+@@ -13,7 +13,7 @@ menuconfig PHONE
+ 
+ if PHONE
+ 
+-config MV_INCLUDE_TDM
++config MVEBU_PHONE
+ 	bool "Mvebu TDM Telephony"
+ 	depends on ARCH_MVEBU
+ 	default y
+@@ -24,8 +24,9 @@ config MV_INCLUDE_TDM
+ 	  2. ARMADA-375.
+ 	  3. ARMADA-38x.
+ 	  4. ARMADA-XP.
++	  5. ARMADA-7k/8k.
+ 
+-if MV_INCLUDE_TDM
++if MVEBU_PHONE
+ 	source "drivers/telephony/mvebu_phone/Kconfig"
+ endif
+ 
+diff --git a/drivers/telephony/Makefile b/drivers/telephony/Makefile
+index 1a7a260..ed4c70b 100644
+--- a/drivers/telephony/Makefile
++++ b/drivers/telephony/Makefile
+@@ -2,4 +2,4 @@
+ # linux/drivers/telephony/Makefile
+ #
+ 
+-obj-$(CONFIG_MV_INCLUDE_TDM)		+= mvebu_phone/
++obj-$(CONFIG_MVEBU_PHONE)		+= mvebu_phone/
+diff --git a/drivers/telephony/mvebu_phone/Kconfig b/drivers/telephony/mvebu_phone/Kconfig
+index 24e5e32..85c8755 100644
+--- a/drivers/telephony/mvebu_phone/Kconfig
++++ b/drivers/telephony/mvebu_phone/Kconfig
+@@ -1,25 +1,5 @@
+ menu "Marvell Telephony options"
+-	depends on MV_INCLUDE_TDM
+-
+-config MV_TDMMC_SUPPORT
+-	bool "Support communit - multichannel TDM"
+-	depends on MACH_ARMADA_XP || ARCH_MVEBU
+-	default y
+-	---help---
+-	Choosing this option enables Marvell
+-	32CH TDM voice interface.
+-	The TDM bus may be used for transferring
+-	voice samples through analog phone interface.
+-
+-config MV_TDM2C_SUPPORT
+-	bool "Support legacy TDM(2 channels)"
+-	depends on MACH_ARMADA_38X
+-	default y
+-	---help---
+-	Choosing this option enables Marvell
+-	2CH TDM voice interface.
+-	The TDM bus may be used for transferring
+-	voice samples through analog phone interface.
++	depends on MVEBU_PHONE
+ 
+ config MV_TDM_EXT_STATS
+ 	bool "Enable legacy TDM extended statistics"
+diff --git a/drivers/telephony/mvebu_phone/telephony_user_guide.txt b/drivers/telephony/mvebu_phone/telephony_user_guide.txt
+index f5c17ad..ccf10c3 100644
+--- a/drivers/telephony/mvebu_phone/telephony_user_guide.txt
++++ b/drivers/telephony/mvebu_phone/telephony_user_guide.txt
+@@ -16,11 +16,10 @@ In order to use telephony drivers the following SW modules are required
+ 
+ Linux Image
+ -----------
+-There are config options for both telephony controllers:
+-	- MV_TDMMC_SUPPORT for multi-channel TDM
+-	- MV_TDM2C_SUPPORT for 2-channel TDM
+-arch/arm/configs/mvebu_v7_lsp_defconfig enables both controllers
+-arch/arm64/confgs/mvebu_v8_lsp_defconfig enables MV_TDMMC_SUPPORT.
++arch/arm/configs/mvebu_v7_lsp_defconfig
++arch/arm64/confgs/mvebu_v8_lsp_defconfig
++enabe usage of both TDM2C and TDMMC, proper operation mode is fully
++determined by Device Tree entry.
+ 
+ Device-tree
+ ------------
+-- 
+2.7.4
+

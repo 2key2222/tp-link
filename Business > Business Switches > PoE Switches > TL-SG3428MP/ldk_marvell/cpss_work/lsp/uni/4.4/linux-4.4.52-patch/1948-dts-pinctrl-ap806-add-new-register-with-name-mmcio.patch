@@ -1,0 +1,37 @@
+From 56021a10a1db63ee6f61bc2f6bf45c8db5869e55 Mon Sep 17 00:00:00 2001
+From: Evan Wang <xswang@marvell.com>
+Date: Thu, 3 Aug 2017 15:19:39 +0800
+Subject: [PATCH 1948/2241] dts: pinctrl: ap806: add new register with name
+ "mmcio"
+
+The new register with name "mmcio" indicates the offset
+of eMMC PHY IO Control 0 Register.
+
+Change-Id: Ia7cfb9fb1021294937c3e0b36ffe1ddf3f04dee5
+Signed-off-by: Evan Wang <xswang@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/42568
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Marcin Wojtas <mw@semihalf.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-ap806.dtsi | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-ap806.dtsi b/arch/arm64/boot/dts/marvell/armada-ap806.dtsi
+index f127bc0..c0d7cff 100644
+--- a/arch/arm64/boot/dts/marvell/armada-ap806.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-ap806.dtsi
+@@ -330,7 +330,9 @@
+ 
+ 			pinctrl@6f4000 {
+ 				compatible = "marvell,ap806-pinctrl";
+-				reg = <0x6f4000 0x10>;
++				reg = <0x6f4000 0x10>, /* pinctrl regs */
++				      <0x6f4100 0x4>; /* eMMC PHY IO Control 0 Register */
++				reg-names = "pinctrl", "mmcio";
+ 
+ 				ap_i2c0_pins: i2c-pins-0 {
+ 					marvell,pins = "mpp4", "mpp5";
+-- 
+2.7.4
+

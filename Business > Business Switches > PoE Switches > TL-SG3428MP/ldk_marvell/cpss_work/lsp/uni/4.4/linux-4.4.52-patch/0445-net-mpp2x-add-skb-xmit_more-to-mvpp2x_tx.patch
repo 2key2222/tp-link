@@ -1,0 +1,64 @@
+From 16756f1e17ebc5a11f4b58067fb492fe7587f057 Mon Sep 17 00:00:00 2001
+From: Stefan Chulski <stefanc@marvell.com>
+Date: Wed, 25 May 2016 00:00:43 +0300
+Subject: [PATCH 0445/2241] net: mpp2x: add skb->xmit_more to mvpp2x_tx
+
+-add skb->xmit_more to mvpp2x_tx
+
+Change-Id: I5c774afafe9a8d051d0d2dfcf8358766a0ab10f7
+Reviewed-on: http://vgitil04.il.marvell.com:8080/29953
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+Tested-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h      |  3 +++
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c | 11 +++++------
+ 2 files changed, 8 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h
+index 914d16a..97bfa91 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h
+@@ -362,6 +362,9 @@ struct mv_pp2x_aggr_tx_queue {
+ 
+ 	/* Index of the next Tx DMA descriptor to process */
+ 	int next_desc_to_proc;
++
++	/* Used to statistic the desc number to xmit in bulk */
++	u32 xmit_bulk;
+ };
+ 
+ struct mv_pp2x_rx_queue {
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+index 58e47bf..e4145d6 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+@@ -2392,6 +2392,7 @@ static int mv_pp2x_tx(struct sk_buff *skb, struct net_device *dev)
+ 	u32 tx_cmd;
+ 
+ 	txq_id = 0/*skb_get_queue_mapping(skb)*/;
++	nq = netdev_get_tx_queue(dev, txq_id);
+ 	txq = port->txqs[txq_id];
+ 	txq_pcpu = this_cpu_ptr(txq->pcpu);
+ 	aggr_txq = &port->priv->aggr_txqs[smp_processor_id()];
+@@ -2470,14 +2471,12 @@ static int mv_pp2x_tx(struct sk_buff *skb, struct net_device *dev)
+ 	txq_pcpu->reserved_num -= frags;
+ 	txq_pcpu->count += frags;
+ 	aggr_txq->count += frags;
++	aggr_txq->xmit_bulk += frags;
+ 
+ 	/* Enable transmit */
+-	mv_pp2x_aggr_txq_pend_desc_add(port, frags);
+-
+-	if (txq_pcpu->size - txq_pcpu->count < MAX_SKB_FRAGS + 1) {
+-		MVPP2_PRINT_LINE();
+-		nq = netdev_get_tx_queue(dev, txq_id);
+-		netif_tx_stop_queue(nq);
++	if (!skb->xmit_more || netif_xmit_stopped(nq)) {
++		mv_pp2x_aggr_txq_pend_desc_add(port, aggr_txq->xmit_bulk);
++		aggr_txq->xmit_bulk = 0;
+ 	}
+ out:
+ 	if (frags > 0) {
+-- 
+2.7.4
+

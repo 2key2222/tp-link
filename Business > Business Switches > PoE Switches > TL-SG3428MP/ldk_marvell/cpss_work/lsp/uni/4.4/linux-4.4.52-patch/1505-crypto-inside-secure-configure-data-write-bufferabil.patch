@@ -1,0 +1,49 @@
+From 392c5fcfc84b51ff032af67bdd63dfbb8b37e20b Mon Sep 17 00:00:00 2001
+From: Igal Liberman <igall@marvell.com>
+Date: Mon, 20 Mar 2017 17:47:59 +0200
+Subject: [PATCH 1505/2241] crypto: inside-secure: configure data write
+ bufferability
+
+This patch configures the data write bufferability in the
+DSE (data storange engine), aligning the configuration to
+the HW default (last transfer of each packet non-bufferable,
+rest bufferable).
+
+Change-Id: Iebc5ba11a8100ab2f9c4c793707b3932a4ca385f
+Signed-off-by: Igal Liberman <igall@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/37739
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+---
+ drivers/crypto/inside-secure/safexcel.c | 1 +
+ drivers/crypto/inside-secure/safexcel.h | 1 +
+ 2 files changed, 2 insertions(+)
+
+diff --git a/drivers/crypto/inside-secure/safexcel.c b/drivers/crypto/inside-secure/safexcel.c
+index 7a2b157..b240fd1 100644
+--- a/drivers/crypto/inside-secure/safexcel.c
++++ b/drivers/crypto/inside-secure/safexcel.c
+@@ -534,6 +534,7 @@ static int eip_hw_init(struct device *dev, struct safexcel_crypto_priv *priv)
+ 	val = EIP197_HIA_DSE_CFG_DIS_DEBUG;
+ 	val |= EIP197_HIA_DxE_CFG_MIN_DATA_SIZE(7) | EIP197_HIA_DxE_CFG_MAX_DATA_SIZE(8);
+ 	val |= EIP197_HIA_DxE_CFG_DATA_CACHE_CTRL(RD_CACHE_3BITS);
++	val |= EIP197_HIA_DSE_CFG_BUFFER_CTRL(2);
+ 	writel(val, EIP197_HIA_DSE(priv) + EIP197_HIA_DSE_CFG);
+ 
+ 	/* Leave the DSE threads reset state */
+diff --git a/drivers/crypto/inside-secure/safexcel.h b/drivers/crypto/inside-secure/safexcel.h
+index a39a843..9f773b0 100644
+--- a/drivers/crypto/inside-secure/safexcel.h
++++ b/drivers/crypto/inside-secure/safexcel.h
+@@ -273,6 +273,7 @@
+ #define EIP197_HIA_DxE_CFG_MAX_CTRL_SIZE(n)	((n) << 24)
+ #define EIP197_HIA_DFE_CFG_DIS_DEBUG		(BIT(31) | BIT(29))
+ #define EIP197_HIA_DSE_CFG_DIS_DEBUG		BIT(31)
++#define EIP197_HIA_DSE_CFG_BUFFER_CTRL(n)	(((n) & 0x3) << 14)
+ 
+ /* EIP197_HIA_DFE/DSE_THR_CTRL */
+ #define EIP197_DxE_THR_CTRL_EN			BIT(30)
+-- 
+2.7.4
+

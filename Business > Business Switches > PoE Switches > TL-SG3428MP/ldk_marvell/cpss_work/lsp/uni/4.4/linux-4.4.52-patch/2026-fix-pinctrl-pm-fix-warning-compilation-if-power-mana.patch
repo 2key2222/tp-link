@@ -1,0 +1,53 @@
+From 44c771ca4eb666fc60e51b684f2b17220775d51f Mon Sep 17 00:00:00 2001
+From: Hanna Hawa <hannah@marvell.com>
+Date: Tue, 10 Oct 2017 14:39:30 +0300
+Subject: [PATCH 2026/2241] fix: pinctrl: pm: fix warning compilation if power
+ management disabled
+
+Fix warning compilation if power management core functionality is disabled
+
+Change-Id: Ief448351a16a7283620042c662ecce12c8ab2e07
+Signed-off-by: Hanna Hawa <hannah@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/45092
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+---
+ drivers/pinctrl/mvebu/pinctrl-armada-ap806.c | 2 ++
+ drivers/pinctrl/mvebu/pinctrl-armada-cp110.c | 4 +++-
+ 2 files changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/pinctrl/mvebu/pinctrl-armada-ap806.c b/drivers/pinctrl/mvebu/pinctrl-armada-ap806.c
+index 19b5c18..32cc38a6 100644
+--- a/drivers/pinctrl/mvebu/pinctrl-armada-ap806.c
++++ b/drivers/pinctrl/mvebu/pinctrl-armada-ap806.c
+@@ -154,7 +154,9 @@ static int armada_ap806_pinctrl_probe(struct platform_device *pdev)
+ 	const struct of_device_id *match =
+ 		of_match_device(armada_ap806_pinctrl_of_match, &pdev->dev);
+ 	struct resource *res, *res_mmcio;
++#ifdef CONFIG_PM
+ 	struct mvebu_pinctrl_pm_save *pm_save;
++#endif
+ 
+ 	if (!match)
+ 		return -ENODEV;
+diff --git a/drivers/pinctrl/mvebu/pinctrl-armada-cp110.c b/drivers/pinctrl/mvebu/pinctrl-armada-cp110.c
+index eeb4018..bab4036 100644
+--- a/drivers/pinctrl/mvebu/pinctrl-armada-cp110.c
++++ b/drivers/pinctrl/mvebu/pinctrl-armada-cp110.c
+@@ -664,10 +664,12 @@ static struct pinctrl_gpio_range armada_cp110_1_mpp_gpio_ranges[] = {
+ static int armada_cp110_pinctrl_probe(struct platform_device *pdev)
+ {
+ 	struct mvebu_pinctrl_soc_info *soc;
+-	struct mvebu_pinctrl_pm_save *pm_save;
+ 	const struct of_device_id *match =
+ 		of_match_device(armada_cp110_pinctrl_of_match, &pdev->dev);
+ 	struct resource *res;
++#ifdef CONFIG_PM
++	struct mvebu_pinctrl_pm_save *pm_save;
++#endif
+ 
+ 	if (!match)
+ 		return -ENODEV;
+-- 
+2.7.4
+

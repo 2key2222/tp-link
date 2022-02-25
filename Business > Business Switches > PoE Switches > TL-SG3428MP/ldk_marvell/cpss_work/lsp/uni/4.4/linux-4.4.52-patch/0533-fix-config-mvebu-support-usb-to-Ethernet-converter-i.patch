@@ -1,0 +1,35 @@
+From 35ade11e9155ddcec28a981ba17370d186573215 Mon Sep 17 00:00:00 2001
+From: Ken Ma <make@marvell.com>
+Date: Tue, 28 Jun 2016 17:21:57 +0800
+Subject: [PATCH 0533/2241] fix: config: mvebu: support usb to Ethernet
+ converter in linux
+
+- Set CONFIG_USB_USBNET to "y" in "mvebu_v8_lsp_defconfig" to support
+  USB to ethernet converter
+- SYSTEMSW-2577: Driver USB to Ethernet is not supported on Linux
+
+Change-Id: I5078b8feea58d4571ecb9c52ae214512099b6d92
+Signed-off-by: Ken Ma <make@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/30762
+Reviewed-by: Victor Gu <xigu@marvell.com>
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ arch/arm64/configs/mvebu_v8_lsp_defconfig | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm64/configs/mvebu_v8_lsp_defconfig b/arch/arm64/configs/mvebu_v8_lsp_defconfig
+index c9fc51d..06ae430 100644
+--- a/arch/arm64/configs/mvebu_v8_lsp_defconfig
++++ b/arch/arm64/configs/mvebu_v8_lsp_defconfig
+@@ -123,6 +123,7 @@ CONFIG_SKY2=y
+ CONFIG_SMC91X=y
+ CONFIG_SMSC911X=y
+ CONFIG_MARVELL_PHY=y
++CONFIG_USB_USBNET=y
+ # CONFIG_WLAN is not set
+ CONFIG_INPUT_EVDEV=y
+ CONFIG_KEYBOARD_GPIO=y
+-- 
+2.7.4
+

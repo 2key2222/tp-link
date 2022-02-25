@@ -1,0 +1,36 @@
+From 7abb2859d5ab0c44db9ef0c4a5b986371a41e490 Mon Sep 17 00:00:00 2001
+From: Grzegorz Jaszczyk <jaz@semihalf.com>
+Date: Tue, 16 Aug 2016 17:52:34 +0200
+Subject: [PATCH 0897/2241] arm64: dts: marvell: use lower case for pinctrl
+ node name in Armada 8K AP dtsi
+
+Change-Id: Ie75b0e25cfadd77d8366a25ee43bca6d5e19599c
+Signed-off-by: Grzegorz Jaszczyk <jaz@semihalf.com>
+Signed-off-by: Igal Liberman <igall@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/32376
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+Tested-by: Star_Automation <star@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-ap806.dtsi | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-ap806.dtsi b/arch/arm64/boot/dts/marvell/armada-ap806.dtsi
+index 9891ca0a..ab16e65 100644
+--- a/arch/arm64/boot/dts/marvell/armada-ap806.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-ap806.dtsi
+@@ -233,9 +233,9 @@
+ 				status = "disabled";
+ 			};
+ 
+-			pinctrl@6F4000 {
++			pinctrl@6f4000 {
+ 				compatible = "marvell,ap806-pinctrl";
+-				reg = <0x6F4000 0x10>;
++				reg = <0x6f4000 0x10>;
+ 			};
+ 
+ 			gpio0: gpio@6F5040 {
+-- 
+2.7.4
+

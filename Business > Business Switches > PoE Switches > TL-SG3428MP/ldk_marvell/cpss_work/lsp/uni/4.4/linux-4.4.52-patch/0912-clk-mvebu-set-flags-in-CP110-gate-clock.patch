@@ -1,0 +1,49 @@
+From 60afb9d4c7bfac702a6ff17e0e9a72ce9620f327 Mon Sep 17 00:00:00 2001
+From: Marcin Wojtas <mw@semihalf.com>
+Date: Mon, 22 Aug 2016 20:22:35 +0200
+Subject: [PATCH 0912/2241] clk: mvebu: set flags in CP110 gate clock
+
+Armada CP110 system controller comprises its own routine responsble
+for registering gate clocks. Among others 'flags' field in
+struct clk_init_data was not set, using a random values, which
+may cause an unpredicted behavior.
+
+This patch fixes the problem by resetting all fields of clk_init_data
+before assigning values and also setting CLK_IS_BASIC flag for
+all gated clocks of Armada 7k/8k SoCs family.
+
+Fixes: d3da3eaef7f4 ("clk: mvebu: new driver for Armada CP110 system ...")
+
+This patch is part of patch-set which adds
+mainline mvebu clock gating support [7/21].
+
+Change-Id: Ide1f07e0f9a0922cdde178495cbc9077fb9dee48
+Signed-off-by: Marcin Wojtas <mw@semihalf.com>
+Signed-off-by: Igal Liberman <igall@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/32392
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Tested-by: Omri Itach <omrii@marvell.com>
+---
+ drivers/clk/mvebu/cp110-system-controller.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/drivers/clk/mvebu/cp110-system-controller.c b/drivers/clk/mvebu/cp110-system-controller.c
+index 7fa42d6..a2e4328 100644
+--- a/drivers/clk/mvebu/cp110-system-controller.c
++++ b/drivers/clk/mvebu/cp110-system-controller.c
+@@ -142,8 +142,11 @@ static struct clk *cp110_register_gate(const char *name,
+ 	if (!gate)
+ 		return ERR_PTR(-ENOMEM);
+ 
++	memset(&init, 0, sizeof(init));
++
+ 	init.name = name;
+ 	init.ops = &cp110_gate_ops;
++	init.flags = CLK_IS_BASIC;
+ 	init.parent_names = &parent_name;
+ 	init.num_parents = 1;
+ 
+-- 
+2.7.4
+

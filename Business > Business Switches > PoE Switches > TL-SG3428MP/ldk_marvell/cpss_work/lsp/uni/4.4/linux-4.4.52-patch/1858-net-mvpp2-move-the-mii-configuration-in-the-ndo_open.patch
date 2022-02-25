@@ -1,0 +1,42 @@
+From b69fdf00438641b35218c0c77773143408735ef0 Mon Sep 17 00:00:00 2001
+From: Antoine Tenart <antoine.tenart@free-electrons.com>
+Date: Fri, 16 Jun 2017 11:52:46 +0200
+Subject: [PATCH 1858/2241] net: mvpp2: move the mii configuration in the
+ ndo_open path
+
+This moves the mii configuration in the ndo_open path, to allow handling
+different mii configurations later and to switch between these
+configurations at runtime.
+
+Change-Id: Iabecc4f3a5fe22fb594a3c211ea2cf74ea3f9717
+Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/42826
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2.c b/drivers/net/ethernet/marvell/mvpp2.c
+index 8de8122..12400cb 100644
+--- a/drivers/net/ethernet/marvell/mvpp2.c
++++ b/drivers/net/ethernet/marvell/mvpp2.c
+@@ -6152,6 +6152,7 @@ static void mvpp2_start_dev(struct mvpp2_port *port)
+ 	/* Enable interrupts on all CPUs */
+ 	mvpp2_interrupts_enable(port);
+ 
++	mvpp2_port_mii_set(port);
+ 	mvpp2_port_enable(port);
+ 	phy_start(ndev->phydev);
+ 	netif_tx_start_all_queues(port->dev);
+@@ -7168,7 +7169,6 @@ static int mvpp2_port_probe(struct platform_device *pdev,
+ 		goto err_free_stats;
+ 	}
+ 
+-	mvpp2_port_mii_set(port);
+ 	mvpp2_port_periodic_xon_disable(port);
+ 
+ 	if (priv->hw_version == MVPP21)
+-- 
+2.7.4
+

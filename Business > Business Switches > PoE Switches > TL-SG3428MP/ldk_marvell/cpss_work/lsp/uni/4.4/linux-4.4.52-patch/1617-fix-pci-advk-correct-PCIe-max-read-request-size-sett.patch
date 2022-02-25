@@ -1,0 +1,47 @@
+From 1b7d9983557cdc6e6b390e68d5c507966183b1ba Mon Sep 17 00:00:00 2001
+From: Evan Wang <xswang@marvell.com>
+Date: Fri, 5 May 2017 10:57:34 +0800
+Subject: [PATCH 1617/2241] fix: pci: advk: correct PCIe max read request size
+ setting
+
+There is an obvious typo issue when setting PCIe max
+read request size according to spec, but it does not
+cause any functional issue, so it is only a typo issue.
+
+The patch added the missed macro definetion of PCIe
+max read request size, and correct its setting in
+the driver.
+
+Change-Id: I80bdd7b76a680b4f5863451d3a28b62fb66a4ba7
+Signed-off-by: Evan Wang <xswang@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/39171
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Victor Gu <xigu@marvell.com>
+---
+ drivers/pci/host/pci-aardvark.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/pci/host/pci-aardvark.c b/drivers/pci/host/pci-aardvark.c
+index e2ce469..3d75bf2 100644
+--- a/drivers/pci/host/pci-aardvark.c
++++ b/drivers/pci/host/pci-aardvark.c
+@@ -34,6 +34,7 @@
+ #define     PCIE_CORE_DEV_CTRL_STATS_MAX_PAYLOAD_SZ		0x2
+ #define     PCIE_CORE_DEV_CTRL_STATS_SNOOP_DISABLE		(0 << 11)
+ #define     PCIE_CORE_DEV_CTRL_STATS_MAX_RD_REQ_SIZE_SHIFT	12
++#define     PCIE_CORE_DEV_CTRL_STATS_MAX_RD_REQ_SZ		0x2
+ #define     PCIE_CORE_MPS_UNIT_BYTE				128
+ #define PCIE_CORE_LINK_CTRL_STAT_REG				0xd0
+ #define     PCIE_CORE_LINK_L0S_ENTRY				BIT(0)
+@@ -261,7 +262,7 @@ static void advk_pcie_setup_hw(struct advk_pcie *pcie)
+ 	reg = PCIE_CORE_DEV_CTRL_STATS_RELAX_ORDER_DISABLE |
+ 		(PCIE_CORE_DEV_CTRL_STATS_MAX_PAYLOAD_SZ << PCIE_CORE_DEV_CTRL_STATS_MAX_PAYLOAD_SZ_SHIFT) |
+ 		PCIE_CORE_DEV_CTRL_STATS_SNOOP_DISABLE |
+-		PCIE_CORE_DEV_CTRL_STATS_MAX_RD_REQ_SIZE_SHIFT;
++		(PCIE_CORE_DEV_CTRL_STATS_MAX_RD_REQ_SZ << PCIE_CORE_DEV_CTRL_STATS_MAX_RD_REQ_SIZE_SHIFT);
+ 	advk_writel(pcie, reg, PCIE_CORE_DEV_CTRL_STATS_REG);
+ 
+ 	/* Program PCIe Control 2 to disable strict ordering */
+-- 
+2.7.4
+

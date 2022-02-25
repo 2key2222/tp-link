@@ -1,0 +1,557 @@
+From ee478aa29330342c33603f8c635507d8e3a8027d Mon Sep 17 00:00:00 2001
+From: Stefan Chulski <stefanc@marvell.com>
+Date: Tue, 15 Nov 2016 10:54:34 +0200
+Subject: [PATCH 1097/2241] net: mvpp2x: add comphy support for SGMII, XFI, SFI
+ and HS-SGMII
+
+- This patch add comphy support in driver. From this commit Serdes
+  and GOP configuration do not rely on U-boot. GOP and Serdes mode
+  should be set in device tree and mode could be changed by ethtool.
+- Add comphy handler to port structure
+- Set Serdes mode from device tree
+- Add 10G <-> 2.5G <-> 1G transition capability by ethtool
+- Power on/off Serdes during up/down port procedure
+
+Change-Id: Ie32d3175743d537796580ce6dd7c5613b2b19f34
+Signed-off-by: Stefan Chulski <stefanc@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/33857
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Yuval Caduri <cyuval@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2x/mv_gop110_hw.c |  25 +++
+ drivers/net/ethernet/marvell/mvpp2x/mv_gop110_hw.h |   1 +
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h      |   5 +
+ .../net/ethernet/marvell/mvpp2x/mv_pp2x_ethtool.c  | 188 ++++++++++++++++-----
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.h   |   2 +
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c |  81 +++++++--
+ 6 files changed, 251 insertions(+), 51 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_gop110_hw.c b/drivers/net/ethernet/marvell/mvpp2x/mv_gop110_hw.c
+index a9ce20d..9c3c448 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_gop110_hw.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_gop110_hw.c
+@@ -1077,6 +1077,8 @@ void mv_gop110_port_enable(struct gop_hw *gop, struct mv_mac_data *mac)
+ 	case PHY_INTERFACE_MODE_KR:
+ 	case PHY_INTERFACE_MODE_SFI:
+ 	case PHY_INTERFACE_MODE_XFI:
++		mv_gop110_mpcs_clock_reset(gop,  UNRESET);
++		mv_gop110_xlg_mac_reset(gop, port_num, UNRESET);
+ 		mv_gop110_xlg_mac_port_enable(gop, port_num);
+ 	break;
+ 	default:
+@@ -1103,6 +1105,8 @@ void mv_gop110_port_disable(struct gop_hw *gop, struct mv_mac_data *mac)
+ 	case PHY_INTERFACE_MODE_SFI:
+ 	case PHY_INTERFACE_MODE_XFI:
+ 		mv_gop110_xlg_mac_port_disable(gop, port_num);
++		mv_gop110_xlg_mac_reset(gop, port_num, RESET);
++		mv_gop110_mpcs_clock_reset(gop,  RESET);
+ 	break;
+ 	default:
+ 		pr_err("%s: Wrong port mode (%d)", __func__, mac->phy_mode);
+@@ -2366,6 +2370,27 @@ int mv_gop110_mpcs_mode(struct gop_hw *gop)
+ 	return 0;
+ }
+ 
++void mv_gop110_mpcs_clock_reset(struct gop_hw *gop, enum mv_reset reset)
++{
++	u32 val, reg_addr, val1;
++
++	if (reset == RESET)
++		val1 = 0x0;
++	else
++		val1 = 0x1;
++
++	/* configure PCS CLOCK RESET */
++	reg_addr = PCS_CLOCK_RESET;
++	val = mv_gop110_mpcs_global_read(gop, reg_addr);
++
++	U32_SET_FIELD(val, MAC_CLK_RESET_MASK, val1 << MAC_CLK_RESET_OFFSET);
++	U32_SET_FIELD(val, RX_SD_CLK_RESET_MASK, val1 << RX_SD_CLK_RESET_OFFSET);
++	U32_SET_FIELD(val, TX_SD_CLK_RESET_MASK, val1 << TX_SD_CLK_RESET_OFFSET);
++
++	mv_gop110_mpcs_global_write(gop, reg_addr, val);
++}
++
++
+ u64 mv_gop110_mib_read64(struct gop_hw *gop, int port, unsigned int offset)
+ {
+ 	u64 val, val2;
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_gop110_hw.h b/drivers/net/ethernet/marvell/mvpp2x/mv_gop110_hw.h
+index f360a56..cd7a27d 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_gop110_hw.h
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_gop110_hw.h
+@@ -238,6 +238,7 @@ void mv_gop110_xpcs_lane_regs_dump(struct gop_hw *gop, int lane);
+ int mv_gop110_xpcs_reset(struct gop_hw *gop, enum mv_reset reset);
+ int mv_gop110_xpcs_mode(struct gop_hw *gop, int num_of_lanes);
+ int mv_gop110_mpcs_mode(struct gop_hw *gop);
++void mv_gop110_mpcs_clock_reset(struct gop_hw *gop,  enum mv_reset reset);
+ 
+ /* XLG MAC Functions */
+ static inline u32 mv_gop110_xlg_mac_read(struct gop_hw *gop, int mac_num,
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h
+index db43302..7ef5c79 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h
+@@ -264,10 +264,13 @@ struct mv_mac_data {
+ #define MV_EMAC_F_LINK_UP_BIT	0
+ #define MV_EMAC_F_INIT_BIT	1
+ #define MV_EMAC_F_SGMII2_5_BIT	2
++#define MV_EMAC_F_PORT_UP_BIT	3
+ 
+ #define MV_EMAC_F_LINK_UP	(1 << MV_EMAC_F_LINK_UP_BIT)
+ #define MV_EMAC_F_INIT		(1 << MV_EMAC_F_INIT_BIT)
+ #define MV_EMAC_F_SGMII2_5	(1 << MV_EMAC_F_SGMII2_5_BIT)
++#define MV_EMAC_F_PORT_UP	(1 << MV_EMAC_F_PORT_UP_BIT)
++
+ 
+ #define MVPP2_NO_LINK_IRQ	0
+ 
+@@ -620,6 +623,8 @@ struct mv_pp2x_port {
+ 					*/
+ 	struct mv_pp2x_bm_pool *pool_short; /* Pointer to the short pool_id */
+ 
++	struct phy *comphy; /* comphy handler */
++
+ 	u32 num_qvector;
+ 	/* q_vector is the parameter that will be passed to
+ 	 * mv_pp2_isr(int irq, void *dev_id=q_vector)
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_ethtool.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_ethtool.c
+index cf56936..ffa7427 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_ethtool.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_ethtool.c
+@@ -37,6 +37,8 @@
+ #include <uapi/linux/ppp_defs.h>
+ #include <net/ip.h>
+ #include <net/ipv6.h>
++#include <linux/phy/phy.h>
++#include <dt-bindings/phy/phy-mvebu-comphy.h>
+ 
+ #include "mv_pp2x.h"
+ #include "mv_pp2x_hw.h"
+@@ -77,6 +79,14 @@ int mv_pp2x_check_speed_duplex_valid(struct ethtool_cmd *cmd,
+ 	case DUPLEX_HALF:
+ 		pstatus->duplex = MV_PORT_DUPLEX_HALF;
+ 		break;
++	case DUPLEX_UNKNOWN:
++		if (cmd->speed == SPEED_1000)
++			pstatus->duplex = MV_PORT_DUPLEX_FULL;
++		else {
++			pstatus->duplex = MV_PORT_DUPLEX_FULL;
++			pr_err("Unknown duplex configuration, full duplex set\n");
++		}
++		break;
+ 	default:
+ 		pr_err("Wrong duplex configuration\n");
+ 		return -1;
+@@ -101,44 +111,41 @@ int mv_pp2x_check_speed_duplex_valid(struct ethtool_cmd *cmd,
+ 	}
+ }
+ 
+-
+-int mv_pp2x_autoneg_check_valid(struct mv_mac_data *mac, struct gop_hw *gop,
++int mv_pp2x_autoneg_gmac_check_valid(struct mv_mac_data *mac, struct gop_hw *gop,
+ 			struct ethtool_cmd *cmd, struct mv_port_link_status *pstatus)
+ {
+ 
+ 	int port_num = mac->gop_index;
+ 	int err;
+ 
+-	switch (mac->phy_mode) {
+-	case PHY_INTERFACE_MODE_RGMII:
+-	case PHY_INTERFACE_MODE_SGMII:
+-	case PHY_INTERFACE_MODE_QSGMII:
+-		err = mv_gop110_check_port_type(gop, port_num);
+-		if (err) {
+-			pr_err("GOP %d set to 1000Base-X and cannot be changed\n", port_num);
++	err = mv_gop110_check_port_type(gop, port_num);
++	if (err) {
++		if (cmd->autoneg) {
++			pr_err("GOP %d set to 1000Base-X and doesn't support autonegotiation\n", port_num);
+ 			return -EINVAL;
+ 		}
+-		if (!cmd->autoneg) {
+-			err = mv_pp2x_check_speed_duplex_valid(cmd, pstatus);
+-			if (err)
+-				return -EINVAL;
+-		}
+-	break;
+-	case PHY_INTERFACE_MODE_XAUI:
+-	case PHY_INTERFACE_MODE_RXAUI:
+-	case PHY_INTERFACE_MODE_KR:
+-	case PHY_INTERFACE_MODE_SFI:
+-	case PHY_INTERFACE_MODE_XFI:
+-		pr_err("XLG GOP %d doesn't support autonegotiation\n", port_num);
+-		return -ENODEV;
+-
+-	break;
+-	default:
+-		pr_err("%s: Wrong port mode (%d)\n", __func__, mac->phy_mode);
+-		return -1;
++		return 0;
++	}
++	if (!cmd->autoneg) {
++		err = mv_pp2x_check_speed_duplex_valid(cmd, pstatus);
++		if (err)
++			return -EINVAL;
+ 	}
++
+ 	return 0;
++}
++
++int mv_pp2x_autoneg_xlg_check_valid(struct mv_mac_data *mac, struct ethtool_cmd *cmd)
++{
+ 
++	int port_num = mac->gop_index;
++
++	if (cmd->autoneg) {
++		pr_err("XLG GOP %d doesn't support autonegotiation\n", port_num);
++		return -EINVAL;
++	}
++
++	return 0;
+ }
+ 
+ void mv_pp2x_ethtool_valid_coalesce(struct ethtool_coalesce *c,
+@@ -527,6 +534,50 @@ static int mv_pp2x_ethtool_get_settings(struct net_device *dev,
+ 	return phy_ethtool_gset(port->mac_data.phy_dev, cmd);
+ }
+ 
++void mv_pp2x_ethtool_set_gmac_config(struct mv_port_link_status status, struct gop_hw *gop,
++			int gop_port, struct mv_mac_data *mac, struct ethtool_cmd *cmd)
++{
++
++	mv_gop110_force_link_mode_set(gop, mac, false, true);
++	mv_gop110_gmac_set_autoneg(gop, mac, cmd->autoneg);
++	if (cmd->autoneg)
++		mv_gop110_autoneg_restart(gop, mac);
++	else
++		mv_gop110_gmac_speed_duplex_set(gop, gop_port, status.speed, status.duplex);
++	mv_gop110_force_link_mode_set(gop, mac, false, false);
++}
++
++int mv_pp2x_get_new_comphy_mode(struct ethtool_cmd *cmd, int port_id)
++{
++
++	if (cmd->speed == SPEED_10000 && port_id == 0)
++		return COMPHY_DEF(COMPHY_SFI_MODE, port_id);
++	else if (cmd->speed == SPEED_2500)
++		return COMPHY_DEF(COMPHY_HS_SGMII_MODE, port_id);
++	else if (cmd->speed == SPEED_1000 || cmd->speed == SPEED_100 ||
++			cmd->speed == SPEED_10)
++		return COMPHY_DEF(COMPHY_SGMII_MODE, port_id);
++	else
++		return -EINVAL;
++
++}
++
++void mv_pp2x_set_new_phy_mode(struct ethtool_cmd *cmd, struct mv_mac_data *mac)
++{
++	if (cmd->speed == SPEED_10000)
++		mac->phy_mode = PHY_INTERFACE_MODE_SFI;
++	else if (cmd->speed == SPEED_2500) {
++		mac->phy_mode = PHY_INTERFACE_MODE_SGMII;
++		mac->speed = SPEED_2500;
++		mac->flags |= MV_EMAC_F_SGMII2_5;
++	} else {
++		mac->phy_mode = PHY_INTERFACE_MODE_SGMII;
++		mac->speed = SPEED_1000;
++		mac->flags &= ~MV_EMAC_F_SGMII2_5;
++	}
++}
++
++
+ /* Set settings (phy address, speed) for ethtools */
+ static int mv_pp2x_ethtool_set_settings(struct net_device *dev,
+ 					struct ethtool_cmd *cmd)
+@@ -537,30 +588,85 @@ static int mv_pp2x_ethtool_set_settings(struct net_device *dev,
+ 	struct gop_hw *gop = &port->priv->hw.gop;
+ 	struct mv_mac_data *mac = &port->mac_data;
+ 	int gop_port = mac->gop_index;
++	bool phy_mode_update = false;
+ 
+ 	if (port->priv->pp2_version == PPV21)
+ 		if (!port->mac_data.phy_dev)
+ 			return -ENODEV;
+ 
+-	if (!port->mac_data.phy_dev) {
+-		err = mv_pp2x_autoneg_check_valid(mac, gop, cmd, &status);
++	if (port->mac_data.phy_dev)
++		return phy_ethtool_sset(port->mac_data.phy_dev, cmd);
+ 
+-		if (err < 0) {
+-			pr_err("Wrong negotiation mode set\n");
+-			return err;
++	if (port->comphy)  {
++		int comphy_old_mode, comphy_new_mode;
++
++		comphy_new_mode = mv_pp2x_get_new_comphy_mode(cmd, port->id);
++
++		if (comphy_new_mode < 0) {
++			pr_err("Port ID %d: unsupported speed set\n", port->id);
++			return comphy_new_mode;
+ 		}
++		comphy_old_mode = phy_get_mode(port->comphy);
++
++		if (comphy_old_mode != comphy_new_mode) {
++			err = phy_set_mode(port->comphy, comphy_new_mode);
++			if (err < 0) {
++				phy_set_mode(port->comphy, comphy_old_mode);
++				pr_err("Port ID %d: COMPHY lane is busy\n", port->id);
++				return err;
++			}
+ 
+-		mv_gop110_force_link_mode_set(gop, mac, false, true);
+-		mv_gop110_gmac_set_autoneg(gop, mac, cmd->autoneg);
+-		if (cmd->autoneg)
+-			mv_gop110_autoneg_restart(gop, mac);
+-		else
+-			mv_gop110_gmac_speed_duplex_set(gop, gop_port, status.speed, status.duplex);
+-		mv_gop110_force_link_mode_set(gop, mac, false, false);
+-		return 0;
++			if (mac->flags & MV_EMAC_F_PORT_UP) {
++				netif_carrier_off(port->dev);
++				mv_gop110_port_events_mask(gop, mac);
++				mv_gop110_port_disable(gop, mac);
++				phy_power_off(port->comphy);
++			}
++
++			mv_pp2x_set_new_phy_mode(cmd, mac);
++			phy_mode_update = true;
++		}
+ 	}
+ 
+-	return phy_ethtool_sset(port->mac_data.phy_dev, cmd);
++	if (phy_mode_update) {
++		if (mac->flags & MV_EMAC_F_INIT) {
++			mac->flags &= ~MV_EMAC_F_INIT;
++			mvcpn110_mac_hw_init(port);
++		}
++		mv_pp22_set_net_comp(port->priv);
++
++		if (mac->flags & MV_EMAC_F_PORT_UP) {
++			mv_gop110_port_events_unmask(gop, mac);
++			mv_gop110_port_enable(gop, mac);
++			phy_power_on(port->comphy);
++		}
++	}
++
++	switch (mac->phy_mode) {
++	case PHY_INTERFACE_MODE_RGMII:
++	case PHY_INTERFACE_MODE_SGMII:
++	case PHY_INTERFACE_MODE_QSGMII:
++		err = mv_pp2x_autoneg_gmac_check_valid(mac, gop, cmd, &status);
++		if (err < 0)
++			return err;
++		if (cmd->speed != SPEED_2500)
++			mv_pp2x_ethtool_set_gmac_config(status, gop, gop_port, mac, cmd);
++	break;
++	case PHY_INTERFACE_MODE_XAUI:
++	case PHY_INTERFACE_MODE_RXAUI:
++	case PHY_INTERFACE_MODE_KR:
++	case PHY_INTERFACE_MODE_SFI:
++	case PHY_INTERFACE_MODE_XFI:
++		mv_pp2x_autoneg_xlg_check_valid(mac, cmd);
++		if (err < 0)
++			return err;
++	break;
++	default:
++		pr_err("Wrong port mode (%d)\n", mac->phy_mode);
++		return -1;
++	}
++
++	return 0;
+ }
+ 
+ /* Set interrupt coalescing for ethtools */
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.h b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.h
+index 08b9018..a780e8b 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.h
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.h
+@@ -797,5 +797,7 @@ void mv_pp2x_tx_fifo_size_set(struct mv_pp2x_hw *hw, u32 port_id, u32 val);
+ void mv_pp2x_tx_fifo_threshold_set(struct mv_pp2x_hw *hw, u32 port_id, u32 val);
+ 
+ int mv_pp2x_check_hw_buf_num(struct mv_pp2x *priv, struct mv_pp2x_bm_pool *bm_pool);
++void mv_pp22_set_net_comp(struct mv_pp2x *priv);
++int mvcpn110_mac_hw_init(struct mv_pp2x_port *port);
+ 
+ #endif /* _MVPP2_HW_H_ */
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+index 2a4f4c1..6737e2d 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+@@ -36,6 +36,7 @@
+ #include <linux/of_address.h>
+ #include <linux/of_address.h>
+ #include <linux/of_device.h>
++#include <linux/phy/phy.h>
+ 
+ #include <linux/phy.h>
+ #include <linux/clk.h>
+@@ -47,6 +48,7 @@
+ #include <net/busy_poll.h>
+ #include <asm/cacheflush.h>
+ #include <linux/dma-mapping.h>
++#include <dt-bindings/phy/phy-mvebu-comphy.h>
+ 
+ #include "mv_pp2x.h"
+ #include "mv_pp2x_hw.h"
+@@ -3133,7 +3135,42 @@ static void mv_pp2x_port_irqs_dispose_mapping(struct mv_pp2x_port *port)
+ 		irq_dispose_mapping(port->of_irqs[i]);
+ }
+ 
+-static int mvcpn110_mac_hw_init(struct mv_pp2x_port *port)
++static void mv_serdes_port_init(struct mv_pp2x_port *port)
++{
++	int mode;
++
++	switch (port->mac_data.phy_mode) {
++	case PHY_INTERFACE_MODE_RGMII:
++		break;
++	case PHY_INTERFACE_MODE_SGMII:
++	case PHY_INTERFACE_MODE_QSGMII:
++		if (port->mac_data.flags & MV_EMAC_F_SGMII2_5)
++			mode = COMPHY_DEF(COMPHY_HS_SGMII_MODE, port->id);
++		else
++			mode = COMPHY_DEF(COMPHY_SGMII_MODE, port->id);
++		phy_set_mode(port->comphy, mode);
++	break;
++	case PHY_INTERFACE_MODE_XAUI:
++	case PHY_INTERFACE_MODE_RXAUI:
++		mode = COMPHY_DEF(COMPHY_RXAUI_MODE, port->id);
++		phy_set_mode(port->comphy, mode);
++	break;
++	case PHY_INTERFACE_MODE_KR:
++	case PHY_INTERFACE_MODE_SFI:
++		mode = COMPHY_DEF(COMPHY_SFI_MODE, port->id);
++		phy_set_mode(port->comphy, mode);
++	break;
++	case PHY_INTERFACE_MODE_XFI:
++		mode = COMPHY_DEF(COMPHY_XFI_MODE, port->id);
++		phy_set_mode(port->comphy, mode);
++	break;
++	default:
++		pr_err("%s: Wrong port mode (%d)", __func__, port->mac_data.phy_mode);
++	}
++}
++
++
++int mvcpn110_mac_hw_init(struct mv_pp2x_port *port)
+ {
+ 
+ 	struct gop_hw *gop = &port->priv->hw.gop;
+@@ -3146,6 +3183,9 @@ static int mvcpn110_mac_hw_init(struct mv_pp2x_port *port)
+ 	/* configure port PHY address */
+ 	mv_gop110_smi_phy_addr_cfg(gop, gop_port, mac->phy_addr);
+ 
++	if (port->comphy)
++		mv_serdes_port_init(port);
++
+ 	mv_gop110_port_init(gop, mac);
+ 
+ 	if (mac->force_link)
+@@ -3201,6 +3241,11 @@ void mv_pp2x_start_dev(struct mv_pp2x_port *port)
+ 	/* Enable RX/TX interrupts on all CPUs */
+ 	mv_pp2x_port_interrupts_enable(port);
+ 
++	if (port->comphy) {
++		mv_gop110_port_disable(gop, mac);
++		phy_power_on(port->comphy);
++		}
++
+ 	if (port->priv->pp2_version == PPV21) {
+ 		mv_pp21_port_enable(port);
+ 	} else {
+@@ -3222,8 +3267,10 @@ void mv_pp2x_start_dev(struct mv_pp2x_port *port)
+ 	mv_pp2x_egress_enable(port);
+ 	mv_pp2x_ingress_enable(port);
+ 	/* Unmask link_event */
+-	if (port->priv->pp2_version == PPV22)
++	if (port->priv->pp2_version == PPV22) {
+ 		mv_gop110_port_events_unmask(gop, mac);
++		port->mac_data.flags |= MV_EMAC_F_PORT_UP;
++	}
+ }
+ 
+ /* Set hw internals when stopping port */
+@@ -3246,12 +3293,17 @@ void mv_pp2x_stop_dev(struct mv_pp2x_port *port)
+ 	netif_tx_stop_all_queues(port->dev);
+ 
+ 	mv_pp2x_egress_disable(port);
++
++	if (port->comphy)
++		phy_power_off(port->comphy);
++
+ 	if (port->priv->pp2_version == PPV21) {
+ 		mv_pp21_port_disable(port);
+ 	} else {
+ 		mv_gop110_port_events_mask(gop, mac);
+ 		mv_gop110_port_disable(gop, mac);
+ 		port->mac_data.flags &= ~MV_EMAC_F_LINK_UP;
++		port->mac_data.flags &= ~MV_EMAC_F_PORT_UP;
+ 	}
+ 
+ 	if (port->mac_data.phy_dev)
+@@ -4329,6 +4381,7 @@ static int mv_pp2x_port_probe(struct platform_device *pdev,
+ 	unsigned int *port_irqs;
+ 	int port_num_irq;
+ 	int phy_mode;
++	struct phy *comphy;
+ 
+ 	dev = alloc_etherdev_mqs(sizeof(struct mv_pp2x_port),
+ 		mv_pp2x_txq_number, mv_pp2x_rxq_number);
+@@ -4377,6 +4430,11 @@ static int mv_pp2x_port_probe(struct platform_device *pdev,
+ 		/* Init emac_data, includes link interrupt */
+ 		if (mv_pp2_init_emac_data(port, emac_node))
+ 			goto err_free_netdev;
++
++		comphy = devm_of_phy_get(&pdev->dev, emac_node, "comphy");
++
++		if (!IS_ERR(comphy))
++			port->comphy = comphy;
+ 	}
+ 
+ 	if (port->mac_data.phy_node) {
+@@ -5136,6 +5194,16 @@ static void mv_pp21_fifo_init(struct mv_pp2x *priv)
+ 	mvpp21_tx_fifo_init(priv);
+ }
+ 
++void mv_pp22_set_net_comp(struct mv_pp2x *priv)
++{
++	u32 net_comp_config;
++
++	net_comp_config = mvp_pp2x_gop110_netc_cfg_create(priv);
++	mv_gop110_netc_init(&priv->hw.gop, net_comp_config, MV_NETC_FIRST_PHASE);
++	mv_gop110_netc_init(&priv->hw.gop, net_comp_config, MV_NETC_SECOND_PHASE);
++}
++
++
+ static int mv_pp2x_probe(struct platform_device *pdev)
+ {
+ 	struct mv_pp2x *priv;
+@@ -5144,7 +5212,6 @@ static int mv_pp2x_probe(struct platform_device *pdev)
+ 	int i, err;
+ 	u16 cpu_map;
+ 	u32 cell_index = 0;
+-	u32 net_comp_config;
+ 	struct device_node *dn = pdev->dev.of_node;
+ 	struct device_node *port_node;
+ 
+@@ -5231,13 +5298,7 @@ static int mv_pp2x_probe(struct platform_device *pdev)
+ 	if (priv->pp2_version == PPV22) {
+ 		/* Init tx fifo for each port */
+ 		mv_pp22_tx_fifo_init(priv);
+-
+-		net_comp_config = mvp_pp2x_gop110_netc_cfg_create(priv);
+-		mv_gop110_netc_init(&priv->hw.gop, net_comp_config,
+-					MV_NETC_FIRST_PHASE);
+-
+-		mv_gop110_netc_init(&priv->hw.gop, net_comp_config,
+-					MV_NETC_SECOND_PHASE);
++		mv_pp22_set_net_comp(priv);
+ 	}
+ 
+ 	else
+-- 
+2.7.4
+

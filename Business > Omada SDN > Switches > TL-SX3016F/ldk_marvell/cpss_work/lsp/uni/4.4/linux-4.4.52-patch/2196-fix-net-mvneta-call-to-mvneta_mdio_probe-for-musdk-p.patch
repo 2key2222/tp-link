@@ -1,0 +1,43 @@
+From c48de5f93c336f0d0f9943ffb2c2ae436e9a1b06 Mon Sep 17 00:00:00 2001
+From: Yelena Krivosheev <yelena@marvell.com>
+Date: Mon, 15 Jan 2018 15:37:46 +0200
+Subject: [PATCH 2196/2241] fix: net: mvneta: call to mvneta_mdio_probe() for
+ musdk port
+
+mvneta_mdio_probe() function call moved to end of mvneta_open()
+and doesn't run for musdk port.
+This patch fixes the problem and call to mvneta_mdio_probe() in
+case of musdk port.
+
+Change-Id: If09f5ca017867f380bc4ce174043eeebe807140a
+Signed-off-by: Yelena Krivosheev <yelena@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/49080
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Dmitri Epshtein <dima@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvneta.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvneta.c b/drivers/net/ethernet/marvell/mvneta.c
+index 226e964..16ac6a5 100644
+--- a/drivers/net/ethernet/marvell/mvneta.c
++++ b/drivers/net/ethernet/marvell/mvneta.c
+@@ -3751,8 +3751,14 @@ static int mvneta_open(struct net_device *dev)
+ 	int ret;
+ 
+ 	if (pp->flags & MVNETA_PORT_F_IF_MUSDK) {
+-		if (!pp->use_inband_status)
++		if (!pp->use_inband_status) {
++			ret = mvneta_mdio_probe(pp);
++			if (ret < 0) {
++				netdev_err(dev, "cannot probe MDIO bus\n");
++				return 0;
++			}
+ 			phy_start(pp->phy_dev);
++		}
+ 		netdev_warn(dev, "skipping ndo_open as this port is User Space port\n");
+ 		return 0;
+ 	}
+-- 
+2.7.4
+

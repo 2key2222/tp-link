@@ -1,0 +1,183 @@
+From f9350a648f9646e191d7ad50cdec1f7a20180a33 Mon Sep 17 00:00:00 2001
+From: allen yan <yanwei@marvell.com>
+Date: Mon, 26 Jun 2017 20:37:44 +0800
+Subject: [PATCH 1744/2241] clk: mvebu: a3700: adjust the clock driver to fit
+ the linux-4.4.52-devel
+
+- Because of the difference of Linux clock framework driver between
+  Branch linux-4.4.52-devel and Master, some functions are missing in
+  linux-4.4.52-devel.
+  clk_hw_register_fixed_rate ----------> clk_register_fixed_rate
+  clk_hw_register_fixed_factor --------> clk_register_fixed_factor
+  clk_hw_unregister_fixed_factor ------> clk_unregister_fixed_factor
+  of_clk_hw_onecell_get ---------------> of_clk_src_onecell_get
+  struct clk_hw_onecell_data ----------> struct clk_onecell_data
+  of_clk_add_hw_provider --------------> of_clk_add_provider
+  clk_hw_register_composite -----------> clk_register_composite
+
+- This patch just exchange the funcitons which was missing on branch
+  linux-4.4.52-devel in clock driver to make clock driver fit to
+  linux-4.4.52-devel.
+
+Change-Id: I67601a075d6263955e02decc3f2e1af373cc291a
+Signed-off-by: allen yan <yanwei@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/40825
+Reviewed-by: Victor Gu <xigu@marvell.com>
+Tested-by: Victor Gu <xigu@marvell.com>
+---
+ drivers/clk/mvebu/armada-37xx-periph.c | 20 ++++++++++----------
+ drivers/clk/mvebu/armada-37xx-tbg.c    | 16 ++++++++--------
+ drivers/clk/mvebu/armada-37xx-xtal.c   |  4 ++--
+ 3 files changed, 20 insertions(+), 20 deletions(-)
+
+diff --git a/drivers/clk/mvebu/armada-37xx-periph.c b/drivers/clk/mvebu/armada-37xx-periph.c
+index cecb0fd..2895ed6 100644
+--- a/drivers/clk/mvebu/armada-37xx-periph.c
++++ b/drivers/clk/mvebu/armada-37xx-periph.c
+@@ -34,7 +34,7 @@
+ #define CLK_DIS		0x14
+ 
+ struct clk_periph_driver_data {
+-	struct clk_hw_onecell_data *hw_data;
++	struct clk_onecell_data *hw_data;
+ 	spinlock_t lock;
+ };
+ 
+@@ -305,7 +305,7 @@ static const struct of_device_id armada_3700_periph_clock_of_match[] = {
+ };
+ static int armada_3700_add_composite_clk(const struct clk_periph_data *data,
+ 					 void __iomem *reg, spinlock_t *lock,
+-					 struct device *dev, struct clk_hw **hw)
++					 struct device *dev, struct clk **hw)
+ {
+ 	const struct clk_ops *mux_ops = NULL, *gate_ops = NULL,
+ 		*rate_ops = NULL;
+@@ -354,7 +354,7 @@ static int armada_3700_add_composite_clk(const struct clk_periph_data *data,
+ 		}
+ 	}
+ 
+-	*hw = clk_hw_register_composite(dev, data->name, data->parent_names,
++	*hw = clk_register_composite(dev, data->name, data->parent_names,
+ 				       data->num_parents, mux_hw,
+ 				       mux_ops, rate_hw, rate_ops,
+ 				       gate_hw, gate_ops, CLK_IGNORE_UNUSED);
+@@ -396,12 +396,12 @@ static int armada_3700_periph_clock_probe(struct platform_device *pdev)
+ 			    GFP_KERNEL);
+ 	if (!driver_data->hw_data)
+ 		return -ENOMEM;
+-	driver_data->hw_data->num = num_periph;
++	driver_data->hw_data->clk_num = num_periph;
+ 
+ 	spin_lock_init(&driver_data->lock);
+ 
+ 	for (i = 0; i < num_periph; i++) {
+-		struct clk_hw **hw = &driver_data->hw_data->hws[i];
++		struct clk **hw = &driver_data->hw_data->clks[i];
+ 
+ 		if (armada_3700_add_composite_clk(&data[i], reg,
+ 						  &driver_data->lock, dev, hw))
+@@ -410,11 +410,11 @@ static int armada_3700_periph_clock_probe(struct platform_device *pdev)
+ 
+ 	}
+ 
+-	ret = of_clk_add_hw_provider(np, of_clk_hw_onecell_get,
++	ret = of_clk_add_provider(np, of_clk_src_onecell_get,
+ 				  driver_data->hw_data);
+ 	if (ret) {
+ 		for (i = 0; i < num_periph; i++)
+-			clk_hw_unregister(driver_data->hw_data->hws[i]);
++			clk_unregister(driver_data->hw_data->clks[i]);
+ 		return ret;
+ 	}
+ 
+@@ -425,13 +425,13 @@ static int armada_3700_periph_clock_probe(struct platform_device *pdev)
+ static int armada_3700_periph_clock_remove(struct platform_device *pdev)
+ {
+ 	struct clk_periph_driver_data *data = platform_get_drvdata(pdev);
+-	struct clk_hw_onecell_data *hw_data = data->hw_data;
++	struct clk_onecell_data *hw_data = data->hw_data;
+ 	int i;
+ 
+ 	of_clk_del_provider(pdev->dev.of_node);
+ 
+-	for (i = 0; i < hw_data->num; i++)
+-		clk_hw_unregister(hw_data->hws[i]);
++	for (i = 0; i < hw_data->clk_num; i++)
++		clk_unregister(hw_data->clks[i]);
+ 
+ 	return 0;
+ }
+diff --git a/drivers/clk/mvebu/armada-37xx-tbg.c b/drivers/clk/mvebu/armada-37xx-tbg.c
+index aa80db1..21aa133 100644
+--- a/drivers/clk/mvebu/armada-37xx-tbg.c
++++ b/drivers/clk/mvebu/armada-37xx-tbg.c
+@@ -83,7 +83,7 @@ static unsigned int tbg_get_div(void __iomem *reg, const struct tbg_def *ptbg)
+ static int armada_3700_tbg_clock_probe(struct platform_device *pdev)
+ {
+ 	struct device_node *np = pdev->dev.of_node;
+-	struct clk_hw_onecell_data *hw_tbg_data;
++	struct clk_onecell_data *hw_tbg_data;
+ 	struct device *dev = &pdev->dev;
+ 	const char *parent_name;
+ 	struct resource *res;
+@@ -96,7 +96,7 @@ static int armada_3700_tbg_clock_probe(struct platform_device *pdev)
+ 				   GFP_KERNEL);
+ 	if (!hw_tbg_data)
+ 		return -ENOMEM;
+-	hw_tbg_data->num = NUM_TBG;
++	hw_tbg_data->clk_num = NUM_TBG;
+ 	platform_set_drvdata(pdev, hw_tbg_data);
+ 
+ 	parent = devm_clk_get(dev, NULL);
+@@ -118,13 +118,13 @@ static int armada_3700_tbg_clock_probe(struct platform_device *pdev)
+ 		name = tbg[i].name;
+ 		mult = tbg_get_mult(reg, &tbg[i]);
+ 		div = tbg_get_div(reg, &tbg[i]);
+-		hw_tbg_data->hws[i] = clk_hw_register_fixed_factor(NULL, name,
++		hw_tbg_data->clks[i] = clk_register_fixed_factor(NULL, name,
+ 						parent_name, 0, mult, div);
+-		if (IS_ERR(hw_tbg_data->hws[i]))
++		if (IS_ERR(hw_tbg_data->clks[i]))
+ 			dev_err(dev, "Can't register TBG clock %s\n", name);
+ 	}
+ 
+-	ret = of_clk_add_hw_provider(np, of_clk_hw_onecell_get, hw_tbg_data);
++	ret = of_clk_add_provider(np, of_clk_src_onecell_get, hw_tbg_data);
+ 
+ 	return ret;
+ }
+@@ -132,11 +132,11 @@ static int armada_3700_tbg_clock_probe(struct platform_device *pdev)
+ static int armada_3700_tbg_clock_remove(struct platform_device *pdev)
+ {
+ 	int i;
+-	struct clk_hw_onecell_data *hw_tbg_data = platform_get_drvdata(pdev);
++	struct clk_onecell_data *hw_tbg_data = platform_get_drvdata(pdev);
+ 
+ 	of_clk_del_provider(pdev->dev.of_node);
+-	for (i = 0; i < hw_tbg_data->num; i++)
+-		clk_hw_unregister_fixed_factor(hw_tbg_data->hws[i]);
++	for (i = 0; i < hw_tbg_data->clk_num; i++)
++		clk_unregister_fixed_factor(hw_tbg_data->clks[i]);
+ 
+ 	return 0;
+ }
+diff --git a/drivers/clk/mvebu/armada-37xx-xtal.c b/drivers/clk/mvebu/armada-37xx-xtal.c
+index 612d65e..da6c1e4 100644
+--- a/drivers/clk/mvebu/armada-37xx-xtal.c
++++ b/drivers/clk/mvebu/armada-37xx-xtal.c
+@@ -59,10 +59,10 @@ static int armada_3700_xtal_clock_probe(struct platform_device *pdev)
+ 		rate = 25000000;
+ 
+ 	of_property_read_string_index(np, "clock-output-names", 0, &xtal_name);
+-	xtal_hw = clk_hw_register_fixed_rate(NULL, xtal_name, NULL, 0, rate);
++	xtal_hw->clk = clk_register_fixed_rate(NULL, xtal_name, NULL, CLK_IS_ROOT, rate);
+ 	if (IS_ERR(xtal_hw))
+ 		return PTR_ERR(xtal_hw);
+-	ret = of_clk_add_hw_provider(np, of_clk_hw_simple_get, xtal_hw);
++	ret = of_clk_add_provider(np, of_clk_src_simple_get, xtal_hw->clk);
+ 
+ 	return ret;
+ }
+-- 
+2.7.4
+

@@ -1,0 +1,47 @@
+From e4ad927b3a50239018ebac32e5de3b69d08cc26a Mon Sep 17 00:00:00 2001
+From: Ofer Heifetz <oferh@marvell.com>
+Date: Tue, 28 Jul 2015 17:04:58 +0300
+Subject: [PATCH 0043/2241] dma: mv_xor: add barriers on busy current reads
+
+There was a race in heavy transaction loads since there was no memory
+barrier	before reading the current descriptor and engine busy state.
+
+Change-Id: I3d87933f57f1925671ebcbfe604329cc6e338c90
+Signed-off-by: Ofer Heifetz <oferh@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/22273
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Nadav Haklai <nadavh@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/22678
+Reviewed-on: http://vgitil04.il.marvell.com:8080/26869
+Reviewed-by: Lior Amsalem <alior@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/27273
+Tested-by: Lior Amsalem <alior@marvell.com>
+---
+ drivers/dma/mv_xor.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/dma/mv_xor.c b/drivers/dma/mv_xor.c
+index 997a2b5..2b1989a 100644
+--- a/drivers/dma/mv_xor.c
++++ b/drivers/dma/mv_xor.c
+@@ -99,7 +99,7 @@ static void mv_desc_set_src_addr(struct mv_xor_desc_slot *desc,
+ 
+ static u32 mv_chan_get_current_desc(struct mv_xor_chan *chan)
+ {
+-	return readl_relaxed(XOR_CURR_DESC(chan));
++	return readl(XOR_CURR_DESC(chan));
+ }
+ 
+ static void mv_chan_set_next_descriptor(struct mv_xor_chan *chan,
+@@ -165,7 +165,7 @@ static void mv_chan_activate(struct mv_xor_chan *chan)
+ 
+ static char mv_chan_is_busy(struct mv_xor_chan *chan)
+ {
+-	u32 state = readl_relaxed(XOR_ACTIVATION(chan));
++	u32 state = readl(XOR_ACTIVATION(chan));
+ 
+ 	state = (state >> 4) & 0x3;
+ 
+-- 
+2.7.4
+

@@ -1,0 +1,1718 @@
+/*******************************************************************************
+Copyright (C) Marvell International Ltd. and its affiliates
+
+********************************************************************************
+Marvell GPL License Option
+
+If you received this File from Marvell, you may opt to use, redistribute and/or
+modify this File in accordance with the terms and conditions of the General
+Public License Version 2, June 1991 (the "GPL License"), a copy of which is
+available along with the File in the license.txt file or by writing to the Free
+Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 or
+on the worldwide web at http://www.gnu.org/licenses/gpl.txt.
+
+THE FILE IS DISTRIBUTED AS-IS, WITHOUT WARRANTY OF ANY KIND, AND THE IMPLIED
+WARRANTIES OF MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE ARE EXPRESSLY
+DISCLAIMED.  The GPL License provides additional details about this warranty
+disclaimer.
+
+*******************************************************************************/
+
+#include <config.h>
+#include <common.h>
+#include <command.h>
+#include <pci.h>
+#include <net.h>
+
+#include "mvCommon.h"
+#include "ctrlEnv/mvCtrlEnvLib.h"
+#include "boardEnv/mvBoardEnvLib.h"
+#include "cpu/mvCpu.h"
+#include "ctrlEnv/sys/mvAhbToMbusRegs.h"
+
+#if defined(MV_INC_BOARD_NOR_FLASH)
+#include "norflash/mvFlash.h"
+#endif
+
+#if defined(MV_INCLUDE_GIG_ETH)
+#include "eth-phy/mvEthPhy.h"
+#endif
+
+#if defined(MV_INCLUDE_PEX)
+#include "pex/mvPex.h"
+#endif
+
+#if defined(MV_INCLUDE_PDMA)
+#include "pdma/mvPdma.h"
+#include "mvSysPdmaApi.h"
+#endif
+
+#if defined(MV_INCLUDE_XOR)
+#include "xor/mvXorRegs.h"
+#include "xor/mvXor.h"
+#endif
+
+#if defined(MV_INCLUDE_PMU)
+#include "pmu/mvPmuRegs.h"
+#endif
+
+#include "cntmr/mvCntmrRegs.h"
+
+#if defined(CONFIG_CMD_BSP)
+
+/******************************************************************************
+* Category     - General
+* Functionality- The commands allows the user to view the contents of the MV
+*                internal registers and modify them.
+* Need modifications (Yes/No) - no
+*****************************************************************************/
+int ir_cmd( cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[] )
+{
+	MV_U32 regNum = 0x0, regVal, regValTmp, res;
+	MV_8 regValBin[40];
+	MV_8 cmd[40];
+	int i,j = 0, flagm = 0;
+	extern MV_8 console_buffer[];
+
+	if( argc == 2 ) {
+		regNum = simple_strtoul( argv[1], NULL, 16 );
+	}
+	else {
+		printf( "Usage:\n%s\n", cmdtp->usage );
+		return 0;
+	}
+
+	regVal = MV_REG_READ( regNum + INTER_REGS_BASE);
+	regValTmp = regVal;
+	printf( "Internal register 0x%x value : 0x%x\n ",regNum, regVal );
+	printf( "\n    31      24        16         8         0" );
+	printf( "\n     |       |         |         |         |\nOLD: " );
+
+	for( i = 31 ; i >= 0 ; i-- ) {
+		if( regValTmp > 0 ) {
+			res = regValTmp % 2;
+			regValTmp = (regValTmp - res) / 2;
+			if( res == 0 )
+				regValBin[i] = '0';
+			else
+				regValBin[i] = '1';
+		}
+		else
+			regValBin[i] = '0';
+	}
+
+	for( i = 0 ; i < 32 ; i++ ) {
+		printf( "%c", regValBin[i] );
+		if( (((i+1) % 4) == 0) && (i > 1) && (i < 31) )
+			printf( "-" );
+	}
+
+	readline( "\nNEW: " );
+	strcpy(cmd, console_buffer);
+	if( (cmd[0] == '0') && (cmd[1] == 'x') ) {
+		regVal = simple_strtoul( cmd, NULL, 16 );
+		flagm=1;
+	}
+	else {
+		for( i = 0 ; i < 40 ; i++ ) {
+			if(cmd[i] == '\0')
+				break;
+			if( i == 4 || i == 9 || i == 14 || i == 19 || i == 24 || i == 29 || i == 34 )
+				continue;
+			if( cmd[i] == '1' ) {
+				regVal = regVal | (0x80000000 >> j);
+				flagm = 1;
+			}
+			else if( cmd[i] == '0' ) {
+				regVal = regVal & (~(0x80000000 >> j));
+				flagm = 1;
+			}
+			j++;
+		}
+	}
+
+	if( flagm == 1 ) {
+		MV_REG_WRITE( regNum + INTER_REGS_BASE, regVal );
+		printf( "\nNew value = 0x%x\n\n", MV_REG_READ(regNum +
+					INTER_REGS_BASE) );
+	}
+	return 1;
+}
+
+U_BOOT_CMD(
+	ir,      2,     1,      ir_cmd,
+	"ir	- reading and changing MV internal register values.\n",
+	" address\n"
+	"\tDisplays the contents of the internal register in 2 forms, hex and binary.\n"
+	"\tIt's possible to change the value by writing a hex value beginning with \n"
+	"\t0x or by writing 0 or 1 in the required place. \n"
+	"\tPressing enter without any value keeps the value unchanged.\n"
+);
+
+/******************************************************************************
+* Category     - General
+* Functionality- Display temperature from sensor.
+* Need modifications (Yes/No) - no
+*****************************************************************************/
+int temperature_cmd( cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	printf("Junction Temprature (Tj) = %d\n", mvCtrlGetJuncTemp());
+
+	return 1;
+}
+
+U_BOOT_CMD(
+	temp,      1,     1,      temperature_cmd,
+	"temp	- Display the device temperature.\n",
+	" \n \tDisplay the device temperature as read from the internal sensor.\n"
+
+);
+
+int reset_count_cmd(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
+{
+	MV_U32 resetCount, resetLimit;
+	char *bootcmd, *tmpStr = getenv("reset_count");
+	char countStr[10];
+
+	resetCount = tmpStr ? simple_strtoul(tmpStr, NULL, 16) : 0;
+
+	tmpStr = getenv("reset_limit");
+	resetLimit = tmpStr ? simple_strtoul(tmpStr, NULL, 10) : 0;
+
+	if( (resetLimit > 0) && (resetCount >= resetLimit)){
+		printf("Reset limit reached, Creset stopped.\n Reset reset_count or reset_limit to continue\n");
+		return 1;
+	}
+
+	/* in 1st time, save original boot command in 'bootcmd_Creset' env varialble */
+	if (resetCount == 0) {
+		bootcmd = getenv("bootcmd");
+		setenv("bootcmd_Creset", bootcmd);
+		/* replace boot command with 'Creset' or 'Creset boot' */
+		if( argc >= 2 && strcmp( argv[1], "boot") == 0)
+			setenv("bootcmd", "Creset boot");
+		else
+			setenv("bootcmd", "Creset");
+	}
+
+	printf("\nreset_count = %d\n" , resetCount);
+	sprintf(countStr, "%x", ++resetCount);
+	setenv("reset_count", countStr);
+	run_command("saveenv", 0);
+
+	/* if requested 'Creset boot' run boot command instead of reset */
+	if( argc >= 2 && strcmp( argv[1], "boot") == 0)
+		run_command("run bootcmd_Creset", 0);
+	else
+		run_command("reset", 0);
+
+	return 1;
+}
+
+U_BOOT_CMD(Creset, 2, 1, reset_count_cmd,
+	"Creset	- Run 'reset' or boot command in a loop, while counting.\n",
+	" \n"
+	"    \t'Creset'      - loop and count reset tries:\n"
+	"    \t'Creset boot' - loop and count boot tries:\n\n"
+	"    \tto restart count, set count value to 1, save, and run boot:\n"
+	"    \t'setenv reset_count 1; saveenv; boot;'\n"
+	"    \t'to limit resets sequence set reset_limit to limit value'\n"
+);
+
+#if defined(MV_INCLUDE_PMU)
+/******************************************************************************
+* Category     - General
+* Functionality- Display temperature from sensor.
+* Need modifications (Yes/No) - no
+*****************************************************************************/
+int volt_cmd( cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	MV_U32 reg = 0, reg1 = 0;
+	MV_U32 value = 0;
+	int i = 0;
+	char *cmd, *s;
+
+	if (argc < 2)
+		goto usage;
+
+	cmd = argv[1];
+
+	if (strncmp(cmd, "cpu", 3) != 0 && strncmp(cmd, "core", 4) != 0)
+		goto usage;
+
+	reg = MV_REG_READ(PMU_TEMP_DIOD_CTRL0_REG);
+	reg |= PMU_TDC0_SEL_IP_MODE_MASK;
+	MV_REG_WRITE(PMU_TEMP_DIOD_CTRL0_REG, PMU_TDC0_SEL_IP_MODE_MASK);
+
+	if (strncmp(cmd, "cpu", 3) == 0) {
+		reg = MV_REG_READ(PMU_TEMP_DIOD_CTRL0_REG);
+		reg &= ~(PMU_TDC0_SEL_VSEN_MASK);
+		MV_REG_WRITE(PMU_TEMP_DIOD_CTRL0_REG, reg);
+	}
+	if (strncmp(cmd, "core", 3) == 0) {
+		reg = MV_REG_READ(PMU_TEMP_DIOD_CTRL0_REG);
+		reg |= PMU_TDC0_SEL_VSEN_MASK;
+		MV_REG_WRITE(PMU_TEMP_DIOD_CTRL0_REG, reg);
+	}
+	udelay(1000);
+	/* Verify that the temperature is valid */
+	reg = MV_REG_READ(PMU_TEMP_DIOD_CTRL1_REG);
+	if ((reg & PMU_TDC1_TEMP_VLID_MASK) == 0x0)
+	{
+		printf("Error reading voltage\n");
+	}
+	else
+	{
+		reg1 = MV_REG_READ(PMU_THERMAL_MNGR_REG);
+		reg1 = ((reg1 >> 1) & 0x1FF);
+		for (i = 0; i < 16; i++)
+		{
+			/* Read the thermal sensor looking for two successive readings that differ in LSB only */
+			reg = MV_REG_READ(PMU_THERMAL_MNGR_REG);
+			reg = ((reg >> 1) & 0x1FF);
+			if (((reg ^ reg1) & 0x1FE) == 0x0)
+				break;
+			/* save the current reading for the next iteration */
+			reg1 = reg;
+		}
+		value = ((reg + 241)*10000/39619);
+		if (i == 16)
+			printf("Voltage sensor is unstable: could not get two identical successive readings\n");
+		else
+			printf("Voltage (V) = %d.%d, Register Value = 0x%08X\n", value/100, value%100, reg);
+	}
+	return 0;
+usage:
+	printf("Usage:\n%s\n", cmdtp->usage);
+	return 1;
+}
+
+U_BOOT_CMD(
+	volt,      2,     1,      volt_cmd,
+	"volt	- Display the cpu / core voltage.\n",
+	"volt cpu	- display the cpu voltage\n"
+	"volt core	- display the core voltage\n"
+);
+#endif /* #if defined(MV_INCLUDE_PMU) */
+
+/******************************************************************************
+* Functional only when using Lauterbach to load image into DRAM
+* Category     - DEBUG
+* Functionality- Display the array of registers the u-boot write to.
+*
+*****************************************************************************/
+#if defined(REG_DEBUG)
+int reg_arry[4096][2];
+int reg_arry_index = 0;
+int print_registers( cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	int i;
+	printf("Register display\n");
+
+	for (i=0; i < reg_arry_index; i++)
+		printf("Reg no %d addr 0x%x = 0x%08x\n", i, reg_arry[i][0], reg_arry[i][1]);
+
+	return 1;
+}
+
+U_BOOT_CMD(
+	printreg,      1,     1,      print_registers,
+	"printreg	- Display the register array the u-boot write to.\n",
+	" \n"
+	"\tDisplay the register array the u-boot write to.\n"
+);
+#endif
+
+#if defined(MV_INCLUDE_GIG_ETH)
+/******************************************************************************
+* Category     - Etherent
+* Functionality- Display PHY ports status (using SMI access).
+* Need modifications (Yes/No) - No
+*****************************************************************************/
+int sg_cmd(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	MV_U32 port;
+	for( port = 0 ; port < mvCtrlEthMaxPortGet(); port++ ) {
+
+		printf( "PHY %d :\n", port );
+		printf( "---------\n" );
+
+		mvEthPhyPrintStatus((MV_U32)mvBoardPhyAddrGet(port) );
+
+		printf("\n");
+	}
+	return 1;
+}
+
+U_BOOT_CMD(
+	sg,      1,     1,      sg_cmd,
+	"sg	- scanning the PHYs status\n",
+	" \n"
+	"\tScan all the Gig port PHYs and display their Duplex, Link, Speed and AN status.\n"
+);
+#endif /* #if defined(MV_INCLUDE_GIG_ETH) */
+
+#if defined(MV_INCLUDE_PDMA)
+
+/******************************************************************************
+* Category     - PDMA
+* Functionality- Perform a PDMA transaction
+* Need modifications (Yes/No) - No
+*****************************************************************************/
+int mvPdma_cmd( cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[] )
+{
+	MV_8 cmd[20];
+	extern MV_8 console_buffer[];
+	MV_U32 src, dst, byteCount;
+	MV_PDMA_CHANNEL chan;
+
+	/* get PDMA channel */
+
+	/* source address */
+	while(1) {
+		readline( "Source Address: " );
+		strcpy( cmd, console_buffer );
+		src = simple_strtoul( cmd, NULL, 16 );
+		if( src == 0xffffffff ) printf( "Bad address !!!\n" );
+		else break;
+	}
+
+	/* desctination address */
+	while(1) {
+		readline( "Destination Address: " );
+		strcpy(cmd, console_buffer);
+		dst = simple_strtoul( cmd, NULL, 16 );
+		if( dst == 0xffffffff ) printf("Bad address !!!\n");
+		else break;
+	}
+
+	/* byte count */
+	while(1) {
+		readline( "Byte Count (up to 8KByte (0 - 0x1FFF)): " );
+		strcpy( cmd, console_buffer );
+		byteCount = simple_strtoul( cmd, NULL, 16 );
+		if( (byteCount >= 0x2000) || (byteCount == 0) ) printf("Bad value !!!\n");
+		else break;
+	}
+
+	if (mvPdmaChanAlloc(MV_PDMA_MEMORY, 0, &chan) != MV_OK) {
+		printf("Error allocating PDMA channel\n");
+		return 0;
+	}
+	/* wait for previous transfer completion */
+	while(mvPdmaChannelStateGet(&chan) == MV_PDMA_CHANNEL_RUNNING);
+	/* issue the transfer */
+	if (mvPdmaChanTransfer(&chan, MV_PDMA_MEM_TO_MEM, src, dst, byteCount, 0) != MV_OK) {
+		printf("Error with PDMA transfer\n");
+	}
+	/* wait for completion */
+	while(mvPdmaChannelStateGet(&chan) == MV_PDMA_CHANNEL_RUNNING);
+	if (mvPdmaChanFree(&chan) != MV_OK) {
+		printf("Error freeing PDMA channel\n");
+		return 0;
+	}
+
+	printf( "Done...\n" );
+	return 1;
+}
+
+U_BOOT_CMD(
+	pdma,      1,     1,      mvPdma_cmd,
+	"pdma	- Perform PDMA\n",
+	" \n"
+	"\tPerform PDMA memory to memory transaction with the parameters given by the user.\n"
+);
+
+#endif /* #if defined(MV_INCLUDE_PDMA) */
+
+#if defined(MV_INCLUDE_XOR)
+
+/******************************************************************************
+* Category     - DMA
+* Functionality- Perform a DMA transaction using the XOR engine
+* Need modifications (Yes/No) - No
+*****************************************************************************/
+#define XOR_TIMEOUT 0x8000000
+
+struct xor_channel_t
+{
+	MV_CRC_DMA_DESC *pDescriptor;
+	MV_ULONG	descPhyAddr;
+};
+
+#define XOR_CAUSE_DONE_MASK(chan) ((BIT0|BIT1) << (chan * 16) )
+void xor_waiton_eng(int chan)
+{
+    int timeout = 0;
+
+    while(!(MV_REG_READ(XOR_CAUSE_REG(XOR_UNIT(chan))) & XOR_CAUSE_DONE_MASK(XOR_CHAN(chan))))
+    {
+	if(timeout > XOR_TIMEOUT)
+	    goto timeout;
+	timeout++;
+    }
+
+    timeout = 0;
+    while(mvXorStateGet(chan) != MV_IDLE)
+    {
+	if(timeout > XOR_TIMEOUT)
+	    goto timeout;
+	timeout++;
+    }
+    /* Clear int */
+    MV_REG_WRITE(XOR_CAUSE_REG(XOR_UNIT(chan)), ~(XOR_CAUSE_DONE_MASK(XOR_CHAN(chan))));
+
+timeout:
+    if(timeout > XOR_TIMEOUT)
+    {
+	printf("ERR: XOR eng got timedout!!\n");
+    }
+    return;
+}
+int mvDma_cmd( cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[] )
+{
+	MV_8 cmd[20], c;
+	extern MV_8 console_buffer[];
+	MV_U32 chan, src, dst, byteCount, ctrlLo, ctrlOvrrid;
+	MV_UNIT_WIN_INFO win;
+    struct xor_channel_t channel;
+    MV_U8	*pVirt = (MV_U8*)mvOsIoUncachedAlignedMalloc(NULL, 32, sizeof(MV_XOR_DESC),
+					    &(channel.descPhyAddr), NULL);
+
+	MV_BOOL err;
+	/* XOR channel */
+	if( argc == 2 )
+		chan = simple_strtoul( argv[1], NULL, 16 );
+	else
+		chan = 0;
+
+	/* source address */
+	while(1) {
+		readline( "Physical Source Address (must be cache-line aligned): " );
+		strcpy( cmd, console_buffer );
+		src = simple_strtoul( cmd, NULL, 16 );
+		if ((src == 0xffffffff) || (src & 0x1F)) printf( "Bad address !!!\n" );
+		else break;
+	}
+
+	/* desctination address */
+	while(1) {
+		readline( "Physical Destination Address (must be cache-line aligned): " );
+		strcpy(cmd, console_buffer);
+		dst = simple_strtoul( cmd, NULL, 16 );
+		if ((dst == 0xffffffff) || (dst & 0x1F)) printf("Bad address !!!\n");
+		else break;
+	}
+
+	/* byte count */
+	while(1) {
+		readline( "Byte Count (up to (16M-1), must be a multiple of the cache-line): " );
+		strcpy( cmd, console_buffer );
+		byteCount = simple_strtoul( cmd, NULL, 16 );
+		if( (byteCount > 0xffffff) || (byteCount == 0) ) printf("Bad value !!!\n");
+		else break;
+	}
+	/* compose the command */
+	ctrlLo = (1 << XEXCR_REG_ACC_PROTECT_OFFS);
+#if defined(MV_CPU_BE)
+	ctrlLo |= (XEXCR_DES_SWP_MASK);
+/* 				| (1 << XEXCR_DRD_RES_SWP_OFFS)
+				| (1 << XEXCR_DWR_REQ_SWP_OFFS);
+*/
+#endif
+
+
+	/* set data transfer limit */
+	while(1) {
+		printf( "Source Data transfer limit(DTL):\n" );
+		printf( "(2) 32  bytes at a time.\n" );
+		printf( "(3) 64  bytes at a time.\n" );
+		printf( "(4) 128 bytes at a time.\n" );
+
+		c = getc();
+		printf( "%c\n", c );
+
+		err = MV_FALSE;
+
+		switch( c ) {
+			case 13: /* Enter */
+				ctrlLo |= (2 << XEXCR_SRC_BURST_LIMIT_OFFS);
+				printf( "32 bytes at a time.\n" );
+				break;
+			case '2':
+				ctrlLo |= (2 << XEXCR_SRC_BURST_LIMIT_OFFS);
+				break;
+			case '3':
+				ctrlLo |= (3 << XEXCR_SRC_BURST_LIMIT_OFFS);
+				break;
+			case '4':
+				ctrlLo |= (4 << XEXCR_SRC_BURST_LIMIT_OFFS);
+				break;
+			default:
+				printf( "Bad value !!!\n" );
+				err = MV_TRUE;
+		}
+
+		if( !err ) break;
+	}
+	while(1) {
+		printf( "Destination Data transfer limit(DTL):\n" );
+		printf( "(2) 32  bytes at a time.\n" );
+		printf( "(3) 64  bytes at a time.\n" );
+		printf( "(4) 128 bytes at a time.\n" );
+
+		c = getc();
+		printf( "%c\n", c );
+
+		err = MV_FALSE;
+
+		switch( c ) {
+			case 13: /* Enter */
+				ctrlLo |= (2 << XEXCR_DST_BURST_LIMIT_OFFS);
+				printf( "32 bytes at a time.\n" );
+				break;
+			case '2':
+				ctrlLo |= (2 << XEXCR_DST_BURST_LIMIT_OFFS);
+				break;
+			case '3':
+				ctrlLo |= (3 << XEXCR_DST_BURST_LIMIT_OFFS);
+				break;
+			case '4':
+				ctrlLo |= (4 << XEXCR_DST_BURST_LIMIT_OFFS);
+				break;
+			default:
+				printf( "Bad value !!!\n" );
+				err = MV_TRUE;
+		}
+
+		if( !err ) break;
+	}
+
+	/* set ovveride source option */
+
+	/* read the override control register */
+	ctrlOvrrid =  MV_REG_READ(XOR_OVERRIDE_CTRL_REG(chan));
+	ctrlOvrrid &= ~((1 << XEAOCR_SA0OVR_EN_OFFS) |
+					(3 << XEAOCR_SA0OVRPTR_OFFS) |
+					(1 << XEAOCR_DA0OVR_EN_OFFS) |
+					(3 << XEAOCR_DA0OVRPTR_OFFS));
+
+	while(1) {
+		printf( "Override Source:\n" );
+		printf( "(9) - no override (default)\n" );
+		mvXorTargetWinRead( chan,0, &win );
+		printf( "Win0 base=%08x, size=%llx, Attrib=0x%x, ID=%d\n",
+					win.addrWin.baseLow, win.addrWin.size,win.attrib,   win.targetId);
+
+		printf( "(0) - use Win0 (%s)\n",mvCtrlTargetNameGet(win.targetId));
+		mvXorTargetWinRead( chan,1, &win );
+		printf( "Win1 base=%08x, size=%llx, Attrib=0x%x, ID=%d\n",
+					win.addrWin.baseLow, win.addrWin.size,win.attrib,   win.targetId);
+
+		printf( "(1) - use Win1 (%s)\n",mvCtrlTargetNameGet(win.targetId));
+		mvXorTargetWinRead( chan,2, &win );
+		printf( "(2) - use Win2 (%s)\n",mvCtrlTargetNameGet(win.targetId));
+		mvXorTargetWinRead( chan,3, &win );
+		printf( "(3) - use Win3 (%s)\n",mvCtrlTargetNameGet(win.targetId));
+
+		c = getc();
+		printf( "%c\n", c );
+
+		err = MV_FALSE;
+
+		switch( c ) {
+			case 13: /* Enter */
+			case '9':
+				printf( "No override\n" );
+				break;
+			case '0':
+			case '1':
+			case '2':
+			case '3':
+				ctrlOvrrid |= (1 << XEAOCR_SA0OVR_EN_OFFS) |
+							 ((c - '0') << XEAOCR_SA0OVRPTR_OFFS);
+				break;
+			default:
+				printf("Bad value !!!\n");
+				err = MV_TRUE;
+		}
+
+		if( !err ) break;
+	}
+
+	/* set override destination option */
+	while(1) {
+		printf( "Override Destination:\n" );
+		printf( "(9) - no override (default)\n" );
+		mvXorTargetWinRead( chan,0, &win );
+		printf( "(0) - use Win0 (%s)\n",mvCtrlTargetNameGet(win.targetId));
+		mvXorTargetWinRead( chan,1, &win );
+		printf( "(1) - use Win1 (%s)\n",mvCtrlTargetNameGet(win.targetId));
+		mvXorTargetWinRead( chan,2, &win );
+		printf( "(2) - use Win2 (%s)\n",mvCtrlTargetNameGet(win.targetId));
+		mvXorTargetWinRead( chan,3, &win );
+		printf( "(3) - use Win3 (%s)\n",mvCtrlTargetNameGet(win.targetId));
+
+		c = getc();
+		printf( "%c\n", c );
+
+		err = MV_FALSE;
+
+	        switch( c ) {
+			case 13: /* Enter */
+			case '9':
+				printf( "No override\n" );
+				break;
+			case '0':
+			case '1':
+			case '2':
+			case '3':
+				ctrlOvrrid |= (1 << XEAOCR_DA0OVR_EN_OFFS) |
+							 ((c - '0') << XEAOCR_DA0OVRPTR_OFFS);
+				break;
+			default:
+				printf("Bad value !!!\n");
+				err = MV_TRUE;
+		}
+
+		if( !err ) break;
+	}
+
+
+	/* wait for previous transfer completion */
+	while (mvXorStateGet(chan) != MV_IDLE);
+
+	mvXorCtrlSet( chan, ctrlLo );
+
+	/* save the override control register */
+	MV_REG_WRITE(XOR_OVERRIDE_CTRL_REG(chan), ctrlOvrrid);
+
+	/* build the channel descriptor */
+	channel.pDescriptor = (MV_CRC_DMA_DESC *)pVirt;
+        channel.pDescriptor->srcAdd0 = src;
+        channel.pDescriptor->srcAdd1 = 0;
+	channel.pDescriptor->destAdd = dst;
+        channel.pDescriptor->byteCnt = byteCount;
+        channel.pDescriptor->nextDescPtr = 0;
+        channel.pDescriptor->status = BIT31;
+        channel.pDescriptor->descCommand = 0x0;
+
+	/* issue the transfer */
+	if (mvXorTransfer(chan, MV_DMA, channel.descPhyAddr) != MV_OK)
+		printf("Error in DMA(XOR) Operation\n");
+
+	/* wait for completion */
+	xor_waiton_eng(chan);
+
+	mvOsIoUncachedAlignedFree(NULL, sizeof(MV_XOR_DESC), channel.descPhyAddr, pVirt, 0);
+
+	printf( "Done...\n" );
+	return 1;
+}
+
+U_BOOT_CMD(
+	dma,      1,     1,      mvDma_cmd,
+	"dma	- Perform DMA using the XOR engine\n",
+	" \n"
+	"\tPerform DMA transaction with the parameters given by the user.\n"
+);
+#endif /* #if defined(MV_INCLUDE_XOR) */
+
+/******************************************************************************
+* Category     - Memory
+* Functionality- Displays the MV's Memory map
+* Need modifications (Yes/No) - Yes
+*****************************************************************************/
+int displayMemoryMap_cmd(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	mvCtrlAddrDecShow();
+	return 1;
+}
+
+U_BOOT_CMD(
+	map,      1,     1,      displayMemoryMap_cmd,
+	"map	- Display address decode windows\n",
+	" \n"
+	"\tDisplay controller address decode windows: CPU, PCI, Gig, DMA, XOR and COMM\n"
+);
+
+
+/******************************************************************************
+* Category     - MonExt
+*****************************************************************************/
+int printTempMsg(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	printf("This command allocated for monitor extinction\n");
+	return 1;
+}
+
+U_BOOT_CMD(
+	tempCmd0,      1,     1,      printTempMsg,
+	"tempCmd - This command allocated for monitor extinction\n",
+	" "
+);
+
+U_BOOT_CMD(
+	tempCmd1,      1,     1,      printTempMsg,
+	"tempCmd - This command allocated for monitor extinction\n",
+	" "
+);
+
+U_BOOT_CMD(
+	tempCmd2,      1,     1,      printTempMsg,
+	"tempCmd - This command allocated for monitor extinction\n",
+	" "
+);
+
+U_BOOT_CMD(
+	tempCmd3,      1,     1,      printTempMsg,
+	"tempCmd - This command allocated for monitor extinction\n",
+	" "
+);
+
+
+#if defined(MV_INC_BOARD_DDIM)
+
+/******************************************************************************
+* Category     - Memory
+* Functionality- Displays the SPD information for a givven dimm
+* Need modifications (Yes/No) -
+*****************************************************************************/
+
+int dimminfo_cmd(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
+{
+        int num = 0;
+
+        if (argc > 1) {
+                num = simple_strtoul (argv[1], NULL, 10);
+        }
+
+        printf("*********************** DIMM%d *****************************\n",num);
+
+        dimmSpdPrint(num);
+
+        printf("************************************************************\n");
+
+        return 1;
+}
+
+U_BOOT_CMD(
+        ddimm,      2,     1,      dimminfo_cmd,
+        "ddimm  - Display SPD Dimm Info\n",
+        " [0/1]\n"
+        "\tDisplay Dimm 0/1 SPD information.\n"
+);
+
+/******************************************************************************
+* Category     - Memory
+* Functionality- Copy the SPD information of dimm 0 to dimm 1
+* Need modifications (Yes/No) -
+*****************************************************************************/
+
+int spdcpy_cmd(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+
+        printf("Copy DIMM 0 SPD data into DIMM 1 SPD...");
+
+        if (MV_OK != dimmSpdCpy())
+		printf("\nDIMM SPD copy fail!\n");
+	else
+		printf("Done\n");
+
+        return 1;
+}
+
+U_BOOT_CMD(
+        spdcpy,      2,     1,      spdcpy_cmd,
+        "spdcpy  - Copy Dimm 0 SPD to Dimm 1 SPD \n",
+        ""
+        ""
+);
+#endif /* #if defined(MV_INC_BOARD_DDIM) */
+
+#ifdef CONFIG_MV_XSMI
+#include "eth-phy/mvEthPhyXsmi.h"
+#include "ctrlEnv/mvCtrlNetCompLib.h"
+
+int xsmi_phy_read_cmd(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	MV_U16 phyReg;
+
+	if (argc < 4) {
+		printf("command need three arguments\n");
+		cmd_usage(cmdtp);
+		return 1;
+	}
+	/* NSS need to be enabled before each access and disabled right after,
+	   in order to access the PHY registers via PSS window */
+	mvNetComplexNssSelect(1);
+	mvEthPhyXsmiRegRead(simple_strtoul(argv[1], NULL, 16),
+			simple_strtoul(argv[2], NULL, 16),
+			simple_strtoul(argv[3], NULL, 16), &phyReg);
+	mvNetComplexNssSelect(0);
+
+	printf("0x%x\n", phyReg);
+
+	return 1;
+}
+
+U_BOOT_CMD(
+	xsmiPhyRead,      4,     4, xsmi_phy_read_cmd,
+	"xsmiPhyRead	- Read Phy register through XSMI interface\n",
+	" <Phy Address> <Dev Address> <Reg Offset>. \n"
+	"\tRead the Phy register through XSMI interface. \n"
+);
+
+int xsmi_phy_write_cmd(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
+{
+	if (argc < 5) {
+		printf("command need four arguments\n");
+		cmd_usage(cmdtp);
+		return 1;
+	}
+	/* NSS need to be enabled before each access and disabled right after,
+	   in order to access the PHY registers via PSS window */
+	mvNetComplexNssSelect(1);
+	mvEthPhyXsmiRegWrite(simple_strtoul(argv[1], NULL, 16),
+			simple_strtoul(argv[2], NULL, 16),
+			simple_strtoul(argv[3], NULL, 16),
+			simple_strtoul(argv[4], NULL, 16));
+	mvNetComplexNssSelect(0);
+
+	return 1;
+}
+
+U_BOOT_CMD(
+	xsmiPhyWrite,      5,     5, xsmi_phy_write_cmd,
+	"xsmiPhyWrite	- Write Phy register through XSMI interface\n",
+	" <Phy Address> <Dev Address> <Reg Offset> <Value>. \n"
+	"\tWrite to Phy register through XSMI interface. \n"
+);
+
+#endif /* CONFIG_MV_XSMI */
+
+#if defined(CONFIG_MV_ETH_FW_DOWNLOAD)
+#include "eth-phy/mvEthFwDownload.h"
+
+/*******************************************************************************
+* mvEthXcvrFwDwnld - Downloads firmware to x3220/x3310 Ethernet transceiver PHY.
+*
+* DESCRIPTION:
+*	   This function downloads firmware to x3220/x3110 Ethernet transceiver PHY.
+*
+* INPUT:
+*	   fwImgAddr	   - FW image address in RAM.
+*	   fwImgSz		 - Size of FW image.
+*	   slaveImgAddr	- Slave image address in RAM.
+*	   slaveImgSz	  - Size of slave image.
+*	   xsmiPortNumber - XSMI port number
+*
+* OUTPUT:
+*	   TBD.
+*
+* RETURN:
+*	   MV_OK if download successful, MV_FAIL otherwise.
+*
+*******************************************************************************/
+static MV_STATUS mvEthXcvrFwDwnld(MV_U8 * fwImgAddr, MV_U32 fwImgSz, MV_U8 * slaveImgAddr,
+		 MV_U32 slaveImgSz, MV_U8 xsmiPortNumber) {
+	/* Check here the correctness of inputs, if required. */
+
+	CTX_PTR_TYPE	contextPtr = NULL;
+
+	MV_STATUS  retCode = MV_OK;
+	MV_U16	 errCode;
+
+	retCode = mvUpdateFlashImage(contextPtr, xsmiPortNumber, (MV_U8 *)fwImgAddr, (MV_U32)fwImgSz,
+									(MV_U8 *)slaveImgAddr, (MV_U32)slaveImgSz, &errCode);
+
+	printf("\n");
+
+	if (retCode == MV_FAIL) {
+		printf("mvUpdateFlashImage() failed.\n");
+		return MV_FAIL;
+	} else {
+		printf("mvUpdateFlashImage() succeeded.\n");
+	}
+
+	retCode = mvRemovePhyMdioDownloadMode(contextPtr, xsmiPortNumber);
+	if (retCode == MV_FAIL) {
+		printf("mvRemovePhyMdioDownloadMode() failed.\n");
+		return MV_FAIL;
+	} else {
+		printf("mvRemovePhyMdioDownloadMode() succeeded.\n");
+	}
+
+	return MV_OK;
+}
+
+/**
+ * eth_xcvr_fw_dwnld() - Handle the "ethXcvrFwDwnld" command-line command
+ * @cmdtp:  Command data struct pointer
+ * @flag:   Command flag
+ * @argc:   Command-line argument count
+ * @argv:   Array of command-line arguments
+ *
+ * Returns zero on success and one on error.
+ */
+static int eth_xcvr_fw_dwnld(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	MV_STATUS retCode = MV_OK;
+
+	if (argc < 6) {
+		printf("command expects five arguments\n");
+		cmd_usage(cmdtp);
+		return 1;
+	}
+	printf("Starting Ethernet transceiver PHY firmware download.\n"
+		"This process takes some time to complete...\n");
+	retCode = mvEthXcvrFwDwnld((MV_U8 *)simple_strtoul(argv[1], NULL, 16),
+		(MV_U32)simple_strtoul(argv[2], NULL, 10),
+		(MV_U8 *)simple_strtoul(argv[3], NULL, 16),
+		(MV_U32)simple_strtoul(argv[4], NULL, 10),
+		(MV_U8)simple_strtoul(argv[5], NULL, 10));
+
+	if (retCode == MV_FAIL) {
+		printf("Ethernet transceiver PHY firmware download failed.\n");
+		return 1;
+	}
+	else
+		printf("Ethernet transceiver PHY firmware download succeeded.\n");
+
+	return 0;
+}
+
+U_BOOT_CMD(
+        ethXcvrFwDwnld,      6,     0,  eth_xcvr_fw_dwnld,
+        "ethXcvrFwDwnld - Downloads x3220/3310 Ethernet transceiver PHY firmware.\n",
+        "\t<FW Image Addr, Hex> <FW Image Size, Bytes> <Slave Image Addr, Hex> <Slave Image Size, Bytes>"
+		" <XSMI Port Number>\n"
+		"\t(Marvell>> ethXcvrFwDwnld 0x2010000 167972 0x2000000 9948 8)\n"
+        "\tDownloads x3220/3310 Ethernet transceiver PHY firmware.\n"
+);
+
+#endif
+
+#if defined(MV_INCLUDE_GIG_ETH)
+
+#include "eth-phy/mvEthPhy.h"
+
+int phy_read_cmd(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	MV_U16 phyReg;
+
+#ifdef MV_PP_SMI
+	mvPPEthPhyRegRead(simple_strtoul(argv[1], NULL, 16),
+					simple_strtoul(argv[2], NULL, 16), &phyReg);
+#else
+	mvEthPhyRegRead(simple_strtoul( argv[1], NULL, 16 ),
+	                simple_strtoul( argv[2], NULL, 16), &phyReg);
+#endif
+
+	printf ("0x%x\n", phyReg);
+
+	return 1;
+}
+
+U_BOOT_CMD(
+	phyRead,      3,     3,      phy_read_cmd,
+	"phyRead	- Read Phy register\n",
+	" Phy_address Phy_offset. \n"
+	"\tRead the Phy register. \n"
+);
+
+
+int phy_write_cmd(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+#ifdef MV_PP_SMI
+	mvPPEthPhyRegWrite(simple_strtoul(argv[1], NULL, 16),
+						 simple_strtoul(argv[2], NULL, 16),
+						 simple_strtoul(argv[3], NULL, 16));
+#else
+	mvEthPhyRegWrite(simple_strtoul( argv[1], NULL, 16 ),
+					 simple_strtoul( argv[2], NULL, 16 ),
+					 simple_strtoul( argv[3], NULL, 16 ));
+#endif
+
+	return 1;
+}
+U_BOOT_CMD(
+	phyWrite,      4,     4,      phy_write_cmd,
+	"phyWrite	- Write Phy register\n",
+	" Phy_address Phy_offset value.\n"
+	"\tWrite to the Phy register.\n"
+);
+
+#if defined(MV_INCLUDE_SWITCH)
+#include "ethSwitch/mvSwitch.h"
+int switch_read_cmd(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	MV_U16 phyReg;
+
+	mvEthSwitchRegRead(simple_strtoul( argv[1], NULL, 16 ),
+					   simple_strtoul( argv[2], NULL, 16), simple_strtoul( argv[3], NULL, 16 ), &phyReg);
+
+	printf ("0x%x\n", phyReg);
+
+	return 1;
+}
+
+U_BOOT_CMD(
+	switchRegRead,      4,     4,      switch_read_cmd,
+	"switchRegRead	- Read switch register\n",
+	" Port_number Phy_address Phy_offset. \n"
+	"\tRead the switch register. \n"
+);
+
+
+int switch_write_cmd(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	mvEthSwitchRegWrite(simple_strtoul( argv[1], NULL, 16 ),
+						simple_strtoul( argv[2], NULL, 16 ), simple_strtoul( argv[3], NULL, 16 ),
+										simple_strtoul( argv[4], NULL, 16 ));
+
+	return 1;
+}
+
+U_BOOT_CMD(
+	switchRegWrite,      5,     5,      switch_write_cmd,
+	"switchRegWrite	- Write switch register\n",
+	" Port_number Phy_address Phy_offset value.\n"
+	"\tWrite to the switch register.\n"
+);
+
+
+int switch_phy_read_cmd(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	MV_U16 phyReg;
+
+	mvEthSwitchPhyRegRead(simple_strtoul( argv[1], NULL, 16 ), simple_strtoul( argv[2], NULL, 16 ),
+						  simple_strtoul( argv[3], NULL, 16 ), &phyReg);
+
+	printf ("0x%x\n", phyReg);
+	return 1;
+}
+
+U_BOOT_CMD(
+	switchPhyRegRead,      4,     4,      switch_phy_read_cmd,
+	"- Read switch register\n",
+	" SW_on_port Port_number Phy_offset. \n"
+	"\tRead the switch register. \n"
+);
+
+int switch_phy_write_cmd(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	mvEthSwitchPhyRegWrite(simple_strtoul( argv[1], NULL, 16 ),
+						   simple_strtoul( argv[2], NULL, 16 ), simple_strtoul( argv[3], NULL, 16 ),
+										   simple_strtoul( argv[4], NULL, 16 ));
+
+	return 1;
+}
+
+U_BOOT_CMD(
+	switchPhyRegWrite,      5,     4,      switch_phy_write_cmd,
+	"- Write switch register\n",
+	" SW_on_port Port_number Phy_offset value.\n"
+	"\tWrite to the switch register.\n"
+);
+
+int switch_cntread_cmd(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	MV_U16 data;
+	MV_U32 port;
+	MV_U32 i;
+
+	port = simple_strtoul(argv[1], NULL, 16);
+	printf("Switch on port = %d.\n", port);
+	for(i = 0; i < 7; i++) {
+		/* Set egress counter */
+		mvEthSwitchRegWrite(port, 0x1B, 0x1D, 0xC400 | ((i + 1) << 5) | 0xE);
+		do {
+			mvEthSwitchRegRead(port, 0x1B, 0x1D, &data);
+		} while(data & 0x8000);
+		/* Read egress counter */
+		mvEthSwitchRegRead(port, 0x1B, 0x1F, &data);
+		printf("Port %d: Egress 0x%x, Ingress ", i, data);
+		/* Set ingress counter */
+		mvEthSwitchRegWrite(port, 0x1B, 0x1D, 0xC400 | ((i + 1) << 5) | 0x0);
+		do {
+			mvEthSwitchRegRead(port, 0x1B, 0x1D, &data);
+		} while(data & 0x8000);
+		/* Read egress counter */
+		mvEthSwitchRegRead(port, 0x1B, 0x1F, &data);
+		printf("0x%x.\n", data);
+	}
+
+	/* Clear all counters */
+	mvEthSwitchRegWrite(port, 0x1B, 0x1D, 0x94C0);
+	do {
+		mvEthSwitchRegRead(port, 0x1B, 0x1D, &data);
+	} while(data & 0x8000);
+
+	return 1;
+}
+
+U_BOOT_CMD(
+	switchCountersRead,      2,     2,      switch_cntread_cmd,
+	"switchCntPrint	- Read switch port counters.\n",
+	" MAC_Port. \n"
+	"\tRead the switch ports counters. \n"
+);
+#elif defined(MV_SWITCH_ADDRESS_COMPLETION) /* MV_INCLUDE_SWITCH */
+
+#define SWITCH_REGS_BASE_ADDR_MASK		0xFC000000
+#define SWITCH_ADDR_COMPL_MSB_VAL(addr)	((addr >> 24) & 0xFF)
+#define SWITCH_ADDR_COMPL_SHIFT(addr)	(((addr >> 24) & 0x3) << 3)
+#define SWITCH_BUS_ADDR(addr)			((~SWITCH_REGS_BASE_ADDR_MASK & addr) |\
+							(SWITCH_WIN_BASE_ADDR_GET() & SWITCH_REGS_BASE_ADDR_MASK))
+
+/*******************************************************************************
+* SWITCH_WIN_BASE_ADDR_GET
+*
+* DESCRIPTION:
+* This function returns the base address of switch registers window
+*
+*
+* RETURN:
+*	base address of switch registers window
+*
+*******************************************************************************/
+static __inline MV_U32 SWITCH_WIN_BASE_ADDR_GET(MV_VOID)
+{
+	static MV_U32	baseAddr;
+	baseAddr = MV_REG_READ(AHB_TO_MBUS_WIN_BASE_REG(SWITCH_WIN_ID));
+	return baseAddr;
+}
+
+/*******************************************************************************
+* SWITCH_ADDR_COMPL_SET
+*
+* DESCRIPTION:
+* This function configures address completion register
+*
+* INPUT:
+*	addr	- the address to access indirectly
+*
+*******************************************************************************/
+static __inline MV_STATUS SWITCH_ADDR_COMPL_SET(MV_U32 addr)
+{
+	MV_U32	rVal;
+	/* Configure address completion region REG using SERDES memory window */
+	rVal  = MV_MEMIO32_READ(SWITCH_WIN_BASE_ADDR_GET());
+	rVal &= ~(0xFF << SWITCH_ADDR_COMPL_SHIFT(addr));
+	rVal |= SWITCH_ADDR_COMPL_MSB_VAL(addr) << SWITCH_ADDR_COMPL_SHIFT(addr);
+	MV_MEMIO32_WRITE(SWITCH_WIN_BASE_ADDR_GET(), rVal);
+	return MV_OK;
+}
+
+/*******************************************************************************
+* mvSwitchRegisterGet
+*
+* DESCRIPTION:
+* This function reads switch register with address completion
+*
+* INPUT:
+*	address		- the address to read indirectly
+*	mask		- mask of the read data
+*
+* OUTPUT:
+*	data		- the register's data value
+*
+*
+*******************************************************************************/
+void mvSwitchRegisterGet(MV_U32 address, MV_U32 *data, MV_U32 mask)
+{
+	SWITCH_ADDR_COMPL_SET(address); /* Only MSB is important, serdes number offset does not matter */
+	*data  = MV_MEMIO32_READ(SWITCH_BUS_ADDR(address)) & mask;
+}
+
+/*******************************************************************************
+* switchRegRead
+*
+* DESCRIPTION:
+* This command reads switch register with address completion
+*
+*******************************************************************************/
+int switch_read_cmd(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	MV_U32 regVal;
+
+	mvSwitchRegisterGet(simple_strtoul(argv[1], NULL, 16), &regVal, 0xFFFF);
+	printf ("0x%x\n", regVal);
+
+	return 1;
+}
+U_BOOT_CMD(
+	switchRegRead,      2,     2,      switch_read_cmd,
+"switchRegRead	- Read switch register, using Address completion\n",
+" Reg_offset. \n"
+"\tRead the switch register, using Address completion. \n"
+);
+
+/*******************************************************************************
+* mvSwitchRegisterSet
+*
+* DESCRIPTION:
+* This function writes to switch register with address completion
+*
+*	address		- the address to write to indirectly
+*	data		- the data to write
+*	mask		- mask of the write data
+*
+*******************************************************************************/
+void mvSwitchRegisterSet(MV_U32 address, MV_U32 data, MV_U32 mask)
+{
+	MV_U32 regData;
+
+	if ((mask & 0xFFFF) != 0xFFFF) { /* since switch registers are 16 bits - check only the relevant bits */
+		mvSwitchRegisterGet(address, &regData, ~mask);
+		regData |= (data & mask);
+	} else
+		regData = data;
+
+	SWITCH_ADDR_COMPL_SET(address); /* Only MSB is important, serdes number offset does not matter */
+
+	MV_MEMIO32_WRITE(SWITCH_BUS_ADDR(address), regData);
+}
+
+/*******************************************************************************
+* switchRegWrite
+*
+* DESCRIPTION:
+* This command writes to switch register with address completion
+*
+*******************************************************************************/
+int switch_write_cmd(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	mvSwitchRegisterSet(simple_strtoul(argv[1], NULL, 16), simple_strtoul(argv[2], NULL, 16), 0xFFFF);
+
+	return 1;
+}
+
+U_BOOT_CMD(
+	switchRegWrite,      3,     3,      switch_write_cmd,
+"switchRegWrite	- Write to switch register, using Address completion\n",
+" Reg_offset Reg_data. \n"
+"\tWrite to the switch register, using Address completion. \n"
+);
+#endif /* MV_SWITCH_ADDRESS_COMPLETION */
+#endif /* #if defined(MV_INCLUDE_GIG_ETH) */
+
+#define REG_SDRAM_CONFIG_ADDR					0x1400
+#define REG_DDR3_RANK_CTRL_ADDR					0x15E0
+#define REG_READ_DATA_SAMPLE_DELAYS_ADDR		0x1538
+#define REG_READ_DATA_READY_DELAYS_ADDR			0x153C
+#define REG_PHY_REGISTRY_FILE_ACCESS_ADDR		0x16A0
+#define REG_PHY_DATA		0
+#define REG_PHY_CTRL		1
+
+/******************************************************************************
+* Category     - DDR3 Training
+* Functionality- The commands prints the results of the DDR3 Training
+* Need modifications (Yes/No) - no
+*****************************************************************************/
+#ifdef MV_DDR_TRAINING_CMD_NEW_TIP
+unsigned int trainingReadPhyReg(int uiRegAddr, int uiPup, int type)
+{
+	unsigned int uiReg;
+    unsigned int addrLow = 0x3F & uiRegAddr;
+    unsigned int addrHi = ((0xC0 & uiRegAddr) >> 6);
+
+	uiReg = (1 << 31) + (uiPup << 22) + (type << 26) + (addrHi << 28) + (addrLow << 16);
+	MV_REG_WRITE(REG_PHY_REGISTRY_FILE_ACCESS_ADDR,uiReg&0x7FFFFFFF);
+	MV_REG_WRITE(REG_PHY_REGISTRY_FILE_ACCESS_ADDR,uiReg);
+
+	do {
+		uiReg = ((MV_REG_READ(REG_PHY_REGISTRY_FILE_ACCESS_ADDR)) & (1 << 31));
+	} while (uiReg);				/* Wait for '0' to mark the end of the transaction */
+
+	uiReg = MV_REG_READ(REG_PHY_REGISTRY_FILE_ACCESS_ADDR);
+	uiReg = uiReg & 0xFFFF;
+
+	return uiReg;
+}
+
+int training_cmd( cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[] )
+{
+	MV_U32 uiCsEna,uiCs,uiReg,uiPup,uiPhase,uiDelay,
+			uiRdRdyDly,uiRdSmplDly,uiDq, uiCentralTxRes, uiCentralRxRes;
+	MV_U32 uiPupNum;
+
+	uiCsEna = MV_REG_READ(REG_DDR3_RANK_CTRL_ADDR) & 0xF;
+	printf("DDR3 Training results: \n");
+
+	uiPupNum = 5;
+
+	for (uiCs = 0; uiCs < 4; uiCs++) {
+		if (uiCsEna & (1 << uiCs)) {
+			printf("CS: %d \n", uiCs);
+			for(uiPup = 0; uiPup < uiPupNum; uiPup++) {
+
+				uiReg = trainingReadPhyReg(0 + uiCs*4,uiPup, REG_PHY_DATA);
+				uiPhase = (uiReg >> 6) & 0x7;
+				uiDelay = uiReg & 0x1F;
+				printf("Write Leveling: PUP: %d, Phase: %d, Delay: %d\n",uiPup,uiPhase,uiDelay);
+			}
+
+			for (uiPup = 0; uiPup < uiPupNum; uiPup++) {
+
+				uiReg = trainingReadPhyReg(2 + uiCs*4,uiPup, REG_PHY_DATA);
+				uiPhase = (uiReg >> 6) & 0x7;
+				uiDelay = uiReg & 0x1F;
+				printf("Read Leveling: PUP: %d, Phase: %d, Delay: %d\n",uiPup, uiPhase, uiDelay);
+			}
+
+			uiRdRdyDly = ((MV_REG_READ(REG_READ_DATA_READY_DELAYS_ADDR) >> (8*uiCs)) & 0x1F);
+			uiRdSmplDly = ((MV_REG_READ(REG_READ_DATA_SAMPLE_DELAYS_ADDR) >> (8*uiCs)) & 0x1F);
+			printf("Read Sample Delay:\t%d\n",uiRdSmplDly);
+			printf("Read Ready Delay:\t%d\n",uiRdRdyDly);
+
+			/* PBS */
+			if (uiCs == 0) {
+				for (uiPup=0;uiPup<uiPupNum;uiPup++) {
+					for (uiDq = 0; uiDq < 10 ;uiDq++) {
+						if (uiDq == 9)
+							uiDq++;
+
+						uiReg = trainingReadPhyReg(0x10+uiDq+uiCs*0x12,uiPup, REG_PHY_DATA);
+						uiDelay = uiReg & 0x1F;
+
+						if (uiDq == 0)
+							printf("PBS TX: PUP: %d: ", uiPup);
+						printf("%d ", uiDelay);
+					}
+					printf("\n");
+				}
+				for(uiPup=0; uiPup < uiPupNum; uiPup++) {
+					for(uiDq = 0; uiDq < 9; uiDq++) {
+						uiReg = trainingReadPhyReg(0x50+uiDq+uiCs*0x12,uiPup, REG_PHY_DATA);
+						uiDelay = uiReg & 0x1F;
+
+						if (uiDq == 0)
+							printf("PBS RX: PUP: %d: ", uiPup);
+						printf("%d ", uiDelay);
+					}
+					printf("\n");
+				}
+			}
+
+			/*Read Centralization windows sizes for Scratch PHY registers*/
+			for(uiPup = 0; uiPup < uiPupNum; uiPup++)
+			{
+				uiReg = trainingReadPhyReg(0xC0+uiCs,uiPup, REG_PHY_DATA);
+				uiCentralRxRes = uiReg >> 5;
+				uiCentralTxRes = uiReg & 0x1F;
+				printf("Central window size for PUP %d is %d(RX) and %d(TX)\n", uiPup, uiCentralRxRes, uiCentralTxRes);
+			}
+		}
+	}
+
+	return 1;
+}
+#else
+int training_cmd( cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[] )
+{
+#define REG_PHY_OP_OFFS							31
+#define REG_PHY_CS_OFFS							16
+#define REG_PHY_PUP_OFFS						22
+#define CENTRAL_RESULTS_PUP0					0x1504
+#define CENTRAL_RESULTS_PUP1					0x150C
+#define CENTRAL_RESULTS_PUP2					0x1514
+#define CENTRAL_RESULTS_PUP3					0x151C
+
+	MV_U32 uiCsEna,uiCs,uiReg,uiPup,uiPhase,uiDelay,
+			uiDQS,uiRdRdyDly,uiRdSmplDly,uiDq;
+	MV_U32 uiPupNum;
+
+	uiCsEna = MV_REG_READ(REG_DDR3_RANK_CTRL_ADDR) & 0xF;
+	printf("DDR3 Training results: \n");
+
+	uiPupNum = 4;
+
+	for (uiCs = 0; uiCs < 4; uiCs++) {
+		if (uiCsEna & (1 << uiCs)) {
+			printf("CS: %d \n", uiCs);
+			for(uiPup = 0; uiPup < uiPupNum; uiPup++) {
+				uiReg = (1 << REG_PHY_OP_OFFS) | (uiPup << REG_PHY_PUP_OFFS) | ((0x4*uiCs) << REG_PHY_CS_OFFS);
+				MV_REG_WRITE(REG_PHY_REGISTRY_FILE_ACCESS_ADDR,uiReg);  /* 0x16A0 */
+
+				do {
+					uiReg = ((MV_REG_READ(REG_PHY_REGISTRY_FILE_ACCESS_ADDR)) & (1 << REG_PHY_OP_OFFS));
+				} while (uiReg);				/* Wait for '0' to mark the end of the transaction */
+
+				uiReg = MV_REG_READ(REG_PHY_REGISTRY_FILE_ACCESS_ADDR);  /* 0x16A0 */
+				uiPhase = (uiReg >> 6) & 0x7;
+				uiDelay = uiReg & 0x1F;
+
+				uiReg = (1 << REG_PHY_OP_OFFS) | (uiPup << REG_PHY_PUP_OFFS) | ((0x4*uiCs+0x1) << REG_PHY_CS_OFFS);
+				MV_REG_WRITE(REG_PHY_REGISTRY_FILE_ACCESS_ADDR,uiReg);  /* 0x16A0 */
+
+				do {
+					uiReg = ((MV_REG_READ(REG_PHY_REGISTRY_FILE_ACCESS_ADDR)) & (1 << REG_PHY_OP_OFFS)); 
+				} while (uiReg);				/* Wait for '0' to mark the end of the transaction */
+
+				uiReg = MV_REG_READ(REG_PHY_REGISTRY_FILE_ACCESS_ADDR);  /* 0x16A0 */
+				uiDQS = (uiReg & 0x3F) - uiDelay;
+
+				printf("Write Leveling: PUP: %d, Phase: %d, Delay: %d, DQS: %d \n",uiPup,uiPhase,uiDelay,uiDQS);
+			}
+
+			for (uiPup = 0; uiPup < uiPupNum; uiPup++) {
+				uiReg = (1 << REG_PHY_OP_OFFS) | (uiPup << REG_PHY_PUP_OFFS) | ((0x4*uiCs+0x2) << REG_PHY_CS_OFFS);
+				MV_REG_WRITE(REG_PHY_REGISTRY_FILE_ACCESS_ADDR,uiReg);  /* 0x16A0 */
+
+				do {
+					uiReg = ((MV_REG_READ(REG_PHY_REGISTRY_FILE_ACCESS_ADDR)) & (1 << REG_PHY_OP_OFFS));
+				} while (uiReg);				/* Wait for '0' to mark the end of the transaction */
+
+				uiReg = MV_REG_READ(REG_PHY_REGISTRY_FILE_ACCESS_ADDR);  /* 0x16A0 */
+				uiPhase = (uiReg >> 6) & 0x7;
+				uiDelay = uiReg & 0x1F;
+
+				uiReg = (1 << REG_PHY_OP_OFFS) | (uiPup << REG_PHY_PUP_OFFS) | ((0x4*uiCs+0x3) << REG_PHY_CS_OFFS);
+				MV_REG_WRITE(REG_PHY_REGISTRY_FILE_ACCESS_ADDR,uiReg);  /* 0x16A0 */
+
+				do {
+					uiReg = ((MV_REG_READ(REG_PHY_REGISTRY_FILE_ACCESS_ADDR)) & (1 << REG_PHY_OP_OFFS)); 
+				} while (uiReg);				/* Wait for '0' to mark the end of the transaction */
+
+				uiReg = MV_REG_READ(REG_PHY_REGISTRY_FILE_ACCESS_ADDR);  /* 0x16A0 */
+				uiDQS = uiReg & 0x3F;
+
+				printf("Read Leveling: PUP: %d, Phase: %d, Delay: %d, DQS: %d \n",uiPup, uiPhase, uiDelay, uiDQS);
+			}
+
+			uiRdRdyDly = ((MV_REG_READ(REG_READ_DATA_READY_DELAYS_ADDR) >> (8*uiCs)) & 0x1F);
+			uiRdSmplDly = ((MV_REG_READ(REG_READ_DATA_SAMPLE_DELAYS_ADDR) >> (8*uiCs)) & 0x1F);
+			printf("Read Sample Delay:\t%d\n",uiRdSmplDly);
+			printf("Read Ready Delay:\t%d\n",uiRdRdyDly);
+
+			/* PBS */
+			if (uiCs == 0) {
+				for (uiPup=0;uiPup<uiPupNum;uiPup++) {
+					for (uiDq = 0; uiDq < 10 ;uiDq++) {
+						if (uiDq == 9)
+							uiDq++;
+						uiReg = (1 << REG_PHY_OP_OFFS) | (uiPup << REG_PHY_PUP_OFFS) | ((0x10+uiDq) << REG_PHY_CS_OFFS);
+						MV_REG_WRITE(REG_PHY_REGISTRY_FILE_ACCESS_ADDR,uiReg);  /* 0x16A0 */
+
+						do {
+							uiReg = ((MV_REG_READ(REG_PHY_REGISTRY_FILE_ACCESS_ADDR)) & (1 << REG_PHY_OP_OFFS));
+						} while (uiReg);				/* Wait for '0' to mark the end of the transaction */
+
+						uiReg = MV_REG_READ(REG_PHY_REGISTRY_FILE_ACCESS_ADDR);  /* 0x16A0 */
+						uiDelay = uiReg & 0x1F;
+
+						if (uiDq == 0)
+							printf("PBS TX: PUP: %d: ", uiPup);
+ 						if (uiDq < 8)
+							printf("DQ:%d-%d,", uiDq, uiDelay);
+						else if (uiDq == 8)
+							printf("\nPBS TX: PUP: %d, DQS-%d \n", uiPup, uiDelay);
+						else
+							printf("PBS TX: PUP: %d, DM-%d \n", uiPup, uiDelay);
+					}
+				}
+				for(uiPup=0; uiPup < uiPupNum; uiPup++) {
+					for(uiDq = 0; uiDq < 9; uiDq++) {
+						uiReg = (1 << REG_PHY_OP_OFFS) | (uiPup << REG_PHY_PUP_OFFS) | ((0x30+uiDq) << REG_PHY_CS_OFFS);
+						MV_REG_WRITE(REG_PHY_REGISTRY_FILE_ACCESS_ADDR,uiReg);  /* 0x16A0 */
+
+						do {
+							uiReg = ((MV_REG_READ(REG_PHY_REGISTRY_FILE_ACCESS_ADDR)) & (1 << REG_PHY_OP_OFFS));
+						} while (uiReg);				/* Wait for '0' to mark the end of the transaction */
+
+						uiReg = MV_REG_READ(REG_PHY_REGISTRY_FILE_ACCESS_ADDR);  /* 0x16A0 */
+						uiDelay = uiReg & 0x1F;
+
+						if (uiDq == 0)
+							printf("PBS RX: PUP: %d: ", uiPup);
+ 						if (uiDq < 8)
+							printf("DQ:%d-%d,", uiDq, uiDelay);
+						if (uiDq == 8)
+							printf("\nPBS RX: PUP: %d, DQS-%d \n", uiPup, uiDelay);
+					}
+				}
+			}
+		}
+	}
+
+	return 1;
+}
+#endif
+
+U_BOOT_CMD(
+		   training,      1,     1,      training_cmd,
+	 "training	- prints the results of the DDR3 Training.\n",""
+ );
+
+#ifdef MV_DDR_TRAINING_CMD_NEW_TIP
+
+#define WL_PHY_REG                        (0x0)
+#define WRITE_CENTRALIZATION_PHY_REG      (0x1)
+#define RL_PHY_REG                        (0x2)
+#define READ_CENTRALIZATION_PHY_REG       (0x3)
+#define RESULT_DB_PHY_REG_ADDR			  0xC0
+#define PAD_CONFIG_PHY_REG                (0xA8)
+
+/******************************************************************************
+* Category     - DDR3 Training
+* Functionality- The commands prints the row data of stability results for DDR3 Training
+* Need modifications (Yes/No) - no
+*****************************************************************************/
+MV_U32 dminPhyRegTable[20][2] = {
+					{0	,0xC0},
+					{0	,0xC1},
+					{0	,0xC2},
+					{0	,0xC3},
+					{0	,0xC4},
+					{1	,0xC0},
+					{1	,0xC1},
+					{1	,0xC2},
+					{1	,0xC3},
+					{1	,0xC4},
+					{2	,0xC0},
+					{2	,0xC1},
+					{2	,0xC2},
+					{2	,0xC3},
+					{2	,0xC4},
+					{0	,0xC5},
+					{1	,0xC5},
+					{2	,0xC5},
+					{0	,0xC6},
+					{1	,0xC6}};
+int trainingStability_cmd( cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[] )
+{
+	MV_U32 uiCsEna, interfaceId=0, csindex = 0,busId=0, padIndex=0;
+	MV_U32 regData, regData1;
+
+	uiCsEna = MV_REG_READ(REG_DDR3_RANK_CTRL_ADDR) & 0xF;
+
+	/*Title print*/
+	for(interfaceId = 0; interfaceId < 1; interfaceId++)
+	{
+		printf("Title: I/F# , Tj,CalibrationN0,CalibrationP0,CalibrationN1,CalibrationP1,CalibrationN2,CalibrationP2,");
+		for(csindex = 0; csindex < 4; csindex++)
+		{
+			if (!(uiCsEna & (1 << csindex))) continue;
+			printf("CS%d , ",csindex);
+			for(busId = 0; busId < 5; busId++)
+			{
+				#ifdef CONFIG_DDR3/*DDR3*/
+					printf("VWTx,VWRx,WL_tot,WL_ADLL,WL_PH,RL_Tot,RL_ADLL,RL_PH,RL_Smp,CenTx,CenRx,Vref,DQVref,");
+				#else/*DDR4*/
+					printf("DminTx,AreaTx,DminRx,AreaRx,WL_tot,WL_ADLL,WL_PH,RL_Tot,RL_ADLL,RL_PH,RL_Smp,CenTx,CenRx,Vref,DQVref,");
+				#endif
+				#ifdef CONFIG_DDR3
+				#else
+				for(padIndex = 0; padIndex < 10; padIndex++)
+				{
+					printf("DC-Pad%d,",padIndex);
+				}
+				#endif
+				for(padIndex = 0; padIndex < 10; padIndex++)
+				{
+					printf("PBSTx-Pad%d,",padIndex);
+				}
+				for(padIndex = 0; padIndex < 10; padIndex++)
+				{
+					printf("PBSRx-Pad%d,",padIndex);
+				}
+			}
+		}
+	}
+	printf("\n");
+
+	/*Data print*/
+	for(interfaceId = 0; interfaceId < 1; interfaceId++)
+	{
+		printf("Data: %d,%d,",interfaceId,mvCtrlGetJuncTemp());//add Junction Temperature
+		regData = MV_REG_READ(0x14C8);
+		printf("%d,%d,",((regData&0x3F0)>>4),((regData&0xFC00)>>10));
+		regData = MV_REG_READ(0x17C8);
+		printf("%d,%d,",((regData&0x3F0)>>4),((regData&0xFC00)>>10));
+		regData = MV_REG_READ(0x1DC8);
+		printf("%d,%d,",((regData&0x3F0000)>>16),((regData&0xFC00000)>>22));
+		for(csindex = 0; csindex < 4; csindex++)
+		{
+			if (!(uiCsEna & (1 << csindex))) continue;
+			printf("CS%d , ",csindex);
+			for(busId = 0; busId <5; busId++)
+			{
+				#ifdef CONFIG_DDR3/*DDR3*/
+				regData = trainingReadPhyReg(RESULT_DB_PHY_REG_ADDR+csindex,busId, REG_PHY_DATA);
+				printf("%d,%d,",(regData&0x1F),((regData&0x3E0)>>5));
+				#else/*DDR4*/
+				/*DminTx, areaTX*/
+				regData = trainingReadPhyReg(RESULT_DB_PHY_REG_ADDR+csindex,busId, REG_PHY_DATA);
+				regData1 = trainingReadPhyReg(dminPhyRegTable[csindex*5+busId][1],dminPhyRegTable[csindex*5+busId][0], REG_PHY_CTRL);
+				printf("%d,%d,",2*(regData1&0xFF),regData);
+				/*DminRx, areaRX*/
+				regData = trainingReadPhyReg(RESULT_DB_PHY_REG_ADDR+csindex+4,busId, REG_PHY_DATA);
+				regData1 = trainingReadPhyReg(dminPhyRegTable[csindex*5+busId][1],dminPhyRegTable[csindex*5+busId][0], REG_PHY_CTRL);
+				printf("%d,%d,",2*(regData1>>8),regData);
+				#endif
+				/*WL*/
+				regData = trainingReadPhyReg(WL_PHY_REG+csindex*4,busId, REG_PHY_DATA);
+				printf("%d,%d,%d,",(regData&0x1F)+((regData&0x1C0)>>6)*32,(regData&0x1F),(regData&0x1C0)>>6);
+				/*RL*/
+				regData1 = MV_REG_READ(REG_READ_DATA_SAMPLE_DELAYS_ADDR);
+				regData1 = (regData1&(0xF<<(4*csindex))) >> (4*csindex);
+				regData = trainingReadPhyReg(RL_PHY_REG+csindex*4,busId, REG_PHY_DATA);
+				printf("%d,%d,%d,%d,",(regData&0x1F)+((regData&0x1C0)>>6)*32 + regData1*64,(regData&0x1F),((regData&0x1C0)>>6),regData1);
+				/*Centralization*/
+				regData = trainingReadPhyReg(WRITE_CENTRALIZATION_PHY_REG+csindex*4,busId, REG_PHY_DATA);
+				printf("%d,",(regData&0x3F));
+				regData = trainingReadPhyReg(READ_CENTRALIZATION_PHY_REG+csindex*4,busId, REG_PHY_DATA);
+				printf("%d,",(regData&0x1F));
+				/*Vref */
+				regData = trainingReadPhyReg(PAD_CONFIG_PHY_REG+csindex,busId, REG_PHY_DATA);
+				printf("%d,",(regData&0x7));
+				/*DQVref*/
+				/* Need to add the Read Function from device*/
+				printf("%d,",0);
+				#ifndef CONFIG_DDR3
+				for(padIndex = 0; padIndex < 11; padIndex++)
+				{
+					regData = trainingReadPhyReg(0xD0+12*csindex+padIndex,busId, REG_PHY_DATA);
+					printf("%d,",(regData&0x3F));
+				}
+				#endif
+				for(padIndex = 0; padIndex < 11; padIndex++)
+				{
+					regData = trainingReadPhyReg(0x10+16*csindex+padIndex,busId, REG_PHY_DATA);
+					printf("%d,",(regData&0x3F));
+				}
+				for(padIndex = 0; padIndex < 11; padIndex++)
+				{
+					regData = trainingReadPhyReg(0x50+16*csindex+padIndex,busId, REG_PHY_DATA);
+					printf("%d,",(regData&0x3F));
+				}
+			}
+		}
+	}
+	printf("\n");
+
+	return MV_OK;
+}
+
+U_BOOT_CMD(
+		   trainingStability,      1,     1,      trainingStability_cmd,
+	 "training	- prints the results of the DDR3 Training.\n",""
+ );
+
+#endif/*NewTip*/
+
+#endif /* MV_TINY */
+
+int whoAmI_cmd( cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[] )
+{
+	printf("cpu #: %d", whoAmI());
+	return 1;
+}
+
+U_BOOT_CMD(
+		   whoAmI,      2,     1,      whoAmI_cmd,
+	 "- reading CPU ID\n",
+	""
+		  );

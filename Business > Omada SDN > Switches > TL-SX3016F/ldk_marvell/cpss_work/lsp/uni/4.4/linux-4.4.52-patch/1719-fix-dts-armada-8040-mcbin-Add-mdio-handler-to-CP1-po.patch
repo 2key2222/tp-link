@@ -1,0 +1,53 @@
+From b8cceb2cc8e7de6fe616c1472f2dff3f26c5d51b Mon Sep 17 00:00:00 2001
+From: Stefan Chulski <stefanc@marvell.com>
+Date: Sun, 28 May 2017 13:59:41 +0300
+Subject: [PATCH 1719/2241] fix: dts: armada-8040-mcbin: Add mdio handler to
+ CP1 port1
+
+This patch enable smi mdio on CP0 and connect CP1 port1
+to CP0 PHYid 0 smi mdio.
+On u-boot2017 phy configured only for used ports, so if CP1 port1
+wasn't used in u-boot -> port won't work in Linux.
+From this patch CP1 port1 not depend on u-boot PHY configuration.
+
+Change-Id: I7bf068ae4e5943b1b9ba3a01b0c88db01d2ee469
+Signed-off-by: Stefan Chulski <stefanc@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/39998
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Reviewed-by: Nadav Haklai <nadavh@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/40059
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-8040-mcbin.dts | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-8040-mcbin.dts b/arch/arm64/boot/dts/marvell/armada-8040-mcbin.dts
+index 324943e..5c6c394 100644
+--- a/arch/arm64/boot/dts/marvell/armada-8040-mcbin.dts
++++ b/arch/arm64/boot/dts/marvell/armada-8040-mcbin.dts
+@@ -118,6 +118,13 @@
+ 					status = "okay";
+ 				};
+ 			};
++			mdio@12a200 {
++				#address-cells = <1>;
++				#size-cells = <0>;
++				smi_phy0: ethernet-phy@0 {
++					reg = <0>;
++				};
++			};
+ 			mdio@15b000 {
+ 				#address-cells = <1>;
+ 				#size-cells = <0>;
+@@ -212,6 +219,7 @@
+ 					phy-mode = "sgmii"; /* lane-0 */
+ 					phys = <&comphy1 0 COMPHY_SGMII1>;
+ 					phy-names = "comphy";
++					phy = <&smi_phy0>;
+ 				};
+ 				emac3_1: mac3 {
+ 					phy-mode = "sgmii"; /* lane-5 */
+-- 
+2.7.4
+

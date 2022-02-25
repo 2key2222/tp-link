@@ -1,0 +1,34 @@
+From 2cb8e99dd184465d3b73834654f372de3abec64c Mon Sep 17 00:00:00 2001
+From: Victor Gu <xigu@marvell.com>
+Date: Wed, 11 Oct 2017 18:32:00 +0800
+Subject: [PATCH 2094/2241] Revert "fix: usb: xhci-plat: release USB phy after
+ shut down"
+
+Previous patch is a workaround to fix the USB reboot warning,
+after the official fix is integrated, need to revert this patch.
+This reverts commit dc05dc5069c37ade909cb526738be6bc621a9db3.
+
+Change-Id: I6e1df230b39ba08aa273e6e1fbbae2e99c6e65ac
+Reviewed-on: http://vgitil04.il.marvell.com:8080/45107
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Tested-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/usb/host/xhci-plat.c | 2 --
+ 1 file changed, 2 deletions(-)
+
+diff --git a/drivers/usb/host/xhci-plat.c b/drivers/usb/host/xhci-plat.c
+index 974c53b..1067ae1 100644
+--- a/drivers/usb/host/xhci-plat.c
++++ b/drivers/usb/host/xhci-plat.c
+@@ -318,8 +318,6 @@ static int xhci_plat_remove(struct platform_device *dev)
+ 	} else {
+ 		usb_remove_hcd(xhci->shared_hcd);
+ 		usb_phy_shutdown(hcd->usb_phy);
+-		usb_put_phy(hcd->usb_phy);
+-		hcd->usb_phy = NULL;
+ 
+ 		usb_remove_hcd(hcd);
+ 	}
+-- 
+2.7.4
+

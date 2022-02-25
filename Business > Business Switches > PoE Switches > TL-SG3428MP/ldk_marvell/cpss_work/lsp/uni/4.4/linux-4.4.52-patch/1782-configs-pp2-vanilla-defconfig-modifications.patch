@@ -1,0 +1,29 @@
+From dbc4936407976e7d9c020062c16c826473eaacbc Mon Sep 17 00:00:00 2001
+From: Stefan Chulski <stefanc@marvell.com>
+Date: Mon, 10 Jul 2017 13:41:40 +0300
+Subject: [PATCH 1782/2241] configs: pp2-vanilla defconfig modifications
+
+This patch adds config to create Image with vanilla mvppv2 driver.
+
+Change-Id: I92efc905d17bc204938eb62692bf35cc4036e480
+Signed-off-by: Stefan Chulski <stefanc@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/41417
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+---
+ tools/configs/pp2-vanilla | 2 ++
+ 1 file changed, 2 insertions(+)
+ create mode 100644 tools/configs/pp2-vanilla
+
+diff --git a/tools/configs/pp2-vanilla b/tools/configs/pp2-vanilla
+new file mode 100644
+index 0000000..1c78c70
+--- /dev/null
++++ b/tools/configs/pp2-vanilla
+@@ -0,0 +1,2 @@
++CONFIG_MVPP2=y
++CONFIG_MVPP2X=n
+-- 
+2.7.4
+

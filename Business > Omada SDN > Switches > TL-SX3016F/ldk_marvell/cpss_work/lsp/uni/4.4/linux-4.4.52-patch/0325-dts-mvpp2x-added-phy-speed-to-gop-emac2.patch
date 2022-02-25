@@ -1,0 +1,47 @@
+From d2bf5c4b010e3f6ff131c8b46b027e4b2e56c4f1 Mon Sep 17 00:00:00 2001
+From: Stefan Chulski <stefanc@marvell.com>
+Date: Mon, 11 Apr 2016 19:40:06 +0300
+Subject: [PATCH 0325/2241] dts: mvpp2x: added phy-speed to gop emac2
+
+-added added phy-speed to gop emac2 for armada-7040-rz-db-router.dts
+ and armada-7040-db-router.dts
+
+Change-Id: I65425b7bd136745c74622a89a69b95a0d5bf007e
+Reviewed-on: http://vgitil04.il.marvell.com:8080/28938
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-7040-db-router.dts    | 4 ++--
+ arch/arm64/boot/dts/marvell/armada-7040-rz-db-router.dts | 1 +
+ 2 files changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-7040-db-router.dts b/arch/arm64/boot/dts/marvell/armada-7040-db-router.dts
+index 3434746..6eeb854 100644
+--- a/arch/arm64/boot/dts/marvell/armada-7040-db-router.dts
++++ b/arch/arm64/boot/dts/marvell/armada-7040-db-router.dts
+@@ -85,8 +85,8 @@
+ 					status = "okay";
+ 				};
+ 				emac2: mac2 {
+-					phy-mode = "rgmii"; /* rgmii-0 */
+-					phy = <&phy2>;
++					phy-mode = "sgmii"; /* lane-0 */
++					phy-speed = <2500>;
+ 					status = "okay";
+ 				};
+ 				emac3: mac3 {
+diff --git a/arch/arm64/boot/dts/marvell/armada-7040-rz-db-router.dts b/arch/arm64/boot/dts/marvell/armada-7040-rz-db-router.dts
+index 20ef7d6..62bd97b 100644
+--- a/arch/arm64/boot/dts/marvell/armada-7040-rz-db-router.dts
++++ b/arch/arm64/boot/dts/marvell/armada-7040-rz-db-router.dts
+@@ -86,6 +86,7 @@
+ 				};
+ 				emac2: mac2 {
+ 					phy-mode = "sgmii"; /* lane-0 */
++					phy-speed = <2500>;
+ 					status = "okay";
+ 				};
+ 				emac3: mac3 {
+-- 
+2.7.4
+

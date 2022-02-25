@@ -1,0 +1,55 @@
+From f99cf1337bc5224ebe4f50cb4ff1846cb64abd69 Mon Sep 17 00:00:00 2001
+From: Victor Gu <xigu@marvell.com>
+Date: Fri, 17 Mar 2017 16:52:45 +0800
+Subject: [PATCH 1475/2241] dts: a3700: add CPU PM clock DT node
+
+The CPU PM clock is used to change the CPU frequency dynamically
+for power management purpose.
+The CPU PM clock is based on PMU DFS unit, thus this DT node is
+added, and previous cpufreq node is removed.
+
+Change-Id: I50c05dfa1cab1a03cdc24e1b8253443057f5cdee
+Signed-off-by: Victor Gu <xigu@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/37536
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Evan Wang <xswang@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-37xx.dtsi | 15 +++++++--------
+ 1 file changed, 7 insertions(+), 8 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-37xx.dtsi b/arch/arm64/boot/dts/marvell/armada-37xx.dtsi
+index c1bab6f..9fcc1ae 100644
+--- a/arch/arm64/boot/dts/marvell/armada-37xx.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-37xx.dtsi
+@@ -214,6 +214,13 @@
+ 				};
+ 			};
+ 
++			cpu_pm_clk: cpu-pm-clk@14018 {
++				compatible = "marvell,armada-37xx-cpu-pm-clk";
++				reg = <0x14018 0x1C>;
++				#clock-cells = <1>;
++				clocks = <&core_clk 4>;
++			};
++
+ 			sgateclk: south-bridge-gate-clk@18014 {
+ 				compatible = "marvell,armada-3700-south-bridge-gating-clock";
+ 				reg = <0x18014 0x4>;
+@@ -235,14 +242,6 @@
+ 				};
+ 			};
+ 
+-			cpufreq@14000 {
+-				compatible = "marvell,armada-3700-cpufreq";
+-				reg = <0x14000 0x1000>;
+-				interrupts = <GIC_SPI 128 IRQ_TYPE_LEVEL_HIGH>;
+-				clock-latency = <1000>;
+-				clocks = <&core_clk 4>;
+-			};
+-
+ 			eth0: ethernet@30000 {
+ 				   compatible = "marvell,armada3700-neta";
+ 				   reg = <0x30000 0x4000>;
+-- 
+2.7.4
+

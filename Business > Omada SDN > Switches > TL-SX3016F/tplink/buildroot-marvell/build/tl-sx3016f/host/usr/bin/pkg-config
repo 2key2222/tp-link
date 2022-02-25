@@ -1,0 +1,2 @@
+#!/bin/sh
+PKG_CONFIG_LIBDIR=${PKG_CONFIG_LIBDIR:-/home/ubuntu/tp-link/TL-SX3016F_trunk/tplink/buildroot-marvell/build/tl-sx3016f/host/usr/arm-buildroot-linux-gnueabi/sysroot/usr/lib/pkgconfig:/home/ubuntu/tp-link/TL-SX3016F_trunk/tplink/buildroot-marvell/build/tl-sx3016f/host/usr/arm-buildroot-linux-gnueabi/sysroot/usr/share/pkgconfig} PKG_CONFIG_SYSROOT_DIR=${PKG_CONFIG_SYSROOT_DIR:-/home/ubuntu/tp-link/TL-SX3016F_trunk/tplink/buildroot-marvell/build/tl-sx3016f/host/usr/arm-buildroot-linux-gnueabi/sysroot} $(dirname $0)/pkgconf  $@

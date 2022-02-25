@@ -1,0 +1,43 @@
+From 855dfea077cdfa83c378ac8d9a31ed0f3ed7bd4d Mon Sep 17 00:00:00 2001
+From: Yehuda Yitschak <yehuday@marvell.com>
+Date: Sun, 20 Mar 2016 16:21:02 +0200
+Subject: [PATCH 0258/2241] coresight: add linux drivers for coresight trace
+
+instead of using a debugger, new linux drivers now enable tracing
+through sysfs files.
+
+Change-Id: I28e9a6c8e590f40c5cffb556d7744d80cb02007d
+Signed-off-by: Yehuda Yitschak <yehuday@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/28367
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+Reviewed-by: Shadi Ammouri <shadi@marvell.com>
+---
+ arch/arm64/configs/mvebu_v8_lsp_defconfig | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/arch/arm64/configs/mvebu_v8_lsp_defconfig b/arch/arm64/configs/mvebu_v8_lsp_defconfig
+index 034acca..8ebbfaa 100644
+--- a/arch/arm64/configs/mvebu_v8_lsp_defconfig
++++ b/arch/arm64/configs/mvebu_v8_lsp_defconfig
+@@ -196,6 +196,7 @@ CONFIG_CLK_VEXPRESS_OSC=y
+ CONFIG_ARM_SMMU=y
+ CONFIG_RESET_CONTROLLER=y
+ CONFIG_PHY_XGENE=y
++CONFIG_STM=y
+ CONFIG_EXT2_FS=y
+ CONFIG_EXT3_FS=y
+ CONFIG_BTRFS_FS=y
+@@ -229,6 +230,9 @@ CONFIG_LOCKUP_DETECTOR=y
+ # CONFIG_DEBUG_PREEMPT is not set
+ # CONFIG_FTRACE is not set
+ CONFIG_MEMTEST=y
++CONFIG_CORESIGHT=y
++CONFIG_CORESIGHT_LINK_AND_SINK_TMC=y
++CONFIG_CORESIGHT_SOURCE_ETM4X=y
+ CONFIG_SECURITY=y
+ CONFIG_CRYPTO_ANSI_CPRNG=y
+ CONFIG_ARM64_CRYPTO=y
+-- 
+2.7.4
+

@@ -1,0 +1,248 @@
+From 370edcb1f70754ff76e8712eac04c8f08aab2631 Mon Sep 17 00:00:00 2001
+From: Stefan Chulski <stefanc@marvell.com>
+Date: Mon, 5 Sep 2016 11:46:33 +0300
+Subject: [PATCH 0930/2241] fix: mvpp2x: update rss config per port and do
+ validation
+
+- fix the issue SYSTEMSW-2847
+
+Change-Id: If6421cb2579fe870e32cdd84025a0663232dd4d6
+Signed-off-by: Stefan Chulski <stefanc@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/32524
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Alan Winkowski <walan@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h      |  2 +-
+ .../net/ethernet/marvell/mvpp2x/mv_pp2x_ethtool.c  |  2 +-
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.c   |  2 +-
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c | 69 +++++++++++++---------
+ 4 files changed, 45 insertions(+), 30 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h
+index 9be5391..b998b48 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h
+@@ -486,7 +486,6 @@ struct mv_pp2x_rss {
+ };
+ 
+ struct mv_pp2x_param_config {
+-	struct mv_pp2x_rss rss_cfg;
+ 	u8 first_bm_pool;
+ 	u8 first_sw_thread; /* The index of the first PPv2.2
+ 			* sub-address space for this NET_INSTANCE.
+@@ -630,6 +629,7 @@ struct mv_pp2x_port {
+ 
+ 	struct mv_pp2x_ptp_desc *ptp_desc;
+ 	struct mv_pp2x_cos cos_cfg;
++	struct mv_pp2x_rss rss_cfg;
+ };
+ 
+ struct pp2x_hw_params {
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_ethtool.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_ethtool.c
+index c028129..1ee3929 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_ethtool.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_ethtool.c
+@@ -695,7 +695,7 @@ static int mv_pp2x_get_rss_hash_opts(struct mv_pp2x_port *port,
+ 	case UDP_V4_FLOW:
+ 	case UDP_V6_FLOW:
+ 		nfc->data |= RXH_IP_SRC | RXH_IP_DST;
+-		if (port->priv->pp2_cfg.rss_cfg.rss_mode == MVPP2_RSS_NF_UDP_5T)
++		if (port->rss_cfg.rss_mode == MVPP2_RSS_NF_UDP_5T)
+ 			nfc->data |= RXH_L4_B_0_1 | RXH_L4_B_2_3;
+ 		break;
+ 	case IPV4_FLOW:
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.c
+index 4c4f49d..b45fc86 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.c
+@@ -5933,7 +5933,7 @@ int mv_pp2x_cls_c2_rule_set(struct mv_pp2x_port *port, u8 start_queue)
+ 					MVPP2_CLS2_ACT_QOS_ATTR_QL_BITS;
+ 		}
+ 		/* RSS En in PP22 */
+-		c2_init_entry.rss_en = port->priv->pp2_cfg.rss_cfg.rss_en;
++		c2_init_entry.rss_en = port->rss_cfg.rss_en;
+ 
+ 		/* Add rule to C2 TCAM */
+ 		ret = mv_pp2x_c2_rule_add(port, &c2_init_entry);
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+index 746253c..6429483 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+@@ -1984,8 +1984,7 @@ void mv_pp22_rss_enable(struct mv_pp2x_port *port, bool en)
+ {
+ 	u8 bound_cpu_first_rxq;
+ 
+-
+-	if (port->priv->pp2_cfg.rss_cfg.rss_en == en)
++	if (port->rss_cfg.rss_en == en)
+ 		return;
+ 
+ 	bound_cpu_first_rxq  = mv_pp2x_bound_cpu_first_rxq_calc(port);
+@@ -1994,19 +1993,19 @@ void mv_pp22_rss_enable(struct mv_pp2x_port *port, bool en)
+ 		mv_pp22_rss_c2_enable(port, en);
+ 		if (en) {
+ 			if (mv_pp22_rss_default_cpu_set(port,
+-				port->priv->pp2_cfg.rss_cfg.dflt_cpu))
++				port->rss_cfg.dflt_cpu))
+ 				netdev_err(port->dev,
+ 				"cannot set rss default cpu on port(%d)\n",
+ 				port->id);
+ 			else
+-				port->priv->pp2_cfg.rss_cfg.rss_en = 1;
++				port->rss_cfg.rss_en = 1;
+ 		} else {
+ 			if (mv_pp2x_cls_c2_rule_set(port, bound_cpu_first_rxq))
+ 				netdev_err(port->dev,
+ 				"cannot set c2 and qos table on port(%d)\n",
+ 				port->id);
+ 			else
+-				port->priv->pp2_cfg.rss_cfg.rss_en = 0;
++				port->rss_cfg.rss_en = 0;
+ 		}
+ 	}
+ }
+@@ -2024,6 +2023,12 @@ int mv_pp22_rss_mode_set(struct mv_pp2x_port *port, int rss_mode)
+ 	if (port->priv->pp2_cfg.queue_mode == MVPP2_QDIST_SINGLE_MODE)
+ 		return -1;
+ 
++	if (rss_mode != MVPP2_RSS_NF_UDP_2T &&
++	    rss_mode != MVPP2_RSS_NF_UDP_5T) {
++		pr_err("Invalid rss mode:%d\n", rss_mode);
++		return -EINVAL;
++	}
++
+ 	for (index = 0; index < (MVPP2_PRS_FL_LAST - MVPP2_PRS_FL_START);
+ 		index++) {
+ 		flow_info = &(hw->cls_shadow->flow_info[index]);
+@@ -2076,7 +2081,7 @@ int mv_pp22_rss_mode_set(struct mv_pp2x_port *port, int rss_mode)
+ 		}
+ 	}
+ 	/* Record it in priv */
+-	port->priv->pp2_cfg.rss_cfg.rss_mode = rss_mode;
++	port->rss_cfg.rss_mode = rss_mode;
+ 
+ 	return 0;
+ }
+@@ -2095,6 +2100,11 @@ int mv_pp22_rss_default_cpu_set(struct mv_pp2x_port *port, int default_cpu)
+ 	if (port->priv->pp2_cfg.queue_mode == MVPP2_QDIST_SINGLE_MODE)
+ 		return -1;
+ 
++	if (!(port->priv->cpu_map & (1 << default_cpu))) {
++		pr_err("Invalid default cpu id %d\n", default_cpu);
++		return -EINVAL;
++	}
++
+ 	/* Calculate width */
+ 	mv_pp2x_width_calc(port, &cpu_width, &cos_width, NULL);
+ 	q_cpu_mask = (1 << cpu_width) - 1;
+@@ -2119,7 +2129,7 @@ int mv_pp22_rss_default_cpu_set(struct mv_pp2x_port *port, int default_cpu)
+ 	}
+ 
+ 	/* Update default cpu in cfg */
+-	port->priv->pp2_cfg.rss_cfg.dflt_cpu = default_cpu;
++	port->rss_cfg.dflt_cpu = default_cpu;
+ 
+ 	return 0;
+ }
+@@ -3396,8 +3406,7 @@ int mv_pp2x_open_cls(struct net_device *dev)
+ 	/* RSS related config */
+ 	if (port->priv->pp2_cfg.queue_mode == MVPP2_QDIST_MULTI_MODE) {
+ 		/* Set RSS mode */
+-		err = mv_pp22_rss_mode_set(port,
+-			port->priv->pp2_cfg.rss_cfg.rss_mode);
++		err = mv_pp22_rss_mode_set(port, port->rss_cfg.rss_mode);
+ 		if (err) {
+ 			netdev_err(port->dev, "cannot set rss mode\n");
+ 			return err;
+@@ -3411,9 +3420,9 @@ int mv_pp2x_open_cls(struct net_device *dev)
+ 		}
+ 
+ 		/* Set rss default CPU only when rss enabled */
+-		if (port->priv->pp2_cfg.rss_cfg.rss_en) {
++		if (port->rss_cfg.rss_en) {
+ 			err = mv_pp22_rss_default_cpu_set(port,
+-					port->priv->pp2_cfg.rss_cfg.dflt_cpu);
++				port->rss_cfg.dflt_cpu);
+ 			if (err) {
+ 				netdev_err(port->dev, "cannot set rss default cpu\n");
+ 				return err;
+@@ -4228,12 +4237,19 @@ err_free_percpu:
+ 	return err;
+ }
+ 
+-static void mv_pp2x_port_init_config(struct mv_pp2x_cos *cos_cfg)
++static void mv_pp2x_port_init_config(struct mv_pp2x_port *port)
+ {
+-	cos_cfg->cos_classifier = cos_classifer;
+-	cos_cfg->default_cos = default_cos;
+-	cos_cfg->num_cos_queues = mv_pp2x_num_cos_queues;
+-	cos_cfg->pri_map = pri_map;
++	/* CoS init config */
++	port->cos_cfg.cos_classifier = cos_classifer;
++	port->cos_cfg.default_cos = default_cos;
++	port->cos_cfg.num_cos_queues = mv_pp2x_num_cos_queues;
++	port->cos_cfg.pri_map = pri_map;
++
++	/* RSS init config */
++	port->rss_cfg.dflt_cpu = default_cpu;
++	/* RSS is disabled as default, it can be update when running */
++	port->rss_cfg.rss_en = 0;
++	port->rss_cfg.rss_mode = rss_mode;
+ }
+ 
+ /* Ports initialization */
+@@ -4267,7 +4283,7 @@ static int mv_pp2x_port_probe(struct platform_device *pdev,
+ 	SET_NETDEV_DEV(dev, &pdev->dev);
+ 	port->priv = priv;
+ 
+-	mv_pp2x_port_init_config(&port->cos_cfg);
++	mv_pp2x_port_init_config(port);
+ 
+ 	if (of_property_read_u32(port_node, "port-id", &id)) {
+ 		err = -EINVAL;
+@@ -4723,24 +4739,19 @@ static const struct of_device_id mv_pp2x_match_tbl[] = {
+ 	{ }
+ };
+ 
+-static void mv_pp2x_init_config(struct mv_pp2x_param_config *pp2_cfg,
+-	u32 cell_index)
++static int mv_pp2x_init_config(struct mv_pp2x_param_config *pp2_cfg,
++			       u32 cell_index)
+ {
+ 	pp2_cfg->cell_index = cell_index;
+ 	pp2_cfg->first_bm_pool = first_bm_pool;
+ 	pp2_cfg->first_sw_thread = first_addr_space;
+ 	pp2_cfg->first_log_rxq = first_log_rxq_queue;
+ 	pp2_cfg->queue_mode = mv_pp2x_queue_mode;
+-
+-	pp2_cfg->rss_cfg.dflt_cpu = default_cpu;
+-	/* RSS is disabled as default, which can be update in running time */
+-	pp2_cfg->rss_cfg.rss_en = 0;
+-	pp2_cfg->rss_cfg.rss_mode = rss_mode;
+-
+ 	pp2_cfg->rx_cpu_map = port_cpu_bind_map;
+-
+ 	pp2_cfg->uc_filter_max = uc_filter_max;
+ 	pp2_cfg->mc_filter_max = MVPP2_PRS_MAC_UC_MC_FILT_MAX - uc_filter_max;
++
++	return 0;
+ }
+ 
+ static void mv_pp2x_init_rxfhindir(struct mv_pp2x *pp2)
+@@ -5074,7 +5085,11 @@ static int mv_pp2x_probe(struct platform_device *pdev)
+ 	priv->cpu_map = cpu_map;
+ 
+ 	/*Init PP2 Configuration */
+-	mv_pp2x_init_config(&priv->pp2_cfg, cell_index);
++	err = mv_pp2x_init_config(&priv->pp2_cfg, cell_index);
++	if (err < 0) {
++		dev_err(&pdev->dev, "invalid driver parameters configured\n");
++		goto err_clk;
++	}
+ 
+ 	/* Initialize network controller */
+ 	err = mv_pp2x_init(pdev, priv);
+-- 
+2.7.4
+

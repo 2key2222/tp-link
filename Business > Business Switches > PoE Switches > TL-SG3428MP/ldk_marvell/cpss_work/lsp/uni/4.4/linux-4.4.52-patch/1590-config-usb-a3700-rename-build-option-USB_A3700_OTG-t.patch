@@ -1,0 +1,72 @@
+From fe10660d4cc2840da828e97ddf7d9d0315c35529 Mon Sep 17 00:00:00 2001
+From: zachary <zhangzg@marvell.com>
+Date: Thu, 20 Apr 2017 15:36:53 +0800
+Subject: [PATCH 1590/2241] config: usb: a3700: rename build option
+ USB_A3700_OTG to USB_A3700_PHY
+
+Change-Id: I2ce6cafa422c17acafa93b02ede3d3b0fca3e631
+Signed-off-by: zachary <zhangzg@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/38752
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Victor Gu <xigu@marvell.com>
+---
+ arch/arm64/configs/mvebu_v8_lsp_defconfig |  2 +-
+ drivers/usb/phy/Kconfig                   | 12 ++++++------
+ drivers/usb/phy/Makefile                  |  2 +-
+ 3 files changed, 8 insertions(+), 8 deletions(-)
+
+diff --git a/arch/arm64/configs/mvebu_v8_lsp_defconfig b/arch/arm64/configs/mvebu_v8_lsp_defconfig
+index fb05575..5079255 100644
+--- a/arch/arm64/configs/mvebu_v8_lsp_defconfig
++++ b/arch/arm64/configs/mvebu_v8_lsp_defconfig
+@@ -190,7 +190,7 @@ CONFIG_USB_OHCI_HCD=y
+ CONFIG_USB_OHCI_HCD_PLATFORM=y
+ CONFIG_USB_STORAGE=y
+ CONFIG_USB_ISP1760=y
+-CONFIG_USB_A3700_OTG=y
++CONFIG_USB_A3700_PHY=y
+ CONFIG_NOP_USB_XCEIV=y
+ CONFIG_USB_ULPI=y
+ CONFIG_USB_GADGET=y
+diff --git a/drivers/usb/phy/Kconfig b/drivers/usb/phy/Kconfig
+index b64d5c5..17d107d 100644
+--- a/drivers/usb/phy/Kconfig
++++ b/drivers/usb/phy/Kconfig
+@@ -18,15 +18,15 @@ config AB8500_USB
+ 	  This transceiver supports high and full speed devices plus,
+ 	  in host mode, low speed.
+ 
+-config USB_A3700_OTG
+-	bool "Armada3700 USB OTG Transceiver Driver"
++config USB_A3700_PHY
++	bool "Armada 3700 USB Transceiver Driver"
+ 	depends on USB_XHCI_MVEBU && USB_MVEBU_U3D
+ 	select USB_PHY
+ 	help
+-	  Enable this to support the USB OTG transceiver on Marvell
+-	  Armada3700 board.
+-	  This transceiver supports both HOST & Device modes and
+-	  can work on USB3.0 and USB2.0 protocol.
++	  Enable this to support the Armada 3700 USB PHY.
++	  This transceiver supports both USB HOST mode and
++	  USB Device mode, and can work on USB3.0 and
++	  USB2.0 protocol.
+ 
+ config FSL_USB2_OTG
+ 	bool "Freescale USB OTG Transceiver Driver"
+diff --git a/drivers/usb/phy/Makefile b/drivers/usb/phy/Makefile
+index 4bd9274..650ba2c 100644
+--- a/drivers/usb/phy/Makefile
++++ b/drivers/usb/phy/Makefile
+@@ -22,7 +22,7 @@ obj-$(CONFIG_USB_ISP1301)		+= phy-isp1301.o
+ obj-$(CONFIG_USB_MSM_OTG)		+= phy-msm-usb.o
+ obj-$(CONFIG_USB_QCOM_8X16_PHY)	+= phy-qcom-8x16-usb.o
+ obj-$(CONFIG_USB_MV_OTG)		+= phy-mv-usb.o
+-obj-$(CONFIG_USB_A3700_OTG)		+= phy-a3700-usb.o
++obj-$(CONFIG_USB_A3700_PHY)		+= phy-a3700-usb.o
+ obj-$(CONFIG_USB_MXS_PHY)		+= phy-mxs-usb.o
+ obj-$(CONFIG_USB_RCAR_PHY)		+= phy-rcar-usb.o
+ obj-$(CONFIG_USB_ULPI)			+= phy-ulpi.o
+-- 
+2.7.4
+

@@ -1,0 +1,104 @@
+From 9b616cd9e73c84554c8b9b4fb9c14a51ef1b776b Mon Sep 17 00:00:00 2001
+From: Stefan Chulski <stefanc@marvell.com>
+Date: Thu, 26 May 2016 19:32:01 +0300
+Subject: [PATCH 0465/2241] fix: net: mvpp2x: fix in netmap_complete for netmap
+ and add spin_lock for netmap
+
+-add spin_lock_irqsave near napi_complete to avoid
+ collision since in netmap interrupts are enabled
+ asynchronous to napi
+-disable port specific interrupt in case enabled
+ before calling to napi_complete.
+-restore initial state afterwards
+
+Change-Id: Ic8c576203eabd32e47848525df481cd53c7ab36a
+Reviewed-on: http://vgitil04.il.marvell.com:8080/30036
+Reviewed-by: Alan Winkowski <walan@marvell.com>
+Tested-by: Star_Automation <star@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.h    | 11 +++++++++++
+ .../net/ethernet/marvell/mvpp2x/mv_pp2x_hw_type.h   |  3 +++
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c  | 21 +++++++++++++++++----
+ 3 files changed, 31 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.h b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.h
+index 4d2770f..e87a5ae 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.h
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.h
+@@ -359,6 +359,17 @@ static inline void mv_pp2x_qvector_interrupt_disable(struct queue_vector *q_vec)
+ 
+ }
+ 
++static inline u32 mv_pp2x_qvector_interrupt_state_get(struct queue_vector
++						       *q_vec)
++{
++	struct mv_pp2x_port *port = q_vec->parent;
++	u32 state;
++
++	state = mv_pp2x_read(&port->priv->hw, MVPP2_ISR_ENABLE_REG(port->id));
++	state &= MVPP2_ISR_ENABLE_INTERRUPT(q_vec->sw_thread_mask);
++	return state;
++}
++
+ static inline int mv_pp2x_txq_sent_desc_proc(struct mv_pp2x_port *port,
+ 					     int sw_thread,
+ 					     u8 txq_id)
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw_type.h b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw_type.h
+index 93862b9..cd2ddf5 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw_type.h
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw_type.h
+@@ -1193,6 +1193,9 @@
+ /* Maximum number of supported ports */
+ #define MVPP2_MAX_PORTS			4
+ 
++/* Maximum number of supported cells */
++#define MVPP2_MAX_CELLS			4
++
+ /* Maximum number of TXQs used by single port */
+ #define MVPP2_MAX_TXQ			8
+ 
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+index ea8129d..bb2392c 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+@@ -2515,7 +2515,6 @@ static inline void mv_pp2x_cause_misc_handle(struct mv_pp2x_port *port,
+ 	}
+ }
+ 
+-
+ static inline int mv_pp2x_cause_rx_handle(struct mv_pp2x_port *port,
+ 		struct queue_vector *q_vec, struct napi_struct *napi,
+ 		int budget, u32 cause_rx)
+@@ -2539,12 +2538,26 @@ static inline int mv_pp2x_cause_rx_handle(struct mv_pp2x_port *port,
+ 			cause_rx &= ~(1 << rxq->log_id);
+ 		}
+ 	}
+-	if (budget > 0) {
++
++#ifdef DEV_NETMAP
++	if ((port->flags & MVPP2_F_IFCAP_NETMAP)) {
++		u32 state;
++
++		state = mv_pp2x_qvector_interrupt_state_get(q_vec);
++		if (state)
++			mv_pp2x_qvector_interrupt_disable(q_vec);
+ 		cause_rx = 0;
+ 		napi_complete(napi);
+-#ifdef DEV_NETMAP
+-	if (!(port->flags & MVPP2_F_IFCAP_NETMAP))
++		if (state)
++			mv_pp2x_qvector_interrupt_enable(q_vec);
++		q_vec->pending_cause_rx = cause_rx;
++		return rx_done;
++	}
+ #endif
++
++	if (budget > 0) {
++		cause_rx = 0;
++		napi_complete(napi);
+ 		mv_pp2x_qvector_interrupt_enable(q_vec);
+ 	}
+ 	q_vec->pending_cause_rx = cause_rx;
+-- 
+2.7.4
+

@@ -1,0 +1,123 @@
+From 8b36483649b51aacfa422b53d4aca5acbdd0b07c Mon Sep 17 00:00:00 2001
+From: Yehuda Yitschak <yehuday@marvell.com>
+Date: Sun, 25 Dec 2016 13:00:47 +0200
+Subject: [PATCH 1253/2241] sysctl: ap806: add ring and ext_ring clocks
+
+The ring and external ring clocks are required by the
+AXI monitor to enable profiling measurements
+
+Change-Id: Ibccbd7f2033f535d6a2339c2efafc306bb965f87
+Signed-off-by: Yehuda Yitschak <yehuday@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/34959
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ .../bindings/arm/marvell/ap806-system-controller.txt | 11 +++++++----
+ arch/arm64/boot/dts/marvell/armada-ap806.dtsi        |  3 ++-
+ drivers/clk/mvebu/ap806-system-controller.c          | 20 +++++++++++++++++---
+ 3 files changed, 26 insertions(+), 8 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/arm/marvell/ap806-system-controller.txt b/Documentation/devicetree/bindings/arm/marvell/ap806-system-controller.txt
+index 938e1c0..8a62a06 100644
+--- a/Documentation/devicetree/bindings/arm/marvell/ap806-system-controller.txt
++++ b/Documentation/devicetree/bindings/arm/marvell/ap806-system-controller.txt
+@@ -15,7 +15,9 @@ a number of clocks:
+  - 2: fixed PLL at 1200 Mhz
+  - 3: MSS clock, derived from the fixed PLL
+  - 4: eMMC clock, derived from the fixed PLL
+- - 5: AP HCLK, derived from sample-at-reset configuration.
++ - 5: AP DCLK, derived from sample-at-reset configuration.
++ - 6: AP ring clock. always double the DCLK
++ - 7: AP external ring clock. half the ring clock.
+ 
+ Required properties:
+ 
+@@ -24,14 +26,15 @@ Required properties:
+  - reg: register area of the AP806 system controller
+  - #clock-cells: must be set to 1
+  - clock-output-names: must be defined to:
+-   "ap-cpu-cluster-0", "ap-cpu-cluster-1", "ap-fixed", "ap-mss", "ap-emmc", "ap-dclk"
+-
++   "ap-cpu-cluster-0", "ap-cpu-cluster-1", "ap-fixed", "ap-mss", "ap-emmc", "ap-dclk",
++   "ap-rclk", "ap-ext-rclk"
+ Example:
+ 
+ 	syscon: system-controller@6f4000 {
+ 		compatible = "marvell,ap806-system-controller", "syscon";
+ 		#clock-cells = <1>;
+ 		clock-output-names = "ap-cpu-cluster-0", "ap-cpu-cluster-1",
+-				     "ap-fixed", "ap-mss", "ap-emmc", "dp-hclk";
++				     "ap-fixed", "ap-mss", "ap-emmc", "dp-hclk",
++				     "ap-rclk", "ap-ext-rclk";
+ 		reg = <0x6f4000 0x1000>;
+ 	};
+diff --git a/arch/arm64/boot/dts/marvell/armada-ap806.dtsi b/arch/arm64/boot/dts/marvell/armada-ap806.dtsi
+index 24872bc..4296b22 100644
+--- a/arch/arm64/boot/dts/marvell/armada-ap806.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-ap806.dtsi
+@@ -360,7 +360,8 @@
+ 				compatible = "marvell,ap806-system-controller", "syscon";
+ 				#clock-cells = <1>;
+ 				clock-output-names = "ap-cpu-cluster-0", "ap-cpu-cluster-1",
+-						     "ap-fixed", "ap-mss", "ap-emmc", "ap-dclk";
++						     "ap-fixed", "ap-mss", "ap-emmc", "ap-dclk",
++						     "ap-rclk", "ap-ext-rclk";
+ 				reg = <0x6f4000 0x1000>;
+ 			};
+ 
+diff --git a/drivers/clk/mvebu/ap806-system-controller.c b/drivers/clk/mvebu/ap806-system-controller.c
+index 47c40e8..ccb0723 100644
+--- a/drivers/clk/mvebu/ap806-system-controller.c
++++ b/drivers/clk/mvebu/ap806-system-controller.c
+@@ -24,7 +24,7 @@
+ #define AP806_SAR_REG			0x400
+ #define AP806_SAR_CLKFREQ_MODE_MASK	0x1f
+ 
+-#define AP806_CLK_NUM			6
++#define AP806_CLK_NUM			8
+ 
+ static struct clk *ap806_clks[AP806_CLK_NUM];
+ 
+@@ -35,8 +35,8 @@ static struct clk_onecell_data ap806_clk_data = {
+ 
+ static void __init ap806_syscon_clk_init(struct device_node *np)
+ {
+-	unsigned int freq_mode, cpuclk_freq, dclk_freq;
+-	const char *name, *fixedclk_name;
++	unsigned int freq_mode, cpuclk_freq, dclk_freq, ringclk_freq;
++	const char *name, *fixedclk_name, *ringclk_name;
+ 	struct regmap *regmap;
+ 	u32 reg;
+ 
+@@ -126,6 +126,9 @@ static void __init ap806_syscon_clk_init(struct device_node *np)
+ 	cpuclk_freq *= 1000 * 1000;
+ 	dclk_freq *= 1000 * 1000;
+ 
++	/* In all SAR values ring_clk is twice ddr clock */
++	ringclk_freq = 2 * dclk_freq;
++
+ 	/* CPU clocks depend on the Sample At Reset configuration */
+ 	of_property_read_string_index(np, "clock-output-names",
+ 				      0, &name);
+@@ -160,6 +163,17 @@ static void __init ap806_syscon_clk_init(struct device_node *np)
+ 	ap806_clks[5] = clk_register_fixed_rate(NULL, name, NULL, CLK_IS_ROOT,
+ 						dclk_freq);
+ 
++	of_property_read_string_index(np, "clock-output-names",
++				      6, &ringclk_name);
++	ap806_clks[6] = clk_register_fixed_rate(NULL, ringclk_name, NULL, CLK_IS_ROOT,
++						ringclk_freq);
++
++	/* External ring is 1/2 of ring clk */
++	of_property_read_string_index(np, "clock-output-names",
++				      7, &name);
++	ap806_clks[7] = clk_register_fixed_factor(NULL, name, ringclk_name,
++						  0, 1, 2);
++
+ 	of_clk_add_provider(np, of_clk_src_onecell_get, &ap806_clk_data);
+ }
+ 
+-- 
+2.7.4
+

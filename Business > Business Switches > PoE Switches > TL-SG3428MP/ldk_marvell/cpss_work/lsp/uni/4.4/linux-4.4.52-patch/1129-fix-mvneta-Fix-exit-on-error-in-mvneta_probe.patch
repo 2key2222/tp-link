@@ -1,0 +1,42 @@
+From ad25ec82115fa876d6d1bab931d484cb38b8f89d Mon Sep 17 00:00:00 2001
+From: Yelena <yelena@marvell.com>
+Date: Wed, 16 Nov 2016 14:12:16 +0200
+Subject: [PATCH 1129/2241] fix: mvneta: Fix exit on error in mvneta_probe()
+
+Add unregister_netdev on mvneta_probe error.
+
+Fix for JIRA-SYSTEMSW-2947:
+Kernel crash during boot if only SGMII1(neta1) is installed
+
+Change-Id: I5a91325920184a3e8e2c68af21c20e5408d86c2f
+Signed-off-by: Yelena <yelena@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/33843
+Reviewed-by: Dmitri Epshtein <dima@marvell.com>
+Tested-by: Neta Zur Hershkovits <neta@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvneta.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvneta.c b/drivers/net/ethernet/marvell/mvneta.c
+index 541939c..b17d112 100644
+--- a/drivers/net/ethernet/marvell/mvneta.c
++++ b/drivers/net/ethernet/marvell/mvneta.c
+@@ -4245,12 +4245,14 @@ static int mvneta_probe(struct platform_device *pdev)
+ 		err = mvneta_mdio_probe(pp);
+ 		if (err < 0) {
+ 			netdev_err(dev, "cannot probe MDIO bus\n");
+-			goto err_free_stats;
++			goto err_netdev;
+ 		}
+ 	}
+ 
+ 	return 0;
+ 
++err_netdev:
++	unregister_netdev(dev);
+ err_free_stats:
+ 	free_percpu(pp->stats);
+ err_free_ports:
+-- 
+2.7.4
+

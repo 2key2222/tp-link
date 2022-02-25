@@ -1,0 +1,76 @@
+From 5ef35639f948a9000855a9bde3dadf854be7a067 Mon Sep 17 00:00:00 2001
+From: Stefan Chulski <stefanc@marvell.com>
+Date: Tue, 26 Jul 2016 14:32:41 +0300
+Subject: [PATCH 0640/2241] fix: net: mvpp2x: warning fixes in mv_pp2x_hw.c and
+ mv_pp2x_main.c
+
+Change-Id: I9b0af5e18cae8964cbf85d6e9a763011bcfd8530
+Signed-off-by: Stefan Chulski <stefanc@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/31461
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Yuval Caduri <cyuval@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.c   | 6 ++----
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c | 5 +----
+ 2 files changed, 3 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.c
+index e1a4b5a..f057b83 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.c
+@@ -3985,9 +3985,8 @@ int mv_pp2x_prs_default_init(struct platform_device *pdev,
+ 	}
+ 
+ 	/* Invalidate all tcam entries */
+-	for (index = 0; index < MVPP2_PRS_TCAM_SRAM_SIZE; index++) {
++	for (index = 0; index < MVPP2_PRS_TCAM_SRAM_SIZE; index++)
+ 		mv_pp2x_prs_hw_inv(hw, index);
+-	}
+ 
+ 	hw->prs_shadow = devm_kcalloc(&pdev->dev, MVPP2_PRS_TCAM_SRAM_SIZE,
+ 				      sizeof(struct mv_pp2x_prs_shadow),
+@@ -5314,9 +5313,8 @@ void mv_pp2x_cls_c2_hw_inv_all(struct mv_pp2x_hw *hw)
+ {
+ 	int index;
+ 
+-	for (index = 0; index < MVPP2_CLS_C2_TCAM_SIZE; index++) {
++	for (index = 0; index < MVPP2_CLS_C2_TCAM_SIZE; index++)
+ 		mv_pp2x_cls_c2_hw_inv(hw, index);
+-	}
+ }
+ EXPORT_SYMBOL(mv_pp2x_cls_c2_hw_inv_all);
+ 
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+index e500952..d02f3d7 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+@@ -2480,9 +2480,8 @@ static int mv_pp2x_tx(struct sk_buff *skb, struct net_device *dev)
+ 
+ 	/* Prevent shadow_q override, stop tx_queue until tx_done is called*/
+ 
+-	if (mv_pp2x_txq_free_count(txq_pcpu) < (MAX_SKB_FRAGS + 2)) {
++	if (mv_pp2x_txq_free_count(txq_pcpu) < (MAX_SKB_FRAGS + 2))
+ 		netif_tx_stop_queue(nq);
+-	}
+ 
+ 	/* Enable transmit */
+ 	if (!skb->xmit_more || netif_xmit_stopped(nq)) {
+@@ -4354,7 +4353,6 @@ static int mv_pp2x_platform_data_get(struct platform_device *pdev,
+ 			(res->start-mspg_base));
+ 		hw->gop.gop_110.gmac.obj_size = 0x1000;
+ 
+-
+ 		/* FCA - flow control*/
+ 		res = platform_get_resource_byname(pdev,
+ 			IORESOURCE_MEM, "fca");
+@@ -4365,7 +4363,6 @@ static int mv_pp2x_platform_data_get(struct platform_device *pdev,
+ 			(res->start-mspg_base));
+ 		hw->gop.gop_110.fca.obj_size = 0x1000;
+ 
+-
+ 		/* MSPG - xlg */
+ 		res = platform_get_resource_byname(pdev,
+ 			IORESOURCE_MEM, "xlg");
+-- 
+2.7.4
+

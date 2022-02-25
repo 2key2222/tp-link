@@ -1,0 +1,932 @@
+.TH xtables-addons 8 "v1.42 (2012-04-05)" "" "v1.42 (2012-04-05)"
+.SH Name
+Xtables-addons \(em additional extensions for iptables, ip6tables, etc.
+.SH Targets
+.\" @TARGET@
+.SS ACCOUNT
+The ACCOUNT target is a high performance accounting system for large
+local networks. It allows per-IP accounting in whole prefixes of IPv4
+addresses with size of up to /8 without the need to add individual
+accouting rule for each IP address.
+.PP
+The ACCOUNT is designed to be queried for data every second or at
+least every ten seconds. It is written as kernel module to handle high
+bandwidths without packet loss.
+.PP
+The largest possible subnet size is 24 bit, meaning for example 10.0.0.0/8
+network. ACCOUNT uses fixed internal data structures
+which speeds up the processing of each packet. Furthermore,
+accounting data for one complete 192.168.1.X/24 network takes 4 KB of
+memory. Memory for 16 or 24 bit networks is only allocated when
+needed.
+.PP
+To optimize the kernel<->userspace data transfer a bit more, the
+kernel module only transfers information about IPs, where the src/dst
+packet counter is not 0. This saves precious kernel time.
+.PP
+There is no /proc interface as it would be too slow for continuous access.
+The read-and-flush query operation is the fastest, as no internal data
+snapshot needs to be created&copied for all data. Use the "read"
+operation without flush only for debugging purposes!
+.PP
+Usage:
+.PP
+ACCOUNT takes two mandatory parameters:
+.TP
+\fB\-\-addr\fR \fInetwork\fP\fB/\fP\fInetmask\fR
+where \fInetwork\fP\fB/\fP\fInetmask\fP is the subnet to account for, in CIDR syntax
+.TP
+\fB\-\-tname\fP \fINAME\fP
+where \fINAME\fP is the name of the table where the accounting information
+should be stored
+.PP
+The subnet 0.0.0.0/0 is a special case: all data are then stored in the src_bytes
+and src_packets structure of slot "0". This is useful if you want
+to account the overall traffic to/from your internet provider.
+.PP
+The data can be queried using the userspace libxt_ACCOUNT_cl library,
+and by the reference implementation to show usage of this library,
+the \fBiptaccount\fP(8) tool.
+.PP
+Here is an example of use:
+.PP
+iptables \-A FORWARD \-j ACCOUNT \-\-addr 0.0.0.0/0 \-\-tname all_outgoing;
+iptables \-A FORWARD \-j ACCOUNT \-\-addr 192.168.1.0/24 \-\-tname sales;
+.PP
+This creates two tables called "all_outgoing" and "sales" which can be
+queried using the userspace library/iptaccount tool.
+.PP
+Note that this target is non-terminating \(em the packet destined to it
+will continue traversing the chain in which it has been used.
+.PP
+Also note that once a table has been defined for specific CIDR address/netmask
+block, it can be referenced multiple times using \-j ACCOUNT, provided
+that both the original table name and address/netmask block are specified.
+.PP
+For more information go to http://www.intra2net.com/en/developer/ipt_ACCOUNT/
+.SS LUA
+Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+.SS CHAOS
+Causes confusion on the other end by doing odd things with incoming packets.
+CHAOS will randomly reply (or not) with one of its configurable subtargets:
+.TP
+\fB\-\-delude\fP
+Use the REJECT and DELUDE targets as a base to do a sudden or deferred
+connection reset, fooling some network scanners to return non-deterministic
+(randomly open/closed) results, and in case it is deemed open, it is actually
+closed/filtered.
+.TP
+\fB\-\-tarpit\fP
+Use the REJECT and TARPIT target as a base to hold the connection until it
+times out. This consumes conntrack entries when connection tracking is loaded
+(which usually is on most machines), and routers inbetween you and the Internet
+may fail to do their connection tracking if they have to handle more
+connections than they can.
+.PP
+The randomness factor of not replying vs. replying can be set during load-time
+of the xt_CHAOS module or during runtime in /sys/modules/xt_CHAOS/parameters.
+.PP
+See http://jengelh.medozas.de/projects/chaostables/ for more information
+about CHAOS, DELUDE and lscan.
+.SS CHECKSUM
+This target allows to selectively work around broken/old applications.
+It can only be used in the mangle table.
+.TP
+\fB\-\-checksum\-fill\fP
+Compute and fill in the checksum in a packet that lacks a checksum.
+This is particularly useful, if you need to work around old applications
+such as dhcp clients, that do not work well with checksum offloads,
+but don't want to disable checksum offload in your device.
+.SS DELUDE
+The DELUDE target will reply to a SYN packet with SYN-ACK, and to all other
+packets with an RST. This will terminate the connection much like REJECT, but
+network scanners doing TCP half-open discovery can be spoofed to make them
+belive the port is open rather than closed/filtered.
+.SS DHCPMAC
+In conjunction with ebtables, DHCPMAC can be used to completely change all MAC
+addresses from and to a VMware-based virtual machine. This is needed because
+VMware does not allow to set a non-VMware MAC address before an operating
+system is booted (and the MAC be changed with `ip link set eth0 address
+aa:bb..`).
+.TP
+\fB\-\-set\-mac\fP \fIaa:bb:cc:dd:ee:ff\fP[\fB/\fP\fImask\fP]
+Replace the client host MAC address field in the DHCP message with the given
+MAC address. This option is mandatory. The \fImask\fP parameter specifies the
+prefix length of bits to change.
+.PP
+EXAMPLE, replacing all addresses from one of VMware's assigned vendor IDs
+(00:50:56) addresses with something else:
+.PP
+iptables \-t mangle \-A FORWARD \-p udp \-\-dport 67 \-m physdev
+\-\-physdev\-in vmnet1 \-m dhcpmac \-\-mac 00:50:56:00:00:00/24 \-j DHCPMAC
+\-\-set\-mac ab:cd:ef:00:00:00/24
+.PP
+iptables \-t mangle \-A FORWARD \-p udp \-\-dport 68 \-m physdev
+\-\-physdev\-out vmnet1 \-m dhcpmac \-\-mac ab:cd:ef:00:00:00/24 \-j DHCPMAC
+\-\-set\-mac 00:50:56:00:00:00/24
+.PP
+(This assumes there is a bridge interface that has vmnet1 as a port. You will
+also need to add appropriate ebtables rules to change the MAC address of the
+Ethernet headers.)
+.SS DNETMAP
+The \fBDNETMAP\fR target allows dynamic two-way 1:1 mapping of IPv4 subnets.
+Single rule can map private subnet to shorter public subnet creating and
+maintaining unambigeous private-public ip bindings. Second rule can be used to
+map new flows to private subnet according to maintained bindings. Target allows
+efficient public IPv4 space usage and unambigeous NAT at the same time.
+
+Target can be used only in \fBnat\fR table in \fBPOSTROUTING\fR or \fBOUTPUT\fR
+chains for SNAT and in \fBPREROUTING\fR for DNAT. Only flows directed to bound
+IPs will be DNATed. Packet continues chain traversal if there is no free
+postnat-ip to be assigned to prenat-ip. Default binding \fBttl\fR is \fI10
+minutes\fR and can be changed using \fBdefault_ttl\fR module option. Default ip
+hash size is 256 and can be changed using \fBhash_size\fR module option.
+
+.TP
+\fB\-\-prefix\fR \fIaddr\fR\fB/\fR\fImask\fR
+Network subnet to map to. If not specified, all existing prefixes are used.
+.TP
+\fB\-\-reuse\fR
+Reuse entry for given prenat-ip from any prefix despite bindings ttl < 0.
+.TP
+\fB\-\-ttl\fR \fIseconds\fR
+Regenerate bindings ttl value to \fIseconds\fR. If negative value is specified,
+bindings ttl is kept unchanged. If not specified then default ttl value (600s)
+is used.
+.PP
+\fB* /proc interface\fR
+
+Module creates following entries for each new specified subnet:
+.TP
+\fB/proc/net/xt_DNETMAP/\fR\fIsubnet\fR\fB_\fR\fImask\fR
+Contains binding table for subnet/mask. Each line contains \fBprenat-ip\fR,
+\fBpostnat-ip\fR,\fBttl\fR (seconds till entry times out), \fBlasthit\fR (last
+entry hit in seconds relative to system boot time).
+.TP
+\fB/proc/net/xt_DNETMAP/\fR\fIsubnet\fR\fB_\fR\fImask\fR\fB_stat\fR
+Contains statistics for given subnet/mask. Line contains contains three
+numerical values separated by spaces. First one is number of currently used
+addresses (bindings with negative ttl excluded), second one is number of all
+usable addresses in subnet and third one is mean \fBttl\fR value for all active
+entries.
+.PP
+Entries are removed if the last iptables rule for a specific subnet is deleted.
+
+\fB* Logging\fR
+
+Module logs binding add/timeout events to klog. This behaviour can be disabled
+using \fBdisable_log\fR module parameter.
+
+\fB* Examples\fR
+
+\fB1.\fR Map subnet 192.168.0.0/24 to subnets 20.0.0.0/26. SNAT only:
+
+iptables -t nat -A POSTROUTING -s 192.168.0.0/24 -j DNETMAP --prefix 20.0.0.0/26
+
+Active hosts from 192.168.0.0/24 subnet are mapped to 20.0.0.0/26. If packet
+from not yet bound prenat-ip hits the rule and there are no free or timed-out
+(ttl<0) entries in prefix 20.0.0.0/28, then notice is logged to klog and chain
+traversal continues. If packet from already bound prenat-ip hits the rule,
+bindings ttl value is regenerated to default_ttl and SNAT is performed.
+
+\fB2.\fR Use of \fB\-\-reuse\fR and \fB\-\-ttl\fR switches, multiple rule
+interaction:
+
+iptables -t nat -A POSTROUTING -s 192.168.0.0/24 -j DNETMAP --prefix
+20.0.0.0/26 --reuse --ttl 200
+
+iptables -t nat -A POSTROUTING -s 192.168.0.0/24 -j DNETMAP --prefix 30.0.0.0/26
+
+Active hosts from 192.168.0.0/24 subnet are mapped to 20.0.0.0/26 with ttl =
+200 seconds. If there are no free addresses in first prefix the next one
+(30.0.0.0/26) is used with default ttl. It's important to note that the first
+rule SNATs all flows whose source IP is already actively (ttl>0) bound to ANY
+prefix. Parameter \fB\-\-reuse\fR makes this functionality work even for
+inactive (ttl<0) entries.
+
+If both subnets are exhaused, then chain traversal continues.
+
+\fB3.\fR Map 192.168.0.0/24 to subnets 20.0.0.0/26 bidirectional way:
+
+iptables -t nat -A POSTROUTING -s 192.168.0.0/24 -j DNETMAP --prefix 20.0.0.0/26
+
+iptables -t nat -A PREROUTING -j DNETMAP
+
+If host 192.168.0.10 generates some traffic, it gets bound to first free IP in
+subnet - 20.0.0.0. Now any traffic directed to 20.0.0.0 gets DNATed to
+192.168.0.10 as long as there's an active (ttl>0) binding. There's no need to
+specify \fB\-\-prefix\fR parameter in PREROUTING rule, because this way it DNATs
+traffic to all active prefixes. You could specify prefix it you'd like to make
+DNAT work for specific prefix only.
+
+.
+.SS ECHO
+The \fBECHO\fP target will send back all packets it received. It serves as an
+examples for an Xtables target.
+.PP
+ECHO takes no options.
+.SS IPMARK
+Allows you to mark a received packet basing on its IP address. This
+can replace many mangle/mark entries with only one, if you use
+firewall based classifier.
+
+This target is to be used inside the \fBmangle\fP table.
+.TP
+\fB\-\-addr\fP {\fBsrc\fP|\fBdst\fP}
+Select source or destination IP address as a basis for the mark.
+.TP
+\fB\-\-and\-mask\fP \fImask\fP
+Perform bitwise AND on the IP address and this bitmask.
+.TP
+\fB\-\-or\-mask\fP \fImask\fP
+Perform bitwise OR on the IP address and this bitmask.
+.TP
+\fB\-\-shift\fP \fIvalue\fP
+Shift addresses to the right by the given number of bits before taking it
+as a mark. (This is done before ANDing or ORing it.) This option is needed
+to select part of an IPv6 address, because marks are only 32 bits in size.
+.PP
+The order of IP address bytes is reversed to meet "human order of bytes":
+192.168.0.1 is 0xc0a80001. At first the "AND" operation is performed, then
+"OR".
+.PP
+Examples:
+.PP
+We create a queue for each user, the queue number is adequate
+to the IP address of the user, e.g.: all packets going to/from 192.168.5.2
+are directed to 1:0502 queue, 192.168.5.12 -> 1:050c etc.
+.PP
+We have one classifier rule:
+.IP
+tc filter add dev eth3 parent 1:0 protocol ip fw
+.PP
+Earlier we had many rules just like below:
+.IP
+iptables \-t mangle \-A POSTROUTING \-o eth3 \-d 192.168.5.2 \-j MARK
+\-\-set\-mark 0x10502
+.IP
+iptables \-t mangle \-A POSTROUTING \-o eth3 \-d 192.168.5.3 \-j MARK
+\-\-set\-mark 0x10503
+.PP
+Using IPMARK target we can replace all the mangle/mark rules with only one:
+.IP
+iptables \-t mangle \-A POSTROUTING \-o eth3 \-j IPMARK \-\-addr dst
+\-\-and\-mask 0xffff \-\-or\-mask 0x10000
+.PP
+On the routers with hundreds of users there should be significant load
+decrease (e.g. twice).
+.PP
+(IPv6 example) If the source address is of the form
+2001:db8:45:1d:20d:93ff:fe9b:e443 and the resulting mark should be 0x93ff,
+then a right-shift of 16 is needed first:
+.IP
+\-t mangle \-A PREROUTING \-s 2001:db8::/32 \-j IPMARK \-\-addr src \-\-shift
+16 \-\-and\-mask 0xFFFF
+.SS LOGMARK
+The LOGMARK target will log packet and connection marks to syslog.
+.TP
+\fB\-\-log\-level\fR \fIlevel\fR
+A logging level between 0 and 8 (inclusive).
+.TP
+\fB\-\-log\-prefix\fR \fIstring\fR
+Prefix log messages with the specified prefix; up to 29 bytes long, and useful
+for distinguishing messages in the logs.
+.SS RAWDNAT
+The \fBRAWDNAT\fR target will rewrite the destination address in the IP header,
+much like the \fBNETMAP\fR target.
+.TP
+\fB\-\-to\-destination\fR \fIaddr\fR[\fB/\fR\fImask\fR]
+Network address to map to. The resulting address will be constructed the
+following way: All 'one' bits in the \fImask\fR are filled in from the new
+\fIaddress\fR. All bits that are zero in the mask are filled in from the
+original address.
+.PP
+See the \fBRAWSNAT\fR help entry for examples and constraints.
+.SS RAWSNAT
+The \fBRAWSNAT\fR and \fBRAWDNAT\fP targets provide stateless network address
+translation.
+.PP
+The \fBRAWSNAT\fR target will rewrite the source address in the IP header, much
+like the \fBNETMAP\fP target. \fBRAWSNAT\fP (and \fBRAWDNAT\fP) may only be
+used in the \fBraw\fP or \fBrawpost\fP tables, but can be used in all chains,
+which makes it possible to change the source address either when the packet
+enters the machine or when it leaves it. The reason for this table constraint
+is that RAWNAT must happen outside of connection tracking.
+.TP
+\fB\-\-to\-source\fR \fIaddr\fR[\fB/\fR\fImask\fR]
+Network address to map to. The resulting address will be constructed the
+following way: All 'one' bits in the \fImask\fR are filled in from the new
+\fIaddress\fR. All bits that are zero in the mask are filled in from the
+original address.
+.PP
+As an example, changing the destination for packets forwarded from an internal
+LAN to the internet:
+.IP
+\-t raw \-A PREROUTING \-i lan0 \-d 212.201.100.135 \-j RAWDNAT \-\-to\-destination 199.181.132.250;
+\-t rawpost \-A POSTROUTING \-o lan0 \-s 199.181.132.250 \-j RAWSNAT \-\-to\-source 212.201.100.135;
+.PP
+Note that changing addresses may influence the route selection! Specifically,
+it statically NATs packets, not connections, like the normal DNAT/SNAT targets
+would do. Also note that it can transform already-NATed connections \(em as
+said, it is completely external to Netfilter's connection tracking/NAT.
+.PP
+If the machine itself generates packets that are to be rawnat'ed, you need a
+rule in the OUTPUT chain instead, just like you would with the stateful NAT
+targets.
+.PP
+It may be necessary that in doing so, you also need an extra RAWSNAT rule, to
+override the automatic source address selection that the routing code does
+before passing packets to iptables. If the connecting socket has not been
+explicitly bound to an address, as is the common mode of operation, the address
+that will be chosen is the primary address of the device through which the
+packet would be routed with its initial destination address - the address as
+seen before any RAWNAT takes place.
+.SS STEAL
+Like the DROP target, but does not throw an error like DROP when used in the
+\fBOUTPUT\fP chain.
+.SS SYSRQ
+The SYSRQ target allows to remotely trigger sysrq on the local machine over the
+network. This can be useful when vital parts of the machine hang, for example
+an oops in a filesystem causing locks to be not released and processes to get
+stuck as a result \(em if still possible, use /proc/sysrq-trigger. Even when
+processes are stuck, interrupts are likely to be still processed, and as such,
+sysrq can be triggered through incoming network packets.
+.PP
+The xt_SYSRQ implementation uses a salted hash and a sequence number to prevent
+network sniffers from either guessing the password or replaying earlier
+requests. The initial sequence number comes from the time of day so you will
+have a small window of vulnerability should time go backwards at a reboot.
+However, the file /sys/module/xt_SYSREQ/seqno can be used to both query and
+update the current sequence number. Also, you should limit as to who can issue
+commands using \fB\-s\fP and/or \fB\-m mac\fP, and also that the destination is
+correct using \fB\-d\fP (to protect against potential broadcast packets),
+noting that it is still short of MAC/IP spoofing:
+.IP
+\-A INPUT \-s 10.10.25.1 \-m mac \-\-mac\-source aa:bb:cc:dd:ee:ff \-d
+10.10.25.7 \-p udp \-\-dport 9 \-j SYSRQ
+.IP
+(with IPsec) \-A INPUT \-s 10.10.25.1 \-d 10.10.25.7 \-m policy \-\-dir in
+\-\-pol ipsec \-\-proto esp \-\-tunnel\-src 10.10.25.1 \-\-tunnel\-dst
+10.10.25.7 \-p udp \-\-dport 9 \-j SYSRQ
+.PP
+You should also limit the rate at which connections can be received to limit
+the CPU time taken by illegal requests, for example:
+.IP
+\-A INPUT \-s 10.10.25.1 \-m mac \-\-mac\-source aa:bb:cc:dd:ee:ff \-d
+10.10.25.7 \-p udp \-\-dport 9 \-m limit \-\-limit 5/minute \-j SYSRQ
+.PP
+This extension does not take any options. The \fB\-p udp\fP options are
+required.
+.PP
+The SYSRQ password can be changed through
+/sys/module/xt_SYSRQ/parameters/password, for example:
+.IP
+echo \-n "password" >/sys/module/xt_SYSRQ/parameters/password
+.PP
+The module will not respond to sysrq requests until a password has been set.
+.PP
+Alternatively, the password may be specified at modprobe time, but this is
+insecure as people can possible see it through ps(1). You can use an option
+line in e.g. /etc/modprobe.d/xt_sysrq if it is properly guarded, that is, only
+readable by root.
+.IP
+options xt_SYSRQ password=cookies
+.PP
+The hash algorithm can also be specified as a module option, for example, to
+use SHA-256 instead of the default SHA-1:
+.IP
+options xt_SYSRQ hash=sha256
+.PP
+The xt_SYSRQ module is normally silent unless a successful request is received,
+but the \fIdebug\fP module parameter can be used to find exactly why a
+seemingly correct request is not being processed.
+.PP
+To trigger SYSRQ from a remote host, just use socat:
+.PP
+.nf
+sysrq_key="s"  # the SysRq key(s)
+password="password"
+seqno="$(date +%s)"
+salt="$(dd bs=12 count=1 if=/dev/urandom 2>/dev/null |
+    openssl enc \-base64)"
+ipaddr=10.10.25.7
+req="$sysrq_key,$seqno,$salt"
+req="$req,$(echo \-n "$req,$ipaddr,$password" | sha1sum | cut \-c1\-40)"
+
+echo "$req" | socat stdin udp\-sendto:$ipaddr:9
+.fi
+.PP
+See the Linux docs for possible sysrq keys. Important ones are: re(b)oot,
+power(o)ff, (s)ync filesystems, (u)mount and remount readonly. More than one
+sysrq key can be used at once, but bear in mind that, for example, a sync may
+not complete before a subsequent reboot or poweroff.
+.PP
+An IPv4 address should have no leading zeros, an IPv6 address should
+be in the form recommended by RFC 5952.  The debug option will log the
+correct form of the address.
+.PP
+The hashing scheme should be enough to prevent mis-use of SYSRQ in many
+environments, but it is not perfect: take reasonable precautions to
+protect your machines.
+.SS TARPIT
+Captures and holds incoming TCP connections using no local per-connection
+resources.
+.PP
+TARPIT only works at the TCP level, and is totally application agnostic. This
+module will answer a TCP request and play along like a listening server, but
+aside from sending an ACK or RST, no data is sent. Incoming packets are ignored
+and dropped. The attacker will terminate the session eventually. This module
+allows the initial packets of an attack to be captured by other software for
+inspection. In most cases this is sufficient to determine the nature of the
+attack.
+.PP
+This offers similar functionality to LaBrea
+<http://www.hackbusters.net/LaBrea/> but does not require dedicated hardware or
+IPs. Any TCP port that you would normally DROP or REJECT can instead become a
+tarpit.
+.TP
+\fB\-\-tarpit\fP
+This mode completes a connection with the attacker but limits the window size
+to 0, thus keeping the attacker waiting long periods of time. While he is
+maintaining state of the connection and trying to continue every 60-240
+seconds, we keep none, so it is very lightweight. Attempts to close the
+connection are ignored, forcing the remote side to time out the connection in
+12-24 minutes. This mode is the default.
+.TP
+\fB\-\-honeypot\fP
+This mode completes a connection with the attacker, but signals a normal window
+size, so that the remote side will attempt to send data, often with some very
+nasty exploit attempts. We can capture these packets for decoding and further
+analysis. The module does not send any data, so if the remote expects an
+application level response, the game is up.
+.TP
+\fB\-\-reset\fP
+This mode is handy because we can send an inline RST (reset). It has no other
+function.
+.PP
+To tarpit connections to TCP port 80 destined for the current machine:
+.IP
+\-A INPUT \-p tcp \-m tcp \-\-dport 80 \-j TARPIT
+.PP
+To significantly slow down Code Red/Nimda-style scans of unused address space,
+forward unused ip addresses to a Linux box not acting as a router (e.g. "ip
+route 10.0.0.0 255.0.0.0 ip.of.linux.box" on a Cisco), enable IP forwarding on
+the Linux box, and add:
+.IP
+\-A FORWARD \-p tcp \-j TARPIT
+.IP
+\-A FORWARD \-j DROP
+.PP
+NOTE:
+If you use the conntrack module while you are using TARPIT, you should also use
+unset tracking on the packet, or the kernel will unnecessarily allocate
+resources for each TARPITted connection. To TARPIT incoming connections to the
+standard IRC port while using conntrack, you could:
+.IP
+\-t raw \-A PREROUTING \-p tcp \-\-dport 6667 \-j CT \-\-notrack
+.IP
+\-A INPUT \-p tcp \-\-dport 6667 \-j NFLOG
+.IP
+\-A INPUT \-p tcp \-\-dport 6667 \-j TARPIT
+.SS TEE
+The \fBTEE\fP target will clone a packet and redirect this clone to another
+machine on the \fBlocal\fP network segment. In other words, the nexthop
+must be the target, or you will have to configure the nexthop to forward it
+further if so desired.
+.TP
+\fB\-\-gateway\fP \fIipaddr\fP
+Send the cloned packet to the host reachable at the given IP address.
+Use of 0.0.0.0 (for IPv4 packets) or :: (IPv6) is invalid.
+.PP
+To forward all incoming traffic on eth0 to an Network Layer logging box:
+.PP
+\-t mangle \-A PREROUTING \-i eth0 \-j TEE \-\-gateway 2001:db8::1
+.SH Matches
+.\" @MATCHES@
+.SS condition
+This matches if a specific condition variable is (un)set.
+.TP
+[\fB!\fP] \fB\-\-condition\fP \fIname\fP
+Match on boolean value stored in /proc/net/nf_condition/\fIname\fP.
+.SS dhcpmac
+.TP
+\fB\-\-mac\fP \fIaa:bb:cc:dd:ee:ff\fP[\fB/\fP\fImask\fP]
+Matches the DHCP "Client Host" address (a MAC address) in a DHCP message.
+\fImask\fP specifies the prefix length of the initial portion to match.
+.SS fuzzy
+This module matches a rate limit based on a fuzzy logic controller (FLC).
+.TP
+\fB\-\-lower\-limit\fP \fInumber\fP
+Specifies the lower limit, in packets per second.
+.TP
+\fB\-\-upper\-limit\fP \fInumber\fP
+Specifies the upper limit, also in packets per second.
+.SS geoip
+Match a packet by its source or destination country.
+.TP
+[\fB!\fP] \fB\-\-src\-cc\fP, \fB\-\-source\-country\fP \fIcountry\fP[\fB,\fP\fIcountry\fP\fB...\fP]
+Match packet coming from (one of) the specified country(ies)
+.TP
+[\fB!\fP] \fB\-\-dst\-cc\fP, \fB\-\-destination\-country\fP \fIcountry\fP[\fB,\fP\fIcountry\fP\fB...\fP]
+Match packet going to (one of) the specified country(ies)
+.TP
+NOTE:
+The country is inputed by its ISO-3166 code.
+.PP
+The extra files you will need is the binary database files. They are generated
+from a country-subnet database with the geoip_build_db.pl tool that is shipped
+with the source package, and which should be available in compiled packages in
+/usr/lib(exec)/xtables-addons/. The first command retrieves CSV files from
+MaxMind, while the other two build packed bisectable range files:
+.PP
+mkdir -p /usr/share/xt_geoip; cd /tmp; $path/to/xt_geoip_dl;
+.PP
+$path/to/xt_geoip_build -D /usr/share/xt_geoip GeoIP*.csv;
+.PP
+The shared library is hardcoded to look in these paths, so use them.
+.SS gradm
+This module matches packets based on grsecurity RBAC status.
+.TP
+[\fB!\fP] \fB\-\-enabled\fP
+Matches packets if grsecurity RBAC is enabled.
+.TP
+[\fB!\fP] \fB\-\-disabled\fP
+Matches packets if grsecurity RBAC is disabled.
+.SS iface
+Allows you to check interface states. First, an interface needs to be selected
+for comparison. Exactly one option of the following three must be specified:
+.TP
+\fB\-\-iface\fP \fIname\fP
+Check the states on the given interface.
+.TP
+\fB\-\-dev\-in\fP
+Check the states on the interface on which the packet came in. If the input
+device is not set, because for example you are using \-m iface in the OUTPUT
+chain, this submatch returns false.
+.TP
+\fB\-\-dev\-out\fP
+Check the states on the interface on which the packet will go out. If the
+output device is not set, because for example you are using \-m iface in the
+INPUT chain, this submatch returns false.
+.PP
+Following that, one can select the interface properties to check for:
+.TP
+[\fB!\fP] \fB\-\-up\fP, [\fB!\fP] \fB\-\-down\fP
+Check the UP flag.
+.TP
+[\fB!\fP] \fB\-\-broadcast\fP
+Check the BROADCAST flag.
+.TP
+[\fB!\fP] \fB\-\-loopback\fP
+Check the LOOPBACK flag.
+.TP
+[\fB!\fP] \fB\-\-pointtopoint\fP
+Check the POINTTOPOINT flag.
+.TP
+[\fB!\fP] \fB\-\-running\fP
+Check the RUNNING flag. Do NOT rely on it!
+.TP
+[\fB!\fP] \fB\-\-noarp\fP, [\fB!\fP] \fB\-\-arp\fP
+Check the NOARP flag.
+.TP
+[\fB!\fP] \fB\-\-promisc\fP
+Check the PROMISC flag.
+.TP
+[\fB!\fP] \fB\-\-multicast\fP
+Check the MULTICAST flag.
+.TP
+[\fB!\fP] \fB\-\-dynamic\fP
+Check the DYNAMIC flag.
+.TP
+[\fB!\fP] \fB\-\-lower\-up\fP
+Check the LOWER_UP flag.
+.TP
+[\fB!\fP] \fB\-\-dormant\fP
+Check the DORMANT flag.
+.SS ipp2p
+This module matches certain packets in P2P flows. It is not
+designed to match all packets belonging to a P2P connection \(em
+use IPP2P together with CONNMARK for this purpose.
+.PP
+Use it together with \-p tcp or \-p udp to search these protocols
+only or without \-p switch to search packets of both protocols.
+.PP
+IPP2P provides the following options, of which one or more may be specified
+on the command line:
+.TP
+\fB\-\-edk\fP
+Matches as many eDonkey/eMule packets as possible.
+.TP
+\fB\-\-kazaa\fP
+Matches as many KaZaA packets as possible.
+.TP
+\fB\-\-gnu\fP
+Matches as many Gnutella packets as possible.
+.TP
+\fB\-\-dc\fP
+Matches as many Direct Connect packets as possible.
+.TP
+\fB\-\-bit\fP
+Matches BitTorrent packets.
+.TP
+\fB\-\-apple\fP
+Matches AppleJuice packets.
+.TP
+\fB\-\-soul\fP
+Matches some SoulSeek packets. Considered as beta, use careful!
+.TP
+\fB\-\-winmx\fP
+Matches some WinMX packets. Considered as beta, use careful!
+.TP
+\fB\-\-ares\fP
+Matches Ares and AresLite packets. Use together with \-j DROP only.
+.TP
+\fB\-\-debug\fP
+Prints some information about each hit into kernel logfile. May 
+produce huge logfiles so beware!
+.PP
+Note that ipp2p may not (and often, does not) identify all packets that are
+exchanged as a result of running filesharing programs.
+.PP
+There is more information on http://ipp2p.org/ , but it has not been updated
+since September 2006, and the syntax there is different from the ipp2p.c
+provided in Xtables-addons; most importantly, the \-\-ipp2p flag was removed
+due to its ambiguity to match "all known" protocols.
+.SS ipv4options
+The "ipv4options" module allows to match against a set of IPv4 header options.
+.TP
+\fB\-\-flags\fP [\fB!\fP]\fIsymbol\fP[\fB,\fP[\fB!\fP]\fIsymbol...\fP]
+Specify the options that shall appear or not appear in the header. Each
+symbol specification is delimited by a comma, and a '!' can be prefixed to
+a symbol to negate its presence. Symbols are either the name of an IPv4 option
+or its number. See examples below.
+.TP
+\fB\-\-any\fP
+By default, all of the flags specified must be present/absent, that is, they
+form an AND condition. Use the \-\-any flag instead to use an OR condition
+where only at least one symbol spec must be true.
+.PP
+Known symbol names (and their number):
+.PP
+1 \(em \fBnop\fP
+.PP
+2 \(em \fBsecurity\fP \(em RFC 1108
+.PP
+3 \(em \fBlsrr\fP \(em Loose Source Routing, RFC 791
+.PP
+4 \(em \fBtimestamp\fP \(em RFC 781, 791
+.PP
+7 \(em \fBrecord\-route\fP \(em RFC 791
+.PP
+9 \(em \fBssrr\fP \(em Strict Source Routing, RFC 791
+.PP
+11 \(em \fBmtu\-probe\fP \(em RFC 1063
+.PP
+12 \(em \fBmtu\-reply\fP \(em RFC 1063
+.PP
+18 \(em \fBtraceroute\fP \(em RFC 1393
+.PP
+20 \(em \fBrouter-alert\fP \(em RFC 2113
+.PP
+Examples:
+.PP
+Match packets that have both Timestamp and NOP:
+\-m ipv4options \-\-flags nop,timestamp
+.PP
+~ that have either of Timestamp or NOP, or both:
+\-\-flags nop,timestamp \-\-any
+.PP
+~ that have Timestamp and no NOP: \-\-flags '!nop,timestamp'
+.PP
+~ that have either no NOP or a timestamp (or both conditions):
+\-\-flags '!nop,timestamp' \-\-any
+.SS length2
+This module matches the length of a packet against a specific value or range of
+values.
+.TP
+[\fB!\fR] \fB\-\-length\fR \fIlength\fR[\fB:\fR\fIlength\fR]
+Match exact length or length range.
+.TP
+\fB\-\-layer3\fR
+Match the layer3 frame size (e.g. IPv4/v6 header plus payload).
+.TP
+\fB\-\-layer4\fR
+Match the layer4 frame size (e.g. TCP/UDP header plus payload).
+.TP
+\fB\-\-layer5\fR
+Match the layer5 frame size (e.g. TCP/UDP payload, often called layer7).
+.PP
+If no \-\-layer* option is given, \-\-layer3 is assumed by default. Note that
+using \-\-layer5 may not match a packet if it is not one of the recognized
+types (currently TCP, UDP, UDPLite, ICMP, AH and ESP) or which has no 5th
+layer.
+.SS lscan
+Detects simple low-level scan attemps based upon the packet's contents.
+(This is
+different from other implementations, which also try to match the rate of new
+connections.) Note that an attempt is only discovered after it has been carried
+out, but this information can be used in conjunction with other rules to block
+the remote host's future connections. So this match module will match on the
+(probably) last packet the remote side will send to your machine.
+.TP
+\fB\-\-stealth\fR
+Match if the packet did not belong to any known TCP connection
+(Stealth/FIN/XMAS/NULL scan).
+.TP
+\fB\-\-synscan\fR
+Match if the connection was a TCP half-open discovery (SYN scan), i.e. the
+connection was torn down after the 2nd packet in the 3-way handshake.
+.TP
+\fB\-\-cnscan\fR
+Match if the connection was a TCP full open discovery (connect scan), i.e. the
+connection was torn down after completion of the 3-way handshake.
+.TP
+\fB\-\-grscan\fR
+Match if data in the connection only flew in the direction of the remote side,
+e.g. if the connection was terminated after a locally running daemon sent its
+identification. (E.g. openssh, smtp, ftpd.) This may falsely trigger on
+warranted single-direction data flows, usually bulk data transfers such as
+FTP DATA connections or IRC DCC. Grab Scan Detection should only be used on
+ports where a protocol runs that is guaranteed to do a bidirectional exchange
+of bytes.
+.PP
+NOTE: Some clients (Windows XP for example) may do what looks like a SYN scan,
+so be advised to carefully use xt_lscan in conjunction with blocking rules,
+as it may lock out your very own internal network.
+.SS psd
+Attempt to detect TCP and UDP port scans. This match was derived from
+Solar Designer's scanlogd.
+.TP
+\fB\-\-psd\-weight\-threshold\fP \fIthreshold\fP
+Total weight of the latest TCP/UDP packets with different
+destination ports coming from the same host to be treated as port
+scan sequence.
+.TP
+\fB\-\-psd\-delay\-threshold\fP \fIdelay\fP
+Delay (in hundredths of second) for the packets with different
+destination ports coming from the same host to be treated as
+possible port scan subsequence.
+.TP
+\fB\-\-psd\-lo\-ports\-weight\fP \fIweight\fP
+Weight of the packet with privileged (<=1024) destination port.
+.TP
+\fB\-\-psd\-hi\-ports\-weight\fP \fIweight\fP
+Weight of the packet with non-priviliged destination port.
+.SS quota2
+The "quota2" implements a named counter which can be increased or decreased
+on a per-match basis. Available modes are packet counting or byte counting.
+The value of the counter can be read and reset through procfs, thereby making
+this match a minimalist accounting tool.
+.PP
+When counting down from the initial quota, the counter will stop at 0 and
+the match will return false, just like the original "quota" match. In growing
+(upcounting) mode, it will always return true.
+.TP
+\fB\-\-grow\fP
+Count upwards instead of downwards.
+.TP
+\fB\-\-no\-change\fP
+Makes it so the counter or quota amount is never changed by packets matching
+this rule. This is only really useful in "quota" mode, as it will allow you to
+use complex prerouting rules in association with the quota system, without
+counting a packet twice.
+.TP
+\fB\-\-name\fP \fIname\fP
+Assign the counter a specific name. This option must be present, as an empty
+name is not allowed. Names starting with a dot or names containing a slash are
+prohibited.
+.TP
+[\fB!\fP] \fB\-\-quota\fP \fIiq\fP
+Specify the initial quota for this counter. If the counter already exists,
+it is not reset. An "!" may be used to invert the result of the match. The
+negation has no effect when \fB\-\-grow\fP is used.
+.TP
+\fB\-\-packets\fP
+Count packets instead of bytes that passed the quota2 match.
+.PP
+Because counters in quota2 can be shared, you can combine them for various
+purposes, for example, a bytebucket filter that only lets as much traffic go
+out as has come in:
+.PP
+\-A INPUT \-p tcp \-\-dport 6881 \-m quota \-\-name bt \-\-grow;
+\-A OUTPUT \-p tcp \-\-sport 6881 \-m quota \-\-name bt;
+.SS pknock
+Pknock match implements so-called "port knocking", a stealthy system
+for network authentication: a client sends packets to selected
+ports in a specific sequence (= simple mode, see example 1 below), or a HMAC
+payload to a single port (= complex mode, see example 2 below),
+to a target machine that has pknock rule(s) installed. The target machine
+then decides whether to unblock or block (again) the pknock-protected port(s).
+This can be used, for instance, to avoid brute force
+attacks on ssh or ftp services.
+.PP
+Example prerequisites:
+.IP
+modprobe cn
+.IP
+modprobe xt_pknock
+.PP
+Example 1 (TCP mode, manual closing of opened port not possible):
+.IP
+iptables -P INPUT DROP
+.IP
+iptables -A INPUT -p tcp -m pknock --knockports 4002,4001,4004 --strict
+--name SSH --time 10 --autoclose 60 --dport 22 -j ACCEPT
+.PP
+The rule will allow tcp port 22 for the attempting IP address after the successful reception of TCP SYN packets
+to ports 4002, 4001 and 4004, in this order (a.k.a. port-knocking).
+Port numbers in the connect sequence must follow the exact specification, no
+other ports may be "knocked" inbetween. The rule is named '\fBSSH\fP' \(em a file of
+the same name for tracking port knocking states will be created in
+\fB/proc/net/xt_pknock\fP .
+Successive port knocks must occur with delay of at most 10 seconds. Port 22 (from the example) will
+be automatiaclly dropped after 60 minutes after it was previously allowed.
+.PP
+Example 2 (UDP mode \(em non-replayable and non-spoofable, manual closing
+of opened port possible, secure, also called "SPA" = Secure Port
+Authorization):
+.IP
+iptables -A INPUT -p udp -m pknock --knockports 4000 --name FTP
+--opensecret foo --closesecret bar --autoclose 240 -j DROP
+.IP
+iptables -A INPUT -p tcp -m pknock --checkip --name FTP --dport 21 -j ACCEPT
+.PP
+The first rule will create an "ALLOWED" record in /proc/net/xt_pknock/FTP after
+the successful reception of an UDP packet to port 4000. The packet payload must be
+constructed as a HMAC256 using "foo" as a key. The HMAC content is the particular client's IP address as a 32-bit network byteorder quantity,
+plus the number of minutes since the Unix epoch, also as a 32-bit value.
+(This is known as Simple Packet Authorization, also called "SPA".)
+In such case, any subsequent attempt to connect to port 21 from the client's IP
+address will cause such packets to be accepted in the second rule.
+.PP
+Similarly, upon reception of an UDP packet constructed the same way, but with
+the key "bar", the first rule will remove a previously installed "ALLOWED" state
+record from /proc/net/xt_pknock/FTP, which means that the second rule will
+stop matching for subsequent connection attempts to port 21.
+In case no close-secret packet is received within 4 hours, the first rule
+will remove "ALLOWED" record from /proc/net/xt_pknock/FTP itself.
+.PP
+Things worth noting:
+.PP
+\fBGeneral\fP:
+.PP
+Specifying \fB--autoclose 0\fP means that no automatic close will be performed at all.
+.PP
+xt_pknock is capable of sending information about successful matches
+via a netlink socket to userspace, should you need to implement your own
+way of receiving and handling portknock notifications.
+Be sure to read the documentation in the doc/pknock/ directory,
+or visit the original site \(em http://portknocko.berlios.de/ .
+.PP
+\fBTCP mode\fP:
+.PP
+This mode is not immune against eavesdropping, spoofing and
+replaying of the port knock sequence by someone else (but its use may still
+be sufficient for scenarios where these factors are not necessarily
+this important, such as bare shielding of the SSH port from brute-force attacks).
+However, if you need these features, you should use UDP mode.
+.PP
+It is always wise to specify three or more ports that are not monotonically
+increasing or decreasing with a small stepsize (e.g. 1024,1025,1026)
+to avoid accidentally triggering
+the rule by a portscan.
+.PP
+Specifying the inter-knock timeout with \fB--time\fP is mandatory in TCP mode,
+to avoid permanent denial of services by clogging up the peer knock-state tracking table
+that xt_pknock internally keeps, should there be a DDoS on the
+first-in-row knock port from more hostile IP addresses than what the actual size
+of this table is (defaults to 16, can be changed via the "peer_hasht_ents" module parameter).
+It is also wise to use as short a time as possible (1 second) for \fB--time\fP
+for this very reason. You may also consider increasing the size
+of the peer knock-state tracking table. Using \fB--strict\fP also helps,
+as it requires the knock sequence to be exact. This means that if the
+hostile client sends more knocks to the same port, xt_pknock will
+mark such attempt as failed knock sequence and will forget it immediately.
+To completely thwart this kind of DDoS, knock-ports would need to have
+an additional rate-limit protection. Or you may consider using UDP mode.
+.PP
+\fBUDP mode\fP:
+.PP
+This mode is immune against eavesdropping, replaying and spoofing attacks.
+It is also immune against DDoS attack on the knockport.
+.PP
+For this mode to work, the clock difference on the client and on the server
+must be below 1 minute. Synchronizing time on both ends by means
+of NTP or rdate is strongly suggested.
+.PP
+There is a rate limiter built into xt_pknock which blocks any subsequent
+open attempt in UDP mode should the request arrive within less than one
+minute since the first successful open. This is intentional;
+it thwarts eventual spoofing attacks.
+.PP
+Because the payload value of an UDP knock packet is influenced by client's IP address,
+UDP mode cannot be used across NAT.
+.PP
+For sending UDP "SPA" packets, you may use either \fBknock.sh\fP or
+\fBknock-orig.sh\fP. These may be found in doc/pknock/util.
+.SH "See also"
+\fBiptables\fP(8), \fBip6tables\fP(8), \fBiptaccount\fP(8)
+.PP
+For developers, the book "Writing Netfilter modules" at
+http://jengelh.medozas.de/documents/Netfilter_Modules.pdf provides detailed
+information on how to write such modules/extensions.

@@ -1,0 +1,53 @@
+From 29495ae902aa05570d5b7554a5493077f7ec27c4 Mon Sep 17 00:00:00 2001
+From: Antoine Tenart <antoine.tenart@free-electrons.com>
+Date: Mon, 17 Jul 2017 15:35:08 +0200
+Subject: [PATCH 1866/2241] net: mvpp2: improve the link management function
+
+When the link status changes, the phylib calls the link_event function
+in the mvpp2 driver. Before this patch only the egress/ingress transmit
+was enabled/disabled. This patch adds more functionality to the link
+status management code by enabling/disabling the port per-cpu
+interrupts, and the port itself. The queues are now stopped as well, and
+the netif carrier helpers are called.
+
+Change-Id: I95c06aefd0ca89875f46b6c4829f88b4cf070796
+Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/42834
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2.c b/drivers/net/ethernet/marvell/mvpp2.c
+index 3c4ab99..84755b0 100644
+--- a/drivers/net/ethernet/marvell/mvpp2.c
++++ b/drivers/net/ethernet/marvell/mvpp2.c
+@@ -5840,14 +5840,24 @@ static void mvpp2_link_event(struct net_device *dev)
+ 		port->link = phydev->link;
+ 
+ 		if (phydev->link) {
++			mvpp2_interrupts_enable(port);
++			mvpp2_port_enable(port);
++
+ 			mvpp2_egress_enable(port);
+ 			mvpp2_ingress_enable(port);
++			netif_carrier_on(dev);
++			netif_tx_wake_all_queues(dev);
+ 		} else {
+ 			port->duplex = -1;
+ 			port->speed = 0;
+ 
++			netif_tx_stop_all_queues(dev);
++			netif_carrier_off(dev);
+ 			mvpp2_ingress_disable(port);
+ 			mvpp2_egress_disable(port);
++
++			mvpp2_port_disable(port);
++			mvpp2_interrupts_disable(port);
+ 		}
+ 
+ 		phy_print_status(phydev);
+-- 
+2.7.4
+

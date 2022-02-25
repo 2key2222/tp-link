@@ -1,0 +1,36 @@
+From 51531822cd2f08a04b72ededf4f8b2bb51a612ef Mon Sep 17 00:00:00 2001
+From: jinghua <jinghua@marvell.com>
+Date: Thu, 3 Mar 2016 23:18:20 +0800
+Subject: [PATCH 0335/2241] arm64: regulator: mvebu: enable GPIO regulator in
+ mvebu defconfig
+
+- there has already been regulator support in mvebu defconfig,
+  this patch only adds GPIO regulator option, which is a type
+  of regulator that uses GPIO and goes with compatible string
+  "regulator-gpio".
+
+Change-Id: Ie2f536cb6b1df788194affd47c89b02a3ef22b34
+Signed-off-by: jinghua <jinghua@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/28007
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ arch/arm64/configs/mvebu_v8_lsp_defconfig | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm64/configs/mvebu_v8_lsp_defconfig b/arch/arm64/configs/mvebu_v8_lsp_defconfig
+index e27b8f2..133540c 100644
+--- a/arch/arm64/configs/mvebu_v8_lsp_defconfig
++++ b/arch/arm64/configs/mvebu_v8_lsp_defconfig
+@@ -150,6 +150,7 @@ CONFIG_POWER_RESET_SYSCON=y
+ CONFIG_THERMAL=y
+ CONFIG_ARMADA_THERMAL=y
+ CONFIG_REGULATOR=y
++CONFIG_REGULATOR_GPIO=y
+ CONFIG_REGULATOR_FIXED_VOLTAGE=y
+ CONFIG_FB=y
+ CONFIG_FB_ARMCLCD=y
+-- 
+2.7.4
+

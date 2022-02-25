@@ -1,0 +1,37 @@
+From ab0a1281f69e5bbb548d0bac079efc5124d903bf Mon Sep 17 00:00:00 2001
+From: Evan Wang <xswang@marvell.com>
+Date: Sat, 30 Sep 2017 10:46:54 +0800
+Subject: [PATCH 2115/2241] dts: cp110: comphy: add PCIe MAC reset register
+
+The patch added new DT property of MAC reset register in
+comphy DTS node, which is optional and did not involve
+function changes.
+The PCIe MAC reset should be implemented.
+
+Change-Id: Ida9f1bfe4bbdc43229da455c218b860739e767cf
+Signed-off-by: Evan Wang <xswang@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/44893
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-cp110.dtsi | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-cp110.dtsi b/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
+index d17c4e8..21f25d7 100644
+--- a/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
+@@ -545,8 +545,8 @@
+ 
+ 			CP110_LABEL(comphy): comphy {
+ 				compatible = "marvell,cp110-comphy";
+-				reg = <0x441000 0x100>, <0x120000 0x6000>;
+-				reg-names = "comphy", "serdes";
++				reg = <0x441000 0x100>, <0x120000 0x6000>, <0x440268 0x4>;
++				reg-names = "comphy", "serdes", "mac_reset";
+ 				dfx-reg = <0x400280 4>;
+ 				#phy-cells = <2>;
+ 				sar-data = <&CP110_LABEL(sar)>;
+-- 
+2.7.4
+

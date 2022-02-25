@@ -1,0 +1,41 @@
+From d53f636e53a7f36f2eb16b283632bbf5766a3705 Mon Sep 17 00:00:00 2001
+From: Stefan Chulski <stefanc@marvell.com>
+Date: Wed, 14 Dec 2016 08:47:40 +0200
+Subject: [PATCH 1244/2241] net: mvpp2x: add link up/down print to phy callback
+
+Change-Id: I7e343c2cf1fad66d88af5550bb0e49c2725e07a1
+Signed-off-by: Stefan Chulski <stefanc@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/34648
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Reviewed-by: Yuval Caduri <cyuval@marvell.com>
+Verified-Armada37x0: Yuval Caduri <cyuval@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+index ce47121..b42b4d1 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+@@ -1731,6 +1731,7 @@ static void mv_pp22_link_event(struct net_device *dev)
+ 			mv_gop110_port_events_unmask(&port->priv->hw.gop,
+ 						     &port->mac_data);
+ 			port->mac_data.flags |= MV_EMAC_F_LINK_UP;
++			netdev_info(dev, "link up\n");
+ 		} else {
+ 			mv_pp2x_ingress_disable(port);
+ 			mv_pp2x_egress_disable(port);
+@@ -1739,6 +1740,7 @@ static void mv_pp22_link_event(struct net_device *dev)
+ 			mv_gop110_port_disable(&port->priv->hw.gop,
+ 					       &port->mac_data);
+ 			port->mac_data.flags &= ~MV_EMAC_F_LINK_UP;
++			netdev_info(dev, "link down\n");
+ 		}
+ 	}
+ }
+-- 
+2.7.4
+

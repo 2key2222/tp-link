@@ -1,0 +1,42 @@
+From 9315bde524cf38ae01c370a87fa6cc990036f799 Mon Sep 17 00:00:00 2001
+From: Stefan Chulski <stefanc@marvell.com>
+Date: Wed, 29 Jun 2016 11:36:22 +0300
+Subject: [PATCH 0547/2241] net: mpp2x: Update tx port register dump for debug
+
+Change-Id: I09f8c08cafe6d8c9a829189909ee836da07efede
+Signed-off-by: Stefan Chulski <stefanc@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/30824
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+Reviewed-by: Yuval Caduri <cyuval@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_debug.c | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_debug.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_debug.c
+index 60db931..39940d4 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_debug.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_debug.c
+@@ -676,8 +676,19 @@ void mvPp2TxRegs(struct mv_pp2x *priv)
+ 				  "MVPP21_TX_FIFO_THRESH_REG");
+ 	} else {
+ 		for (i = 0 ; i < MVPP2_MAX_PORTS; i++) {
++			DBG_MSG("\n[TX port-%d registers]\n", i);
+ 			mv_pp2x_print_reg(hw, MVPP22_TX_FIFO_THRESH_REG(i),
+ 					  "MVPP22_TX_FIFO_THRESH_REG");
++			mv_pp2x_print_reg(hw, MVPP22_TX_FIFO_SIZE_REG(i),
++					  "MVPP22_TX_FIFO_SIZE_REG");
++			mv_pp2x_print_reg(hw, MVPP2_TX_BAD_FCS_CNTR_REG(i),
++					  "MVPP2_TX_BAD_FCS_CNTR_REG");
++			mv_pp2x_print_reg(hw, MVPP2_TX_DROP_CNTR_REG(i),
++					  "MVPP2_TX_DROP_CNTR_REG");
++			mv_pp2x_print_reg(hw, MVPP2_TX_ETH_DSEC_THRESH_REG(i),
++					  "MVPP2_TX_ETH_DSEC_THRESH_REG");
++			mv_pp2x_print_reg(hw, MVPP22_TX_EGR_PIPE_DELAY_REG(i),
++					  "MVPP22_TX_EGR_PIPE_DELAY_REG");
+ 		}
+ 	}
+ 	mv_pp2x_print_reg(hw, MVPP2_TX_PORT_FLUSH_REG,
+-- 
+2.7.4
+

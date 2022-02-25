@@ -1,0 +1,110 @@
+From 55a474e2f20363dfeb6c8a8b1867b63e09779ccb Mon Sep 17 00:00:00 2001
+From: Ofer Heifetz <oferh@marvell.com>
+Date: Thu, 10 Mar 2016 13:03:17 +0200
+Subject: [PATCH 0274/2241] Revert "bus: mvebu-mbus: use automatic I/O
+ synchronization barriers"
+
+Reverts commit a0b5cd4ac2d6 ("bus: mvebu-mbus: use automatic I/O
+synchronization barriers")
+
+Instead of using explicit I/O synchronization barriers shoehorned
+inside the streaming DMA mappings API (in
+arch/arm/mach-mvebu/coherency.c), we are switching to use automatic
+I/O synchronization barrier.
+
+The primary motivation for this change is that explicit I/O
+synchronization barriers are not only needed for streaming DMA
+mappings (which can easily be done by overriding the dma_map_ops), but
+also for coherent DMA mappings (which is a lot less easy to do, since
+the kernel assumes such mappings are coherent and don't require any
+sort of cache maintenance operation to ensure the consistency of the
+buffers).
+
+Switching to automatic I/O synchronization barriers will also allow us
+to use the existing arm_coherent_dma_ops instead of our custom
+arm_dma_ops.
+
+In order to use automatic I/O synchronization barriers, this commit
+changes mvebu-mbus in two ways:
+
+ - It enables automatic I/O synchronization barriers in the 0x84
+   register of the MBus bridge, by enabling such barriers for all MBus
+   units. This enables automatic barriers for the on-SoC peripherals
+   that are doing DMA.
+
+ - It enables the SyncEnable bit in the MBus windows, so that PCIe
+   devices also use automatic I/O synchronization barrier.
+
+This automatic synchronization barrier relies on the assumption that
+at least one register of a given hardware unit is read before the
+driver accesses the DMA mappings modified by this unit. This
+assumption is guaranteed for PCI devices by vertue of the PCI
+standard, and we can reasonably verify that this assumption is also
+true for the limited number of platform drivers doing DMA used on
+Marvell EBU platforms.
+
+Change-Id: I2aef5f61fd7d226e5a83311dbc5c9abf3012d52e
+Signed-off-by: Ofer Heifetz <oferh@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/28261
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Lior Amsalem <alior@marvell.com>
+---
+ drivers/bus/mvebu-mbus.c | 14 +++-----------
+ 1 file changed, 3 insertions(+), 11 deletions(-)
+
+diff --git a/drivers/bus/mvebu-mbus.c b/drivers/bus/mvebu-mbus.c
+index 0faba37..3fcc490 100644
+--- a/drivers/bus/mvebu-mbus.c
++++ b/drivers/bus/mvebu-mbus.c
+@@ -393,8 +393,6 @@ static int mvebu_mbus_setup_window(struct mvebu_mbus_state *mbus,
+ 		(attr << WIN_CTRL_ATTR_SHIFT)    |
+ 		(target << WIN_CTRL_TGT_SHIFT)   |
+ 		WIN_CTRL_ENABLE;
+-	if (mbus->hw_io_coherency)
+-		ctrl |= WIN_CTRL_SYNCBARRIER;
+ 
+ 	writel(base & WIN_BASE_LOW, addr + WIN_BASE_OFF);
+ 	writel(ctrl, addr + WIN_CTRL_OFF);
+@@ -1133,8 +1131,7 @@ static int __init mvebu_mbus_common_init(struct mvebu_mbus_state *mbus,
+ 					 phys_addr_t mbusbridge_phys_base,
+ 					 size_t mbusbridge_size,
+ 					 phys_addr_t mbusopt_phys_base,
+-					 size_t mbusopt_size,
+-					 bool is_coherent)
++					 size_t mbusopt_size)
+ {
+ 	int win;
+ 
+@@ -1172,10 +1169,6 @@ static int __init mvebu_mbus_common_init(struct mvebu_mbus_state *mbus,
+ 	mbus->soc->setup_cpu_target(mbus);
+ 	mvebu_mbus_setup_cpu_target_nooverlap(mbus);
+ 
+-	if (is_coherent)
+-		writel(UNIT_SYNC_BARRIER_ALL,
+-		       mbus->mbuswins_base + UNIT_SYNC_BARRIER_OFF);
+-
+ 	register_syscore_ops(&mvebu_mbus_syscore_ops);
+ 
+ 	return 0;
+@@ -1203,7 +1196,7 @@ int __init mvebu_mbus_init(const char *soc, phys_addr_t mbuswins_phys_base,
+ 			mbuswins_phys_base,
+ 			mbuswins_size,
+ 			sdramwins_phys_base,
+-			sdramwins_size, 0, 0, 0, 0, false);
++			sdramwins_size, 0, 0, 0, 0);
+ }
+ 
+ #ifdef CONFIG_OF
+@@ -1419,8 +1412,7 @@ int __init mvebu_mbus_dt_init(bool is_coherent)
+ 				     mbusbridge_res.start,
+ 				     resource_size(&mbusbridge_res),
+ 				     mbusopt_res.start,
+-				     resource_size(&mbusopt_res),
+-				     is_coherent);
++				     resource_size(&mbusopt_res));
+ 	if (ret)
+ 		return ret;
+ 
+-- 
+2.7.4
+

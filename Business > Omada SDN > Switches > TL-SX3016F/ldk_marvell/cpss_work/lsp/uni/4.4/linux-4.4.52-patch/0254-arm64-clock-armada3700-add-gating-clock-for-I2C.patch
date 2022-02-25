@@ -1,0 +1,33 @@
+From bbda1ded06db37c530563405b5b26b3b23dbb86a Mon Sep 17 00:00:00 2001
+From: Victor Gu <xigu@marvell.com>
+Date: Thu, 18 Feb 2016 16:58:53 +0800
+Subject: [PATCH 0254/2241] arm64: clock: armada3700: add gating clock for I2C
+
+This patch adds gating clock support for Armada-3700 I2C
+by defining I2C gate clock in gate clock module.
+
+Change-Id: If18e163bb3c7b4b886c4dff41494f9ab66e5fda0
+Signed-off-by: Victor Gu <xigu@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/28065
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Wilson Ding <dingwei@marvell.com>
+---
+ drivers/clk/mvebu/armada-3700.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/clk/mvebu/armada-3700.c b/drivers/clk/mvebu/armada-3700.c
+index ada70a2..2e837fa 100644
+--- a/drivers/clk/mvebu/armada-3700.c
++++ b/drivers/clk/mvebu/armada-3700.c
+@@ -27,6 +27,8 @@
+  */
+ static const struct clk_gating_soc_desc armada_3700_north_bridge_gating_desc[] __initconst = {
+ 	{ "sata-host", NULL, 3, 0, CLK_GATE_SET_TO_DISABLE },
++	{ "twsi2", NULL, 16, 0, CLK_GATE_SET_TO_DISABLE },
++	{ "twsi1", NULL, 17, 0, CLK_GATE_SET_TO_DISABLE },
+ 	{ }
+ };
+ 
+-- 
+2.7.4
+

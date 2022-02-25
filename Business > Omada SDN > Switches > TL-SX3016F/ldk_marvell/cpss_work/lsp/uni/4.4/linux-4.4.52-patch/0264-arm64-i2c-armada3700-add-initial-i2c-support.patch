@@ -1,0 +1,190 @@
+From e6571983a4700dda67c5daaa2b3268bb3e3df7d8 Mon Sep 17 00:00:00 2001
+From: Wilson Ding <dingwei@marvell.com>
+Date: Fri, 6 Mar 2015 15:23:26 +0800
+Subject: [PATCH 0264/2241] arm64: i2c: armada3700: add initial i2c support
+
+The i2c device in Armada-3700 is compatible with PXA-2xx/3xx
+device.
+- add Armada-3700 i2c register mapping in i2c-pxa driver
+- add i2c Kconfig option and enable it in default config
+- add comments in i2c pxa device tree document
+- the FIFO mode is not supported yet in this driver
+    although Armada-3700 i2c supports FIFO mode
+
+Change-Id: I351068032f213268562d36d8a012cfdbee766ef4
+Signed-off-by: Victor Gu <xigu@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/27773
+Reviewed-by: Wilson Ding <dingwei@marvell.com>
+Tested-by: Star_Automation <star@marvell.com>
+---
+ Documentation/devicetree/bindings/i2c/i2c-pxa.txt |  8 +++++
+ arch/arm64/configs/mvebu_v8_lsp_defconfig         |  1 +
+ drivers/i2c/busses/Kconfig                        |  2 +-
+ drivers/i2c/busses/i2c-pxa.c                      | 37 +++++++++++++++++++++--
+ 4 files changed, 44 insertions(+), 4 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/i2c/i2c-pxa.txt b/Documentation/devicetree/bindings/i2c/i2c-pxa.txt
+index 12b78ac..33dbce7 100644
+--- a/Documentation/devicetree/bindings/i2c/i2c-pxa.txt
++++ b/Documentation/devicetree/bindings/i2c/i2c-pxa.txt
+@@ -5,6 +5,7 @@ Required properties :
+  - reg : Offset and length of the register set for the device
+  - compatible : should be "mrvl,mmp-twsi" where mmp is the name of a
+    compatible processor, e.g. pxa168, pxa910, mmp2, mmp3.
++   For Marvell Armada-3700, whould be "marvell,armada-3700-i2c".
+    For the pxa2xx/pxa3xx, an additional node "mrvl,pxa-i2c" is required
+    as shown in the example below.
+ 
+@@ -31,3 +32,10 @@ Examples:
+ 		reg = <0xd4025000 0x1000>;
+ 		interrupts = <58>;
+ 	};
++
++	i2c0: i2c@11000 {
++		compatible = "marvell,armada-3700-i2c";
++		reg = <0x11000 0x80>;
++		interrupts = <GIC_SPI 1 IRQ_TYPE_LEVEL_HIGH>;
++		mrvl,i2c-fast-mode;
++	};
+\ No newline at end of file
+diff --git a/arch/arm64/configs/mvebu_v8_lsp_defconfig b/arch/arm64/configs/mvebu_v8_lsp_defconfig
+index 8ebbfaa..c2f3736 100644
+--- a/arch/arm64/configs/mvebu_v8_lsp_defconfig
++++ b/arch/arm64/configs/mvebu_v8_lsp_defconfig
+@@ -131,6 +131,7 @@ CONFIG_VIRTIO_CONSOLE=y
+ # CONFIG_HW_RANDOM is not set
+ CONFIG_I2C_CHARDEV=y
+ CONFIG_I2C_MV64XXX=y
++CONFIG_I2C_PXA=y
+ CONFIG_SPI=y
+ CONFIG_SPI_ORION=y
+ CONFIG_SPI_PL022=y
+diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
+index 437c58e..21b6e0f 100644
+--- a/drivers/i2c/busses/Kconfig
++++ b/drivers/i2c/busses/Kconfig
+@@ -759,7 +759,7 @@ config I2C_PUV3
+ 
+ config I2C_PXA
+ 	tristate "Intel PXA2XX I2C adapter"
+-	depends on ARCH_PXA || ARCH_MMP || (X86_32 && PCI && OF)
++	depends on ARCH_PXA || ARCH_MMP || ARCH_MVEBU || (X86_32 && PCI && OF)
+ 	help
+ 	  If you have devices in the PXA I2C bus, say yes to this option.
+ 	  This driver can also be built as a module.  If so, the module
+diff --git a/drivers/i2c/busses/i2c-pxa.c b/drivers/i2c/busses/i2c-pxa.c
+index 0d35195..54a4d90 100644
+--- a/drivers/i2c/busses/i2c-pxa.c
++++ b/drivers/i2c/busses/i2c-pxa.c
+@@ -55,6 +55,7 @@ enum pxa_i2c_types {
+ 	REGS_PXA3XX,
+ 	REGS_CE4100,
+ 	REGS_PXA910,
++	REGS_ARMADA3700,
+ };
+ 
+ /*
+@@ -91,6 +92,13 @@ static struct pxa_reg_layout pxa_reg_layout[] = {
+ 		.ilcr = 0x28,
+ 		.iwcr = 0x30,
+ 	},
++	[REGS_ARMADA3700] = {
++		.ibmr = 0x00,
++		.idbr = 0x04,
++		.icr =	0x08,
++		.isr =	0x0c,
++		.isar = 0x10,
++	},
+ };
+ 
+ static const struct platform_device_id i2c_pxa_id_table[] = {
+@@ -98,6 +106,7 @@ static const struct platform_device_id i2c_pxa_id_table[] = {
+ 	{ "pxa3xx-pwri2c",	REGS_PXA3XX },
+ 	{ "ce4100-i2c",		REGS_CE4100 },
+ 	{ "pxa910-i2c",		REGS_PXA910 },
++	{ "armada-3700-i2c",	REGS_ARMADA3700 },
+ 	{ },
+ };
+ MODULE_DEVICE_TABLE(platform, i2c_pxa_id_table);
+@@ -122,8 +131,11 @@ MODULE_DEVICE_TABLE(platform, i2c_pxa_id_table);
+ #define ICR_SADIE	(1 << 13)	   /* slave address detected int enable */
+ #define ICR_UR		(1 << 14)	   /* unit reset */
+ #define ICR_FM		(1 << 15)	   /* fast mode */
++#define ICR_SHIFT_FM	(1 << 16)	   /* shifted fast mode */
+ #define ICR_HS		(1 << 16)	   /* High Speed mode */
++#define ICR_SHIFT_HS	(1 << 17)	   /* shifted high speed mode */
+ #define ICR_GPIOEN	(1 << 19)	   /* enable GPIO mode for SCL in HS */
++#define ICR_HSEN	(1 << 20)	   /* enable high speed mode */
+ 
+ #define ISR_RWM		(1 << 0)	   /* read/write mode */
+ #define ISR_ACKNAK	(1 << 1)	   /* ack/nak status */
+@@ -154,6 +166,9 @@ MODULE_DEVICE_TABLE(platform, i2c_pxa_id_table);
+ #define IWCR_HS_CNT2_SHIFT	10
+ #define IWCR_HS_CNT2_MASK	(0x1F << IWCR_HS_CNT2_SHIFT)
+ 
++/* Controller has different FM HS relavant definition in register */
++#define I2C_PXA_QUIRK_SHIFT_FM_HS	(1 << 0)
++
+ struct pxa_i2c {
+ 	spinlock_t		lock;
+ 	wait_queue_head_t	wait;
+@@ -164,6 +179,8 @@ struct pxa_i2c {
+ 	unsigned int		slave_addr;
+ 	unsigned int		req_slave_addr;
+ 
++	unsigned int		quirk;
++
+ 	struct i2c_adapter	adap;
+ 	struct clk		*clk;
+ #ifdef CONFIG_I2C_PXA_SLAVE
+@@ -503,8 +520,13 @@ static void i2c_pxa_reset(struct pxa_i2c *i2c)
+ 		writel(i2c->slave_addr, _ISAR(i2c));
+ 
+ 	/* set control register values */
+-	writel(I2C_ICR_INIT | (i2c->fast_mode ? ICR_FM : 0), _ICR(i2c));
+-	writel(readl(_ICR(i2c)) | (i2c->high_mode ? ICR_HS : 0), _ICR(i2c));
++	if (i2c->quirk & I2C_PXA_QUIRK_SHIFT_FM_HS) {
++		writel(I2C_ICR_INIT | (i2c->fast_mode ? ICR_SHIFT_FM : 0), _ICR(i2c));
++		writel(readl(_ICR(i2c)) | (i2c->high_mode ? ICR_SHIFT_HS : 0), _ICR(i2c));
++	} else {
++		writel(I2C_ICR_INIT | (i2c->fast_mode ? ICR_FM : 0), _ICR(i2c));
++		writel(readl(_ICR(i2c)) | (i2c->high_mode ? ICR_HS : 0), _ICR(i2c));
++	}
+ 
+ #ifdef CONFIG_I2C_PXA_SLAVE
+ 	dev_info(&i2c->adap.dev, "Enabling slave mode\n");
+@@ -743,7 +765,12 @@ static int i2c_pxa_send_mastercode(struct pxa_i2c *i2c)
+ 	writel(i2c->master_code, _IDBR(i2c));
+ 
+ 	icr = readl(_ICR(i2c)) & ~(ICR_STOP | ICR_ALDIE);
+-	icr |= ICR_GPIOEN | ICR_START | ICR_TB | ICR_ITEIE;
++	icr |= ICR_START | ICR_TB | ICR_ITEIE;
++	if (i2c->quirk & I2C_PXA_QUIRK_SHIFT_FM_HS)
++		icr |= ICR_HSEN;
++	else
++		icr |= ICR_GPIOEN;
++
+ 	writel(icr, _ICR(i2c));
+ 
+ 	spin_unlock_irq(&i2c->lock);
+@@ -1137,6 +1164,7 @@ static const struct of_device_id i2c_pxa_dt_ids[] = {
+ 	{ .compatible = "mrvl,pxa-i2c", .data = (void *)REGS_PXA2XX },
+ 	{ .compatible = "mrvl,pwri2c", .data = (void *)REGS_PXA3XX },
+ 	{ .compatible = "mrvl,mmp-twsi", .data = (void *)REGS_PXA910 },
++	{ .compatible = "marvell,armada-3700-i2c", .data = (void *)REGS_ARMADA3700 },
+ 	{}
+ };
+ MODULE_DEVICE_TABLE(of, i2c_pxa_dt_ids);
+@@ -1161,6 +1189,9 @@ static int i2c_pxa_probe_dt(struct platform_device *pdev, struct pxa_i2c *i2c,
+ 
+ 	*i2c_types = (enum pxa_i2c_types)(of_id->data);
+ 
++	if (of_device_is_compatible(np, "marvell,armada-3700-i2c"))
++		i2c->quirk |= I2C_PXA_QUIRK_SHIFT_FM_HS;
++
+ 	return 0;
+ }
+ 
+-- 
+2.7.4
+

@@ -1,0 +1,1004 @@
+From fda429b81e0aa2db60ea9a72263e18ca28b7b1c3 Mon Sep 17 00:00:00 2001
+From: Hanna Hawa <hannah@marvell.com>
+Date: Mon, 9 Oct 2017 16:23:22 +0300
+Subject: [PATCH 2059/2241] mvebu: dts: a8k-p: add basic device trees for
+ Armada-8k-plus family
+
+This patch add basic device trees for Armada-8k-plus family, that
+include our new AP810 octa core.
+The device tree include the below hierarchy by using def/undef to avoid
+device tree duplications:
+
+- armada-8080-pd.dts/armada-8160-pd.dts/armada-8320-pd.dts ->
+  device tree of the emulator
+  |-> armada-8080.dtsi/armada-8160.dtsi/armada-8320.dtsi ->
+      device tree of the Armada-8080/8160/8320 SoC that include
+      Single/Dual/Quad AP810, this file include the configuration
+      of the SoC, and it use def/undef for AP810 parameters
+      (name, base addrees, ap number) to avoid device tree duplication.
+     |-> armada-ap810-octa-core.dtsi -> common device tree than include
+         core configuration.
+        |-> armada-ap810.dtsi -> common device tree that include AP810
+            SoC configuration.
+     |-> armada-ap810-ap0.dtsi -> include the non-common & basic nodes
+         for AP810 (e.g. GIC, timer)
+
+Armada-8k-plus family will include several SoCs:
+Armada-8XXY: XX - number of cores in the SoC (e.g. 08, 16, 32)
+             Y - number of CP-110 in the SoC (e.g. 1, 2, 4)
+For example:
+	Armada-8080: will include AP110 only with 8 cores
+	Armada-8162: will include dual AP110 with 16 cores & 2 CP110
+	Armada-8328: will include quad AP110 with 32 cores & 8 CP110
+
+Change-Id: I990d01e9fff27134fbc5cc733ee434438ebefbb8
+Signed-off-by: Hanna Hawa <hannah@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/45082
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+---
+ .../bindings/arm/marvell/armada-8k-plus.txt        |  43 +++++++
+ arch/arm64/boot/dts/marvell/Makefile               |   3 +
+ arch/arm64/boot/dts/marvell/armada-8080-pd.dts     |  67 ++++++++++
+ arch/arm64/boot/dts/marvell/armada-8080.dtsi       |  69 +++++++++++
+ arch/arm64/boot/dts/marvell/armada-8160-pd.dts     |  67 ++++++++++
+ arch/arm64/boot/dts/marvell/armada-8160.dtsi       |  83 +++++++++++++
+ arch/arm64/boot/dts/marvell/armada-8320-pd.dts     |  67 ++++++++++
+ arch/arm64/boot/dts/marvell/armada-8320.dtsi       |  99 +++++++++++++++
+ arch/arm64/boot/dts/marvell/armada-ap810-ap0.dtsi  | 104 ++++++++++++++++
+ .../boot/dts/marvell/armada-ap810-octa-core.dtsi   | 106 ++++++++++++++++
+ arch/arm64/boot/dts/marvell/armada-ap810.dtsi      | 136 +++++++++++++++++++++
+ arch/arm64/boot/dts/marvell/armada-common.dtsi     |   1 +
+ include/dt-bindings/soc/ap810-stream-id.h          |   3 +
+ 13 files changed, 848 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/arm/marvell/armada-8k-plus.txt
+ create mode 100644 arch/arm64/boot/dts/marvell/armada-8080-pd.dts
+ create mode 100644 arch/arm64/boot/dts/marvell/armada-8080.dtsi
+ create mode 100644 arch/arm64/boot/dts/marvell/armada-8160-pd.dts
+ create mode 100644 arch/arm64/boot/dts/marvell/armada-8160.dtsi
+ create mode 100644 arch/arm64/boot/dts/marvell/armada-8320-pd.dts
+ create mode 100644 arch/arm64/boot/dts/marvell/armada-8320.dtsi
+ create mode 100644 arch/arm64/boot/dts/marvell/armada-ap810-ap0.dtsi
+ create mode 100644 arch/arm64/boot/dts/marvell/armada-ap810-octa-core.dtsi
+ create mode 100644 arch/arm64/boot/dts/marvell/armada-ap810.dtsi
+ create mode 100644 include/dt-bindings/soc/ap810-stream-id.h
+
+diff --git a/Documentation/devicetree/bindings/arm/marvell/armada-8k-plus.txt b/Documentation/devicetree/bindings/arm/marvell/armada-8k-plus.txt
+new file mode 100644
+index 0000000..7dd58b9f
+--- /dev/null
++++ b/Documentation/devicetree/bindings/arm/marvell/armada-8k-plus.txt
+@@ -0,0 +1,43 @@
++Marvell Armada 8K Plus Platforms Device Tree Bindings
++-----------------------------------------------------
++
++Armada-8k-plus family will include several SoCs:
++Armada-8XXY:	XX - number of cores in the SoC (e.g. 08, 16, 32)
++		Y - number of CP-110 in the SoC (e.g. 1, 2, 4)
++For example:
++	Armada-8080: will include AP110 only with 8 cores
++	Armada-8162: will include dual AP110 with 16 cores & 2 CP110
++	Armada-8328: will include quad AP110 with 32 cores & 8 CP110
++
++Boards using a SoC of the Marvell 8K Plus families must carry
++the following root node property:
++
++ - compatible, with one of the following values:
++
++SoC:
++   - "marvell,armada8080", "marvell,armada-ap810-octa", "marvell,armada-ap810"
++      when the SoC being used is the Armada 8080
++
++   - "marvell,armada8160", "marvell,armada-ap810-octa", "marvell,armada-ap810"
++      when the SoC being used is the Armada 8160
++
++   - "marvell,armada8320", "marvell,armada-ap810-octa", "marvell,armada-ap810"
++      when the SoC being used is the Armada 8320
++
++   - "marvell,armada8081", "marvell,armada-cp110", "marvell,armada-ap810-octa",
++     "marvell,armada-ap810"
++      when the SoC being used is the Armada 8081
++      (Should add "marvell,armada-cp110" if CP110 included in the SoC)
++
++Boards:
++   - "marvell,armada-8080-pd"
++      when the board being used is the Armada-8080 emulator
++   - "marvell,armada-8160-pd"
++      when the board being used is the Armada-8160 emulator
++   - "marvell,armada-8320-pd"
++      when the board being used is the Armada-8320 emulator
++
++Example:
++
++compatible = "marvell,armada-8080-pd", "marvell,armada-8080",
++             "marvell,armada-ap810-octa", "marvell,armada-ap810";
+diff --git a/arch/arm64/boot/dts/marvell/Makefile b/arch/arm64/boot/dts/marvell/Makefile
+index efc4fe8..2830fd0 100644
+--- a/arch/arm64/boot/dts/marvell/Makefile
++++ b/arch/arm64/boot/dts/marvell/Makefile
+@@ -31,6 +31,9 @@ dtb-$(CONFIG_ARCH_MVEBU) += armada-8040-db-E.dtb
+ dtb-$(CONFIG_ARCH_MVEBU) += armada-8040-mcbin.dtb
+ dtb-$(CONFIG_ARCH_MVEBU) += armada-8040-ocp.dtb
+ dtb-$(CONFIG_ARCH_MVEBU) += armada-80x0-customer.dtb
++dtb-$(CONFIG_ARCH_MVEBU_PD) += armada-8080-pd.dtb
++dtb-$(CONFIG_ARCH_MVEBU_PD) += armada-8160-pd.dtb
++dtb-$(CONFIG_ARCH_MVEBU_PD) += armada-8320-pd.dtb
+ 
+ always		:= $(dtb-y)
+ subdir-y	:= $(dts-dirs)
+diff --git a/arch/arm64/boot/dts/marvell/armada-8080-pd.dts b/arch/arm64/boot/dts/marvell/armada-8080-pd.dts
+new file mode 100644
+index 0000000..b40a1b6
+--- /dev/null
++++ b/arch/arm64/boot/dts/marvell/armada-8080-pd.dts
+@@ -0,0 +1,67 @@
++/*
++ * Copyright (C) 2017 Marvell Technology Group Ltd.
++ *
++ * This file is dual-licensed: you can use it either under the terms
++ * of the GPLv2 or the X11 license, at your option. Note that this dual
++ * licensing only applies to this file, and not this project as a
++ * whole.
++ *
++ *  a) This library is free software; you can redistribute it and/or
++ *     modify it under the terms of the GNU General Public License as
++ *     published by the Free Software Foundation; either version 2 of the
++ *     License, or (at your option) any later version.
++ *
++ *     This library is distributed in the hope that it will be useful,
++ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *     GNU General Public License for more details.
++ *
++ * Or, alternatively,
++ *
++ *  b) Permission is hereby granted, free of charge, to any person
++ *     obtaining a copy of this software and associated documentation
++ *     files (the "Software"), to deal in the Software without
++ *     restriction, including without limitation the rights to use,
++ *     copy, modify, merge, publish, distribute, sublicense, and/or
++ *     sell copies of the Software, and to permit persons to whom the
++ *     Software is furnished to do so, subject to the following
++ *     conditions:
++ *
++ *     The above copyright notice and this permission notice shall be
++ *     included in all copies or substantial portions of the Software.
++ *
++ *     THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
++ *     EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
++ *     OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
++ *     NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
++ *     HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
++ *     WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++ *     FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
++ *     OTHER DEALINGS IN THE SOFTWARE.
++ */
++
++/*
++ * Device Tree file for Marvell Armada-8080 Development board platform
++ */
++
++#include "armada-8080.dtsi"
++
++/ {
++	model = "Marvell 8080 board";
++	compatible = "marvell,armada-8080-pd", "marvell,armada-8080",
++		     "marvell,armada-ap810-octa", "marvell,armada-ap810";
++
++	chosen {
++		stdout-path = "serial0:115200n8";
++	};
++
++	memory@00000000 {
++		device_type = "memory";
++		reg = <0x0 0x0 0x0 0x80000000>;
++	};
++};
++
++&ap0_uart0 {
++	clock-frequency = <384000>;
++	status = "okay";
++};
+diff --git a/arch/arm64/boot/dts/marvell/armada-8080.dtsi b/arch/arm64/boot/dts/marvell/armada-8080.dtsi
+new file mode 100644
+index 0000000..09b095d
+--- /dev/null
++++ b/arch/arm64/boot/dts/marvell/armada-8080.dtsi
+@@ -0,0 +1,69 @@
++/*
++ * Copyright (C) 2017 Marvell Technology Group Ltd.
++ *
++ * This file is dual-licensed: you can use it either under the terms
++ * of the GPLv2 or the X11 license, at your option. Note that this dual
++ * licensing only applies to this file, and not this project as a
++ * whole.
++ *
++ *  a) This library is free software; you can redistribute it and/or
++ *     modify it under the terms of the GNU General Public License as
++ *     published by the Free Software Foundation; either version 2 of the
++ *     License, or (at your option) any later version.
++ *
++ *     This library is distributed in the hope that it will be useful,
++ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *     GNU General Public License for more details.
++ *
++ * Or, alternatively,
++ *
++ *  b) Permission is hereby granted, free of charge, to any person
++ *     obtaining a copy of this software and associated documentation
++ *     files (the "Software"), to deal in the Software without
++ *     restriction, including without limitation the rights to use,
++ *     copy, modify, merge, publish, distribute, sublicense, and/or
++ *     sell copies of the Software, and to permit persons to whom the
++ *     Software is furnished to do so, subject to the following
++ *     conditions:
++ *
++ *     The above copyright notice and this permission notice shall be
++ *     included in all copies or substantial portions of the Software.
++ *
++ *     THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
++ *     EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
++ *     OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
++ *     NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
++ *     HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
++ *     WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++ *     FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
++ *     OTHER DEALINGS IN THE SOFTWARE.
++ */
++
++/*
++ * Device Tree file for Marvell Armada-8080 SoC, made of an AP810 OCTA.
++ */
++
++#include "armada-common.dtsi"
++#include "armada-ap810-ap0.dtsi"
++
++#define AP_NUM				0
++#define AP810_NAME			ap0
++#define AP810_BASE			0xe8000000
++#define AP810_GIC_ITS_BASE	0xf040000
++#include "armada-ap810-octa-core.dtsi"
++#undef AP_NUM
++#undef AP810_NAME
++#undef AP810_BASE
++#undef AP810_GIC_ITS_BASE
++
++/ {
++	model = "Marvell 8080 board";
++	compatible = "marvell,armada-8080", "marvell,armada-ap810-octa",
++				"marvell,armada-ap810";
++
++	aliases {
++		serial0 = &ap0_uart0;
++		serial1 = &ap0_uart1;
++	};
++};
+diff --git a/arch/arm64/boot/dts/marvell/armada-8160-pd.dts b/arch/arm64/boot/dts/marvell/armada-8160-pd.dts
+new file mode 100644
+index 0000000..ff1eb57
+--- /dev/null
++++ b/arch/arm64/boot/dts/marvell/armada-8160-pd.dts
+@@ -0,0 +1,67 @@
++/*
++ * Copyright (C) 2017 Marvell Technology Group Ltd.
++ *
++ * This file is dual-licensed: you can use it either under the terms
++ * of the GPLv2 or the X11 license, at your option. Note that this dual
++ * licensing only applies to this file, and not this project as a
++ * whole.
++ *
++ *  a) This library is free software; you can redistribute it and/or
++ *     modify it under the terms of the GNU General Public License as
++ *     published by the Free Software Foundation; either version 2 of the
++ *     License, or (at your option) any later version.
++ *
++ *     This library is distributed in the hope that it will be useful,
++ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *     GNU General Public License for more details.
++ *
++ * Or, alternatively,
++ *
++ *  b) Permission is hereby granted, free of charge, to any person
++ *     obtaining a copy of this software and associated documentation
++ *     files (the "Software"), to deal in the Software without
++ *     restriction, including without limitation the rights to use,
++ *     copy, modify, merge, publish, distribute, sublicense, and/or
++ *     sell copies of the Software, and to permit persons to whom the
++ *     Software is furnished to do so, subject to the following
++ *     conditions:
++ *
++ *     The above copyright notice and this permission notice shall be
++ *     included in all copies or substantial portions of the Software.
++ *
++ *     THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
++ *     EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
++ *     OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
++ *     NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
++ *     HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
++ *     WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++ *     FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
++ *     OTHER DEALINGS IN THE SOFTWARE.
++ */
++
++/*
++ * Device Tree file for Marvell Armada-8160 Development board platform
++ */
++
++#include "armada-8160.dtsi"
++
++/ {
++	model = "Marvell 8160 emulator";
++	compatible = "marvell,armada-8160-pd", "marvell,armada-8160",
++		     "marvell,armada-ap810-octa", "marvell,armada-ap810";
++
++	chosen {
++		stdout-path = "serial0:115200n8";
++	};
++
++	memory@00000000 {
++		device_type = "memory";
++		reg = <0x0 0x0 0x0 0x80000000>;
++	};
++};
++
++&ap0_uart0 {
++	clock-frequency = <384000>;
++	status = "okay";
++};
+diff --git a/arch/arm64/boot/dts/marvell/armada-8160.dtsi b/arch/arm64/boot/dts/marvell/armada-8160.dtsi
+new file mode 100644
+index 0000000..12163ce
+--- /dev/null
++++ b/arch/arm64/boot/dts/marvell/armada-8160.dtsi
+@@ -0,0 +1,83 @@
++/*
++ * Copyright (C) 2017 Marvell Technology Group Ltd.
++ *
++ * This file is dual-licensed: you can use it either under the terms
++ * of the GPLv2 or the X11 license, at your option. Note that this dual
++ * licensing only applies to this file, and not this project as a
++ * whole.
++ *
++ *  a) This library is free software; you can redistribute it and/or
++ *     modify it under the terms of the GNU General Public License as
++ *     published by the Free Software Foundation; either version 2 of the
++ *     License, or (at your option) any later version.
++ *
++ *     This library is distributed in the hope that it will be useful,
++ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *     GNU General Public License for more details.
++ *
++ * Or, alternatively,
++ *
++ *  b) Permission is hereby granted, free of charge, to any person
++ *     obtaining a copy of this software and associated documentation
++ *     files (the "Software"), to deal in the Software without
++ *     restriction, including without limitation the rights to use,
++ *     copy, modify, merge, publish, distribute, sublicense, and/or
++ *     sell copies of the Software, and to permit persons to whom the
++ *     Software is furnished to do so, subject to the following
++ *     conditions:
++ *
++ *     The above copyright notice and this permission notice shall be
++ *     included in all copies or substantial portions of the Software.
++ *
++ *     THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
++ *     EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
++ *     OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
++ *     NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
++ *     HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
++ *     WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++ *     FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
++ *     OTHER DEALINGS IN THE SOFTWARE.
++ */
++
++/*
++ * Device Tree file for Marvell Armada-8160 SoC, made of a dual AP810 OCTA.
++ */
++
++#include "armada-common.dtsi"
++#include "armada-ap810-ap0.dtsi"
++
++#define AP_NUM			0
++#define AP810_NAME		ap0
++#define AP810_BASE		0xe8000000
++#define AP810_GIC_ITS_BASE	0xf040000
++
++#include "armada-ap810-octa-core.dtsi"
++
++#undef AP_NUM
++#undef AP810_NAME
++#undef AP810_BASE
++#undef AP810_GIC_ITS_BASE
++
++#define AP_NUM			1
++#define AP810_NAME		ap1
++#define AP810_BASE		0xe4000000
++#define AP810_GIC_ITS_BASE	0xb040000
++
++#include "armada-ap810-octa-core.dtsi"
++
++#undef AP_NUM
++#undef AP810_NAME
++#undef AP810_BASE
++#undef AP810_GIC_ITS_BASE
++
++/ {
++	model = "Marvell 8160 SoC";
++	compatible = "marvell,armada-8160", "marvell,armada-ap810-octa",
++				"marvell,armada-ap810";
++
++	aliases {
++		serial0 = &ap0_uart0;
++		serial1 = &ap0_uart1;
++	};
++};
+diff --git a/arch/arm64/boot/dts/marvell/armada-8320-pd.dts b/arch/arm64/boot/dts/marvell/armada-8320-pd.dts
+new file mode 100644
+index 0000000..f619dd0
+--- /dev/null
++++ b/arch/arm64/boot/dts/marvell/armada-8320-pd.dts
+@@ -0,0 +1,67 @@
++/*
++ * Copyright (C) 2017 Marvell Technology Group Ltd.
++ *
++ * This file is dual-licensed: you can use it either under the terms
++ * of the GPLv2 or the X11 license, at your option. Note that this dual
++ * licensing only applies to this file, and not this project as a
++ * whole.
++ *
++ *  a) This library is free software; you can redistribute it and/or
++ *     modify it under the terms of the GNU General Public License as
++ *     published by the Free Software Foundation; either version 2 of the
++ *     License, or (at your option) any later version.
++ *
++ *     This library is distributed in the hope that it will be useful,
++ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *     GNU General Public License for more details.
++ *
++ * Or, alternatively,
++ *
++ *  b) Permission is hereby granted, free of charge, to any person
++ *     obtaining a copy of this software and associated documentation
++ *     files (the "Software"), to deal in the Software without
++ *     restriction, including without limitation the rights to use,
++ *     copy, modify, merge, publish, distribute, sublicense, and/or
++ *     sell copies of the Software, and to permit persons to whom the
++ *     Software is furnished to do so, subject to the following
++ *     conditions:
++ *
++ *     The above copyright notice and this permission notice shall be
++ *     included in all copies or substantial portions of the Software.
++ *
++ *     THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
++ *     EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
++ *     OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
++ *     NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
++ *     HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
++ *     WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++ *     FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
++ *     OTHER DEALINGS IN THE SOFTWARE.
++ */
++
++/*
++ * Device Tree file for Marvell Armada-8320 Development board platform
++ */
++
++#include "armada-8320.dtsi"
++
++/ {
++	model = "Marvell 8320 emulator";
++	compatible = "marvell,armada-8320-pd", "marvell,armada-8320",
++		     "marvell,armada-ap810-octa", "marvell,armada-ap810";
++
++	chosen {
++		stdout-path = "serial0:115200n8";
++	};
++
++	memory@00000000 {
++		device_type = "memory";
++		reg = <0x0 0x0 0x0 0x80000000>;
++	};
++};
++
++&ap0_uart0 {
++	clock-frequency = <384000>;
++	status = "okay";
++};
+diff --git a/arch/arm64/boot/dts/marvell/armada-8320.dtsi b/arch/arm64/boot/dts/marvell/armada-8320.dtsi
+new file mode 100644
+index 0000000..0def268
+--- /dev/null
++++ b/arch/arm64/boot/dts/marvell/armada-8320.dtsi
+@@ -0,0 +1,99 @@
++/*
++ * Copyright (C) 2017 Marvell Technology Group Ltd.
++ *
++ * This file is dual-licensed: you can use it either under the terms
++ * of the GPLv2 or the X11 license, at your option. Note that this dual
++ * licensing only applies to this file, and not this project as a
++ * whole.
++ *
++ *  a) This library is free software; you can redistribute it and/or
++ *     modify it under the terms of the GNU General Public License as
++ *     published by the Free Software Foundation; either version 2 of the
++ *     License, or (at your option) any later version.
++ *
++ *     This library is distributed in the hope that it will be useful,
++ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *     GNU General Public License for more details.
++ *
++ * Or, alternatively,
++ *
++ *  b) Permission is hereby granted, free of charge, to any person
++ *     obtaining a copy of this software and associated documentation
++ *     files (the "Software"), to deal in the Software without
++ *     restriction, including without limitation the rights to use,
++ *     copy, modify, merge, publish, distribute, sublicense, and/or
++ *     sell copies of the Software, and to permit persons to whom the
++ *     Software is furnished to do so, subject to the following
++ *     conditions:
++ *
++ *     The above copyright notice and this permission notice shall be
++ *     included in all copies or substantial portions of the Software.
++ *
++ *     THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
++ *     EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
++ *     OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
++ *     NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
++ *     HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
++ *     WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++ *     FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
++ *     OTHER DEALINGS IN THE SOFTWARE.
++ */
++
++/*
++ * Device Tree file for Marvell Armada-8320 SoC, made of a quad AP810 OCTA.
++ */
++
++#include "armada-common.dtsi"
++#include "armada-ap810-ap0.dtsi"
++
++#define AP_NUM			0
++#define AP810_NAME		ap0
++#define AP810_BASE		0xe8000000
++#define AP810_GIC_ITS_BASE	0xf040000
++#include "armada-ap810-octa-core.dtsi"
++#undef AP_NUM
++#undef AP810_NAME
++#undef AP810_BASE
++#undef AP810_GIC_ITS_BASE
++
++#define AP_NUM			1
++#define AP810_NAME		ap1
++#define AP810_BASE		0xe4000000
++#define AP810_GIC_ITS_BASE	0xb040000
++#include "armada-ap810-octa-core.dtsi"
++#undef AP_NUM
++#undef AP810_NAME
++#undef AP810_BASE
++#undef AP810_GIC_ITS_BASE
++
++#define AP_NUM			2
++#define AP810_NAME		ap2
++#define AP810_BASE		0xe0000000
++#define AP810_GIC_ITS_BASE	0x7040000
++#include "armada-ap810-octa-core.dtsi"
++#undef AP_NUM
++#undef AP810_NAME
++#undef AP810_BASE
++#undef AP810_GIC_ITS_BASE
++
++#define AP_NUM			3
++#define AP810_NAME		ap3
++#define AP810_BASE		0xdc000000
++#define AP810_GIC_ITS_BASE	0x3040000
++#include "armada-ap810-octa-core.dtsi"
++#undef AP_NUM
++#undef AP810_NAME
++#undef AP810_BASE
++#undef AP810_GIC_ITS_BASE
++
++/ {
++	model = "Marvell 8320 SoC";
++	compatible = "marvell,armada-8320", "marvell,armada-ap810-octa",
++				"marvell,armada-ap810";
++
++	aliases {
++		serial0 = &ap0_uart0;
++		serial1 = &ap0_uart1;
++	};
++};
+diff --git a/arch/arm64/boot/dts/marvell/armada-ap810-ap0.dtsi b/arch/arm64/boot/dts/marvell/armada-ap810-ap0.dtsi
+new file mode 100644
+index 0000000..ed7ae7c
+--- /dev/null
++++ b/arch/arm64/boot/dts/marvell/armada-ap810-ap0.dtsi
+@@ -0,0 +1,104 @@
++/*
++ * Copyright (C) 2017 Marvell Technology Group Ltd.
++ *
++ * This file is dual-licensed: you can use it either under the terms
++ * of the GPLv2 or the X11 license, at your option. Note that this dual
++ * licensing only applies to this file, and not this project as a
++ * whole.
++ *
++ *  a) This library is free software; you can redistribute it and/or
++ *     modify it under the terms of the GNU General Public License as
++ *     published by the Free Software Foundation; either version 2 of the
++ *     License, or (at your option) any later version.
++ *
++ *     This library is distributed in the hope that it will be useful,
++ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *     GNU General Public License for more details.
++ *
++ * Or, alternatively,
++ *
++ *  b) Permission is hereby granted, free of charge, to any person
++ *     obtaining a copy of this software and associated documentation
++ *     files (the "Software"), to deal in the Software without
++ *     restriction, including without limitation the rights to use,
++ *     copy, modify, merge, publish, distribute, sublicense, and/or
++ *     sell copies of the Software, and to permit persons to whom the
++ *     Software is furnished to do so, subject to the following
++ *     conditions:
++ *
++ *     The above copyright notice and this permission notice shall be
++ *     included in all copies or substantial portions of the Software.
++ *
++ *     THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
++ *     EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
++ *     OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
++ *     NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
++ *     HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
++ *     WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++ *     FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
++ *     OTHER DEALINGS IN THE SOFTWARE.
++ */
++
++/*
++ * Device Tree file for Marvell Armada AP810 (relevant for AP0 only).
++ */
++
++#include <dt-bindings/interrupt-controller/arm-gic.h>
++
++/dts-v1/;
++
++/ {
++	model = "Marvell Armada AP810";
++	compatible = "marvell,armada-ap810";
++	#address-cells = <2>;
++	#size-cells = <2>;
++
++	psci {
++		compatible = "arm,psci-0.2";
++		method = "smc";
++	};
++
++	config-space {
++		#address-cells = <1>;
++		#size-cells = <1>;
++		compatible = "simple-bus";
++		ranges = <0x0 0x0 0xdc000000 0x14000000>;
++		interrupt-parent = <&gic>;
++
++		/* Every AP810 die includes GIC Distributor.
++		 * As GIC-600 feature there is no need to initialize
++		 * every distributor in multi-die system, since GIC-600
++		 * broadcast the distributor configuration for other dies,
++		 * (this is done from AP0 in ATF firmware).
++		 * The above explains why we need to describe the
++		 * following interrupt controller node only for AP0
++		 */
++		gic: interrupt-controller@13000000 {
++			compatible = "arm,gic-v3";
++			#interrupt-cells = <3>;
++			#address-cells = <1>;
++			#size-cells = <1>;
++			interrupt-controller;
++			interrupts = <GIC_PPI 9 IRQ_TYPE_LEVEL_HIGH>;
++			ranges;
++
++			reg = <0x13000000 0x10000>,	/* GICD */
++			      <0x13060000 0x100000>,	/* GICR */
++			      <0x100c0000 0x2000>,	/* GICC */
++			      <0x100d0000 0x1000>,	/* GICH */
++			      <0x100e0000 0x2000>;	/* GICV */
++		};
++
++		/* All APs are synced in relevance to AP0 timer,
++		 * so we describe timer node only for AP0.
++		 */
++		timer {
++			compatible = "arm,armv8-timer";
++			interrupts = <GIC_PPI 13 IRQ_TYPE_LEVEL_LOW>,
++				     <GIC_PPI 14 IRQ_TYPE_LEVEL_LOW>,
++				     <GIC_PPI 11 IRQ_TYPE_LEVEL_LOW>,
++				     <GIC_PPI 10 IRQ_TYPE_LEVEL_LOW>;
++		};
++	};
++};
+diff --git a/arch/arm64/boot/dts/marvell/armada-ap810-octa-core.dtsi b/arch/arm64/boot/dts/marvell/armada-ap810-octa-core.dtsi
+new file mode 100644
+index 0000000..cb65e5b
+--- /dev/null
++++ b/arch/arm64/boot/dts/marvell/armada-ap810-octa-core.dtsi
+@@ -0,0 +1,106 @@
++/*
++ * Copyright (C) 2017 Marvell Technology Group Ltd.
++ *
++ * This file is dual-licensed: you can use it either under the terms
++ * of the GPLv2 or the X11 license, at your option. Note that this dual
++ * licensing only applies to this file, and not this project as a
++ * whole.
++ *
++ *  a) This library is free software; you can redistribute it and/or
++ *     modify it under the terms of the GNU General Public License as
++ *     published by the Free Software Foundation; either version 2 of the
++ *     License, or (at your option) any later version.
++ *
++ *     This library is distributed in the hope that it will be useful,
++ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *     GNU General Public License for more details.
++ *
++ * Or, alternatively,
++ *
++ *  b) Permission is hereby granted, free of charge, to any person
++ *     obtaining a copy of this software and associated documentation
++ *     files (the "Software"), to deal in the Software without
++ *     restriction, including without limitation the rights to use,
++ *     copy, modify, merge, publish, distribute, sublicense, and/or
++ *     sell copies of the Software, and to permit persons to whom the
++ *     Software is furnished to do so, subject to the following
++ *     conditions:
++ *
++ *     The above copyright notice and this permission notice shall be
++ *     included in all copies or substantial portions of the Software.
++ *
++ *     THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
++ *     EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
++ *     OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
++ *     NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
++ *     HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
++ *     WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++ *     FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
++ *     OTHER DEALINGS IN THE SOFTWARE.
++ */
++
++/*
++ * Device Tree file for Marvell Armada AP810 OCTA cores.
++ */
++
++#define CPU_NUM(x)			(AP_NUM << 16 | x)
++
++#include "armada-ap810.dtsi"
++
++/ {
++	cpus@AP_NUM {
++		#address-cells = <1>;
++		#size-cells = <0>;
++		compatible = "marvell,armada-ap810-octa";
++
++		cpu0@000 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a72", "arm,armv8";
++			reg = <CPU_NUM(0x0)>;
++			enable-method = "psci";
++		};
++		cpu1@001 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a72", "arm,armv8";
++			reg = <CPU_NUM(0x1)>;
++			enable-method = "psci";
++		};
++		cpu2@100 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a72", "arm,armv8";
++			reg = <CPU_NUM(0x100)>;
++			enable-method = "psci";
++		};
++		cpu3@101 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a72", "arm,armv8";
++			reg = <CPU_NUM(0x101)>;
++			enable-method = "psci";
++		};
++		cpu4@200 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a72", "arm,armv8";
++			reg = <CPU_NUM(0x200)>;
++			enable-method = "psci";
++		};
++		cpu5@201 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a72", "arm,armv8";
++			reg = <CPU_NUM(0x201)>;
++			enable-method = "psci";
++		};
++		cpu6@300 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a72", "arm,armv8";
++			reg = <CPU_NUM(0x300)>;
++			enable-method = "psci";
++		};
++		cpu7@301 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a72", "arm,armv8";
++			reg = <CPU_NUM(0x301)>;
++			enable-method = "psci";
++		};
++	};
++};
+diff --git a/arch/arm64/boot/dts/marvell/armada-ap810.dtsi b/arch/arm64/boot/dts/marvell/armada-ap810.dtsi
+new file mode 100644
+index 0000000..11a17ff
+--- /dev/null
++++ b/arch/arm64/boot/dts/marvell/armada-ap810.dtsi
+@@ -0,0 +1,136 @@
++/*
++ * Copyright (C) 2017 Marvell Technology Group Ltd.
++ *
++ * This file is dual-licensed: you can use it either under the terms
++ * of the GPLv2 or the X11 license, at your option. Note that this dual
++ * licensing only applies to this file, and not this project as a
++ * whole.
++ *
++ *  a) This library is free software; you can redistribute it and/or
++ *     modify it under the terms of the GNU General Public License as
++ *     published by the Free Software Foundation; either version 2 of the
++ *     License, or (at your option) any later version.
++ *
++ *     This library is distributed in the hope that it will be useful,
++ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *     GNU General Public License for more details.
++ *
++ * Or, alternatively,
++ *
++ *  b) Permission is hereby granted, free of charge, to any person
++ *     obtaining a copy of this software and associated documentation
++ *     files (the "Software"), to deal in the Software without
++ *     restriction, including without limitation the rights to use,
++ *     copy, modify, merge, publish, distribute, sublicense, and/or
++ *     sell copies of the Software, and to permit persons to whom the
++ *     Software is furnished to do so, subject to the following
++ *     conditions:
++ *
++ *     The above copyright notice and this permission notice shall be
++ *     included in all copies or substantial portions of the Software.
++ *
++ *     THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
++ *     EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
++ *     OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
++ *     NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
++ *     HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
++ *     WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++ *     FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
++ *     OTHER DEALINGS IN THE SOFTWARE.
++ */
++
++/*
++ * Device Tree file for Marvell Armada AP810.
++ */
++
++#include <dt-bindings/interrupt-controller/arm-gic.h>
++#include <dt-bindings/soc/ap810-stream-id.h>
++
++/* For every AP810, include ITS unit (part of GICv3),
++ * the ITS node should be part of GIC generic node.
++ * This node describe the ITS (Interrupt translation service)
++ * of AP-x.
++ * ITS does not have boadcast configuration (every ITS have his own)
++ * interrupt and configuration.
++ */
++&gic{
++	AP810_LABEL(gic_its): interrupt-controller0@AP810_GIC_ITS_BASE {
++		compatible = "arm,gic-v3-its";
++		msi-controller;
++		#msi-cells = <1>;
++		reg = <AP810_GIC_ITS_BASE 0x20000>;
++	};
++};
++
++/ {
++	AP810_NAME {
++		#address-cells = <2>;
++		#size-cells = <2>;
++		compatible = "simple-bus";
++		interrupt-parent = <&gic>;
++		ranges;
++
++		config-space {
++			#address-cells = <1>;
++			#size-cells = <1>;
++			compatible = "simple-bus";
++			ranges = <0x0 0x0 AP810_BASE 0x4000000>;
++			interrupt-parent = <&gic>;
++
++			AP810_LABEL(xor0): xor0@400000 {
++				compatible = "marvell,mv-xor-v2";
++				reg = <0x400000 0x1000>,
++				      <0x410000 0x1000>;
++				msi-parent = <&AP810_LABEL(gic_its) MVEBU_STREAM_ID_XORx(0, AP_NUM)>;
++				dma-bus-width = <40>;
++				dma-coherent;
++			};
++
++			AP810_LABEL(xor1): xor1@420000 {
++				compatible = "marvell,mv-xor-v2";
++				reg = <0x420000 0x1000>,
++				      <0x430000 0x1000>;
++				msi-parent = <&AP810_LABEL(gic_its) MVEBU_STREAM_ID_XORx(1, AP_NUM)>;
++				dma-bus-width = <40>;
++				dma-coherent;
++			};
++
++			AP810_LABEL(xor2): xor2@440000 {
++				compatible = "marvell,mv-xor-v2";
++				reg = <0x440000 0x1000>,
++				      <0x450000 0x1000>;
++				msi-parent = <&AP810_LABEL(gic_its) MVEBU_STREAM_ID_XORx(2, AP_NUM)>;
++				dma-bus-width = <40>;
++				dma-coherent;
++			};
++
++			AP810_LABEL(xor3): xor3@460000 {
++				compatible = "marvell,mv-xor-v2";
++				reg = <0x460000 0x1000>,
++				      <0x470000 0x1000>;
++				msi-parent = <&AP810_LABEL(gic_its) MVEBU_STREAM_ID_XORx(3, AP_NUM)>;
++				dma-bus-width = <40>;
++				dma-coherent;
++			};
++
++			AP810_LABEL(uart0): serial0@512000 {
++				compatible = "snps,dw-apb-uart";
++				reg = <0x512000 0x100>;
++				reg-shift = <2>;
++				interrupts = <GIC_SPI 22 IRQ_TYPE_LEVEL_HIGH>;
++				reg-io-width = <1>;
++				status = "disabled";
++			};
++
++			AP810_LABEL(uart1): serial1@512100 {
++				compatible = "snps,dw-apb-uart";
++				reg = <0x512100 0x100>;
++				reg-shift = <2>;
++				interrupts = <GIC_SPI 23 IRQ_TYPE_LEVEL_HIGH>;
++				reg-io-width = <1>;
++				status = "disabled";
++			};
++		};
++	};
++};
+diff --git a/arch/arm64/boot/dts/marvell/armada-common.dtsi b/arch/arm64/boot/dts/marvell/armada-common.dtsi
+index fb3073d..64668d2 100644
+--- a/arch/arm64/boot/dts/marvell/armada-common.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-common.dtsi
+@@ -10,6 +10,7 @@
+  *     CP110_LABEL(usb0) -> cps_usb0
+  */
+ #define CP110_LABEL(name)	EVALUATOR(CP110_NAME, name)
++#define AP810_LABEL(name)	EVALUATOR(AP810_NAME, name)
+ 
+ #define APPEND_NX(A, B)		A ##-## B
+ #define APPEND(A, B)		APPEND_NX(A, B)
+diff --git a/include/dt-bindings/soc/ap810-stream-id.h b/include/dt-bindings/soc/ap810-stream-id.h
+new file mode 100644
+index 0000000..6518611
+--- /dev/null
++++ b/include/dt-bindings/soc/ap810-stream-id.h
+@@ -0,0 +1,3 @@
++/* XOR stream IDs: 0xa0-0xaf */
++#define MVEBU_STREAM_ID_XOR0		0xa0
++#define MVEBU_STREAM_ID_XORx(x, ap)	(MVEBU_STREAM_ID_XOR0 + ap * 4 + x)
+-- 
+2.7.4
+

@@ -1,0 +1,11 @@
+prefix=/home/ubuntu/tp-link/TL-SX3016F_trunk/tplink/buildroot-marvell/build/tl-sx3016f/host/usr
+exec_prefix=/home/ubuntu/tp-link/TL-SX3016F_trunk/tplink/buildroot-marvell/build/tl-sx3016f/host/usr
+libdir=/home/ubuntu/tp-link/TL-SX3016F_trunk/tplink/buildroot-marvell/build/tl-sx3016f/host/usr/lib
+includedir=/home/ubuntu/tp-link/TL-SX3016F_trunk/tplink/buildroot-marvell/build/tl-sx3016f/host/usr/include
+
+Name: libkmod
+Description: Library to deal with kernel modules
+Version: 20
+Libs: -L${libdir} -lkmod
+Libs.private:  
+Cflags: -I${includedir}

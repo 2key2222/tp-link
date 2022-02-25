@@ -1,0 +1,161 @@
+From bacbbf55598a983d250759dc5acead4f51f71f10 Mon Sep 17 00:00:00 2001
+From: jinghua <xigu@marvell.com>
+Date: Thu, 13 Apr 2017 20:46:22 +0800
+Subject: [PATCH 1591/2241] usb: a3700: change usb phy driver compatible string
+
+Change-Id: Iac51be555eaf70f7e5fe4447e378e9f884fa5762
+Signed-off-by: jinghua <xigu@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/38673
+Tested-by: Hua Jing <jinghua@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/38753
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+---
+ .../devicetree/bindings/usb/armada3700-otg-phy.txt | 49 ----------------------
+ .../devicetree/bindings/usb/armada3700-usb-phy.txt | 49 ++++++++++++++++++++++
+ arch/arm64/boot/dts/marvell/armada-37xx.dtsi       |  4 +-
+ drivers/usb/phy/phy-a3700-usb.c                    |  2 +-
+ 4 files changed, 52 insertions(+), 52 deletions(-)
+ delete mode 100644 Documentation/devicetree/bindings/usb/armada3700-otg-phy.txt
+ create mode 100644 Documentation/devicetree/bindings/usb/armada3700-usb-phy.txt
+
+diff --git a/Documentation/devicetree/bindings/usb/armada3700-otg-phy.txt b/Documentation/devicetree/bindings/usb/armada3700-otg-phy.txt
+deleted file mode 100644
+index 93bae71..0000000
+--- a/Documentation/devicetree/bindings/usb/armada3700-otg-phy.txt
++++ /dev/null
+@@ -1,49 +0,0 @@
+-USB Armada3700 OTG PHY
+-
+-This controller is integrated only in Armada-3700.
+-
+-Armada-3700 could be working in USB OTG mode which supports USB Host/Device mode
+-switching dynamically. To do that, the following dts changes are required:
+-- Enable both USB Host (usb3) and Device (u3d and udc) controller DT nodes.
+-- In USB Host DT node, use special XHCI driver compatible string:
+-  "marvell,armada-3700-xhci-otg", while the default one "generic-xhci" is for
+-  USB static host mode.
+-- Enable OTG PHY TD node and make sure XHCI DT node have reference to it with
+-  "usb-phy" property.
+-Armada-3700 could also be working in USB static host mode, when USB Device feature
+-is not required.
+-
+-Required properties:
+-- compatible	: should be "marvell,armada-3700-otg"
+-- reg		: Physical base address and size of the USB3 device registers map.
+-- interrupts	: Should contain single irq line of USB3 device controller
+-
+-Optional properties:
+-- vcc-supply: phandle to the regulator that provides power to the PHY.
+-- marvell,static-host-mode: OTG PHY is working in usb static host mode, with no host/device
+-  switching supported.
+-
+-USB OTG mode example:
+-	usb3@58000 {
+-		compatible = "marvell,armada-3700-xhci-otg";
+-		status = "okay";
+-		usb-phy = <&otg_phy>;
+-	};
+-
+-	otg_phy: otg@5d800 {
+-		compatible = "marvell,usb-3700-otg";
+-		reg = <0x5d800 0x100>;
+-		interrupts = <GIC_SPI 16 IRQ_TYPE_LEVEL_HIGH>;
+-		vcc-supply = <&exp_usb3_vbus>;
+-		status = "okay";
+-	};
+-
+-USB Static Host mode example, no modification to USB3 host controller DT node:
+-	otg_phy: otg@5d800 {
+-		compatible = "marvell,usb-3700-otg";
+-		reg = <0x5d800 0x100>;
+-		interrupts = <GIC_SPI 16 IRQ_TYPE_LEVEL_HIGH>;
+-		marvell,static-host-mode;
+-		vcc-supply = <&exp_usb3_vbus>;
+-		status = "okay";
+-	};
+diff --git a/Documentation/devicetree/bindings/usb/armada3700-usb-phy.txt b/Documentation/devicetree/bindings/usb/armada3700-usb-phy.txt
+new file mode 100644
+index 0000000..59a8743
+--- /dev/null
++++ b/Documentation/devicetree/bindings/usb/armada3700-usb-phy.txt
+@@ -0,0 +1,49 @@
++USB Armada3700 OTG PHY
++
++This controller is integrated only in Armada-3700.
++
++Armada-3700 could be working in USB OTG mode which supports USB Host/Device mode
++switching dynamically. To do that, the following dts changes are required:
++- Enable both USB Host (usb3) and Device (u3d and udc) controller DT nodes.
++- In USB Host DT node, use special XHCI driver compatible string:
++  "marvell,armada-3700-xhci-otg", while the default one "generic-xhci" is for
++  USB static host mode.
++- Enable OTG PHY TD node and make sure XHCI DT node have reference to it with
++  "usb-phy" property.
++Armada-3700 could also be working in USB static host mode, when USB Device feature
++is not required.
++
++Required properties:
++- compatible	: should be "marvell,armada-3700-usb-phy"
++- reg		: Physical base address and size of the USB3 device registers map.
++- interrupts	: Should contain single irq line of USB3 device controller
++
++Optional properties:
++- vcc-supply: phandle to the regulator that provides power to the PHY.
++- marvell,static-host-mode: OTG PHY is working in usb static host mode, with no host/device
++  switching supported.
++
++USB OTG mode example:
++	usb3@58000 {
++		compatible = "marvell,armada-3700-xhci-otg";
++		status = "okay";
++		usb-phy = <&otg_phy>;
++	};
++
++	usb_phy: usb_phy@5d800 {
++		compatible = "marvell,armada-3700-usb-phy";
++		reg = <0x5d800 0x100>;
++		interrupts = <GIC_SPI 16 IRQ_TYPE_LEVEL_HIGH>;
++		vcc-supply = <&exp_usb3_vbus>;
++		status = "okay";
++	};
++
++USB Static Host mode example, no modification to USB3 host controller DT node:
++	usb_phy: usb_phy@5d800 {
++		compatible = "marvell,armada-3700-usb-phy";
++		reg = <0x5d800 0x100>;
++		interrupts = <GIC_SPI 16 IRQ_TYPE_LEVEL_HIGH>;
++		marvell,static-host-mode;
++		vcc-supply = <&exp_usb3_vbus>;
++		status = "okay";
++	};
+diff --git a/arch/arm64/boot/dts/marvell/armada-37xx.dtsi b/arch/arm64/boot/dts/marvell/armada-37xx.dtsi
+index af46df0..cfe495f 100644
+--- a/arch/arm64/boot/dts/marvell/armada-37xx.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-37xx.dtsi
+@@ -370,8 +370,8 @@
+ 				status = "disabled";
+ 			};
+ 
+-			otg_phy: otg@5d800 {
+-				compatible = "marvell,armada-3700-otg";
++			usb_phy: usb_phy@5d800 {
++				compatible = "marvell,armada-3700-usb-phy";
+ 				reg = <0x5d800 0x100>;
+ 				interrupts = <GIC_SPI 16 IRQ_TYPE_LEVEL_HIGH>;
+ 				status = "disabled";
+diff --git a/drivers/usb/phy/phy-a3700-usb.c b/drivers/usb/phy/phy-a3700-usb.c
+index 479f7c3..6ef2ac5 100644
+--- a/drivers/usb/phy/phy-a3700-usb.c
++++ b/drivers/usb/phy/phy-a3700-usb.c
+@@ -559,7 +559,7 @@ static const struct dev_pm_ops a3700_otg_pm_ops = {
+ #endif
+ 
+ static const struct of_device_id a3700_otg_dt_ids[] = {
+-	{ .compatible = "marvell,armada-3700-otg" },
++	{ .compatible = "marvell,armada-3700-usb-phy" },
+ 	{ }
+ };
+ 
+-- 
+2.7.4
+

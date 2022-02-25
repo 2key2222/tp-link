@@ -1,0 +1,38 @@
+From da17fe370490c11bbbbc15eac37888f6a9784b98 Mon Sep 17 00:00:00 2001
+From: Konstantin Porotchkin <kostap@marvell.com>
+Date: Thu, 11 Aug 2016 15:49:14 +0300
+Subject: [PATCH 0674/2241] mmc: Add CONFIG_MMC_SDHCI_XENON entry in menuconfig
+
+Add CONFIG_MMC_SDHCI_XENON support in drivers/mmc/host/Kconfig.
+
+Change-Id: Iac542551c294cce7a7eb46bba7854dfe792e2473
+Signed-off-by: Hu Ziji <huziji@marvell.com>
+Signed-off-by: Konstantin Porotchkin <kostap@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/31895
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/mmc/host/Kconfig | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/drivers/mmc/host/Kconfig b/drivers/mmc/host/Kconfig
+index 2e6d2ff..87e1f46 100644
+--- a/drivers/mmc/host/Kconfig
++++ b/drivers/mmc/host/Kconfig
+@@ -786,3 +786,12 @@ config MMC_MTK
+ 	  If you have a machine with a integrated SD/MMC card reader, say Y or M here.
+ 	  This is needed if support for any SD/SDIO/MMC devices is required.
+ 	  If unsure, say N.
++
++config MMC_SDHCI_XENON
++	tristate "Marvell Xenon eMMC/SD/SDIO SDHCI driver"
++	depends on MMC_SDHCI && MMC_SDHCI_PLTFM
++	help
++	  This selects Marvell Xenon eMMC/SD/SDIO SDHCI.
++	  If you have a machine with integrated  Marvell Xenon SDHC IP,
++	  say Y or M here.
++	  If unsure, say N
+-- 
+2.7.4
+

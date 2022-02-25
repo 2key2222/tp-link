@@ -1,0 +1,30 @@
+From 8eade28ddf9da28535ff5194bea817f451fe6b70 Mon Sep 17 00:00:00 2001
+From: Igal Liberman <igall@marvell.com>
+Date: Thu, 23 Mar 2017 11:33:25 +0200
+Subject: [PATCH 1532/2241] doc: mvebu: add EIP197 driver to porting-guide
+
+Change-Id: I3018dc3b07995dcb4143ce46d1c4186da4d5d121
+Signed-off-by: Igal Liberman <igall@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/37900
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ Documentation/mvebu/porting_guide.txt | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/Documentation/mvebu/porting_guide.txt b/Documentation/mvebu/porting_guide.txt
+index 4cc5571..7ee2d44 100644
+--- a/Documentation/mvebu/porting_guide.txt
++++ b/Documentation/mvebu/porting_guide.txt
+@@ -98,6 +98,7 @@ A80x0/A70x0
+ 	Marvell AP806 CPU Clock Driver	| clock/mvebu-armada-ap806-cpu-clock.txt
+ 	Marvell SPI driver		| spi/spi-orion.txt
+ 	Marvell I2c driver		| i2c/i2c-mv64xxx.txt
++	Marvell EIP197 crypto driver	| crypto/inside_secure_eip.txt
+ 
+ A37x0
+ -----
+-- 
+2.7.4
+

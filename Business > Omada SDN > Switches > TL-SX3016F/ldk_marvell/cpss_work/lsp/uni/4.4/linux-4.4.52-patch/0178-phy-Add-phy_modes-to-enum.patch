@@ -1,0 +1,45 @@
+From 129d1d2041d01e6a901c8cd4e2f595f9d29d63e3 Mon Sep 17 00:00:00 2001
+From: Yuval Caduri <cyuval@marvell.com>
+Date: Thu, 11 Feb 2016 15:16:33 +0200
+Subject: [PATCH 0178/2241] phy: Add phy_modes to enum
+
+Add the PHY modes XAUI/RXAUI/KR
+
+Change-Id: I760ee18d27487e88273eec0470be88899e1c0cd1
+Reviewed-on: http://vgitil04.il.marvell.com:8080/27449
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Yehuda Yitschak <yehuday@marvell.com>
+---
+ include/linux/phy.h | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/include/linux/phy.h b/include/linux/phy.h
+index 05fde31..c0ec813 100644
+--- a/include/linux/phy.h
++++ b/include/linux/phy.h
+@@ -77,6 +77,9 @@ typedef enum {
+ 	PHY_INTERFACE_MODE_XGMII,
+ 	PHY_INTERFACE_MODE_MOCA,
+ 	PHY_INTERFACE_MODE_QSGMII,
++	PHY_INTERFACE_MODE_XAUI,
++	PHY_INTERFACE_MODE_RXAUI,
++	PHY_INTERFACE_MODE_KR,
+ 	PHY_INTERFACE_MODE_MAX,
+ } phy_interface_t;
+ 
+@@ -120,6 +123,12 @@ static inline const char *phy_modes(phy_interface_t interface)
+ 		return "moca";
+ 	case PHY_INTERFACE_MODE_QSGMII:
+ 		return "qsgmii";
++	case PHY_INTERFACE_MODE_XAUI:
++		return "xaui";
++	case PHY_INTERFACE_MODE_RXAUI:
++		return "rxaui";
++	case PHY_INTERFACE_MODE_KR:
++		return "kr";
+ 	default:
+ 		return "unknown";
+ 	}
+-- 
+2.7.4
+

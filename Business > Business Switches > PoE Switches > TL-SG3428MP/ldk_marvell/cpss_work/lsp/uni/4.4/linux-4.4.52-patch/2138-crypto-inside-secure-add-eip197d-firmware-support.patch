@@ -1,0 +1,47 @@
+From c601715a086a4dbc6e803af853f6fd26cb62287b Mon Sep 17 00:00:00 2001
+From: Ofer Heifetz <oferh@marvell.com>
+Date: Thu, 23 Nov 2017 14:17:31 +0200
+Subject: [PATCH 2138/2241] crypto: inside-secure: add eip197d firmware support
+
+ap810 uses new eip197d which needs different firmware then
+the cp110 eip197b, driver should select the firmware directory
+based on HW version.
+
+Change-Id: I3b07532766f7941b438a59067c4126f3c441b67e
+Signed-off-by: Ofer Heifetz <oferh@marvell.com>
+---
+ drivers/crypto/inside-secure/safexcel.c | 14 ++++++++++----
+ 1 file changed, 10 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/crypto/inside-secure/safexcel.c b/drivers/crypto/inside-secure/safexcel.c
+index 806c1b9..efeeb07 100644
+--- a/drivers/crypto/inside-secure/safexcel.c
++++ b/drivers/crypto/inside-secure/safexcel.c
+@@ -255,14 +255,20 @@ static int eip197_load_fw(struct device *dev, struct safexcel_crypto_priv *priv)
+ 	const u32		*fw_data;
+ 	int			i, ret, pe;
+ 	u32			fw_size, reg;
+-	const char		*fw_name[MAX_FW_NR] = {"eip197/197b/ifpp.bin",
+-						       "eip197/197b/ipue.bin"};
++	const char		*fw_file_name[MAX_FW_NR] = {"ifpp.bin",
++							    "ipue.bin"};
++	char			fw_base[13] = {0};	/* "eip197/197X/\0" */
++	char			fw_full_name[25] = {0};
++
++	snprintf(fw_base, 13, "eip197/197%s/",
++		 (priv->eip197_hw_ver == EIP197B ) ? "b" : "d");
+ 
+ 	for (i = 0; i < MAX_FW_NR; i++) {
+-		ret = request_firmware(&fw[i], fw_name[i], dev);
++		snprintf(fw_full_name, 21, "%s%s", fw_base, fw_file_name[i]);
++		ret = request_firmware(&fw[i], fw_full_name, dev);
+ 		if (ret) {
+ 			dev_err(dev, "request_firmware failed (fw: %s)\n",
+-				fw_name[i]);
++				fw_full_name);
+ 			goto release_fw;
+ 		}
+ 	 }
+-- 
+2.7.4
+

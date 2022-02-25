@@ -1,0 +1,46 @@
+From a03cc2ff14361c3aa24ffb7a54117d4ab57650ca Mon Sep 17 00:00:00 2001
+From: Hanna Hawa <hannah@marvell.com>
+Date: Mon, 25 Jul 2016 10:21:31 +0300
+Subject: [PATCH 0636/2241] fix: dts: spi: change SPI boot partition to be 3M
+
+the update SPI partitions are:
+bootloader: 3M
+filesystem: 12M
+bootloader_2nd: 1M
+
+Change-Id: Id66fec08b3d22381a28db5dd03e842e2d339f839
+Signed-off-by: Hanna Hawa <hannah@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/31397
+Reviewed-by: Neta Zur Hershkovits <neta@marvell.com>
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Haim Boot <hayim@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-7040-db.dtsi | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-7040-db.dtsi b/arch/arm64/boot/dts/marvell/armada-7040-db.dtsi
+index 421711f..eaebaa8 100644
+--- a/arch/arm64/boot/dts/marvell/armada-7040-db.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-7040-db.dtsi
+@@ -102,15 +102,15 @@
+ 					spi-max-frequency = <20000000>;
+ 					partition@0 {
+ 						label = "boot";
+-						reg = <0x0 0x200000>;
++						reg = <0x0 0x300000>;
+ 					};
+ 					partition@200000 {
+ 						label = "Filesystem";
+-						reg = <0x200000 0xd00000>;
++						reg = <0x300000 0xc00000>;
+ 					};
+ 					partition@d00000 {
+ 						label = "boot_2nd";
+-						reg = <0xd00000 0x100000>;
++						reg = <0xf00000 0x100000>;
+ 					};
+ 				};
+ 			};
+-- 
+2.7.4
+

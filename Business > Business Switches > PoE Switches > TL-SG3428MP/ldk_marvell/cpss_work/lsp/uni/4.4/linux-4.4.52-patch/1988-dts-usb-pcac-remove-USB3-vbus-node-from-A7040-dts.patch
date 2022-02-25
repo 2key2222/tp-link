@@ -1,0 +1,92 @@
+From 29f87662dde79c67b8799fb2bf1fb3b27d55a810 Mon Sep 17 00:00:00 2001
+From: Christine Gharzuzi <chrisg@marvell.com>
+Date: Wed, 6 Sep 2017 19:30:19 +0300
+Subject: [PATCH 1988/2241] dts: usb: pcac: remove USB3 vbus node from A7040
+ dts
+
+- Enable correct usb node in kernel pcac device-tree
+  (usb3h1 should be enabled and not usb3h0)
+
+- PCAC vbus is always on, therefore it's incorrect
+  to configure vcc-supply since it's not changed by
+  io-expander nor GPIO.
+
+Change-Id: Idd2103d20cf5bd07ec91e9c93ed91e68b7f5c71f
+Signed-off-by: Christine Gharzuzi <chrisg@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/43861
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Ofir Fedida <ofedida@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-7040-pcac.dts | 39 +++---------------------
+ 1 file changed, 4 insertions(+), 35 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-7040-pcac.dts b/arch/arm64/boot/dts/marvell/armada-7040-pcac.dts
+index 4d6c244..56248dd 100644
+--- a/arch/arm64/boot/dts/marvell/armada-7040-pcac.dts
++++ b/arch/arm64/boot/dts/marvell/armada-7040-pcac.dts
+@@ -130,18 +130,13 @@
+ 					reg = <0x21>;
+ 				};
+ 			};
+-			usb3h0: usb3@500000 {
+-				usb-phy = <&usb3h0_phy>;
++			usb3h1: usb3@510000 {
+ 				separated-phys-for-usb2-usb3;
+-				phys = <&utmi0>,
+-				       <&comphy0 1 COMPHY_USB3H0>;
++				phys = <&utmi1>,
++				       <&comphy0 4 COMPHY_USB3H1>;
+ 				phy-names = "usb2", "usb3";
+ 				status = "okay";
+ 			};
+-			usb3h1: usb3@510000 {
+-				status = "disabled";
+-				usb-phy = <&usb3h1_phy>;
+-			};
+ 			spi@700680 {
+ 				status = "okay";
+ 				spi-flash@0 {
+@@ -216,7 +211,7 @@
+ 				};
+ 			};
+ 
+-			utmi0: utmi@580000 {
++			utmi1: utmi@581000 {
+ 				status = "okay";
+ 			};
+ 		};
+@@ -225,30 +220,4 @@
+ 			status = "okay";
+ 		};
+ 	};
+-	usb3h0_phy: usb3-h0-phy {
+-		compatible = "usb-nop-xceiv";
+-		vcc-supply = <&exp_usb3h0_vbus>;
+-	};
+-	usb3h1_phy: usb3-h1-phy {
+-		compatible = "usb-nop-xceiv";
+-		vcc-supply = <&exp_usb3h1_vbus>;
+-	};
+-	exp_usb3h0_vbus: usb3-0-vbus {
+-		compatible = "regulator-fixed";
+-		regulator-name = "usb3-0-vbus";
+-		regulator-min-microvolt = <5000000>;
+-		regulator-max-microvolt = <5000000>;
+-		enable-active-high;
+-		regulator-always-on;
+-		gpio = <&expander0 0 GPIO_ACTIVE_HIGH>;
+-	};
+-	exp_usb3h1_vbus: usb3-1-vbus {
+-		compatible = "regulator-fixed";
+-		regulator-name = "usb3-1-vbus";
+-		regulator-min-microvolt = <5000000>;
+-		regulator-max-microvolt = <5000000>;
+-		enable-active-high;
+-		regulator-always-on;
+-		gpio = <&expander0 1 GPIO_ACTIVE_HIGH>;
+-	};
+ };
+-- 
+2.7.4
+

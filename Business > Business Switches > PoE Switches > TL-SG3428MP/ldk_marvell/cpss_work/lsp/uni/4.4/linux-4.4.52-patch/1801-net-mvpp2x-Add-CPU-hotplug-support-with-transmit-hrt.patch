@@ -1,0 +1,54 @@
+From 052c608c2165e541e4e877e53f6673b1cc2e9f90 Mon Sep 17 00:00:00 2001
+From: Stefan Chulski <stefanc@marvell.com>
+Date: Thu, 6 Jul 2017 16:30:07 +0300
+Subject: [PATCH 1801/2241] net: mvpp2x: Add CPU hotplug support with transmit
+ hrtimer
+
+This patch add aggregated TXQ drain during CPU down prepare procedure.
+
+During CPU down prepare procedure:
+- SW transmit all packets from CPU aggregated TXQ to HW.
+- Stop transmit hrtimer.
+- When cpu is back on and this CPU access xmit procedure,
+  new htimer would be started.
+
+Change-Id: I3d996d7e68bbb39522434d951b1dd95787a12556
+Signed-off-by: Stefan Chulski <stefanc@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/41277
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Tested-by: Omri Itach <omrii@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+index 812f8b8..f2223a5 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+@@ -4893,6 +4893,8 @@ static int mv_pp2x_port_cpu_callback(struct notifier_block *nfb,
+ 	struct queue_vector *qvec;
+ 	cpumask_t cpus_mask;
+ 	struct mv_pp2x_port *port = container_of(nfb, struct mv_pp2x_port, port_hotplug_nb);
++	struct mv_pp2x_aggr_tx_queue *aggr_txq;
++	struct mv_pp2x_cp_pcpu *cp_pcpu;
+ 
+ 	switch (action) {
+ 	case CPU_ONLINE:
+@@ -4914,6 +4916,14 @@ static int mv_pp2x_port_cpu_callback(struct notifier_block *nfb,
+ 		if (port->priv->pp2xdata->interrupt_tx_done)
+ 			on_each_cpu_mask(&cpus_mask, mv_pp2x_tx_done_pkts_coal_set, port, 1);
+ 		break;
++	case CPU_DOWN_PREPARE:
++		cp_pcpu = per_cpu_ptr(port->priv->pcpu, cpu);
++		aggr_txq = &port->priv->aggr_txqs[cpu];
++		mv_pp2x_tx_timer_kill(cp_pcpu);
++		aggr_txq->sw_count -= aggr_txq->xmit_bulk;
++		aggr_txq->hw_count += aggr_txq->xmit_bulk;
++		mv_pp22_thread_write(&port->priv->hw, cpu, MVPP2_AGGR_TXQ_UPDATE_REG, aggr_txq->xmit_bulk);
++		aggr_txq->xmit_bulk = 0;
+ 	}
+ 
+ 	return NOTIFY_OK;
+-- 
+2.7.4
+

@@ -1,0 +1,41 @@
+From 30784102c169d1d3831c7bbf109dfda5d601d1e9 Mon Sep 17 00:00:00 2001
+From: Christophe Jaillet <christophe.jaillet@wanadoo.fr>
+Date: Sun, 19 Feb 2017 10:19:57 +0100
+Subject: [PATCH 1656/2241] net: mvpp2: Fix a memory leak in error handling
+ path
+
+if 'devm_kzalloc()' fails, we should release resources allocated so far,
+just as done a few lines below.
+
+Patch cherry-picked from mainline 4.12_rc5
+
+Change-Id: Ic75fc210a2612e142d1123537347f3302bea4076
+Signed-off-by: Christophe JAILLET <christophe.jaillet@wanadoo.fr>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/40378
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2.c b/drivers/net/ethernet/marvell/mvpp2.c
+index 7569f8c..15959b9 100644
+--- a/drivers/net/ethernet/marvell/mvpp2.c
++++ b/drivers/net/ethernet/marvell/mvpp2.c
+@@ -6013,8 +6013,10 @@ static int mvpp2_port_init(struct mvpp2_port *port)
+ 		struct mvpp2_tx_queue *txq;
+ 
+ 		txq = devm_kzalloc(dev, sizeof(*txq), GFP_KERNEL);
+-		if (!txq)
+-			return -ENOMEM;
++		if (!txq) {
++			err = -ENOMEM;
++			goto err_free_percpu;
++		}
+ 
+ 		txq->pcpu = alloc_percpu(struct mvpp2_txq_pcpu);
+ 		if (!txq->pcpu) {
+-- 
+2.7.4
+

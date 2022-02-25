@@ -1,0 +1,64 @@
+From caa525e52e9f4c4d43c99454582bda554bedaf8e Mon Sep 17 00:00:00 2001
+From: Marcin Wojtas <mw@semihalf.com>
+Date: Mon, 31 Jul 2017 06:49:15 +0200
+Subject: [PATCH 1833/2241] arm64: defconfig: enable fine-grained task level
+ IRQ time accounting
+
+Tests showed, that under certain conditions, the summary number of jiffies
+spent on softirq/idle, which are counted by system statistics can be even
+below 10% of expected value, resulting in false load presentation.
+
+The issue was observed on the quad-core Marvell Armada 8k SoC, whose two
+10G ports were bound into L2 bridge. Load was controlled by bidirectional
+UDP traffic, produced by a packet generator. Under such condition,
+the dominant load is softirq. With 100% single CPU occupation or without
+any activity (all CPUs 100% idle), total number of jiffies is 10000 (2500
+per each core) in 10s interval. Also with other kind of load this was
+true.
+
+However below a saturation threshold it was observed, that with CPU which
+was occupied almost by softirqs only, the statistic were awkward. See
+the mpstat output:
+
+CPU %usr %nice %sys %iowait %irq %soft %steal %guest %gnice %idle
+all 0.00  0.00 0.13    0.00 0.00  0.55   0.00   0.00   0.00 99.32
+  0 0.00  0.00 0.00    0.00 0.00 23.08   0.00   0.00   0.00 76.92
+  1 0.00  0.00 0.40    0.00 0.00  0.00   0.00   0.00   0.00 99.60
+  2 0.00  0.00 0.00    0.00 0.00  0.00   0.00   0.00   0.00 100.00
+  3 0.00  0.00 0.00    0.00 0.00  0.00   0.00   0.00   0.00 100.00
+
+Above would mean basically no total load, debug CPU0 occupied in 25%.
+Raw statistics, printed every 10s from /proc/stat unveiled a root
+cause - summary idle/softirq jiffies on loaded CPU were below 200,
+i.e. over 90% samples lost. All problems were gone after enabling
+fine granulity IRQ time accounting.
+
+This patch fixes possible wrong statistics processing by enabling
+CONFIG_IRQ_TIME_ACCOUNTING for arm64 platfroms, which is by
+default done on other architectures, e.g. x86 and arm. Tests
+showed no noticeable performance penalty, nor stability impact.
+
+Change-Id: I54df5e740497a82f1d9c2bcdc666507d8f9e8678
+Signed-off-by: Marcin Wojtas <mw@semihalf.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/42505
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+---
+ arch/arm64/configs/mvebu_v8_lsp_defconfig | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm64/configs/mvebu_v8_lsp_defconfig b/arch/arm64/configs/mvebu_v8_lsp_defconfig
+index 7fe59ef..4833c6a 100644
+--- a/arch/arm64/configs/mvebu_v8_lsp_defconfig
++++ b/arch/arm64/configs/mvebu_v8_lsp_defconfig
+@@ -4,6 +4,7 @@ CONFIG_FHANDLE=y
+ CONFIG_AUDIT=y
+ CONFIG_NO_HZ_IDLE=y
+ CONFIG_HIGH_RES_TIMERS=y
++CONFIG_IRQ_TIME_ACCOUNTING=y
+ CONFIG_BSD_PROCESS_ACCT=y
+ CONFIG_BSD_PROCESS_ACCT_V3=y
+ CONFIG_TASKSTATS=y
+-- 
+2.7.4
+

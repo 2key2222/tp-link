@@ -1,0 +1,37 @@
+From 44d7c94d4747115ff27a9cc2f35951192694ea21 Mon Sep 17 00:00:00 2001
+From: Yan Markman <ymarkman@marvell.com>
+Date: Sun, 14 Aug 2016 19:59:35 +0300
+Subject: [PATCH 0665/2241] pp3: mv_pp3_tx_done: print error with context
+
+In mv_pp3_tx_done()
+add "timer" or "direct tx" context text-description for
+bufs_free failure report
+permitting differentiate abnormal-handling and
+making debug trace more clear.
+
+Change-Id: I029889642dc931986818bef4e18280e6a31b3529
+Signed-off-by: Yan Markman <ymarkman@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/31930
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/net/ethernet/marvell/pp3/net_dev/mv_netdev.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/net/ethernet/marvell/pp3/net_dev/mv_netdev.c b/drivers/net/ethernet/marvell/pp3/net_dev/mv_netdev.c
+index 40494a6..e8023f0 100644
+--- a/drivers/net/ethernet/marvell/pp3/net_dev/mv_netdev.c
++++ b/drivers/net/ethernet/marvell/pp3/net_dev/mv_netdev.c
+@@ -1378,7 +1378,8 @@ static inline int mv_pp3_tx_done(struct net_device *dev, int tx_todo)
+ 		total_free = pp3_pool_bufs_free_internal(tx_todo, dev, dev_priv->cpu_shared->txdone_pool);
+ #ifdef PP3_INTERNAL_DEBUG
+ 		if (total_free < 0) {
+-			pr_err("%s: tx_done failed to release %d buffers\n", dev->name, tx_todo);
++			pr_err("%s: tx_done failed to release %d buffers (in %s)\n",
++			       dev->name, tx_todo, in_interrupt() ? "timer" : "direct tx");
+ 			mv_pp3_internal_debug_action_on_err(dev);
+ 			return -1;
+ 		}
+-- 
+2.7.4
+

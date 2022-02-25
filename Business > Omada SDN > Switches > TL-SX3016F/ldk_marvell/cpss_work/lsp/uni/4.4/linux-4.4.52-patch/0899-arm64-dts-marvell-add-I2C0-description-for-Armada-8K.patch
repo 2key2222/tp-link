@@ -1,0 +1,71 @@
+From 83c4d75ca9cfac41253017dd33bbc572734c19d2 Mon Sep 17 00:00:00 2001
+From: Grzegorz Jaszczyk <jaz@semihalf.com>
+Date: Tue, 16 Aug 2016 17:52:34 +0200
+Subject: [PATCH 0899/2241] arm64: dts: marvell: add I2C0 description for
+ Armada 8K CP0
+
+Beside adding new I2C0 description, update pinctrl node about related
+MPP's which can be configured as I2C ones.
+
+Change-Id: I13eb2070a5795aed815ef5dbbfd01460e540473b
+Signed-off-by: Grzegorz Jaszczyk <jaz@semihalf.com>
+Signed-off-by: Igal Liberman <igall@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/32378
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Tested-by: Omri Itach <omrii@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-8040-db.dtsi | 21 +++++++++++++++++++++
+ arch/arm64/boot/dts/marvell/armada-8040.dtsi    |  5 +++++
+ 2 files changed, 26 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-8040-db.dtsi b/arch/arm64/boot/dts/marvell/armada-8040-db.dtsi
+index 8759918..57fe8c9 100644
+--- a/arch/arm64/boot/dts/marvell/armada-8040-db.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-8040-db.dtsi
+@@ -80,6 +80,27 @@
+ 		};
+ 	};
+ 
++	cpn-110-master {
++		config-space {
++			i2c@701000 {
++				status = "okay";
++				clock-frequency = <100000>;
++				pinctrl-names = "default";
++				pinctrl-0 = <&cpm_i2c0_pins>;
++				eeprom@57 {
++					compatible = "at24,24c64";
++					reg = <0x57>;
++					pagesize = <32>;
++				};
++				eeprom@50 {
++					compatible = "at24,24c64";
++					reg = <0x50>;
++					pagesize = <32>;
++				};
++			};
++		};
++	};
++
+ 	cpn-110-slave {
+ 		config-space {
+ 			i2c@701000 {
+diff --git a/arch/arm64/boot/dts/marvell/armada-8040.dtsi b/arch/arm64/boot/dts/marvell/armada-8040.dtsi
+index fff514f..d494dd7 100644
+--- a/arch/arm64/boot/dts/marvell/armada-8040.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-8040.dtsi
+@@ -135,6 +135,11 @@
+ 			};
+ 			pinctrl@440000 {
+ 				compatible = "marvell,a80x0-cp0-pinctrl";
++
++				cpm_i2c0_pins: i2c-pins-0 {
++					marvell,pins = "mpp37", "mpp38";
++					marvell,function = "i2c0";
++				};
+ 			};
+ 			usb3h0: usb3@500000 {
+ 				#stream-id-cells = <1>;
+-- 
+2.7.4
+

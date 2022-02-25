@@ -1,0 +1,41 @@
+From 4c3742b5326b0d44875ec262e94bf1c30c541f78 Mon Sep 17 00:00:00 2001
+From: Jisheng Zhang <jszhang@marvell.com>
+Date: Thu, 31 Mar 2016 17:01:23 +0800
+Subject: [PATCH 1651/2241] net: mvpp2: fix maybe-uninitialized warning
+
+This is to fix the following maybe-uninitialized warning:
+
+drivers/net/ethernet/marvell/mvpp2.c:6007:18: warning: 'err' may be
+used uninitialized in this function [-Wmaybe-uninitialized]
+
+Patch cherry-picked from mainline 4.12_rc5
+
+Change-Id: I178d88fca762ab3a396cf449ca6d676a0dd60549
+Signed-off-by: Jisheng Zhang <jszhang@marvell.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/40355
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2.c b/drivers/net/ethernet/marvell/mvpp2.c
+index 3e2677e..13576f5 100644
+--- a/drivers/net/ethernet/marvell/mvpp2.c
++++ b/drivers/net/ethernet/marvell/mvpp2.c
+@@ -6048,8 +6048,10 @@ static int mvpp2_port_init(struct mvpp2_port *port)
+ 
+ 		/* Map physical Rx queue to port's logical Rx queue */
+ 		rxq = devm_kzalloc(dev, sizeof(*rxq), GFP_KERNEL);
+-		if (!rxq)
++		if (!rxq) {
++			err = -ENOMEM;
+ 			goto err_free_percpu;
++		}
+ 		/* Map this Rx queue to a physical queue */
+ 		rxq->id = port->first_rxq + queue;
+ 		rxq->port = port->id;
+-- 
+2.7.4
+

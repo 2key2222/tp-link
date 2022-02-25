@@ -1,0 +1,35 @@
+From cafab8e62dadf8caac92e37e72747afb028a6fac Mon Sep 17 00:00:00 2001
+From: Terry Zhou <bjzhou@marvell.com>
+Date: Tue, 19 Apr 2016 17:43:14 +0800
+Subject: [PATCH 1009/2241] mtd: spi-nand: add support for MT29F1G SPI NAND
+ flash
+
+Add configuration for the MT29f1G chip
+
+Change-Id: I663358da01ab4eb1febd37438fd8b1901d274513
+Signed-off-by: Terry Zhou <bjzhou@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/30009
+Reviewed-by: Victor Gu <xigu@marvell.com>
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+---
+ drivers/mtd/nand/nand_ids.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/drivers/mtd/nand/nand_ids.c b/drivers/mtd/nand/nand_ids.c
+index a8804a3..d9f1e9e 100644
+--- a/drivers/mtd/nand/nand_ids.c
++++ b/drivers/mtd/nand/nand_ids.c
+@@ -52,6 +52,9 @@ struct nand_flash_dev nand_flash_ids[] = {
+ 		{ .id = {0xad, 0xde, 0x94, 0xda, 0x74, 0xc4} },
+ 		  SZ_8K, SZ_8K, SZ_2M, 0, 6, 640, NAND_ECC_INFO(40, SZ_1K),
+ 		  4 },
++	{"MT29F 1G 1.8V 8-bit",
++		{ .id = {0x2c, 0x15} },
++		  SZ_2K, SZ_128, SZ_128K, 0, 2, 128, NAND_ECC_INFO(8, SZ_512)},
+ 
+ 	LEGACY_ID_NAND("NAND 4MiB 5V 8-bit",   0x6B, 4, SZ_8K, SP_OPTIONS),
+ 	LEGACY_ID_NAND("NAND 4MiB 3,3V 8-bit", 0xE3, 4, SZ_8K, SP_OPTIONS),
+-- 
+2.7.4
+

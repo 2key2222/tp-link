@@ -1,0 +1,71 @@
+From 8681bece900e9834d3f5454f003a861f04b8aafe Mon Sep 17 00:00:00 2001
+From: Roopa Prabhu <roopa@cumulusnetworks.com>
+Date: Fri, 15 Apr 2016 20:36:25 -0700
+Subject: [PATCH 0869/2241] rtnetlink: rtnl_fill_stats: avoid an unnecssary
+ stats copy
+
+Upstream-commit: 550bce59baf3f3059cd4ae1e268f08f2d2cb1d5c
+
+This patch passes netlink attr data ptr directly to dev_get_stats
+thus elimiating a stats copy.
+
+Suggested-by: David Miller <davem@davemloft.net>
+Signed-off-by: Roopa Prabhu <roopa@cumulusnetworks.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+---
+ net/core/rtnetlink.c | 23 ++++++++---------------
+ 1 file changed, 8 insertions(+), 15 deletions(-)
+
+diff --git a/net/core/rtnetlink.c b/net/core/rtnetlink.c
+index b94e165..d2769e6 100644
+--- a/net/core/rtnetlink.c
++++ b/net/core/rtnetlink.c
+@@ -806,11 +806,6 @@ static void copy_rtnl_link_stats(struct rtnl_link_stats *a,
+ 	a->tx_compressed = b->tx_compressed;
+ }
+ 
+-static void copy_rtnl_link_stats64(void *v, const struct rtnl_link_stats64 *b)
+-{
+-	memcpy(v, b, sizeof(*b));
+-}
+-
+ /* All VF info */
+ static inline int rtnl_vfinfo_size(const struct net_device *dev,
+ 				   u32 ext_filter_mask)
+@@ -1049,25 +1044,23 @@ static int rtnl_phys_switch_id_fill(struct sk_buff *skb, struct net_device *dev)
+ static noinline_for_stack int rtnl_fill_stats(struct sk_buff *skb,
+ 					      struct net_device *dev)
+ {
+-	const struct rtnl_link_stats64 *stats;
+-	struct rtnl_link_stats64 temp;
++	struct rtnl_link_stats64 *sp;
+ 	struct nlattr *attr;
+ 
+-	stats = dev_get_stats(dev, &temp);
+-
+-	attr = nla_reserve(skb, IFLA_STATS,
+-			   sizeof(struct rtnl_link_stats));
++	attr = nla_reserve(skb, IFLA_STATS64,
++			   sizeof(struct rtnl_link_stats64));
+ 	if (!attr)
+ 		return -EMSGSIZE;
+ 
+-	copy_rtnl_link_stats(nla_data(attr), stats);
++	sp = nla_data(attr);
++	dev_get_stats(dev, sp);
+ 
+-	attr = nla_reserve(skb, IFLA_STATS64,
+-			   sizeof(struct rtnl_link_stats64));
++	attr = nla_reserve(skb, IFLA_STATS,
++			   sizeof(struct rtnl_link_stats));
+ 	if (!attr)
+ 		return -EMSGSIZE;
+ 
+-	copy_rtnl_link_stats64(nla_data(attr), stats);
++	copy_rtnl_link_stats(nla_data(attr), sp);
+ 
+ 	return 0;
+ }
+-- 
+2.7.4
+

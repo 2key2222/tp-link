@@ -1,0 +1,414 @@
+From 9ffc79b3f89987153d881584e26592b40cc4dff8 Mon Sep 17 00:00:00 2001
+From: Terry Zhou <bjzhou@marvell.com>
+Date: Fri, 13 May 2016 14:38:45 +0800
+Subject: [PATCH 0396/2241] pinctrl: mvebu: add driver for the Marvell Msys
+ SoC's
+
+Change-Id: Ia706f8c503c060a21857ef75263e6809644f7a2a
+Signed-off-by: Terry Zhou <bjzhou@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/29750
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Lior Amsalem <alior@marvell.com>
+Reviewed-by: Wilson Ding <dingwei@marvell.com>
+---
+ .../bindings/pinctrl/marvell,msys-pinctrl.txt      |  53 ++++
+ drivers/pinctrl/mvebu/Kconfig                      |   4 +
+ drivers/pinctrl/mvebu/Makefile                     |   1 +
+ drivers/pinctrl/mvebu/pinctrl-msys.c               | 301 +++++++++++++++++++++
+ 4 files changed, 359 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/pinctrl/marvell,msys-pinctrl.txt
+ create mode 100644 drivers/pinctrl/mvebu/pinctrl-msys.c
+
+diff --git a/Documentation/devicetree/bindings/pinctrl/marvell,msys-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/marvell,msys-pinctrl.txt
+new file mode 100644
+index 0000000..0a1e8f2
+--- /dev/null
++++ b/Documentation/devicetree/bindings/pinctrl/marvell,msys-pinctrl.txt
+@@ -0,0 +1,53 @@
++* Marvell Msys SoC pinctrl driver for mpp
++
++Please refer to marvell,mvebu-pinctrl.txt in this directory for common binding
++part and usage.
++
++Required properties:
++- compatible: "marvell,ac3-pinctrl", "marvell,bc2-pinctrl",
++              "marvell,bobk-pinctrl"
++- reg: register specifier of MPP registers
++
++This driver supports all Msys variants, i.e. AlleyCat3, BobCat2, and BobK.
++
++Available mpp pins/groups and functions:
++Note: brackets (x) are not part of the mpp name for marvell,function and given
++only for more detailed description in this document.
++
++* Marvell Msys (all variants)
++
++name          pins     functions
++================================================================================
++mpp0          0        gpo, spi(mosi), dev(ad8)
++mpp1          1        gpio, spi(miso), dev(ad9)
++mpp2          2        gpo, spi(sck), dev(ad10)
++mpp3          3        gpio, spi(cs0), dev(ad11)
++mpp4          4        gpio, spi(cs1), mstsmi(mdc), dev(cs0), nf
++mpp5          5        gpio, pex(rstout), sdio(cmd), dev(bootcsn)
++mpp6          6        gpo, sdio(clk), dev(ad2)
++mpp7          7        gpio, sdio(d0), dev(ale0)
++mpp8          8        gpio, sdio(d1), dev(ale1)
++mpp9          9        gpio, sdio(d2), dev(readyn)
++mpp10         10       gpio, sdio(d3), dev(ad12)
++mpp11         11       gpio, uart1(rxd), uart0(cts), dev(ad13)
++mpp12         12       gpo, uart1(txd), uart0(rts), dev(ad14)
++mpp13         13       gpio, pp(intout), i2c1(sck), dev(ad15)
++mpp14         14       gpio, i2c0(sck)
++mpp15         15       gpio, i2c0(sda)
++mpp16         16       gpio, dev(oen), nf(ren)
++mpp17         17       gpio, dev(clkout)
++mpp18         18       gpio, i2c1(sda), uart1,(txd)
++mpp19         19       gpio, uart1(rxd), nf(rbn)
++mpp20         20       gpio, dev(wen0), nf(wen)
++mpp21         21       gpio, dev(ad0), nf(io0)
++mpp22         22       gpio, dev(ad1), nf(io1)
++mpp23         23       gpio, dev(ad2), nf(io2)
++mpp24         24       gpio, dev(ad3), nf(io3)
++mpp25         25       gpio, dev(ad4), nf(io4)
++mpp26         26       gpio, dev(ad5), nf(io5)
++mpp27         27       gpio, dev(ad6), nf(io6)
++mpp28         28       gpio, dev(ad7), nf(io7)
++mpp29         29       gpio, dev(a0), nf(cle)
++mpp30         30       gpio, dev(a1), nf(ale)
++mpp31         31       gpio, slvsmi(mdc), mstsmi(mdc), dev(wen1)
++mpp32         32       gpio, slvsmi(mdio), mstsmi(mdio), dev(cs1)
+diff --git a/drivers/pinctrl/mvebu/Kconfig b/drivers/pinctrl/mvebu/Kconfig
+index 50cfc7d..cdbe3d7 100644
+--- a/drivers/pinctrl/mvebu/Kconfig
++++ b/drivers/pinctrl/mvebu/Kconfig
+@@ -46,6 +46,10 @@ config PINCTRL_ARMADA_XP
+ 	bool
+ 	select PINCTRL_MVEBU
+ 
++config PINCTRL_MSYS
++	bool
++	select PINCTRL_MVEBU
++
+ config PINCTRL_ORION
+ 	bool
+ 	select PINCTRL_MVEBU
+diff --git a/drivers/pinctrl/mvebu/Makefile b/drivers/pinctrl/mvebu/Makefile
+index cd3847c..87860fa 100644
+--- a/drivers/pinctrl/mvebu/Makefile
++++ b/drivers/pinctrl/mvebu/Makefile
+@@ -10,3 +10,4 @@ obj-$(CONFIG_PINCTRL_ARMADA_3700) += pinctrl-armada-3700.o
+ obj-$(CONFIG_PCIE_ARMADA_8K) += pinctrl-armada-ap806.o
+ obj-$(CONFIG_PCIE_ARMADA_8K) += pinctrl-armada-cp110.o
+ obj-$(CONFIG_PINCTRL_ORION)  += pinctrl-orion.o
++obj-$(CONFIG_PINCTRL_MSYS)  += pinctrl-msys.o
+diff --git a/drivers/pinctrl/mvebu/pinctrl-msys.c b/drivers/pinctrl/mvebu/pinctrl-msys.c
+new file mode 100644
+index 0000000..a4857ac8
+--- /dev/null
++++ b/drivers/pinctrl/mvebu/pinctrl-msys.c
+@@ -0,0 +1,301 @@
++/*
++ * Marvell Msys pinctrl driver based on mvebu pinctrl core
++ *
++ * Copyright (C) 2015 Marvell
++ *
++ * Marcin Wojtas <mw@semihalf.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ */
++
++#include <linux/err.h>
++#include <linux/init.h>
++#include <linux/io.h>
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/of.h>
++#include <linux/of_device.h>
++#include <linux/pinctrl/pinctrl.h>
++
++#include "pinctrl-mvebu.h"
++
++#define MVEBU_MPPS_PER_REG	8
++#define MVEBU_MPP_BITS		4
++#define MVEBU_MPP_MASK		0xf
++
++static void __iomem *mpp_base;
++static u32 *mpp_saved_regs;
++
++static int msys_mpp_ctrl_get(unsigned pid, unsigned long *config)
++{
++	return default_mpp_ctrl_get(mpp_base, pid, config);
++}
++
++static int msys_mpp_ctrl_set(unsigned pid, unsigned long config)
++{
++	return default_mpp_ctrl_set(mpp_base, pid, config);
++}
++
++enum {
++	V_AC3 = BIT(0),
++	V_BC2 = BIT(1),
++	V_BOBK = BIT(2),
++	V_MSYS = (V_AC3 | V_BC2 | V_BOBK),
++};
++
++static struct mvebu_mpp_mode msys_mpp_modes[] = {
++	MPP_MODE(0,
++		 MPP_VAR_FUNCTION(0, "gpo",    NULL,      V_MSYS),
++		 MPP_VAR_FUNCTION(2, "spi",    "mosi",    V_MSYS),
++		 MPP_VAR_FUNCTION(4, "dev",    "ad8",     V_MSYS)),
++	MPP_MODE(1,
++		 MPP_VAR_FUNCTION(0, "gpio",   NULL,      V_MSYS),
++		 MPP_VAR_FUNCTION(2, "spi",    "miso",    V_MSYS),
++		 MPP_VAR_FUNCTION(4, "dev",    "ad9",     V_MSYS)),
++	MPP_MODE(2,
++		 MPP_VAR_FUNCTION(0, "gpo",    NULL,      V_MSYS),
++		 MPP_VAR_FUNCTION(2, "spi",    "sck",     V_MSYS),
++		 MPP_VAR_FUNCTION(4, "dev",    "ad10",    V_MSYS)),
++	MPP_MODE(3,
++		 MPP_VAR_FUNCTION(0, "gpio",   NULL,      V_MSYS),
++		 MPP_VAR_FUNCTION(2, "spi",    "cs0",     V_MSYS),
++		 MPP_VAR_FUNCTION(4, "dev",    "ad11",    V_MSYS)),
++	MPP_MODE(4,
++		 MPP_VAR_FUNCTION(0, "gpio",   NULL,      V_MSYS),
++		 MPP_VAR_FUNCTION(2, "spi",    "cs1",     V_MSYS),
++		 MPP_VAR_FUNCTION(3, "mstsmi", "mdc",     V_AC3 | V_BOBK),
++		 MPP_VAR_FUNCTION(4, "dev",    "cs0",     V_MSYS),
++		 MPP_VAR_FUNCTION(4, "nf",     "cen",     V_MSYS)),
++	MPP_MODE(5,
++		 MPP_VAR_FUNCTION(0, "gpio",   NULL,      V_MSYS),
++		 MPP_VAR_FUNCTION(1, "pex",    "rstoutn", V_MSYS),
++		 MPP_VAR_FUNCTION(2, "sdio",   "cmd",     V_BC2 | V_BOBK),
++		 MPP_VAR_FUNCTION(4, "dev",    "bootcsn", V_MSYS)),
++	MPP_MODE(6,
++		 MPP_VAR_FUNCTION(0, "gpo",    NULL,      V_MSYS),
++		 MPP_VAR_FUNCTION(2, "sdio",   "clk",     V_BC2 | V_BOBK),
++		 MPP_VAR_FUNCTION(4, "dev",    "ad2",     V_MSYS)),
++	MPP_MODE(7,
++		 MPP_VAR_FUNCTION(0, "gpio",   NULL,      V_MSYS),
++		 MPP_VAR_FUNCTION(2, "sdio",   "d0",      V_BC2 | V_BOBK),
++		 MPP_VAR_FUNCTION(4, "dev",    "ale0",    V_MSYS)),
++	MPP_MODE(8,
++		 MPP_VAR_FUNCTION(0, "gpio",   NULL,      V_MSYS),
++		 MPP_VAR_FUNCTION(2, "sdio",   "d1",      V_BC2 | V_BOBK),
++		 MPP_VAR_FUNCTION(4, "dev",    "ale1",    V_MSYS)),
++	MPP_MODE(9,
++		 MPP_VAR_FUNCTION(0, "gpio",   NULL,      V_MSYS),
++		 MPP_VAR_FUNCTION(2, "sdio",   "d2",      V_BC2 | V_BOBK),
++		 MPP_VAR_FUNCTION(4, "dev",    "readyn",  V_MSYS)),
++	MPP_MODE(10,
++		 MPP_VAR_FUNCTION(0, "gpio",   NULL,      V_MSYS),
++		 MPP_VAR_FUNCTION(2, "sdio",   "d3",      V_BC2 | V_BOBK),
++		 MPP_VAR_FUNCTION(4, "dev",    "ad12",    V_MSYS)),
++	MPP_MODE(11,
++		 MPP_VAR_FUNCTION(0, "gpio",   NULL,      V_MSYS),
++		 MPP_VAR_FUNCTION(2, "uart1",  "rxd",     V_MSYS),
++		 MPP_VAR_FUNCTION(3, "uart0",  "cts",     V_MSYS),
++		 MPP_VAR_FUNCTION(4, "dev",    "ad13",    V_MSYS)),
++	MPP_MODE(12,
++		 MPP_VAR_FUNCTION(0, "gpo",    NULL,      V_MSYS),
++		 MPP_VAR_FUNCTION(2, "uart1",  "txd",     V_MSYS),
++		 MPP_VAR_FUNCTION(3, "uart0",  "rts",     V_MSYS),
++		 MPP_VAR_FUNCTION(4, "dev",    "ad14",    V_MSYS)),
++	MPP_MODE(13,
++		 MPP_VAR_FUNCTION(0, "gpio",   NULL,      V_MSYS),
++		 MPP_VAR_FUNCTION(1, "pp",     "intoutn", V_MSYS),
++		 MPP_VAR_FUNCTION(2, "i2c1",   "sck",     V_BOBK),
++		 MPP_VAR_FUNCTION(4, "dev",    "ad15",    V_MSYS)),
++	MPP_MODE(14,
++		 MPP_VAR_FUNCTION(0, "gpio",   NULL,      V_MSYS),
++		 MPP_VAR_FUNCTION(1, "i2c0",   "sck",     V_MSYS)),
++	MPP_MODE(15,
++		 MPP_VAR_FUNCTION(0, "gpio",   NULL,      V_MSYS),
++		 MPP_VAR_FUNCTION(1, "i2c0",   "sda",     V_MSYS)),
++	MPP_MODE(16,
++		 MPP_VAR_FUNCTION(0, "gpio",   NULL,      V_MSYS),
++		 MPP_VAR_FUNCTION(4, "dev",    "oen",     V_MSYS),
++		 MPP_VAR_FUNCTION(4, "nf",     "ren",     V_MSYS)),
++	MPP_MODE(17,
++		 MPP_VAR_FUNCTION(0, "gpio",   NULL,      V_MSYS),
++		 MPP_VAR_FUNCTION(4, "dev",    "clkout",  V_MSYS)),
++	MPP_MODE(18,
++		 MPP_VAR_FUNCTION(0, "gpio",   NULL,      V_MSYS),
++		 MPP_VAR_FUNCTION(2, "i2c1",   "sda",     V_BOBK),
++		 MPP_VAR_FUNCTION(3, "uart1",  "txd",     V_MSYS)),
++	MPP_MODE(19,
++		 MPP_VAR_FUNCTION(0, "gpio",   NULL,      V_MSYS),
++		 MPP_VAR_FUNCTION(3, "uart1",  "rxd",     V_MSYS),
++		 MPP_VAR_FUNCTION(4, "nf",     "rbn",     V_MSYS)),
++	MPP_MODE(20,
++		 MPP_VAR_FUNCTION(0, "gpio",   NULL,      V_MSYS),
++		 MPP_VAR_FUNCTION(4, "dev",    "wen0",    V_MSYS),
++		 MPP_VAR_FUNCTION(4, "nf",     "wen",     V_MSYS)),
++	MPP_MODE(21,
++		 MPP_VAR_FUNCTION(0, "gpio",   NULL,      V_MSYS),
++		 MPP_VAR_FUNCTION(4, "dev",    "ad0",     V_MSYS),
++		 MPP_VAR_FUNCTION(4, "nf",     "io0",     V_MSYS)),
++	MPP_MODE(22,
++		 MPP_VAR_FUNCTION(0, "gpio",   NULL,      V_MSYS),
++		 MPP_VAR_FUNCTION(4, "dev",    "ad1",     V_MSYS),
++		 MPP_VAR_FUNCTION(4, "nf",     "io1",     V_MSYS)),
++	MPP_MODE(23,
++		 MPP_VAR_FUNCTION(0, "gpio",   NULL,      V_MSYS),
++		 MPP_VAR_FUNCTION(4, "dev",    "ad2",     V_MSYS),
++		 MPP_VAR_FUNCTION(4, "nf",     "io2",     V_MSYS)),
++	MPP_MODE(24,
++		 MPP_VAR_FUNCTION(0, "gpio",   NULL,      V_MSYS),
++		 MPP_VAR_FUNCTION(4, "dev",    "ad3",     V_MSYS),
++		 MPP_VAR_FUNCTION(4, "nf",     "io3",     V_MSYS)),
++	MPP_MODE(25,
++		 MPP_VAR_FUNCTION(0, "gpio",   NULL,      V_MSYS),
++		 MPP_VAR_FUNCTION(4, "dev",    "ad4",     V_MSYS),
++		 MPP_VAR_FUNCTION(4, "nf",     "io4",     V_MSYS)),
++	MPP_MODE(26,
++		 MPP_VAR_FUNCTION(0, "gpio",   NULL,      V_MSYS),
++		 MPP_VAR_FUNCTION(4, "dev",    "ad5",     V_MSYS),
++		 MPP_VAR_FUNCTION(4, "nf",     "io5",     V_MSYS)),
++	MPP_MODE(27,
++		 MPP_VAR_FUNCTION(0, "gpio",   NULL,      V_MSYS),
++		 MPP_VAR_FUNCTION(4, "dev",    "ad6",     V_MSYS),
++		 MPP_VAR_FUNCTION(4, "nf",     "io6",     V_MSYS)),
++	MPP_MODE(28,
++		 MPP_VAR_FUNCTION(0, "gpio",   NULL,      V_MSYS),
++		 MPP_VAR_FUNCTION(4, "dev",    "ad7",     V_MSYS),
++		 MPP_VAR_FUNCTION(4, "nf",     "io7",     V_MSYS)),
++	MPP_MODE(29,
++		 MPP_VAR_FUNCTION(0, "gpio",   NULL,      V_MSYS),
++		 MPP_VAR_FUNCTION(4, "dev",    "a0",      V_MSYS),
++		 MPP_VAR_FUNCTION(4, "nf",     "cle",     V_MSYS)),
++	MPP_MODE(30,
++		 MPP_VAR_FUNCTION(0, "gpio",   NULL,      V_MSYS),
++		 MPP_VAR_FUNCTION(4, "dev",    "a1",      V_MSYS),
++		 MPP_VAR_FUNCTION(4, "nf",     "ale",     V_MSYS)),
++	MPP_MODE(31,
++		 MPP_VAR_FUNCTION(0, "gpio",   NULL,      V_MSYS),
++		 MPP_VAR_FUNCTION(1, "slvsmi", "mdc",     V_MSYS),
++		 MPP_VAR_FUNCTION(3, "mstsmi", "mdc",     V_MSYS),
++		 MPP_VAR_FUNCTION(4, "dev",    "wen1",    V_MSYS)),
++	MPP_MODE(32,
++		 MPP_VAR_FUNCTION(0, "gpio",   NULL,      V_MSYS),
++		 MPP_VAR_FUNCTION(1, "slvsmi", "mdio",    V_MSYS),
++		 MPP_VAR_FUNCTION(3, "mstsmi", "mdio",    V_MSYS),
++		 MPP_VAR_FUNCTION(4, "dev",    "cs1",     V_MSYS)),
++};
++
++static struct mvebu_pinctrl_soc_info msys_pinctrl_info;
++
++static const struct of_device_id msys_pinctrl_of_match[] = {
++	{
++		.compatible = "marvell,ac3-pinctrl",
++		.data       = (void *) V_AC3,
++	},
++	{
++		.compatible = "marvell,bc2-pinctrl",
++		.data       = (void *) V_BC2,
++	},
++	{
++		.compatible = "marvell,bobk-pinctrl",
++		.data       = (void *) V_BOBK,
++	},
++	{ },
++};
++
++static struct mvebu_mpp_ctrl msys_mpp_controls[] = {
++	MPP_FUNC_CTRL(0, 32, NULL, msys_mpp_ctrl),
++};
++
++static struct pinctrl_gpio_range msys_mpp_gpio_ranges[] = {
++	MPP_GPIO_RANGE(0,   0,  0, 32),
++	MPP_GPIO_RANGE(1,  32, 32, 1),
++};
++
++int msys_pinctrl_suspend(struct platform_device *pdev, pm_message_t state)
++{
++	struct mvebu_pinctrl_soc_info *soc = platform_get_drvdata(pdev);
++	int i, nregs;
++
++	nregs = DIV_ROUND_UP(soc->nmodes, MVEBU_MPPS_PER_REG);
++
++	for (i = 0; i < nregs; i++)
++		mpp_saved_regs[i] = readl(mpp_base + i * 4);
++
++	return 0;
++}
++
++int msys_pinctrl_resume(struct platform_device *pdev)
++{
++	struct mvebu_pinctrl_soc_info *soc = platform_get_drvdata(pdev);
++	int i, nregs;
++
++	nregs = DIV_ROUND_UP(soc->nmodes, MVEBU_MPPS_PER_REG);
++
++	for (i = 0; i < nregs; i++)
++		writel(mpp_saved_regs[i], mpp_base + i * 4);
++
++	return 0;
++}
++
++static int msys_pinctrl_probe(struct platform_device *pdev)
++{
++	struct mvebu_pinctrl_soc_info *soc = &msys_pinctrl_info;
++	const struct of_device_id *match =
++			     of_match_device(msys_pinctrl_of_match, &pdev->dev);
++	struct resource *res;
++	int nregs;
++
++	if (!match)
++		return -ENODEV;
++
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	mpp_base = devm_ioremap_resource(&pdev->dev, res);
++	if (IS_ERR(mpp_base))
++		return PTR_ERR(mpp_base);
++
++	soc->variant = (unsigned) match->data & 0xff;
++	soc->controls = msys_mpp_controls;
++	soc->ncontrols = ARRAY_SIZE(msys_mpp_controls);
++	soc->gpioranges = msys_mpp_gpio_ranges;
++	soc->ngpioranges = ARRAY_SIZE(msys_mpp_gpio_ranges);
++	soc->modes = msys_mpp_modes;
++	soc->nmodes = msys_mpp_controls[0].npins;
++
++	nregs = DIV_ROUND_UP(soc->nmodes, MVEBU_MPPS_PER_REG);
++
++	mpp_saved_regs = devm_kmalloc(&pdev->dev, nregs * sizeof(u32),
++				      GFP_KERNEL);
++	if (!mpp_saved_regs)
++		return -ENOMEM;
++
++	pdev->dev.platform_data = soc;
++
++	return mvebu_pinctrl_probe(pdev);
++}
++
++static int msys_pinctrl_remove(struct platform_device *pdev)
++{
++	return mvebu_pinctrl_remove(pdev);
++}
++
++static struct platform_driver msys_pinctrl_driver = {
++	.driver = {
++		.name = "msys-pinctrl",
++		.of_match_table = of_match_ptr(msys_pinctrl_of_match),
++	},
++	.probe = msys_pinctrl_probe,
++	.remove = msys_pinctrl_remove,
++#ifdef CONFIG_PM
++	.suspend = msys_pinctrl_suspend,
++	.resume = msys_pinctrl_resume,
++#endif
++
++};
++
++module_platform_driver(msys_pinctrl_driver);
++
++MODULE_AUTHOR("Marcin Wojtas <mw@semihalf.com>");
++MODULE_DESCRIPTION("Marvell Msys pinctrl driver");
++MODULE_LICENSE("GPL v2");
+-- 
+2.7.4
+

@@ -1,0 +1,38 @@
+From 55415e6336d845d6093f9c404bcaf0cfc92b26fc Mon Sep 17 00:00:00 2001
+From: Igal Liberman <igall@marvell.com>
+Date: Thu, 23 Mar 2017 10:33:49 +0200
+Subject: [PATCH 1521/2241] crypto: inside-secure: change the firmware path
+
+This patch changes the path where request_firmware() function
+looks for the EIP197 firmware images from /lib/firmare/ to
+/lib/firmware/eip197/.
+
+No functional change (only requires moving the images).
+
+Change-Id: I64f6547af09697bcbb3ce12f417abf3dd087bd75
+Signed-off-by: Igal Liberman <igall@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/37879
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/crypto/inside-secure/safexcel.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/crypto/inside-secure/safexcel.c b/drivers/crypto/inside-secure/safexcel.c
+index 7b045cd..c35346d 100644
+--- a/drivers/crypto/inside-secure/safexcel.c
++++ b/drivers/crypto/inside-secure/safexcel.c
+@@ -255,7 +255,8 @@ static int eip197_load_fw(struct device *dev, struct safexcel_crypto_priv *priv)
+ 	const u32		*fw_data;
+ 	int			i, ret;
+ 	u32			fw_size, reg;
+-	const char		*fw_name[MAX_FW_NR] = {"ifpp.bin", "ipue.bin"};
++	const char		*fw_name[MAX_FW_NR] = {"eip197/ifpp.bin",
++						       "eip197/ipue.bin"};
+ 
+ 	for (i = 0; i < MAX_FW_NR; i++) {
+ 		ret = request_firmware(&fw[i], fw_name[i], dev);
+-- 
+2.7.4
+

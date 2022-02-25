@@ -1,0 +1,125 @@
+From 737a1495f8fe9ed41ecfa3782720cac52dcbaec0 Mon Sep 17 00:00:00 2001
+From: Grzegorz Jaszczyk <jaz@semihalf.com>
+Date: Tue, 1 Mar 2016 12:39:02 +0100
+Subject: [PATCH 0234/2241] Revert "fix: spi: a38x: Fix the value of size-cells
+ parameter in DT"
+
+If the cells size is set to 0, the partition describe in dts are not
+created due to error "spi0.0: error parsing ofpart partition"
+
+Reverts 'commit b0531c49d702 ("fix: spi: a38x: Fix the value of
+size-cells parameter in DT")'
+
+and also introduce relevant change for armada-382-db.dts and
+armada-388-clearfog.dts.
+
+Change-Id: Ic92073e182535a5a6ac2c584aa41e086f4fddce0
+Signed-off-by: Grzegorz Jaszczyk <jaz@semihalf.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/27977
+Reviewed-by: Ofer Heifetz <oferh@marvell.com>
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Lior Amsalem <alior@marvell.com>
+---
+ arch/arm/boot/dts/armada-380-gp.dts       | 2 +-
+ arch/arm/boot/dts/armada-382-db.dts       | 2 +-
+ arch/arm/boot/dts/armada-385-db-ap.dts    | 2 +-
+ arch/arm/boot/dts/armada-388-clearfog.dts | 2 +-
+ arch/arm/boot/dts/armada-388-db.dts       | 2 +-
+ arch/arm/boot/dts/armada-388-gp.dts       | 2 +-
+ arch/arm/boot/dts/armada-388-rd.dts       | 2 +-
+ 7 files changed, 7 insertions(+), 7 deletions(-)
+
+diff --git a/arch/arm/boot/dts/armada-380-gp.dts b/arch/arm/boot/dts/armada-380-gp.dts
+index f74db5f..b630144 100644
+--- a/arch/arm/boot/dts/armada-380-gp.dts
++++ b/arch/arm/boot/dts/armada-380-gp.dts
+@@ -69,7 +69,7 @@
+ 
+ 				spi-flash@0 {
+ 					#address-cells = <1>;
+-					#size-cells = <0>;
++					#size-cells = <1>;
+ 					compatible = "st,m25p128";
+ 					reg = <0>; /* Chip select 0 */
+ 					spi-max-frequency = <50000000>;
+diff --git a/arch/arm/boot/dts/armada-382-db.dts b/arch/arm/boot/dts/armada-382-db.dts
+index 24e5dc0..bcf2624 100644
+--- a/arch/arm/boot/dts/armada-382-db.dts
++++ b/arch/arm/boot/dts/armada-382-db.dts
+@@ -87,7 +87,7 @@
+ 
+ 				spi-flash@0 {
+ 					#address-cells = <1>;
+-					#size-cells = <0>;
++					#size-cells = <1>;
+ 					compatible = "w25q32", "jedec,spi-nor";
+ 					reg = <0>; /* Chip select 0 */
+ 					spi-max-frequency = <108000000>;
+diff --git a/arch/arm/boot/dts/armada-385-db-ap.dts b/arch/arm/boot/dts/armada-385-db-ap.dts
+index 2463cd0..1ac4f45 100644
+--- a/arch/arm/boot/dts/armada-385-db-ap.dts
++++ b/arch/arm/boot/dts/armada-385-db-ap.dts
+@@ -76,7 +76,7 @@
+ 
+ 				spi-flash@0 {
+ 					#address-cells = <1>;
+-					#size-cells = <0>;
++					#size-cells = <1>;
+ 					compatible = "st,m25p128", "jedec,spi-nor";
+ 					reg = <0>; /* Chip select 0 */
+ 					spi-max-frequency = <54000000>;
+diff --git a/arch/arm/boot/dts/armada-388-clearfog.dts b/arch/arm/boot/dts/armada-388-clearfog.dts
+index c6e180e..8fa7b27 100644
+--- a/arch/arm/boot/dts/armada-388-clearfog.dts
++++ b/arch/arm/boot/dts/armada-388-clearfog.dts
+@@ -341,7 +341,7 @@
+ 
+ 				spi-flash@0 {
+ 					#address-cells = <1>;
+-					#size-cells = <0>;
++					#size-cells = <1>;
+ 					compatible = "w25q32", "jedec,spi-nor";
+ 					reg = <0>; /* Chip select 0 */
+ 					spi-max-frequency = <3000000>;
+diff --git a/arch/arm/boot/dts/armada-388-db.dts b/arch/arm/boot/dts/armada-388-db.dts
+index d0d0a5b..938e678 100644
+--- a/arch/arm/boot/dts/armada-388-db.dts
++++ b/arch/arm/boot/dts/armada-388-db.dts
+@@ -74,7 +74,7 @@
+ 
+ 				spi-flash@0 {
+ 					#address-cells = <1>;
+-					#size-cells = <0>;
++					#size-cells = <1>;
+ 					compatible = "w25q32", "jedec,spi-nor";
+ 					reg = <0>; /* Chip select 0 */
+ 					spi-max-frequency = <108000000>;
+diff --git a/arch/arm/boot/dts/armada-388-gp.dts b/arch/arm/boot/dts/armada-388-gp.dts
+index cc3554c..6394e27 100644
+--- a/arch/arm/boot/dts/armada-388-gp.dts
++++ b/arch/arm/boot/dts/armada-388-gp.dts
+@@ -78,7 +78,7 @@
+ 
+ 				spi-flash@0 {
+ 					#address-cells = <1>;
+-					#size-cells = <0>;
++					#size-cells = <1>;
+ 					compatible = "st,m25p128", "jedec,spi-nor";
+ 					reg = <0>; /* Chip select 0 */
+ 					spi-max-frequency = <50000000>;
+diff --git a/arch/arm/boot/dts/armada-388-rd.dts b/arch/arm/boot/dts/armada-388-rd.dts
+index cb18101..853f973 100644
+--- a/arch/arm/boot/dts/armada-388-rd.dts
++++ b/arch/arm/boot/dts/armada-388-rd.dts
+@@ -75,7 +75,7 @@
+ 
+ 				spi-flash@0 {
+ 					#address-cells = <1>;
+-					#size-cells = <0>;
++					#size-cells = <1>;
+ 					compatible = "st,m25p128", "jedec,spi-nor";
+ 					reg = <0>; /* Chip select 0 */
+ 					spi-max-frequency = <108000000>;
+-- 
+2.7.4
+

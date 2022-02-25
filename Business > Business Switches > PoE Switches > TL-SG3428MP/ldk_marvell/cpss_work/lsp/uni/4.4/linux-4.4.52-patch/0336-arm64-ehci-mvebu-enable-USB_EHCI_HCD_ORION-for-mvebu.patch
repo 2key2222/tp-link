@@ -1,0 +1,31 @@
+From d0519ed80c53cfeeb9e9baab4e525dc3e635509b Mon Sep 17 00:00:00 2001
+From: jinghua <jinghua@marvell.com>
+Date: Thu, 7 Apr 2016 01:24:25 +0800
+Subject: [PATCH 0336/2241] arm64: ehci: mvebu: enable USB_EHCI_HCD_ORION for
+ mvebu SoCs
+
+Change-Id: Ic282073f3346f1d933c43b4dfd1a84743c640c44
+Signed-off-by: jinghua <jinghua@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/28823
+Reviewed-by: Wilson Ding <dingwei@marvell.com>
+Tested-by: Star_Automation <star@marvell.com>
+---
+ drivers/usb/host/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
+index 3bb0887..c9ce783 100644
+--- a/drivers/usb/host/Kconfig
++++ b/drivers/usb/host/Kconfig
+@@ -169,7 +169,7 @@ config USB_EHCI_HCD_OMAP
+ 
+ config USB_EHCI_HCD_ORION
+ 	tristate  "Support for Marvell EBU on-chip EHCI USB controller"
+-	depends on USB_EHCI_HCD && PLAT_ORION
++	depends on USB_EHCI_HCD && (PLAT_ORION || ARCH_MVEBU)
+ 	default y
+ 	---help---
+ 	  Enables support for the on-chip EHCI controller on Marvell's
+-- 
+2.7.4
+

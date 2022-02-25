@@ -1,0 +1,36 @@
+From 8cb112a6d87a232b823bf3b0a70d0fe82c434f39 Mon Sep 17 00:00:00 2001
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Date: Mon, 8 Feb 2016 15:51:31 +0100
+Subject: [PATCH 0086/2241] clk: unconditionally recurse into clk/mvebu/
+
+The drivers/clk/mvebu directory is only being built when
+CONFIG_PLAT_ORION=y. As we are going to support additional mvebu
+platforms in drivers/clk/mvebu, which don't have CONFIG_PLAT_ORION=y,
+we need to recurse into this directory regardless of the value of
+CONFIG_PLAT_ORION.
+
+Since all files in drivers/clk/mvebu/ are already conditionally
+compiled depending on various Kconfig options, we can recurse
+unconditionally into drivers/clk/mvebu without any other change.
+
+Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+---
+ drivers/clk/Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
+index 820714c..c0b26a2 100644
+--- a/drivers/clk/Makefile
++++ b/drivers/clk/Makefile
+@@ -59,7 +59,7 @@ obj-$(CONFIG_ARCH_MEDIATEK)		+= mediatek/
+ ifeq ($(CONFIG_COMMON_CLK), y)
+ obj-$(CONFIG_ARCH_MMP)			+= mmp/
+ endif
+-obj-$(CONFIG_PLAT_ORION)		+= mvebu/
++obj-y					+= mvebu/
+ obj-$(CONFIG_ARCH_MESON)		+= meson/
+ obj-$(CONFIG_ARCH_MXS)			+= mxs/
+ obj-$(CONFIG_ARCH_LPC18XX)		+= nxp/
+-- 
+2.7.4
+

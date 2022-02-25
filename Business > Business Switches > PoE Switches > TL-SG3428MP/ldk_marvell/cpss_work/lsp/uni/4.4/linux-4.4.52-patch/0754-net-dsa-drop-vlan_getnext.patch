@@ -1,0 +1,115 @@
+From a9dff286ec584789f5cf3f10a9fe5813415c0c51 Mon Sep 17 00:00:00 2001
+From: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+Date: Tue, 23 Feb 2016 12:13:56 -0500
+Subject: [PATCH 0754/2241] net: dsa: drop vlan_getnext
+
+Upstream-commit: 477b184526a7f44164029eea720da0e0c888cac6
+
+The VLAN GetNext operation is specific to some switches, and thus can be
+complicated to implement for some drivers.
+
+Remove the support for the vlan_getnext/port_pvid_get approach in favor
+of the generic and simpler port_vlan_dump function.
+
+Signed-off-by: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+---
+ Documentation/networking/dsa/dsa.txt |  9 ---------
+ include/net/dsa.h                    |  3 ---
+ net/dsa/slave.c                      | 35 +----------------------------------
+ 3 files changed, 1 insertion(+), 46 deletions(-)
+
+diff --git a/Documentation/networking/dsa/dsa.txt b/Documentation/networking/dsa/dsa.txt
+index 350a502..974e9c3 100644
+--- a/Documentation/networking/dsa/dsa.txt
++++ b/Documentation/networking/dsa/dsa.txt
+@@ -542,12 +542,6 @@ Bridge layer
+ Bridge VLAN filtering
+ ---------------------
+ 
+-- port_pvid_get: bridge layer function invoked when a Port-based VLAN ID is
+-  queried for the given switch port
+-
+-- port_pvid_set: bridge layer function invoked when a Port-based VLAN ID needs
+-  to be configured on the given switch port
+-
+ - port_vlan_add: bridge layer function invoked when a VLAN is configured
+   (tagged or untagged) for the given switch port
+ 
+@@ -558,9 +552,6 @@ Bridge VLAN filtering
+   function that the driver has to call for each VLAN the given port is a member
+   of. A switchdev object is used to carry the VID and bridge flags.
+ 
+-- vlan_getnext: bridge layer function invoked to query the next configured VLAN
+-  in the switch, i.e. returns the bitmaps of members and untagged ports
+-
+ - port_fdb_add: bridge layer function invoked when the bridge wants to install a
+   Forwarding Database entry, the switch hardware should be programmed with the
+   specified address in the specified VLAN Id in the forwarding database
+diff --git a/include/net/dsa.h b/include/net/dsa.h
+index ebc0d9e..3dd5486 100644
+--- a/include/net/dsa.h
++++ b/include/net/dsa.h
+@@ -316,9 +316,6 @@ struct dsa_switch_driver {
+ 	int	(*port_vlan_dump)(struct dsa_switch *ds, int port,
+ 				  struct switchdev_obj_port_vlan *vlan,
+ 				  int (*cb)(struct switchdev_obj *obj));
+-	int	(*port_pvid_get)(struct dsa_switch *ds, int port, u16 *pvid);
+-	int	(*vlan_getnext)(struct dsa_switch *ds, u16 *vid,
+-				unsigned long *ports, unsigned long *untagged);
+ 
+ 	/*
+ 	 * Forwarding database
+diff --git a/net/dsa/slave.c b/net/dsa/slave.c
+index 5f94b33..4e7928a 100644
+--- a/net/dsa/slave.c
++++ b/net/dsa/slave.c
+@@ -243,44 +243,11 @@ static int dsa_slave_port_vlan_dump(struct net_device *dev,
+ {
+ 	struct dsa_slave_priv *p = netdev_priv(dev);
+ 	struct dsa_switch *ds = p->parent;
+-	DECLARE_BITMAP(members, DSA_MAX_PORTS);
+-	DECLARE_BITMAP(untagged, DSA_MAX_PORTS);
+-	u16 pvid, vid = 0;
+-	int err;
+ 
+ 	if (ds->drv->port_vlan_dump)
+ 		return ds->drv->port_vlan_dump(ds, p->port, vlan, cb);
+ 
+-	if (!ds->drv->vlan_getnext || !ds->drv->port_pvid_get)
+-		return -EOPNOTSUPP;
+-
+-	err = ds->drv->port_pvid_get(ds, p->port, &pvid);
+-	if (err)
+-		return err;
+-
+-	for (;;) {
+-		err = ds->drv->vlan_getnext(ds, &vid, members, untagged);
+-		if (err)
+-			break;
+-
+-		if (!test_bit(p->port, members))
+-			continue;
+-
+-		memset(vlan, 0, sizeof(*vlan));
+-		vlan->vid_begin = vlan->vid_end = vid;
+-
+-		if (vid == pvid)
+-			vlan->flags |= BRIDGE_VLAN_INFO_PVID;
+-
+-		if (test_bit(p->port, untagged))
+-			vlan->flags |= BRIDGE_VLAN_INFO_UNTAGGED;
+-
+-		err = cb(&vlan->obj);
+-		if (err)
+-			break;
+-	}
+-
+-	return err == -ENOENT ? 0 : err;
++	return -EOPNOTSUPP;
+ }
+ 
+ static int dsa_slave_port_fdb_add(struct net_device *dev,
+-- 
+2.7.4
+

@@ -1,0 +1,155 @@
+From 36fe9110fb756fc4b5083057df1b8d7e5259ace5 Mon Sep 17 00:00:00 2001
+From: Grzegorz Jaszczyk <jaz@semihalf.com>
+Date: Thu, 18 Aug 2016 09:30:34 +0200
+Subject: [PATCH 0895/2241] pinctrl: cp110: add pinctrl support for CP0 and CP1
+ which exist in Armada 8K
+
+Differences between Armada-80x0 (dual CP) and Armada-70x0 (single CP):
+- CP present in A7K has access to control all available MPP's 0-62
+- CP0 present in A8K has access to control MPP's 32-62
+- CP1 present in A8K has access to control MPP's 0-32
+
+Despite mentioned differences the base address of CP0 (Armada-80x0) and
+CP (Armada-70x0) is the same. Therefore CP and CP1 share the same
+*ctrl_get and *ctrl_set functions and differences between them are handled
+with "variant" flag. The CP1 has it's separate base address and
+*ctrl_get and *ctrl_set functions.
+
+Additional notes:
+The cp110_1_mpp_controls has to have defined 62 MPP because it is used
+together with 'armada_cp110_mpp_modes' table, which has 62 entries.
+Nevertheless as mentioned earlier, thanks to the 'variant' flag only
+MPP 0-31 are valid for CP1. Accordingly, the same is for the CP0:
+62 MPP are defined but for Armada 8K only 32-62 are valid while for
+Armada 7K all 62 are valid.
+
+The armada_cp110_0_mpp_gpio_ranges is used for both Armada 8K and Armada
+7K, and again "variant" flag is used for validating if appropriate MPP
+is available for each platform. It will be more clear to define separate
+pinctrl_gpio_range for Armada 7K (0-62) and Armada 8K (32-62), but the
+common gpio framework expects that the gpio starts from 0.
+
+Change-Id: I3ca60d24c2ef318e9a277931858539d90670f9c5
+Signed-off-by: Grzegorz Jaszczyk <jaz@semihalf.com>
+Signed-off-by: Igal Liberman <igall@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/32374
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/pinctrl/mvebu/pinctrl-armada-cp110.c | 70 +++++++++++++++++++++-------
+ 1 file changed, 53 insertions(+), 17 deletions(-)
+
+diff --git a/drivers/pinctrl/mvebu/pinctrl-armada-cp110.c b/drivers/pinctrl/mvebu/pinctrl-armada-cp110.c
+index 4827d5f..6b6c22c3 100644
+--- a/drivers/pinctrl/mvebu/pinctrl-armada-cp110.c
++++ b/drivers/pinctrl/mvebu/pinctrl-armada-cp110.c
+@@ -23,18 +23,29 @@
+ 
+ #include "pinctrl-mvebu.h"
+ 
+-static void __iomem *mpp_base;
++static void __iomem *cp0_mpp_base;
+ 
+-static int armada_cp110_mpp_ctrl_get(unsigned pid, unsigned long *config)
++static int armada_cp110_0_mpp_ctrl_get(unsigned pid, unsigned long *config)
+ {
+-	return default_mpp_ctrl_get(mpp_base, pid, config);
++	return default_mpp_ctrl_get(cp0_mpp_base, pid, config);
+ }
+ 
+-static int armada_cp110_mpp_ctrl_set(unsigned pid, unsigned long config)
++static int armada_cp110_0_mpp_ctrl_set(unsigned pid, unsigned long config)
+ {
+-	return default_mpp_ctrl_set(mpp_base, pid, config);
++	return default_mpp_ctrl_set(cp0_mpp_base, pid, config);
+ }
+ 
++static void __iomem *cp1_mpp_base;
++
++static int armada_cp110_1_mpp_ctrl_get(unsigned pid, unsigned long *config)
++{
++	return default_mpp_ctrl_get(cp1_mpp_base, pid, config);
++}
++
++static int armada_cp110_1_mpp_ctrl_set(unsigned pid, unsigned long config)
++{
++	return default_mpp_ctrl_set(cp1_mpp_base, pid, config);
++}
+ /* In Armada-70x0 (single CP) all the MPPs are available.
+ ** In Armada-80x0 (dual CP) the MPPs are split into 2 parts, MPPs 0-31 from
+ ** CP1, and MPPs 32-62 from CP0, the below flags (V_ARMADA_80X0_CP0,
+@@ -623,15 +634,23 @@ static const struct of_device_id armada_cp110_pinctrl_of_match[] = {
+ 	{ },
+ };
+ 
+-static struct mvebu_mpp_ctrl armada_cp110_mpp_controls[] = {
+-	MPP_FUNC_CTRL(0, 62, NULL, armada_cp110_mpp_ctrl),
++static struct mvebu_mpp_ctrl armada_cp110_0_mpp_controls[] = {
++	MPP_FUNC_CTRL(0, 62, NULL, armada_cp110_0_mpp_ctrl),
+ };
+ 
+-static struct pinctrl_gpio_range armada_cp110_mpp_gpio_ranges[] = {
++static struct mvebu_mpp_ctrl armada_cp110_1_mpp_controls[] = {
++	MPP_FUNC_CTRL(0, 62, NULL, armada_cp110_1_mpp_ctrl),
++};
++
++static struct pinctrl_gpio_range armada_cp110_0_mpp_gpio_ranges[] = {
+ 	MPP_GPIO_RANGE(0, 0, 0, 32),
+ 	MPP_GPIO_RANGE(1, 32, 32, 31),
+ };
+ 
++static struct pinctrl_gpio_range armada_cp110_1_mpp_gpio_ranges[] = {
++	MPP_GPIO_RANGE(0, 0, 0, 32),
++};
++
+ static int armada_cp110_pinctrl_probe(struct platform_device *pdev)
+ {
+ 	struct mvebu_pinctrl_soc_info *soc;
+@@ -648,17 +667,34 @@ static int armada_cp110_pinctrl_probe(struct platform_device *pdev)
+ 		return -ENOMEM;
+ 
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	mpp_base = devm_ioremap_resource(&pdev->dev, res);
+-	if (IS_ERR(mpp_base))
+-		return PTR_ERR(mpp_base);
+ 
+ 	soc->variant = (u64)match->data & 0xff;
+-	soc->controls = armada_cp110_mpp_controls;
+-	soc->ncontrols = ARRAY_SIZE(armada_cp110_mpp_controls);
+-	soc->gpioranges = armada_cp110_mpp_gpio_ranges;
+-	soc->ngpioranges = ARRAY_SIZE(armada_cp110_mpp_gpio_ranges);
+-	soc->modes = armada_cp110_mpp_modes;
+-	soc->nmodes = armada_cp110_mpp_controls[0].npins;
++
++	switch (soc->variant) {
++	case V_ARMADA_70X0:
++	case V_ARMADA_80X0_CP0:
++		cp0_mpp_base = devm_ioremap_resource(&pdev->dev, res);
++		if (IS_ERR(cp0_mpp_base))
++			return PTR_ERR(cp0_mpp_base);
++		soc->controls = armada_cp110_0_mpp_controls;
++		soc->ncontrols = ARRAY_SIZE(armada_cp110_0_mpp_controls);
++		soc->gpioranges = armada_cp110_0_mpp_gpio_ranges;
++		soc->ngpioranges = ARRAY_SIZE(armada_cp110_0_mpp_gpio_ranges);
++		soc->modes = armada_cp110_mpp_modes;
++		soc->nmodes = armada_cp110_0_mpp_controls[0].npins;
++		break;
++	case V_ARMADA_80X0_CP1:
++		cp1_mpp_base = devm_ioremap_resource(&pdev->dev, res);
++		if (IS_ERR(cp1_mpp_base))
++			return PTR_ERR(cp1_mpp_base);
++		soc->controls = armada_cp110_1_mpp_controls;
++		soc->ncontrols = ARRAY_SIZE(armada_cp110_1_mpp_controls);
++		soc->gpioranges = armada_cp110_1_mpp_gpio_ranges;
++		soc->ngpioranges = ARRAY_SIZE(armada_cp110_1_mpp_gpio_ranges);
++		soc->modes = armada_cp110_mpp_modes;
++		soc->nmodes = armada_cp110_1_mpp_controls[0].npins;
++		break;
++	}
+ 
+ 	pdev->dev.platform_data = soc;
+ 
+-- 
+2.7.4
+

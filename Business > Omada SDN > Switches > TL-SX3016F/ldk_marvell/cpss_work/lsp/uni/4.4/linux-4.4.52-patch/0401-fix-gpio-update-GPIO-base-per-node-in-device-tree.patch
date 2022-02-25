@@ -1,0 +1,83 @@
+From 27b8ee5c3b3a727b3771b417d5b841d2fbdd266b Mon Sep 17 00:00:00 2001
+From: Hanna Hawa <hannah@marvell.com>
+Date: Mon, 16 May 2016 15:02:47 +0300
+Subject: [PATCH 0401/2241] fix: gpio: update GPIO base per node in device tree
+
+Issue found when register more than one GPIO bank, and the 1st bank had
+less than 32 pins.
+The gpio driver calculates the base of the bank by multiplying the
+ID number by MVEBU_MAX_GPIO_PER_BANK (32)
+CP0 is split into 2 ranges 0-31, and 32-62, the 1st range got id=1,
+and 2nd got id = 2, according to this the base is 32, 64 accordingly,
+and this is wrong because the base should start at index 20 (right after
+AP GPIOs)
+
+This patch updates the base according to the gpiobase in the GPIO node
+
+Change-Id: Ia4176926de0c2d595001e028ecf365f736c54cad
+Signed-off-by: Hanna Hawa <hannah@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/29729
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Shadi Ammouri <shadi@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-cp110.dtsi | 2 ++
+ drivers/gpio/gpio-mvebu.c                     | 9 ++++++++-
+ 2 files changed, 10 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-cp110.dtsi b/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
+index 4811046..bdafa2d 100644
+--- a/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
+@@ -39,6 +39,7 @@ gpio@440100 {
+ 	compatible = "marvell,orion-gpio";
+ 	reg = <0x440100 0x40>;
+ 	ngpios = <32>;
++	gpiobase = <20>;
+ 	gpio-controller;
+ 	#gpio-cells = <2>;
+ 	interrupt-controller;
+@@ -53,6 +54,7 @@ gpio@440140 {
+ 	compatible = "marvell,orion-gpio";
+ 	reg = <0x440140 0x40>;
+ 	ngpios = <31>;
++	gpiobase = <52>;
+ 	gpio-controller;
+ 	#gpio-cells = <2>;
+ 	interrupt-controller;
+diff --git a/drivers/gpio/gpio-mvebu.c b/drivers/gpio/gpio-mvebu.c
+index 62ec57c..97ad051 100644
+--- a/drivers/gpio/gpio-mvebu.c
++++ b/drivers/gpio/gpio-mvebu.c
+@@ -890,6 +890,7 @@ static int mvebu_gpio_probe(struct platform_device *pdev)
+ 	struct irq_chip_type *ct;
+ 	struct clk *clk;
+ 	unsigned int ngpios;
++	unsigned int gpio_base = -1;
+ 	int soc_variant;
+ 	int i, cpu, id;
+ 	int err;
+@@ -912,6 +913,9 @@ static int mvebu_gpio_probe(struct platform_device *pdev)
+ 		return -ENODEV;
+ 	}
+ 
++	if (of_property_read_u32(pdev->dev.of_node, "gpiobase", &gpio_base))
++		gpio_base = -1;
++
+ 	id = of_alias_get_id(pdev->dev.of_node, "gpio");
+ 	if (id < 0) {
+ 		dev_err(&pdev->dev, "Couldn't get OF id\n");
+@@ -940,7 +944,10 @@ static int mvebu_gpio_probe(struct platform_device *pdev)
+ 		mvchip->chip.get = mvebu_gpio_get;
+ 		mvchip->chip.direction_output = mvebu_gpio_direction_output;
+ 		mvchip->chip.set = mvebu_gpio_set;
+-		mvchip->chip.base = id * MVEBU_MAX_GPIO_PER_BANK;
++		if (gpio_base != -1)
++			mvchip->chip.base = gpio_base;
++		else
++			mvchip->chip.base = id * MVEBU_MAX_GPIO_PER_BANK;
+ 		mvchip->chip.dbg_show = mvebu_gpio_dbg_show;
+ 	}
+ 	mvchip->chip.to_irq = mvebu_gpio_to_irq;
+-- 
+2.7.4
+

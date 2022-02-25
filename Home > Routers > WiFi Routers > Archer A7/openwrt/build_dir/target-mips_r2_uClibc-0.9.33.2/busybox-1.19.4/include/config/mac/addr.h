@@ -1,0 +1,1 @@
+#define CONFIG_MAC_ADDR 1

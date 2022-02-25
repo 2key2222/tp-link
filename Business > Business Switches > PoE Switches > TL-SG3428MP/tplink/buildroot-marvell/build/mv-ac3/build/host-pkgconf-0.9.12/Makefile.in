@@ -1,0 +1,75 @@
+prefix			= @prefix@
+exec_prefix		= @exec_prefix@
+bindir			= @bindir@
+srcdir			= @srcdir@
+libdir			= @libdir@
+datarootdir		= @datarootdir@
+datadir			= @datadir@
+includedir		= @includedir@
+system_includedir	= @SYSTEM_INCLUDEDIR@
+system_libdir		= @SYSTEM_LIBDIR@
+pkgconfigdir		= @PKGCONFIGDIR@
+
+CC			= @CC@
+INSTALL			= @INSTALL@
+PROG			= pkgconf@EXEEXT@
+SRCS			= main.c cache.c pkg.c bsdstubs.c getopt_long.c fragment.c argvsplit.c fileio.c tuple.c dependency.c queue.c
+OBJS			= ${SRCS:.c=.o}
+GCOV_OBJS		= ${SRCS:.c=.og}
+PROF_OBJS		= ${SRCS:.c=.op}
+CFLAGS			= @CFLAGS@
+LDFLAGS			= @LDFLAGS@
+CFLAGS			+= -DLIBDIR=\"${libdir}\" -DINCLUDEDIR=\"${includedir}\" -DPKG_DEFAULT_PATH=\"${pkgconfigdir}\" -DSYSTEM_INCLUDEDIR=\"${system_includedir}\" -DSYSTEM_LIBDIR=\"${system_libdir}\" -Wall -Wextra -Wformat=2 -std=gnu99
+MANDIR			= ${datarootdir}/man/man1
+
+all: build
+build: ${PROG}
+
+clean:
+	rm -f *.o *.og *.gcda *.gcno *.gcov
+	rm -f $(PROG)
+
+install:
+	mkdir -p $(DESTDIR)$(bindir)
+	@INSTALL_PROGRAM@ $(PROG) $(DESTDIR)$(bindir)/$(PROG)
+	mkdir -p $(DESTDIR)$(datarootdir)/aclocal
+	@INSTALL_DATA@ $(srcdir)/pkg.m4 $(DESTDIR)$(datarootdir)/aclocal/pkg.m4
+	mkdir -p $(DESTDIR)$(MANDIR)
+	@INSTALL_DATA@ $(srcdir)/pkgconf.1 $(DESTDIR)$(MANDIR)/pkgconf.1
+
+check: $(PROG)
+	$(SHELL) tests/run.sh ./$(PROG)
+
+valgrind-check: $(PROG)
+	$(SHELL) tests/run.sh 'valgrind --leak-check=full --show-reachable=yes ./$(PROG)'
+
+%.o: $(srcdir)/%.c
+	$(CC) -c $(CFLAGS) -I. $(CPPFLAGS) $< -o $@
+
+$(PROG): $(OBJS)
+	${CC} ${LDFLAGS} -o $@ $(OBJS)
+
+$(PROG)-gcov: $(GCOV_OBJS)
+	${CC} ${LDFLAGS} -fprofile-arcs -ftest-coverage -o $@ $(GCOV_OBJS)
+
+gcov-check: $(PROG)-gcov
+	$(SHELL) tests/run.sh ./$(PROG)-gcov
+	@echo "gcov(1) reporting data should now be generated..."
+
+$(PROG)-profile: $(PROF_OBJS)
+	${CC} ${LDFLAGS} -pg -o $@ $(PROF_OBJS)
+
+profile-check: $(PROG)-profile
+	$(SHELL) tests/run.sh ./$(PROG)-profile
+	@echo "gprof(1) reporting data should now be generated..."
+
+.c.o:
+	${CC} ${CFLAGS} -c $< -o $@
+
+.c.og:
+	${CC} ${CFLAGS} -fprofile-arcs -ftest-coverage -c $< -o $@
+
+.c.op:
+	${CC} ${CFLAGS} -pg -c $< -o $@
+
+.SUFFIXES: .og .op

@@ -1,0 +1,90 @@
+Source-Makefile: target/linux/ipq806x/Makefile
+Target: ipq806x
+Target-Board: ipq806x
+Target-Name: QCA IPQ806X
+Target-Path: /home/leo/hd500/GPL/c7v5/Archer_C7_V4/openwrt
+Target-Arch: arm
+Target-Arch-Packages: ipq806x
+Target-Features: dtc gpio pci squashfs targz ubifs usb usbgadget
+Target-Depends: 
+Target-Optimization: -Os -pipe -march=armv7-a -mfpu=vfpv3-d16 -mfloat-abi=softfp
+Linux-Version: 3.4.103
+Linux-Release: 1
+Linux-Kernel-Arch: arm
+Target-Description:
+	Build firmware images for Qualcomm Atheros IPQ806x (arm) platform.
+@@
+Default-Packages: base-files libc libgcc busybox dropbear mtd uci opkg hotplug2 netifd dnsmasq iptables ppp ppp-mod-pppoe kmod-ipt-nathelper firewall mtd-utils mtd-utils-mkfs.ubifs mtd-utils-ubiattach mtd-utils-ubidetach mtd-utils-ubiformat mtd-utils-ubimkvol mtd-utils-ubiupdatevol kmod-button-hotplug uboot-envtools swconfig kmod-input-gpio-keys kmod-qca-nss-drv kmod-qca-nss-gmac kmod-leds-gpio kmod-ledtrig-default-on kmod-ledtrig-timer kmod-ledtrig-netdev kmod-usb-gadget kmod-usb-gadget-dwc3 kmod-usb-gadget-dwc3-ipq kmod-usb-core kmod-usb2 kmod-usb-xhci uboot-ipq806x kmod-ledtrig-usbdev uboot-ipq806x-fwupgrade-tools
+Target-Profile: Default
+Target-Profile-Name: Default Profile (minimum package set)
+Target-Profile-Packages: kmod-usb-core kmod-usb-ohci kmod-usb2 kmod-ledtrig-usbdev
+Target-Profile-Config: 
+
+@@
+Target-Profile-Description:
+	Default package set compatible with most boards.
+@@
+
+Target-Profile: QSDK_Open
+Target-Profile-Name: Qualcomm-Atheros SDK Open Profile
+Target-Profile-Packages: kmod-usb-core kmod-usb-ohci kmod-usb2 kmod-ledtrig-usbdev kmod-ath9k wpad-mini kmod-qca-nss-connmgr-noload
+Target-Profile-Config: 
+
+@@
+Target-Profile-Description:
+	QSDK Open package set configuration.
+	This profile includes only open source packages and provides basic Wi-Fi router features using the QCA upstream Linux Wi-Fi driver. It supports:
+	-Bridging and routing networking
+	-LuCI web configuration interface
+	-Integrated 11abgn support using the ath9k driver
+@@
+
+Target-Profile: QSDK_Standard
+Target-Profile-Name: Qualcomm-Atheros SDK Standard Profile
+Target-Profile-Packages: luci uhttpd kmod-ipt-nathelper-extra luci-app-upnp kmod-usb-storage kmod-fs-msdos kmod-fs-ntfs kmod-fs-vfat kmod-sound-core kmod-sound-soc-ipq806x alsa mplayer kmod-ipt-ipopt ntfs-3g dosfsck e2fsprogs iozone fdisk mkdosfs kmod-ipt-conntrack-qos kmod-nls-cp437 kmod-nls-iso8859-1 tftp-hpa sysstat mcproxy kmod-ipt-nathelper-rtsp kmod-ipv6 iperf devmem2 ip ethtool ip6tables ds-lite rstp quagga quagga-ripd quagga-zebra quagga-watchquagga quagga-vtysh rp-pppoe-relay -dnsmasq dnsmasq-dhcpv6 radvd wide-dhcpv6-client luci-app-samba luci-proto-6x4 bridge luci-app-ddns ddns-scripts cups cups-client mdadm kmod-md-mod kmod-md-linear kmod-md-raid0 kmod-md-raid1 iputils-tracepath iputils-tracepath6 alljoyn alljoyn-about alljoyn-c alljoyn-config alljoyn-controlpanel alljoyn-notification alljoyn-services_common kmod-qca-ssdk-nohnat qca-ssdk-shell file pure-ftpd kmod-qca-nss-drv-qdisc xl2tpd ppp-mod-pptp pm-utils kmod-qca-nss-macsec qca-thermald rng-tools perf kmod-nat-sctp kmod-aq_phy kmod-qca_85xx_sw streamboost-noload kmod-qca-nss-ecm hyfi kmod-qca-nss-drv-profile kmod-qca-nss-drv-tun6rd kmod-qca-nss-drv-tunipip6 qca-nss-fw-retail kmod-qca-wifi-akronite-perf kmod-art2 qca-hostap qca-hostapd-cli qca-wpa-supplicant-macsec qca-wpa-cli qca-spectral qca-wapid sigma-dut qca-acfg qca-wrapd whc qca-thermald
+Target-Profile-Config: 
+
+@@
+Target-Profile-Description:
+	QSDK Standard package set configuration.
+	This profile provides basic Wi-Fi router features using the QCA 10.2 Wi-Fi driver. It supports:
+	-Bridging and routing networking
+	-LuCI web configuration interface
+	-Integrated 11abgn/ac support using the qca-wifi driver
+@@
+
+Target-Profile: QSDK_Standard_Beeliner
+Target-Profile-Name: Qualcomm-Atheros SDK Standard Beeliner Profile
+Target-Profile-Packages: luci uhttpd kmod-ipt-nathelper-extra luci-app-upnp kmod-usb-storage kmod-fs-msdos kmod-fs-ntfs kmod-fs-vfat kmod-sound-core kmod-sound-soc-ipq806x alsa mplayer kmod-ipt-ipopt ntfs-3g dosfsck e2fsprogs iozone fdisk mkdosfs kmod-ipt-conntrack-qos kmod-nls-cp437 kmod-nls-iso8859-1 tftp-hpa sysstat mcproxy kmod-ipt-nathelper-rtsp kmod-ipv6 iperf devmem2 ip ethtool ip6tables ds-lite rstp quagga quagga-ripd quagga-zebra quagga-watchquagga quagga-vtysh rp-pppoe-relay -dnsmasq dnsmasq-dhcpv6 radvd wide-dhcpv6-client luci-app-samba luci-proto-6x4 bridge luci-app-ddns ddns-scripts cups cups-client mdadm kmod-md-mod kmod-md-linear kmod-md-raid0 kmod-md-raid1 iputils-tracepath iputils-tracepath6 alljoyn alljoyn-about alljoyn-c alljoyn-config alljoyn-controlpanel alljoyn-notification alljoyn-services_common kmod-qca-ssdk-nohnat qca-ssdk-shell file pure-ftpd kmod-qca-nss-drv-qdisc xl2tpd ppp-mod-pptp pm-utils kmod-qca-nss-macsec qca-thermald rng-tools perf kmod-nat-sctp kmod-aq_phy kmod-qca_85xx_sw streamboost-noload kmod-qca-nss-ecm hyfi kmod-qca-nss-drv-tun6rd kmod-qca-nss-drv-tunipip6 qca-nss-fw-retail kmod-qca-wifi-10.4-akronite-perf kmod-art2-10.4 qca-hostap-10.4 qca-hostapd-cli-10.4 qca-wpa-supplicant-10.4-macsec qca-wpa-cli-10.4 qca-wapid-10.4 sigma-dut-10.4 qca-wpc-10.4 qca-acfg-10.4 qca-wrapd-10.4 qca-spectral-10.4 qcmbr-10.4 whc qca-wifi-fw-hw1-10.4-asic qca-wifi-fw-hw2-10.4-asic qca-wifi-fw-hw3-10.4-asic qca-thermald-10.4
+Target-Profile-Config: 
+
+@@
+Target-Profile-Description:
+	QSDK Standard package set configuration.
+	This profile provides basic Wi-Fi router features using the QCA 10.4 Wi-Fi driver. It supports:
+	-Bridging and routing networking
+	-LuCI web configuration interface
+	-Integrated 11abgn/ac support using the qca-wifi driver
+@@
+
+Target-Profile: QSDK_Enterprise
+Target-Profile-Name: Qualcomm-Atheros SDK Enterprise Profile
+Target-Profile-Packages: luci uhttpd kmod-ipt-nathelper-extra luci-app-upnp kmod-usb-storage kmod-fs-msdos kmod-fs-ntfs kmod-fs-vfat kmod-sound-core kmod-sound-soc-ipq806x alsa mplayer kmod-ipt-ipopt ntfs-3g dosfsck e2fsprogs iozone fdisk mkdosfs kmod-ipt-conntrack-qos kmod-nls-cp437 kmod-nls-iso8859-1 tftp-hpa sysstat mcproxy kmod-ipt-nathelper-rtsp kmod-ipv6 iperf devmem2 ip ethtool ip6tables ds-lite rstp quagga quagga-ripd quagga-zebra quagga-watchquagga quagga-vtysh rp-pppoe-relay -dnsmasq dnsmasq-dhcpv6 radvd wide-dhcpv6-client luci-app-samba luci-proto-6x4 bridge luci-app-ddns ddns-scripts cups cups-client mdadm kmod-md-mod kmod-md-linear kmod-md-raid0 kmod-md-raid1 iputils-tracepath iputils-tracepath6 alljoyn alljoyn-about alljoyn-c alljoyn-config alljoyn-controlpanel alljoyn-notification alljoyn-services_common kmod-qca-ssdk-nohnat qca-ssdk-shell file pure-ftpd kmod-qca-nss-drv-qdisc xl2tpd ppp-mod-pptp pm-utils kmod-qca-nss-macsec qca-thermald rng-tools perf kmod-nat-sctp kmod-aq_phy kmod-qca_85xx_sw luci-app-qos luci-app-openswan kmod-crypto-ocf kmod-qca-nss-ecm-noload kmod-openswan-nss openswan-nss kmod-qca-nss-crypto kmod-qca-nss-cfi kmod-qca-nss-drv-profile kmod-qca-nss-drv-capwapmgr qca-nss-fw-enterprise kmod-qca-nss-drv-ipsecmgr qca-nss-fw-enterprise_custA qca-nss-fw-enterprise_custC kmod-qca-wifi-akronite-perf kmod-art2 qca-hostap qca-hostapd-cli qca-wpa-supplicant-macsec qca-wpa-cli qca-spectral qca-wapid sigma-dut qca-acfg qca-wrapd whc qca-thermald
+Target-Profile-Config: 
+
+@@
+Target-Profile-Description:
+	QSDK Enterprise package set configuration.
+@@
+
+Target-Profile: QSDK_Enterprise_Beeliner
+Target-Profile-Name: Qualcomm-Atheros SDK Enterprise Profile
+Target-Profile-Packages: luci uhttpd kmod-ipt-nathelper-extra luci-app-upnp kmod-usb-storage kmod-fs-msdos kmod-fs-ntfs kmod-fs-vfat kmod-sound-core kmod-sound-soc-ipq806x alsa mplayer kmod-ipt-ipopt ntfs-3g dosfsck e2fsprogs iozone fdisk mkdosfs kmod-ipt-conntrack-qos kmod-nls-cp437 kmod-nls-iso8859-1 tftp-hpa sysstat mcproxy kmod-ipt-nathelper-rtsp kmod-ipv6 iperf devmem2 ip ethtool ip6tables ds-lite rstp quagga quagga-ripd quagga-zebra quagga-watchquagga quagga-vtysh rp-pppoe-relay -dnsmasq dnsmasq-dhcpv6 radvd wide-dhcpv6-client luci-app-samba luci-proto-6x4 bridge luci-app-ddns ddns-scripts cups cups-client mdadm kmod-md-mod kmod-md-linear kmod-md-raid0 kmod-md-raid1 iputils-tracepath iputils-tracepath6 alljoyn alljoyn-about alljoyn-c alljoyn-config alljoyn-controlpanel alljoyn-notification alljoyn-services_common kmod-qca-ssdk-nohnat qca-ssdk-shell file pure-ftpd kmod-qca-nss-drv-qdisc xl2tpd ppp-mod-pptp pm-utils kmod-qca-nss-macsec qca-thermald rng-tools perf kmod-nat-sctp kmod-aq_phy kmod-qca_85xx_sw luci-app-qos luci-app-openswan kmod-crypto-ocf kmod-qca-nss-ecm-noload kmod-openswan-nss openswan-nss kmod-qca-nss-crypto kmod-qca-nss-cfi kmod-qca-nss-drv-profile kmod-qca-nss-drv-capwapmgr qca-nss-fw-enterprise kmod-qca-nss-drv-ipsecmgr qca-nss-fw-enterprise_custA qca-nss-fw-enterprise_custC kmod-qca-wifi-10.4-akronite-perf kmod-art2-10.4 qca-hostap-10.4 qca-hostapd-cli-10.4 qca-wpa-supplicant-10.4-macsec qca-wpa-cli-10.4 qca-wapid-10.4 sigma-dut-10.4 qca-wpc-10.4 qca-acfg-10.4 qca-wrapd-10.4 qca-spectral-10.4 qcmbr-10.4 whc qca-wifi-fw-hw1-10.4-asic qca-wifi-fw-hw2-10.4-asic qca-wifi-fw-hw3-10.4-asic qca-thermald-10.4
+Target-Profile-Config: 
+
+@@
+Target-Profile-Description:
+	QSDK Enterprise package set configuration with Beeliner wifi support.
+@@
+
+

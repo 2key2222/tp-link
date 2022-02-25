@@ -1,0 +1,63 @@
+From 9f45a04f4268f1502f7598b366242b00cfd14237 Mon Sep 17 00:00:00 2001
+From: Yehuda Yitschak <yehuday@marvell.com>
+Date: Mon, 18 Apr 2016 14:16:43 +0300
+Subject: [PATCH 0368/2241] config: mmio: make MMIO_64BIT true by default
+
+When CONFIG_MMIO_64BIT was introduced it disabled 64BIT register
+access for all platforms. This patches fixes this by disabling
+the config only for our platforms.
+For now, this config is only used in the MMU-500 driver
+
+Change-Id: I695eb0318d9027b4b96a1df93596c7b4d2d46e37
+Signed-off-by: Yehuda Yitschak <yehuday@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/29147
+Reviewed-by: Shadi Ammouri <shadi@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+Tested-by: Hanna Hawa <hannah@marvell.com>
+---
+ arch/arm64/Kconfig                        | 9 ++++++---
+ arch/arm64/configs/mvebu_v8_lsp_defconfig | 1 +
+ 2 files changed, 7 insertions(+), 3 deletions(-)
+
+diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
+index e4e57a3..d9de79c 100644
+--- a/arch/arm64/Kconfig
++++ b/arch/arm64/Kconfig
+@@ -98,9 +98,6 @@ config ARM64
+ config 64BIT
+ 	def_bool y
+ 
+-config MMIO_64BIT
+-	def_bool n
+-
+ config ARCH_PHYS_ADDR_T_64BIT
+ 	def_bool y
+ 
+@@ -499,6 +496,12 @@ config CPU_BIG_ENDIAN
+        help
+          Say Y if you plan on running a kernel in big-endian mode.
+ 
++config MMIO_64BIT
++       bool "64BIT MMIO Access"
++       default y
++       help
++         Say Y if you your platform supports 64bit MMIO access.
++
+ config SCHED_MC
+ 	bool "Multi-core scheduler support"
+ 	help
+diff --git a/arch/arm64/configs/mvebu_v8_lsp_defconfig b/arch/arm64/configs/mvebu_v8_lsp_defconfig
+index 6880e53..44ac33c 100644
+--- a/arch/arm64/configs/mvebu_v8_lsp_defconfig
++++ b/arch/arm64/configs/mvebu_v8_lsp_defconfig
+@@ -39,6 +39,7 @@ CONFIG_IGNORE_ASYNC_ABORT=y
+ CONFIG_PCI_HOST_GENERIC=y
+ CONFIG_PCIE_IPROC=y
+ CONFIG_PCIE_ARMADA_8K=y
++# CONFIG_MMIO_64BIT is not set
+ CONFIG_SCHED_MC=y
+ CONFIG_PREEMPT=y
+ CONFIG_KSM=y
+-- 
+2.7.4
+

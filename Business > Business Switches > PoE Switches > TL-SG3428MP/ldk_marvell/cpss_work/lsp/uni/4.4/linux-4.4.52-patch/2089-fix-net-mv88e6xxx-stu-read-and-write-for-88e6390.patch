@@ -1,0 +1,84 @@
+From 00d3991e46d51922062b14a4df7e8e87bc3dfe08 Mon Sep 17 00:00:00 2001
+From: Ravindra Reddy K <ravindra@marvell.com>
+Date: Mon, 27 Nov 2017 13:45:32 +0530
+Subject: [PATCH 2089/2241] fix: net: mv88e6xxx: stu read and write for
+ 88e6390.
+
+Modified read and write of stu data as per functional specification.
+Refer to Global 1, register 7 and register 8 of peridot and other
+devices. These registers specify, ingress and egress membership and
+egress tagging of each port. For all devices expect peridot, width of
+the membership tag for each port is 4 bits wide in which two bits are
+reserved. For peridot, width of membership tag for each port is two bits.
+
+Change-Id: I8c35bb205d0b6d10636cf974835b6ee336d26658
+Signed-off-by: Ravindra Reddy K <ravindra@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/46883
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Tested-by: Omri Itach <omrii@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/47005
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+---
+ drivers/net/dsa/mv88e6xxx.c | 28 ++++++++++++++++++++++++----
+ 1 file changed, 24 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/net/dsa/mv88e6xxx.c b/drivers/net/dsa/mv88e6xxx.c
+index 8957b7a..0d6138d 100644
+--- a/drivers/net/dsa/mv88e6xxx.c
++++ b/drivers/net/dsa/mv88e6xxx.c
+@@ -1500,6 +1500,16 @@ static int _mv88e6xxx_vtu_stu_data_read(struct mv88e6xxx_priv_state *ps,
+ 	u16 regs[3];
+ 	int i;
+ 	int ret;
++	int member_tags_per_reg;
++	int member_tag_size;
++
++	if (mv88e6xxx_6390_family(ps)) {
++		member_tags_per_reg = 8;
++		member_tag_size = 2;
++	} else {
++		member_tags_per_reg = 4;
++		member_tag_size = 4;
++	}
+ 
+ 	for (i = 0; i < 3; ++i) {
+ 		ret = _mv88e6xxx_reg_read(ps, REG_GLOBAL,
+@@ -1511,8 +1521,8 @@ static int _mv88e6xxx_vtu_stu_data_read(struct mv88e6xxx_priv_state *ps,
+ 	}
+ 
+ 	for (i = 0; i < ps->info->num_ports; ++i) {
+-		unsigned int shift = (i % 4) * 4 + nibble_offset;
+-		u16 reg = regs[i / 4];
++		unsigned int shift = (i % member_tags_per_reg) * member_tag_size + nibble_offset;
++		u16 reg = regs[i / member_tags_per_reg];
+ 
+ 		entry->data[i] = (reg >> shift) & GLOBAL_VTU_STU_DATA_MASK;
+ 	}
+@@ -1539,12 +1549,22 @@ static int _mv88e6xxx_vtu_stu_data_write(struct mv88e6xxx_priv_state *ps,
+ 	u16 regs[3] = { 0 };
+ 	int i;
+ 	int ret;
++	int member_tags_per_reg;
++	int member_tag_size;
++
++	if (mv88e6xxx_6390_family(ps)) {
++		member_tags_per_reg = 8;
++		member_tag_size = 2;
++	} else {
++		member_tags_per_reg = 4;
++		member_tag_size = 4;
++	}
+ 
+ 	for (i = 0; i < ps->info->num_ports; ++i) {
+-		unsigned int shift = (i % 4) * 4 + nibble_offset;
++		unsigned int shift = (i % member_tags_per_reg) * member_tag_size + nibble_offset;
+ 		u8 data = entry->data[i];
+ 
+-		regs[i / 4] |= (data & GLOBAL_VTU_STU_DATA_MASK) << shift;
++		regs[i / member_tags_per_reg] |= (data & GLOBAL_VTU_STU_DATA_MASK) << shift;
+ 	}
+ 
+ 	for (i = 0; i < 3; ++i) {
+-- 
+2.7.4
+

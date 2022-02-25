@@ -1,0 +1,73 @@
+From 85e8322fe3d8d4e61c273cf66891d8059067622e Mon Sep 17 00:00:00 2001
+From: Stefan Chulski <stefanc@marvell.com>
+Date: Wed, 7 Dec 2016 13:54:44 +0200
+Subject: [PATCH 1176/2241] fix: net: mvpp2x: fix two crashes with all ports
+ disabled state
+
+1. First crash:
+- Driver will return -ENODEV if port count is 0 and there are no
+  enabled ports in device tree.
+2. Second crash:
+- create single thread workqueue in the later states of driver probe.
+  Crash occurred since workqueue were created and driver exit probe
+  with error. To solve this issue workqueue creation were moved to the end
+  of the probe.
+
+Change-Id: I50006c6ef07c0872bc7566a16a44ebf1545614a7
+Signed-off-by: Stefan Chulski <stefanc@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/34445
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c | 19 ++++++++++---------
+ 1 file changed, 10 insertions(+), 9 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+index a819bfa..719019e 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+@@ -5115,7 +5115,7 @@ static int mv_pp2x_platform_data_get(struct platform_device *pdev,
+ 	*port_count = of_get_available_child_count(dn);
+ 	if (*port_count == 0) {
+ 		dev_err(&pdev->dev, "no ports enabled\n");
+-		err = -ENODEV;
++		return -ENODEV;
+ 	}
+ 	return 0;
+ }
+@@ -5298,14 +5298,6 @@ static int mv_pp2x_probe(struct platform_device *pdev)
+ 		goto err_clk;
+ 	}
+ 
+-	priv->workqueue = create_singlethread_workqueue("mv_pp2x");
+-
+-	if (!priv->workqueue) {
+-		err = -ENOMEM;
+-		goto err_clk;
+-	}
+-	INIT_DELAYED_WORK(&priv->stats_task, mv_pp2x_get_device_stats);
+-
+ 	/* Init PP22 rxfhindir table evenly in probe */
+ 	if (priv->pp2_version == PPV22)
+ 		mv_pp22_init_rxfhindir(priv);
+@@ -5326,6 +5318,15 @@ static int mv_pp2x_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	platform_set_drvdata(pdev, priv);
++
++	priv->workqueue = create_singlethread_workqueue("mv_pp2x");
++
++	if (!priv->workqueue) {
++		err = -ENOMEM;
++		goto err_clk;
++	}
++	INIT_DELAYED_WORK(&priv->stats_task, mv_pp2x_get_device_stats);
++
+ 	queue_delayed_work(priv->workqueue, &priv->stats_task, stats_delay);
+ 	pr_debug("Platform Device Name : %s\n", kobject_name(&pdev->dev.kobj));
+ 	return 0;
+-- 
+2.7.4
+

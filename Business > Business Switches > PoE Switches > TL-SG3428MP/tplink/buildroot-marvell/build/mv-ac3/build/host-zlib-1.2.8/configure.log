@@ -1,0 +1,155 @@
+--------------------
+./configure --prefix=/project/trunk/MV-AC3_GPL/tplink/buildroot-marvell/build/mv-ac3/host/usr --sysconfdir=/project/trunk/MV-AC3_GPL/tplink/buildroot-marvell/build/mv-ac3/host/etc
+Sun Feb 20 17:35:44 PST 2022
+ignored option: --sysconfdir
+=== ztest14379.c ===
+extern int getchar();
+int hello() {return getchar();}
+===
+/usr/bin/gcc -c ztest14379.c
+... using gcc
+
+Checking for obsessive-compulsive compiler options...
+=== ztest14379.c ===
+int foo() { return 0; }
+===
+/usr/bin/gcc -c -O2 -I/project/trunk/MV-AC3_GPL/tplink/buildroot-marvell/build/mv-ac3/host/usr/include ztest14379.c
+
+Checking for shared library support...
+=== ztest14379.c ===
+extern int getchar();
+int hello() {return getchar();}
+===
+/usr/bin/gcc -w -c -O2 -I/project/trunk/MV-AC3_GPL/tplink/buildroot-marvell/build/mv-ac3/host/usr/include -fPIC ztest14379.c
+/usr/bin/gcc -shared -Wl,-soname,libz.so.1,--version-script,zlib.map -O2 -I/project/trunk/MV-AC3_GPL/tplink/buildroot-marvell/build/mv-ac3/host/usr/include -fPIC -o ztest14379.so ztest14379.o
+Building shared library libz.so.1.2.8 with /usr/bin/gcc.
+
+=== ztest14379.c ===
+#include <sys/types.h>
+off64_t dummy = 0;
+===
+/usr/bin/gcc -c -O2 -I/project/trunk/MV-AC3_GPL/tplink/buildroot-marvell/build/mv-ac3/host/usr/include -D_LARGEFILE64_SOURCE=1 ztest14379.c
+Checking for off64_t... Yes.
+Checking for fseeko... Yes.
+
+=== ztest14379.c ===
+#include <string.h>
+#include <errno.h>
+int main() { return strlen(strerror(errno)); }
+===
+/usr/bin/gcc -O2 -I/project/trunk/MV-AC3_GPL/tplink/buildroot-marvell/build/mv-ac3/host/usr/include -D_LARGEFILE64_SOURCE=1 -o ztest14379 ztest14379.c
+Checking for strerror... Yes.
+
+=== ztest14379.c ===
+#include <unistd.h>
+int main() { return 0; }
+===
+/usr/bin/gcc -c -O2 -I/project/trunk/MV-AC3_GPL/tplink/buildroot-marvell/build/mv-ac3/host/usr/include -D_LARGEFILE64_SOURCE=1 ztest14379.c
+Checking for unistd.h... Yes.
+
+=== ztest14379.c ===
+#include <stdarg.h>
+int main() { return 0; }
+===
+/usr/bin/gcc -c -O2 -I/project/trunk/MV-AC3_GPL/tplink/buildroot-marvell/build/mv-ac3/host/usr/include -D_LARGEFILE64_SOURCE=1 ztest14379.c
+Checking for stdarg.h... Yes.
+
+=== ztest14379.c ===
+#include <stdio.h>
+#include <stdarg.h>
+#include "zconf.h"
+int main()
+{
+#ifndef STDC
+  choke me
+#endif
+  return 0;
+}
+===
+/usr/bin/gcc -c -O2 -I/project/trunk/MV-AC3_GPL/tplink/buildroot-marvell/build/mv-ac3/host/usr/include -D_LARGEFILE64_SOURCE=1 ztest14379.c
+Checking whether to use vs[n]printf() or s[n]printf()... using vs[n]printf().
+
+=== ztest14379.c ===
+#include <stdio.h>
+#include <stdarg.h>
+int mytest(const char *fmt, ...)
+{
+  char buf[20];
+  va_list ap;
+  va_start(ap, fmt);
+  vsnprintf(buf, sizeof(buf), fmt, ap);
+  va_end(ap);
+  return 0;
+}
+int main()
+{
+  return (mytest("Hello%d\n", 1));
+}
+===
+/usr/bin/gcc -O2 -I/project/trunk/MV-AC3_GPL/tplink/buildroot-marvell/build/mv-ac3/host/usr/include -D_LARGEFILE64_SOURCE=1 -o ztest14379 ztest14379.c
+Checking for vsnprintf() in stdio.h... Yes.
+
+=== ztest14379.c ===
+#include <stdio.h>
+#include <stdarg.h>
+int mytest(const char *fmt, ...)
+{
+  int n;
+  char buf[20];
+  va_list ap;
+  va_start(ap, fmt);
+  n = vsnprintf(buf, sizeof(buf), fmt, ap);
+  va_end(ap);
+  return n;
+}
+int main()
+{
+  return (mytest("Hello%d\n", 1));
+}
+===
+/usr/bin/gcc -c -O2 -I/project/trunk/MV-AC3_GPL/tplink/buildroot-marvell/build/mv-ac3/host/usr/include -D_LARGEFILE64_SOURCE=1 ztest14379.c
+Checking for return value of vsnprintf()... Yes.
+
+=== ztest14379.c ===
+#define ZLIB_INTERNAL __attribute__((visibility ("hidden")))
+int ZLIB_INTERNAL foo;
+int main()
+{
+  return 0;
+}
+===
+/usr/bin/gcc -c -O2 -I/project/trunk/MV-AC3_GPL/tplink/buildroot-marvell/build/mv-ac3/host/usr/include -D_LARGEFILE64_SOURCE=1 ztest14379.c
+Checking for attribute(visibility) support... Yes.
+
+ALL = static shared all64
+AR = /usr/bin/ar
+ARFLAGS = rc
+CC = /usr/bin/gcc
+CFLAGS = -O2 -I/project/trunk/MV-AC3_GPL/tplink/buildroot-marvell/build/mv-ac3/host/usr/include -D_LARGEFILE64_SOURCE=1 -DHAVE_HIDDEN
+CPP = /usr/bin/cpp
+EXE =
+LDCONFIG = ldconfig
+LDFLAGS = -L/project/trunk/MV-AC3_GPL/tplink/buildroot-marvell/build/mv-ac3/host/lib -L/project/trunk/MV-AC3_GPL/tplink/buildroot-marvell/build/mv-ac3/host/usr/lib -Wl,-rpath,/project/trunk/MV-AC3_GPL/tplink/buildroot-marvell/build/mv-ac3/host/usr/lib
+LDSHARED = /usr/bin/gcc -shared -Wl,-soname,libz.so.1,--version-script,zlib.map
+LDSHAREDLIBC = -lc
+OBJC = $(OBJZ) $(OBJG)
+PIC_OBJC = $(PIC_OBJZ) $(PIC_OBJG)
+RANLIB = /usr/bin/ranlib
+SFLAGS = -O2 -I/project/trunk/MV-AC3_GPL/tplink/buildroot-marvell/build/mv-ac3/host/usr/include -fPIC -D_LARGEFILE64_SOURCE=1 -DHAVE_HIDDEN
+SHAREDLIB = libz.so
+SHAREDLIBM = libz.so.1
+SHAREDLIBV = libz.so.1.2.8
+STATICLIB = libz.a
+TEST = all teststatic testshared test64
+VER = 1.2.8
+Z_U4 =
+exec_prefix = ${prefix}
+includedir = ${prefix}/include
+libdir = ${exec_prefix}/lib
+mandir = ${prefix}/share/man
+prefix = /project/trunk/MV-AC3_GPL/tplink/buildroot-marvell/build/mv-ac3/host/usr
+sharedlibdir = ${libdir}
+uname = Linux
+--------------------
+
+

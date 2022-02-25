@@ -1,0 +1,54 @@
+From 0fc6438f1a0189b3b3a15b70d384a1e9185d406d Mon Sep 17 00:00:00 2001
+From: Igal Liberman <igall@marvell.com>
+Date: Wed, 27 Sep 2017 18:23:58 +0300
+Subject: [PATCH 2017/2241] fix: cp110: comphy: usb3: configure SSC amplitude
+ correctly
+
+The current setting doesn't pass compliance tests.
+This patch fixes this issue by setting correct SSC amplitude
+when configuring a comphy into USB3 mode.
+
+Change-Id: Ib73e98405e8e9ac124c4a143056586fe2e31a767
+Signed-off-by: Igal Liberman <igall@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/44808
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+---
+ drivers/phy/phy-comphy-cp110.c | 4 ++++
+ drivers/phy/phy-comphy-cp110.h | 4 ++++
+ 2 files changed, 8 insertions(+)
+
+diff --git a/drivers/phy/phy-comphy-cp110.c b/drivers/phy/phy-comphy-cp110.c
+index d828ba4..1dd6083 100644
+--- a/drivers/phy/phy-comphy-cp110.c
++++ b/drivers/phy/phy-comphy-cp110.c
+@@ -706,6 +706,10 @@ static int mvebu_cp110_comphy_usb3_power_on(struct mvebu_comphy_priv *priv,
+ 	mask |= HPIPE_LANE_CFG4_SSC_CTRL_MASK;
+ 	data |= 0x1 << HPIPE_LANE_CFG4_SSC_CTRL_OFFSET;
+ 	reg_set(hpipe_addr + HPIPE_LANE_CFG4_REG, data, mask);
++	/* Confifure SSC amplitude */
++	mask = HPIPE_G2_TX_SSC_AMP_MASK;
++	data = 0x1f << HPIPE_G2_TX_SSC_AMP_OFFSET;
++	reg_set(hpipe_addr + HPIPE_G2_SET_2_REG, data, mask);
+ 	/* End of analog parameters */
+ 
+ 	dev_dbg(priv->dev, "stage: Comphy power up\n");
+diff --git a/drivers/phy/phy-comphy-cp110.h b/drivers/phy/phy-comphy-cp110.h
+index 264d7e5..8f746f0 100644
+--- a/drivers/phy/phy-comphy-cp110.h
++++ b/drivers/phy/phy-comphy-cp110.h
+@@ -259,6 +259,10 @@ extern const struct mvebu_comphy_soc_info cp110_comphy;
+ #define HPIPE_G1_SET_2_G1_TX_EMPH0_EN_OFFSET	4
+ #define HPIPE_G1_SET_2_G1_TX_EMPH0_EN_MASK	(0x1 << HPIPE_G1_SET_2_G1_TX_EMPH0_EN_OFFSET)
+ 
++#define HPIPE_G2_SET_2_REG			0xf8
++#define HPIPE_G2_TX_SSC_AMP_OFFSET		9
++#define HPIPE_G2_TX_SSC_AMP_MASK		(0x7f << HPIPE_G2_TX_SSC_AMP_OFFSET)
++
+ #define HPIPE_VDD_CAL_0_REG			0x108
+ #define HPIPE_CAL_VDD_CONT_MODE_OFFSET		15
+ #define HPIPE_CAL_VDD_CONT_MODE_MASK		(0x1 << HPIPE_CAL_VDD_CONT_MODE_OFFSET)
+-- 
+2.7.4
+

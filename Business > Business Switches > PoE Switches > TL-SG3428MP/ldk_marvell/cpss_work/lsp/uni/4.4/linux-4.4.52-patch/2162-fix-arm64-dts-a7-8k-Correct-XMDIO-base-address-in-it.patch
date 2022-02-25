@@ -1,0 +1,77 @@
+From aff1f0b18c7de08760abae9846a7d654a90593a8 Mon Sep 17 00:00:00 2001
+From: Ken Ma <make@marvell.com>
+Date: Thu, 4 Jan 2018 14:19:22 +0800
+Subject: [PATCH 2162/2241] fix: arm64: dts: a7/8k: Correct XMDIO base address
+ in its name
+
+The correct base address of XMDIO is 0x12a600, the XMDIO fdt node has
+the correct "reg" property - <0x12a600 0x10>, but it is named
+"mdio@15b000" wrongly, correct its name to "mdio@12a600".
+
+Change-Id: Iec39c919ac4182f9f416341bd67fa2460999947b
+Signed-off-by: Ken Ma <make@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/48515
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-3900-db.dtsi               | 2 +-
+ arch/arm64/boot/dts/marvell/armada-8040-mcbin-pp2-vanilla.dts | 2 +-
+ arch/arm64/boot/dts/marvell/armada-8040-mcbin.dts             | 2 +-
+ arch/arm64/boot/dts/marvell/armada-cp110.dtsi                 | 2 +-
+ 4 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-3900-db.dtsi b/arch/arm64/boot/dts/marvell/armada-3900-db.dtsi
+index e06e79d..fc5271e 100644
+--- a/arch/arm64/boot/dts/marvell/armada-3900-db.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-3900-db.dtsi
+@@ -127,7 +127,7 @@
+ 					pagesize = <32>;
+ 				};
+ 			};
+-			mdio@15b000 {
++			mdio@12a600 {
+ 				#address-cells = <1>;
+ 				#size-cells = <0>;
+ 				status = "okay";
+diff --git a/arch/arm64/boot/dts/marvell/armada-8040-mcbin-pp2-vanilla.dts b/arch/arm64/boot/dts/marvell/armada-8040-mcbin-pp2-vanilla.dts
+index da32dc5..48e67ed 100644
+--- a/arch/arm64/boot/dts/marvell/armada-8040-mcbin-pp2-vanilla.dts
++++ b/arch/arm64/boot/dts/marvell/armada-8040-mcbin-pp2-vanilla.dts
+@@ -136,7 +136,7 @@
+ 					reg = <0>;
+ 				};
+ 			};
+-			mdio@15b000 {
++			mdio@12a600 {
+ 				#address-cells = <1>;
+ 				#size-cells = <0>;
+ 				status = "okay";
+diff --git a/arch/arm64/boot/dts/marvell/armada-8040-mcbin.dts b/arch/arm64/boot/dts/marvell/armada-8040-mcbin.dts
+index d5d3c29..5bc75fd 100644
+--- a/arch/arm64/boot/dts/marvell/armada-8040-mcbin.dts
++++ b/arch/arm64/boot/dts/marvell/armada-8040-mcbin.dts
+@@ -139,7 +139,7 @@
+ 					reg = <0>;
+ 				};
+ 			};
+-			mdio@15b000 {
++			mdio@12a600 {
+ 				#address-cells = <1>;
+ 				#size-cells = <0>;
+ 				status = "okay";
+diff --git a/arch/arm64/boot/dts/marvell/armada-cp110.dtsi b/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
+index 7941dff..8c0768e 100644
+--- a/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-cp110.dtsi
+@@ -381,7 +381,7 @@
+ 				status = "disabled";
+ 			};
+ 
+-			CP110_LABEL(mdio1): mdio@15b000 {
++			CP110_LABEL(mdio1): mdio@12a600 {
+ 				#address-cells = <1>;
+ 				#size-cells = <0>;
+ 				compatible = "marvell,xmdio";
+-- 
+2.7.4
+

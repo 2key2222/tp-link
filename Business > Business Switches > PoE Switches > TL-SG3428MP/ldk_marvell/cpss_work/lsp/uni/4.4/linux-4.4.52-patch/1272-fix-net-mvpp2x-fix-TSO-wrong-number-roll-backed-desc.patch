@@ -1,0 +1,46 @@
+From f75259b69a7db2382e5c24b28772c2f93cfda5b2 Mon Sep 17 00:00:00 2001
+From: Stefan Chulski <stefanc@marvell.com>
+Date: Mon, 9 Jan 2017 10:08:22 +0200
+Subject: [PATCH 1272/2241] fix: net: mvpp2x: fix TSO wrong number roll backed
+ descriptors issue
+
+Issue:
+- If TSO header build failed, wrong number of descriptors roll backed.
+
+Fix:
+- Increment total descriptors number after building TCP header.
+
+Change-Id: I8e27c40ee3780c97505f17b64e6eb93943b5b046
+Signed-off-by: Stefan Chulski <stefanc@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/35454
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/35396
+---
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+index 54f2e46..3346b4d 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+@@ -2765,7 +2765,6 @@ static inline int mv_pp2_tx_tso(struct sk_buff *skb, struct net_device *dev,
+ 		tx_desc = mv_pp2x_txq_next_desc_get(aggr_txq);
+ 		tx_desc->phys_txq = txq->id;
+ 
+-		total_desc_num++;
+ 		total_len -= data_left;
+ 
+ 		/* prepare packet headers: MAC + IP + TCP */
+@@ -2775,6 +2774,7 @@ static inline int mv_pp2_tx_tso(struct sk_buff *skb, struct net_device *dev,
+ 						 total_len);
+ 		if (size < 0)
+ 			goto out_no_tx_desc;
++		total_desc_num++;
+ 
+ 		total_bytes += size;
+ 
+-- 
+2.7.4
+

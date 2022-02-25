@@ -1,0 +1,50 @@
+From a5c5e96f02e379ffbf8aba553f2847fdffc2f9a4 Mon Sep 17 00:00:00 2001
+From: Evan Wang <xswang@marvell.com>
+Date: Thu, 12 Jan 2017 22:13:44 +0800
+Subject: [PATCH 1365/2241] dts: comphy: add armada-3700 comphy dts node
+
+- The node status is disabled as default
+
+Change-Id: I314100be7b1595cae4c9b1ff99c27bebfd9c14ba
+Signed-off-by: Evan Wang <xswang@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/35531
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Igal Liberman <igall@marvell.com>
+Reviewed-by: Wilson Ding <dingwei@marvell.com>
+---
+ arch/arm64/boot/dts/marvell/armada-37xx.dtsi | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-37xx.dtsi b/arch/arm64/boot/dts/marvell/armada-37xx.dtsi
+index 1a5c21b..222d3a98 100644
+--- a/arch/arm64/boot/dts/marvell/armada-37xx.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-37xx.dtsi
+@@ -46,6 +46,7 @@
+ 
+ #include <dt-bindings/interrupt-controller/arm-gic.h>
+ #include <dt-bindings/gpio/gpio.h>
++#include <dt-bindings/phy/phy-comphy-mvebu.h>
+ 
+ / {
+ 	model = "Marvell Armada 37xx SoC";
+@@ -376,6 +377,17 @@
+ 				reg = <0x1d00000 0x10000>, /* GICD */
+ 				      <0x1d40000 0x40000>; /* GICR */
+ 			};
++
++			a3700_comphy: comphy@18300 {
++				compatible = "marvell,mvebu-comphy", "marvell,armada-3700-comphy";
++				reg = <0x18300 0x300>, /* comphy */
++				      <0x1F000 0x1000>, /* serdes */
++				      <0x5c000 0x1000>, /* usb3_gbe1_phy */
++				      <0xe0178 0x8>; /* lane2 indirect access */
++				reg-names = "comphy", "serdes", "usb3_gbe1_phy", "indirect";
++				#phy-cells = <2>;
++				status = "disabled";
++			};
+ 		};
+ 
+ 		pcie0: pcie@d0070000 {
+-- 
+2.7.4
+

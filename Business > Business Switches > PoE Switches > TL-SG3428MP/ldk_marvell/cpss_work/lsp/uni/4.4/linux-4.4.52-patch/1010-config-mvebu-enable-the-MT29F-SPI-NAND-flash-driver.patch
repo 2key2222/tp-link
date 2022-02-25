@@ -1,0 +1,32 @@
+From d077878c4d9edbb19d4175209847016a93f3ebf0 Mon Sep 17 00:00:00 2001
+From: Terry Zhou <bjzhou@marvell.com>
+Date: Tue, 13 Sep 2016 09:19:44 +0800
+Subject: [PATCH 1010/2241] config: mvebu: enable the MT29F SPI NAND flash
+ driver
+
+Change-Id: I7554a6a80f5d10da806da044841505a196803a9a
+Signed-off-by: Terry Zhou <bjzhou@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/32736
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+---
+ arch/arm64/configs/mvebu_v8_lsp_defconfig | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/arch/arm64/configs/mvebu_v8_lsp_defconfig b/arch/arm64/configs/mvebu_v8_lsp_defconfig
+index b15d77a..42a130b 100644
+--- a/arch/arm64/configs/mvebu_v8_lsp_defconfig
++++ b/arch/arm64/configs/mvebu_v8_lsp_defconfig
+@@ -262,6 +262,9 @@ CONFIG_CORESIGHT_SOURCE_ETM4X=y
+ CONFIG_CORESIGHT_SOURCE_AXIM=y
+ CONFIG_SECURITY=y
+ CONFIG_CRYPTO_ANSI_CPRNG=y
++CONFIG_STAGING=y
++CONFIG_MTD_SPINAND_MT29F=y
++CONFIG_MTD_SPINAND_ONDIEECC=y
+ CONFIG_ARM64_CRYPTO=y
+ CONFIG_CRYPTO_SHA1_ARM64_CE=y
+ CONFIG_CRYPTO_SHA2_ARM64_CE=y
+-- 
+2.7.4
+

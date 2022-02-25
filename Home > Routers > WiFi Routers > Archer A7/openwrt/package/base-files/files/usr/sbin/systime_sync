@@ -1,0 +1,85 @@
+#!/bin/sh
+# Copyright(c) 2011-2015 Shenzhen TP-LINK Technologies Co.Ltd.
+#
+# /usr/sbin/systime_sync
+# Written by Feng JiaFa<fengjiafa@tp-link.net>, July 2015
+#
+# do NTP for system
+# version 1.0.0
+
+. /lib/functions.sh
+
+lock -w /var/run/ntpd.lock
+
+if [ -d /var/run/ntpd ]
+then
+    if [ -e "/var/run/ntpd/ntpd.pid" ]
+    then
+        ntpdpids=$(ps | grep "/usr/sbin/ntpd" | grep -v "grep" | awk '{print $1}')
+        for ntpdpid in $ntpdpids
+        do
+            kill -9 $ntpdpid
+            sleep 1
+        done
+
+        pid=$(cat /var/run/ntpd/ntpd.pid)
+        match=$(ps | grep "^[\t ]*$pid")
+        if [ -n "$match" ]
+        then
+            kill -9 $pid
+            sleep 1
+        fi
+
+        rm -f /var/run/ntpd/ntpd.*
+    fi
+else
+    mkdir /var/run/ntpd
+fi
+echo $$ > /var/run/ntpd/ntpd.pid
+
+lock -u /var/run/ntpd.lock
+
+local peers
+local enable_server
+local type
+local args="-n"
+local retry=3
+
+config_load system
+
+config_get type ntp type
+config_get peers ntp server
+config_get_bool enable_server ntp enable_server 0
+
+if [ $enable_server -ne 0 ]; then
+   append args "-l"
+fi
+
+if [ -n "$peers" ]; then
+    local peer
+    for peer in $peers; do
+        append args "-p $peer"
+    done
+fi
+while [ "$type" != "manual" ] && [ $retry != 0 ]
+do
+    if [ "$args" != "-n" ]; then
+        local result
+		/usr/sbin/ntpd -q $args 2>&1
+		result=$?    
+		[ "$result" = "0" ] && {
+			# ntp success and set ntp interval to 1 hour
+            /etc/init.d/sysntpd reload
+            break			
+		}
+    fi
+
+    retry=$((retry - 1))
+
+    sleep 5
+done
+
+config_clear
+rm -f /var/run/ntpd/ntpd.*
+
+return 0

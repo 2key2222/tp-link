@@ -1,0 +1,43 @@
+From b8ad3476c17ad2fed4586866eb40b4aade3b0fb2 Mon Sep 17 00:00:00 2001
+From: Yan Markman <ymarkman@marvell.com>
+Date: Mon, 8 Aug 2016 11:44:45 +0300
+Subject: [PATCH 0696/2241] net: mvpp2x: add utility to get gop struct by index
+
+- add utility to get gop struct by index
+
+Change-Id: I1509eca7dcf1a7f1b0d97920c405e89d41cc11ef
+Signed-off-by: Yan Markman <ymarkman@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/31784
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+Tested-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h
+index 7bcb70a..52797e2 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h
+@@ -656,6 +656,19 @@ static inline struct mv_pp2x_port *mv_pp2x_port_struct_get(struct mv_pp2x *priv,
+ 	return NULL;
+ }
+ 
++static inline
++struct mv_pp2x_port *mv_pp2x_port_struct_get_by_gop_index(struct mv_pp2x *priv,
++							  int gop_index)
++{
++	int i;
++
++	for (i = 0; i < priv->num_ports; i++) {
++		if (priv->port_list[i]->mac_data.gop_index == gop_index)
++			return priv->port_list[i];
++	}
++	return NULL;
++}
++
+ static inline u8 mv_pp2x_cosval_queue_map(struct mv_pp2x_port *port,
+ 					  u8 cos_value)
+ {
+-- 
+2.7.4
+

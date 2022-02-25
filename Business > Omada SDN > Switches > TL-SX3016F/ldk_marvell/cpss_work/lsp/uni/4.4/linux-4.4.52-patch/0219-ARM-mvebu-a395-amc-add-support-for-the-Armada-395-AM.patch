@@ -1,0 +1,182 @@
+From c607b68aa38da833434e3cf629a1f2a9a05b8358 Mon Sep 17 00:00:00 2001
+From: Grzegorz Jaszczyk <jaz@semihalf.com>
+Date: Thu, 25 Feb 2016 16:21:22 +0100
+Subject: [PATCH 0219/2241] ARM: mvebu: a395-amc: add support for the Armada
+ 395 AMC board
+
+The A395-AMC board holds:
+- 1 PCIe slot
+- 1 USB2.0 port
+- 1 32MB SPI-NOR
+- 1 1024 NAND FLASH
+- 1 SFP port
+- 1 Gigabit Ethernet port
+
+Change-Id: I663c574b3a556880a528160888c0f9b874e0263e
+Signed-off-by: Grzegorz Jaszczyk <jaz@semihalf.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/27973
+Reviewed-by: Lior Amsalem <alior@marvell.com>
+Tested-by: Lior Amsalem <alior@marvell.com>
+---
+ .../devicetree/bindings/arm/marvell/armada-39x.txt |   2 +-
+ arch/arm/boot/dts/armada-395-amc.dts               | 138 +++++++++++++++++++++
+ 2 files changed, 139 insertions(+), 1 deletion(-)
+ create mode 100644 arch/arm/boot/dts/armada-395-amc.dts
+
+diff --git a/Documentation/devicetree/bindings/arm/marvell/armada-39x.txt b/Documentation/devicetree/bindings/arm/marvell/armada-39x.txt
+index f066801..2d202e7 100644
+--- a/Documentation/devicetree/bindings/arm/marvell/armada-39x.txt
++++ b/Documentation/devicetree/bindings/arm/marvell/armada-39x.txt
+@@ -17,4 +17,4 @@ compatible: must contain "marvell,armada398"
+ 
+ Example:
+ 
+-compatible = "marvell,a398-db", "marvell,armada398", "marvell,armada395", "marvell,armada390";
++compatible = "marvell,a398-db", "marvell,a395-amc", "marvell,armada398", "marvell,armada395", "marvell,armada390";
+diff --git a/arch/arm/boot/dts/armada-395-amc.dts b/arch/arm/boot/dts/armada-395-amc.dts
+new file mode 100644
+index 0000000..6eae6ea
+--- /dev/null
++++ b/arch/arm/boot/dts/armada-395-amc.dts
+@@ -0,0 +1,138 @@
++/*
++ * Device Tree file for Marvell Armada 390 AMC board
++ * (DB-88F6925-AMC)
++ *
++ * Copyright (C) 2014 Marvell
++ *
++ * Grzegorz Jaszczyk <jaz@semihalf.com>
++ *
++ * This file is dual-licensed: you can use it either under the terms
++ * of the GPL or the X11 license, at your option. Note that this dual
++ * licensing only applies to this file, and not this project as a
++ * whole.
++ *
++ *  a) This file is licensed under the terms of the GNU General Public
++ *     License version 2.  This program is licensed "as is" without
++ *     any warranty of any kind, whether express or implied.
++ *
++ * Or, alternatively,
++ *
++ *  b) Permission is hereby granted, free of charge, to any person
++ *     obtaining a copy of this software and associated documentation
++ *     files (the "Software"), to deal in the Software without
++ *     restriction, including without limitation the rights to use,
++ *     copy, modify, merge, publish, distribute, sublicense, and/or
++ *     sell copies of the Software, and to permit persons to whom the
++ *     Software is furnished to do so, subject to the following
++ *     conditions:
++ *
++ *     The above copyright notice and this permission notice shall be
++ *     included in all copies or substantial portions of the Software.
++ *
++ *     THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
++ *     EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
++ *     OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
++ *     NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
++ *     HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
++ *     WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++ *     FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
++ *     OTHER DEALINGS IN THE SOFTWARE.
++ */
++
++/dts-v1/;
++#include "armada-395.dtsi"
++#include <dt-bindings/gpio/gpio.h>
++
++/ {
++	model = "Marvell Armada 395-AMC Development Board";
++	compatible = "marvell,a395-amc", "marvell,armada395", "marvell,armada380";
++
++	chosen {
++		bootargs = "console=ttyS0,115200 earlyprintk";
++	};
++
++	memory {
++		device_type = "memory";
++		reg = <0x00000000 0x10000000>; /* 256 MB */
++	};
++
++	soc {
++		ranges = <MBUS_ID(0xf0, 0x01) 0 0xf1000000 0x100000
++			  MBUS_ID(0x01, 0x1d) 0 0xfff00000 0x100000>;
++
++		internal-regs {
++			spi@10680 {
++				status = "disabled";
++
++				spi-flash@1 {
++					#address-cells = <1>;
++					#size-cells = <1>;
++					compatible = "n25q256a", "jedec,spi-nor";
++					reg = <0>; /* Chip select 0 */
++					spi-max-frequency = <108000000>;
++
++					partition@0 {
++						label = "U-Boot";
++						reg = <0 0x400000>;
++					};
++					partition@400000 {
++						label = "Filesystem";
++						reg = <0x400000 0xc00000>;
++					};
++				};
++			};
++
++			flash@d0000 {
++				status = "okay";
++				pinctrl-0 = <&nand_pins>;
++				pinctrl-names = "default";
++				num-cs = <1>;
++				marvell,nand-keep-config;
++				marvell,nand-enable-arbiter;
++				nand-on-flash-bbt;
++				nand-ecc-strength = <8>;
++				nand-ecc-step-size = <512>;
++
++				partition@0 {
++					label = "U-Boot";
++					reg = <0x00000000 0x00600000>;
++					read-only;
++				};
++
++				partition@800000 {
++					label = "uImage";
++					reg = <0x00600000 0x00400000>;
++					read-only;
++				};
++
++				partition@1000000 {
++					label = "Root";
++					reg = <0x00a00000 0x3f600000>;
++				};
++			};
++
++			i2c@11000 {
++				status = "okay";
++				clock-frequency = <100000>;
++			};
++
++			serial@12000 {
++				status = "okay";
++			};
++
++			usb@58000 {
++				status = "okay";
++			};
++		};
++
++		pcie-controller {
++			status = "okay";
++
++			pcie@1,0 {
++				/* Port 0, Lane 0 */
++				status = "okay";
++			};
++		};
++	};
++};
++
+-- 
+2.7.4
+

@@ -1,0 +1,35 @@
+From e9121cdaaf8367c7be02d9e9b9088b4428300f92 Mon Sep 17 00:00:00 2001
+From: allen yan <yanwei@marvell.com>
+Date: Thu, 23 Mar 2017 15:09:27 +0800
+Subject: [PATCH 1529/2241] defconfig: a3700: enable watchdog support
+
+- This patch enables Linux generic watchdog framework and
+  Armada 3700 watchdog driver config.
+
+Change-Id: I109120dc83ed9135bc61f7d5140461a597786c97
+Signed-off-by: allen yan <yanwei@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/37875
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Reviewed-by: Hua Jing <jinghua@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+---
+ arch/arm64/configs/mvebu_v8_lsp_defconfig | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/arch/arm64/configs/mvebu_v8_lsp_defconfig b/arch/arm64/configs/mvebu_v8_lsp_defconfig
+index 0e575df..9b13bb0 100644
+--- a/arch/arm64/configs/mvebu_v8_lsp_defconfig
++++ b/arch/arm64/configs/mvebu_v8_lsp_defconfig
+@@ -168,6 +168,8 @@ CONFIG_POWER_RESET_SYSCON=y
+ # CONFIG_HWMON is not set
+ CONFIG_THERMAL=y
+ CONFIG_ARMADA_THERMAL=y
++CONFIG_WATCHDOG=y
++CONFIG_ARMADA3700_WATCHDOG=y
+ CONFIG_REGULATOR=y
+ CONFIG_REGULATOR_FIXED_VOLTAGE=y
+ CONFIG_REGULATOR_GPIO=y
+-- 
+2.7.4
+

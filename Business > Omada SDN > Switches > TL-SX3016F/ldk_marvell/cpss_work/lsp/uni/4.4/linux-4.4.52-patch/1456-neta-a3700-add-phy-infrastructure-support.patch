@@ -1,0 +1,147 @@
+From 77b729d3e00f5af7ffa4346d4b292cd191a16d5c Mon Sep 17 00:00:00 2001
+From: Evan Wang <xswang@marvell.com>
+Date: Tue, 17 Jan 2017 00:40:13 +0800
+Subject: [PATCH 1456/2241] neta: a3700: add phy infrastructure support
+
+- neta driver needs to support phy init during normal setup
+  and PM resume to eliminate dependency on bootloader.
+- the patch implement phy support with phy infrastructure
+  via calling API of phy_init, phy_power_on, etc.
+
+Change-Id: I1a9db5dd54281432aeb2c6ec22a35edfbabded21
+Signed-off-by: Evan Wang <xswang@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/37076
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+---
+ .../bindings/net/marvell-armada-370-neta.txt       | 23 ++++++++++++++-
+ drivers/net/ethernet/marvell/mvneta.c              | 33 +++++++++++++++++++++-
+ 2 files changed, 54 insertions(+), 2 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/net/marvell-armada-370-neta.txt b/Documentation/devicetree/bindings/net/marvell-armada-370-neta.txt
+index c4fa5c0..f439e1e 100644
+--- a/Documentation/devicetree/bindings/net/marvell-armada-370-neta.txt
++++ b/Documentation/devicetree/bindings/net/marvell-armada-370-neta.txt
+@@ -17,7 +17,7 @@ Optional properties:
+   Value is presented in bytes. If not used, by default 1600B is set for
+   "marvell,armada-370-neta" and 9800B for others.
+ 
+-Optional properties (valid only for Armada XP/38x):
++Optional properties (valid only for Armada XP/38x/3700):
+ 
+ - buffer-manager: a phandle to a buffer manager node. Please refer to
+   Documentation/devicetree/bindings/net/marvell-neta-bm.txt
+@@ -28,6 +28,10 @@ Optional properties (valid only for Armada XP/38x):
+ - bm,pool-short: ID of a pool, that will be used for accepting
+   packets of a size lower than given threshold. If not set, the port
+   will use a single 'long' pool for all packets, as defined above.
++- phys: the serdes PHY associated to this device. Currently the property
++  is only used by armada-3700 for SGMII interface.
++  Format: <comphy_parent lane_number lane_type>.
++- phy-names: the name of dedicated serdes indicated by above property of phys.
+ 
+ Example:
+ 
+@@ -44,3 +48,20 @@ ethernet@70000 {
+ 	bm,pool-long = <0>;
+ 	bm,pool-short = <1>;
+ };
++
++Example with serdes PHY:
++	eth1: ethernet@40000 {
++	compatible = "marvell,armada3700-neta";
++	reg = <0x40000 0x4000>;
++	interrupts = <GIC_SPI 45 IRQ_TYPE_LEVEL_HIGH>;
++	mac-address = [00 50 43 01 02 03];
++	clocks = <&sgateclk 4>;
++	status = "okay";
++	phy-mode = "sgmii";
++	phy = <&phy1>;
++	buffer-manager = <&bm>;
++	bm,pool-long = <0>;
++	bm,pool-short = <1>;
++	phys = <&a3700_comphy 1 COMPHY_SGMII1>;
++	phy-names = "comphy";
++};
+diff --git a/drivers/net/ethernet/marvell/mvneta.c b/drivers/net/ethernet/marvell/mvneta.c
+index f996e50..d80939d 100644
+--- a/drivers/net/ethernet/marvell/mvneta.c
++++ b/drivers/net/ethernet/marvell/mvneta.c
+@@ -35,6 +35,7 @@
+ #include <net/ip.h>
+ #include <net/ipv6.h>
+ #include <net/tso.h>
++#include <linux/phy/phy.h>
+ 
+ /* Registers */
+ #define MVNETA_RXQ_CONFIG_REG(q)                (0x1400 + ((q) << 2))
+@@ -419,6 +420,11 @@ struct mvneta_port {
+ 	struct phy_device *phy_dev;
+ 	phy_interface_t phy_interface;
+ 	struct device_node *phy_node;
++	/* comphy handler, current it supports a 1:1 relation between the port
++	 * and the phy. The phy here means serdes, which is different from
++	 * phy_dev above.
++	 */
++	struct phy *comphy;
+ 	unsigned int link;
+ 	unsigned int duplex;
+ 	unsigned int speed;
+@@ -4665,6 +4671,20 @@ static int mvneta_probe(struct platform_device *pdev)
+ 	pp->phy_node = phy_node;
+ 	pp->phy_interface = phy_mode;
+ 
++	/* Get comphy and init if there is */
++	pp->comphy = devm_of_phy_get(&pdev->dev, dn, "comphy");
++	if (!IS_ERR(pp->comphy)) {
++		err = phy_init(pp->comphy);
++		if (err)
++			goto err_put_phy_node;
++
++		err = phy_power_on(pp->comphy);
++		if (err) {
++			phy_exit(pp->comphy);
++			goto err_exit_phy;
++		}
++	}
++
+ 	err = of_property_read_string(dn, "managed", &managed);
+ 	pp->use_inband_status = (err == 0 &&
+ 				 strcmp(managed, "in-band-status") == 0);
+@@ -4689,7 +4709,7 @@ static int mvneta_probe(struct platform_device *pdev)
+ 	pp->clk = devm_clk_get(&pdev->dev, NULL);
+ 	if (IS_ERR(pp->clk)) {
+ 		err = PTR_ERR(pp->clk);
+-		goto err_put_phy_node;
++		goto err_off_phy;
+ 	}
+ 
+ 	clk_prepare_enable(pp->clk);
+@@ -4851,6 +4871,12 @@ err_free_ports:
+ 	free_percpu(pp->ports);
+ err_clk:
+ 	clk_disable_unprepare(pp->clk);
++err_off_phy:
++	if (!IS_ERR(pp->comphy))
++		phy_power_off(pp->comphy);
++err_exit_phy:
++	if (!IS_ERR(pp->comphy))
++		phy_exit(pp->comphy);
+ err_put_phy_node:
+ 	of_node_put(phy_node);
+ err_free_irq:
+@@ -4882,6 +4908,11 @@ static int mvneta_remove(struct platform_device *pdev)
+ 				       1 << pp->id);
+ 	}
+ 
++	if (!IS_ERR(pp->comphy)) {
++		phy_power_off(pp->comphy);
++		phy_exit(pp->comphy);
++	}
++
+ 	return 0;
+ }
+ 
+-- 
+2.7.4
+

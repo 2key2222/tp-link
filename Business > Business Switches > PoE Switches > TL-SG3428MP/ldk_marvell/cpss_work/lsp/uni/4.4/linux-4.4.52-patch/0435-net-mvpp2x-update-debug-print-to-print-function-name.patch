@@ -1,0 +1,42 @@
+From 43c157b48aafad4d0b194231e6e93ada5e731224 Mon Sep 17 00:00:00 2001
+From: Stefan Chulski <stefanc@marvell.com>
+Date: Tue, 24 May 2016 18:59:29 +0300
+Subject: [PATCH 0435/2241] net: mvpp2x: update debug print to print function
+ name instead of filename
+
+Change-Id: I2e1ccba1ea3a9fe102176b523d1e0ba9c55aed57
+Reviewed-on: http://vgitil04.il.marvell.com:8080/29950
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Yuval Caduri <cyuval@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h
+index 4dc177c..3bf91ae 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x.h
+@@ -144,15 +144,15 @@
+ 
+ #ifdef MVPP2_VERBOSE
+ #define MVPP2_PRINT_2LINE() \
+-	pr_info("Passed: %s(%d)\n", __FILENAME__, __LINE__)
++	pr_info("Passed: %s(%d)\n", __func__, __LINE__)
+ #define MVPP2_PRINT_LINE() \
+-	pr_info("Passed: %s(%d)\n", __FILENAME__, __LINE__)
++	pr_info("Passed: %s(%d)\n", __func__, __LINE__)
+ 
+ #define MVPP2_PRINT_VAR(var) \
+-	pr_info("%s(%d): "#var"=0x%lx\n", __FILENAME__, __LINE__,\
++	pr_info("%s(%d): "#var"=0x%lx\n", __func__, __LINE__,\
+ 		(unsigned long)var)
+ #define MVPP2_PRINT_VAR_NAME(var, name) \
+-	pr_info("%s(%d): %s=0x%lx\n", __FILENAME__, __LINE__, name, var)
++	pr_info("%s(%d): %s=0x%lx\n", __func__, __LINE__, name, var)
+ #else
+ #define MVPP2_PRINT_LINE()
+ #define MVPP2_PRINT_2LINE()
+-- 
+2.7.4
+

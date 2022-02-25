@@ -1,0 +1,32 @@
+From 3421d8ba54ff378b126fe28b5961bdac2b7b81f3 Mon Sep 17 00:00:00 2001
+From: Stefan Chulski <stefanc@marvell.com>
+Date: Tue, 24 May 2016 18:22:51 +0300
+Subject: [PATCH 0429/2241] net: mvpp2x: remove skb->csum=0 from check sum
+
+-remove skb->csum=0 from checksum function
+-skb->csum=0 no needed in CHECKSUM_UNNECESSARY case
+
+Change-Id: Ifb52da9791a03569053f7791939a3a240f18bc34
+Reviewed-on: http://vgitil04.il.marvell.com:8080/29944
+Reviewed-by: Yuval Caduri <cyuval@marvell.com>
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.c | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.c
+index cca195d..295ce54 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.c
+@@ -3552,7 +3552,6 @@ void mv_pp2x_rx_csum(struct mv_pp2x_port *port, u32 status,
+ 		if (((status & MVPP2_RXD_L4_UDP) ||
+ 		     (status & MVPP2_RXD_L4_TCP)) &&
+ 		     (status & MVPP2_RXD_L4_CSUM_OK)) {
+-			skb->csum = 0;
+ 			skb->ip_summed = CHECKSUM_UNNECESSARY;
+ 			return;
+ 		}
+-- 
+2.7.4
+

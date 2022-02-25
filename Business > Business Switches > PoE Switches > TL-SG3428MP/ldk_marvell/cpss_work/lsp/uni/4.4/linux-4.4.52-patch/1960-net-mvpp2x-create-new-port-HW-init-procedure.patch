@@ -1,0 +1,120 @@
+From 2f6a1556f3cfa1c4c63e6409def1e603fcf3860c Mon Sep 17 00:00:00 2001
+From: Stefan Chulski <stefanc@marvell.com>
+Date: Tue, 29 Aug 2017 19:38:31 +0300
+Subject: [PATCH 1960/2241] net: mvpp2x: create new port HW init procedure
+
+This patch reorder current port init function and create new
+port HW init function. Function added to reuse port HW code in
+S2RAM procedure.
+Changes are cosmetic and didn't change driver functionality.
+
+Change-Id: I85107f2b54091f981dcefc3a05ee17a85e123285
+Signed-off-by: Stefan Chulski <stefanc@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/43524
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c | 54 +++++++++++++---------
+ 1 file changed, 31 insertions(+), 23 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+index e5b371a..8984329 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+@@ -4810,13 +4810,12 @@ static void mv_pp2x_get_device_stats(struct work_struct *work)
+ }
+ 
+ /* Initialize port HW */
+-static int mv_pp2x_port_init(struct mv_pp2x_port *port)
++static int mv_pp2x_port_hw_init(struct mv_pp2x_port *port)
+ {
+-	struct device *dev = port->dev->dev.parent;
+ 	struct mv_pp2x *priv = port->priv;
+ 	struct gop_hw *gop = &port->priv->hw.gop;
+ 	struct mv_mac_data *mac = &port->mac_data;
+-	int queue, err;
++	int err = 0;
+ 
+ 	/* Disable port */
+ 	mv_pp2x_egress_disable(port);
+@@ -4827,6 +4826,31 @@ static int mv_pp2x_port_init(struct mv_pp2x_port *port)
+ 		if (!(port->flags & MVPP2_F_LOOPBACK))
+ 			mv_gop110_port_disable(gop, mac, port->comphy);
+ 
++	/* Configure Rx queue group interrupt for this port */
++	priv->pp2xdata->mv_pp2x_port_isr_rx_group_cfg(port);
++
++	mv_pp2x_ingress_disable(port);
++
++	/* Port default configuration */
++	mv_pp2x_defaults_set(port);
++
++	/* Port's classifier configuration */
++	mv_pp2x_cls_oversize_rxq_set(port);
++	mv_pp2x_cls_port_config(port);
++
++	/* Initialize pools for swf */
++	if (!(port->flags & MVPP2_F_IF_MUSDK))
++		err = mv_pp2x_swf_bm_pool_init(port);
++
++	return err;
++}
++
++/* Initialize port */
++static int mv_pp2x_port_init(struct mv_pp2x_port *port)
++{
++	struct device *dev = port->dev->dev.parent;
++	int queue, err;
++
+ 	/* Allocate queues */
+ 	port->txqs = devm_kcalloc(dev, port->num_tx_queues, sizeof(*port->txqs),
+ 				  GFP_KERNEL);
+@@ -4845,18 +4869,9 @@ static int mv_pp2x_port_init(struct mv_pp2x_port *port)
+ 
+ 	/* Associate physical Rx queues to port and initialize.  */
+ 	err = mv_pp2x_port_rxqs_init(dev, port);
+-
+ 	if (err)
+ 		goto err_free_percpu;
+ 
+-	/* Configure queue_vectors */
+-
+-	if (!(port->flags & MVPP2_F_IF_MUSDK))
+-		priv->pp2xdata->mv_pp2x_port_queue_vectors_init(port);
+-
+-	/* Configure Rx queue group interrupt for this port */
+-	priv->pp2xdata->mv_pp2x_port_isr_rx_group_cfg(port);
+-
+ 	/* Create Rx descriptor rings */
+ 	for (queue = 0; queue < port->num_rx_queues; queue++) {
+ 		struct mv_pp2x_rx_queue *rxq = port->rxqs[queue];
+@@ -4866,21 +4881,14 @@ static int mv_pp2x_port_init(struct mv_pp2x_port *port)
+ 		rxq->time_coal = MVPP2_RX_COAL_USEC;
+ 	}
+ 
+-	mv_pp2x_ingress_disable(port);
+-
+-	/* Port default configuration */
+-	mv_pp2x_defaults_set(port);
+-
+-	/* Port's classifier configuration */
+-	mv_pp2x_cls_oversize_rxq_set(port);
+-	mv_pp2x_cls_port_config(port);
+-
+ 	/* Provide an initial Rx packet size */
+ 	port->pkt_size = MVPP2_RX_PKT_SIZE(port->dev->mtu);
+ 
+-	/* Initialize pools for swf */
++	/* Configure queue_vectors */
+ 	if (!(port->flags & MVPP2_F_IF_MUSDK))
+-		err = mv_pp2x_swf_bm_pool_init(port);
++		port->priv->pp2xdata->mv_pp2x_port_queue_vectors_init(port);
++
++	err = mv_pp2x_port_hw_init(port);
+ 	if (err)
+ 		goto err_free_percpu;
+ 	return 0;
+-- 
+2.7.4
+

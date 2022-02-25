@@ -1,0 +1,53 @@
+From 87b56da34cf81b0a54279c3e0845eed30c5f6361 Mon Sep 17 00:00:00 2001
+From: Evan Wang <xswang@marvell.com>
+Date: Tue, 2 Aug 2016 20:50:38 +0800
+Subject: [PATCH 1025/2241] mvneta: prefetch packet header before access
+ skb->data
+
+- neta performance can be improved by ~5% with less cache miss
+
+Change-Id: I8d74f1a74172767493ff52912e12375f2e9a99a3
+Signed-off-by: Evan Wang <xswang@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/31658
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Dmitri Epshtein <dima@marvell.com>
+Reviewed-by: Wilson Ding <dingwei@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvneta.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvneta.c b/drivers/net/ethernet/marvell/mvneta.c
+index 321f412..9141aef 100644
+--- a/drivers/net/ethernet/marvell/mvneta.c
++++ b/drivers/net/ethernet/marvell/mvneta.c
+@@ -1461,7 +1461,7 @@ static void mvneta_tx_done_pkts_coal_set(struct mvneta_port *pp,
+ }
+ 
+ /* Handle rx descriptor fill by setting buf_cookie and buf_phys_addr */
+-static void mvneta_rx_desc_fill(struct mvneta_rx_desc *rx_desc,
++static inline void mvneta_rx_desc_fill(struct mvneta_rx_desc *rx_desc,
+ 				u32 phys_addr, u32 cookie)
+ {
+ 	rx_desc->buf_cookie = cookie;
+@@ -1669,7 +1669,7 @@ static void mvneta_frag_free(const struct mvneta_port *pp, void *data)
+ }
+ 
+ /* Refill processing */
+-static int mvneta_rx_refill(struct mvneta_port *pp,
++static inline int mvneta_rx_refill(struct mvneta_port *pp,
+ 			    struct mvneta_rx_desc *rx_desc)
+ {
+ 	dma_addr_t phys_addr;
+@@ -1860,6 +1860,9 @@ static int mvneta_rx(struct mvneta_port *pp, int rx_todo,
+ #else
+ 		data = (u8 *)rx_desc->buf_cookie;
+ #endif
++		/* Prefetch header */
++		prefetch(data + NET_SKB_PAD);
++
+ 		phys_addr = rx_desc->buf_phys_addr;
+ 
+ 		if (!mvneta_rxq_desc_is_first_last(rx_status) ||
+-- 
+2.7.4
+

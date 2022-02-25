@@ -1,0 +1,38 @@
+From 7ccae4722e8f645a6c4d771a047a5c0c29e9f8c9 Mon Sep 17 00:00:00 2001
+From: Shadi Ammouri <shadi@marvell.com>
+Date: Sun, 13 Mar 2016 10:09:03 +0200
+Subject: [PATCH 0248/2241] dma: cp110: Update dma dt-binding doc to include
+ clock gating info
+
+Change-Id: I4d432d3d699713dbee87e4eeb727c97a318385d3
+Signed-off-by: Shadi Ammouri <shadi@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/28180
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Hanna Hawa <hannah@marvell.com>
+---
+ Documentation/devicetree/bindings/dma/mv-xor-v2.txt | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/Documentation/devicetree/bindings/dma/mv-xor-v2.txt b/Documentation/devicetree/bindings/dma/mv-xor-v2.txt
+index c63de77..bb0091b 100644
+--- a/Documentation/devicetree/bindings/dma/mv-xor-v2.txt
++++ b/Documentation/devicetree/bindings/dma/mv-xor-v2.txt
+@@ -7,6 +7,8 @@ Required properties:
+     the second set is the global registers
+ - msi-parent: Phandle to the MSI-capable interrupt controller used for
+   interrupts.
++- clocks: One ore more clock gating clocks to be used to enable DMA engine
++  unit in the SoC.
+ 
+ Example:
+ 
+@@ -15,5 +17,6 @@ Example:
+ 		reg = <0x400000 0x1000>,
+ 		      <0x410000 0x1000>;
+ 		msi-parent = <&gic_odmi>;
++		clocks = <&gateclk 14>;
+ 		dma-coherent;
+ 	};
+-- 
+2.7.4
+

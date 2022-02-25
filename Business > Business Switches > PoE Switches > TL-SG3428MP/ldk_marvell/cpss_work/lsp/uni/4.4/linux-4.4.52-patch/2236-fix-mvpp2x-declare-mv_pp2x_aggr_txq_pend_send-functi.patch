@@ -1,0 +1,53 @@
+From f4408dd3e1d5772acae23dfe015af8dab32a6a31 Mon Sep 17 00:00:00 2001
+From: Stefan Chulski <stefanc@marvell.com>
+Date: Wed, 7 Feb 2018 16:52:27 +0200
+Subject: [PATCH 2236/2241] fix: mvpp2x: declare mv_pp2x_aggr_txq_pend_send
+ function
+
+Patch fix Netmap compilation fail.
+Netmap use mv_pp2x_aggr_txq_pend_send callback.
+
+Change-Id: I2bacd250117cb2e1557ab68d246e2c412f7ec95a
+Signed-off-by: Stefan Chulski <stefanc@marvell.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/50181
+Tested-by: Yan Markman <ymarkman@marvell.com>
+Reviewed-by: Omri Itach <omrii@marvell.com>
+Tested-by: iSoC Platform CI <ykjenk@marvell.com>
+---
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.h   | 4 +++-
+ drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c | 6 +++---
+ 2 files changed, 6 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.h b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.h
+index 10c49a4..cd6b15a 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.h
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_hw.h
+@@ -755,5 +755,7 @@ int mvcpn110_mac_hw_init(struct mv_pp2x_port *port);
+ void mv_pp2x_counters_stat_update(struct mv_pp2x_port *port,
+ 				  struct gop_stat *gop_statistics);
+ void mv_pp2x_counters_stat_clear(struct mv_pp2x_port *port);
+-
++void mv_pp2x_aggr_txq_pend_send(struct mv_pp2x_port *port,
++				struct mv_pp2x_cp_pcpu *cp_pcpu,
++				struct mv_pp2x_aggr_tx_queue *aggr_txq, int address_space);
+ #endif /* _MVPP2_HW_H_ */
+diff --git a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+index a2ccb13..f242299 100644
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+@@ -2144,9 +2144,9 @@ void mv_pp2x_aggr_txq_pend_desc_add(struct mv_pp2x_port *port, int pending, int
+ }
+ 
+ /* TX to HW the pendings in aggregated TXQ; kill deferring TX hrtimer */
+-static inline void mv_pp2x_aggr_txq_pend_send(struct mv_pp2x_port *port,
+-					      struct mv_pp2x_cp_pcpu *cp_pcpu,
+-					      struct mv_pp2x_aggr_tx_queue *aggr_txq, int address_space)
++void mv_pp2x_aggr_txq_pend_send(struct mv_pp2x_port *port,
++				struct mv_pp2x_cp_pcpu *cp_pcpu,
++				struct mv_pp2x_aggr_tx_queue *aggr_txq, int address_space)
+ {
+ 	mv_pp2x_tx_timer_kill(cp_pcpu);
+ 	aggr_txq->hw_count += aggr_txq->sw_count;
+-- 
+2.7.4
+

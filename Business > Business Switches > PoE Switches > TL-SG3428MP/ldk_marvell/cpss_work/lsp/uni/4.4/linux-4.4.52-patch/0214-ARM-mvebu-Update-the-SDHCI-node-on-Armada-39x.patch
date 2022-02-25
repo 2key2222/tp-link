@@ -1,0 +1,42 @@
+From 4704f30bfee4595e8ff50657ff5cc9a50f1ef980 Mon Sep 17 00:00:00 2001
+From: Grzegorz Jaszczyk <jaz@semihalf.com>
+Date: Wed, 17 Feb 2016 17:06:39 +0100
+Subject: [PATCH 0214/2241] ARM: mvebu: Update the SDHCI node on Armada 39x
+
+Due to change in the dhci-pxav3 driver, the node has to be updated
+accordingly. Based on commit relevant for Armada 38x:
+"ARM: mvebu: Update the SDHCI node on Armada 38x"
+
+"The binding of the armada-380-sdhci has been extended with a new
+register in order to be able to use the SDR50 and DDR50 mode. This
+commit add the resource associated to this new register for the
+Armada 38x."
+
+Change-Id: Ib8b4cbac34c5fa81119a24d9576497574dd6a003
+Signed-off-by: Grzegorz Jaszczyk <jaz@semihalf.com>
+Reviewed-on: http://vgitil04.il.marvell.com:8080/27967
+Tested-by: Star_Automation <star@marvell.com>
+Reviewed-by: Lior Amsalem <alior@marvell.com>
+---
+ arch/arm/boot/dts/armada-39x.dtsi | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/armada-39x.dtsi b/arch/arm/boot/dts/armada-39x.dtsi
+index dc6efd3..cb66f20 100644
+--- a/arch/arm/boot/dts/armada-39x.dtsi
++++ b/arch/arm/boot/dts/armada-39x.dtsi
+@@ -380,7 +380,10 @@
+ 
+ 			sdhci@d8000 {
+ 				compatible = "marvell,armada-380-sdhci";
+-				reg = <0xd8000 0x1000>, <0xdc000 0x100>;
++				reg-names = "sdhci", "mbus", "conf-sdio3";
++				reg = <0xd8000 0x1000>,
++					<0xdc000 0x100>,
++					<0x18454 0x4>;
+ 				interrupts = <GIC_SPI 25 IRQ_TYPE_LEVEL_HIGH>;
+ 				clocks = <&gateclk 17>;
+ 				mrvl,clk-delay-cycles = <0x1F>;
+-- 
+2.7.4
+
