@@ -1,0 +1,408 @@
+--- a/drivers/mtd/mtdpart.c	2021-06-15 06:10:54.190023718 -0400
++++ b/drivers/mtd/mtdpart.c	2021-06-15 06:13:34.979281037 -0400
+@@ -51,6 +51,8 @@
+ 
+ static void mtd_partition_split(struct mtd_info *master, struct mtd_part *part);
+ 
++void (*mtd_partition_notify)(struct mtd_info *master, struct mtd_info *part, uint64_t offset, int reg);
++EXPORT_SYMBOL_GPL(mtd_partition_notify);
+ /*
+  * Given a pointer to the MTD object in the mtd_part structure, we can retrieve
+  * the pointer to that structure with this macro.
+@@ -401,6 +403,9 @@
+ 	struct mtd_part *slave, *next;
+ 	int ret, err = 0;
+ 
++	if (mtd_partition_notify) {
++		mtd_partition_notify(master, NULL, 0, 0);
++	}
+ 	mutex_lock(&mtd_partitions_mutex);
+ 	list_for_each_entry_safe(slave, next, &mtd_partitions, list)
+ 		if (slave->master == master) {
+@@ -688,6 +693,13 @@
+ 	struct mtd_part *slave, *next;
+ 	int ret = -EINVAL;
+ 
++	if (mtd_partition_notify) {
++		struct mtd_info *pmtd = get_mtd_device(NULL, partno);
++		if (pmtd) {
++			mtd_partition_notify(master, pmtd, 0, 0);
++			put_mtd_device(pmtd);
++		}
++	}
+ 	mutex_lock(&mtd_partitions_mutex);
+ 	list_for_each_entry_safe(slave, next, &mtd_partitions, list)
+ 		if ((slave->master == master) &&
+@@ -841,6 +853,10 @@
+ {
+ 	static int rootfs_found = 0;
+ 
++	if (mtd_partition_notify) {
++		mtd_partition_notify(master, &part->mtd, part->offset, 1);
++	}
++
+ 	if (rootfs_found)
+ 		return;
+ 
+--- a/drivers/mtd/mtdblock.c	2014-07-17 18:58:15.000000000 -0400
++++ b/drivers/mtd/mtdblock.c	2021-06-15 06:13:24.540009479 -0400
+@@ -46,6 +46,157 @@
+ 
+ static DEFINE_MUTEX(mtdblks_lock);
+ 
++#define MTD_FIRMWARE  "firmware"
++#define MTD_SUPP_MAX  64
++struct mtdblock_part {
++	struct mtd_info *mtd;
++	struct mtd_info *master;
++	uint64_t size;
++	uint64_t offset;
++};
++
++static DEFINE_MUTEX(g_mtd_parts_mutex);
++static struct mtdblock_part g_mtd_parts[MTD_SUPP_MAX];
++
++extern void (*mtd_partition_notify)(struct mtd_info *master, struct mtd_info *part, uint64_t offset, int reg);
++
++static int mtd_get_part_start_block(struct mtd_info *mtd, unsigned long part_offset,
++			unsigned long part_size, unsigned long offset)
++{
++	int block = 0; /* block count in mtd */
++	int block_size = mtd->erasesize;
++	int part_block = 0;	/* block count in part */
++	int part_block_good = 0; /* good block count in part */
++
++	block = (part_offset / block_size);
++	while (part_block < (part_size / block_size)) {
++		if (mtd_block_isbad(mtd, block * block_size) > 0) {
++			block++;
++			part_block++;
++			continue;
++		}
++		part_block_good++;
++		if ((offset - part_offset) >= (part_block_good * block_size)) {
++			block++;
++			part_block++;
++			continue;
++		}
++		break;
++	}
++	return block;
++}
++
++/*
++ * In this mtd, find which block the 'offset_in_mtd' belongs to,
++ */
++static int mtd_get_start_block(struct mtd_info *mtd, unsigned long offset)
++{
++	int i = 0;
++	struct mtdblock_part *this  = NULL;
++	struct mtdblock_part *part = NULL;
++
++	if (strcasecmp(MTD_FIRMWARE, mtd->name)) {
++		return mtd_get_part_start_block(mtd, 0, mtd->size, offset);
++	}
++
++	mutex_lock(&g_mtd_parts_mutex);
++	/* find the self part of this mtd */
++	for (i = 0; i < MTD_SUPP_MAX; i++) {
++		part = &g_mtd_parts[i];	
++		if (part->mtd == mtd) {
++			this = part;
++			break;
++		}
++	}
++	if (!this) {
++		part = NULL;
++		goto out;
++	}
++
++	/* find which sub part the 'offset_in_mtd' belongs to */
++	for (i = 0; i < MTD_SUPP_MAX; i++) {
++		part = &g_mtd_parts[i];
++		if (!part->mtd) {
++			continue;
++		}
++		/* self */
++		if (this == part) {
++			continue;
++		}
++		/* not same master */
++		if (this->master != part->master) {
++			continue;
++		}
++		/* not sub part of this mtd */	
++		if (part->offset < this->offset ||
++			(part->offset + part->size) > (this->offset + this->size)) {
++			continue;
++		}
++		/*  not belongs to this sub part */
++		if (offset < part->offset || offset >= (part->offset + part->size)) {
++			continue;
++		}
++		
++		/* success to find out the sub part */
++		break;
++	}
++	if (i >= MTD_SUPP_MAX) {
++		part = NULL;
++	}
++out:
++	mutex_unlock(&g_mtd_parts_mutex);
++
++	return mtd_get_part_start_block(mtd, part ? part->offset : 0, part ? part->size : mtd->size, offset);
++}
++
++static void mtdblock_part_notify(struct mtd_info *master, struct mtd_info *part, uint64_t offset, int reg)
++{
++	if (!master) {
++		return;
++	}
++
++	mutex_lock(&g_mtd_parts_mutex);
++	if (reg) {
++		if (!part || part->index >= MTD_SUPP_MAX) {
++			goto out;
++		}
++		g_mtd_parts[part->index].mtd    = part;
++		g_mtd_parts[part->index].master = master;
++		g_mtd_parts[part->index].size   = part->size;
++		g_mtd_parts[part->index].offset = offset;
++		printk(KERN_ERR"mtdblock: add part:mtd(%s), master(%s), offset(0x%08llx), size(0x%08llx)\n",
++			part->name, master->name, offset, part->size);
++	} else {
++		if (part) {
++			if (part->index >= MTD_SUPP_MAX) {
++				goto out;
++			}
++			g_mtd_parts[part->index].mtd    = NULL;
++			g_mtd_parts[part->index].master = NULL;
++			g_mtd_parts[part->index].size   = 0;
++			g_mtd_parts[part->index].offset = 0;
++			printk(KERN_ERR"mtdblock: del part:mtd(%s), master(%s)\n",
++				part->name, master->name);
++		} else {
++			int i = 0;
++
++			for (i = 0; i < MTD_SUPP_MAX; i++) {
++				if (g_mtd_parts[i].master != master) {
++					continue;
++				}
++				printk(KERN_ERR"mtdblock: del part:mtd(%s), master(%s)\n",
++					g_mtd_parts[i].mtd->name, master->name);
++				g_mtd_parts[i].mtd    = NULL;
++				g_mtd_parts[i].master = NULL;
++				g_mtd_parts[i].size   = 0;
++				g_mtd_parts[i].offset = 0;
++			}
++		}	
++	}
++out:
++	mutex_unlock(&g_mtd_parts_mutex);
++}
++
+ /*
+  * Cache stuff...
+  *
+@@ -62,6 +182,158 @@
+ 	wake_up(wait_q);
+ }
+ 
++static int erase_block (struct mtd_info *mtd, unsigned long pos)
++{
++	struct erase_info erase;
++	DECLARE_WAITQUEUE(wait, current);
++	wait_queue_head_t wait_q;
++	int ret;
++
++	/*
++	 * First, let's erase the flash block.
++	 */
++
++	init_waitqueue_head(&wait_q);
++	erase.mtd = mtd;
++	erase.callback = erase_callback;
++	erase.addr = pos;
++	erase.len = mtd->erasesize;
++	erase.priv = (u_long)&wait_q;
++
++	set_current_state(TASK_INTERRUPTIBLE);
++	add_wait_queue(&wait_q, &wait);
++
++	ret = mtd_erase(mtd, &erase);
++	if (ret) {
++		set_current_state(TASK_RUNNING);
++		remove_wait_queue(&wait_q, &wait);
++		printk (KERN_WARNING "mtdblock: erase of region [0x%lx, 0x%x] "
++				     "on \"%s\" failed\n",
++			pos, mtd->erasesize, mtd->name);
++		return ret;
++	}
++
++	schedule();  /* Wait for erase to finish. */
++	remove_wait_queue(&wait_q, &wait);
++
++	return 0;
++}
++
++/* skip bad blocks when write to nand flash mtd device. */
++static int nand_erase_write (struct mtd_info *mtd, unsigned long offset,
++			int len, const char *buf)
++{
++	int ret = 0;
++	int block = 0;	/* block count in mtd */
++	int block_size       = mtd->erasesize;
++	int block_in_offset  = offset % block_size; /* the read offset from block head */
++	int block_max_offset = block_size; /* the max offset from block head */
++	int block_offset     = 0; /* the block's head offset from mtd head . */
++	size_t write_len = 0;
++	size_t retlen = 0;
++
++	if ((offset % block_size) || (len % block_size)) {
++		return -EINVAL;	/* pos & len should aligin to block size */
++	}
++
++	block = mtd_get_start_block(mtd, offset); /* In the mtd, find which block 'offset' belongs to */
++	while (block < (mtd->size / block_size)) {
++		block_offset = block * block_size;
++		if (mtd_block_isbad(mtd, block_offset) > 0) {
++			block++;
++			continue;
++		}
++		/* first to erase block */
++		ret = erase_block(mtd, block_offset);
++		if (ret < 0) {
++			if (ret == -EIO) {
++				ret = mtd_block_markbad(mtd, block_offset);
++				if (ret < 0 && ret != -EOPNOTSUPP) {
++					printk(KERN_ERR "mtdblock: block_markbad failed, aborting\n");
++					return -EIO;
++				}
++			}
++			block++;
++			continue;
++		}
++
++		/* write data to good erased block, block by block */
++		if ((block_in_offset + len) > block_max_offset) {
++			ret = mtd_write(mtd, block_offset + block_in_offset, block_max_offset - block_in_offset, &write_len, buf + retlen);
++			if (ret) {
++				return ret;
++			}
++			if (write_len != (block_max_offset - block_in_offset)) {
++				return -EIO;
++			}
++			retlen = retlen + write_len;
++			len     = len - write_len;
++			block_in_offset = 0;
++		} else {
++			ret = mtd_write(mtd, block_offset + block_in_offset, len, &write_len, buf + retlen);
++			if (ret) {
++				return ret;
++			}
++			if (write_len != len) {
++				return -EIO;
++			}
++			retlen = retlen + write_len;
++			len     = len - write_len;
++			break;
++		}
++		block++;
++	}
++	return 0;
++}
++
++/* skip bad blocks when read from nand flash mtd device. */
++static int mtd_read_skip_bad(struct mtd_info *mtd, loff_t offset, size_t len, size_t *retlen,
++         u_char *buf)
++{
++	int ret = 0;
++	int block = 0;
++	int block_size       = mtd->erasesize;
++	int block_in_offset  = offset % block_size; /* the offset from block head */
++	int block_max_offset = block_size; /* the max offset from block head */
++	int block_offset     = 0; /* the block's head offset from mtd head . */
++	size_t read_len      = 0;
++
++	if (mtd->type != MTD_NANDFLASH) {
++		return mtd_read(mtd, offset, len, retlen, buf);
++	}
++
++	block = mtd_get_start_block(mtd, offset); /* In the mtd, find which block 'offset' belongs to */
++	*retlen = 0;
++	while (block < (mtd->size / block_size)) {
++		block_offset = block * block_size;
++		if (mtd_block_isbad(mtd, block_offset) > 0) {
++			block++;
++			continue;
++		}
++
++		/* read data from mtd, block by block */
++		if ((block_in_offset + len) > block_max_offset) {
++			ret = mtd_read(mtd, block_offset + block_in_offset, block_max_offset - block_in_offset, &read_len, buf + *retlen);
++			if (ret) {
++				return ret;
++			}
++			*retlen = *retlen + read_len;
++			len     = len - read_len;
++			block_in_offset = 0;
++		} else {
++			ret = mtd_read(mtd, block_offset + block_in_offset, len, &read_len, buf + *retlen);
++			if (ret) {
++				return ret;
++			}
++			*retlen = *retlen + read_len;
++			len     = len - read_len;
++			break;
++		}
++		block++;
++	}
++	return 0;
++}
++
+ static int erase_write (struct mtd_info *mtd, unsigned long pos,
+ 			int len, const char *buf)
+ {
+@@ -71,6 +344,10 @@
+ 	size_t retlen;
+ 	int ret;
+ 
++	if (mtd->type == MTD_NANDFLASH) {
++		return nand_erase_write(mtd, pos, len, buf);
++	}
++
+ 	/*
+ 	 * First, let's erase the flash block.
+ 	 */
+@@ -184,7 +461,7 @@
+ 			    mtdblk->cache_offset != sect_start) {
+ 				/* fill the cache with the current sector */
+ 				mtdblk->cache_state = STATE_EMPTY;
+-				ret = mtd_read(mtd, sect_start, sect_size,
++				ret = mtd_read_skip_bad(mtd, sect_start, sect_size,
+ 					       &retlen, mtdblk->cache_data);
+ 				if (ret)
+ 					return ret;
+@@ -241,7 +518,7 @@
+ 		    mtdblk->cache_offset == sect_start) {
+ 			memcpy (buf, mtdblk->cache_data + offset, size);
+ 		} else {
+-			ret = mtd_read(mtd, pos, size, &retlen, buf);
++			ret = mtd_read_skip_bad(mtd, pos, size, &retlen, buf);
+ 			if (ret)
+ 				return ret;
+ 			if (retlen != size)
+@@ -388,11 +665,13 @@
+ 
+ static int __init init_mtdblock(void)
+ {
++	RCU_INIT_POINTER(mtd_partition_notify, mtdblock_part_notify);
+ 	return register_mtd_blktrans(&mtdblock_tr);
+ }
+ 
+ static void __exit cleanup_mtdblock(void)
+ {
++	RCU_INIT_POINTER(mtd_partition_notify, NULL);
+ 	deregister_mtd_blktrans(&mtdblock_tr);
+ }
+ 

@@ -1,0 +1,89 @@
+{
+	"id" : 1,
+	"result" : {
+		"normal" : [{
+				"t_isup" : true,
+				"t_type" : "none",
+				"t_name" : "wan1_eth",
+				"macaddr" : "14:CC:20:EC:07:D8",
+                "t_linktype" : "static",
+                "ipaddr" : "3.4.6.7",
+                "netmask" : "255.0.0.0",
+                "gwaddr" : "23.45.76.34",
+                "dns1" : "23.45.76.34",
+                "dns2" : "23.45.76.34"
+			}, {
+				"t_isup" : false,
+				"t_type" : "ethernet",
+				"t_name" : "if_eth_dhcp",
+				"macaddr" : "00:00:00:00:00:00",
+                "t_linktype" : "static",
+                "ipaddr" : "3.4.6.7",
+                "netmask" : "255.0.0.0",
+                "gwaddr" : "23.45.76.34",
+                "dns1" : "23.45.76.34",
+                "dns2" : "23.45.76.34"
+			}, {
+				"t_isup" : false,
+				"t_type" : "ethernet",
+				"t_name" : "lan1",
+				"macaddr" : "00:00:00:00:00:00",
+                "t_linktype" : "static",
+                "ipaddr" : "223.4.6.7",
+                "netmask" : "255.0.0.0",
+                "gwaddr" : "11.45.76.34",
+                "dns1" : "23.45.76.34",
+                "dns2" : "23.45.76.34"
+			}, {
+				"t_isup" : true,
+				"t_type" : "pppoe",
+				"t_name" : "lan5",
+				"macaddr" : "00:00:00:00:00:0d",
+                "t_linktype" : "static",
+                "ipaddr" : "3.4.6.7",
+                "netmask" : "255.0.0.0",
+                "gwaddr" : "23.45.76.34",
+                "dns1" : "23.45.76.34",
+                "dns2" : "23.45.76.34"
+			}, {
+				"t_isup" : true,
+				"t_type" : "pppoe",
+				"t_name" : "lan2",
+				"macaddr" : "00:00:00:00:00:0d",
+                "t_linktype" : "static",
+                "ipaddr" : "13.4.6.7",
+                "netmask" : "255.0.0.0",
+                "gwaddr" : "23.45.76.34",
+                "dns1" : "23.45.76.34",
+                "dns2" : "23.45.76.34"
+			}, {
+				"t_isup" : true,
+				"t_type" : "ethernet",
+				"t_name" : "lan4",
+				"macaddr" : "00:00:00:00:00:2d",
+                "proto" : "dhcp",
+                "ipaddr" : "13.4.6.7",
+                "netmask" : "255.0.0.0",
+                "gwaddr" : "23.45.76.34",
+                "dns1" : "23.45.76.34",
+                "dns2" : "23.45.76.34"
+			}
+		],
+		"vpn" : [{
+				"ipaddr" : "192.168.60.10",
+				"dns" : "192.168.1.1",
+				"netmask" : "255.255.255.255",
+				"t_name" : "vpn_xx1",
+				"t_isup" : true,
+				"t_type" : "l2tp",
+                "t_linktype" : "static",
+                "ipaddr" : "3.4.6.7",
+                "netmask" : "255.0.0.0",
+                "gwaddr" : "23.45.76.34",
+                "dns1" : "23.45.76.34",
+                "dns2" : "23.45.76.34"
+			}
+		]
+	},
+	"error_code" : "0"
+}

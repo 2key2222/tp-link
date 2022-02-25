@@ -1,0 +1,34 @@
+Source-Makefile: package/network/services/improxy/Makefile
+Package: improxy
+Submenu: Routing and Redirection
+Version: 1.0-1
+Depends: +libc +USE_EGLIBC:librt +USE_EGLIBC:libpthread 
+Menu-Depends: 
+Provides: 
+Section: net
+Category: Network
+Title: Multicast Proxy for IGMP/MLD
+Maintainer: 
+Source: 
+Type: ipkg
+Description: 	Improxy is an IGMP/MLD Proxy daemon written in c for Linux. It is lightweight and do not depend on any thirdparty library.
+
+@@
+
+Package: improxyvnet
+Submenu: Routing and Redirection
+Version: 1.0-1
+Depends: +libc +USE_EGLIBC:librt +USE_EGLIBC:libpthread 
+Menu-Depends: 
+Provides: 
+Section: net
+Category: Network
+Title: Vnet Multicast Proxy for IGMP/MLD
+Maintainer: 
+Source: 
+Type: ipkg
+Description: 	Improxy is an IGMP/MLD Proxy daemon written in c for Linux. It is lightweight and do not depend on any thirdparty library.
+
+@@
+
+

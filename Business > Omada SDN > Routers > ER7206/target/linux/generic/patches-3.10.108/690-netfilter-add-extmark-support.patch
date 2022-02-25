@@ -1,0 +1,190 @@
+--- a/include/linux/skbuff.h
++++ b/include/linux/skbuff.h
+@@ -500,6 +500,16 @@ struct sk_buff {
+ 		__u32		reserved_tailroom;
+ 	};
+ 
++#ifdef CONFIG_NF_CONNTRACK_EXTMARK
++	/** 
++	 * nfextmark 
++	 *  
++	 * used by extmark/EXTMARK(skb) and connextmark/CONNEXTMARK(nf_conntrack)
++	 *  
++	 * */ 
++	__u32 			extmark;  
++#endif /* CONFIG_NF_CONNTRACK_EXTMARK */
++
+ 	sk_buff_data_t		inner_transport_header;
+ 	sk_buff_data_t		inner_network_header;
+ 	sk_buff_data_t		inner_mac_header;
+--- /dev/null
++++ b/include/uapi/linux/netfilter/xt_extmark.h
+@@ -0,0 +1,15 @@
++#ifndef _XT_EXTMARK_H
++#define _XT_EXTMARK_H
++
++#include <linux/types.h>
++
++struct xt_extmark_tginfo2 {
++	__u32 mark, mask;
++};
++
++struct xt_extmark_mtinfo1 {
++	__u32 mark, mask;
++	__u8 invert;
++};
++
++#endif /*_XT_EXTMARK_H*/
+--- a/net/netfilter/Kconfig
++++ b/net/netfilter/Kconfig
+@@ -458,6 +458,21 @@ config NETFILTER_XT_MARK
+ 	"Use netfilter MARK value as routing key") and can also be used by
+ 	other subsystems to change their behavior.
+ 
++config NETFILTER_XT_EXTMARK
++	tristate 'nfextmark target and match support'
++	default m if NETFILTER_ADVANCED=n
++	---help---
++	This option adds the "EXTMARK" target and "extmark" match.
++
++	Netfilter mark matching allows you to match packets based on the
++	"nfextmark" value in the packet.
++	The target allows you to create rules in the "mangle" table which alter
++	the netfilter extmark (nfextmark) field associated with the packet.
++
++	Prior to routing, the nfmark can influence the routing method (see
++	"Use netfilter EXTMARK value as routing key") and can also be used by
++	other subsystems to change their behavior.
++
+ config NETFILTER_XT_CONNMARK
+ 	tristate 'ctmark target and match support'
+ 	depends on NF_CONNTRACK
+@@ -680,6 +695,15 @@ config NETFILTER_XT_TARGET_MARK
+ 	(e.g. when running oldconfig). It selects
+ 	CONFIG_NETFILTER_XT_MARK (combined mark/MARK module).
+ 
++config NETFILTER_XT_TARGET_EXTMARK
++	tristate '"EXTMARK" target support'
++	depends on NETFILTER_ADVANCED
++	select NETFILTER_XT_EXTMARK
++	---help---
++	This is a backwards-compat option for the user's convenience
++	(e.g. when running oldconfig). It selects
++	CONFIG_NETFILTER_XT_EXTMARK (combined extmark/EXTMARK module).
++
+ config NETFILTER_XT_TARGET_NETMAP
+ 	tristate '"NETMAP" target support'
+ 	depends on NF_NAT
+@@ -1115,6 +1139,15 @@ config NETFILTER_XT_MATCH_MARK
+ 	(e.g. when running oldconfig). It selects
+ 	CONFIG_NETFILTER_XT_MARK (combined mark/MARK module).
+ 
++config NETFILTER_XT_MATCH_EXTMARK
++	tristate '"extmark" match support'
++	depends on NETFILTER_ADVANCED
++	select NETFILTER_XT_EXTMARK
++	---help---
++	This is a backwards-compat option for the user's convenience
++	(e.g. when running oldconfig). It selects
++	CONFIG_NETFILTER_XT_EXTMARK (combined extmark/EXTMARK module).
++
+ config NETFILTER_XT_MATCH_MULTIPORT
+ 	tristate '"multiport" Multiple port match support'
+ 	depends on NETFILTER_ADVANCED
+--- a/net/netfilter/Makefile
++++ b/net/netfilter/Makefile
+@@ -69,6 +69,7 @@ obj-$(CONFIG_NETFILTER_XTABLES) += x_tab
+ 
+ # combos
+ obj-$(CONFIG_NETFILTER_XT_MARK) += xt_mark.o
++obj-$(CONFIG_NETFILTER_XT_EXTMARK) += xt_extmark.o
+ obj-$(CONFIG_NETFILTER_XT_CONNMARK) += xt_connmark.o
+ obj-$(CONFIG_NETFILTER_XT_CONNEXTMARK) += xt_connextmark.o
+ obj-$(CONFIG_NETFILTER_XT_SET) += xt_set.o
+--- /dev/null
++++ b/net/netfilter/xt_extmark.c
+@@ -0,0 +1,84 @@
++/*
++ *	xt_extmark - Netfilter module to match NFEXTMARK value
++ *
++ *	(C) 1999-2001 Marc Boucher <marc@mbsi.ca>
++ *	Copyright © CC Computer Consultants GmbH, 2007 - 2008
++ *	Jan Engelhardt <jengelh@medozas.de>
++ *
++ *	This program is free software; you can redistribute it and/or modify
++ *	it under the terms of the GNU General Public License version 2 as
++ *	published by the Free Software Foundation.
++ */
++
++#include <linux/module.h>
++#include <linux/skbuff.h>
++
++#include <linux/netfilter/xt_extmark.h>
++#include <linux/netfilter/x_tables.h>
++
++MODULE_LICENSE("GPL");
++MODULE_AUTHOR("Marc Boucher <marc@mbsi.ca>");
++MODULE_DESCRIPTION("Xtables: packet extmark operations");
++MODULE_ALIAS("ipt_extmark");
++MODULE_ALIAS("ip6t_extmark");
++MODULE_ALIAS("ipt_EXTMARK");
++MODULE_ALIAS("ip6t_EXTMARK");
++
++static unsigned int
++extmark_tg(struct sk_buff *skb, const struct xt_action_param *par)
++{
++	const struct xt_extmark_tginfo2 *info = par->targinfo;
++
++	skb->extmark = (skb->extmark & ~info->mask) ^ info->mark;
++	return XT_CONTINUE;
++}
++
++static bool
++extmark_mt(const struct sk_buff *skb, struct xt_action_param *par)
++{
++	const struct xt_extmark_mtinfo1 *info = par->matchinfo;
++
++	return ((skb->extmark & info->mask) == info->mark) ^ info->invert;
++}
++
++static struct xt_target extmark_tg_reg __read_mostly = {
++	.name           = "EXTMARK",
++	.revision       = 2,
++	.family         = NFPROTO_UNSPEC,
++	.target         = extmark_tg,
++	.targetsize     = sizeof(struct xt_extmark_tginfo2),
++	.me             = THIS_MODULE,
++};
++
++static struct xt_match extmark_mt_reg __read_mostly = {
++	.name           = "extmark",
++	.revision       = 1,
++	.family         = NFPROTO_UNSPEC,
++	.match          = extmark_mt,
++	.matchsize      = sizeof(struct xt_extmark_mtinfo1),
++	.me             = THIS_MODULE,
++};
++
++static int __init extmark_mt_init(void)
++{
++	int ret;
++
++	ret = xt_register_target(&extmark_tg_reg);
++	if (ret < 0)
++		return ret;
++	ret = xt_register_match(&extmark_mt_reg);
++	if (ret < 0) {
++		xt_unregister_target(&extmark_tg_reg);
++		return ret;
++	}
++	return 0;
++}
++
++static void __exit extmark_mt_exit(void)
++{
++	xt_unregister_match(&extmark_mt_reg);
++	xt_unregister_target(&extmark_tg_reg);
++}
++
++module_init(extmark_mt_init);
++module_exit(extmark_mt_exit);

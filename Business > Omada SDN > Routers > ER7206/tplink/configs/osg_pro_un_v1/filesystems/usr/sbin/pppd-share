@@ -1,0 +1,45 @@
+#!/bin/sh
+
+# set environment variables
+local envs=""
+while read line
+do
+	eval "$line"
+	envs="$envs $line"
+done < /tmp/.pppv6-share
+
+# parameters
+local script=""
+local ifname="$IFNAME"
+local devnam="$DEVICE"
+local strspeed="0"
+local strlocal="$LLLOCAL"
+local strremote="$LLREMOTE"
+local ipparam=""
+
+while [ -n "$1" ];
+do
+	case "$1" in
+		"ipv6-up-script" )
+			shift; script="$1"; shift
+			;;
+		"ipparam" )
+			shift; ipparam="$1"; shift
+			;;
+		* )
+			shift
+			;;
+	esac
+done
+
+# exec script
+[ -n "$script" ] || exit 1
+env ${envs} ${script} ${ifname} ${devnam} ${strspeed} ${strlocal} ${strremote} ${ipparam}
+
+# infinite loop
+while true ;
+do
+	sleep 3600s
+done
+
+exit 0

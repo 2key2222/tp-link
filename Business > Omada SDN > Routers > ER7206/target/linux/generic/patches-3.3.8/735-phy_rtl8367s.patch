@@ -1,0 +1,10 @@
+--- a/drivers/net/phy/Kconfig	2016-04-05 19:40:44.299130579 +0800
++++ b/drivers/net/phy/Kconfig	2016-04-05 19:40:56.671130032 +0800
+@@ -6,6 +6,7 @@
+ 	tristate "PHY Device support and infrastructure"
+ 	depends on !S390
+ 	depends on NETDEVICES
++        select ETHERNET_PACKET_MANGLE
+ 	help
+ 	  Ethernet controllers are usually attached to PHY
+ 	  devices.  This option provides infrastructure for

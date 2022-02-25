@@ -1,0 +1,40 @@
+--- a/net/netfilter/xt_socket.c	2019-03-26 09:12:05.500192904 +0800
++++ b/net/netfilter/xt_socket.c	2019-03-26 09:58:06.358822375 +0800
+@@ -143,6 +143,7 @@
+ 	struct nf_conn const *ct;
+ 	enum ip_conntrack_info ctinfo;
+ #endif
++	struct net *net = dev_net(skb->dev);
+ 
+ 	if (iph->protocol == IPPROTO_UDP || iph->protocol == IPPROTO_TCP) {
+ 		hp = skb_header_pointer(skb, ip_hdrlen(skb),
+@@ -213,6 +214,17 @@
+ 			sk = NULL;
+ 	}
+ 
++	if (sk && net->ipv4.iptable_filter) {
++		struct sk_buff *skb2 = skb_clone(skb, GFP_ATOMIC);
++		unsigned int ret;
++		
++		ret = ipt_do_table(skb2, NF_INET_LOCAL_IN, skb2->dev, NULL, net->ipv4.iptable_filter);
++		if (ret == NF_DROP)
++			sk = NULL;
++
++		kfree_skb(skb2);
++	}
++
+ 	pr_debug("proto %hhu %pI4:%hu -> %pI4:%hu (orig %pI4:%hu) sock %p\n",
+ 		 protocol, &saddr, ntohs(sport),
+ 		 &daddr, ntohs(dport),
+--- a/include/net/netfilter/ipv4/nf_reject.h	2019-03-26 10:55:35.039197679 +0800
++++ b/include/net/netfilter/ipv4/nf_reject.h	2019-03-26 10:56:35.317700947 +0800
+@@ -20,6 +20,9 @@
+ 	const struct tcphdr *oth;
+ 	struct tcphdr _otcph, *tcph;
+ 
++	if (!skb_rtable(oldskb))
++		return;
++
+ 	/* IP header checks: fragment. */
+ 	if (ip_hdr(oldskb)->frag_off & htons(IP_OFFSET))
+ 		return;

@@ -1,0 +1,176 @@
+<!--<!DOCTYPE html>
+<html><head lang="zh-CN"><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	<meta charset="UTF-8">
+    <title>PC连Wi-Fi</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="format-detection" content="telephone=no">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+-->
+    <script type="text/javascript" src="/pcauth.js"></script>
+    <!-- <link rel="stylesheet" href="https://wifi.weixin.qq.com/resources/css/style-simple-follow.css"/>  -->
+
+    <!--  meta name="renderer" content="webkit"-->
+    <!--  meta charset="UTF-8"-->
+    <link rel="stylesheet" href="/style-pcdemo.css">
+<!--<script src="https://wifi.weixin.qq.com/cgi-bin/pollpcresult?ticket=1078137196yxjiyxwxbv12lnmi&callback=callback10001">-->
+</script></head>
+<!-- body class="mod-simple-follow">
+<div class="mod-simple-follow-page">
+    <div class="mod-simple-follow-page__banner">
+        <img class="mod-simple-follow-page__banner-bg" src="https://wifi.weixin.qq.com/resources/images/background.jpg" alt=""/>
+        <div class="mod-simple-follow-page__img-shadow"></div>
+        <div class="mod-simple-follow-page__logo">
+            <img class="mod-simple-follow-page__logo-img" src="https://wifi.weixin.qq.com/resources/images/t.weixin.logo.png" alt=""/>
+            <p class="mod-simple-follow-page__logo-name"></p>
+            <p class="mod-simple-follow-page__logo-welcome">欢迎您</p>
+        </div>
+    </div>
+    <div class="mod-simple-follow-page__attention">
+        <p class="mod-simple-follow-page__attention-txt">欢迎使用微信连Wi-Fi</p>
+    </div>
+</div>
+</body -->
+<style type="text/css">
+    .demo{
+      padding: 25px;
+      background-color: rgba(0,0,0,0.5);/* IE9、标准浏览器、IE6和部分IE7内核的浏览器(如QQ浏览器)会读懂 */
+    }
+    .demo p{
+      color: #FFFFFF;
+    }
+    @media \0screen\,screen\9 {/* 只支持IE6、7、8 */
+      .demo{
+        background-color:#000000;
+        filter:Alpha(opacity=50);
+        position:static; /* IE6、7、8只能设置position:static(默认属性) ，否则会导致子元素继承Alpha值 */
+        *zoom:1; /* 激活IE6、7的haslayout属性，让它读懂Alpha */
+      }
+      .demo p{
+        position: relative;/* 设置子元素为相对定位，可让子元素不继承Alpha值 */
+      }  
+    }
+    
+    .welinfo{margin-top:200px;font-size:28px;line-height:28px}
+    .welinfo em{color:#3cc123;font-weight:400;font-style:normal}
+    
+    #div_welinfo{
+/*        position:relative;
+        top:50%;
+        left:50%;
+        width:446px;
+        height:446px;
+        margin-top:-328px;
+        margin-left:-223px;
+        -webkit-border-radius:15px;
+        -moz-border-radius:15px;
+        border-radius:15px;
+        -webkit-background-clip:padding-box;
+        -moz-background-clip:padding-box;
+        background-clip:padding-box;
+        color:#333;
+*/
+        text-align:center;
+    }
+</style>
+<body>
+	<div class="container">
+	    <div id="div_logo" class="header">
+	        <img id="img_logo" class="header__logo" alt="商户logo">
+	        <!--建议图片大小为570x140 或 287x70-->
+	    </div>
+	
+	    <div id="img_background" class="main" style="background-image:url('');">
+	        <!--建议图片大小为 1920x1200 或 1920x1080-->
+            <div id="div_welinfo" class="">
+                <h2 id="welinfo" class="welinfo"></h2>
+            </div>
+	        <div id="div_main_content" class="main__content">
+	            <h2 id="portalinfo" class="main__content-title">欢迎使用<em>免费Wi-Fi</em></h2>
+	            <div class="main__content-qrcode" id="qrcode_zone" style="text-align: center; margin: 20px auto; width: 250px; position: relative;" title="http://wifi.weixin.qq.com/assistant/wifigw/pcAuth.xhtml?appId=wxb596835445a0412f&amp;shopId=8163361&amp;ticket=1078137196yxjiyxwxbv12lnmi"><img style="width:50px;position:absolute;z-index:1;top:50%;left:50%;margin-top:-25px;margin-left:-22px;background-color:#FFF;" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFoAAABQCAYAAACZM2JkAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAyJpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuMy1jMDExIDY2LjE0NTY2MSwgMjAxMi8wMi8wNi0xNDo1NjoyNyAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIiB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL21tLyIgeG1sbnM6c3RSZWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZVJlZiMiIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIENTNiAoV2luZG93cykiIHhtcE1NOkluc3RhbmNlSUQ9InhtcC5paWQ6NzQ0QTA3Qjk2RkJBMTFFNEJCMEZDQzc4NzdCOUExOEEiIHhtcE1NOkRvY3VtZW50SUQ9InhtcC5kaWQ6NzQ0QTA3QkE2RkJBMTFFNEJCMEZDQzc4NzdCOUExOEEiPiA8eG1wTU06RGVyaXZlZEZyb20gc3RSZWY6aW5zdGFuY2VJRD0ieG1wLmlpZDo3NDRBMDdCNzZGQkExMUU0QkIwRkNDNzg3N0I5QTE4QSIgc3RSZWY6ZG9jdW1lbnRJRD0ieG1wLmRpZDo3NDRBMDdCODZGQkExMUU0QkIwRkNDNzg3N0I5QTE4QSIvPiA8L3JkZjpEZXNjcmlwdGlvbj4gPC9yZGY6UkRGPiA8L3g6eG1wbWV0YT4gPD94cGFja2V0IGVuZD0iciI/Po2Ln3EAAAkeSURBVHja7F0HjBVF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"><div id="weixin_wifi_qrcode_timeout" style="display:none;position:absolute;z-index:1;background-color:#000;opacity:.8;width:240px;height:240px;text-align:center;font-size:26px;color:#FFF;"><div id="weixin_wifi_error_tips" style="margin-top:94px;">二维码失效<br>请刷新重试</div></div><canvas width="240" height="240" style="display: none;"></canvas><img alt="Scan me!" src="data:image/png;base64,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" style="display: block;"></div>
+	            <div class="main__content-info">使用微信扫描二维码</div>
+	        </div>
+	
+	        <!--<div class="main__wifi-logo">-->
+	            <!--<i class="main__wifi-icon"></i>-->
+	        <!--</div>-->
+	    </div>
+	
+	    <div class="footer">
+	        <div id="txt_copyright" class="footer_copyright"><!--<a href="http://wifi.weixin.qq.com/">微信连Wi-Fi详细介绍</a>--> Copyright © 2016 TP-LINK. All Rights Reserved.</div>
+	    </div>
+	</div>
+
+<script type="text/javascript">
+        var $id=function(id){return document.getElementById(id)};
+        var $css=function(id, type, vaule){var e=(typeof id == "string")?$id(id):id;if(typeof type == 'string')e.style[type]=vaule;else{for(var t in type){e.style[t]=type[t]}}};
+        
+        if ( typeof(cfgPara) == "undefined")
+        {
+            var cfgPara = {
+                "pagetype":"portal",
+                "shopId":"4941584",
+                "appId":"wx23dc7123bfa33ab7",
+                "extend":"extend",
+                "authUrl":"http://weixin.tplogin.cn:8080/weixin/?12345",
+                "background":"wifi-bgd.jpg",
+                "logo":"wifi-logo.png",
+                "copyright":" Copyright © 2016 TP-LINK. All Rights Reserved.",
+                "freetime":"30",
+                "welinfo":"欢迎使用<em>免费Wi-Fi</em>",
+                "wired_auth":"on",
+                "logoname":"",
+                "bgdname":"bgdname"
+            }
+        }else{
+            cfgPara.copyright = cfgPara.copyright.replace(/&/ig,'&amp;');
+            cfgPara.copyright = cfgPara.copyright.replace(/</ig,'&lt;');
+            cfgPara.copyright = cfgPara.copyright.replace(/>/ig,'&gt;');
+            
+            cfgPara.welinfo = cfgPara.welinfo.replace(/&/ig,'&amp;');
+            cfgPara.welinfo = cfgPara.welinfo.replace(/</ig,'&lt;');
+            cfgPara.welinfo = cfgPara.welinfo.replace(/>/ig,'&gt;');
+            
+            cfgPara.copyright = cfgPara.copyright.replace(/&/ig,'&amp;');
+            cfgPara.copyright = cfgPara.copyright.replace(/</ig,'&lt;');
+            cfgPara.copyright = cfgPara.copyright.replace(/>/ig,'&gt;');
+        }
+
+	    JSAPI.auth({
+	    	target : document.getElementById('qrcode_zone'),
+	        appId  : cfgPara.appId,
+	        shopId : cfgPara.shopId,
+	        extend : cfgPara.extend,
+	        authUrl : cfgPara.authUrl
+	        //authUrl : 'http://wximg.qq.com/tmt/wifi-landing-pc/dist/html/index-success.html'
+	    });
+        
+        function pageConfigParse(){
+            if("" == cfgPara.logoname){
+                $id('img_logo').src = "";
+                $css('div_logo', 'visibility', 'hidden');
+            }else{
+                $id('img_logo').src = cfgPara.logo;
+            }
+            $id('txt_copyright').innerHTML = cfgPara.copyright;
+            $id('welinfo').innerHTML = "您可以免费上网<em>"+cfgPara.freetime+"</em>分钟";
+            $id('portalinfo').innerHTML = cfgPara.welinfo;
+            $id('img_background').style.backgroundImage = "url('"+ cfgPara.background +"')";
+            
+            if("portal" != cfgPara.pagetype){
+                $css("div_main_content" , 'display', 'none'); 
+                $css("div_welinfo" , 'display', 'block'); 
+            }else{
+                $css("div_main_content" , 'display', 'block'); 
+                $css("div_welinfo" , 'display', 'none'); 
+            }
+        }
+        
+        (function onLoad(){
+            pageConfigParse();
+        })();
+
+</script>
+</body></html>

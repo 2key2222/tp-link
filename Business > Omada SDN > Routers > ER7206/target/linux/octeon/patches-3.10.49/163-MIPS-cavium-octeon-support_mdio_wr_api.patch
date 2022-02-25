@@ -1,0 +1,54 @@
+--- a/drivers/net/phy/mdio-octeon.c	2016-03-31 09:47:26.000000000 +0800
++++ b/drivers/net/phy/mdio-octeon.c	2016-03-31 09:48:14.000000000 +0800
+@@ -176,6 +176,43 @@
+ 	return 0;
+ }
+ 
++struct mii_bus *g_octeon_mii_bus = NULL;
++
++void MDC_MDIO_READ(uint32_t preamble_len,
++                   int32_t phy_id,
++                   int32_t register_id,
++                   uint32_t *pdata)
++{
++    int val = 0;
++
++    if (NULL == g_octeon_mii_bus) 
++    {
++        printk("############%s:%d: g_octeon_mii_bus is null\r\n", __func__, __LINE__);
++        return;
++    }
++
++    val = mdiobus_read(g_octeon_mii_bus, phy_id, register_id);
++
++    *pdata = val;
++}
++EXPORT_SYMBOL(MDC_MDIO_READ);
++
++void MDC_MDIO_WRITE(uint32_t preamble_len,
++                    int32_t phy_id,
++                    int32_t register_id,
++                    uint16_t data)
++{
++    if (NULL == g_octeon_mii_bus) 
++    {
++        printk("############%s:%d: g_octeon_mii_bus is null\r\n", __func__, __LINE__);
++        return;
++    }
++
++    mdiobus_write(g_octeon_mii_bus, phy_id, register_id, data);
++    
++}
++EXPORT_SYMBOL(MDC_MDIO_WRITE);
++
+ static int octeon_mdiobus_probe(struct platform_device *pdev)
+ {
+ 	struct octeon_mdiobus *bus;
+@@ -229,6 +266,7 @@
+ 		goto fail_register;
+ 
+ 	dev_info(&pdev->dev, "Version " DRV_VERSION "\n");
++    g_octeon_mii_bus = bus->mii_bus;
+ 
+ 	return 0;
+ fail_register:

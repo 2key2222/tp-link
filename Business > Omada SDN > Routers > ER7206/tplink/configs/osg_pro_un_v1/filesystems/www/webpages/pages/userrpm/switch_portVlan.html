@@ -1,0 +1,334 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Switch_portVlan</title>
+</head>
+
+<body>
+<div class="func-container">
+
+<form id="switch_portStatus">
+	<div id="switch_portStatus_panel">
+		
+		<div class="container grid-container">
+
+			<div class="container grid-header-container">
+				<table border="0" cellspacing="0" cellpadding="0">
+					<tr class="grid-header-tr">
+						<th class="grid-header grid-header-0 port" style="width:70px;">
+							<span class="content">端口</span>
+						</th>
+						<th class="grid-header grid-header-1 port1">
+							<span class="content">端口1</span>
+						</th>
+						<th class="grid-header grid-header-2 port2">
+							<span class="content">端口2</span>
+						</th>
+						<th class="grid-header grid-header-3 port3">
+							<span class="content">端口3</span>
+						</th>
+						<th class="grid-header grid-header-4 port4">
+							<span class="content">端口4</span>
+						</th>
+						<th class="grid-header grid-header-5 port5">
+							<span class="content">端口5</span>
+						</th>
+					</tr>
+				</table>
+			</div>
+			<div class="grid-content-container-outer">
+				<div class="grid-content-container" style="overflow:visible;">
+					<table border="0" cellspacing="0" cellpadding="0" id="table">
+						<tr class="grid-content-tr grid-content-tr-key-1" id="network">
+							<td class="grid-content-td grid-content-td-0 grid-content-td-fst" style="width:70px;">
+								<span class="text">网络</span>
+							</td>
+							<div id="forform"></div>
+						</tr>
+						<tr class="grid-content-tr grid-content-tr-key-2" id="vlan">
+							<td class="grid-content-td grid-content-td-0 grid-content-td-fst" style="width:70px;">
+								<span class="text">VLAN</span>
+							</td>
+						</tr>
+					</table>
+				</div>
+			</div>
+		</div>
+		<div id="button-wrap" style="margin-top:30px;">
+			<button id="submit_btn">设置</button>
+		</div>
+		
+	</div>
+
+</form>
+     		
+
+	 <div id="switchPortVlan_help"></div>
+</div>
+
+<script type="text/javascript">
+try{
+    $
+}catch(e){
+    location.href = "/";
+};
+
+$(document).ready(function(e){
+	var URL_VLAN = $.su.url("/admin/switch?form=pvlan");
+	var pvlanProxy = new $.su.Proxy({
+		url: URL_VLAN
+	});
+
+	var URL_WANMODE = $.su.url('/admin/interface_wan?form=wanmode');
+	var wanModeProxy = new $.su.Proxy({
+        url: URL_WANMODE
+    });
+
+    $("#switch_portStatus_panel").panel({
+        title: $.su.CHAR.SWITCH.STATUS,
+        collapsible: false
+    }); 
+
+    var inHTML = "";
+
+
+
+    for(var i = 1; i <= 5; i++){
+    	inHTML +=      "<td class=\"grid-content-td grid-content-td-"+i+" grid-content-td-port"+ i +"\">";
+
+    		inHTML +=			"<span class=\"text\">---</span>";
+
+    	
+    	inHTML +=	   "</td>";
+    }
+
+    $("#network").append(inHTML);
+
+    inHTML = "";
+
+    for(var i = 1; i <= 5; i++){
+    	inHTML +=      "<td class=\"grid-content-td grid-content-td-"+i+" grid-content-td-port"+ i +"\">";
+    	inHTML +=			"<input id=\"port-"+i+"-vid\" name=\"port-"+i+"-vid\"/>";
+    	inHTML +=	   "</td>";
+    }
+
+    $("#vlan").append(inHTML);
+
+
+	var port1 = $("#port-1-vid").combobox({
+		fieldLabel:"",
+		separator:"",
+		items:[
+			{name:"VLAN7", value:"7"}
+		],
+		allowBlank:false,
+		inputCls:"m"
+	});
+
+	port1.combobox("disableStyle");
+	var port2 = $("#port-2-vid").combobox({
+		fieldLabel:"",
+		separator:"",
+		items:[
+			{name:"VLAN8", value:"8"}
+		],
+		allowBlank:false,
+		inputCls:"m"
+	});
+	port2.combobox("disableStyle");
+
+	var port3 = $("#port-3-vid").combobox({
+		fieldLabel:"",
+		separator:"",
+		items:[
+			{name:"VLAN1", value:"1"},
+			{name:"VLAN2", value:"2"},
+			{name:"VLAN3", value:"3"},
+			{name:"VLAN4", value:"4"}
+		],
+		allowBlank:false,
+		inputCls:"m"
+	});
+
+	var port4 = $("#port-4-vid").combobox({
+		fieldLabel:"",
+		separator:"",
+		items:[
+			{name:"VLAN1", value:"1"},
+			{name:"VLAN2", value:"2"},
+			{name:"VLAN3", value:"3"},
+			{name:"VLAN4", value:"4"}
+		],
+		allowBlank:false,
+		inputCls:"m"
+	});
+
+	var port5 = $("#port-5-vid").combobox({
+		fieldLabel:"",
+		separator:"",
+		items:[
+			{name:"VLAN1", value:"1"},
+			{name:"VLAN2", value:"2"},
+			{name:"VLAN3", value:"3"},
+			{name:"VLAN4", value:"4"}
+		],
+		allowBlank:false,
+		inputCls:"m"
+	});
+
+
+	var forform = $("#forform").form({
+        showPrompt:true
+    });
+
+	var LAN_VLAN = [
+		{name:"VLAN1", value:"1"},
+		{name:"VLAN2", value:"2"},
+		{name:"VLAN3", value:"3"},
+		{name:"VLAN4", value:"4"}
+	];
+    function loadData(){
+    	wanModeProxy.read({},function(data){
+    		switch(data.wanmode){
+    			case "1":
+    				$("tr.grid-content-tr-key-1 td.grid-content-td-port1").text("WAN");
+    				$("tr.grid-content-tr-key-1 td.grid-content-td-port2").text("LAN");
+    				$("tr.grid-content-tr-key-1 td.grid-content-td-port3").text("LAN");
+    				$("tr.grid-content-tr-key-1 td.grid-content-td-port4").text("LAN");
+    				$("tr.grid-content-tr-key-1 td.grid-content-td-port5").text("LAN");
+    				port2.combobox("loadData", LAN_VLAN);
+    				port2.combobox("enableStyle");
+    				port3.combobox("loadData", LAN_VLAN);
+    				port4.combobox("loadData", LAN_VLAN);
+    			break;
+    			case "2":
+    				$("tr.grid-content-tr-key-1 td.grid-content-td-port1").text("WAN");
+    				$("tr.grid-content-tr-key-1 td.grid-content-td-port2").text("WAN");
+    				$("tr.grid-content-tr-key-1 td.grid-content-td-port3").text("LAN");
+    				$("tr.grid-content-tr-key-1 td.grid-content-td-port4").text("LAN");
+    				$("tr.grid-content-tr-key-1 td.grid-content-td-port5").text("LAN");
+    				port2.combobox("loadData", [{name:"VLAN8", value:"8",selected:true}]);
+    				port2.combobox("disableStyle");
+    				port3.combobox("loadData", LAN_VLAN);
+    				port4.combobox("loadData", LAN_VLAN);
+    			break;
+    			case "3":
+    				$("tr.grid-content-tr-key-1 td.grid-content-td-port1").text("WAN");
+    				$("tr.grid-content-tr-key-1 td.grid-content-td-port2").text("WAN");
+    				$("tr.grid-content-tr-key-1 td.grid-content-td-port3").text("WAN");
+    				$("tr.grid-content-tr-key-1 td.grid-content-td-port4").text("LAN");
+    				$("tr.grid-content-tr-key-1 td.grid-content-td-port5").text("LAN");
+    				port2.combobox("loadData", [{name:"VLAN8", value:"8",selected:true}]);
+    				port2.combobox("disableStyle");
+    				port3.combobox("loadData", [{name:"VLAN9", value:"9",selected:true}]);
+    				port3.combobox("disableStyle");
+    				port4.combobox("loadData", LAN_VLAN);
+ 
+    			break;
+    			case "4":
+    				$("tr.grid-content-tr-key-1 td.grid-content-td-port1").text("WAN");
+    				$("tr.grid-content-tr-key-1 td.grid-content-td-port2").text("WAN");
+    				$("tr.grid-content-tr-key-1 td.grid-content-td-port3").text("WAN");
+    				$("tr.grid-content-tr-key-1 td.grid-content-td-port4").text("WAN");
+    				$("tr.grid-content-tr-key-1 td.grid-content-td-port5").text("LAN");
+       				port2.combobox("loadData", [{name:"VLAN8", value:"8",selected:true}]);
+    				port2.combobox("disableStyle");
+    				port3.combobox("loadData", [{name:"VLAN9", value:"9",selected:true}]);
+    				port3.combobox("disableStyle");
+    				port4.combobox("loadData", [{name:"VLAN10", value:"10",selected:true}]);
+    				port4.combobox("disableStyle");
+    			break;
+    			default:
+    				$("tr.grid-content-tr-key-1 td.grid-content-td-port2").text("WAN");
+    				$("tr.grid-content-tr-key-1 td.grid-content-td-port3").text("LAN");
+    				$("tr.grid-content-tr-key-1 td.grid-content-td-port4").text("LAN");
+    				port2.combobox("loadData", [{name:"VLAN8", value:"8",selected:true}]);
+    				port2.combobox("disableStyle");
+    				port3.combobox("loadData", LAN_VLAN);
+    				port3.combobox("enableStyle");
+    				port4.combobox("loadData", LAN_VLAN);
+    				port4.combobox("enableStyle");
+    			break;
+    		}
+    		$("label").css("textAlign", "left");
+
+    		pvlanProxy.read({
+			'method':'get',
+			'params': {},
+			'id':1
+			},function(data){
+
+				$(data).each(function(i, obj){
+					$("#port-"+obj.port+"-vid").combobox("setValue", obj.pvlan_id);
+					//console.log(obj.pvlan_id[0],$("#port-"+obj.port+"-vid").combobox("getValue"))
+				});
+
+
+			},function(errcode){});
+    	},function(errcode){
+    		port2.combobox("loadData", LAN_VLAN);
+			port2.combobox("enableStyle");
+			port3.combobox("loadData", LAN_VLAN);
+			port3.combobox("enableStyle");
+			port4.combobox("loadData", LAN_VLAN);
+			port4.combobox("enableStyle");
+    	});
+
+
+    	
+    }
+    
+    loadData();
+
+
+    function setData(){
+
+    	$.su.loading.show();
+    	var params = [
+    		{"pvlan_id":port1.combobox("getValue"),"port":"1"},
+    		{"pvlan_id":port2.combobox("getValue"),"port":"2"},
+    		{"pvlan_id":port3.combobox("getValue"),"port":"3"},
+    		{"pvlan_id":port4.combobox("getValue"),"port":"4"},
+    		{"pvlan_id":port5.combobox("getValue"),"port":"5"}
+    	];
+    	pvlanProxy.write({
+    		'method':'set',
+			'params': params,
+			'id':1
+		},function(data){
+			$.su.loading.hide();
+			forform.form("prompt", true);
+		},function(errcode){
+			$.su.loading.hide();
+			forform.form("prompt", false);
+		},function(fail){
+			$.su.loading.hide();
+			forform.form("prompt", false);
+		});
+    }
+    
+    $("button#submit_btn").button({
+    	handler:function(e){
+
+    		setData();
+    		loadData();
+    	}
+    });
+
+
+
+    
+    
+
+	var switchParameter_help = new $.su.Help({
+		container: "div#switchPortVlan_help",
+		content: ["SWITCH_PORTVLAN"]
+	});
+});
+</script>
+</body>
+
+</html>
+
+			

@@ -1,0 +1,323 @@
+diff -Nuar a/net/ipv4/ip_output.c b/net/ipv4/ip_output.c
+--- a/net/ipv4/ip_output.c	2020-06-11 13:00:03.000000000 +0800
++++ b/net/ipv4/ip_output.c	2020-06-16 16:37:15.000000000 +0800
+@@ -355,6 +355,10 @@
+ 	struct iphdr *iph;
+ 	int res;
+ 
++#ifdef CONFIG_XFRM_MULTI_L2TP_CLIENT_SUPPORT
++	struct dst_entry *old_dst;
++#endif
++
+ 	/* Skip all of this if the packet is already routed,
+ 	 * f.e. by something like SCTP.
+ 	 */
+@@ -362,6 +366,24 @@
+ 	inet_opt = rcu_dereference(inet->inet_opt);
+ 	fl4 = &fl->u.ip4;
+ 	rt = skb_rtable(skb);
++
++#ifdef CONFIG_XFRM_MULTI_L2TP_CLIENT_SUPPORT
++	if( rt != NULL && sk->sk_mark != 0 && skb_dst(skb)->xfrm == 0 )
++	{
++		skb_dst_drop(skb);
++		old_dst = sk_dst_get(sk);
++
++		if(old_dst)
++		{
++			sk_dst_reset(sk);
++			dst_release(old_dst);
++		}
++
++		rt = skb_rtable(skb);
++		/*printk(KERN_ERR "ip_queue_xmit,the sk->sk_mark is %u, the rt != NULL , so skb_dst_drop. \n",sk->sk_mark);*/
++	}
++#endif
++
+ 	if (rt != NULL)
+ 		goto packet_routed;
+ 
+diff -Nuar a/net/ipv4/udp.c b/net/ipv4/udp.c
+--- a/net/ipv4/udp.c	2018-09-03 10:15:19.000000000 +0800
++++ b/net/ipv4/udp.c	2020-06-16 17:11:08.000000000 +0800
+@@ -132,6 +132,7 @@
+ 
+ #define MAX_UDP_PORTS 65536
+ #define PORTS_PER_CHAIN (MAX_UDP_PORTS / UDP_HTABLE_SIZE_MIN)
++#define IPSEC_MARK_MASK 0x0ff00000
+ 
+ static int udp_lib_lport_inuse(struct net *net, __u16 num,
+ 			       const struct udp_hslot *hslot,
+@@ -337,6 +338,237 @@
+ 	return udp_lib_get_port(sk, snum, ipv4_rcv_saddr_equal, hash2_nulladdr);
+ }
+ 
++#ifdef CONFIG_XFRM_MULTI_L2TP_CLIENT_SUPPORT
++/***********************************Add for mark matching test*************************************/
++static inline int compute_score_withmark(struct sock *sk, struct net *net, __be32 saddr,
++			 unsigned short hnum,
++			 __be16 sport, __be32 daddr, __be16 dport, int dif, unsigned int mark)
++{
++	int score = -1;
++
++	//printk(KERN_ERR "!!!!!!!!!__compute_score_withmark!!!!!!! ");
++
++	if (net_eq(sock_net(sk), net) && udp_sk(sk)->udp_port_hash == hnum &&
++			!ipv6_only_sock(sk)) {
++		struct inet_sock *inet = inet_sk(sk);
++
++		score = (sk->sk_family == PF_INET ? 2 : 1);
++		if ( sk->sk_mark ){
++			if(sk->sk_mark == mark)
++				score +=4;
++		}
++		if (inet->inet_rcv_saddr) {
++			if (inet->inet_rcv_saddr != daddr)
++				return -1;
++			score += 4;
++		}
++		if (inet->inet_daddr) {
++			if (inet->inet_daddr != saddr)
++				return -1;
++			score += 4;
++		}
++		if (inet->inet_dport) {
++			if (inet->inet_dport != sport)
++				return -1;
++			score += 4;
++		}
++		if (sk->sk_bound_dev_if) {
++			if (sk->sk_bound_dev_if != dif)
++				return -1;
++			score += 4;
++		}
++
++	}
++	return score;
++}
++
++/*
++ * In this second variant, we check (daddr, dport) matches (inet_rcv_sadd, inet_num)
++ */
++static inline int compute_score2_withmark(struct sock *sk, struct net *net,
++				 __be32 saddr, __be16 sport,
++				 __be32 daddr, unsigned int hnum, int dif, unsigned int mark)
++{
++	int score = -1;
++
++	//printk(KERN_ERR "!!!!!!!!!__compute_score2_withmark!!!!!!! ");
++
++	if (net_eq(sock_net(sk), net) && !ipv6_only_sock(sk)) {
++		struct inet_sock *inet = inet_sk(sk);
++
++		if (inet->inet_rcv_saddr != daddr)
++			return -1;
++		if (inet->inet_num != hnum)
++			return -1;
++
++		score = (sk->sk_family == PF_INET ? 2 : 1);
++
++		if ( sk->sk_mark ){
++			if(sk->sk_mark == mark)
++				score +=4;
++		}	
++		if (inet->inet_daddr) {
++			if (inet->inet_daddr != saddr)
++				return -1;
++			score += 4;
++		}
++		if (inet->inet_dport) {
++			if (inet->inet_dport != sport)
++				return -1;
++			score += 4;
++		}
++		if (sk->sk_bound_dev_if) {
++			if (sk->sk_bound_dev_if != dif)
++				return -1;
++			score += 4;
++		}	
++	}
++	return score;
++}
++
++
++/* called with read_rcu_lock() */
++static struct sock *udp4_lib_lookup2_withmark(struct net *net,
++		__be32 saddr, __be16 sport,
++		__be32 daddr, unsigned int hnum, int dif,
++		struct udp_hslot *hslot2, unsigned int slot2, unsigned int mark)
++{
++	struct sock *sk, *result;
++	struct hlist_nulls_node *node;
++	int score, badness, matches = 0, reuseport = 0;
++	u32 hash = 0;
++
++	//printk(KERN_ERR "!!!!!!!!!__udp4_lib_lookup2_withmark!!!!!!! ");
++
++begin:
++	result = NULL;
++	badness = 0;
++	udp_portaddr_for_each_entry_rcu(sk, node, &hslot2->head) {
++		score = compute_score2_withmark(sk, net, saddr, sport,
++				      daddr, hnum, dif, mark);
++		if (score > badness) {
++			result = sk;
++			badness = score;
++			reuseport = sk->sk_reuseport;
++			if (reuseport) {
++				hash = inet_ehashfn(net, daddr, hnum,
++						    saddr, htons(sport));
++				matches = 1;
++			}
++		} else if (score == badness && reuseport) {
++			matches++;
++			if (((u64)hash * matches) >> 32 == 0)
++				result = sk;
++			hash = next_pseudo_random32(hash);
++		}
++	}
++	/*
++	 * if the nulls value we got at the end of this lookup is
++	 * not the expected one, we must restart lookup.
++	 * We probably met an item that was moved to another chain.
++	 */
++	if (get_nulls_value(node) != slot2)
++		goto begin;
++	if (result) {
++		if (unlikely(!atomic_inc_not_zero_hint(&result->sk_refcnt, 2)))
++			result = NULL;
++		else if (unlikely(compute_score2_withmark(result, net, saddr, sport,
++				  daddr, hnum, dif, mark) < badness)) {
++			sock_put(result);
++			goto begin;
++		}
++	}
++	return result;
++}
++
++/* UDP is nearly always wildcards out the wazoo, it makes no sense to try
++ * harder than this. -DaveM
++ */
++struct sock *__udp4_lib_lookup_withmark(struct net *net, __be32 saddr,
++		__be16 sport, __be32 daddr, __be16 dport,
++		int dif, struct udp_table *udptable, unsigned int mark)
++{
++	struct sock *sk, *result;
++	struct hlist_nulls_node *node;
++	unsigned short hnum = ntohs(dport);
++	unsigned int hash2, slot2, slot = udp_hashfn(net, hnum, udptable->mask);
++	struct udp_hslot *hslot2, *hslot = &udptable->hash[slot];
++	int score, badness, matches = 0, reuseport = 0;
++	u32 hash = 0;
++
++	//printk(KERN_ERR "!!!!!!!!!__udp4_lib_lookup_withmark!!!!!!! ");
++
++	rcu_read_lock();
++	if (hslot->count > 10) {
++		hash2 = udp4_portaddr_hash(net, daddr, hnum);
++		slot2 = hash2 & udptable->mask;
++		hslot2 = &udptable->hash2[slot2];
++		if (hslot->count < hslot2->count)
++			goto begin;
++
++		result = udp4_lib_lookup2_withmark(net, saddr, sport,
++					  daddr, hnum, dif,
++					  hslot2, slot2, mark);
++		if (!result) {
++			hash2 = udp4_portaddr_hash(net, htonl(INADDR_ANY), hnum);
++			slot2 = hash2 & udptable->mask;
++			hslot2 = &udptable->hash2[slot2];
++			if (hslot->count < hslot2->count)
++				goto begin;
++
++			result = udp4_lib_lookup2_withmark(net, saddr, sport,
++						  htonl(INADDR_ANY), hnum, dif,
++						  hslot2, slot2, mark);
++		}
++		rcu_read_unlock();
++		return result;
++	}
++begin:
++	result = NULL;
++	badness = 0;
++	sk_nulls_for_each_rcu(sk, node, &hslot->head) {
++		score = compute_score_withmark(sk, net, saddr, hnum, sport,
++				      daddr, dport, dif, mark);
++		if (score > badness) {
++			result = sk;
++			badness = score;
++			reuseport = sk->sk_reuseport;
++			if (reuseport) {
++				hash = inet_ehashfn(net, daddr, hnum,
++						    saddr, htons(sport));
++				matches = 1;
++			}
++		} else if (score == badness && reuseport) {
++			matches++;
++			if (((u64)hash * matches) >> 32 == 0)
++				result = sk;
++			hash = next_pseudo_random32(hash);
++		}
++	}
++	/*
++	 * if the nulls value we got at the end of this lookup is
++	 * not the expected one, we must restart lookup.
++	 * We probably met an item that was moved to another chain.
++	 */
++	if (get_nulls_value(node) != slot)
++		goto begin;
++
++	if (result) {
++		if (unlikely(!atomic_inc_not_zero_hint(&result->sk_refcnt, 2)))
++			result = NULL;
++		else if (unlikely(compute_score_withmark(result, net, saddr, hnum, sport,
++				  daddr, dport, dif, mark) < badness)) {
++			sock_put(result);
++			goto begin;
++		}
++	}
++	rcu_read_unlock();
++	return result;
++}
++EXPORT_SYMBOL_GPL(__udp4_lib_lookup_withmark);
++/*****************************************************************************/
++#endif
++
+ static inline int compute_score(struct sock *sk, struct net *net, __be32 saddr,
+ 			 unsigned short hnum,
+ 			 __be16 sport, __be32 daddr, __be16 dport, int dif)
+@@ -555,7 +787,15 @@
+ 
+ 	if (unlikely(sk = skb_steal_sock(skb)))
+ 		return sk;
+-	else
++#ifdef CONFIG_XFRM_MULTI_L2TP_CLIENT_SUPPORT
++	else if(skb->sp && (skb->mark)&IPSEC_MARK_MASK)
++	{
++		return __udp4_lib_lookup_withmark(dev_net(skb_dst(skb)->dev), iph->saddr, sport,
++					 iph->daddr, dport, inet_iif(skb),
++					 udptable, ((skb->mark)&IPSEC_MARK_MASK));
++	}
++#endif
++	else 
+ 		return __udp4_lib_lookup(dev_net(skb_dst(skb)->dev), iph->saddr, sport,
+ 					 iph->daddr, dport, inet_iif(skb),
+ 					 udptable);
+diff -Nuar a/net/xfrm/Kconfig b/net/xfrm/Kconfig
+--- a/net/xfrm/Kconfig	2020-06-16 17:16:15.578369246 +0800
++++ b/net/xfrm/Kconfig	2020-06-16 17:09:55.000000000 +0800
+@@ -30,6 +30,14 @@
+ 
+ 	  If unsure, say N.
+ 
++config XFRM_MULTI_L2TP_CLIENT_SUPPORT
++	bool "Multiple l2tp over IPSec clients after nat support"
++	depends on XFRM
++	---help---
++	  Support Multiple l2tp over IPSec clients which after the same nat device to connect the server at the same time.
++
++	  If unsure, say N.
++
+ config XFRM_MIGRATE
+ 	bool "Transformation migrate database"
+ 	depends on XFRM

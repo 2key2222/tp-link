@@ -1,0 +1,1399 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Interface</title>
+<style type="text/css">
+    .interface-operation{
+        text-align: left;
+    }
+</style>
+</head>
+
+<body>
+<div class="func-container">
+    <div id="own-editor">
+        <input id="interface-type" name="t_type"/>
+        <input id="interface-name" name="t_name"/>
+        <!--<input id="link-status" name="t_isup"/>-->
+        <input id="bind-interface" name="t_bindif" class="conficting excluding-physic"/>
+        <input id="interface-vlanid" name="t_vlanid" class="conficting excluding-physic ethernet-widgets"/>
+        <input id="set-vlantag" name="untag" class="conficting excluding-physic ethernet-widgets"/>
+        <input id="link-mode" name="proto" class="conficting ethernet-widgets bridged-physical-disable"/>
+        <input id="static-ip" name="ipaddr" class="conficting ethernet-widgets static-widgets bridged-physical-disable"/>
+        <input id="static-mask" name="netmask" class="conficting ethernet-widgets static-widgets bridged-physical-disable"/>
+        <input id="static-gateway" name="gateway" class="conficting ethernet-widgets static-widgets bridged-physical-disable"/>
+        <input id="dhcp-hostname" name="hostname" class="conficting ethernet-widgets dhcp-widgets bridged-physical-disable"/>
+        <input id="username" name="username" class="conficting pppoe-widgets"/>
+        <input id="password" name="password" class="conficting pppoe-widgets"/>
+        <input id="link-type" name="t_linktype" class="conficting pppoe-widgets"/>
+        <input id="time-object" name="t_timeobj" class="conficting pppoe-widgets"/>
+        <input id="interface-up-bandwidth" name="uplink" class="bridged-physical-disable"/>
+        <input id="interface-down-bandwidth" name="downlink" class="bridged-physical-disable"/>
+        <input id="echo-interval" name="lcpechointerval" class="conficting pppoe-widgets"/>
+        <input id="echo-retry" name="lcpechofailure" class="conficting pppoe-widgets"/>
+        <input id="interface-mtu" name="mtu" class="bridged-physical-disable"/>
+        <input id="service-name" name="service" class="conficting pppoe-widgets"/>
+        <input id="main-dns" name="dns1" class="bridged-physical-disable"/>
+        <input id="backup-dns" name="dns2" class="bridged-physical-disable"/>
+        <input id="interface-mac" name="macaddr" class="conficting ethernet-widgets"/>
+        <input id="dobalance" name="balance"/>
+        <input id="mngt_iface" name="mngt_iface"/>
+    </div>
+    <div id="interface-list">
+        <div id="port-indicator-wrapper" class="inline-block">
+            <div id="port-indicator"></div>
+        </div>
+        <form id="phyif-form">
+            <input id="phyif-list" name="phyif" value=""/>
+        </form>
+        <div id="interface-grid">
+        </div>
+    </div>
+    <div id="link-alert" class="warning">
+        <h4 class="title">
+            <span class="icon"></span>
+            <span class="text"></span>
+        </h4>
+    </div>
+    <div id="link-detail-window">
+        <table class="link-detail-table detail">
+            <tr>
+                <td class="detail-key" id="link-detail-key-name"></td>
+                <td class="detail-value" id="link-detail-value-name"></td>
+            </tr>
+            <tr>
+                <td class="detail-key" id="link-detail-key-status"></td>
+                <td class="detail-value" id="link-detail-value-status"></td>
+            </tr>
+            <tr>
+                <td class="detail-key" id="link-detail-key-mode"></td>
+                <td class="detail-value" id="link-detail-value-mode"></td>
+            </tr>
+            <tr>
+                <td class="detail-key" id="link-detail-key-ip"></td>
+                <td class="detail-value" id="link-detail-value-ip"></td>
+            </tr>
+            <tr>
+                <td class="detail-key" id="link-detail-key-mask"></td>
+                <td class="detail-value" id="link-detail-value-mask"></td>
+            </tr>
+            <tr>
+                <td class="detail-key" id="link-detail-key-gateway"></td>
+                <td class="detail-value" id="link-detail-value-gateway"></td>
+            </tr>
+            <tr>
+                <td class="detail-key" id="link-detail-key-dns"></td>
+                <td class="detail-value" id="link-detail-value-dns"></td>
+            </tr>
+            <tr>
+                <td class="detail-key" id="link-detail-key-dns2"></td>
+                <td class="detail-value" id="link-detail-value-dns2"></td>
+            </tr>
+            <tr id="link-detail-mac">
+                <td class="detail-key" id="link-detail-key-mac"></td>
+                <td class="detail-value" id="link-detail-value-mac"></td>
+            </tr>
+        </table>
+    </div>
+
+    <div id="interface-help"></div>
+</div>
+
+<script type="text/javascript">
+
+//<![CDATA[
+
+try{
+    $
+}catch(e){
+    location.href = "/";
+};
+
+$(document).ready(function(e){
+    var if_has_disabled = false;
+    var URL_INTERFACE = $.su.url("/admin/interface?form=interface"),
+        URL_PHYSIC = $.su.url("/admin/interface?form=interface"),
+        URL_CONNECT = $.su.url("/admin/interface?form=connect"),
+        URL_DISCONNECT = $.su.url("/admin/interface?form=disconnect"),
+        URL_STATUS = $.su.url("/admin/interface?form=status2"),
+        URL_QOS = $.su.url("/admin/qos?form=interface"),
+        URL_BALANCE = $.su.url("/admin/balance?form=interface"),
+        URL_MNGT_IFACE = $.su.url("/admin/remote_mngt?form=interface"),
+        $confictWidgets = $(".conficting"),
+        $physicExcludes = $(".excluding-physic"),
+        $pppoeWidgets = $(".pppoe-widgets"),
+        $ethernetWidgets = $(".ethernet-widgets"),
+        $dhcpWidgets = $(".dhcp-widgets"),
+        $staticWidgets = $(".static-widgets"),
+        $bridgePhysicals = $(".bridged-physical-disable");
+    var firstLoad = true;
+    var statusData = {};
+    var gothers = {};
+    var insert = true;      /* whether insert a new item or modify a old item */
+    var maxmtu = 1500;
+    var ispppoe = false;
+    function showWidgets($list){
+        $list.each(function(i, o){
+            $(o)[o.xtype]('enable')[o.xtype]('show');
+        });
+    }
+
+    function hideWidgets($list){
+        $list.each(function(i, o){
+            $(o)[o.xtype]('disable')[o.xtype]('hide');
+        });
+    }
+
+    var $phyifList = $('#phyif-list').combobox({
+        fieldLabel: '选择物理接口',
+        items: [{name: '---', value: '---'}]
+    }).on("ev_change", function(e, oldValue, newValue){
+        var phyif = newValue[0];
+        reloadGrid(phyif, function(dt){
+            refreshStatus();
+        });
+        $('#port-indicator').find('.port-indicate-icon').removeClass('upport-indicate-icon').each(function(i, o){
+            var $o = $(o);
+            if($o.data('name') == phyif || $o.hasClass('bridge-' + phyif)){
+                $o.addClass('upport-indicate-icon');
+            }
+        });
+    });
+
+    var $phyifForm = $('#phyif-form').form({
+        proxy: new $.su.Proxy({url: URL_PHYSIC}),
+        autoLoad: true,
+        fields: [
+            {name: "phyif", mapping: "phyif"}
+        ]
+    }).on('ev_loadData', function(e, data){
+        var phyifItems = [];
+        var html = '';
+        if(!data){
+            return;
+        }
+        var phyData = data.physical;
+        var briData = data.bridge;
+        $.each(phyData, function(i, o){
+            phyifItems.push({name: o, value: o});
+            html += '<div class="port-icon-wrapper inline-block">' +
+                        '<span class="port-icon-index inline-block">'+ (i+1) +'</span>' +
+                        '<span class="port-indicate-icon inline-block" data-name="'+ o +'"></span>' +
+                    '</div>';
+        });
+        $.each(briData, function(i, o){
+            phyifItems.push({name: o.t_label, value: o.t_name});
+        });
+        phyifItems[0].selected = true;
+        $phyifList.combobox('loadData', phyifItems);
+        $('#port-indicator').html(html).find('.port-indicate-icon:eq(0)').addClass('upport-indicate-icon');
+        $.each(briData, function(i, o){
+            $.each(o.t_bindif, function(j, phyif){
+                $('#port-indicator').find('.port-indicate-icon').each(function(k, icon){
+                    var $icon = $(icon);
+                    if($icon.data('name') == phyif){
+                        $icon.addClass('bridge-' + o.t_name);
+                    }
+                });
+            });
+        });
+        reloadGrid(phyifItems[0].name);
+    });
+
+    $('#interface-type').combobox({
+        fieldLabel: $.su.CHAR.INTERFACE.IFTYPE,
+        alwaysTrigger: true,
+        items:[
+            {value:"physical", name: "物理接口", selected: true},
+            {value:"bridge", name: "网桥接口"},
+            {value:"ethernet", name: "Ethernet"},
+            {value:"pppoe", name: "PPPoE"}
+        ]
+    }).on("ev_change", function(e, oldValue, newValue){
+        var value = newValue[0],
+            $editor = $(interfaceGrid.grid("getEditor")),
+            $linkMode = $editor.find("#link-mode"),
+            $linkType = $editor.find("#link-type"),
+            $bindIf = $editor.find('#bind-interface'),
+            items = [],
+            data = interfaceGrid.grid('getStore').data;
+            $('#dobalance').checkbox('setValue', '0')
+            $('#mngt_iface').checkbox('setValue', '0')
+
+        ispppoe = false;
+        if(value === "ethernet"){
+            showWidgets($physicExcludes);
+            showWidgets($ethernetWidgets);
+            hideWidgets($pppoeWidgets);
+            var linkModeValue = $linkMode.combobox('getValue');
+            if(linkModeValue.length === 0){
+                linkModeValue = 'static';
+            }
+            $linkMode.combobox("setValue", linkModeValue);
+            items.length = 0;
+            $.each(data, function(i, el){
+                if(el.t_type === 'physical' || el.t_type === 'bridge'){
+                    items.push({name: el.t_label, value: el.t_name, selected: true});
+                    return false;
+                }
+            });
+            if($bindIf.length > 0){
+                $bindIf.combobox('loadData', items);
+            }
+        }else if(value === "pppoe"){
+            ispppoe = true;
+            showWidgets($physicExcludes);
+            showWidgets($pppoeWidgets);
+            hideWidgets($ethernetWidgets);
+            $('#dobalance').checkbox('setValue', '1')
+            var linkTypeValue = $linkType.combobox('getValue');
+            if(linkTypeValue.length === 0){
+                linkTypeValue = 'auto';
+            }
+            $linkType.combobox("setValue", linkTypeValue);
+            items.length = 0;
+            $.each(data, function(i, el){
+                if(el.t_type === 'physical' || el.t_type === 'bridge' || el.t_type === 'ethernet'){
+                    items.push({name: el.t_label, value: el.t_name});
+                }
+            });
+            items[0].selected = true;
+            if($bindIf.length > 0){
+                var bindifValue = $bindIf.combobox('getValue');
+                $bindIf.combobox('loadData', items);
+                if(bindifValue.length == 1){
+                    $bindIf.combobox('setValue', bindifValue);
+                }
+            }
+        }else if(value === "physical" || value === 'bridge'){
+            showWidgets($ethernetWidgets);
+            hideWidgets($physicExcludes);
+            hideWidgets($pppoeWidgets);
+            var linkModeValue = $linkMode.combobox('getValue');
+            if(linkModeValue.length === 0){
+                linkModeValue = 'static';
+            }
+            $linkMode.combobox("setValue", linkModeValue);
+            maxmtu = 1500;
+            $('#interface-mtu').textbox('setTips', "（576-" + maxmtu + "）");
+		}
+
+        if (value == "ethernet" || value == "pppoe") {
+            var bindifValuex = $bindIf.combobox('getValue');
+            var alldata = interfaceGrid.grid('getStore').data;
+            maxmtu = 1500;
+            for (var k = 0; k < alldata.length; k++) {
+                if (bindifValuex[0] == alldata[k].t_name) {
+                    maxmtu = alldata[k].mtu ? alldata[k].mtu : 1500;
+                    break;
+                }
+            }
+            if (ispppoe)
+                maxmtu = maxmtu - 8;
+            $('#interface-mtu').textbox('setTips', "（576-" + maxmtu + "）");
+        }
+    });
+    $('#interface-name').textbox({
+        fieldLabel: $.su.CHAR.INTERFACE.IFNAME,
+        allowBlank: false,
+        maxLength: 12,
+        tips: $.su.CHAR.INTERFACE.IFNAMETIPS,
+        validator: function(v) {
+            if(new $.su.vtype('name').validate(v) !== true)
+            {
+                return $.su.CHAR.INTERFACE.WRONG_NAME;
+            } 
+            if (v.length > 12)
+            {
+                return $.su.CHAR.INTERFACE.WRONG_NAME_LENGTH;
+            }
+            return true;
+        }
+    });
+    /*$('#link-status').textbox({
+        fieldLabel: "连接状态",
+        readOnly: true
+    });*/
+    $('#bind-interface').combobox({
+        fieldLabel: $.su.CHAR.INTERFACE.BINDIF,
+        items:[
+            {value:"---", name: "---"}
+        ]
+    }).on("ev_change", function(e, oldValue, newValue){
+        var value = newValue[0];
+        var data = interfaceGrid.grid('getStore').data;
+        maxmtu = 1500;
+
+        for (var k = 0; k < data.length; k++) {
+            if (value == data[k].t_name) {
+                maxmtu = data[k].mtu ? data[k].mtu : 1500;
+                break;
+            }
+        }
+
+        if (ispppoe)
+            maxmtu = maxmtu - 8;
+        $('#interface-mtu').textbox('setTips', "（576-" + maxmtu + "）");
+        
+    });
+
+    $('#link-mode').combobox({
+        fieldLabel: $.su.CHAR.INTERFACE.LINKTYPE,
+        alwaysTrigger: true,
+        items:[
+            {value:"static", name: $.su.CHAR.INTERFACE.STATICIP, selected: true},
+            {value:"dhcp", name: "DHCP"}
+        ]
+    }).on("ev_change", function(e, oldValue, newValue){
+        var value = newValue[0],
+            $editor = $(interfaceGrid.grid("getEditor"));
+        if(value === "static"){
+            showWidgets($staticWidgets);
+            hideWidgets($dhcpWidgets);
+        }else if(value === "dhcp"){
+            showWidgets($dhcpWidgets);
+            hideWidgets($staticWidgets);
+        }
+    });
+
+    $('#set-vlantag').checkbox({
+        fieldLabel: null,
+        cls: "inline",
+        items: [
+            {boxlabel: $.su.CHAR.INTERFACE.SETVLANTAG, inputValue:'1', uncheckedValue:'0'}
+        ]
+    });
+
+    $('#interface-vlanid').textbox({
+        cls: "inline-block",
+        fieldLabel: $.su.CHAR.INTERFACE.VLANID,
+        allowBlank: false,
+        vtype:{
+            vtype:"number",
+            min:1,
+            max:4094
+        }
+
+    });
+    $('#static-ip').textbox({
+        fieldLabel: $.su.CHAR.INTERFACE.IPADDR,
+        allowBlank: false,
+        //vtype: "ip",
+        validator: function(v) {
+            if(v == "0.0.0.0" || (new $.su.vtype('ip').validate(v) === true)){
+                return true;
+            }
+            return "IP格式错误";
+        }
+    });
+    $('#static-mask').textbox({
+        fieldLabel: $.su.CHAR.INTERFACE.NETMASK,
+        allowBlank: false,
+		//vtype: "netmask",
+        validator: function(v) {
+            if(v == "0.0.0.0" || (new $.su.vtype('netmask').validate(v) === true)){
+                return true;
+            }
+            return "子网掩码格式错误";
+        }
+    });
+    $('#static-gateway').textbox({
+        fieldLabel: $.su.CHAR.INTERFACE.GATEWAY,
+		//vtype: "ip",
+        tips: $.su.CHAR.INTERFACE.OPTIONAL,
+        validator: function(v) {
+            if(v == "0.0.0.0" || (new $.su.vtype('ip').validate(v) === true)){
+                return true;
+            }
+            return "IP格式错误";
+        }
+    });
+    $('#dhcp-hostname').textbox({
+        fieldLabel: $.su.CHAR.INTERFACE.HOSTNAME,
+        vtype: "string_visible",
+        tips: $.su.CHAR.INTERFACE.OPTIONAL
+    });
+    $('#interface-mtu').textbox({
+        fieldLabel: "MTU",
+        value: "1500",
+        tips: $.su.CHAR.INTERFACE.MTUOPTIONAL,
+        /*vtype: {
+            vtype: "number",
+            max: 1500,
+            min: 576
+        }*/
+        validator: function(v) {
+            return (new $.su.vtype({vtype: "number", min: 576, max: maxmtu}).validate(v))
+        }
+    });
+    $('#main-dns').textbox({
+        fieldLabel: $.su.CHAR.INTERFACE.DNS1,
+        vtype: "ip",
+        tips: $.su.CHAR.INTERFACE.OPTIONAL
+    });
+    $('#backup-dns').textbox({
+        fieldLabel: $.su.CHAR.INTERFACE.DNS2,
+        vtype: "ip",
+        tips: $.su.CHAR.INTERFACE.OPTIONAL
+    });
+    $('#interface-mac').textbox({
+        fieldLabel: $.su.CHAR.INTERFACE.MACADDR,
+        value: "00-00-00-00-00-00",
+        vtype: "mac",
+        allowBlank: false
+    });
+    $('#dobalance').checkbox({
+        fieldLabel: $.su.CHAR.INTERFACE.BALANCE,
+        items: [
+            {boxlabel: "", inputValue:'1', uncheckedValue:'0'}
+        ]
+    });
+    $("#dobalance").checkbox('setValue', '0');
+    $("#mngt_iface").checkbox({
+        fieldLabel: $.su.CHAR.INTERFACE.MNGT_IFACE,
+        items: [
+            {boxlabel: "", inputValue:'1', uncheckedValue:'0'}
+        ]
+	});
+    $("#mngt_iface").checkbox('setValue', '0');
+
+    $('#interface-up-bandwidth').textbox({
+        fieldLabel: $.su.CHAR.INTERFACE.UPLINK,
+        allowBlank: false,
+        value: "1000000",
+        tips: "Kbps（100-1000000）",
+        vtype: {
+            vtype: "number",
+            max: 1000000,
+            min: 100
+        }
+    });
+    $('#interface-down-bandwidth').textbox({
+        fieldLabel: $.su.CHAR.INTERFACE.DOWNLINK,
+        allowBlank: false,
+        value: "1000000",
+        tips: "Kbps（100-1000000）",
+        vtype: {
+            vtype: "number",
+            max: 1000000,
+            min: 100
+        }
+    });
+    //hideWidgets($('#interface-up-bandwidth'))
+    //hideWidgets($('#interface-down-bandwidth'))
+    $('#username').textbox({
+        fieldLabel: $.su.CHAR.INTERFACE.USERNAME,
+        allowBlank: false,
+        maxLength: 64,
+        validator: function(v) 
+        {
+            if(new $.su.vtype({vtype:'string_visible_username'}).validate(v) !== true)
+            {
+                return $.su.CHAR.L2TP_CLIENT.WRONG_NAME;
+            }
+            if (v.indexOf(" ") >= 0 || v.indexOf("\\") >= 0)
+            {
+                return $.su.CHAR.L2TP_CLIENT.WRONG_NAME;
+            }
+            if (v.length > 64)
+            {
+                return $.su.CHAR.L2TP_CLIENT.WRONG_NAME_LENGTH;
+            }
+            return true;
+        }  
+    });
+    $('#password').password({
+        fieldLabel: $.su.CHAR.INTERFACE.PASSWORD,
+        allowBlank: false,
+        maxLength: 128,
+        showLevel: false,
+        vtype: "password",
+        validator: function(v) 
+        {
+            if(new $.su.vtype({vtype:'password'}).validate(v) !== true)
+            {
+                return $.su.CHAR.L2TP_CLIENT.WRONG_NAME;
+            } 
+            if (v.indexOf(" ") >= 0)
+            {
+                return $.su.CHAR.L2TP_CLIENT.WRONG_NAME;
+            }
+            if (v.length > 128)
+            {
+                return $.su.CHAR.PPTP_CLIENT_SETTING.WRONG_NAME_LENGTH;
+            }
+            return true;
+        } 
+    });
+    $('#time-object').combobox({
+        fieldLabel: $.su.CHAR.INTERFACE.TIMEOBJ,
+        allowBlank: false,
+        alwaysTrigger: true,
+        items:[
+            {value:"Any", name: "Any", selected: true}
+        ]
+    });
+    /*$('#dial-type').combobox({
+        fieldLabel: $.su.CHAR.INTERFACE.IFDIALTYPE,
+        items:[
+            {value:"static-ip", name: $.su.CHAR.INTERFACE.STATICIP, selected: true},
+            {value:"dhcp", name: "DHCP"}
+        ]
+    });*/
+    $('#link-type').combobox({
+        fieldLabel: $.su.CHAR.INTERFACE.LINKTYPE,
+        alwaysTrigger: true,
+        items:[
+            {value:"auto", name: $.su.CHAR.INTERFACE.AUTOLINK, selected: true},
+            {value:"manual", name: $.su.CHAR.INTERFACE.MANUALLINK},
+            {value:"time", name: $.su.CHAR.INTERFACE.TIMELINK}
+        ]
+    }).on("ev_change", function(e, oldValue, newValue){
+        var value = newValue[0],
+            $timeObj = $('#time-object');
+        if(value === "time"){
+            showWidgets($timeObj);
+        }else{
+            hideWidgets($timeObj);
+        }
+    });
+    $('#echo-interval').textbox({
+        fieldLabel: $.su.CHAR.INTERFACE.CHECKINTERVAL,
+        tips: $.su.CHAR.INTERFACE.LCPINTERVALOPTIONAL,
+        value: "30",
+        vtype: {
+            vtype: "number",
+            max: 60,
+            min: 1
+        }
+    });
+    $('#echo-retry').textbox({
+        fieldLabel: $.su.CHAR.INTERFACE.CHECKRETRYTIMES,
+        tips: $.su.CHAR.INTERFACE.LCPRETRYOPTIONAL,
+        value: "5",
+        vtype: {
+            vtype: "number",
+            max: 10,
+            min: 1
+        }
+    });
+    $('#service-name').textbox({
+        fieldLabel: $.su.CHAR.INTERFACE.SERVICENAME,
+        tips: $.su.CHAR.INTERFACE.SERVICEOPTIONAL,
+        validator: function(v) {
+            if(new $.su.vtype('string_visible_username').validate(v) === false)
+            {
+                return $.su.CHAR.INTERFACE.WRONG_NAME;
+            }
+            if (v.indexOf(" ") >= 0)
+            {
+                return $.su.CHAR.L2TP_CLIENT.WRONG_NAME;
+            }
+            if (v.length > 128)
+            {
+                return $.su.CHAR.INTERFACE.WRONG_NAME_LENGTH;
+            }
+            return true;
+        }
+    });
+
+	$("#interface-list").panel({
+		title: $.su.CHAR.INTERFACE.IFSETTING,
+		collapsible: false
+	});
+
+
+    var $linkAlert = $("#link-alert").msg({
+        closeBtn: true,
+        cls:"grid-popup-msg",
+        type: "alert"
+    }).msg("hide");
+
+    var $linkDetail = $("#link-detail-window").msg({
+        closeBtn: true,
+        cls:"m",
+        title: "连接状态信息",
+        type: "window"
+    }).msg("hide");
+    $linkDetail.find("#link-detail-key-name").text("接口名称：");
+    $linkDetail.find("#link-detail-key-status").text("连接状态：");
+    $linkDetail.find("#link-detail-key-mode").text("连接方式：");
+    $linkDetail.find("#link-detail-key-ip").text("IP地址：");
+    $linkDetail.find("#link-detail-key-mask").text("子网掩码：");
+    $linkDetail.find("#link-detail-key-gateway").text("网关地址：");
+    $linkDetail.find("#link-detail-key-dns").text("首选DNS服务器：");
+    $linkDetail.find("#link-detail-key-dns2").text("备用DNS服务器：");
+    $linkDetail.find("#link-detail-key-mac").text("MAC地址：");
+
+    var connectProxy = new $.su.Proxy({
+        url: URL_CONNECT
+    });
+    var disconnectProxy = new $.su.Proxy({
+        url: URL_DISCONNECT
+    });
+
+	var interfaceListProxy = new $.su.Proxy({
+		url: [URL_INTERFACE, URL_QOS, URL_BALANCE,URL_MNGT_IFACE],
+        combineKey: ["t_name", "t_name", "interface","interface"]
+	});
+
+
+	var interfaceGrid = $("#interface-grid").grid({
+        maxRulesProperty: "total_max",
+        editor: {
+            validator: function()
+            {
+                var $editor = $(interfaceGrid.grid("getEditor"));
+                var store   = interfaceGrid.grid("getStore");
+                var grid_array  = store.data;
+                var editingId = $editor.editor("getEditingId"); 
+                var keyProperty = store.keyProperty;
+                var ifname = $editor.find("#interface-name").textbox("getValue");
+                var vlanid = $editor.find("#interface-vlanid").textbox("getValue");
+                var ifmac = $editor.find("#interface-mac").textbox("getValue");
+                var ifip = $editor.find("#static-ip").textbox("getValue");
+                var iftype = $editor.find("#interface-type").textbox("getValue"); 
+                var bindif = $editor.find("#bind-interface").combobox("getValue"); 
+                var ifnames = []
+                var bindifx = {}
+
+                if (ifname == "VPN" || ifname == "NORMAL" || ifname == "setting" || 
+                    ifname == "loopback")
+                {
+                    $($("div#interface-grid").grid("getEditor")).form('setError', "接口名称" + ifname + "被系统保留，禁止使用！");
+                    return false;
+                }
+
+                if($.isArray(grid_array) && grid_array.length > 0)
+                {
+                    for(var k = 0; k < grid_array.length;k++)
+                    {
+                        var data = grid_array[k];
+                        
+                        if(data[keyProperty] == editingId)
+                        {
+                            if (iftype == "bridge" && 
+                                data["t_bindif"] && 
+                                $.isArray(data["t_bindif"])) {
+                                for (var ci = 0; ci < data["t_bindif"].length; ci++) {
+                                    bindifx[data["t_bindif"][ci]] = true;
+                                }
+                            }
+                            continue;
+                        }
+                        else
+                        { 
+                            if((data["t_name"] == ifname))
+                            {
+                                $($("div#interface-grid").grid("getEditor")).form('setError', "接口名称冲突");
+                                return false;
+                            }
+
+                            if((data['t_vlanid'] == vlanid) && ('ethernet' == iftype))
+                            {
+                                /* only check vlanid when modify or insert an ehthernet type interface */
+                                $($("div#interface-grid").grid("getEditor")).form('setError', "Vlan ID 冲突");
+                                return false;
+                            }
+
+                            if((data['ipaddr'] == ifip))
+                            {
+                                $($("div#interface-grid").grid("getEditor")).form('setError', "IP 地址冲突");
+                                return false;
+                            }
+
+                            ifnames[data['t_name']] = data['t_name'];
+                        }
+                    }
+                }
+
+               /*var statusProxy = new $.su.Proxy({
+                    url: URL_STATUS,
+                    async: false
+                });*/
+                var success = true;
+                /*statusProxy.read({}, function(data)*/
+                {
+                    data = statusData;
+                    if(!data){
+                        success = false;
+                    }
+                    if (data["normal"] && data["normal"].length > 0)
+                    {
+                        var bindifs = {};   
+                        for (var k = 0; k < data["normal"].length; k++)
+                        {
+                            if (data["normal"][k].t_type == "bridge")
+                            {
+                                var in_bridge = false;
+                                if (data["normal"][k].t_name == ifname)
+                                {
+                                    in_bridge = true;
+                                }
+                                for (var i = 0; i < data["normal"][k]["t_bindif"].length; i++)
+                                {
+                                    var bridge_bindif = data["normal"][k]["t_bindif"][i];
+                                    if (bridge_bindif == bindif)
+                                    {
+                                        in_bridge = true;
+                                    }
+                                    bindifs[bridge_bindif] = bridge_bindif;
+                                }
+                                bindifs[data["normal"][k].t_name] = data["normal"][k].t_name;
+                                if (in_bridge || data["normal"][k].t_name == bindif)
+                                {
+                                    break;
+                                }
+                                bindifs = {};
+                            }
+                        }
+
+                        for (var k = 0; k < data['normal'].length; k++){
+                            element = data['normal'][k];
+                            if (!ifnames[element['t_name']]){
+                                if (true == insert && element['t_name'] == ifname)
+                                {
+                                    $($("div#interface-grid").grid("getEditor")).form('setError', "接口名称冲突");
+                                    success = false;
+                                    return success;
+                                }
+                                if (element['t_type'] == 'pppoe' || (false == insert && element['t_name'] == ifname)){
+                                    /* if modify an old item, stop compare to self-data on the server */
+                                    continue;
+                                }
+                                if (element['ipaddr'] == ifip){
+                                    $($("div#interface-grid").grid("getEditor")).form('setError', "Ip 地址冲突");
+                                    success = false;
+                                    return success;
+                                } 
+                                if (element['macaddr'] == ifmac){
+                                    if ((bindifx[element['t_name']] && iftype == "bridge") || bindifs[element.t_name] || 
+                                        (bindifs[element.t_bindif] && bindifs[bindif[0]]))
+                                    {
+                                        continue;
+                                    }
+                                    $($("div#interface-grid").grid("getEditor")).form('setError', "Mac 地址冲突");
+                                    success = false;
+                                    return success;
+                                }
+                            }
+                        }                        
+                    }
+                    if (data['vpn'] && data['vpn'].length > 0)
+                    {
+                        for (var k = 0; k < data['vpn'].length; k++){
+                            element = data['vpn'][k];
+                            if (!ifnames[element['t_name']]){
+                                if (true == insert && element['t_name'] == ifname)
+                                {
+                                    $($("div#interface-grid").grid("getEditor")).form('setError', "接口名称冲突");
+                                    success = false;
+                                    return success;
+                                }
+                            }
+                        }                        
+                    }
+ 
+                }/*)*/;
+                if (false == success){
+                    return false;
+                }
+
+                if (insert == true)
+                {
+                    success = true;
+                    /*var interfaceListProxy_sync = new $.su.Proxy({
+                        url: [URL_INTERFACE, URL_QOS, URL_BALANCE],
+                        combineKey: ["t_name", "t_name", "interface"],
+                        async: false
+                    });
+                    interfaceListProxy_sync.read({}, function(data, others)*/
+                    {
+                        others = gothers;
+                        if (iftype == 'pppoe'){
+                            var pppoe_num = others['pppoe_num'];
+                            var pppoe_max = others['pppoe_max'];
+                            if (pppoe_num + 1 > pppoe_max){
+                                $($("div#interface-grid").grid("getEditor")).form('setError', "pppoe接口数已达到上限");
+                                success = false;
+                            }
+                            return success;
+                        }
+                        else{
+                            var iflink_mode = $editor.find("#link-mode").combobox("getValue")
+                            if (iflink_mode == 'static'){
+                                var static_num = others['static_num'];
+                                var static_max = others['static_max'];
+                                if (static_num + 1 > static_max){
+                                    $($("div#interface-grid").grid("getEditor")).form('setError', "static接口数已达到上限");
+                                    success = false;
+                                }
+                                return success;
+                            }
+                            else if (iflink_mode == 'dhcp'){
+                                var dhcp_num = others['dhcp_num'];
+                                var dhcp_max = others['dhcp_max'];
+                                if (dhcp_num + 1 > dhcp_max){
+                                    $($("div#interface-grid").grid("getEditor")).form('setError', "dhcp接口数已达到上限");
+                                    success = false;
+                                }
+                                return success;
+                            }
+                        }
+                        return success;
+                    }/*)*/;
+                    if (false == success){
+                        return false;
+                    }                    
+                }
+
+
+                if (if_has_disabled) {
+                    //$("input#interface-type").prop("disabled", false);
+                    //$("input#interface-name").prop("disabled", false);
+                }
+                return true;
+            },
+            content:"#own-editor",
+            fields: [
+                {name: "t_type"},
+                {name: "t_name"},
+                {name: "t_bindif"},
+
+                {name: "t_vlanid"},
+                {name: "untag"},
+                {name: "proto"},
+                {name: "ipaddr"},
+                {name: "netmask"},
+                {name: "gateway"},
+
+                {name: "hostname"},
+
+                {name: "username"},
+                {name: "password"},
+                {name: "t_dialtype"},
+                {name: "t_linktype"},
+                {name: "t_timeobj"},
+                {name: "lcpechointerval"},
+                {name: "lcpechofailure"},
+                {name: "service"},
+
+                {name: "mtu"},
+                {name: "dns1"},
+                {name: "dns2"},
+                {name: "uplink"},
+                {name: "downlink"},
+                
+                {name: "macaddr"},
+                {name: "balance"},
+                {name: "mngt_iface"},
+                {name: "t_reference"},
+                {name: "t_issys"}
+            ]
+        },
+		store:{
+			proxy: interfaceListProxy,
+            extraProperty: "t_name",
+			fields: [
+                {name: "t_type"},
+                {name: "t_name"},
+                {name: "t_bindif"},
+
+                {name: "t_vlanid"},
+                {name: "untag"},
+                {name: "proto"},
+                {name: "ipaddr"},
+                {name: "netmask"},
+                {name: "gateway"},
+
+                {name: "status_ipaddr"},
+                {name: "status_netmask"},
+                {name: "status_gateway"},
+
+                {name: "hostname"},
+
+                {name: "username"},
+                {name: "password"},
+                {name: "t_dialtype"},
+                {name: "t_linktype"},
+                {name: "uplink"},
+                {name: "downlink"},
+                {name: "t_timeobj"},
+                {name: "lcpechointerval"},
+                {name: "lcpechofailure"},
+                {name: "service"},
+
+                {name: "mtu"},
+                {name: "dns1"},
+                {name: "dns2"},
+                {name: "t_isup"},
+                
+                {name: "macaddr"},
+                {name: "balance"},
+                {name: "mngt_iface"},
+                {name: "t_reference"},
+                {name: "t_issys"},
+                {name: "t_isbridged"}
+			],
+			autoLoad: false
+		},
+		columns: [
+			{
+				xtype: "checkcolumn",
+				width: 20/*$.su.CHAR.SETTING.VPN_USER.CHECK_COLUMN_WIDTH*/
+			},
+			{
+				xtype: "rownumberer",
+				width: 20/*$.su.CHAR.SETTING.VPN_USER.ROW_NUMBER_WIDTH*/
+			},
+			{
+				text: $.su.CHAR.INTERFACE.IFTYPE,
+				width: 50,
+				dataIndex: "t_type",
+                renderer: function(v){
+                    var interfaceType = v;
+                    switch (v){
+                        case 'physical':
+                            interfaceType = '物理接口';
+                            break;
+                        case 'bridge':
+                            interfaceType = '网桥接口';
+                            break;
+                        case 'ethernet':
+                            interfaceType = 'Ethernet';
+                            break;
+                        case 'pppoe':
+                            interfaceType = 'PPPoE';
+                            break;
+                        default :
+                            break;
+                    }
+                    return interfaceType;
+                }
+			},
+            {
+                text: $.su.CHAR.INTERFACE.IFNAME,
+                width: 50,
+                dataIndex: "t_name"
+            },
+            {
+                text: $.su.CHAR.INTERFACE.IFSTATUS,
+                width: 50,
+                dataIndex: "t_isup",
+                renderer: function(dd, index, data){
+                    return dd + "&nbsp;<a href='javascript:void(0);' class='btn-detail' data-index='"+ index +"'>详细</a>";
+                }
+            },
+            {
+                text: $.su.CHAR.INTERFACE.IPADDR,
+                width: 60,
+                dataIndex: "status_ipaddr"
+            },
+            {
+                text: $.su.CHAR.INTERFACE.NETMASK,
+                width: 60,
+                dataIndex: "status_netmask"
+            },
+            {
+                text: $.su.CHAR.INTERFACE.GATEWAY,
+                width: 60,
+                dataIndex: "status_gateway"
+            },
+            {
+                width: $.su.CHAR.SETTING.VPN_USER.SETTING_WIDTH,
+                text: $.su.CHAR.GRID.OPERATION,
+                dataIndex: "none",
+                renderer: function(dd, index, data){
+                    var inHTML="<div class=\"button-container interface-operation\">";
+                    inHTML +=	"<a href=\"javascript:void(0);\" data-index=\""+index+"\" data-key=\""+data.key+"\" title=\""+ $.su.CHAR.OPERATION.EDIT +"\" class=\"grid-content-btn grid-content-btn-edit btn-edit\">";
+                    inHTML +=		"<span class=\"icon\"></span>";
+                    inHTML +=		"<span class=\"text\">"+$.su.CHAR.OPERATION.EDIT+"</span>";
+                    inHTML +=	"</a>";
+                    if(data.t_type !== 'physical' && data.t_type !== 'bridge'){
+                        inHTML += 	"<a href=\"javascript:void(0);\" data-index=\""+index+"\" data-key=\""+data.key+"\" title=\""+ $.su.CHAR.OPERATION.DELETE +"\" class=\"grid-content-btn grid-content-btn-delete btn-delete\">";
+                        inHTML +=		"<span class=\"icon\"></span>";
+                        inHTML += 		"<span class=\"text\">"+$.su.CHAR.OPERATION.DELETE+"</span>";
+                        inHTML += 	"</a>";
+                    }
+                    if(/*((data.t_type == 'pppoe' && data.t_linktype == 'manual') ||
+                            (data.t_type == 'ethernet' && data.proto == 'dhcp') ||
+                            (data.t_type == 'physical' && data.proto == 'dhcp') ||
+                            (data.t_type == 'bridge' && data.proto == 'dhcp')) &&*/
+                            data.t_isup == '未连接'){
+                        inHTML += 	"<a href=\"javascript:void(0);\" data-index=\""+index+"\" data-key=\""+data.key+"\" title=\""+ $.su.CHAR.OPERATION.CONNECT +"\" class=\"grid-content-btn grid-content-btn-link btn-link\">";
+                        inHTML +=		"<span class=\"icon\"></span>";
+                        inHTML += 		"<span class=\"text\">"+$.su.CHAR.OPERATION.CONNECTED+"</span>";
+                        inHTML += 	"</a>";
+                    }
+                    if(/*((data.t_type == 'pppoe' && data.t_linktype == 'manual') ||
+                            (data.t_type == 'ethernet' && data.proto == 'dhcp') ||
+                            (data.t_type == 'physical' && data.proto == 'dhcp') ||
+                            (data.t_type == 'bridge' && data.proto == 'dhcp')) &&*/
+                            data.t_isup == '已连接'){
+                        inHTML += 	"<a href=\"javascript:void(0);\" data-index=\""+index+"\" data-key=\"key-"+index+"\" title=\""+ $.su.CHAR.OPERATION.DISCONNECT +"\" class=\"grid-content-btn grid-content-btn-unlink btn-unlink\">";
+                        inHTML +=		"<span class=\"icon\"></span>";
+                        inHTML += 		"<span class=\"text\">"+$.su.CHAR.OPERATION.DISCONNECTED+"</span>";
+                        inHTML += 	"</a>";
+                    }
+                    inHTML +="</div>";
+                    return inHTML;
+                }
+            }
+		],
+		operation: [
+            "prompt",
+            "add",
+            "delete"/*,
+            {
+                xtype: "button",
+                iconCls: "btn-link",
+                text: "连接",
+                handler: function(){
+                    var $alert = $linkAlert.find('.msg-content-container .text');
+                    var selectedKeys = interfaceGrid.grid("getSelected");
+                    var store = interfaceGrid.grid('getStore');
+                    var result = true;
+                    var ifNames = [];
+                    var connectData = {};
+                    if(selectedKeys.length === 0){
+                        $alert.text("请至少选中一项");
+                        $linkAlert.msg('show');
+                        return;
+                    }
+                    $.each(selectedKeys, function(i, o){
+                        var data = store.getData(o);
+                        if(!data || data.t_type !== 'pppoe' || data.t_linktype !== 'manual'){
+                            $alert.text("只能操作手动连接方式下的PPPoE接口");
+                            $linkAlert.msg('show');
+                            result = false;
+                            return false;
+                        }else{
+                            ifNames.push(data.t_name);
+                        }
+                    });
+                    if(!result){
+                        return;
+                    }
+                    connectData.key = selectedKeys.join(",");
+                    connectData.extraKey = ifNames.join(",");
+                    connectProxy.write(connectData, function(data){
+                        if(data.length > 0){
+                            $.each(selectedKeys, function(i, o){
+                                $(".grid-content-tr-"+ o + " .checkbox-label").trigger("click");
+                            });
+                            refreshStatus();
+                        }
+                    });
+                }
+            },
+            {
+                xtype: "button",
+                btnCls: "button-unlink",
+                iconCls: "btn-unlink",
+                text: "断开",
+                handler: function(){
+                    var $alert = $linkAlert.find('.msg-content-container .text');
+                    var selectedKeys = interfaceGrid.grid("getSelected");
+                    var store = interfaceGrid.grid('getStore');
+                    var result = true;
+                    var ifNames = [];
+                    var disconnectData = {};
+                    if(selectedKeys.length === 0){
+                        $alert.text("请至少选中一项");
+                        $linkAlert.msg('show');
+                        return;
+                    }
+                    $.each(selectedKeys, function(i, o){
+                        var data = store.getData(o);
+                        if(!data || data.t_type !== 'pppoe' || data.t_linktype !== 'manual'){
+                            $alert.text("只能操作手动连接方式下的PPPoE接口");
+                            $linkAlert.msg('show');
+                            result = false;
+                            return false;
+                        }else{
+                            ifNames.push(data.t_name);
+                        }
+                    });
+                    if(!result){
+                        return;
+                    }
+                    disconnectData.key = selectedKeys.join(",");
+                    disconnectData.extraKey = ifNames.join(",");
+                    disconnectProxy.write(disconnectData, function(data){
+                        if(data.length > 0){
+                            $.each(selectedKeys, function(i, o){
+                                $(".grid-content-tr-"+ o + " .checkbox-label").trigger("click");
+                            });
+                            refreshStatus();
+                        }
+                    });
+                }
+            }*/
+        ]
+	}).on("ev_load", function(e,data, others){
+        if (others)
+            gothers = others;
+        if (firstLoad){
+            var timeItem=[];
+            var timeProxy = new $.su.Proxy({
+                url: $.su.url('/admin/time_mngt?form=timeobj_list'),
+                async: false
+            });
+
+            timeProxy.read({}, function(data){
+                for (i=0; i<data.length; i++){
+                    timeItem.push({name:data[i].entry_name,value:data[i].entry_name});
+                }
+                var $editor = $(interfaceGrid.grid("getEditor"));
+                var combobox = $editor.find('.combobox-value[name=t_timeobj]');
+                combobox.combobox('loadData',timeItem);
+            });
+        }
+        if(firstLoad){
+            refreshStatus(10000);
+            firstLoad = false;
+        }
+        /*用于指定某一行不能被selected*/
+        var tr = interfaceGrid.find("tr.grid-content-tr.grid-content-tr-key-0");
+        tr.addClass("unavailable");
+        /*用于隐藏指定行的checkbox*/
+        var td = $(tr).find("td.grid-content-td.grid-content-td-0");
+        $(td).find("span.icon").replaceWith("<span></span>");
+
+
+    }).on("ev_insert", function(e, index, data){
+        var phyif = $('#phyif-list').combobox('getValue')[0];
+        reloadGrid(phyif);
+    }).on("ev_remove", function(e, keys){
+        var phyif = $('#phyif-list').combobox('getValue')[0];
+        reloadGrid(phyif);
+    }).delegate('a.btn-detail', 'click', function(e){
+        var index = $(this).data('index');
+        showDetail(interfaceStore.data[index].t_name);
+    }).delegate('a.btn-link', 'click', function(e){
+        var index = $(this).data('index'),
+            linkData = {},
+            data = interfaceStore.getDataByIndex(index);
+        linkData.index = index;
+        linkData.extraKey = data?data.t_name:'';
+        connectProxy.write(linkData, function(data){
+            if(data.length){
+                refreshStatus();
+            }
+        });
+    }).delegate('a.btn-unlink', 'click', function(e){
+        var index = $(this).data('index'),
+            linkData = {},
+            data = interfaceStore.getDataByIndex(index);
+        linkData.index = index;
+        linkData.extraKey = data.t_name;
+        disconnectProxy.write(linkData, function(data){
+            if(data.length){
+                refreshStatus();
+            }
+        });
+    });
+
+    var interfaceStore = interfaceGrid.grid('getStore');
+    var $interfaceEditor = $(interfaceGrid.grid('getEditor'));
+
+    $interfaceEditor.on('ev_startEdit', function(e, index, key){
+        ispppoe = false;
+        if(index == 'add'){
+            $interfaceEditor.find('#interface-type').combobox('loadData', [
+                {value:"ethernet", name: "Ethernet"},
+                {value:"pppoe", name: "PPPoE"}
+            ]).combobox('enable').combobox('setValue', 'ethernet');
+            $interfaceEditor.find('#interface-name').textbox('enable');
+            var data = interfaceStore.data[0];
+            if(data && (data.t_type === 'physical' || data.t_type === 'bridge')){
+                $interfaceEditor.find('#interface-mac').textbox('setValue', data.macaddr);
+            }
+            $bridgePhysicals.each(function(i, o){
+                $(o)[o.xtype]('enable');
+            });
+            var $linkMode = $interfaceEditor.find('#link-mode');
+            var linkModeValue = $linkMode.combobox('getValue');
+            if(linkModeValue.length === 0){
+                linkModeValue = 'static';
+            }
+            $linkMode.combobox("setValue", linkModeValue);
+            $interfaceEditor.find('#password').password('setValue', '');
+            maxmtu = data.mtu ? data.mtu : 1500;
+            $('#interface-mtu').textbox('setTips', "（576-" + maxmtu + "）");
+            $('#interface-mtu').textbox('setValue', maxmtu);       
+            insert = true;
+        }else{
+            var data = interfaceStore.getData(key);
+            $interfaceEditor.find('#interface-type').combobox('loadData', [
+                {value:"physical", name: "物理接口"},
+                {value:"bridge", name: "网桥接口"},
+                {value:"ethernet", name: "Ethernet"},
+                {value:"pppoe", name: "PPPoE"}
+            ]).combobox('setValue', data.t_type).combobox('disable');
+            $interfaceEditor.find('#interface-name').textbox('disable');
+            if(data.t_type === 'physical' && data.t_isbridged == 1){
+                $bridgePhysicals.each(function(i, o){
+                    $(o)[o.xtype]('disable');
+                });
+            }else{
+                $bridgePhysicals.each(function(i, o){
+                    $(o)[o.xtype]('enable');
+                });
+                $interfaceEditor.find('#interface-type').combobox('setValue', data.t_type);
+                if(data.t_type !== 'pppoe'){
+                    var $linkMode = $interfaceEditor.find('#link-mode');
+                    var linkModeValue = $linkMode.combobox('getValue');
+                    if(linkModeValue.length === 0){
+                        linkModeValue = 'static';
+                    }
+                    $linkMode.combobox("setValue", linkModeValue);
+                }
+            }
+            if (data.balance == 1){
+                $interfaceEditor.find('#dobalance').checkbox('setValue', 1);
+            }
+            else{
+                $interfaceEditor.find('#dobalance').checkbox('setValue', 0);
+            }
+            if (data.mngt_iface == 1){
+                $interfaceEditor.find('#mngt_iface').checkbox('setValue', 1);
+            }
+            else{
+                $interfaceEditor.find('#mngt_iface').checkbox('setValue', 0);
+            }
+
+            if(data.t_type === 'pppoe')
+                ispppoe = true;
+
+            if (data.t_type !== 'physical' && data.t_type !== 'bridge') {
+                var alldata = interfaceGrid.grid('getStore').data;
+                maxmtu = 1500;
+                for (var k = 0; k < alldata.length; k++) {
+                    if (data.t_bindif == alldata[k].t_name) {
+                        maxmtu = alldata[k].mtu ? alldata[k].mtu : 1500;
+                        break;
+                    }
+                }
+                if (ispppoe)
+                    maxmtu = maxmtu - 8; /* ethernet link data len minus pppoe header len */
+            }
+            else {
+                maxmtu = 1500;
+            }
+            $('#interface-mtu').textbox('setTips', "（576-" + maxmtu + "）");
+
+            if (data.mtu == false)
+                $('#interface-mtu').textbox('setValue', maxmtu);
+
+            insert = false;
+            //$interfaceEditor.find('#interface-up-bandwidth').textbox('setValue', 1000000);
+            //$interfaceEditor.find('#interface-down-bandwidth').textbox('setValue', 1000000);
+        }
+    });
+
+    function reloadGrid(phyif, callback){
+        var data = {};
+        if($interfaceEditor.editor('isEditing')){
+            $interfaceEditor.editor('cancelEdit');
+        }
+        interfaceStore.keyLength = 0;
+        interfaceStore.load({relatedif: phyif}, callback);
+    }
+
+    var statusProxy = new $.su.Proxy({
+        url: URL_STATUS
+    });
+    function parseStatus(data){
+        var statusIndex = {},
+            gridData = interfaceStore.data;
+        if(!data){
+            return;
+        }
+        statusData = data;
+        $.each(data.normal, function(i, el){
+            statusIndex[el.t_name] = el;
+        });
+        $.each(data.vpn, function(i, el){
+            statusIndex[el.t_name] = el;
+        });
+        $.each(gridData, function(i, el){
+            var rowData = statusIndex[el.t_name];
+            el.t_isup = (rowData&&rowData.t_isup)?'已连接':'未连接';
+            if(rowData&&rowData.ipaddr) el.status_ipaddr = rowData.ipaddr;
+            else el.status_ipaddr = "";
+            if(rowData&&rowData.netmask) el.status_netmask = rowData.netmask;
+            else el.status_netmask = "";
+            if(rowData&&rowData.gwaddr) el.status_gateway = rowData.gwaddr;
+            else el.status_gateway = "";
+        });
+        interfaceStore.loadData(gridData);
+    }
+    function refreshStatus(interval){
+        if(!$.contains(document, interfaceGrid[0])){
+            return;
+        }
+        statusProxy.read({}, parseStatus);
+        if(interval){
+            setTimeout(function(){refreshStatus(interval)}, interval);
+        }
+    }
+
+    function showDetail(t_name){
+        if(!t_name || !statusData){
+            return;
+        }
+        var data = {};
+        $.each(statusData.normal, function(i, el){
+            if(el.t_name == t_name){
+                data = el;
+                return false;
+            }
+        });
+        $.each(statusData.vpn, function(i, el){
+            if(el.t_name == t_name){
+                data = el;
+                return false;
+            }
+        });
+        if(!data){
+            return;
+        }
+        $linkDetail.find("#link-detail-value-name").text(data.t_name);
+        $linkDetail.find("#link-detail-value-status").text(data.t_isup?"已连接":"未连接");
+        var linkmap = {
+            "static": $.su.CHAR.INTERFACE.STATICIP, "dhcp":"DHCP", 
+            "auto":$.su.CHAR.INTERFACE.AUTOLINK, 
+            "manual":$.su.CHAR.INTERFACE.MANUALLINK, 
+            "time":$.su.CHAR.INTERFACE.TIMELINK
+        }
+
+        $linkDetail.find("#link-detail-value-mode").text(linkmap[data.t_linktype]? linkmap[data.t_linktype] : "---");
+        $linkDetail.find("#link-detail-value-ip").text(data.ipaddr?data.ipaddr: "---");
+        $linkDetail.find("#link-detail-value-mask").text(data.netmask?data.netmask: "---");
+        $linkDetail.find("#link-detail-value-gateway").text(data.gwaddr?data.gwaddr: "---");
+        $linkDetail.find("#link-detail-value-dns").text(data.dns1?data.dns1: "---");
+        $linkDetail.find("#link-detail-value-dns2").text(data.dns2?data.dns2: "---");
+        $linkDetail.find("#link-detail-value-mac").text(data.macaddr?data.macaddr: "---");
+        if(data.t_type === "pppoe"){
+            $linkDetail.find("#link-detail-mac").hide();
+        }else{
+            $linkDetail.find("#link-detail-mac").show();
+        }
+        $linkDetail.msg('show');
+    }
+
+    /*var helpVpnUser = new $.su.Help({
+        container: "div#interface-help",
+        content: "NAPT"
+    });*//* TODO */
+    
+
+});
+
+//]]>
+</script>
+</body>
+
+</html>

@@ -1,0 +1,90 @@
+#!/bin/bash
+#
+# Written by WangLei<wanglei_w8270@tp-link.com.cn>, May 2017
+#
+# This script is as shell cmd for terminal
+
+OUT_DIR=tplink/webpages
+CMD_DIR=scripts/web2static
+PRO_NAME=dev_router_series
+
+
+Usage()
+{
+    echo ""
+    echo "  make emulator action v1.0"
+    echo "     start   [Model]"
+    echo "     clean   [Model]"
+    echo "     Example:"
+    echo "       start [ER6120]"
+    echo "       clean [ER6120]"
+    echo ""
+}
+
+make_emulator()
+{
+    ! clean_emulator "$1" && {
+        echo "dir no exists"
+        echo ""
+        return
+    }
+
+    #echo ${OUT_DIR}
+    mkdir ${OUT_DIR}/static${1}
+    cp -rf ${OUT_DIR}/src/* ${OUT_DIR}/static${1}
+    cp ${CMD_DIR}/locale.js ${OUT_DIR}/static${1}/js/su/locale.js
+    local model="$1"
+    [ -z "$model" ] || {
+        sed -i "s/POST/GET/g" ${OUT_DIR}/static${1}/js/su/locale.js ${OUT_DIR}/static${1}/js/su/data/proxy.js ${OUT_DIR}/static${1}/js/libs/jquery.min.js
+        sed -i "s/\"model\": \"\"/\"model\": \"TL-${model}\"/g" ${OUT_DIR}/static${1}/js/su/locale.js
+    }
+    echo "make done!"
+    echo ""
+}
+
+clean_emulator()
+{
+    local pwd0=$(pwd)
+    local include=$(echo $pwd0 | grep "$PRO_NAME")
+    #echo include=$include
+    [ "$include" == "" ] && {
+        echo "Please enter the dir or son-dir of project ${PRO_NAME}"
+        echo ""
+        return 0
+    }
+
+    local dir=${pwd0##*/}
+    local REAL_OUT_DIR="$OUT_DIR"
+    local REAL_SRC_DIR="$CMD_DIR"
+    #echo $dir
+    
+    while [ "$dir" != "$PRO_NAME" ]
+    do
+        cd ..
+        pwd=$(pwd)
+        #echo "pwd=$pwd"
+        dir=${pwd##*/}
+        REAL_OUT_DIR="../$REAL_OUT_DIR"
+        REAL_SRC_DIR="../$REAL_SRC_DIR"
+    done
+    OUT_DIR=${REAL_OUT_DIR}
+    CMD_DIR=${REAL_SRC_DIR}
+    #echo ${OUT_DIR}
+    #echo ${CMD_DIR}
+    cd $pwd0
+    [ -d $OUT_DIR -a -d $CMD_DIR ] || {
+        return 1
+    }
+
+    rm -rf ${OUT_DIR}/static${1}
+    echo "clean done!"
+    return 0
+}
+
+act="$1"
+case $act in
+    start) make_emulator "$2";;
+    clean) clean_emulator "$2";;
+    *) Usage ;;
+esac
+

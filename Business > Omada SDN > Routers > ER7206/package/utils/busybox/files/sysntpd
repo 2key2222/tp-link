@@ -1,0 +1,59 @@
+#!/bin/sh /etc/rc.common
+# Copyright (C) 2011 OpenWrt.org
+
+START=96
+
+USE_PROCD=1
+PROG=/usr/sbin/ntpd
+
+validate_ntp_section() {
+	uci_validate_section system timeserver "${1}" \
+		'server:list(host)' 'user_server:list(host)' 'enabled:bool:1' 'enable_server:bool:0'
+}
+
+start_service() {
+	local user_server server enabled enable_server peer user_peer has_user_peer
+
+	validate_ntp_section ntp || {
+		echo "validation failed"
+		return 1
+	}
+
+	[ $enabled = 0 ] && return
+
+	[ -z "$server" ] && return
+	
+	[ -z "$user_server" ] && return
+	
+	procd_open_instance
+	procd_set_param command "$PROG" -n
+	[ "$enable_server" = "1" ] && procd_append_param command -l
+	for user_peer in $user_server; do
+	   if [ "$user_peer" != "0.0.0.0" ]; then
+		has_user_peer="$user_peer"
+	        procd_append_param command -p $user_peer
+	   fi
+	done
+	if [ -z "$has_user_peer" ]; then	
+		for peer in $server; do
+			procd_append_param command -p $peer
+		done
+	fi
+	procd_set_param respawn
+	procd_close_instance
+}
+
+
+stop_service() {
+	ntpds=$(ps |grep /usr/sbin/ntpd |grep -v grep |sed 's/^[ \t]*//g' |cut -d ' ' -f1)
+	ntpds=${ntpds// / }
+	for _ntpd in ${ntpds}; do 
+		kill -9 ${_ntpd}
+	done
+}
+
+service_triggers()
+{
+	procd_add_reload_trigger "system"
+	procd_add_validation validate_ntp_section
+}

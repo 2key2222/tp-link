@@ -1,0 +1,754 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Access Control Inner</title>
+<style type="text/css">
+</style>
+</head>
+
+<body>
+	<div class="func-container">
+    <div id="actl_inner_list">
+        <div id="actl_grid">
+        </div>
+    </div>
+	
+	<div id="own_editor">
+		<input id="rule_name" name="name" />
+		<input id="policy" name="policy" />
+		<input id="service" name="service" />
+		<input id="zone" name="zone" />
+		<input id="src" name="src" />
+		<!--<div id="srcIP" class="hidden">
+			<div class="widget-container">
+		
+			<input id="ipaddr" name="ipaddr" />
+			<span>/</span>
+			<input id="mask" name="mask" />
+			</div>
+		</div>
+		<div id="group" class="hidden">
+			
+			<input id="group_content" name="group_content" />
+		</div>-->
+		<input id="dest" name="dest" />
+		<!--<div id="dstIP" class="hidden">
+			<div class="widget-container">
+			
+			<input id="dstaddr" name="dstaddr" />
+			<span>/</span>
+			<input id="dstmask" name="dstmask" />
+			</div>
+		</div>-->
+		<input id="srcIf" name="srcIf" />
+		<input id="destIf" name="destIf" />
+		<input id="time" name="time" />
+		<input id="position" name="position" />
+		<input type="text" name="flag" class="hidden" value="1" />
+		<input type="text" name="user" class="hidden" value="1" />
+	</div>
+    <div id="actl_help">    
+	</div>
+</div>
+
+<script type="text/javascript">
+try{
+    $
+}catch(e){
+    location.href = "/";
+};
+
+$(document).ready(function(e){ 
+	var actl_inner_url =  $.su.url("/admin/access_ctl?form=acl_inner");
+	var actl_proxy = new $.su.Proxy({
+        url: actl_inner_url,
+    });  
+    var maxrules;
+    var defaultRulesCnt = 0;
+	
+	$("#actl_inner_list").panel({
+        title: $.su.CHAR.ACCESS_CONTROL.RULE_LIST,
+        collapsible: false
+    });
+	
+
+	$("#rule_name").textbox({
+		fieldLabel:$.su.CHAR.ACCESS_CONTROL.NAME,
+		tips:$.su.CHAR.ACCESS_CONTROL.NAME_TIP,//"(1-50个字符)",
+		allowBlank:false,
+		maxLength:50,
+		vtype:"name"
+	});
+	
+	$("#policy").combobox({
+		fieldLabel:$.su.CHAR.ACCESS_CONTROL.POLICY,
+		items:[
+			{name:$.su.CHAR.ACCESS_CONTROL.BLOCK,value:"DROP",selected:true},
+			{name:$.su.CHAR.ACCESS_CONTROL.ACCEPT,value:"ACCEPT"}
+		],
+		allowBlank:false
+	});
+	/*should dymically add here*/
+	$("#service").combobox({
+		fieldLabel:$.su.CHAR.ACCESS_CONTROL.SERVICE,
+		items:[
+				{name:$.su.CHAR.ACCESS_CONTROL.ALL_SERVICE,value:"ALL",selected:true}
+		],
+		allowBlank:false
+	});
+	
+    $("#zone").combobox({
+        fieldLabel:$.su.CHAR.ACCESS_CONTROL.ZONE,
+        multiSelect:true,
+        items:[
+            {name:"---",value:"---"}
+        ],
+        allowBlank:false
+    });
+
+    $("#src").combobox({
+        fieldLabel:$.su.CHAR.ACCESS_CONTROL.SRC,
+        allowBlank:false,
+        items:[
+            /*{name:"IP/MASK",value:"IP_MASK"},
+            {name:"ANY",value:"ANY"},
+            {name:$.su.CHAR.ACCESS_CONTROL.GROUP,value:"group"}*/
+            {name:"---",value:"---"}
+        ]
+    });/*.on('ev_change', function(e, oldValue, newValue){
+        if(newValue == "IP_MASK"){
+            $("#srcIP").form("show");
+            $("#group").form("hide");
+            $("input#ipaddr").textbox("enable");
+            $("input#mask").textbox("enable");
+            $("#group_content").combobox("disable");
+        }
+        else if(newValue == "group"){
+            $("#srcIP").form("hide");
+            $("#group").form("show");
+            $("input#ipaddr").textbox("disable");
+            $("input#mask").textbox("disable");
+            $("#group_content").combobox("enable");
+        }
+        else if(newValue=="ANY"){
+            $("#srcIP").form("hide");
+            $("#group").form("hide");
+            $("input#ipaddr").textbox("disable");
+            $("input#mask").textbox("disable");
+            $("#group_content").combobox("disable");
+        }
+    });
+    
+    $("#ipaddr").textbox({
+        fieldLabel:$.su.CHAR.ACCESS_CONTROL.IP,
+        cls:"inline-block",
+        inputCls:'m',
+        vtype:"ip"
+    });
+    
+    $("#mask").textbox({
+        fieldLabel:null,
+        cls:"inline-block",
+        inputCls:'s',
+        vtype:{
+            vtype: "number",
+            max: 32,
+            min: 1
+        }
+    });*/
+    
+    //need to add dynamically
+    /*$("#group_content").combobox({
+        fieldLabel:$.su.CHAR.ACCESS_CONTROL.GROUP,
+        items:[
+            {name:"---",value:"---"}
+        ]
+    });*/
+    
+    $("#dest").combobox({
+        fieldLabel:$.su.CHAR.ACCESS_CONTROL.DST,
+        items:[
+            /*{name:"IP/MASK",value:"IP_MASK"},
+            {name:"ANY",value:"ANY"}*/
+            {name:"---",value:"---"}
+        ],
+        allowBlank:false
+    });
+
+/*.on('ev_change', function(e, oldValue, newValue){
+        if(newValue == "IP_MASK"){
+            $("#dstIP").form("show");
+            $("#dstaddr").textbox("enable");
+            $("#dstmask").textbox("enable");
+        }
+        else if(newValue == "ANY"){
+            $("#dstIP").form("hide");
+            $("#dstaddr").textbox("disable");
+            $("#dstmask").textbox("disable");
+        }
+    });
+    
+    $("#dstaddr").textbox({
+        fieldLabel:$.su.CHAR.ACCESS_CONTROL.IP,
+        cls:"inline-block",
+        inputCls:'m',
+        vtype:"ip"
+    });
+    
+    $("#dstmask").textbox({
+        fieldLabel:null,
+        cls:"inline-block",
+        inputCls:'s',
+        vtype:{
+            vtype: "number",
+            max: 32,
+            min: 1
+        }
+    });*/
+
+    $("#srcIf").combobox({
+        fieldLabel:$.su.CHAR.ACCESS_CONTROL.SRCIF,
+        allowBlank:false,
+        items:[
+			{name:"---",value:"---"}
+        ]
+    });
+
+	$("#destIf").combobox({
+        fieldLabel:$.su.CHAR.ACCESS_CONTROL.DSTIF,
+        allowBlank:false,
+        items:[
+			{name:"---",value:"---"}
+        ]
+    });
+
+    $("#time").combobox({
+        fieldLabel:$.su.CHAR.ACCESS_CONTROL.TIME,
+        items:[
+            {name:"Any",value:"Any"}
+        ],
+        allowBlank:false
+    });
+
+    $("#position").textbox({
+        fieldLabel:$.su.CHAR.ACCESS_CONTROL.POSITION,
+        tips:$.su.CHAR.ACCESS_CONTROL.OPTIONAL,
+        vtype: {
+            vtype:"number",
+            min: 1
+        }
+    });
+
+
+
+    var serviceItem = [];
+    var interfaceItem = [];
+    var interfaceValue = [];
+	var interfaceValue_vnet = [];
+    var groupItem = [];
+    var rev_groupItem = [];
+    var timeItem = [];
+    var reload_constant_data = true;
+	var srcIfItem = [];
+	var destIfItem = [];
+	var realData = [];
+
+    var serviceProxy = new $.su.Proxy({
+        url: $.su.url('/admin/service?form=service'),
+        async: false
+    });
+
+    var interfaceProxy = new $.su.Proxy({
+            url: $.su.url('/admin/interface?form=status'),
+            async: false
+    });
+
+    var groupProxy = new $.su.Proxy({
+        url: $.su.url('/admin/ipgroup?form=ipgroup_list'),
+        async: false
+    });
+
+    var timeProxy = new $.su.Proxy({
+        url:$.su.url('/admin/time_mngt?form=timeobj_list'),
+        async:false
+    });
+
+	var lanProxy = new $.su.Proxy({
+        url:$.su.url('/admin/dhcps?form=lan'),
+        async:false
+    });
+
+	var ruleGrid = $("#actl_grid").grid({
+		maxRulesProperty: "max_rules",
+		editor:{
+			content:"#own_editor",
+			fields:[
+				{name:"name"},
+				{name:"policy"},
+				{name:"service"},
+				{name:"zone"},
+				{name:"src"},
+				{name:"dest"},	
+				{name:"srcIf"},
+				{name:"destIf"},
+				{name:"time"},
+				{name:"user"}
+			],
+			validator:function(){
+				var name=$("#rule_name").textbox('getValue');
+				var nameList = $("#actl_grid").grid('getStore').data;
+				var editingId = $($("#actl_grid").grid('getEditor')).editor("getEditingId");
+				var modify_flag = 0;
+				for(var i=0;i<nameList.length;i++){
+					if(editingId == nameList[i].key){
+						modify_flag = 1;
+						continue;
+					}
+					if(name == nameList[i].name){
+						$($("#actl_grid").grid("getEditor")).form('setError',$.su.CHAR.ACCESS_CONTROL.ERR1);//"您输入的名称已经存在，请重新输入");
+						return false;
+					}
+				}
+				var position = $("#position").textbox('getValue');
+				//console.log(position);
+				var reg=new RegExp("^[0-9]*$");
+				if(position !="" && !reg.test(position)){
+					$($("#actl_grid").grid("getEditor")).form('setError',$.su.CHAR.ACCESS_CONTROL.ERR2);//"请保持为空或者输入数字");
+					return false;
+				}
+				if(position!="")
+				{
+					position = parseInt(position);
+					/*
+					if (position <= defaultRulesCnt){
+						$($("#actl_grid").grid("getEditor")).form('setError',"只能添加到默认规则后面");
+						return false;
+					}
+					*/
+					if(position<1 || position>nameList.length+1 || position > maxrules) 
+					{
+						$($("#actl_grid").grid("getEditor")).form('setError',$.su.CHAR.ACCESS_CONTROL.ERR3);//"输入数字超过范围");
+						return false;
+					}
+					if(modify_flag)
+					{
+						if(position > nameList.length || position < 1)
+						{
+							$($("#actl_grid").grid("getEditor")).form('setError',$.su.CHAR.ACCESS_CONTROL.ERR3);//"输入数字超过范围");
+							return false;
+						}
+					}
+					if(position == nameList.length+1){
+						$("#position").textbox('setValue',"");
+					}
+				}
+				return true;
+			}
+		},
+		store:{
+			proxy:actl_proxy,
+			fields:[
+				{name:"name"},
+				{name:"policy"},
+				{name:"service"},
+				{name:"zone"},
+				{name:"src"},
+				{name:"dest"},	
+				{name:"srcIf"},
+				{name:"destIf"},	
+				{name:"time"},
+				{name:"user"},
+				{name:"t_label"},
+			],
+			autoLoad:true
+		},
+		paging:[],
+		columns:[
+			 {
+                xtype: "checkcolumn",
+                width: $.su.CHAR.SETTING.LINE_BACKUP.CHECK_COLUMN_WIDTH
+            },
+            {
+                xtype: "rownumberer",
+                width: $.su.CHAR.SETTING.LINE_BACKUP.ROW_NUMBER_WIDTH
+            },  
+			{
+				text:$.su.CHAR.ACCESS_CONTROL.NAME,
+				width:60,
+				dataIndex:"name"
+			},
+			{
+				text:$.su.CHAR.ACCESS_CONTROL.SRC,
+				width:80,
+				dataIndex:"src",
+				renderer:function(data){
+					if (data.substr(data.length - 4, data.length) == "_REV"){
+						return '!' + data.substr(0, data.length-4);
+					}
+					else{
+						return data;
+					}
+				}
+			},
+			{
+				text:$.su.CHAR.ACCESS_CONTROL.DST,
+				width:80,
+				dataIndex:"dest",
+				renderer:function(data){
+					if (data.substr(data.length - 4, data.length) == "_REV"){
+						return '!' + data.substr(0, data.length-4);
+					}
+					else{
+						return data;
+					}
+				}
+			},
+			{
+				text:$.su.CHAR.ACCESS_CONTROL.SRCIF,
+				width:80,
+				dataIndex:"srcIf",
+				renderer:function(data){
+					if (data.substr(data.length - 4, data.length) == "_REV"){
+						return '!' + data.substr(0, data.length-4);
+					}
+					else{
+						return data;
+					}
+				}
+			},
+			{
+				text:$.su.CHAR.ACCESS_CONTROL.DSTIF,
+				width:80,
+				dataIndex:"destIf",
+				renderer:function(data){
+					if (data.substr(data.length - 4, data.length) == "_REV"){
+						return '!' + data.substr(0, data.length-4);
+					}
+					else{
+						return data;
+					}
+				}
+			},
+			{
+				text:$.su.CHAR.ACCESS_CONTROL.POLICY,
+				width:50,
+				dataIndex:"policy",
+				renderer:function(data){
+					if(data == "ACCEPT"){
+						return $.su.CHAR.ACCESS_CONTROL.ACCEPT;
+					}
+					else if(data == "DROP")
+					{
+						return $.su.CHAR.ACCESS_CONTROL.BLOCK;
+					}
+				}
+			},
+			{
+				text:$.su.CHAR.ACCESS_CONTROL.SERVICE,
+				width:50,
+				dataIndex:"service"
+			},
+			{
+				text:$.su.CHAR.ACCESS_CONTROL.ZONE,
+				width:90,
+				dataIndex:"zone",
+				renderer:function(data, index, tdata){
+					var vdata = [];
+					for (var i = 0; i < data.length; i++) {
+						if($.su.func.isLan(data[i])){
+							vdata.push("LAN->WAN");
+						}
+						else if ("VNET" == data[i]){
+							vdata.push("LAN->LAN");
+						}
+						else if ("ALL" == data[i]){
+							vdata.push("ALL");
+						}
+						else {
+							vdata.push("["+tdata.t_label[i]+"] IN");
+						}
+					}
+					return vdata;
+				}
+			},
+			{
+				text:$.su.CHAR.ACCESS_CONTROL.TIME,
+				width:80,
+				dataIndex:"time"
+			},
+			{
+				xtype: "settings",
+                width: $.su.CHAR.SETTING.IMB.SETTING_WIDTH
+			}
+		],
+		operation: 'prompt|add|delete'
+	}).on("ev_load", function(e,data, others){
+		defaultRulesCnt = 0;
+		for (var i = 0; i < data.length; i++){
+			if (data[i].user == "0"){
+				$(actl_grid).grid('disableRow',i);
+				defaultRulesCnt = defaultRulesCnt + 1;
+			}
+		}
+		if(others)/* 閫氳繃json閲岀殑others鍙傛暟浼犻€掑姩鎬侀榾鍊?*/
+		{
+			/*淇濈暀涓嶇敤*/
+			//console.log(others.max_rules);
+            maxrules = others.max_rules;
+		}
+
+        if (reload_constant_data) {
+            reload_constant_data = false;
+
+            serviceItem = [];
+            serviceProxy.read({}, function(data){                     
+                var i;
+                //serviceItem.push({name:$.su.CHAR.ACCESS_CONTROL.ALL_SERVICE,value:"ALL"});
+                for (i=0; i<data.length; i++){                       
+                    serviceItem.push({name:data[i].name,value:data[i].name}); 
+                }  
+                var combobox = aclEditor.find('#service');
+                combobox.combobox('loadData',serviceItem); 
+            });
+
+            interfaceItem = [];
+            interfaceValue = [];
+            interfaceValue_vnet = [];
+			var interface_lan;
+			var interface_vnet;
+            interfaceProxy.read({}, function(data){                     
+                var i;
+                if(data.normal.length > 0 || data.vpn.length > 0){
+                    interfaceItem.push({name:"ALL",value:"ALL"});
+					interfaceValue_vnet.push("ALL");
+                }
+                for (i=0; i<data.normal.length; i++){
+					if ($.su.func.isLan(data["normal"][i].t_name)) {
+						if (!interface_lan) {
+							interfaceItem.push({name:"LAN->WAN",value:"LAN"});
+							interfaceValue.push("LAN");
+							interfaceValue_vnet.push("LAN");
+							interface_lan = "LAN";
+						}
+						if (!interface_vnet) {
+							interfaceItem.push({name:"LAN->LAN",value:"VNET"});
+							interfaceValue.push("VNET");
+							interface_vnet = "VNET";
+						}
+					} else {
+						interfaceItem.push({name:"["+data.normal[i].t_label+"] IN",value:data.normal[i].t_name});
+						interfaceValue.push(data.normal[i].t_name);
+						interfaceValue_vnet.push(data.normal[i].t_name);
+					}
+                }
+                for (i=0; i<data.vpn.length; i++){                       
+                    interfaceItem.push({name:"["+data.vpn[i].t_label+"] IN",value:data.vpn[i].t_name}); 
+                    interfaceValue.push(data.vpn[i].t_name); 
+					interfaceValue_vnet.push(data.vpn[i].t_name);
+                }  
+                var combobox = aclEditor.find('#zone');
+                combobox.combobox('loadData',interfaceItem); 
+            });
+
+			srcIfItem = [];
+			destIfItem = [];
+			realData = [];
+			lanProxy.read({}, function(data){
+				if (data.length > 0)
+				{
+					realData = data;
+				}
+				else
+				{
+					realData[0] = data;
+				}
+				for (i = 0; i < realData.length; i++)
+				{
+					srcIfItem.push({name:realData[i].name, value:realData[i].name});
+					destIfItem.push({name:realData[i].name, value:realData[i].name});
+				}
+				srcIfItem.push({isLine:true});
+				destIfItem.push({isLine:true});
+				for (i = 0; i < realData.length; i++)
+				{
+					srcIfItem.push({name:"!"+realData[i].name, value:realData[i].name+"_REV"});
+					destIfItem.push({name:"!"+realData[i].name, value:realData[i].name+"_REV"});
+				}
+				var combobox = aclEditor.find('#srcIf');
+                combobox.combobox('loadData',srcIfItem);
+                var combobox = aclEditor.find('#destIf');
+                combobox.combobox('loadData',destIfItem);
+			});
+             
+            groupItem = [];
+            rev_groupItem = [];  
+            groupProxy.read({}, function(data){                     
+                var i,flag=0;
+                for (i = 0; i < data.length; i++){
+                    groupItem.push({name:data[i].name,value:data[i].name});
+                    if(data[i].name == "IPGROUP_ANY")
+                    {
+                        flag = 1;
+                        continue;
+                    }
+                    //rev_groupItem.push({name:"!"+data[i].name,value:data[i].name+"_REV"});
+                }
+                groupItem.push({isLine:true});
+                for (i = 0; i < data.length; i++){
+                    if(data[i].name == "IPGROUP_ANY")
+                    {
+                        flag = 1;
+                        continue;
+                    }
+                    rev_groupItem.push({name:"!"+data[i].name,value:data[i].name+"_REV"});
+                }
+                if(flag == 0)
+                {
+                    groupItem.push({name:"IPGROUP_ANY",value:"Any"});
+                    groupItem.push({isLine:true});
+                }
+                    
+                //groupItem.push({name:"--------",value:""});
+                for(i=0;i<rev_groupItem.length;i++){
+                    groupItem.push(rev_groupItem[i]);
+                }
+                if(data.length > 1){
+                    groupItem.push({isLine:true});
+                }
+                
+                groupItem.push({name:"Me", value:"Me"});
+                groupItem.push({name:"!Me", value:"Me_REV"});
+                var combobox = aclEditor.find('#src');
+                combobox.combobox('loadData',groupItem);
+                var combobox = aclEditor.find('#dest');
+                combobox.combobox('loadData',groupItem);
+                //console.log(data);
+            });
+
+            timeItem = [];
+            timeProxy.read({},function(data){
+                for (i=0; i<data.length; i++){
+                    timeItem.push({name:data[i].entry_name,value:data[i].entry_name});                    
+                }
+                var combobox = aclEditor.find('#time');
+                combobox.combobox('loadData',timeItem);
+            });
+        }
+	}).on("ev_insert",function(){
+		ruleGrid.grid("getStore").load();
+	}).on("ev_remove", function(){
+        ruleGrid.grid("getStore").load();
+	}).on("ev_update", function(){
+        ruleGrid.grid("getStore").load();
+    });
+
+    var aclEditor = $($(actl_grid).grid("getEditor"));
+
+
+   	aclEditor.on("ev_startEdit", function(e, index, key){
+   		if (index != "add")
+   		{
+   			$("#rule_name").textbox("disableStyle");
+   			$("#position").textbox("setValue", "");
+   		}
+   		else
+   		{
+   			$("#rule_name").textbox("enableStyle");
+   			$("#position").textbox("setValue", "");
+   		}
+
+   		if("ALL" == $("#zone").combobox("getValue")){
+   			$("#zone").combobox("disableItem", interfaceValue);
+   		}else if ("VNET" == $("#zone").combobox("getValue")){
+			$("#zone").combobox("disableItem", interfaceValue_vnet);
+		}else{
+   			$("#zone").combobox("enableItem", interfaceValue);
+			$("#zone").combobox("enableItem", interfaceValue_vnet);
+			}
+
+		if("VNET" == $("#zone").combobox("getValue")){
+			// SRC/DST: IP Group
+			$("#src").combobox("disable");
+			$("#src").combobox("hide");
+			$("#dest").combobox("disable");
+			$("#dest").combobox("hide");
+			// SRC/DST: LAN Network
+			$("#srcIf").combobox("enable");
+			$("#srcIf").combobox("show");
+			$("#destIf").combobox("enable");
+			$("#destIf").combobox("show");
+		}else{
+			// SRC/DST: IP Group
+			$("#src").combobox("enable");
+			$("#src").combobox("show");
+			$("#dest").combobox("enable");
+			$("#dest").combobox("show");
+			// SRC/DST: LAN Network
+			$("#srcIf").combobox("disable");
+			$("#srcIf").combobox("hide");
+			$("#destIf").combobox("disable");
+			$("#destIf").combobox("hide");
+		}
+
+   		//console.log($("#zone"));
+   		
+   	});
+
+   	var zone = aclEditor.find('.combobox-value[name=zone]');
+	var src = aclEditor.find('.combobox-value[name=src]');
+	var dest = aclEditor.find('.combobox-value[name=dest]');
+	var srcIf = aclEditor.find('.combobox-value[name=srcIf]');
+	var destIf = aclEditor.find('.combobox-value[name=destIf]');
+	
+   	$(zone).on("ev_change", function(e, oldValue, newValue){
+		//console.log(newValue, oldValue);
+		//console.log($("#zone"));
+		if(aclEditor.editor("isEditing")){
+			$(zone).combobox("enableItem", interfaceValue);
+			$(zone).combobox("enableItem", interfaceValue_vnet);
+			if("ALL" == newValue[0]){
+				$(zone).combobox("disableItem", interfaceValue);
+				$(zone).combobox("setValue", "ALL");
+			}
+			else if(newValue.includes("VNET")){
+				$(zone).combobox("disableItem", interfaceValue_vnet);
+				$(zone).combobox("setValue", "VNET");
+			}
+
+			if(newValue.includes("VNET")){
+				// SRC/DST: IP Group
+				$(src).combobox("disable");
+				$(src).combobox("hide");
+				$(dest).combobox("disable");
+				$(dest).combobox("hide");
+				// SRC/DST: LAN Network
+				$(srcIf).combobox("enable");
+				$(srcIf).combobox("show");
+				$(destIf).combobox("enable");
+				$(destIf).combobox("show");
+			}
+			else{
+				// SRC/DST: IP Group
+				$(src).combobox("enable");
+				$(src).combobox("show");
+				$(dest).combobox("enable");
+				$(dest).combobox("show");
+				// SRC/DST: LAN Network
+				$(srcIf).combobox("disable");
+				$(srcIf).combobox("hide");
+				$(destIf).combobox("disable");
+				$(destIf).combobox("hide");
+			}
+		}
+		
+		//console.log($("#zone").combobox("getValue"));
+	});
+
+     var acl_help = new $.su.Help({
+        container: "div#actl_help",
+        content: ["ACL_LIST"] });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,205 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>NAT DMZ</title>
+<style type="text/css">
+</style>
+</head>
+
+<body>
+<div class="func-container">
+    <div id="dmz_list">
+        <div id="dmz_grid">
+        </div>
+    </div>
+
+    <div id="dmz_list_help"></div>
+</div>
+
+<script type="text/javascript">
+try{
+    $
+}catch(e){
+    location.href = "/";
+};
+
+$(document).ready(function(e){
+    var maxIpMask;
+    var URL_DMZ_LIST = $.su.url("/admin/nat?form=dmz");
+
+
+	$("#dmz_list").panel({
+		title: $.su.CHAR.DMZ.MAPPING_LIST,
+		collapsible: false
+	});
+
+	var naptListProxy = new $.su.Proxy({
+		url: URL_DMZ_LIST
+	});
+
+
+	var naptGrid = $("#dmz_grid").grid({
+        editor: {
+			validator:function(){
+				var editor  = $(naptGrid.grid("getEditor"));
+				var name    = editor.find(".text-text[name=name]").textbox("getValue");
+				var store 	= naptGrid.grid("getStore");
+				var keyProperty = store.keyProperty;
+				var grid_array  = store.data;
+				
+				var editingId = editor.editor("getEditingId"); 
+				if($.isArray(grid_array) && grid_array.length > 0)
+				{
+					for(var k = 0; k < grid_array.length;k++)
+					{
+						var data = grid_array[k];
+						
+						if(data[keyProperty] == editingId)
+						{
+							continue;
+						}
+						//name conflict
+						else if(data["name"] == name)
+						{
+							//$($("#naptGrid").grid("getEditor")).form('setError',  $.su.CHAR.ERROR['00000076']);
+							//console.log('conflict name');
+							$($("div#dmz_grid").grid("getEditor")).form('setError', $.su.CHAR.NAPT.ERR1);//"规则名称与已有条目冲突！");
+							$('input#name').textbox('setError');
+							return false;
+						}
+					}
+				}
+				return true;
+			},
+            content:"default",
+            fields: [
+                {name: "name"},
+                {name: "interface"},
+                {name: "ipaddr"},
+                {name: "enable"}
+            ]
+        },
+		store:{
+			proxy: naptListProxy,
+			fields: [
+				{name: "name"},
+		 		{name: "interface"},
+		 		{name: "ipaddr"},
+                {name: "enable"},
+                		{name: "t_label"}
+			],
+			autoLoad: true
+		},
+		paging:[],
+		columns: [
+			{
+				xtype: "checkcolumn",
+				width: $.su.CHAR.SETTING.DMZ.CHECK_COLUMN_WIDTH
+			},
+			{
+				xtype: "rownumberer",
+				width: $.su.CHAR.SETTING.DMZ.ROW_NUMBER_WIDTH
+			},
+			{
+				text: $.su.CHAR.DMZ.NAME,
+				width: $.su.CHAR.SETTING.DMZ.NAME_WIDTH,
+				dataIndex: "name",
+				editor: {
+				    xtype: "textbox",
+				    allowBlank: false,
+            		vtype:"name",
+				    maxLength:32
+				}
+			},
+			{
+				text: $.su.CHAR.DMZ.INTERFACE,
+				width: $.su.CHAR.SETTING.DMZ.INTERFACE_WIDTH,
+				dataIndex: "interface",
+				editor: {
+					xtype: "combobox",
+					allowBlank: false,
+					multiSelect: true,			
+					vtype:"string_visible_allow_blank",
+					items:[
+						{name:"---",value:'---'}
+					]
+				},
+				renderer: function(dd, jindex, data) {
+					return data.t_label ? data.t_label : dd;
+				}
+			},
+			{
+				text: $.su.CHAR.DMZ.IP_RANGE,
+				width: $.su.CHAR.SETTING.DMZ.IP_RANGE_WIDTH,
+				dataIndex: "ipaddr",
+				editor: {
+				    xtype: "textbox",
+				    text: $.su.CHAR.DMZ.IP_RANGE_IP,
+				    allowBlank: false,
+				    validator: function(v){
+				        if((new $.su.vtype('ip').validate(v) === true)){
+				            return true;
+				        }
+				        return $.su.CHAR.VTYPETEXT.IP;
+				    },
+				    maxLength:32
+				}
+			},
+            {
+                text: $.su.CHAR.DMZ.STATUS,
+                width: $.su.CHAR.SETTING.DMZ.STATUS_WIDTH,
+                xtype: "statuscolumn",
+                dataIndex: "enable",
+                editor: {
+                    xtype: "checkbox",
+                    fieldLabel: '',
+                    items: [
+                        {boxlabel: $.su.CHAR.DMZ.ENABLE_THIS_ENTRY, inputValue:'on', uncheckedValue:'off',checked:true}
+                    ]
+                }
+            },
+            {
+                xtype: "settings",
+                width: $.su.CHAR.SETTING.DMZ.SETTING_WIDTH
+            }
+		],
+		operation: 'prompt|add|delete'
+	}).on("ev_load", function(e,data, others){
+			if(others)/* 通过json里的others参数传递动态阀值 */
+			{
+				maxrules = others.max_rules;
+				/*保留不用*/
+			}
+			/*发送form请求,获取interface列表.用于显示于local_binding下拉框*/
+			var interfaceItem=[];
+			var interfaceProxy = new $.su.Proxy({
+					url: $.su.url('/admin/interface?form=status'),
+					async: false
+			});		
+			interfaceProxy.read({}, function(data){					
+						var i
+						for (i=0; i<data.normal.length; i++){
+							if(!$.su.func.isLan(data.normal[i].t_name)){
+							interfaceItem.push({name:data.normal[i].t_label,value:data.normal[i].t_name});						
+							}
+													
+						}
+						for (i=0; i<data.vpn.length; i++){						
+							interfaceItem.push({name:data.vpn[i].t_label,value:data.vpn[i].t_name});	
+						}	
+			});	
+			var editor = $("div#dmz_grid").grid("getEditor");
+			var combobox = $(editor).find('.combobox-value[name=interface]');
+				combobox.combobox('loadData',interfaceItem);
+		});
+    var helpDmzGrid = new $.su.Help({
+        container: "div#dmz_list_help",
+        content: "NAT_DMZ"
+    });
+
+});
+</script>
+</body>
+
+</html>

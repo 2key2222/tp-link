@@ -1,0 +1,231 @@
+#!/bin/sh
+
+LUA_CMD="${LUA_CMD:-call_vlan}"
+
+call_lua()
+{
+	lua -e "require 'luci.model.vlan'.${LUA_CMD}($1, $2)"
+}
+
+call_lua_out()
+{
+	if [ -n "$3" ]; then
+		lua -e "print(require 'luci.model.vlan'.${LUA_CMD}($1, $2).$3 or \"\")"
+	else
+		lua -e "r = require 'luci.model.vlan'.${LUA_CMD}($1, $2);
+				print((r and next(r)) and require 'luci.json'.encode(r) or \"{}\")"
+	fi
+}
+
+# vid ports
+add_vlan()
+{
+	local name="${3:-vlan$1}"
+	local desc="${4:-}"
+
+	if [ -n "$1" -a -n"$2" ]; then
+		call_lua "\"save_vlan_config\"" "{vlan=\"$1\", ports=\"$2\", name=\"$name\", desc=\"$desc\"}"
+		if [ -n "$5" ] ; then
+			loc_vlan "$1" "$5"
+		fi
+	fi
+}
+
+# vid ports
+upd_vlan()
+{
+	if [ -n "$1" ]; then
+		local ports="$2"
+		local name="$3"
+		local desc="$4"
+
+		[ -z "$ports" ] && { ports="$(call_lua_out "\"read_vlan_config\"" "\"$1\"" "ports")"; }
+		[ -z "$name" ] && { name="$(call_lua_out "\"read_vlan_config\"" "\"$1\"" "name")"; }
+		[ -z "$desc" ] && { desc="$(call_lua_out "\"read_vlan_config\"" "\"$1\"" "desc")"; }
+
+		call_lua "\"save_vlan_config\"" "{vlan=\"$1\", ports=\"$ports\", name=\"$name\", desc=\"$desc\"}"
+		if [ -n "$5" ] ; then
+			loc_vlan "$1" "$5"
+		fi
+	fi
+}
+
+# vid
+del_vlan()
+{
+	if [ -n "$1" ]; then
+		call_lua "\"delete_vlan_config\"" "\"$1\""
+	fi
+}
+
+# vid
+dump_vlan_conf()
+{
+	if [ -n "$1" ]; then
+		call_lua_out "\"read_vlan_config\"" "\"$1\"" "$2"
+	fi
+}
+
+# count
+get_vlan()
+{
+	if [ -n "$1" ]; then
+		call_lua_out "\"get_unused_vlan\"" "\"$1\""
+	fi
+}
+
+# vid user
+loc_vlan()
+{
+	if [ -n "$1" ]; then
+		if [ -n "$2" ]; then
+			call_lua "\"add_user_to_vlan\"" "{vlan=\"$1\", iface=\"$2\"}"
+		else
+			call_lua "\"del_user_of_vlan\"" "{vlan=\"$1\"}"
+		fi
+	fi
+}
+
+# vid cport
+cpu_vlan()
+{
+	if [ -n "$1" ]; then
+		if [ -n "$2" ]; then
+			call_lua "\"add_cport_to_vlan\"" "{vlan=\"$1\", port=\"$2\"}"
+		else
+			call_lua "\"del_cport_from_vlan\"" "{vlan=\"$1\"}"
+		fi
+	fi
+}
+
+
+# port
+clean_port()
+{
+	if [ -n "$1" ]; then
+		call_lua "\"deattach_port\"" "\"$1\""
+	fi
+}
+
+# port type pvid tag
+set_port_conf()
+{
+	if [ -n "$1" ]; then
+		local type="$2"
+		local pvid="$3"
+		local tag="$4"
+
+		[ -z "$type" ] && { type="$(call_lua_out "\"read_port_config\"" "\"$1\"" "type")"; }
+		[ -z "$pvid" ] && { pvid="$(call_lua_out "\"read_port_config\"" "\"$1\"" "pvid")"; }
+		[ -z "$tag" ] && { tag="$(call_lua_out "\"read_port_config\"" "\"$1\"" "tag")"; }
+
+		call_lua "\"save_port_config\"" "{port=\"$1\", type=\"$type\", pvid=\"$pvid\", tag=\"$tag\"}"
+	fi
+}
+
+# port
+dump_port_conf()
+{
+	if [ -n "$1" ]; then
+		call_lua_out "\"read_port_config\"" "\"$1\"" "$2"
+	fi
+}
+
+usage()
+{
+	echo 'Usage:
+		vlanctrl vlan_add VID PORTS NAME DESC USER
+		vlanctrl vlan_upd VID PORTS NAME DESC USER
+		vlanctrl vlan_user VID USER
+		vlanctrl vlan_cpu VID CPORT
+		vlanctrl vlan_del VID
+		vlanctrl vlan_get COUNT
+		vlanctrl vlan_dump VID [ OPTION ]
+		vlanctrl port_clean PORT
+		vlanctrl port_pvid PORT PVID
+		vlanctrl port_conf PORT TYPE VID TAG
+		vlanctrl port_dump PORT [ OPTION ]
+		vlanctrl start
+		vlanctrl commit
+		vlanctrl load
+		vlanctrl prio_get VID
+	' >> /dev/console
+}
+
+local cmd="$1"
+shift
+
+param_check()
+{
+	local cmd="$1"
+	local param_need="$2"
+	local param_cnt="$(($#-2))"
+
+	if [ $param_cnt -ne $param_need ] ;
+	then
+		usage
+		exit 1
+	fi
+}
+
+#lock
+case $cmd in
+	"vlan_add")	# vid ports name desc user
+		param_check "$cmd" "2" "$1" "$2"
+		add_vlan "$@"
+		;;
+	"vlan_upd") # vid ports name desc user
+		param_check "$cmd" "2" "$1" "$2"
+		upd_vlan "$@"
+		;;
+	"vlan_user") # vid user
+		param_check "$cmd" "1" "$1"
+		loc_vlan "$@"
+		;;
+	"vlan_cpu") # vid cport
+		param_check "$cmd" "1" "$1"
+		cpu_vlan "$@"
+		;;
+	"vlan_del")	# vid
+		param_check "$cmd" "1" "$@"
+		del_vlan "$@"
+		;;
+	"vlan_get") # count
+		param_check "$cmd" "1" "$@"
+		get_vlan "$@"
+		;;
+	"vlan_dump") # vid
+		param_check "$cmd" "1" "$1"
+		dump_vlan_conf "$@"
+		;;
+	"port_clean") # port
+		param_check "$cmd" "1" "$@"
+		clean_port "$@"
+		;;
+	"port_pvid") # port vid
+		param_check "$cmd" "2" "$@"
+		set_port_conf "$1" "" "$2" ""
+		;;
+	"port_conf") # port type vid tag
+		param_check "$cmd" "4" "$@"
+		set_port_conf "$@"
+		;;
+	"port_dump") # port
+		param_check "$cmd" "1" "$1"
+		dump_port_conf "$@"
+		;;
+	"commit")
+		lua -e "require 'luci.model.vlan'.apply_configs()"
+		;;
+	"load")
+		lua -e "require 'luci.model.vlan'.load_configs()"
+		;;
+	"prio_get") # vid
+		param_check "$cmd" "1" "$@"
+		dump_vlan_conf "$1" "prio"
+		;;
+	*)
+		usage
+		;;
+esac
+#unlock

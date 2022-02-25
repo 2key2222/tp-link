@@ -1,0 +1,1229 @@
+<!--<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="format-detection" content="telephone=yes" />
+    <meta charset="utf-8"/>
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Cache-Control" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+-->
+    
+	<script type="text/javascript">
+    //与preview_wportal页面同步但不会使用lan.js
+    var GlobalStr = new Array(
+        "",
+        "Logging in... Please wait.",
+        "Incorrect username and password.",
+        "Authentication is forbidden at this time. Please try again later.",
+		"You are not authorized to authenticate using this MAC address!",
+		"This username is being used by the maximum number of users.",
+		"This username does not exist.",
+        "This user account has expired.",
+        "Authentication failed",
+		"Login successful.",
+		"The user is forbidden.",
+		"Session timed out. Please log in again.",
+		"Failed to send request to the server. Please try again.",
+		"You have been logged out. Please log in again.",
+        "The username is forbidden.",
+        "Incorrect authentication type.",
+        "Connecting the outside authentication server.",
+        "Username",
+        "Password",
+        "Login successful.",
+        "Time Online:",
+        "Expire Time:",
+        "Note:",
+        "Connecting to the internet… Please wait.",
+        "Choose the authentication type",
+        "Message Authentication",
+        "Web Authentication",
+        "微信认证",
+        "Login",
+        "Click the button below to get online.",
+        "Onekey Online",
+        "Offline",
+        "Authentication is about to expire",
+        "Username and password are required.",
+        0,0);
+    /*var wportalPara = {
+        "token":"dc7e11cadff619f15fdfdf563143461a",
+        "mac":"11-22-33-44-55-66",
+        "ip":"192.168.1.100",
+        "url":"http://wportal.tplogin.cn",
+        "gw_address":"192.168.1.1",
+        "gw_port":2060,
+        "remindFlag":1,                  //0 登录页面 1 提醒页面
+        "wportal_page_type":"local",             // local 本地认证页面， remote 外部认证页面
+        "page_title":"logonTitle",            //本地登录页面标题
+        "wel_info":"logonBanner",          //本地登录页面欢迎信息
+        "copyright":"logonCopyright",    //本地登录页面版权信息
+        "background":"./background.jpg",   //背景图片
+        "external_url":"",                //外部登录页面链接
+        "remind_type":"local",            //local 本地， remote 外部提醒页面
+        "remind_page_title":"remindTitle",     //提醒页面标题
+        "remind_page_content":"remindContent", //提醒页面内容
+        "remindGoUrl":"",                //外部提醒页面链接
+        "authtype":"webwechat",                //web onekey wechat
+        "status":0,                      //当前用户认证状态
+        "onlineTime":0,                  //在线时长
+        "expireTime":"1970年01月01日"                   //到期时间
+    };*/
+
+	function asctochar(high, low)
+	{
+		var connect = 0;
+		if ( high >= '0' && high <= '9' )
+		{
+			high = high.charCodeAt() - 48; 
+		}
+		if ( high >= 'A' && high <= 'F' )
+		{
+			high = high.charCodeAt() - 55;
+		}
+		if ( low >= '0' && low <= '9' )
+		{
+			low = low.charCodeAt() - 48; 
+		}
+		if ( low >= 'A' && low <= 'F' )
+		{
+			low = low.charCodeAt() - 55;
+		}
+		connect = high*16+low;
+		return connect;
+	}
+
+	function strASCdecode(sourceId)
+	{
+		var tempstr = sourceId;/*getVar(sourceId).value*/
+		var index = 0;
+		var ptr = 0;
+		var tempDecode = '';
+		var high, low, high1,low1,high2,low2,inter1, inter2, inter;
+		var charcode = 0;
+		for ( index = 0; index <  tempstr.length; )
+		{
+			high = tempstr.slice(index,index+1);
+			low  = tempstr.slice(index+1,index+2);
+			inter = asctochar(high,low);
+			if ( 0 <= inter && inter <= 0x007f )
+			{
+				tempDecode += String.fromCharCode(inter);
+				index += 2;
+				continue;
+			}
+			if ( 192 <= inter && inter <= 223 )
+			{
+				high1 = tempstr.slice(index+2,index+3);
+				low1 = tempstr.slice(index+3,index+4);
+				inter1 = asctochar(high1,low1);
+				charcode = ((inter-192)<<6) + (inter1-128);
+				tempDecode += String.fromCharCode(charcode);
+				index += 4;
+				continue;
+			}
+			if ( 224<= inter && inter <= 239 )
+			{
+				high1 = tempstr.slice(index+2,index+3);
+				low1 = tempstr.slice(index+3,index+4);
+				high2 = tempstr.slice(index+4,index+5);
+				low2 = tempstr.slice(index+5,index+6);
+				inter1 = asctochar(high1,low1);
+				inter2 = asctochar(high2,low2);
+				charcode = ((inter-224)<<12)+((inter1-128)<<6)+(inter2-128);
+				tempDecode += String.fromCharCode(charcode);
+				index += 6;
+				continue;
+			}
+			else
+			{
+				tempDecode = sourceId;
+				break;
+			}
+		}
+		return tempDecode;
+	}
+	
+    var isAccess        = false;
+    var isOneButton     = false;
+    var countDown       = 5;
+    var accessSeconds   = 0;
+    
+	var remindFlag		= parseInt(wportalPara.remindFlag,10);
+    var token           = wportalPara.token;
+    var mac             = wportalPara.mac;
+    var ip              = wportalPara.ip
+    var url              = wportalPara.url
+    var gw_address      = wportalPara.gw_address
+    var gw_port         = wportalPara.gw_port
+    var gw_id           = wportalPara.gw_id
+	var logonType		= wportalPara.wportal_page_type;
+	//var logonTitle		= strASCdecode(wportalPara.page_title);
+    var logonTitle		= (wportalPara.page_title);
+	//var logonBanner		= strASCdecode(wportalPara.wel_info);
+    var logonBanner		= (wportalPara.wel_info);
+	//var logonCopyright	= strASCdecode(wportalPara.copyright);
+    var logonCopyright	= (wportalPara.copyright);
+	var background		= wportalPara.background;
+    var remoteGoUrl		= wportalPara.external_url;
+	var remindType		= wportalPara.remindType;
+	//var remindTitle		= strASCdecode(wportalPara.remind_page_title);
+    var remindTitle		= wportalPara.remind_page_title;
+	//var remindContent	= strASCdecode(wportalPara.remind_page_content);
+    var remindContent	= wportalPara.remind_page_content;
+	var remindGoUrl		= wportalPara.remindGoUrl;
+	var authtype		= wportalPara.authtype;
+	var logonTip		= parseInt(wportalPara.status,10);
+	var onlineTime		= parseInt(wportalPara.onlineTime,10);
+	var expireTime		= wportalPara.expireTime;
+    var webserver_port  = wportalPara.auth_port;
+  
+    var isModeSwitch    = false;
+    //var authModeList    = ["web-mode", "wechat-mode"];//"SMS-mode"
+    var wechatModeUrl   = "./?gw_address=" + gw_address + "&gw_port=" + gw_port + "&gw_id=" + gw_id + "&ip=" + ip + "&mac=" + mac + "&url=" + url + "&authtype=wechat";
+
+	
+	//logonTitle  		= logonTitle.replace(/&/ig,'&amp;');
+	//logonTitle  		= logonTitle.replace(/</ig,'&lt;');
+	//logonTitle  		= logonTitle.replace(/>/ig,'&gt;');
+	
+	logonBanner  		= logonBanner.replace(/&/ig,'&amp;');
+	logonBanner  		= logonBanner.replace(/</ig,'&lt;');
+	logonBanner  		= logonBanner.replace(/>/ig,'&gt;');
+	
+	logonCopyright  	= logonCopyright.replace(/&/ig,'&amp;');
+	logonCopyright  	= logonCopyright.replace(/</ig,'&lt;');
+	logonCopyright  	= logonCopyright.replace(/>/ig,'&gt;');
+	
+	//remindTitle  		= remindTitle.replace(/&/ig,'&amp;');
+	//remindTitle  		= remindTitle.replace(/</ig,'&lt;');
+	//remindTitle  		= remindTitle.replace(/>/ig,'&gt;');
+	
+	remindContent  		= remindContent.replace(/&/ig,'&amp;');
+	remindContent  		= remindContent.replace(/</ig,'&lt;');
+	remindContent  		= remindContent.replace(/>/ig,'&gt;');
+    
+	// var logonErrInfo = new Array(
+	// 	"",
+	// 	"正在登录，请稍候···",
+	// 	"用户名或者密码错误！",
+    //  "该时间段禁止认证，请稍候重试！",
+	// 	"您没有权限使用该MAC进行认证！",
+	// 	"该用户名已达认证用户上限！",
+	// 	"该用户不存在",
+    //  "用户已过期！",
+    //  "认证失败",
+	// 	"登录成功",
+    //  "该用户处于禁用状态！",
+	// 	"登录超时，请重新登录！",
+	// 	"请求服务器失败，请稍后再试",
+	// 	"退出登录成功，请重新登录",
+    //  "该用户名已被禁用！",
+	// 	"认证方式错误",
+	// 	"正在连接外部认证服务器",
+	// 	0,0);
+	var INFO_TIP_INIT         =    0;
+	var INFO_TIP_REFRESH      =    1;
+	var INFO_TIP_ERRCODE      =    2;
+	var INFO_TIP_INVALIDTIME  =    3;
+	var INFO_TIP_MAC_CONFLICT =    4;
+    var INFO_TIP_USERFULL     =    5;
+    var INFO_TIP_NOUSER       =    6;
+	var INFO_TIP_USEREXPIRE   =    7;
+    var INFO_TIP_AUTH_FAIL    =    8;
+	var INFO_TIP_SUCCESS      =    9;
+    var INFO_TIP_DISABLED     =    10;
+    var INFO_TIP_TIMEOUT      =    11;
+	var INFO_TIP_SERVERERR    =    12;
+	var INFO_TIP_LOGOUT       =    13;
+	var INFO_TIP_BLACKUSER    =    14;
+	var INFO_TIP_AUTHMODE_ERROR = 15;
+	var INFO_TIP_REMOTE_GOURL = 16;
+    
+    if(INFO_TIP_INIT == logonTip && "webwechat" == authtype){
+         isModeSwitch = true;
+    }else{
+        isModeSwitch = false;
+    }
+    
+	</script>
+	
+    <title>Login Auth</title>
+    <style>
+        html,body{
+            margin:0;
+            padding: 0;
+            height:100%;
+            border:none;
+            font-size:16px;
+            color: #444;
+            font-family: monospace, sans-serif;
+        }
+        body{background-color: #EEEEEE}
+        input::-ms-clear{
+            display:none;
+        }
+        input::-ms-reveal{
+            display:none;
+        }
+        #phone-wrapper{
+            width: 100%;
+            height: 100%;
+            position: relative;
+            min-width: 300px;
+            min-height: 400px;
+        }
+        #top-board{
+            position: relative;
+            width: 100%;
+            margin: 0 auto;
+        }
+        #title{
+            margin: 0 auto;
+            text-align: center;
+            font-size: 20px;
+            padding: 20px 5px 0;
+            color: #333333;
+			word-wrap:break-word;
+            overflow:hidden;
+            clear: both;
+        }
+
+        #custom-text{
+            position: absolute;
+            bottom: 0;
+            margin: 0 auto;
+            left: 0;
+            right: 0;
+            font-size: 14px;
+            padding: 15px;
+            text-align: center;
+            background-color: RGBA(33,33,33,0.6);
+            color: #EEEEEE;
+            display: none;
+        }
+        #header-background{
+            float: left;
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+            text-align:center;
+        }
+        .clearfix:after{
+            line-height: 0;
+            content : ".";
+            display: block;
+            height: 0;
+            visibility: hidden;
+            clear: both;
+        }
+        #bottom-board{
+            width: 100%;
+            padding: 20px 0;
+            background: #EEEEEE;
+        }
+        #bottom-board div{
+            text-align: center;
+        }
+
+        #login-widget{
+            display: none;
+            height: 120px;
+        }
+        #logout-widget{
+            display: none;
+            height: 120px;
+        }
+        #login-info{
+            font-size: 80%;
+        }
+        #login-tips{
+            color: #333333;
+        }
+
+        #login-tips.login-errors{
+            color: #ec4946;
+        }
+
+        #login-msg{
+            margin: 10px auto;
+        }
+        .login-inputs{
+            display: block;
+        }
+        .login-inputs a{
+            cursor: pointer;
+            position: relative;
+            left: -19px;
+            visibility: hidden;
+        }
+        .icon{
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            margin-top: 4px;
+            vertical-align: text-top;
+        }
+        .login-inputs input{
+            outline: none;
+            padding: 10px 20px;
+            border: 1px solid gray;
+            position: relative;
+            left: 12px;
+            width: 188px;
+        }
+        .login-inputs input:focus{
+            border-color: skyblue;
+        }
+        #login-user{
+            margin-bottom: 0;
+            -webkit-border-radius: 5px 5px 0 0;
+            -moz-border-radius: 5px 5px 0 0;
+            border-radius: 5px 5px 0 0;
+            border-bottom-color: #ccc;
+        }
+        #login-user:focus{
+            border-bottom-color: skyblue;
+        }
+        #login-pwd{
+            margin-top: 0;
+            -webkit-border-radius: 0 0 5px 5px;
+            -moz-border-radius: 0 0 5px 5px;
+            border-radius: 0 0 5px 5px;
+            border-top-style: none;
+        }
+        #login-pwd:focus{
+            border-top-style: solid;
+            margin-top: -1px;
+        }
+        #login-success{
+            font-size: 150%;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        #access-info-wrapper{
+            width: 100%;
+            font-size: 90%;
+        }
+        #access-info-wrapper .access-info{
+            width: 260px;
+            margin: 5px auto;
+            text-align: center;
+        }
+        .access-info-name{
+            display: inline-block;
+            width:90px;
+            font-weight: bold;
+        }
+        #onebutton-tips{
+            font-size: 90%;
+        }
+        #onebutton-tips.login-errors{
+            color: #ec4946;
+        }
+        #one-button{
+            width: 50px;
+            height: 50px;
+            line-height: 50px;
+            margin: 50px auto 0;
+            cursor: default;
+            background: #a0a0a0;
+            font-size: 30px;
+            color: #fcfcfc;
+            border-radius: 50%;
+            -webkit-transition: width 0.8s ease, border-radius 0.8s ease, background-color 0.3s ease;
+            -moz-transition: width 0.8s ease, border-radius 0.8s ease, background-color 0.3s ease;
+            -ms-transition: width 0.8s ease, border-radius 0.8s ease, background-color 0.3s ease;
+            -o-transition: width 0.8s ease, border-radius 0.8s ease, background-color 0.3s ease;
+            transition: width 0.8s ease, border-radius 0.8s ease, background-color 0.3s ease;
+        }
+        #one-button.clickable{
+            width: 220px;
+            font-size: 24px;
+            border-radius: 5px;
+            border: 1px solid skyblue;
+            background-color: skyblue;
+        }
+        #one-button.clickable:focus{
+            border-color: steelblue;
+        }
+        #one-button.clickable:active{
+            border-color: powderblue;
+        }
+        #one-button.clickable[disabled]{
+            background-color: #CACACA;
+            border-color: gray;
+        }
+        #log-button-wrapper{
+        }
+        #log-button{
+            padding: 10px 20px;
+            border-radius: 5px;
+            background: skyblue;
+            border: 1px solid skyblue;
+            outline: none;
+            color: whitesmoke;
+            width: 230px;
+            -webkit-appearance: none;
+        }
+        #log-button:focus{
+            border-color: steelblue;
+        }
+        #log-button:active{
+            border-color: powderblue;
+        }
+        #log-button[disabled]{
+            background-color: #CACACA;
+            border-color: gray;
+        }
+        #log-button.logout{
+            background: indianred;
+            border-color: indianred;
+        }
+        #log-button.logout:focus{
+            border-color: red;
+        }
+        #log-button.logout:active{
+            border-color: lightpink;
+        }
+        #copyright-widget{
+            margin: 15px auto 15px;
+            font-size: 75%;
+            color: #333333;
+			word-wrap:break-word;
+        }
+        #mode-switch-widget{
+            display: none;
+            padding-top: 36px;
+        }
+        #mode-switch-title{            
+            margin: 0 auto;
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+            padding: 20px 5px;
+            color: #333333;
+            word-break: break-all;
+        }
+        .mode-button{
+            padding: 10px 20px;  
+            margin: 0 auto 12px;
+            border-radius: 5px;
+            background: skyblue;
+            border: 1px solid skyblue;
+            outline: none;
+            font-size: 14px;
+            color: #ffffff;
+            width: 230px;
+            -webkit-appearance: none;
+        }
+        
+        @media (min-width: 460px) {
+            html, body{
+                //overflow: hidden;
+            }
+            #phone-wrapper{
+                width: 460px;
+                margin: 0 0 0 -230px;
+                left:50%;
+                position: relative;
+            }
+        #mode-switch-widget{
+                padding-top: 42px;
+            }
+        }
+    </style>
+<!--[if lte IE 8]>
+    <style>
+        html, body{
+            //overflow: hidden;
+        }
+        #phone-wrapper{
+            width: 460px;
+            margin: 0 0 0 -230px;
+            left:50%;
+            position: relative;
+        }
+        #title{
+            padding-top: 40px;
+        }
+        #custom-text{
+            background-color: #222222;
+            filter: alpha(opacity=60);
+        }
+    </style>
+<![endif]-->
+</head>
+<body>
+<div id="phone-wrapper">
+<div id="top-board" class="clearfix">
+    <div id="header-background"></div>
+    <div id="title"><script type="text/javascript">document.write(logonBanner)</script></div>
+	<input type="txt" id="title_hidden" style="display:none" />
+</div>
+<div id="bottom-board">
+    <div id="login-widget"  style="display:none;">
+        <div id="login-info">
+            <span id="login-tips"></span>
+        </div>
+        <div id="login-msg">
+            <div id="login-user-wrapper" class="login-inputs">
+                <input id="login-user" type="text" tabindex="1"/>
+                <a id="user-clearer" class="clearer" href="javascript:void(0);" tabindex="-1"><i class="icon"></i></a>
+            </div>
+            <div id="login-pwd-wrapper" class="login-inputs">
+                <input id="login-pwd" type="password" tabindex="2"/>
+                <a id="pwd-clearer" class="clearer" href="javascript:void(0);" tabindex="-1"><i class="icon"></i></a>
+            </div>
+        </div>
+    </div>
+    <div id="logout-widget">
+        <div id="login-success">
+            <span id="usr-login-su"></span>
+        </div>
+        <div id="access-info-wrapper">
+            <div class="access-info" id="online-info">
+                <label id="online-time" class="access-info-name"></label>
+                <span id="access-duration" class="access-info-value">01:02:03</span>
+            </div>
+            <div class="access-info" id="expire-info">
+                <label id="end-time" class="access-info-name"></label>
+                <span id="access-endtime" class="access-info-value"><script>document.write(expireTime)</script></span>
+            </div>
+            <div class="access-info" style="display: none;">
+                <label id="note" class="access-info-name"></label>
+                <span id="access-note" class="access-info-value">access-info</span>
+            </div>
+        </div>
+    </div>
+    <div id="onebutton-widget" style="display:none;">
+        <div id="onebutton-info">
+            <span id="onebutton-tips"></span>
+        </div>
+        <div id="one-button">
+            <span id="onebutton-value">30</span>
+        </div>
+    </div>
+    <div id="mode-switch-widget">
+        <div id="mode-switch-title"><span id="mode_switch_title"></span></div>
+        <input id="SMS-mode" class="mode-button" type="button"/>
+        <input id="web-mode" class="mode-button" type="button"/>
+        <input id="wechat-mode" class="mode-button" type="button"/>
+    </div>
+    <div id="log-button-wrapper">
+        <input id="log-button" type="button"/>
+    </div>
+    <div id="copyright-widget">
+        <span><script>document.write(logonCopyright)</script></span>
+    </div>
+</div>
+</div>
+</body>
+</html>
+<script type="text/javascript">
+    var retryTimes = 0,
+        serverUrl = './',
+        msg = {
+
+        };
+
+    var $id=function(id){return document.getElementById(id)},
+        $css=function(id, type, vaule){var e=(typeof id == "string")?$id(id):id;if(typeof type == 'string')e.style[type]=vaule;else{for(var t in type){e.style[t]=type[t]}}};
+    
+	$id('login-user').setAttribute("placeholder",GlobalStr[17]);
+    $id('login-pwd').setAttribute("placeholder",GlobalStr[18]);
+    $id('usr-login-su').innerHTML = GlobalStr[19];
+    $id('online-time').innerHTML = GlobalStr[20];
+    $id('end-time').innerHTML = GlobalStr[21];
+    $id('note').innerHTML = GlobalStr[22];
+    $id('onebutton-tips').innerHTML = GlobalStr[23];
+    $id('mode_switch_title').innerHTML = GlobalStr[24];
+    $id('SMS-mode').setAttribute("value",GlobalStr[25]);
+    $id('web-mode').setAttribute("value",GlobalStr[26]);
+    $id('wechat-mode').setAttribute("value",GlobalStr[27]);
+    $id('log-button').setAttribute("value",GlobalStr[28]);
+
+    var $tips = $id('login-tips'),
+        $onetips = $id('onebutton-tips'),
+        $user = $id('login-user'),
+        $pwd = $id('login-pwd'),
+        $button = $id('log-button');
+        $onebutton = $id('one-button');
+
+    var devicePixelRatio = window.devicePixelRatio || 1,
+        phoneWrapper = $id('phone-wrapper'),
+        customImg = document.createElement('img'),
+        customImgWrapper =$id('header-background'),
+        debug = function(info){if(window.location.href.indexOf('localhost')!=-1){}};
+
+    customImg.setAttribute('id', 'custom-img');
+    customImg.src = background;
+    function getSpaceSize(){return  {
+        width: phoneWrapper.clientWidth,
+        minHeight: phoneWrapper.clientHeight * 0.3,
+        maxHeight: phoneWrapper.clientHeight* 0.5/*保证在一屏内*/
+    }};
+
+    adaptImg(customImg, customImgWrapper, getSpaceSize());
+    window.onresize = function(){adaptImg(customImg, customImgWrapper, getSpaceSize())};
+
+    function adaptImg(img, wrapper, spaceSize){
+        if(img.width === 0 || img.height === 0) {/* wait for loaded */
+            var args = arguments;
+            setTimeout(function(){ args.callee.apply(this, args); }, 100);
+            return;
+        }
+        var ratio = spaceSize.width / img.width;
+        if (spaceSize.minHeight > spaceSize.maxHeight){/*30%还是可能会超出剩余空白大小*/
+            spaceSize.maxHeight = spaceSize.minHeight;/*此时空白区的高度太小，不再具备参考意义*/
+        }
+        if (img.height * ratio < spaceSize.minHeight){/*图片太宽，以高度为准进行缩放*/
+            ratio = spaceSize.minHeight / img.height;
+            img.height = img.height * ratio;
+            img.width = img.width * ratio;
+            $css(wrapper, 'height', img.height + 'px');
+            $css(wrapper, 'width', spaceSize.width + 'px');
+        }
+        else if(img.height * ratio > spaceSize.maxHeight){/*图片太高，以宽度为准进行缩放*/
+            img.width = img.width * ratio;
+            img.height = img.height * ratio;
+            $css(wrapper, 'height', spaceSize.maxHeight + 'px');
+        }
+        else{/*图片比例合适，以宽度为准进行缩放，高度在允许范围内*/
+            img.width = img.width * ratio;
+            img.height = img.height * ratio;
+            $css(wrapper, 'height', img.height + 'px');
+        }
+
+        if (wrapper.childNodes.length === 0) wrapper.appendChild(img);
+    }
+
+    function doGet(url, data, success, failed){
+        var param = "";
+        for(var key in data){
+            param += key+"="+encodeURIComponent(data[key]) + '&';
+        }
+
+        url += "&"+param.substr(0, param.length-1);
+
+        var xmlHttp = window.XMLHttpRequest ? (new XMLHttpRequest()) : (new ActiveXObject("Microsoft.XMLHTTP"));
+        xmlHttp.open("GET", url);
+        xmlHttp.setRequestHeader("Accept","text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
+        xmlHttp.send(null);
+        xmlHttp.onreadystatechange = function() {
+            if ((xmlHttp.readyState == 4)) {
+                if (xmlHttp.status == 200){
+                    if(typeof success == 'function'){
+                        success.call(null, xmlHttp.responseText);
+                    }
+                }
+                else{
+                    if(typeof failed == 'function'){
+                        failed.call(null, xmlHttp.responseText);
+                    }
+                }
+            } else {
+            }
+        
+        }
+    }
+
+    function doRefresh(){
+        serverUrl = "http://" + wportalPara.gw_address + ":" + webserver_port + "/wifidog/auth/?authtype=web&stage=login";
+        doGet(serverUrl, {"token":token,"gw_id":wportalPara.gw_id, "gw_address":wportalPara.gw_address, "gw_port":wportalPara.gw_port, "ip":wportalPara.ip,"mac":wportalPara.mac, "url":wportalPara.url}, onSuccess, onFailed);
+    }
+
+    function timeIncrease(element, timeBefore){
+        var args = arguments,
+            timeHour = Math.floor(timeBefore/3600),
+            timeMinute = Math.floor(timeBefore/60 -  timeHour*60),
+            timeSecond = timeBefore - timeHour*3600 - timeMinute*60,
+            timeAfter = timeBefore+1;
+        if (!isAccess || logonTip != INFO_TIP_SUCCESS){
+            return;
+        }
+
+        if (!!element){
+            element.innerHTML = (timeHour<10?'0':'') + timeHour + ':' +
+                    (timeMinute<10?'0':'') + timeMinute + ':' +
+                    (timeSecond<10?'0':'') + timeSecond;
+        }
+        setTimeout(function(){args.callee.call(this, element, timeAfter)}, 1000);
+    }
+
+    function executeCountDown(buttonText){
+        if (countDown <= 0){
+            $onetips.innerHTML = GlobalStr[29];//'点击下面的按钮来上网';
+            buttonText.innerHTML = GlobalStr[30];//'一键上网';
+            $onebutton.className = 'clickable';
+        }
+        else{
+            countDown--;
+            buttonText.innerHTML = '' + countDown;
+            setTimeout(function(){executeCountDown(buttonText);}, 1000);
+        }
+    }
+
+    function showClearButton(clearButton, event){
+        var buttons,
+            e = event || window.event,
+            input = e.target || e.srcElement;
+        if (e.type === 'blur'){
+            $css(clearButton,'opacity', '0');
+        }
+        else{
+            if (e.type === 'focus'){
+                /* 先去掉所有清除按钮 */
+                if (document.getElementsByClassName){
+                    buttons = document.getElementsByClassName('clearer');
+                }
+                else{
+                    buttons = document.getElementsByTagName('a');
+                }
+                for (var i = buttons.length-1; i >= 0; i--){
+                    if (buttons[i].className.indexOf('clearer') != -1){
+                        buttons[i].style.visibility = 'hidden';
+                    }
+                }
+            }
+            $css(clearButton, (input.value!=='')?{"opacity":'1',"visibility":'visible'}:{'visibility':'hidden'});
+            if (e.type === 'keyup' && e.keyCode==13){
+                handleSubmit();
+            }
+        }
+    }
+
+    function clearInput(input, event){
+        input.value = '';
+        input.focus();
+        return false;
+    }
+
+    function isMobile(){
+        var u = navigator.userAgent;
+        if(u.indexOf('iPad') > -1)return false;
+        return !!u.match(/AppleWebKit.*Mobile/) || !!u.match(/Windows Phone/) || !!u.match(/Android/) || !!u.match(/MQQBrowser/);
+    }
+
+    var EVENT = (function(){
+        var EVENT = {};
+        if (typeof window.addEventListener === 'function') {
+            EVENT.addListener = function(el, type, fn) {
+                el.addEventListener(type, fn, false);
+            };
+            EVENT.removeListener = function(el, type, fn) {
+                el.removeEventListener(type, fn, false);
+            };
+        } else if (typeof document.attachEvent === 'function'){ // IE
+            EVENT.addListener = function(el, type, fn) {
+                el.attachEvent('on' + type, fn);
+            };
+            EVENT.removeListener = function(el, type, fn) {
+                el.detachEvent('on' + type, fn);
+            };
+        } else { // older browsers
+            EVENT.addListener = function(el, type, fn) {
+                el['on' + type] = fn;
+            };
+            EVENT.removeListener = function(el, type, fn) {
+                el['on' + type] = null;
+            };
+        };
+        return EVENT;
+    })();
+
+    String.prototype.trim = String.prototype.trim || function(){return this.replace(/^\s+|\s+$/g, '');}
+
+    function pageConfigParse(){
+        customImg.src = background;
+		if ( isMobile() )
+		{
+			$id('title_hidden').value = logonCopyright;
+			changeFontSize2($id('title_hidden').value, 'copyright-widget');
+			$id('title_hidden').value = logonBanner;
+			changeFontSize($id('title_hidden').value, 'title');
+		}
+
+		/* 外部链接退出时，重定向至外部认证服务器URL */
+		if(INFO_TIP_REMOTE_GOURL == logonTip)
+		{
+			window.location.href = remoteGoUrl;
+			return;
+		}
+		
+		/*if("local" != logonType)
+		{
+			logonTitle = "";
+			logonBanner = "";
+			logonCopyright = "";
+			$css('title', 'display', 'none');
+			
+			if (INFO_TIP_SUCCESS == logonTip )
+			{
+				$css('top-board', 'display', 'none');
+				$css('bottom-board', 'position', 'relative');
+				$css('bottom-board', 'top', '50%');
+				$css('bottom-board', 'margin-top', '-125px');
+			}
+		}
+        */
+        $id('copyright-widget').innerHTML = logonCopyright;
+		document.title = logonTitle;
+		/*if (INFO_TIP_SUCCESS == logonTip )
+		{
+			$id('copyright-widget').innerHTML = '';
+		}*/
+		if(INFO_TIP_SUCCESS == logonTip)
+		{
+			isAccess = true;
+		}
+		else
+		{			
+			isAccess = false;
+			if("onekey" == authtype)
+				isOneButton = true;
+			else
+				isOneButton = false;
+		}
+
+        if (!!isAccess){
+			/*if(1 == remindFlag)
+			{
+				$css('expire-info', 'display', 'block');
+				$id('access-endtime').innerHTML = expireTime;
+				$id('title').innerHTML = '<strong>' + remindContent + '</strong>';
+				document.title = remindTitle;
+			}
+			else
+			{
+				$id('title').innerHTML = '<strong>' + logonBanner + '</strong>';
+				document.title = logonTitle;
+				$css('expire-info', 'display', 'none');
+			}*/
+			accessSeconds = onlineTime;
+            $css('login-widget', 'display', 'none');
+            $css('logout-widget', 'display', 'block');
+            $css('onebutton-widget', 'display', 'none');
+            $button.style.display = 'inline-block';
+            $button.removeAttribute('disabled');
+            $button.value = GlobalStr[31];//'下线';
+            $button.className = 'logout';
+            $id('login-success').innerHTML = '<span>'+GlobalStr[19]+'</span>';//用户登录成功
+			
+			if(1 == remindFlag)
+			{
+				$css('expire-info', 'display', 'block');
+				$id('access-endtime').innerHTML = expireTime;
+				if ( isMobile() )
+				{
+					$id('title_hidden').value = remindContent;
+					changeFontSize($id('title_hidden').value,'title');
+				}
+				
+				$id('title').innerHTML = remindContent;
+				document.title = remindTitle;
+				
+				$css('online-info', 'display', 'none');
+                $css('logout-widget', 'display', 'block');
+				$button.value='';
+				$css('log-button-wrapper','display', 'none');
+				//$id('login-success').innerHTML = '<span>'+GlobalStr[32]+'</span>';//认证即将过期
+                $css('login-success', 'display', 'none');
+				//$id('copyright-widget').innerHTML = '';
+			}
+			else
+			{
+				if ( isMobile() )
+				{
+					$id('title_hidden').value = logonBanner; 
+					changeFontSize($id('title_hidden').value,'title');
+				}
+				$id('title').innerHTML = logonBanner;
+				document.title = logonTitle;
+				$css('expire-info', 'display', 'none');
+				$css('log-button-wrapper','display', 'block');
+				$css('online-info', 'display', 'block');
+			}
+
+            timeIncrease($id('access-duration'), accessSeconds);
+        }else if (!!isOneButton){
+            $css('login-widget', 'display', 'none');
+            $css('logout-widget', 'display', 'none');
+            $css('onebutton-widget', 'display', 'block');
+            $css('mode-switch-widget', 'display', 'none');
+            $button.style.display = 'none';
+            $onebutton.className = '';
+            $onebutton.removeAttribute('disabled');
+            $onetips.innerHTML = GlobalStr[23];//'稍等一会儿，马上就可以上网了';
+            $onetips.className = '';
+            EVENT.addListener($onebutton, 'click', handleSubmit);
+            executeCountDown($id('onebutton-value'));
+        }else if(!!isModeSwitch){
+            $css('mode-switch-widget', 'display', 'block');
+            $css('login-widget', 'display', 'none');
+            $css('logout-widget', 'display', 'none');
+            $css('onebutton-widget', 'display', 'none');
+            $css('header-background', 'display', 'none');
+            $css('copyright-widget', 'display', 'none');
+            $css('title', 'display', 'none');
+
+            $button.style.display = 'none';
+            for(var i = 0, nodes = $id('mode-switch-widget').childNodes; i < nodes.length; i++){
+                if(nodes[i].nodeType == 1) nodes[i].style.display = 'none';
+            }
+            $css("mode-switch-title", 'display', 'block');
+            if("web" == authtype){
+                $css("web-mode", 'display', 'block');
+            }else if("wechat" == authtype){
+                $css("wechat-mode", 'display', 'block');
+            }else if("webwechat" == authtype){
+                $css("web-mode", 'display', 'block');
+                $css("wechat-mode", 'display', 'block');
+            }
+            else{
+            }
+            /*for(var i = 0; i < authModeList.length; i++){
+                $css(authModeList[i], 'display', 'block');
+            }*/
+        }else{
+            $css('login-widget', 'display', 'block');
+            $css('logout-widget', 'display', 'none');
+            $css('onebutton-widget', 'display', 'none');
+            $css('mode-switch-widget', 'display', 'none');
+            $css('header-background', 'display', 'block');
+            $css('copyright-widget', 'display', 'block');
+            $css('title', 'display', 'block');
+            $tips.innerHTML = GlobalStr[logonTip];
+            $tips.className = '';
+            $user.focus();
+            $user.removeAttribute('disabled');
+            $pwd.removeAttribute('disabled');
+            $button.removeAttribute('disabled');
+            $user.value = '';
+            $pwd.value = '';
+            $button.style.display = 'inline-block';
+            $button.value =  GlobalStr[28];//'登录';
+            $button.className = '';
+        }
+        
+        if(window.location.href.indexOf("weixin.tplogin.cn:8080/weixin/") > 0)
+        {
+            $css('log-button-wrapper', 'visibility', 'hidden');
+        }
+    }
+    
+    function onSuccess(oriString){
+        var newPara;
+        var reg = new RegExp("^\\{.*\\}$");
+        if(typeof(oriString) == "undifined" || !oriString.match(reg))
+        {
+            onFailed();
+            return;
+        }
+        newPara = eval("("+oriString+")");
+        if (typeof(newPara.error) != "undefined"){
+            onFailed();
+        }
+        else{
+            if(newPara.stage == "logout"){
+                wportalPara.status = INFO_TIP_INIT;
+            }else{
+                wportalPara = newPara;
+            }
+            remindFlag		= parseInt(wportalPara.remindFlag,10);
+            token           = wportalPara.token;
+            mac             = wportalPara.mac;
+            ip              = wportalPara.ip
+            gw_address      = wportalPara.gw_address
+            gw_id           = wportalPara.gw_id
+            gw_port         = wportalPara.gw_port
+            logonType		= wportalPara.wportal_page_type;
+            //logonTitle		= strASCdecode(wportalPara.page_title);
+            logonTitle		= wportalPara.page_title;
+            //logonBanner		= strASCdecode(wportalPara.wel_info);
+            logonBanner		= wportalPara.wel_info;
+            //logonCopyright	= strASCdecode(wportalPara.copyright);
+            logonCopyright	= wportalPara.copyright;
+            background		= wportalPara.background;
+            remoteGoUrl		= wportalPara.external_url;
+            remindType		= wportalPara.remindType;
+            //remindTitle		= strASCdecode(wportalPara.remind_page_title);
+            remindTitle		= wportalPara.remind_page_title;
+            //remindContent	= strASCdecode(wportalPara.remind_page_content);
+            remindContent	= wportalPara.remind_page_content;
+            remindGoUrl		= wportalPara.remindGoUrl;
+            authtype		= wportalPara.authtype;
+            logonTip		= parseInt(wportalPara.status,10);
+            onlineTime		= parseInt(wportalPara.onlineTime,10);
+            expireTime		= wportalPara.expireTime;
+			/*
+			logonTitle  		= logonTitle.replace(/&/ig,'&amp;');
+			logonTitle  		= logonTitle.replace(/</ig,'&lt;');
+			logonTitle  		= logonTitle.replace(/>/ig,'&gt;');
+			
+			logonBanner  		= logonBanner.replace(/&/ig,'&amp;');
+			logonBanner  		= logonBanner.replace(/</ig,'&lt;');
+			logonBanner  		= logonBanner.replace(/>/ig,'&gt;');
+			
+			logonCopyright  	= logonCopyright.replace(/&/ig,'&amp;');
+			logonCopyright  	= logonCopyright.replace(/</ig,'&lt;');
+			logonCopyright  	= logonCopyright.replace(/>/ig,'&gt;');
+			
+			remindTitle  		= remindTitle.replace(/&/ig,'&amp;');
+			remindTitle  		= remindTitle.replace(/</ig,'&lt;');
+			remindTitle  		= remindTitle.replace(/>/ig,'&gt;');
+			
+			remindContent  		= remindContent.replace(/&/ig,'&amp;');
+			remindContent  		= remindContent.replace(/</ig,'&lt;');
+			remindContent  		= remindContent.replace(/>/ig,'&gt;');
+			*/
+            
+            //苹果连接时，取消无法变成完成，需要reload
+			if(INFO_TIP_SUCCESS == logonTip)
+			{
+                var reloadUrl = "http://" + wportalPara.gw_address + ":" + webserver_port + "/wifidog/portal/?gw_id="+ gw_id+"&gw_address="+gw_address+"&gw_port="+gw_port +"&ip="+ip+"&mac="+mac+"&url="+ wportalPara.url;
+				
+                if("onekey" == authtype){
+                    window.location = reloadUrl + "&reloadFlag=1" + "&authtype=onekey";
+                }else{
+                    window.location = reloadUrl + "&reloadFlag=1" + "&authtype=web";
+                }
+			}
+				
+			
+			if(INFO_TIP_REFRESH == logonTip)
+			{
+				setTimeout(doRefresh, 1000);
+			}
+			else
+			{
+				pageConfigParse();
+			}
+        }
+    }
+
+    function onFailed(){
+        if (!isOneButton){
+            $tips.innerHTML = GlobalStr[INFO_TIP_SERVERERR];
+            $tips.className = 'login-errors';
+            $user.removeAttribute('disabled');
+            $pwd.removeAttribute('disabled');
+            $button.removeAttribute('disabled');
+            $user.focus();
+        }
+        else{
+            $onetips.innerHTML = GlobalStr[INFO_TIP_SERVERERR];
+            $onetips.className = 'login-errors';
+            $onebutton.removeAttribute('disabled');
+            EVENT.addListener($onebutton, 'click', handleSubmit);
+        }
+    }
+
+    function handleSubmit(){
+        if (!!isAccess){/* 已接入 */
+            serverUrl = "http://" + wportalPara.gw_address + ":" + webserver_port + "/wifidog/logoutuser?authtype=" + authtype;
+            doGet(serverUrl, {"token":token,"ip":wportalPara.ip,"mac":wportalPara.mac}, onSuccess, onFailed);
+        }
+        else if (!!isOneButton){
+            if (countDown > 0){
+                return;
+            }
+            serverUrl = "http://" + wportalPara.gw_address + ":" + webserver_port + "/wifidog/logincheck/?authtype=onekey";
+            doGet(serverUrl, {"gw_id":wportalPara.gw_id, "gw_address":wportalPara.gw_address, "gw_port":wportalPara.gw_port, "ip":wportalPara.ip,"mac":wportalPara.mac, "url":wportalPara.url}, onSuccess, onFailed);
+            $onetips.innerHTML = GlobalStr[1];//'正在登录，请稍候...';
+            $onetips.className = '';
+            $onebutton.setAttribute('disabled', 'disabled');
+            EVENT.removeListener($onebutton, 'click', handleSubmit);
+        }
+        else{
+            if ($user.value === '' || $pwd.value === ''){
+                $tips.innerHTML = GlobalStr[33];//'用户名密码不能为空';
+                $tips.className = 'login-errors';
+				if($user.value === '')
+					$user.focus();
+				else
+					$pwd.focus();
+                return;
+            }
+            serverUrl = "http://" + wportalPara.gw_address + ":" + webserver_port + "/wifidog/logincheck/?authtype=web";
+            doGet(serverUrl, {"user":$user.value, "pwd":$pwd.value,"gw_id":wportalPara.gw_id, "gw_address":wportalPara.gw_address, "gw_port":wportalPara.gw_port, "ip":wportalPara.ip,"mac":wportalPara.mac, "url":wportalPara.url}, onSuccess, onFailed);
+            $tips.innerHTML = GlobalStr[INFO_TIP_REFRESH];
+            $tips.className = '';
+            $user.setAttribute('disabled', 'disabled');
+            $pwd.setAttribute('disabled', 'disabled');
+            $button.setAttribute('disabled', 'disabled');
+        }
+    }
+
+	function changeFontSize(sourceValue,sourceId)
+	{
+		var temp = sourceValue;
+		if ( 1<= temp.length && temp.length <= 10 )
+		{
+			$css(sourceId, 'font-size', '35px');
+		}
+		else if ( 11<= temp.length && temp.length <= 20 )
+		{
+			$css(sourceId, 'font-size', '30px');
+		}
+		else if ( 21<= temp.length && temp.length <= 30 )
+		{
+			$css(sourceId, 'font-size', '25px');
+		}
+		else if ( 31<= temp.length && temp.length <= 40 )
+		{
+			$css(sourceId, 'font-size', '20px');
+		}
+		else if ( 41<= temp.length )
+		{
+			$css(sourceId, 'font-size', '15px');
+		}
+		return true;
+	}
+	
+	function changeFontSize2(sourceValue,sourceId)
+	{
+		var temp = sourceValue;
+		$css(sourceId, 'font-size', '15px');
+/*		if ( 1<= temp.length && temp.length <= 10 )
+		{
+			$css(sourceId, 'font-size', '15px');
+		}
+		else if ( 11<= temp.length && temp.length <= 20 )
+		{
+			$css(sourceId, 'font-size', '15px');
+		}
+		else if ( 21<= temp.length && temp.length <= 30 )
+		{
+			$css(sourceId, 'font-size', '15px');
+		}
+		else if ( 31<= temp.length && temp.length <= 40 )
+		{
+			$css(sourceId, 'font-size', '15px');
+		}
+		else if ( 41<= temp.length )
+		{
+			$css(sourceId, 'font-size', '15px');
+		}*/
+		return true;
+	}
+	
+	
+    (function onLoad(){
+        EVENT.addListener($button, 'click', handleSubmit);
+        EVENT.addListener($user, 'focus', function(e){showClearButton($id('user-clearer'), e)});
+        EVENT.addListener($pwd, 'focus', function(e){showClearButton($id('pwd-clearer'), e)});
+        EVENT.addListener($user, 'blur', function(e){showClearButton($id('user-clearer'), e)});
+        EVENT.addListener($pwd, 'blur', function(e){showClearButton($id('pwd-clearer'), e)});
+        EVENT.addListener($user, 'keyup', function(e){showClearButton($id('user-clearer'), e)});
+        EVENT.addListener($pwd, 'keyup', function(e){showClearButton($id('pwd-clearer'), e)});
+        EVENT.addListener($id('web-mode'), 'click', function(e){isModeSwitch = false; pageConfigParse();});
+        EVENT.addListener($id('wechat-mode'), 'click', function(e){window.location.href = wechatModeUrl;});
+        EVENT.addListener($id('user-clearer'), 'click', function(e){clearInput($user, e)});
+        EVENT.addListener($id('pwd-clearer'), 'click', function(e){clearInput($pwd, e)});
+        pageConfigParse();
+    })();
+	
+</script>

@@ -1,0 +1,66 @@
+--- a/drivers/net/ppp/ppp_generic.c	2020-01-21 20:46:46.325423001 +0800
++++ b/drivers/net/ppp/ppp_generic.c	2020-01-21 20:48:00.230423979 +0800
+@@ -2286,6 +2286,20 @@
+ 	return name;
+ }
+ 
++/* Return the PPP net device index */
++int ppp_dev_index(struct ppp_channel *chan)
++{
++	struct channel *pch = chan->ppp;
++	int ifindex = 0;
++
++	if (pch) {
++		read_lock_bh(&pch->upl);
++		if (pch->ppp && pch->ppp->dev)
++			ifindex = pch->ppp->dev->ifindex;
++		read_unlock_bh(&pch->upl);
++	}
++	return ifindex;
++}
+ 
+ /*
+  * Disconnect a channel from the generic layer.
+@@ -2994,6 +3008,7 @@
+ EXPORT_SYMBOL(ppp_channel_index);
+ EXPORT_SYMBOL(ppp_unit_number);
+ EXPORT_SYMBOL(ppp_dev_name);
++EXPORT_SYMBOL(ppp_dev_index);
+ EXPORT_SYMBOL(ppp_input);
+ EXPORT_SYMBOL(ppp_input_error);
+ EXPORT_SYMBOL(ppp_output_wakeup);
+--- a/drivers/net/ppp/pptp.c	2020-01-21 20:48:14.829425430 +0800
++++ b/drivers/net/ppp/pptp.c	2020-01-21 20:52:03.813426200 +0800
+@@ -187,7 +187,7 @@
+ 	int len;
+ 	unsigned char *data;
+ 	__u32 seq_recv;
+-
++	int pptp_ifindex;
+ 
+ 	struct rtable *rt;
+ 	struct net_device *tdev;
+@@ -206,6 +206,11 @@
+ 		goto tx_error;
+ 
+ 	tdev = rt->dst.dev;
++	/* can't route to own dev */
++	pptp_ifindex = ppp_dev_index(chan);
++	if (tdev->ifindex == pptp_ifindex) {
++		goto tx_error;
++	}
+ 
+ 	max_headroom = LL_RESERVED_SPACE(tdev) + sizeof(*iph) + sizeof(*hdr) + 2;
+ 
+--- a/include/linux/ppp_channel.h	2020-01-21 20:59:00.843424167 +0800
++++ b/include/linux/ppp_channel.h	2020-01-21 20:59:30.482424390 +0800
+@@ -69,6 +69,9 @@
+ /* Get the channel number for a channel */
+ extern int ppp_channel_index(struct ppp_channel *);
+ 
++/* Get the device index  associated with a channel, or 0, if none */
++extern int ppp_dev_index(struct ppp_channel *);
++
+ /* Get the unit number associated with a channel, or -1 if none */
+ extern int ppp_unit_number(struct ppp_channel *);
+ 

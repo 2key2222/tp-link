@@ -1,0 +1,309 @@
+--- a/net/netfilter/nf_conntrack_core.c	2020-10-27 11:31:27.797429732 +0800
++++ b/net/netfilter/nf_conntrack_core.c	2020-10-28 11:28:44.633430178 +0800
+@@ -71,6 +71,11 @@
+ EXPORT_SYMBOL_GPL(fastpath_nat_forward_on);
+ #endif
+ 
++#ifdef CONFIG_NF_NAT_IPSTAT
++void (*nf_conntrack_acct_notify)(struct nf_conn *ct, int packet, int len);
++EXPORT_SYMBOL_GPL(nf_conntrack_acct_notify);
++#endif
++
+ int (*nfnetlink_parse_nat_setup_hook)(struct nf_conn *ct,
+ 				      enum nf_nat_manip_type manip,
+ 				      const struct nlattr *attr) __read_mostly;
+@@ -1341,6 +1346,13 @@
+ 
+ 		acct = nf_conn_acct_find(ct);
+ 		if (acct) {
++#ifdef CONFIG_NF_NAT_IPSTAT
++			void (*acct_notify)(struct nf_conn *ct, int, int);
++			acct_notify = rcu_dereference(nf_conntrack_acct_notify);
++			if (acct_notify) {
++				acct_notify(ct, 1, skb->len);
++			}
++#endif
+ 			atomic64_inc(&acct[CTINFO2DIR(ctinfo)].packets);
+ 			atomic64_add(skb->len, &acct[CTINFO2DIR(ctinfo)].bytes);
+ 		}
+@@ -1358,6 +1370,14 @@
+ 
+ 		acct = nf_conn_acct_find(ct);
+ 		if (acct) {
++#ifdef CONFIG_NF_NAT_IPSTAT
++			void (*acct_notify)(struct nf_conn *ct, int, int);
++			acct_notify = rcu_dereference(nf_conntrack_acct_notify);
++			if (acct_notify) {
++				acct_notify(ct, 1, skb->len);
++			}
++#endif
++
+ 			atomic64_inc(&acct[CTINFO2DIR(ctinfo)].packets);
+ 			atomic64_add(skb->len - skb_network_offset(skb),
+ 				     &acct[CTINFO2DIR(ctinfo)].bytes);
+--- a/net/netfilter/nf_nat_core.c	2018-09-03 10:15:20.000000000 +0800
++++ b/net/netfilter/nf_nat_core.c	2020-10-28 11:28:46.960430038 +0800
+@@ -29,6 +29,13 @@
+ #include <net/netfilter/nf_conntrack_zones.h>
+ #include <linux/netfilter/nf_nat.h>
+ 
++#ifdef CONFIG_NF_NAT_IPSTAT
++#define NF_NAT_INDEX_MASK 0xFF000000
++#define NF_NAT_INDEX_SHIFT 24
++
++extern void (*nf_conntrack_acct_notify)(struct nf_conn *ct, int packet, int len);
++#endif
++
+ static DEFINE_SPINLOCK(nf_nat_lock);
+ 
+ static DEFINE_MUTEX(nf_nat_proto_mutex);
+@@ -424,6 +431,15 @@
+ 	else
+ 		ct->status |= IPS_SRC_NAT_DONE;
+ 
++#ifdef CONFIG_NF_NAT_IPSTAT
++	if (range->flags & NF_NAT_INDEX_MASK) {
++		if (maniptype == NF_NAT_MANIP_DST) {
++			nat->nat_index[1] = (unsigned long)((range->flags & NF_NAT_INDEX_MASK) >> NF_NAT_INDEX_SHIFT);
++		} else {
++			nat->nat_index[0] = (unsigned long)((range->flags & NF_NAT_INDEX_MASK) >> NF_NAT_INDEX_SHIFT);
++		}
++	}
++#endif
+ 	return NF_ACCEPT;
+ }
+ EXPORT_SYMBOL(nf_nat_setup_info);
+@@ -768,6 +784,156 @@
+ }
+ #endif
+ 
++#ifdef CONFIG_NF_NAT_IPSTAT
++#define NF_NAT_IPSTAT_INDEX     "nat_index"
++#define NF_NAT_IPSTAT_NAME      "nat_ipstat"
++#define NF_NAT_IPSTAT_MAX (256)
++
++static struct nf_nat_ipstat_info {
++	int used;
++	atomic64_t packets;
++	atomic64_t bytes;
++}nf_nat_ipstat[NF_NAT_IPSTAT_MAX];
++
++static DEFINE_SPINLOCK(nf_nat_ipstat_lock);
++
++static struct proc_dir_entry *nf_nat_ipstat_index_proc = NULL;
++static struct proc_dir_entry *nf_nat_ipstat_name_proc = NULL;
++
++static void nf_nat_ipstat_conntrack_acct(struct nf_conn *ct, int packet, int len)
++{
++	struct nf_nat_ipstat_info *pstat = NULL;
++	struct nf_conn_nat *nat;
++	int index = 0;
++	int i = 0;
++
++	nat = nfct_nat(ct);
++	if (!nat) {
++		return;
++	}
++	for (i = 0; i < 2; i++) {
++		if (!nat->nat_index[i])
++			continue;
++		index = ((nat->nat_index[i] - 1) % NF_NAT_IPSTAT_MAX);
++		spin_lock_bh(&nf_nat_ipstat_lock);
++		pstat = &nf_nat_ipstat[index];
++		if (pstat->used) {
++			atomic64_add(packet, &pstat->packets);
++			atomic64_add(len, &pstat->bytes);
++		} else {
++			nat->nat_index[i] = 0;
++		}
++		spin_unlock_bh(&nf_nat_ipstat_lock);
++	}
++}
++
++static int nf_nat_ipstat_name_proc_show(struct seq_file *seq, void *v)
++{
++	struct nf_nat_ipstat_info *pstat = NULL;
++	char line[512] = {0};
++	int index = 0;
++
++	for (index = 0; index < NF_NAT_IPSTAT_MAX; index++) {
++		spin_lock_bh(&nf_nat_ipstat_lock);
++		pstat = &nf_nat_ipstat[index];
++		if (pstat->used) {
++			snprintf(line, sizeof(line), "%d %llu %llu\n",
++				index + 1,
++				atomic64_read(&pstat->packets),
++				atomic64_read(&pstat->bytes));
++			spin_unlock_bh(&nf_nat_ipstat_lock);
++			seq_puts(seq, line);
++			continue;
++		}
++		spin_unlock_bh(&nf_nat_ipstat_lock);
++	}
++
++	return 0;
++}
++
++static int nf_nat_ipstat_name_proc_open(struct inode *inode, struct file *fp)
++{
++    return single_open(fp, nf_nat_ipstat_name_proc_show, inode->i_private);
++}
++
++static int nf_nat_ipstat_index_proc_show(struct seq_file *seq, void *v)
++{
++	struct nf_nat_ipstat_info *pstat = NULL;
++	char line[512] = {0};
++	int index = 0;
++
++	for (index = 0; index < NF_NAT_IPSTAT_MAX; index++) {
++		spin_lock_bh(&nf_nat_ipstat_lock);
++		pstat = &nf_nat_ipstat[index];
++		if (!pstat->used) {
++			pstat->used = 1;
++			spin_unlock_bh(&nf_nat_ipstat_lock);
++			snprintf(line, sizeof(line), "%d", index + 1);
++			seq_puts(seq, line);
++			break;
++		}
++		spin_unlock_bh(&nf_nat_ipstat_lock);
++	}
++
++	return 0;
++}
++
++static int nf_nat_ipstat_index_proc_open(struct inode *inode, struct file *fp)
++{
++    return single_open(fp, nf_nat_ipstat_index_proc_show, inode->i_private);
++}
++
++static int nf_nat_ipstat_index_proc_write(struct file *fp, const char __user *buff, size_t len, loff_t *ppos)
++{
++	struct nf_nat_ipstat_info *pstat = NULL;
++	int index = 0;
++	int ret = -EINVAL;
++
++	ret = kstrtoint_from_user(buff, len, 0, &index);
++	if ((ret == -EINVAL) || !index || (index > NF_NAT_IPSTAT_MAX)) {
++		return -EINVAL;
++	}
++
++	index = index - 1;
++	spin_lock_bh(&nf_nat_ipstat_lock);
++	pstat = &nf_nat_ipstat[index];
++	if (pstat->used) {
++		memset(pstat, 0, sizeof(*pstat));
++		ret = len;
++	} else {
++		ret = -ENODEV;
++	}
++	spin_unlock_bh(&nf_nat_ipstat_lock);
++
++	if (ret > 0) {
++		/* clean all conntracks */
++	}
++
++	return ret;
++}
++
++
++static const struct file_operations nf_nat_ipstat_name =
++{
++	.open    = nf_nat_ipstat_name_proc_open,
++	.read    = seq_read,
++	.write   = seq_write,
++	.llseek  = seq_lseek,
++	.release = single_release,
++};
++
++static const struct file_operations nf_nat_ipstat_index =
++{
++	.open    = nf_nat_ipstat_index_proc_open,
++	.read    = seq_read,
++	.write   = nf_nat_ipstat_index_proc_write,
++	.llseek  = seq_lseek,
++	.release = single_release,
++};
++
++#endif
++
++
+ static int __net_init nf_nat_net_init(struct net *net)
+ {
+ 	/* Leave them the same for the moment. */
+@@ -775,6 +941,29 @@
+ 	net->ct.nat_bysource = nf_ct_alloc_hashtable(&net->ct.nat_htable_size, 0);
+ 	if (!net->ct.nat_bysource)
+ 		return -ENOMEM;
++
++#ifdef CONFIG_NF_NAT_IPSTAT
++	if (net == &init_net) {
++		nf_nat_ipstat_name_proc = proc_create(NF_NAT_IPSTAT_NAME, 0444, init_net.proc_net, &nf_nat_ipstat_name);
++		if (!nf_nat_ipstat_name_proc) {
++			printk("Create proc file %s failed!\n", NF_NAT_IPSTAT_NAME);
++			nf_ct_free_hashtable(net->ct.nat_bysource, net->ct.nat_htable_size);
++			return -ENOENT;
++		}
++
++		nf_nat_ipstat_index_proc = proc_create(NF_NAT_IPSTAT_INDEX, 0644, init_net.proc_net, &nf_nat_ipstat_index);
++		if (!nf_nat_ipstat_index_proc) {
++			printk("Create proc file %s failed!\n", NF_NAT_IPSTAT_INDEX);
++			remove_proc_entry(NF_NAT_IPSTAT_NAME, init_net.proc_net);
++			nf_ct_free_hashtable(net->ct.nat_bysource, net->ct.nat_htable_size);
++			return -ENOENT;
++		}
++
++		BUG_ON(nf_conntrack_acct_notify != NULL);
++		RCU_INIT_POINTER(nf_conntrack_acct_notify, nf_nat_ipstat_conntrack_acct);
++	}
++#endif
++
+ 	return 0;
+ }
+ 
+@@ -782,6 +971,20 @@
+ {
+ 	struct nf_nat_proto_clean clean = {};
+ 
++#ifdef CONFIG_NF_NAT_IPSTAT
++	if (net == &init_net) {
++		RCU_INIT_POINTER(nf_conntrack_acct_notify, NULL);
++
++		if ( nf_nat_ipstat_name_proc != NULL ) {
++			remove_proc_entry(NF_NAT_IPSTAT_NAME, init_net.proc_net);
++		}
++
++		if ( nf_nat_ipstat_index_proc != NULL ) {
++			remove_proc_entry(NF_NAT_IPSTAT_INDEX, init_net.proc_net);
++		}
++	}
++#endif
++
+ 	nf_ct_iterate_cleanup(net, &nf_nat_proto_remove, &clean);
+ 	synchronize_rcu();
+ 	nf_ct_free_hashtable(net->ct.nat_bysource, net->ct.nat_htable_size);
+--- a/net/netfilter/Kconfig	2020-10-28 11:31:27.754429732 +0800
++++ b/net/netfilter/Kconfig	2020-10-28 08:15:07.709429750 +0800
+@@ -465,6 +465,11 @@
+ 	depends on NF_CONNTRACK && NF_NAT
+ 	default NF_NAT && NF_CONNTRACK_TFTP
+ 
++config NF_NAT_IPSTAT
++	bool
++	depends on NF_CONNTRACK && NF_NAT
++	default y
++
+ endif # NF_CONNTRACK
+ 
+ # transparent proxy support
+--- a/include/net/netfilter/nf_nat.h	2018-09-03 10:15:09.000000000 +0800
++++ b/include/net/netfilter/nf_nat.h	2020-10-28 11:46:57.655430516 +0800
+@@ -48,6 +48,9 @@
+     defined(CONFIG_IP6_NF_TARGET_MASQUERADE_MODULE)
+ 	int masq_index;
+ #endif
++#ifdef CONFIG_NF_NAT_IPSTAT
++	unsigned long nat_index[2];
++#endif
+ };
+ 
+ /* Set up the info structure to map into this range. */

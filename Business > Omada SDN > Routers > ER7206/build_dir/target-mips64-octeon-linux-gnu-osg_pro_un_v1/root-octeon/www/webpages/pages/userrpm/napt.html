@@ -1,0 +1,360 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>NAPT</title>
+<style type="text/css">
+</style>
+</head>
+
+<body>
+<div class="func-container">
+    <div id="napt_list">
+        <div id="napt_grid">
+        </div>
+    </div>
+
+    <div id="napt_list_help"></div>
+</div>
+
+<script type="text/javascript">
+try{
+    $
+}catch(e){
+    location.href = "/";
+};
+
+
+function maskIntToMaskAddr(int_mask)
+
+{
+
+    var mask_addr = "";
+
+    if(parseInt(int_mask,10) < 0 || parseInt(int_mask,10) > 32)
+
+    {
+
+        return mask_addr;
+
+    }
+
+    var mask_num = parseInt(int_mask,10)/8;
+
+    var i = 0;
+
+    for(;i<=(mask_num-1);i++)
+
+    {
+
+        if(i != 0) mask_addr += ".";
+
+        mask_addr += "255";
+
+    }
+
+
+
+    if(mask_num < 4)
+
+    {
+
+        var maskTmp = parseInt(int_mask,10)%8;
+
+        maskTmp = (255 << (8-maskTmp)) & 255;
+
+        if( mask_num >= 1 )mask_addr += ".";
+
+        mask_addr += maskTmp.toString();
+
+    
+
+        for(i = mask_num+1 ; i<4 ; i++)
+
+        {
+
+            if(i!=0)mask_addr += ".";
+
+            mask_addr += "0";
+
+        }
+
+    }
+
+    return mask_addr;
+
+}
+
+function logicAnd(int_a,int_b)
+{
+	var binary_a = parseInt(int_a,10).toString(2);
+	var binary_b = parseInt(int_b,10).toString(2);
+	var len = (binary_a.length < binary_b.length) ? binary_a.length : binary_b.length;
+
+	if (len != 32)
+	{
+		return int_a&int_b;
+	}
+	
+	var cut = Math.abs(binary_a.length - binary_b.length);
+	var temp = '';
+
+	for (var i = 0 ; i < cut; i++)
+	{
+		temp = temp + '0';
+	}
+	
+	if (binary_a.length > binary_b.length)
+	{
+		binary_b = temp + binary_b;
+	}
+	else
+	{
+		binary_a = temp + binary_a;
+	}
+	var res = 0;
+	for (var i=len-1; i >= 0; i--)
+	{
+		if (binary_a.charAt(i)&binary_b.charAt(i) == 1)
+		{
+			if((len-1-i) >24)
+			{
+				res = Number(res) + 256*Number((1<<(len-9-i)));
+			}
+			else
+			{
+				res = Number(res) + Number((1<<(len-1-i)));
+			}
+		}
+	}
+	return res;
+}
+
+$(document).ready(function(e){
+    var maxIpMask;
+    var URL_NAPT_LIST = $.su.url("/admin/nat?form=napt");
+
+
+	$("#napt_list").panel({
+		title: $.su.CHAR.NAPT.MAPPING_LIST,
+		collapsible: false
+	});
+
+	var naptListProxy = new $.su.Proxy({
+		url: URL_NAPT_LIST
+	});
+
+
+	var naptGrid = $("#napt_grid").grid({
+        editor: {
+			validator:function()
+			{
+				var editor  = $(naptGrid.grid("getEditor"));
+				var ruleName = editor.find(".text-text[name=name]").textbox("getValue");
+
+				var subnet  = editor.find("[name=ipaddr]").subnet("getValue");
+				//var mask    = editor.find(".text-text[name=mask]").textbox("getValue");
+				var ipArray = subnet.split('/');
+				var ipAddr	= ipArray[0];
+				var mask    = ipArray[1];
+
+				var slt_inf	= editor.find(".combobox-value[name=interface]").combobox("getValue")[0];
+
+				var store 	= naptGrid.grid("getStore");
+				var keyProperty = store.keyProperty;
+				var grid_array  = store.data;
+				
+				var editingId = editor.editor("getEditingId"); 
+				
+				if($.isArray(grid_array) && grid_array.length > 0)
+				{
+					for(var k = 0; k < grid_array.length;k++)
+					{
+						var data = grid_array[k];
+						
+						if(data[keyProperty] == editingId)
+						{
+							continue;
+						}
+						//name conflict
+						else if(data["name"] == ruleName)
+						{
+							//$($("#naptGrid").grid("getEditor")).form('setError',  $.su.CHAR.ERROR['00000076']);
+							$($("div#napt_grid").grid("getEditor")).form('setError', $.su.CHAR.NAPT.ERR1);//"规则名称与已有条目冲突！");
+							$('input#name').textbox('setError');
+							return false;
+						}
+						else
+						{
+							var iSubnet     = data['ipaddr'].split('/');
+							var iIpAddr		= iSubnet[0];
+							var iMask		= iSubnet[1];
+							var tempMask 	= (iMask > mask)? mask:iMask;
+							var minMask  	= $.su.func.ipToInt(maskIntToMaskAddr(tempMask));
+							var ip_sample 	= logicAnd($.su.func.ipToInt(ipAddr),minMask);
+							var ip_net      = logicAnd($.su.func.ipToInt(iIpAddr),minMask);
+							if(slt_inf == data["interface"] && ip_sample == ip_net)
+							{
+								//$($("#naptGrid").grid("getEditor")).form('setError',  $.su.CHAR.ERROR['00000076']);
+								$($("div#napt_grid").grid("getEditor")).form('setError', $.su.CHAR.NAPT.ERR2);//"规则与已有条目重复！");
+								return false;
+							}
+						}
+					}
+				}
+				//console.log(maskIntToMaskAddr(mask));
+				var ip_sample_x = logicAnd($.su.func.ipToInt(ipAddr),$.su.func.ipToInt(maskIntToMaskAddr(mask)));
+				var ip_net_ip   = $.su.func.intToIp(ip_sample_x);
+				var calSubnet   = ip_net_ip + '/' + mask;
+				editor.find("[name=ipaddr]").subnet("setValue",calSubnet);
+				//console.log(ip_net_ip);
+				//console.log(calSubnet);
+				//console.log(editor.find("[name=ipaddr]").subnet("getValue"));
+				return true;
+
+	},
+            content:"default",
+            fields: [
+                {name: "name"},
+                {name: "interface"},
+                {name: "ipaddr"},
+               // {name: "mask"},
+                {name: "enable"},
+                {name: "sysrule"},
+                {name: "comment"}
+            ]
+        },
+		store:{
+			proxy: naptListProxy,
+			fields: [
+				{name: "name"},
+		 		{name: "ipaddr"},
+		 		{name: "interface"},
+                //{name: "mask"},
+                {name: "enable"},
+                {name: "sysrule"},
+                {name: "comment"}
+			],
+			autoLoad: true
+		},
+		paging:[],
+		columns: [
+			{
+				xtype: "checkcolumn"
+			},
+			{
+				xtype: "rownumberer"
+			},
+			{
+				text: $.su.CHAR.NAPT.NAME,
+				width: 120,
+				dataIndex: "name",
+				editor: {
+				    xtype: "textbox",
+				    allowBlank: false,
+				    vtype:"string_visible_allow_blank",
+            		vtype:"name",
+				    maxLength:32
+				}
+			},
+			{
+				text: $.su.CHAR.NAPT.INTERFACE,
+				width: $.su.CHAR.SETTING.NAPT.INTERFACE_WIDTH,
+				dataIndex: "interface",
+				editor: {
+					xtype: "combobox",
+					allowBlank: false,
+					multiSelect: true,
+					vtype:"string_visible_allow_blank",
+					items:[
+						{name:"---",value:'---'}
+					]
+				}
+			},
+			{
+				text: $.su.CHAR.NAPT.IP_RANGE,
+				//width: $.su.CHAR.SETTING.NAPT.IP_RANGE_WIDTH,
+				dataIndex: "ipaddr",
+                editor: {
+                    xtype: "subnet",
+                    text: $.su.CHAR.NAPT.IP_RANGE_IP,
+                    allowBlank: false
+                },
+                width:150
+			},
+            {
+                text: $.su.CHAR.NAPT.STATUS,
+                xtype: "statuscolumn",
+                dataIndex: "enable",
+                editor: {
+                    xtype: "checkbox",
+                    fieldLabel: '',
+                    items: [
+                        {boxlabel: $.su.CHAR.NAPT.ENABLE_THIS_ENTRY, inputValue:'on', uncheckedValue:'off',checked:true}
+                    ]
+                }
+            },
+            {
+                text: $.su.CHAR.NAPT.COMMENT,
+                xtype:"comment",
+                editor: {
+                    xtype: "textbox",
+                    allowBlank: true,
+                    tips: $.su.CHAR.GRID.OPTIONAL,
+                    vtype:"string_visible_allow_blank",
+                    maxLength:32
+                }
+            },
+            {
+                xtype: "settings"
+            }
+		],
+		operation: 'prompt|add|delete'
+	}).on("ev_load", function(e,data, others){
+			if(others)/* 通过json里的others参数传递动态阀值 */
+			{
+				maxrules = others.max_rules;
+				maxIpMask = others.max_ip_mask;
+			}
+			for (var i=0; i<data.length; i++)
+			{
+				if (data[i].sysrule != "" && data[i].sysrule == '1')
+				{
+					$("div#napt_grid").grid('disableRow',i);
+				}
+			}
+			/*发送form请求,获取interface列表.用于显示于local_binding下拉框*/
+			var interfaceItem=[];
+			var interfaceProxy = new $.su.Proxy({
+					url: $.su.url('/admin/interface?form=status'),
+					async: false
+			});		
+			interfaceProxy.read({}, function(data){
+				for (var i=0; i<data.normal.length; i++){
+					if ($.su.func.isLan(data.normal[i].t_name)){
+						continue;
+					}
+					interfaceItem.push({name:data.normal[i].t_label,value:data.normal[i].t_name});
+				}
+				for (i=0; i<data.vpn.length; i++){
+					if ($.su.func.isLan(data.vpn[i].t_name)){
+						continue;
+					}
+					interfaceItem.push({name:data.vpn[i].t_label,value:data.vpn[i].t_name});
+				}
+				var editor = $("div#napt_grid").grid("getEditor");
+				var combobox = $(editor).find('.combobox-value[name=interface]');
+				combobox.combobox('loadData',interfaceItem);
+			});
+		});
+
+    var helpNaptGrid = new $.su.Help({
+        container: "div#napt_list_help",
+        content: "NAPT"
+    });
+
+});
+</script>
+</body>
+
+</html>

@@ -1,0 +1,84 @@
+--- a/include/linux/ipv6.h
++++ b/include/linux/ipv6.h
+@@ -49,6 +49,8 @@
+ 	__s32		force_tllao;
+ 	__s32           ndisc_notify;
+ 	void		*sysctl;
++	__s32		ndisc_mbit;
++	__s32		ndisc_obit;
+ };
+ 
+ struct ipv6_params {
+--- a/include/uapi/linux/ipv6.h
++++ b/include/uapi/linux/ipv6.h
+@@ -160,6 +160,8 @@
+ 	DEVCONF_ACCEPT_DAD,
+ 	DEVCONF_FORCE_TLLAO,
+ 	DEVCONF_NDISC_NOTIFY,
++	DEVCONF_NDISC_MBIT,
++	DEVCONF_NDISC_OBIT,
+ 	DEVCONF_MAX
+ };
+ 
+--- a/net/ipv6/addrconf.c
++++ b/net/ipv6/addrconf.c
+@@ -204,6 +204,8 @@
+ 	.accept_source_route	= 0,	/* we do not accept RH0 by default. */
+ 	.disable_ipv6		= 0,
+ 	.accept_dad		= 1,
++	.ndisc_mbit = -1,
++	.ndisc_obit = -1,
+ };
+ 
+ static struct ipv6_devconf ipv6_devconf_dflt __read_mostly = {
+@@ -238,6 +240,8 @@
+ 	.accept_source_route	= 0,	/* we do not accept RH0 by default. */
+ 	.disable_ipv6		= 0,
+ 	.accept_dad		= 1,
++	.ndisc_mbit = -1,
++	.ndisc_obit = -1,
+ };
+ 
+ /* IPv6 Wildcard Address and Loopback Address defined by RFC2553 */
+@@ -4300,6 +4304,8 @@
+ 	array[DEVCONF_ACCEPT_DAD] = cnf->accept_dad;
+ 	array[DEVCONF_FORCE_TLLAO] = cnf->force_tllao;
+ 	array[DEVCONF_NDISC_NOTIFY] = cnf->ndisc_notify;
++	array[DEVCONF_NDISC_MBIT] = cnf->ndisc_mbit;
++	array[DEVCONF_NDISC_OBIT] = cnf->ndisc_obit;
+ }
+ 
+ static inline size_t inet6_ifla6_size(void)
+@@ -5062,6 +5068,20 @@
+ 			.proc_handler   = proc_dointvec
+ 		},
+ 		{
++			.procname       = "ndisc_mbit",
++			.data           = &ipv6_devconf.ndisc_mbit,
++			.maxlen         = sizeof(int),
++			.mode           = 0644,
++			.proc_handler   = proc_dointvec
++		},
++		{
++			.procname       = "ndisc_obit",
++			.data           = &ipv6_devconf.ndisc_obit,
++			.maxlen         = sizeof(int),
++			.mode           = 0644,
++			.proc_handler   = proc_dointvec
++		},
++		{
+ 			/* sentinel */
+ 		}
+ 	},
+--- a/net/ipv6/ndisc.c
++++ b/net/ipv6/ndisc.c
+@@ -1133,6 +1133,9 @@
+ 				(ra_msg->icmph.icmp6_addrconf_other ?
+ 					IF_RA_OTHERCONF : 0);
+ 
++	in6_dev->cnf.ndisc_mbit = ra_msg->icmph.icmp6_addrconf_managed ? 1 : 0;
++	in6_dev->cnf.ndisc_obit = ra_msg->icmph.icmp6_addrconf_other ? 1 : 0;
++
+ 	if (!in6_dev->cnf.accept_ra_defrtr)
+ 		goto skip_defrtr;
+ 

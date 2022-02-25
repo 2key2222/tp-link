@@ -1,0 +1,152 @@
+--- a/net/bridge/br_private.h	2017-04-01 19:52:10.449198209 +0800
++++ b/net/bridge/br_private.h	2017-04-01 19:46:30.502197812 +0800
+@@ -19,6 +19,7 @@
+ #include <linux/u64_stats_sync.h>
+ #include <net/route.h>
+ #include <linux/export.h>
++#include <linux/if_vlan.h>
+ 
+ #define BR_HASH_BITS 8
+ #define BR_HASH_SIZE (1 << BR_HASH_BITS)
+@@ -147,7 +147,9 @@
+ 	struct hlist_head		mglist;
+ 	struct hlist_node		rlist;
+ #endif
+-
++#ifdef CONFIG_NETWORK_IPSTACK_VLAN
++	u16				vlan_id;
++#endif
+ #ifdef CONFIG_SYSFS
+ 	char				sysfs_name[IFNAMSIZ];
+ #endif
+@@ -572,4 +573,29 @@
+ 		notify_hook(group, type, data);
+ }
+ 
++#ifdef CONFIG_NETWORK_IPSTACK_VLAN
++#define NO_VLAN_ID	0
++#define AL_VLAN_ID	((__be16)~VLAN_TAG_PRESENT)
++#define VLAN_PROTO(vid)	(VLAN_TAG_PRESENT | vid)
++static inline void skb_set_vlan_proto(struct sk_buff *skb, __be16 vp)
++{
++	skb->vlan_proto = vp;
++}
++
++static inline __be16 skb_get_vlan_proto(struct sk_buff *skb)
++{
++	return skb->vlan_proto;	
++}
++
++static inline __be16 brport_get_vlan_id(const struct net_bridge_port *p)
++{
++	return (p->vlan_id > 0) ? p->vlan_id : NO_VLAN_ID;
++}
++
++static inline int skb_egress_filter(struct sk_buff *skb, struct net_bridge_port *p)
++{
++	return (VLAN_PROTO(AL_VLAN_ID) == skb_get_vlan_proto(skb)) || 
++	       (VLAN_PROTO(brport_get_vlan_id(p)) == skb_get_vlan_proto(skb));
++}
++#endif
+ #endif
+--- a/net/bridge/br_input.c	2017-04-01 19:19:08.994197367 +0800
++++ b/net/bridge/br_input.c	2017-04-01 19:49:55.562198879 +0800
+@@ -186,6 +186,9 @@
+ 		return RX_HANDLER_CONSUMED;
+ 
+ 	p = br_port_get_rcu(skb->dev);
++#ifdef CONFIG_NETWORK_IPSTACK_VLAN
++	skb_set_vlan_proto(skb, VLAN_PROTO(brport_get_vlan_id(p)));
++#endif
+ 
+ 	if (unlikely(is_link_local(dest))) {
+		/*
+--- a/net/bridge/br_device.c	2017-04-01 19:06:29.638198232 +0800
++++ b/net/bridge/br_device.c	2017-04-01 19:50:05.767197938 +0800
+@@ -49,6 +49,9 @@
+ 
+ 	skb_reset_mac_header(skb);
+ 	skb_pull(skb, ETH_HLEN);
++#ifdef CONFIG_NETWORK_IPSTACK_VLAN
++	skb_set_vlan_proto(skb, VLAN_PROTO(AL_VLAN_ID));
++#endif
+ 
+ 	rcu_read_lock();
+ 	get_dst_hook = rcu_dereference(br_get_dst_hook);
+--- a/net/bridge/br_forward.c	2017-04-01 19:09:02.962193729 +0800
++++ b/net/bridge/br_forward.c	2017-04-01 19:50:23.924198503 +0800
+@@ -43,7 +43,11 @@
+ {
+ 	/* ip_fragment doesn't copy the MAC header */
+ 	if (nf_bridge_maybe_copy_header(skb) ||
+-	    (packet_length(skb) > skb->dev->mtu && !skb_is_gso(skb))) {
++	    (packet_length(skb) > skb->dev->mtu && !skb_is_gso(skb))
++#ifdef CONFIG_NETWORK_IPSTACK_VLAN
++	    || (!skb_egress_filter(skb, br_port_get_rcu(skb->dev)))
++#endif
++	    ) {
+ 		kfree_skb(skb);
+ 	} else {
+ 		skb_push(skb, ETH_HLEN);
+@@ -99,6 +103,9 @@
+ void br_deliver(const struct net_bridge_port *to, struct sk_buff *skb)
+ {
+ 	if (to && should_deliver(to, skb)) {
++#ifdef CONFIG_NETWORK_IPSTACK_VLAN
++		skb_set_vlan_proto(skb, VLAN_PROTO(brport_get_vlan_id(to)));
++#endif
+ 		__br_deliver(to, skb);
+ 		return;
+ 	}
+--- a/net/Kconfig	2017-04-06 08:53:51.240197708 +0800
++++ b/net/Kconfig	2017-04-06 09:17:47.649195601 +0800
+@@ -92,6 +92,13 @@
+ 	  to nfmark, but designated for security purposes.
+ 	  If you are unsure how to answer this question, answer N.
+ 
++config NETWORK_IPSTACK_VLAN
++	bool "Record & Filter packets based on VLAN tag"
++	help
++	  Using this feature, we can seperate LAN areas and know where are packets from.
++	  If you are unsure how to answer this question, answer N. 
++
++
+ config NETWORK_PHY_TIMESTAMPING
+ 	bool "Timestamping in PHY devices"
+ 	depends on EXPERIMENTAL
+--- a/net/bridge/br_sysfs_if.c	2017-04-26 16:51:46.209195020 +0800
++++ b/net/bridge/br_sysfs_if.c	2017-04-26 17:02:48.431195193 +0800
+@@ -180,6 +180,23 @@
+ 		   store_multicast_router);
+ #endif
+ 
++#ifdef CONFIG_NETWORK_IPSTACK_VLAN
++static ssize_t show_vlan_id(struct net_bridge_port *p, char *buf)
++{
++	return sprintf(buf, "%d\n", p->vlan_id);
++}
++
++static int store_vlan_id(struct net_bridge_port *p,
++				      unsigned long v)
++{
++	p->vlan_id = v;
++	return 0;
++}
++static BRPORT_ATTR(vlan_id, S_IRUGO | S_IWUSR, show_vlan_id,
++		   store_vlan_id);
++
++#endif
++
+ static struct brport_attribute *brport_attrs[] = {
+ 	&brport_attr_path_cost,
+ 	&brport_attr_priority,
+@@ -201,6 +218,9 @@
+ #ifdef CONFIG_BRIDGE_IGMP_SNOOPING
+ 	&brport_attr_multicast_router,
+ #endif
++#ifdef CONFIG_NETWORK_IPSTACK_VLAN
++	&brport_attr_vlan_id,
++#endif
+ 	NULL
+ };
+ 

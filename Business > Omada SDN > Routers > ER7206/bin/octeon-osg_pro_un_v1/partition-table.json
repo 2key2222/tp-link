@@ -1,0 +1,14 @@
+{
+	"disk-size":	"0x08000000",
+	"partition-table":	[{
+			"name":	"firmware",
+			"base":	"0x00000000",
+			"size":	"0x07E00000",
+			"attr":	"0x22222222"
+		}, {
+			"name":	"panic-oops",
+			"base":	"0x07E00000",
+			"size":	"0x00200000",
+			"attr":	"0x22222222"
+		}]
+}

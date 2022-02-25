@@ -1,0 +1,314 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>ONE NAT</title>
+<style type="text/css">
+</style>
+</head>
+
+<body>
+<div class="func-container">
+    <div id="napt_list">
+        <div id="napt_grid">
+        </div>
+    </div>
+
+    <div id="napt_list_help"></div>
+</div>
+
+<script type="text/javascript">
+try{
+    $
+}catch(e){
+    location.href = "/";
+};
+
+function getInterfaceIpAddr(interfaceName)
+{
+	for(var index = 0;index < interfaceIpAddr.length;index++)
+	{
+		if(interfaceName == interfaceIpAddr[index][0])
+		{
+			return interfaceIpAddr[index][0];
+		}
+	}
+	
+	return false;
+}
+$(document).ready(function(e){
+    var maxIpMask;
+    var URL_ONE_NAT_LIST = $.su.url("/admin/nat?form=one_nat");
+
+
+	$("#napt_list").panel({
+		title: $.su.CHAR.ONE_NAT.MAPPING_LIST,
+		collapsible: false
+	});
+
+	var naptListProxy = new $.su.Proxy({
+		url: URL_ONE_NAT_LIST
+	});
+
+
+	var naptGrid = $("#napt_grid").grid({
+        editor: {
+			validator:function()
+			{
+				var editor  		= $(naptGrid.grid("getEditor"));
+				var ruleName 		= editor.find(".text-text[name=name]").textbox("getValue");
+				var internal_ip  	= editor.find(".text-text[name=internal_ip]").textbox("getValue"); 
+				var external_ip  	= editor.find(".text-text[name=external_ip]").textbox("getValue");
+
+				var slt_inf	= editor.find(".combobox-value[name=interface]").combobox("getValue")[0];
+
+				var store 	= naptGrid.grid("getStore");
+				var keyProperty = store.keyProperty;
+				var grid_array  = store.data;
+				
+				var editingId = editor.editor("getEditingId"); 
+				//console.log(ruleName);
+				//console.log(internal_ip);
+				//console.log(external_ip);
+				//console.log(slt_inf);
+				if(internal_ip == external_ip)
+				{
+					//console.log('internal_ip == external_ip');
+					$($("div#napt_grid").grid("getEditor")).form('setError', $.su.CHAR.ONE_NAT.ERR1);//"映射前后地址不能相同！");
+					$('input#internal_ip').textbox('setError');
+					return false;
+				}
+				
+				/*var infIpAddr = getInterfaceIpAddr(slt_inf);
+				
+				if(infIpAddr != false && infIpAddr == external_ip)
+				{
+					//console.log('external_ip conflicts with interface-ip');
+				}*/
+				
+				if($.isArray(grid_array) && grid_array.length > 0)
+				{
+					for(var k = 0; k < grid_array.length;k++)
+					{
+						var data = grid_array[k];
+						
+						if(data[keyProperty] == editingId)
+						{
+							continue;
+						}
+						//name conflict
+						if(data["name"] == ruleName)
+						{
+							//console.log('same rule name');
+						//$($("#naptGrid").grid("getEditor")).form('setError',  $.su.CHAR.ERROR['00000076']);
+							$($("div#napt_grid").grid("getEditor")).form('setError', $.su.CHAR.NAPT.ERR1);//"规则名称与已有条目冲突！");
+							$('input#name').textbox('setError');
+							return false;
+						}
+						
+						if(slt_inf != data["interface"] && (internal_ip == data["internal_ip"]) && (external_ip == data["external_ip"]))
+						{
+							//console.log('internal_ip must be equal while interface is the same');
+							$($("div#napt_grid").grid("getEditor")).form('setError', $.su.CHAR.NAPT.ERR2);//"规则与已有条目冲突！");
+							return false;
+						}
+					}
+				}
+				//console.log('finished');
+				return true;
+			},
+            content:"default",
+            fields: [
+                {name: "name"},
+                {name: "interface"},
+
+                {name: "internal_ip"},
+                {name: "external_ip"},
+				{name: "dmz"},
+                {name: "enable"},
+                {name: "comment"}
+            ]
+        },
+		store:{
+			proxy: naptListProxy,
+			fields: [
+                {name: "name"},
+                {name: "internal_ip"},
+                {name: "interface"},
+
+                {name: "external_ip"},
+				{name: "dmz"},
+                {name: "enable"},
+                {name: "comment"},
+                {name: "t_label"},
+			],
+			autoLoad: true
+		},
+		paging:[],
+		columns: [
+			{
+				xtype: "checkcolumn",
+				width: $.su.CHAR.SETTING.ONE_NAT.CHECK_COLUMN_WIDTH
+			},
+			{
+				xtype: "rownumberer",
+				width: $.su.CHAR.SETTING.ONE_NAT.ROW_NUMBER_WIDTH
+			},
+			{
+				text: $.su.CHAR.ONE_NAT.NAME,
+				width: $.su.CHAR.SETTING.ONE_NAT.NAME_WIDTH,
+				dataIndex: "name",
+				editor: {
+				    xtype: "textbox",
+				    allowBlank: false,
+            		vtype:"name",
+				    maxLength:32
+				}
+			},
+			{
+                text: $.su.CHAR.ONE_NAT.INTERFACE,
+                width: $.su.CHAR.SETTING.ONE_NAT.INTERFACE_WIDTH,
+                dataIndex: "interface",
+                editor: {
+					xtype: "combobox",
+					allowBlank: false,
+					multiSelect: true,
+					vtype:"string_visible_allow_blank",
+					items:[
+					{name:"---",value:'---'}
+					]
+                },
+                                renderer: function(dd, jindex, data) {
+                                       return data.t_label ? data.t_label : dd;             
+                                } 
+            },
+			{
+				text: $.su.CHAR.ONE_NAT.INTERNAL_IP,
+				width: $.su.CHAR.SETTING.ONE_NAT.IP_RANGE_WIDTH,
+				dataIndex: "internal_ip",
+
+				editor: {
+				    xtype: "textbox",
+				    //text: $.su.CHAR.ONE_NAT.IP_RANGE_IP,
+				    allowBlank: false,
+				    validator: function(v){
+				        if((new $.su.vtype('ip').validate(v) === true)){
+				            return true;
+				        }
+				        return $.su.CHAR.VTYPETEXT.IP;
+				    },
+				    maxLength:32
+                			}
+			},
+			{
+				text: $.su.CHAR.ONE_NAT.EXTERNAL_IP,
+				width: $.su.CHAR.SETTING.ONE_NAT.IP_RANGE_WIDTH,
+				dataIndex: "external_ip",
+
+			                editor: {
+			                    xtype: "textbox",
+			                    //text: $.su.CHAR.ONE_NAT.IP_RANGE_IP,
+			                    allowBlank: false,
+			                    validator: function(v){
+			                        if((new $.su.vtype('ip').validate(v) === true)){
+			                            return true;
+			                        }
+			                        return $.su.CHAR.VTYPETEXT.IP;
+			                    },
+			                    maxLength:32
+			                }
+			},
+			{
+		                text: $.su.CHAR.ONE_NAT.DMZ,
+		                width: $.su.CHAR.SETTING.ONE_NAT.DMZ_WIDTH,
+		                xtype: "statuscolumn",
+		                dataIndex: "dmz",
+		                editor: {
+		                    xtype: "checkbox",
+		                    fieldLabel: '',
+		                    items: [
+		                        {boxlabel: $.su.CHAR.ONE_NAT.ENABLE_THIS_ENTRY, inputValue:'on', uncheckedValue:'off'}
+		                    ]
+		                }
+		            },
+			{
+                text: $.su.CHAR.ONE_NAT.COMMENT,
+                width: $.su.CHAR.SETTING.ONE_NAT.COMMENT_WIDTH,
+                xtype: "comment",
+                editor: {
+                    xtype: "textbox",
+                    allowBlank: true,
+                    tips: $.su.CHAR.GRID.OPTIONAL,
+                    vtype:"string_visible_allow_blank",
+                    maxLength:32
+                }
+            },
+            {
+                text: $.su.CHAR.ONE_NAT.STATUS,
+                width: $.su.CHAR.SETTING.ONE_NAT.STATUS_WIDTH,
+                xtype: "statuscolumn",
+                dataIndex: "enable",
+                editor: {
+                    xtype: "checkbox",
+                    fieldLabel: '',
+                    items: [
+                        {boxlabel: $.su.CHAR.ONE_NAT.ENABLE_THIS_ENTRY, inputValue:'on', uncheckedValue:'off',checked:true}
+                    ]
+                }
+            },
+            {
+                xtype: "settings",
+                width: $.su.CHAR.SETTING.ONE_NAT.SETTING_WIDTH
+            }
+		],
+		operation: 'prompt|add|delete'
+	}).on("ev_load", function(e,data, others){
+			if(others)/* 通过json里的others参数传递动态阀值 */
+			{
+				maxrules = others.max_rules;
+				/*保留不用*/
+			}
+			/*发送form请求,获取interface列表.用于显示于local_binding下拉框*/
+			var interfaceItem=[];
+			var interfaceIpAddr = [];
+			var interfaceProxy = new $.su.Proxy({
+					url: $.su.url('/admin/interface?form=status1'),
+					async: false
+			});		
+			interfaceProxy.read({}, function(data){					
+						for (var i=0; i<data.normal.length; i++){
+                            if ($.su.func.isLan(data.normal[i].t_name)){
+                                continue;
+                            }
+                            if (data.normal[i].t_type != "static"){
+                                continue;
+                            }
+							interfaceItem.push({name:data.normal[i].t_label,value:data.normal[i].t_name});	
+							/*if(data.normal[i].ipaddr != "undefined")
+							{
+								interfaceIpAddr.push({name:data.normal[i].t_label,value:data.normal[i].ipaddr});
+							}*/
+						}
+						//for (i=0; i<data.vpn.length; i++){						
+						//	interfaceItem.push({name:data.vpn[i].t_label,value:data.vpn[i].t_name});	
+							/*if(data.vpn[i].ipaddr != "undefined")
+							{
+								interfaceIpAddr.push({name:data.vpn[i].t_name,value:data.vpn[i].ipaddr});
+							}*/
+						//}	
+			});	
+			var editor = $("div#napt_grid").grid("getEditor");
+			var combobox = $(editor).find('.combobox-value[name=interface]');
+				combobox.combobox('loadData',interfaceItem);
+		});
+
+    var helpNaptGrid = new $.su.Help({
+        container: "div#napt_list_help",
+        content: "ONE_NAT"
+    });
+
+});
+</script>
+</body>
+
+</html>

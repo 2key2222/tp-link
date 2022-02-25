@@ -1,0 +1,122 @@
+#!/bin/sh /etc/rc.common
+# Copyright (C) 2008-2012 OpenWrt.org
+
+SERVICE_USE_PID=1
+START=99
+
+find_release_info()
+{
+	[ -s /etc/openwrt_release ] && . /etc/openwrt_release
+	[ -z "$DISTRIB_DESCRIPTION" ] && [ -s /etc/openwrt_version ] && \
+		DISTRIB_DESCRIPTION="$(cat /etc/openwrt_version)"
+
+	echo "${DISTRIB_DESCRIPTION:-Unknown OpenWrt release} @ $(cat /proc/sys/kernel/hostname)"
+}
+
+old_start() {
+	. /lib/functions/network.sh
+	local enable_cdp
+	local enable_fdp
+	local enable_sonmp
+	local enable_edp
+	local lldp_class
+	local lldp_location
+	local lldp_description
+
+	config_load 'lldpd'
+	config_get_bool enable_cdp 'config' 'enable_cdp' 0
+	config_get_bool enable_fdp 'config' 'enable_fdp' 0
+	config_get_bool enable_sonmp 'config' 'enable_sonmp' 0
+	config_get_bool enable_edp 'config' 'enable_edp' 0
+	config_get lldp_class 'config' 'lldp_class'
+	config_get lldp_location 'config' 'lldp_location'
+	config_get lldp_description 'config' 'lldp_description' "$(find_release_info)"
+
+	local ifaces
+	config_get ifaces 'config' 'interface'
+
+	local iface
+	for iface in $ifaces; do
+		local ifname=""
+		if network_get_device ifname "$iface" || [ -e "/sys/class/net/$iface" ]; then
+			append args "-I ${ifname:-$iface}"
+		fi
+	done
+
+	[ $enable_cdp -gt 0 ] && append args '-c'
+	[ $enable_fdp -gt 0 ] && append args '-f'
+	[ $enable_sonmp -gt 0 ] && append args '-s'
+	[ $enable_edp -gt 0 ] && append args '-e'
+
+	user_exists  lldp 121 || user_add  lldp 121 129
+	group_exists lldp 129 || group_add lldp 129
+
+	mkdir -p /var/run/lldp
+	chown lldp:lldp /var/run/lldp
+
+	service_start /usr/sbin/lldpd $args \
+		${lldp_class:+ -M $lldp_class} \
+		${lldp_description:+ -S "$lldp_description"}
+
+	[ -n "$lldp_location" ] && {
+		sleep 1
+		/usr/sbin/lldpctl -L "$lldp_location" > /dev/null 2>&1
+	}
+}
+
+start() {
+	local enable_lldp
+	local enable_cdp
+	local enable_fdp
+	local enable_sonmp
+	local enable_edp
+	local lldp_class
+	local lldp_description
+	
+	config_load 'lldpd'
+	config_get_bool enable_lldp 'config' 'enable_lldp' 0
+	if [ $enable_lldp -eq 0 ];then
+		return 0
+	fi
+	config_get_bool enable_cdp 'config' 'enable_cdp' 0
+	config_get_bool enable_fdp 'config' 'enable_fdp' 0
+	config_get_bool enable_sonmp 'config' 'enable_sonmp' 0
+	config_get_bool enable_edp 'config' 'enable_edp' 0
+	config_get lldp_class 'config' 'lldp_class'
+	
+	local lan_device
+	local wan_device
+	local sfp_wan_device
+	config_load 'network'
+	config_get lan_device 'global' 'lan_device'
+	config_get wan_device 'global' 'wan_device'
+	sfp_wan_device=""
+	config_get sfp_wan_device 'phy1' 'wan_device'
+	
+	
+	lldp_description=""
+	if [ -f "/tmp/device-info.json" ];then
+		lldp_description=$(grep model_full_name /tmp/device-info.json | sed 's/.*:."//g'| sed 's/",*//g')
+	fi
+	
+	[ $enable_cdp -gt 0 ] && append args '-c'
+	[ $enable_fdp -gt 0 ] && append args '-f'
+	[ $enable_sonmp -gt 0 ] && append args '-s'
+	[ $enable_edp -gt 0 ] && append args '-e'
+
+	vnete /usr/sbin/lldpd $args \
+		${lldp_class:+ -M $lldp_class} \
+		${lldp_description:+ -S "$lldp_description"} \
+		${lan_device:+ -C ${lan_device}.*} ${lan_device:+ -I ${lan_device}.*}
+		
+	/usr/sbin/lldpd $args \
+		${lldp_class:+ -M $lldp_class} \
+		${lldp_description:+ -S "$lldp_description"} \
+		${wan_device:+ -C ${wan_device}.*} ${wan_device:+ -I ${wan_device}.*${sfp_wan_device:+,${sfp_wan_device}*}} -u /var/run/lldpd_wan.socket
+	
+}
+
+stop() {
+	killall lldpd
+	rm -f /var/run/lldpd.socket /var/run/lldpd_wan.socket /var/run/lldpd.pid
+}

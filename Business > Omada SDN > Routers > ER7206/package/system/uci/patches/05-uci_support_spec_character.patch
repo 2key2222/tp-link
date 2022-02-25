@@ -1,0 +1,11 @@
+--- a/util.c	2014-09-24 15:01:58.000000000 +0800
++++ b/util.c	2015-12-13 09:56:52.000000000 +0800
+@@ -76,7 +76,7 @@
+ 
+ 	while (*str) {
+ 		unsigned char c = *str;
+-		if (!isalnum(c) && c != '_') {
++		if (!isalnum(c) && c != '_' && c != '-') {
+ 			if (name || (c < 33) || (c > 126))
+ 				return false;
+ 		}

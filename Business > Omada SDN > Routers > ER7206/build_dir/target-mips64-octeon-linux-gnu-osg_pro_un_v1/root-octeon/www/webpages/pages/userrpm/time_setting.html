@@ -1,0 +1,1963 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Time Setting</title>
+</head>
+
+<body>
+<div class="func-container">
+	<div id="time_cnt">
+	 	<form id="time_setting">
+	 		<input type="text"  id="time_current_time" name="current_time" value="" />
+	 		<input type="text"  id="time_set_type" name="type" value="" />
+			<div id="auto_cnt">
+				<input type="text"  id="time_set_zone" name="timezone" value="" />
+		    	<input type="text"  id="time_set_ntp1" name="ntp_svr1" value="" />
+		    	<input type="text"  id="time_set_ntp2" name="ntp_svr2" value="" />
+		    	<!-- <div class=" part-seperate">
+		    		 <button type="button" id="getGmt" name="getGmt" value=""></button> 
+		    		<input id="dyndns-status" name="status" />
+		    	</div> -->
+			</div>
+	    	
+	    	<div id="manual_cnt">
+	    		<input type="text"  id="time_set_date" name="date" value="" />
+	    		<input type="text"  id="time_set_time" name="time" value="" />
+				<button type="button" id="get_sys_time" name="get_sys_time" value=""></button>
+				
+	    	</div> 	
+
+	    	<button id="submit_button" type="button"></button>
+	    	
+	    	<!-- <p class="note">
+	    		<span class="title note-title"></span>
+	    		<span class="text" id="time-set-note"></span>
+	    	</p> -->
+		</form>
+	</div>
+
+	<div id="dst_cnt">
+		<form id="time_dst">
+	    	<input type="text"  id="dstStatus" name="dstStatus" value="" />
+
+		    <input id="dstMode" name="dstMode" type="radio"/>
+
+	    	<div id="predefine_cnt">
+		    	<input type="text"  id="modeCountry" name="modeCountry" value="" />
+		    </div>
+
+	    	<div id="recurring_cnt" class="hidden">
+		    	<input type="text"  id="recurringTimeOffset" name="recurringTimeOffset" value="" />
+				<div>
+					<input type="text"  id="startCount" name="startCount" value="" />
+					<input type="text"  id="startWeekday" name="startWeekday" value="" />
+					<span id="t_tip_in_1"></span>
+					<input type="text"  id="startMonth" name="startMonth" value="" />
+					<span id="t_tip_at_1"></span>
+					<input type="text"  id="startHour" name="startHour" value="" />
+					<span id="t_tip_colon_1"></span>
+					<input type="text"  id="startMin" name="startMin" value="" />
+				</div>
+				<div>
+					<input type="text"  id="endCount" name="endCount" value="" />
+					<input type="text"  id="endWeekday" name="endWeekday" value="" />
+					<span id="t_tip_in_2"></span>
+					<input type="text"  id="endMonth" name="endMonth" value="" />
+					<span id="t_tip_at_2"></span>
+					<input type="text"  id="endHour" name="endHour" value="" />
+					<span id="t_tip_colon_2"></span>
+					<input type="text"  id="endMin" name="endMin" value="" />
+				</div>
+		    </div>
+
+	    	<div id="date_cnt" class="hidden">
+		    	<input type="text"  id="dateTimeOffset" name="dateTimeOffset" value="" />
+        		<div>
+		    		<input type="text"  id="startDateYear" name="startDateYear" value="" />
+		    		<span id="t_tip_short_line_1"></span>
+		    		<input type="text"  id="startDateMonth" name="startDateMonth" value="" />
+		    		<span id="t_tip_short_line_2"></span>
+		    		<input type="text"  id="startDateDay" name="startDateDay" value="" />
+		    		<span id="t_tip_at_3"></span>
+		    		<input type="text"  id="startDateHour" name="startDateHour" value="" />
+		    		<span id="t_tip_colon_3"></span>
+		    		<input type="text"  id="startDateMin" name="startDateMin" value="" />
+        		</div>
+        		<div>
+         			<input type="text"  id="endDateYear" name="endDateYear" value="" />
+          			<span id="t_tip_short_line_3"></span>
+          			<input type="text"  id="endDateMonth" name="endDateMonth" value="" />
+          			<span id="t_tip_short_line_4"></span>
+          			<input type="text"  id="endDateDay" name="endDateDay" value="" />
+          			<span id="t_tip_at_4"></span>
+          			<input type="text"  id="endDateHour" name="endDateHour" value="" />
+          			<span id="t_tip_colon_4"></span>
+          			<input type="text"  id="endDateMin" name="endDateMin" value="" />
+          			<!--<span id="t_tip_error" style="color:#ff0000"></span>-->
+				</div>
+        	</div>
+		</form>
+	</div>
+	<div id="help_time_setting"></div>
+</div>
+
+<script type="text/javascript">
+try{
+    $
+}catch(e){
+    location.href = "/";
+};
+
+$(document).ready(function(e){
+	var TIME_SET_URL = "./data/time.set.json";
+	var TIME_DST_URL = "./data/time.dst.json";
+
+	var TIME_SET_URL_NEW = $.su.url("/admin/time?form=settings");
+	var TIME_DST_URL_NEW = $.su.url("/admin/time?form=dst");
+
+	var sysTimeHash = "";
+	var startTimeHash = "";
+	var endTimeHash = "";
+	var sysTimeYear = "2013";
+
+
+	window.timeSystem = 0;
+
+function setPreModeDstEn(isEn)
+  {
+  	 if(isEn)
+  	 {
+  	   	$("input#modeCountry").combobox("enable");
+		 }
+		 else
+		 {
+  	   	$("input#modeCountry").combobox("disable");
+		 }
+  }
+
+  function setRecurModeDstEn(isEn)
+  {
+  	 if(isEn)
+  	 {
+  	   	$("input#recurringTimeOffset").textbox("enable");
+  	   	$("input#startCount").combobox("enable");
+  	   	$("input#startWeekday").combobox("enable");
+  	   	$("input#startMonth").combobox("enable");
+  	   	$("input#startHour").combobox("enable");
+  	   	$("input#startMin").combobox("enable");
+  	   	$("input#endCount").combobox("enable");
+  	   	$("input#endWeekday").combobox("enable");
+  	   	$("input#endMonth").combobox("enable");
+  	   	$("input#endHour").combobox("enable");
+  	   	$("input#endMin").combobox("enable");
+		 }
+		 else
+		 {
+  	   	$("input#recurringTimeOffset").textbox("disable");
+  	   	$("input#startCount").combobox("disable");
+  	   	$("input#startWeekday").combobox("disable");
+  	   	$("input#startMonth").combobox("disable");
+  	   	$("input#startHour").combobox("disable");
+  	   	$("input#startMin").combobox("disable");
+  	   	$("input#endCount").combobox("disable");
+  	   	$("input#endWeekday").combobox("disable");
+  	   	$("input#endMonth").combobox("disable");
+  	   	$("input#endHour").combobox("disable");
+  	   	$("input#endMin").combobox("disable");
+		 }
+  }
+
+  function setDateModeDstEn(isEn)
+  {
+  	 if(isEn)
+  	 {
+  	 		$("input#dateTimeOffset").textbox("enable");
+				$("input#startDateYear").combobox("enable");
+				$("input#startDateMonth").combobox("enable");
+				$("input#startDateDay").combobox("enable");
+				$("input#startDateHour").combobox("enable");
+				$("input#startDateMin").combobox("enable");
+				$("input#endDateYear").combobox("enable");
+				$("input#endDateMonth").combobox("enable");
+				$("input#endDateDay").combobox("enable");
+				$("input#endDateHour").combobox("enable");
+				$("input#endDateMin").combobox("enable");
+		 }
+		 else
+		 {
+   	 		$("input#dateTimeOffset").textbox("disable");
+				$("input#startDateYear").combobox("disable");
+				$("input#startDateMonth").combobox("disable");
+				$("input#startDateDay").combobox("disable");
+				$("input#startDateHour").combobox("disable");
+				$("input#startDateMin").combobox("disable");
+				$("input#endDateYear").combobox("disable");
+				$("input#endDateMonth").combobox("disable");
+				$("input#endDateDay").combobox("disable");
+				$("input#endDateHour").combobox("disable");
+				$("input#endDateMin").combobox("disable");
+		 }
+  }
+
+  function setDstEn(isEn)
+  {
+  	 if(isEn)
+  	 {
+  	   	//$("input#dstMode").radio("enableItem", ["0", "1", "2"]);
+  	   	$("input#dstMode").radio("enable");
+	 }
+	 else
+	 {
+			//$("input#dstMode").radio("disableItem",  ["0", "1", "2"]);
+		 	$("input#dstMode").radio("disable");
+	 }
+		 
+	 setPreModeDstEn(isEn);
+  	 setRecurModeDstEn(isEn);
+  	 setDateModeDstEn(isEn);
+  }
+
+	function parseFormat(value, width)
+	{
+		var value = value.toString();
+		while (value.length < width) value = "0" + value;
+		return value;
+	}
+
+function get_time_format()
+	{
+		var start_month =  $("input#start_month").combobox("getSelectedIndex")+1;
+		var start_week =  $("input#start_week").combobox("getSelectedIndex")+1;
+		var start_weekday =  $("input#start_day").combobox("getSelectedIndex")+1;
+		var start_hour =  $("input#start_hour").combobox("getSelectedIndex")+1;
+
+		var end_month =  $("input#end_month").combobox("getSelectedIndex")+1;
+		var end_week =  $("input#end_week").combobox("getSelectedIndex")+1;
+		var end_weekday =  $("input#end_day").combobox("getSelectedIndex")+1;
+		var end_hour =  $("input#end_hour").combobox("getSelectedIndex")+1;
+
+		//start month 1st day is week @fWeek
+		var sdObj = new Date(sysTimeYear, start_month, 1);
+		var sfWeek = parseInt(sdObj.getDay());
+			
+		//end month 1st day is week @eWeek
+		var edObj = new Date(sysTimeYear, end_month, 1);
+		var efWeek = parseInt(edObj.getDay());
+		
+		var start_day = start_week * 7 - sfWeek + start_weekday + 1 + (start_weekday < sfWeek ? 7 : 0);
+		var end_day = end_week * 7 - efWeek + end_weekday + 1 + (end_weekday < efWeek ? 7 : 0);
+		
+		
+		startTimeHash = parseFormat(start_month, 2) + parseFormat(start_day, 2) + parseFormat(start_hour, 2);
+		endTimeHash = parseFormat(end_month, 2) + parseFormat(end_day, 2) + parseFormat(end_hour, 2);
+		// console.log(startTimeHash, endTimeHash);
+
+		if (startTimeHash < endTimeHash)
+		{
+			if (sysTimeHash < endTimeHash)
+			{
+				$("#start_year").textbox("setValue", sysTimeYear);
+				$("#end_year").textbox("setValue", sysTimeYear);
+			}
+			else
+			{
+				$("#start_year").textbox("setValue", sysTimeYear+1);
+				$("#end_year").textbox("setValue", sysTimeYear+1);
+			}
+		}
+		else
+		{
+			if (sysTimeHash < endTimeHash)
+			{
+				$("#start_year").textbox("setValue", sysTimeYear-1);
+				$("#end_year").textbox("setValue", sysTimeYear);
+			}
+			else
+			{
+				$("#start_year").textbox("setValue", sysTimeYear);
+				$("#end_year").textbox("setValue", sysTimeYear+1);
+			}
+		}
+	}
+	
+	function checkDate(dd, mm, yyyy)
+	{
+		if((yyyy >= 2543) && (yyyy <= 2580))
+		{
+			return 3;
+		}
+		
+		if((yyyy < 1970) || (yyyy > 2037))
+		{
+			 return 1;
+		}
+		
+		if(((mm == 4) || (mm == 6) || (mm == 9) || (mm == 11)) && (dd > 30))
+		{
+			 return 2;
+		}
+		
+		if((mm == 2) && (dd > 29))
+		{
+			return 2;
+		}
+
+		if((!((yyyy % 400 == 0) || ((yyyy % 4 == 0) && (yyyy % 100 != 0)))) && (mm == 2) && (dd > 28))
+		{
+			return 2;
+		}
+		
+		return 0;
+
+	}
+
+
+	$("div.func-container").page({
+		title: $.su.CHAR.TIME_SETTING.TITLE,
+		help: ""	//可能是个调用的id 也可能是个url
+	});
+
+
+	$("div#time_cnt").panel({
+		title: $.su.CHAR.TIME_SETTING.TITLE,
+		collapsible: false
+	});
+
+	$("div#dst_cnt").panel({
+		title: $.su.CHAR.TIMESET.DAYLIGHT_SAVE,
+		collapsible: false
+	});
+
+	$("#auto_cnt").fieldset({
+		fields: [
+			{name: "timezone"},
+			{name: "ntp_svr1"},
+			{name: "ntp_svr2"}
+		]
+	});
+
+	$("#auto_cnt").fieldset("hide");
+
+	$("#manual_cnt").fieldset({
+		fields: [
+			{name: "date"},
+			{name: "time"}
+		]
+	});
+
+	$("#manual_cnt").fieldset("hide");
+
+
+	$("#time_current_time").textbox({
+		fieldLabel: $.su.CHAR.TIME_SETTING.CURRENT_TIME,
+		readOnly:true
+	});
+
+
+	$("#time_set_type").radio({
+		fieldLabel: $.su.CHAR.TIME_SETTING.SET_TIME,
+		items:[
+			{boxlabel: $.su.CHAR.TIME_SETTING.AUTOMATIC, inputValue: "auto", id:"radio-1"},
+			{boxlabel: $.su.CHAR.TIME_SETTING.MANUAL, inputValue: "manual", id:"radio-2"}
+		],
+		columns:2
+	}).on("ev_change", function(e, oldValue, newValue){
+		// console.log(newValue);
+		if(newValue == "auto")
+		{
+			$("#auto_cnt").fieldset("show");
+			$("#manual_cnt").fieldset("hide");
+			$("p.note").show();
+		}
+		else
+		{
+			$("#auto_cnt").fieldset("hide");
+			$("#manual_cnt").fieldset("show");
+			$("p.note").hide();
+		}
+	})
+
+
+	$("input#time_set_zone").combobox({
+		fieldLabel: $.su.CHAR.TIME_SETTING.ZONE,
+		//tips: "The tips of combo multi.",
+		inputCls:'xxxxl',
+		items: [
+			
+			 {value: "0", name: $.su.CHAR.TIMESET.Eniwetok},
+			 {value: "60", name: $.su.CHAR.TIMESET.Midway},
+			 {value: "120", name: $.su.CHAR.TIMESET.Hawaii},
+			 {value: "180", name: $.su.CHAR.TIMESET.Alaska},
+			 {value: "240", name: $.su.CHAR.TIMESET.Pacific},
+			 {value: "300", name: $.su.CHAR.TIMESET.Mountain},
+			 {value: "360", name: $.su.CHAR.TIMESET.Central},
+			 {value: "420", name: $.su.CHAR.TIMESET.Eastern},
+			 {value: "450", name: $.su.CHAR.TIMESET.Caracas},
+			
+			 {value: "480", name: $.su.CHAR.TIMESET.Atlantic},
+			 {value: "510", name: $.su.CHAR.TIMESET.Newfoundland},
+			 {value: "540", name: $.su.CHAR.TIMESET.Brasilia},
+			 {value: "600", name: $.su.CHAR.TIMESET.MidAtlantic},
+			 {value: "660", name: $.su.CHAR.TIMESET.Azores},
+			 {value: "720", name: $.su.CHAR.TIMESET.Greenwich},
+			 {value: "780", name: $.su.CHAR.TIMESET.Berlin},
+			 {value: "840", name: $.su.CHAR.TIMESET.Athens},
+			 {value: "900", name: $.su.CHAR.TIMESET.Baghdad},
+			 {value: "930", name: $.su.CHAR.TIMESET.Teheran},
+			 {value: "960", name: $.su.CHAR.TIMESET.Abu},
+			 {value: "990", name: $.su.CHAR.TIMESET.Kabul},
+			 {value: "1020", name: $.su.CHAR.TIMESET.Islamabad},
+			 {value: "1050", name: $.su.CHAR.TIMESET.Madras},
+			 {value: "1065", name: $.su.CHAR.TIMESET.Katmandu},
+			 {value: "1080", name: $.su.CHAR.TIMESET.Alma},
+			 {value: "1110", name: $.su.CHAR.TIMESET.Rangoon},
+			 {value: "1140", name: $.su.CHAR.TIMESET.Bangkok},
+			 {value: "1200", name: $.su.CHAR.TIMESET.Beijing},
+			 {value: "1260", name: $.su.CHAR.TIMESET.Tokyo},
+			 {value: "1290", name: $.su.CHAR.TIMESET.Adelaide},
+			 {value: "1320", name: $.su.CHAR.TIMESET.Brisbane},
+			 {value: "1380", name: $.su.CHAR.TIMESET.Magadan},
+
+			 {value: "1440", name: $.su.CHAR.TIMESET.Fiji},
+			 {value: "1500", name: $.su.CHAR.TIMESET.Nuku}
+		]
+	}).on("ev_change", function(e, oldValue, newValue){
+		// //console.dir(arguments);
+		if(oldValue.length != 0)
+		{
+			var old_hour = $("input#time_set_time").time("getHour");
+			var old_min = $("input#time_set_time").time("getMin");
+			var old_total_min = parseInt(old_hour*60,10)+parseInt(old_min,10);
+			// //console.log(old_total_min,newValue,oldValue);
+			var new_total_min = old_total_min + parseInt(newValue,10) - parseInt(oldValue,10);
+
+			var min_new = new_total_min%60;
+			// //console.log(min_new);
+
+			var hour_temp = parseInt(new_total_min/60, 10);
+			var hour_new = hour_temp > 24 ? hour_temp - 24 : hour_temp;
+			if((hour_new == 24) && (min_new > 0))
+			{
+				hour_new = 0;
+			}
+
+			if(hour_new < 0)
+			{
+				if(hour_new == 0) 
+				{
+					hour_new = 23;
+				}
+				else
+				{
+					hour_new += 24;
+				}
+			}
+
+			if(min_new < 0)
+			{
+				min_new += 60;
+			}
+
+			
+			// //console.log(min_new);
+			if(min_new < 10)
+			{
+				min_new = "0" + min_new;
+			}
+
+			if(hour_new < 10)
+			{
+				hour_new = "0" + hour_new;
+			}
+			
+			var new_time_str  = hour_new.toString() +":"+ min_new.toString() +":"+ $("input#time_set_time").time("getSec");
+			$("input#time_set_time").time("setValue", new_time_str);
+			// //console.log(new_time_str);
+		}
+	});
+
+	/* var regionItem = [];
+	regionItem = $.su.loadComboData("./data/timezone.json", {}, [
+		{
+			srcKey:"name", 
+			dstKey:"name", 
+			func:function(src, para){
+				return para[src];
+			}, 
+			para:$.su.CHAR.TIME_ZONE
+		},
+		{srcKey:"value", dstKey:"value"},
+	]);
+	$("#time_set_zone").combobox("loadData",regionItem); */
+
+	$("input#time_set_date").textbox({
+		fieldLabel: $.su.CHAR.TIME_SETTING.DATE,
+		vtype:"date",
+		allowBlank:false,
+		inputCls:"xl",
+		tips: $.su.CHAR.TIME_SETTING.DATEFORMAT
+	});
+
+	$("input#time_set_time").time({
+		fieldLabel: $.su.CHAR.TIME_SETTING.TIME,
+		inputCls:"xl",
+		tips: $.su.CHAR.TIME_SETTING.TIMEFORMAT
+	});
+
+	$("input#time_set_ntp1").textbox({
+		fieldLabel: $.su.CHAR.TIME_SETTING.NTP1,
+		allowBlank:false,
+		inputCls:"xl",
+		vtype:{
+			vtype:"domain_ip",
+			allowAllZeroFlag: true
+		},
+		maxLength:253
+	});
+
+	$("input#time_set_ntp2").textbox({
+		fieldLabel: $.su.CHAR.TIME_SETTING.NTP2,
+		inputCls:"xl",
+		allowBlank:true,
+		tips: $.su.CHAR.TIME_SETTING.OPTIONAL,
+		vtype:{
+			vtype:"domain_ip",
+			allowAllZeroFlag: true
+		},
+		maxLength:253
+	});
+
+
+	function refershState()
+	{
+		clearInterval(window.timeSystem);
+		window.timeSystem = 0;
+		
+		window.timeSystem = setInterval(function(){
+			dyndnsStatus.status("refresh", {}, function(data, status, xhr){
+				var data = data || {};
+				// //console.log(data.status);
+				if (typeof data.status != "undefined"){
+					if(data.status == 747301)
+					{
+						dyndnsStatus.status("setSuccess", $.su.CHAR.TIME_SETTING.GETGMT_SUCCESS);
+						//load Data
+						$("form#time_setting").form("loadData", data);
+						// //console.log(22);
+						clearInterval(window.timeSystem);
+						window.timeSystem = 0;
+					}
+					if(data.status == 747302)
+					{
+						dyndnsStatus.status("setFailed", $.su.CHAR.TIME_SETTING.GETGMT_TIMEOUT);
+						clearInterval(window.timeSystem);
+						window.timeSystem = 0;
+					}
+					if(data.status == 747303)
+					{
+						dyndnsStatus.status("setLoading", $.su.CHAR.TIME_SETTING.GETGMT_WAIT);
+						//console.log("waiting status...")
+					}
+					$("button#get_sys_time").button("enable");
+				}else{
+					//console.log("fail to get status...")
+				}
+			}, function(){
+				//dyndnsStatus.status("setFailed", $.su.CHAR.DDNS[err_str_arr[data.status]]);
+				$("button#sys_get_gmt").button("enable");
+			});
+		}, 2*1000);
+		
+	}
+
+
+	$("button#getGmt").button({
+		text:$.su.CHAR.TIME_SETTING.AUTOMATIC_BTN,
+		cls: "inline-block",
+		handler:function(){
+			$("button#getGmt").button("disable");
+			$("form#time_setting").form("submit", {operation:"gmt"},function(data){
+				localData = data;
+				isTimeChange = true;
+				// $("button#getGmt").button("setNormal");
+				//refershState();
+				// $("button#getGmt").button("enable");
+				// if()
+			},function(errorcode){
+				// $("button#getGmt").button("enable");
+				// $("button#getGmt").button("setError", $.su.CHAR.ERROR["00000008"]);
+			},null, false);
+			// $("form#time_setting").form("submit", {}, function{
+			// 	// $("button#getGmt").button("enable");
+			// });
+			
+		},
+		fieldLabel:null
+	});
+
+	$("button#get_sys_time").button({
+		text:$.su.CHAR.TIME_SETTING.GET_SYS_TIME,
+		cls: "inline-block",
+		handler:function(){
+			//$("button#get_sys_time").button("disable");
+			var now = new Date();
+			var year = now.getFullYear();
+			var month = now.getMonth() + 1;
+			var date = now.getDate();
+			var hour = now.getHours();
+			var minute = now.getMinutes();
+			var second = now.getSeconds();
+			if (month < 10){month = "0"+month;}
+			if (date < 10){date = "0"+date;}
+			if (hour < 10){hour = "0"+hour;}
+			if (minute < 10){minute = "0"+minute;}
+			if (second < 10){second = "0"+second;}
+			$("#time_set_time").time("setValue", hour+":"+minute+":"+second)
+			$("#time_set_date").textbox("setValue", month+"/"+date+"/"+year)
+			$("form#time_setting").form("submit", {operation:"get_sys_time"},function(data){
+				localData = data;
+				isTimeChange = true;
+
+				// $("button#getGmt").button("setNormal");
+				//refershState();
+				// $("button#getGmt").button("enable");
+				// if()
+			},function(errorcode){
+				// $("button#getGmt").button("enable");
+				// $("button#getGmt").button("setError", $.su.CHAR.ERROR["00000008"]);
+			},null, false);
+			// $("form#time_setting").form("submit", {}, function{
+			// 	// $("button#getGmt").button("enable");
+			// });
+			
+			
+		},
+		fieldLabel:null
+	});
+
+
+	// $("span.note-title").text($.su.CHAR.OPERATION.NOTE);
+	// $("span#time-set-note").text($.su.CHAR.TIME_SETTING.NOTE);
+
+	var dyndnsStatus = $("input#dyndns-status").status({
+		cls: "inline-block",
+		proxy: {
+			url: TIME_SET_URL_NEW
+		}
+	});
+	var isInit = true;
+	var localData = null;
+	var isTimeChange = false;
+	var timeSettingTimeout = null;
+	var refresh = function (){
+		//var localData = data;
+		var t = localData.time.split(":");
+		var d = localData.date.split("/");
+		var second = parseInt(t[2], 10);
+		var min = parseInt(t[1], 10);
+		var hour = parseInt(t[0], 10);
+		var year = parseInt(d[2], 10);
+		var day = parseInt(d[1], 10);
+		var month = parseInt(d[0], 10);
+		//秒数补0
+		localData.time = parseFormat(hour,2) + ":" + parseFormat(min,2) + ":" + parseFormat(second,2);
+		localData.date = parseFormat(month,2) + "/" + parseFormat(day,2) + "/" + parseFormat(year,4);
+		var str = localData.date + " " + localData.time;
+		$("#time_current_time").textbox("setValue", str);
+		clearTimeout(timeSettingTimeout);
+		if(!$.contains(document, time_form[0])){			
+			return;
+		}
+		timeSettingTimeout = setTimeout(function() {
+			second++;
+			//秒数进位
+			if(60 == second){
+				second = 0;
+				min++;
+				//分数进位
+				if(60 == min){
+					min = 0;
+					hour++;
+					//时数进位
+					if(24 == hour){
+						hour = 0;
+						day++;
+						//天数进位
+						if((32 == day) & (1 == month | 3 == month | 5 == month | 7 == month | 8 == month | 10 == month | 12 == month)){
+							day = 1;
+							month++;
+							//月数进位
+							if (13 == month){
+								//年数进位
+								month = 1;
+								year++;
+							}
+						}else if((31 == day) & (4 == month | 6 == month | 9 == month | 11 == month)){
+							day = 1;
+							month++;
+						}else if((2 == month) & (28 < day)){
+							if ((year%4 == 0) | (year%100 == 0 & year%400 == 0)){
+								if(day == 30){
+									day = 1;
+									month++;
+								}
+							}else{
+								if(day == 29){
+									day = 1;
+									month++;
+								}
+							}
+						}
+					}
+				}
+			}			
+			
+			if(!isTimeChange){
+				localData.time = parseFormat(hour,2) + ":" + parseFormat(min,2) + ":" + parseFormat(second,2);
+				localData.date = parseFormat(month,2) + "/" + parseFormat(day,2) + "/" + parseFormat(year,4);
+			}else{
+				isTimeChange = false;
+			}
+
+			refresh(localData);
+			
+		}, 1000);
+	} 
+
+	window.ref_time_interval = window.ref_time_interval || 0;
+    function time_interval(data){
+    	if(window.ref_time_interval){
+    	    clearInterval(window.ref_time_interval);
+    	    window.ref_time_interval = 0;
+    	}
+		window.ref_time_interval = setInterval(function(){
+			if($("#func-advanced title").text() != "Time Setting"){
+				clearInterval(window.ref_time_interval);
+    	    	window.ref_time_interval = 0;
+    	    	return;
+			}
+
+			/*
+			if(data.dstStatus == "false"){
+				clearInterval(window.ref_time_interval);
+    	    	window.ref_time_interval = 0;
+    	    	return;
+			}
+			*/
+			
+			$("form#time_setting").form("load");
+		}, 18*1000);
+    }
+
+	//这里多个表格调用一个proxy，proxy需要单独定义！
+	var time_form = $("form#time_setting").form({
+		proxy: {url: TIME_SET_URL_NEW},
+		fields: [
+			{name: "type", mapping: "type"},
+			{name: "timezone", mapping: "timezone"},
+			{name: "date", mapping: "date"},
+			{name: "time", mapping: "time"},
+			{name: "ntp_svr1", mapping: "ntp_svr1"},
+			{name: "ntp_svr2", mapping: "ntp_svr2"},
+			{name: "gmt_status", mapping: "gmt_status"}
+		],
+		submitBtn: "#submit_button"
+	}).on("ev_loadData", function(e, data){
+		/*
+		var date_arr = data.date.split("/");
+		sysTimeHash = parseFormat(date_arr[0], 2) + parseFormat(date_arr[1], 2) +  parseFormat(data.time.split(":")[0], 2);
+		
+		sysTimeYear = parseInt(date_arr[2], 10);
+		// //console.log(sysTimeYear);    //更新sysTimeYear
+		get_time_format();
+		*/
+		localData = data;
+		if(isInit){
+			refresh();
+			isInit = false;
+		}
+		isTimeChange = true;
+		
+		
+	});
+
+
+	$("#submit_button").button({
+		cls:"submit",
+		text:$.su.CHAR.OPERATION.SAVE,// "设置",
+		handler:function(e){
+			var type = $("#time_set_type").radio("getValue");
+			if(type == "auto"){
+				if(!$("input#time_set_ntp1").textbox("validate") || !$("input#time_set_ntp2").textbox("validate")){
+					return false;
+				}
+			}else if(type == "manual"){
+				if(!$("input#time_set_date").textbox("validate")){
+					return false;
+				}
+			}
+			
+			$.su.loading.show();
+			time_form.form("submit",{},function(data){
+				$.su.loading.hide();
+			},function(errorcode){
+				$.su.loading.hide();
+			},function(fail){
+				$.su.loading.hide();
+			});
+		}
+
+	});
+
+	$("input#dstStatus").checkbox({
+		fieldLabel: $.su.CHAR.TIMESET.STATUS,
+		items: [
+			{boxlabel: $.su.CHAR.TIMESET.ENABLE, uncheckedValue:"false", inputValue: "true"}
+		]
+	}).on("ev_change", function(e, oldValue, newValue){
+		var val = (newValue[0]=="dstStatus"|| newValue[0]=="on") ? "true" : "false";
+		switch(val)
+		{
+			case 'true':
+				setDstEn(true);				
+				break;
+				
+			case 'false':		
+				setDstEn(false);
+				break;
+		}
+	});
+		
+
+	$("input#dstMode").radio({
+		fieldLabel: $.su.CHAR.TIMESET.MODE,
+		columns:3,
+		items:[
+			{boxlabel: $.su.CHAR.TIMESET.PREDEF_MODE, inputValue: '0', checked:true},
+			{boxlabel: $.su.CHAR.TIMESET.RECURR_MODE, inputValue: '1'},
+			{boxlabel: $.su.CHAR.TIMESET.DATE_MODE, inputValue: '2'}
+		], 
+		
+	}).on('ev_change', function(e, oldValue, newValue){
+		if(newValue == '0'){
+			 setPreModeDstEn(true);
+  	   setRecurModeDstEn(false);
+  	   setDateModeDstEn(false);
+  	 
+       $('div#predefine_cnt').show();
+       $('div#recurring_cnt').hide();
+       $('div#date_cnt').hide();
+       //$("span#t_tip_error").html("");
+		}
+		else  if(newValue == '1'){
+			 setPreModeDstEn(false);
+  	   setRecurModeDstEn(true);
+  	   setDateModeDstEn(false);
+			
+       $('div#recurring_cnt').show();
+       $('div#predefine_cnt').hide();
+       $('div#date_cnt').hide();
+       //$("span#t_tip_error").html("");
+		}
+		else{
+			 setPreModeDstEn(false);
+  	   setRecurModeDstEn(false);
+  	   setDateModeDstEn(true);
+  	   
+       $('div#date_cnt').show();
+       $('div#predefine_cnt').hide();
+       $('div#recurring_cnt').hide();
+		}
+		
+	});
+
+
+	$("input#modeCountry").combobox({
+		fieldLabel: $.su.CHAR.TIMESET.PRE_CONTRY,
+		//fieldLabel:null,
+		//tips: "The tips of combo multi.",
+		inputCls:'m',
+		//cls:"inline",
+		items: [
+			{"value": "0", "name": $.su.CHAR.TIMESET.DST_USA, "selected": "selected"},
+			{"value": "1", "name": $.su.CHAR.TIMESET.DST_ERU},
+			{"value": "2", "name": $.su.CHAR.TIMESET.DST_AUS},
+			{"value": "3", "name": $.su.CHAR.TIMESET.DST_NEW}
+		]
+	}).on("ev_change",function(){
+		//get_time_format();
+	});
+
+
+	$("input#recurringTimeOffset").textbox({
+		fieldLabel: $.su.CHAR.TIMESET.TIME_OFFSET,
+		inputCls:'s',
+		tips:  $.su.CHAR.TIMESET.TIPS_MINUTE,
+		vtype:"number",
+		maxLength: 3,
+    minLength: 0,
+    validator:function(val){
+			if((val >= 1) && (val <= 180))
+			{
+				return true;
+			}
+			else
+			{
+				return $.su.CHAR.TIMESET.OFFSET_RANGE;
+			}
+		}
+	});
+
+	$("input#startCount").combobox({
+		fieldLabel: $.su.CHAR.TIMESET.START,
+		//fieldLabel:null,
+		//tips: "The tips of combo multi.",
+		inputCls:'s',
+		cls:"inline-block",
+		items: [
+			{"value": "5", "name": $.su.CHAR.TIMESET.LAST, "selected": "selected"},
+			{"value": "1", "name": $.su.CHAR.TIMESET.FIRST},
+			{"value": "2", "name": $.su.CHAR.TIMESET.SECOND},
+			{"value": "3", "name": $.su.CHAR.TIMESET.THIRD},
+			{"value": "4", "name": $.su.CHAR.TIMESET.FOURTH}
+		]
+	}).on("ev_change",function(){
+		//get_time_format();
+	});
+
+	$("input#startWeekday").combobox({
+		fieldLabel:null,
+		inputCls:'s',
+		cls:"inline-block",
+		//tips: $.su.CHAR.TIMESET.IN,
+		items: [
+			{"value": "0", "name": $.su.CHAR.TIMESET.Sun, "selected": "selected"},
+		  {"value": "1", "name": $.su.CHAR.TIMESET.Mon},
+			{"value": "2", "name": $.su.CHAR.TIMESET.Tues},
+			{"value": "3", "name": $.su.CHAR.TIMESET.Wed},
+			{"value": "4", "name": $.su.CHAR.TIMESET.Thur},
+			{"value": "5", "name": $.su.CHAR.TIMESET.Fri},
+			{"value": "6", "name": $.su.CHAR.TIMESET.Sat}
+
+		]
+	}).on("ev_change",function(){
+		//get_time_format();
+	});
+
+  $("span#t_tip_in_1").html($.su.CHAR.TIMESET.IN);
+
+	$("input#startMonth").combobox({
+		fieldLabel: null,
+		fieldLabel:null,
+		//tips: $.su.CHAR.TIMESET.AT,
+		inputCls:'s',
+		cls:"inline-block",
+		items: [
+			{"value": "1", "name": $.su.CHAR.TIMESET.Jan, "selected": "selected"},
+			{"value": "2", "name": $.su.CHAR.TIMESET.Feb},
+			{"value": "3", "name": $.su.CHAR.TIMESET.Mar},
+			{"value": "4", "name": $.su.CHAR.TIMESET.Apr},
+			{"value": "5", "name": $.su.CHAR.TIMESET.May},
+			{"value": "6", "name": $.su.CHAR.TIMESET.Jun},
+			{"value": "7", "name": $.su.CHAR.TIMESET.Jul},
+			{"value": "8", "name": $.su.CHAR.TIMESET.Aug},
+			{"value": "9", "name": $.su.CHAR.TIMESET.Sep},
+			{"value": "10", "name": $.su.CHAR.TIMESET.Oct},
+			{"value": "11", "name": $.su.CHAR.TIMESET.Nov},
+			{"value": "12", "name": $.su.CHAR.TIMESET.Dec}
+		]
+	}).on("ev_change",function(){
+		//get_time_format();
+	});
+
+  $("span#t_tip_at_1").html($.su.CHAR.TIMESET.AT);
+
+	$("input#startHour").combobox({
+		fieldLabel: null,
+		inputCls:'s',
+		cls:"inline-block",
+		//tips: $.su.CHAR.TIMESET.COLON,
+		items: [
+			{"value": "0", "name": $.su.CHAR.TIMESET["0hour"], "selected": "selected"},
+			{"value": "1", "name": $.su.CHAR.TIMESET["1hour"]}, 
+			{"value": "2", "name": $.su.CHAR.TIMESET["2hour"]}, 
+			{"value": "3", "name": $.su.CHAR.TIMESET["3hour"]}, 
+			{"value": "4", "name": $.su.CHAR.TIMESET["4hour"]}, 
+			{"value": "5", "name": $.su.CHAR.TIMESET["5hour"]}, 
+			{"value": "6", "name": $.su.CHAR.TIMESET["6hour"]}, 
+			{"value": "7", "name": $.su.CHAR.TIMESET["7hour"]}, 
+			{"value": "8", "name": $.su.CHAR.TIMESET["8hour"]}, 
+			{"value": "9", "name": $.su.CHAR.TIMESET["9hour"]}, 
+			{"value": "10", "name": $.su.CHAR.TIMESET["10hour"]}, 
+			{"value": "11", "name": $.su.CHAR.TIMESET["11hour"]},
+			{"value": "12", "name": $.su.CHAR.TIMESET["12hour"]},
+			{"value": "13", "name": $.su.CHAR.TIMESET["13hour"]}, 
+			{"value": "14", "name": $.su.CHAR.TIMESET["14hour"]}, 
+			{"value": "15", "name": $.su.CHAR.TIMESET["15hour"]}, 
+			{"value": "16", "name": $.su.CHAR.TIMESET["16hour"]}, 
+			{"value": "17", "name": $.su.CHAR.TIMESET["17hour"]}, 
+			{"value": "18", "name": $.su.CHAR.TIMESET["18hour"]}, 
+			{"value": "19", "name": $.su.CHAR.TIMESET["19hour"]}, 
+			{"value": "20", "name": $.su.CHAR.TIMESET["20hour"]}, 
+			{"value": "21", "name": $.su.CHAR.TIMESET["21hour"]}, 
+			{"value": "22", "name": $.su.CHAR.TIMESET["22hour"]}, 
+			{"value": "23", "name": $.su.CHAR.TIMESET["23hour"]}
+		]
+	}).on("ev_change",function(){
+		//get_time_format();
+	});
+
+  $("span#t_tip_colon_1").html($.su.CHAR.TIMESET.COLON);
+
+	$("input#startMin").combobox({
+		fieldLabel: null,
+		inputCls:'s',
+		cls:"inline-block",
+		items: [
+			{"value": "0", "name": $.su.CHAR.TIMESET["0Minute"], "selected": "selected"},
+			{"value": "1", "name": $.su.CHAR.TIMESET["1Minute"]},
+			{"value": "2", "name": $.su.CHAR.TIMESET["2Minute"]},
+			{"value": "3", "name": $.su.CHAR.TIMESET["3Minute"]},
+			{"value": "4", "name": $.su.CHAR.TIMESET["4Minute"]},
+			{"value": "5", "name": $.su.CHAR.TIMESET["5Minute"]},
+			{"value": "6", "name": $.su.CHAR.TIMESET["6Minute"]},
+			{"value": "7", "name": $.su.CHAR.TIMESET["7Minute"]},
+			{"value": "8", "name": $.su.CHAR.TIMESET["8Minute"]},
+			{"value": "9", "name": $.su.CHAR.TIMESET["9Minute"]},
+			{"value": "10", "name": $.su.CHAR.TIMESET["10Minute"]},
+			{"value": "11", "name": $.su.CHAR.TIMESET["11Minute"]},
+			{"value": "12", "name": $.su.CHAR.TIMESET["12Minute"]},
+			{"value": "13", "name": $.su.CHAR.TIMESET["13Minute"]},
+			{"value": "14", "name": $.su.CHAR.TIMESET["14Minute"]},
+			{"value": "15", "name": $.su.CHAR.TIMESET["15Minute"]},
+			{"value": "16", "name": $.su.CHAR.TIMESET["16Minute"]},
+			{"value": "17", "name": $.su.CHAR.TIMESET["17Minute"]},
+			{"value": "18", "name": $.su.CHAR.TIMESET["18Minute"]},
+			{"value": "19", "name": $.su.CHAR.TIMESET["19Minute"]},
+			{"value": "20", "name": $.su.CHAR.TIMESET["20Minute"]},
+			{"value": "21", "name": $.su.CHAR.TIMESET["21Minute"]},
+			{"value": "22", "name": $.su.CHAR.TIMESET["22Minute"]},
+			{"value": "23", "name": $.su.CHAR.TIMESET["23Minute"]},
+			{"value": "24", "name": $.su.CHAR.TIMESET["24Minute"]},
+			{"value": "25", "name": $.su.CHAR.TIMESET["25Minute"]},
+			{"value": "26", "name": $.su.CHAR.TIMESET["26Minute"]},
+			{"value": "27", "name": $.su.CHAR.TIMESET["27Minute"]},
+			{"value": "28", "name": $.su.CHAR.TIMESET["28Minute"]},
+			{"value": "29", "name": $.su.CHAR.TIMESET["29Minute"]},
+			{"value": "30", "name": $.su.CHAR.TIMESET["30Minute"]},
+			{"value": "31", "name": $.su.CHAR.TIMESET["31Minute"]},
+			{"value": "32", "name": $.su.CHAR.TIMESET["32Minute"]},
+			{"value": "33", "name": $.su.CHAR.TIMESET["33Minute"]},
+			{"value": "34", "name": $.su.CHAR.TIMESET["34Minute"]},
+			{"value": "35", "name": $.su.CHAR.TIMESET["35Minute"]},
+			{"value": "36", "name": $.su.CHAR.TIMESET["36Minute"]},
+			{"value": "37", "name": $.su.CHAR.TIMESET["37Minute"]},
+			{"value": "38", "name": $.su.CHAR.TIMESET["38Minute"]},
+			{"value": "39", "name": $.su.CHAR.TIMESET["39Minute"]},
+			{"value": "40", "name": $.su.CHAR.TIMESET["40Minute"]},
+			{"value": "41", "name": $.su.CHAR.TIMESET["41Minute"]},
+			{"value": "42", "name": $.su.CHAR.TIMESET["42Minute"]},
+			{"value": "43", "name": $.su.CHAR.TIMESET["43Minute"]},
+			{"value": "44", "name": $.su.CHAR.TIMESET["44Minute"]},
+			{"value": "45", "name": $.su.CHAR.TIMESET["45Minute"]},
+			{"value": "46", "name": $.su.CHAR.TIMESET["46Minute"]},
+			{"value": "47", "name": $.su.CHAR.TIMESET["47Minute"]},
+			{"value": "48", "name": $.su.CHAR.TIMESET["48Minute"]},
+			{"value": "49", "name": $.su.CHAR.TIMESET["49Minute"]},
+			{"value": "50", "name": $.su.CHAR.TIMESET["50Minute"]},
+			{"value": "51", "name": $.su.CHAR.TIMESET["51Minute"]},
+			{"value": "52", "name": $.su.CHAR.TIMESET["52Minute"]},
+			{"value": "53", "name": $.su.CHAR.TIMESET["53Minute"]},
+			{"value": "54", "name": $.su.CHAR.TIMESET["54Minute"]},
+			{"value": "55", "name": $.su.CHAR.TIMESET["55Minute"]},
+			{"value": "56", "name": $.su.CHAR.TIMESET["56Minute"]},
+			{"value": "57", "name": $.su.CHAR.TIMESET["57Minute"]},
+			{"value": "58", "name": $.su.CHAR.TIMESET["58Minute"]},
+			{"value": "59", "name": $.su.CHAR.TIMESET["59Minute"]}
+		]
+	}).on("ev_change",function(){
+		//get_time_format();
+	});
+
+
+	$("input#endCount").combobox({
+		fieldLabel: $.su.CHAR.TIMESET.END,
+		//tips: "The tips of combo multi.",
+		inputCls:'s',
+		cls:"inline-block",
+		items: [
+			{"value": "5", "name": $.su.CHAR.TIMESET.LAST, "selected": "selected"},
+			{"value": "1", "name": $.su.CHAR.TIMESET.FIRST},
+			{"value": "2", "name": $.su.CHAR.TIMESET.SECOND},
+			{"value": "3", "name": $.su.CHAR.TIMESET.THIRD},
+			{"value": "4", "name": $.su.CHAR.TIMESET.FOURTH}
+		]
+	}).on("ev_change",function(){
+		//get_time_format();
+	});
+
+	$("input#endWeekday").combobox({
+		fieldLabel:null,
+		inputCls:'s',
+		cls:"inline-block",
+		//tips: $.su.CHAR.TIMESET.IN,
+		items: [
+			{"value": "0", "name": $.su.CHAR.TIMESET.Sun, "selected": "selected"},
+		  {"value": "1", "name": $.su.CHAR.TIMESET.Mon},
+			{"value": "2", "name": $.su.CHAR.TIMESET.Tues},
+			{"value": "3", "name": $.su.CHAR.TIMESET.Wed},
+			{"value": "4", "name": $.su.CHAR.TIMESET.Thur},
+			{"value": "5", "name": $.su.CHAR.TIMESET.Fri},
+			{"value": "6", "name": $.su.CHAR.TIMESET.Sat}
+
+		]
+	}).on("ev_change",function(){
+		//get_time_format();
+	});
+
+  $("span#t_tip_in_2").html($.su.CHAR.TIMESET.IN);
+
+	$("input#endMonth").combobox({
+		fieldLabel: null,
+		fieldLabel:null,
+		//tips: $.su.CHAR.TIMESET.AT,
+		inputCls:'s',
+		cls:"inline-block",
+		items: [
+			{"value": "1", "name": $.su.CHAR.TIMESET.Jan, "selected": "selected"},
+			{"value": "2", "name": $.su.CHAR.TIMESET.Feb},
+			{"value": "3", "name": $.su.CHAR.TIMESET.Mar},
+			{"value": "4", "name": $.su.CHAR.TIMESET.Apr},
+			{"value": "5", "name": $.su.CHAR.TIMESET.May},
+			{"value": "6", "name": $.su.CHAR.TIMESET.Jun},
+			{"value": "7", "name": $.su.CHAR.TIMESET.Jul},
+			{"value": "8", "name": $.su.CHAR.TIMESET.Aug},
+			{"value": "9", "name": $.su.CHAR.TIMESET.Sep},
+			{"value": "10", "name": $.su.CHAR.TIMESET.Oct},
+			{"value": "11", "name": $.su.CHAR.TIMESET.Nov},
+			{"value": "12", "name": $.su.CHAR.TIMESET.Dec}
+		]
+	}).on("ev_change",function(){
+		//get_time_format();
+	});
+
+  $("span#t_tip_at_2").html($.su.CHAR.TIMESET.AT);
+
+	$("input#endHour").combobox({
+		fieldLabel: null,
+		inputCls:'s',
+		cls:"inline-block",
+		//tips: $.su.CHAR.TIMESET.COLON,
+		items: [
+			{"value": "0", "name": $.su.CHAR.TIMESET["0hour"], "selected": "selected"},
+			{"value": "1", "name": $.su.CHAR.TIMESET["1hour"]}, 
+			{"value": "2", "name": $.su.CHAR.TIMESET["2hour"]}, 
+			{"value": "3", "name": $.su.CHAR.TIMESET["3hour"]}, 
+			{"value": "4", "name": $.su.CHAR.TIMESET["4hour"]}, 
+			{"value": "5", "name": $.su.CHAR.TIMESET["5hour"]}, 
+			{"value": "6", "name": $.su.CHAR.TIMESET["6hour"]}, 
+			{"value": "7", "name": $.su.CHAR.TIMESET["7hour"]}, 
+			{"value": "8", "name": $.su.CHAR.TIMESET["8hour"]}, 
+			{"value": "9", "name": $.su.CHAR.TIMESET["9hour"]}, 
+			{"value": "10", "name": $.su.CHAR.TIMESET["10hour"]}, 
+			{"value": "11", "name": $.su.CHAR.TIMESET["11hour"]},
+			{"value": "12", "name": $.su.CHAR.TIMESET["12hour"]},
+			{"value": "13", "name": $.su.CHAR.TIMESET["13hour"]}, 
+			{"value": "14", "name": $.su.CHAR.TIMESET["14hour"]}, 
+			{"value": "15", "name": $.su.CHAR.TIMESET["15hour"]}, 
+			{"value": "16", "name": $.su.CHAR.TIMESET["16hour"]}, 
+			{"value": "17", "name": $.su.CHAR.TIMESET["17hour"]}, 
+			{"value": "18", "name": $.su.CHAR.TIMESET["18hour"]}, 
+			{"value": "19", "name": $.su.CHAR.TIMESET["19hour"]}, 
+			{"value": "20", "name": $.su.CHAR.TIMESET["20hour"]}, 
+			{"value": "21", "name": $.su.CHAR.TIMESET["21hour"]}, 
+			{"value": "22", "name": $.su.CHAR.TIMESET["22hour"]}, 
+			{"value": "23", "name": $.su.CHAR.TIMESET["23hour"]}
+		]
+	}).on("ev_change",function(){
+		//get_time_format();
+	});
+
+  $("span#t_tip_colon_2").html($.su.CHAR.TIMESET.COLON);
+
+	$("input#endMin").combobox({
+		fieldLabel: null,
+		inputCls:'s',
+		cls:"inline-block",
+		items: [
+			{"value": "0", "name": $.su.CHAR.TIMESET["0Minute"], "selected": "selected"},
+			{"value": "1", "name": $.su.CHAR.TIMESET["1Minute"]},
+			{"value": "2", "name": $.su.CHAR.TIMESET["2Minute"]},
+			{"value": "3", "name": $.su.CHAR.TIMESET["3Minute"]},
+			{"value": "4", "name": $.su.CHAR.TIMESET["4Minute"]},
+			{"value": "5", "name": $.su.CHAR.TIMESET["5Minute"]},
+			{"value": "6", "name": $.su.CHAR.TIMESET["6Minute"]},
+			{"value": "7", "name": $.su.CHAR.TIMESET["7Minute"]},
+			{"value": "8", "name": $.su.CHAR.TIMESET["8Minute"]},
+			{"value": "9", "name": $.su.CHAR.TIMESET["9Minute"]},
+			{"value": "10", "name": $.su.CHAR.TIMESET["10Minute"]},
+			{"value": "11", "name": $.su.CHAR.TIMESET["11Minute"]},
+			{"value": "12", "name": $.su.CHAR.TIMESET["12Minute"]},
+			{"value": "13", "name": $.su.CHAR.TIMESET["13Minute"]},
+			{"value": "14", "name": $.su.CHAR.TIMESET["14Minute"]},
+			{"value": "15", "name": $.su.CHAR.TIMESET["15Minute"]},
+			{"value": "16", "name": $.su.CHAR.TIMESET["16Minute"]},
+			{"value": "17", "name": $.su.CHAR.TIMESET["17Minute"]},
+			{"value": "18", "name": $.su.CHAR.TIMESET["18Minute"]},
+			{"value": "19", "name": $.su.CHAR.TIMESET["19Minute"]},
+			{"value": "20", "name": $.su.CHAR.TIMESET["20Minute"]},
+			{"value": "21", "name": $.su.CHAR.TIMESET["21Minute"]},
+			{"value": "22", "name": $.su.CHAR.TIMESET["22Minute"]},
+			{"value": "23", "name": $.su.CHAR.TIMESET["23Minute"]},
+			{"value": "24", "name": $.su.CHAR.TIMESET["24Minute"]},
+			{"value": "25", "name": $.su.CHAR.TIMESET["25Minute"]},
+			{"value": "26", "name": $.su.CHAR.TIMESET["26Minute"]},
+			{"value": "27", "name": $.su.CHAR.TIMESET["27Minute"]},
+			{"value": "28", "name": $.su.CHAR.TIMESET["28Minute"]},
+			{"value": "29", "name": $.su.CHAR.TIMESET["29Minute"]},
+			{"value": "30", "name": $.su.CHAR.TIMESET["30Minute"]},
+			{"value": "31", "name": $.su.CHAR.TIMESET["31Minute"]},
+			{"value": "32", "name": $.su.CHAR.TIMESET["32Minute"]},
+			{"value": "33", "name": $.su.CHAR.TIMESET["33Minute"]},
+			{"value": "34", "name": $.su.CHAR.TIMESET["34Minute"]},
+			{"value": "35", "name": $.su.CHAR.TIMESET["35Minute"]},
+			{"value": "36", "name": $.su.CHAR.TIMESET["36Minute"]},
+			{"value": "37", "name": $.su.CHAR.TIMESET["37Minute"]},
+			{"value": "38", "name": $.su.CHAR.TIMESET["38Minute"]},
+			{"value": "39", "name": $.su.CHAR.TIMESET["39Minute"]},
+			{"value": "40", "name": $.su.CHAR.TIMESET["40Minute"]},
+			{"value": "41", "name": $.su.CHAR.TIMESET["41Minute"]},
+			{"value": "42", "name": $.su.CHAR.TIMESET["42Minute"]},
+			{"value": "43", "name": $.su.CHAR.TIMESET["43Minute"]},
+			{"value": "44", "name": $.su.CHAR.TIMESET["44Minute"]},
+			{"value": "45", "name": $.su.CHAR.TIMESET["45Minute"]},
+			{"value": "46", "name": $.su.CHAR.TIMESET["46Minute"]},
+			{"value": "47", "name": $.su.CHAR.TIMESET["47Minute"]},
+			{"value": "48", "name": $.su.CHAR.TIMESET["48Minute"]},
+			{"value": "49", "name": $.su.CHAR.TIMESET["49Minute"]},
+			{"value": "50", "name": $.su.CHAR.TIMESET["50Minute"]},
+			{"value": "51", "name": $.su.CHAR.TIMESET["51Minute"]},
+			{"value": "52", "name": $.su.CHAR.TIMESET["52Minute"]},
+			{"value": "53", "name": $.su.CHAR.TIMESET["53Minute"]},
+			{"value": "54", "name": $.su.CHAR.TIMESET["54Minute"]},
+			{"value": "55", "name": $.su.CHAR.TIMESET["55Minute"]},
+			{"value": "56", "name": $.su.CHAR.TIMESET["56Minute"]},
+			{"value": "57", "name": $.su.CHAR.TIMESET["57Minute"]},
+			{"value": "58", "name": $.su.CHAR.TIMESET["58Minute"]},
+			{"value": "59", "name": $.su.CHAR.TIMESET["59Minute"]}
+		]
+	}).on("ev_change",function(){
+		//get_time_format();
+	});
+
+
+
+	$("input#dateTimeOffset").textbox({
+		fieldLabel: $.su.CHAR.TIMESET.TIME_OFFSET,
+		inputCls:'s',
+		tips:  $.su.CHAR.TIMESET.TIPS_MINUTE,
+	  vtype:"number",
+		maxLength: 3,
+    minLength: 0,
+    validator:function(val){
+			if((val >= 1) && (val <= 180))
+			{
+				return true;
+			}
+			else
+			{
+				return $.su.CHAR.TIMESET.OFFSET_RANGE;
+			}
+		}
+		//readOnly:true,
+		//cls:"inline"
+	});
+
+
+	$("input#startDateYear").combobox({
+		fieldLabel: $.su.CHAR.TIMESET.START,
+		//fieldLabel:null,
+		//tips: $.su.CHAR.TIMESET.SHORT_LINE,
+		inputCls:'s',
+		cls:"inline-block",
+		items: [
+			{"value": "1970", "name": $.su.CHAR.TIMESET["1970year"]},
+            {"value": "1971", "name": $.su.CHAR.TIMESET["1971year"]},
+            {"value": "1972", "name": $.su.CHAR.TIMESET["1972year"]},
+            {"value": "1973", "name": $.su.CHAR.TIMESET["1973year"]},
+            {"value": "1974", "name": $.su.CHAR.TIMESET["1974year"]},
+            {"value": "1975", "name": $.su.CHAR.TIMESET["1975year"]},
+            {"value": "1976", "name": $.su.CHAR.TIMESET["1976year"]},
+            {"value": "1977", "name": $.su.CHAR.TIMESET["1977year"]},
+            {"value": "1978", "name": $.su.CHAR.TIMESET["1978year"]},
+            {"value": "1979", "name": $.su.CHAR.TIMESET["1979year"]},
+            {"value": "1980", "name": $.su.CHAR.TIMESET["1980year"]},
+            {"value": "1981", "name": $.su.CHAR.TIMESET["1981year"]},
+            {"value": "1982", "name": $.su.CHAR.TIMESET["1982year"]},
+            {"value": "1983", "name": $.su.CHAR.TIMESET["1983year"]},
+            {"value": "1984", "name": $.su.CHAR.TIMESET["1984year"]},
+            {"value": "1985", "name": $.su.CHAR.TIMESET["1985year"]},
+            {"value": "1986", "name": $.su.CHAR.TIMESET["1986year"]},
+            {"value": "1987", "name": $.su.CHAR.TIMESET["1987year"]},
+            {"value": "1988", "name": $.su.CHAR.TIMESET["1988year"]},
+            {"value": "1989", "name": $.su.CHAR.TIMESET["1989year"]},
+            {"value": "1990", "name": $.su.CHAR.TIMESET["1990year"]},
+            {"value": "1991", "name": $.su.CHAR.TIMESET["1991year"]},
+            {"value": "1992", "name": $.su.CHAR.TIMESET["1992year"]},
+            {"value": "1993", "name": $.su.CHAR.TIMESET["1993year"]},
+            {"value": "1994", "name": $.su.CHAR.TIMESET["1994year"]},
+            {"value": "1995", "name": $.su.CHAR.TIMESET["1995year"]},
+            {"value": "1996", "name": $.su.CHAR.TIMESET["1996year"]},
+            {"value": "1997", "name": $.su.CHAR.TIMESET["1997year"]},
+            {"value": "1998", "name": $.su.CHAR.TIMESET["1998year"]},
+            {"value": "1999", "name": $.su.CHAR.TIMESET["1999year"]},
+            {"value": "2000", "name": $.su.CHAR.TIMESET["2000year"]},
+            {"value": "2001", "name": $.su.CHAR.TIMESET["2001year"]},
+            {"value": "2002", "name": $.su.CHAR.TIMESET["2002year"]},
+            {"value": "2003", "name": $.su.CHAR.TIMESET["2003year"]},
+            {"value": "2004", "name": $.su.CHAR.TIMESET["2004year"]},
+            {"value": "2005", "name": $.su.CHAR.TIMESET["2005year"]},
+            {"value": "2006", "name": $.su.CHAR.TIMESET["2006year"]},
+            {"value": "2007", "name": $.su.CHAR.TIMESET["2007year"]},
+            {"value": "2008", "name": $.su.CHAR.TIMESET["2008year"]},
+            {"value": "2009", "name": $.su.CHAR.TIMESET["2009year"]},
+            {"value": "2010", "name": $.su.CHAR.TIMESET["2010year"]},
+            {"value": "2011", "name": $.su.CHAR.TIMESET["2011year"]},
+            {"value": "2012", "name": $.su.CHAR.TIMESET["2012year"]},
+            {"value": "2013", "name": $.su.CHAR.TIMESET["2013year"]},
+			{"value": "2014", "name": $.su.CHAR.TIMESET["2014year"], "selected": "selected"},
+			{"value": "2015", "name": $.su.CHAR.TIMESET["2015year"]},
+			{"value": "2016", "name": $.su.CHAR.TIMESET["2016year"]},
+			{"value": "2017", "name": $.su.CHAR.TIMESET["2017year"]},
+			{"value": "2018", "name": $.su.CHAR.TIMESET["2018year"]},
+		  	{"value": "2019", "name": $.su.CHAR.TIMESET["2019year"]},
+			{"value": "2020", "name": $.su.CHAR.TIMESET["2020year"]},
+			{"value": "2021", "name": $.su.CHAR.TIMESET["2021year"]},
+			{"value": "2022", "name": $.su.CHAR.TIMESET["2022year"]},
+			{"value": "2023", "name": $.su.CHAR.TIMESET["2023year"]},
+			{"value": "2024", "name": $.su.CHAR.TIMESET["2024year"]},
+			{"value": "2025", "name": $.su.CHAR.TIMESET["2025year"]},
+			{"value": "2026", "name": $.su.CHAR.TIMESET["2026year"]},
+			{"value": "2027", "name": $.su.CHAR.TIMESET["2027year"]},
+			{"value": "2028", "name": $.su.CHAR.TIMESET["2028year"]},
+			{"value": "2029", "name": $.su.CHAR.TIMESET["2029year"]},
+			{"value": "2030", "name": $.su.CHAR.TIMESET["2030year"]}
+		]
+	}).on("ev_change",function(){
+		//get_time_format();
+	});
+
+  $("span#t_tip_short_line_1").html($.su.CHAR.TIMESET.SHORT_LINE);
+
+	$("input#startDateMonth").combobox({
+		fieldLabel: null,
+		fieldLabel:null,
+		//tips: $.su.CHAR.TIMESET.SHORT_LINE,
+		inputCls:'s',
+		cls:"inline-block",
+		items: [
+			{"value": "1", "name": $.su.CHAR.TIMESET.Jan, "selected": "selected"},
+			{"value": "2", "name": $.su.CHAR.TIMESET.Feb},
+			{"value": "3", "name": $.su.CHAR.TIMESET.Mar},
+			{"value": "4", "name": $.su.CHAR.TIMESET.Apr},
+			{"value": "5", "name": $.su.CHAR.TIMESET.May},
+			{"value": "6", "name": $.su.CHAR.TIMESET.Jun},
+			{"value": "7", "name": $.su.CHAR.TIMESET.Jul},
+			{"value": "8", "name": $.su.CHAR.TIMESET.Aug},
+			{"value": "9", "name": $.su.CHAR.TIMESET.Sep},
+			{"value": "10", "name": $.su.CHAR.TIMESET.Oct},
+			{"value": "11", "name": $.su.CHAR.TIMESET.Nov},
+			{"value": "12", "name": $.su.CHAR.TIMESET.Dec}
+		]
+	}).on("ev_change",function(){
+		//get_time_format();
+	});
+
+  $("span#t_tip_short_line_2").html($.su.CHAR.TIMESET.SHORT_LINE);
+
+	$("input#startDateDay").combobox({
+		fieldLabel: null,
+		fieldLabel:null,
+		//tips: $.su.CHAR.TIMESET.AT,
+		inputCls:'s',
+		cls:"inline-block",
+		items: [
+			{"value": "1", "name": $.su.CHAR.TIMESET["1Day"], "selected": "selected"},
+			{"value": "2", "name": $.su.CHAR.TIMESET["2Day"]},
+			{"value": "3", "name": $.su.CHAR.TIMESET["3Day"]},
+			{"value": "4", "name": $.su.CHAR.TIMESET["4Day"]},
+			{"value": "5", "name": $.su.CHAR.TIMESET["5Day"]},
+			{"value": "6", "name": $.su.CHAR.TIMESET["6Day"]},
+			{"value": "7", "name": $.su.CHAR.TIMESET["7Day"]},
+			{"value": "8", "name": $.su.CHAR.TIMESET["8Day"]},
+			{"value": "9", "name": $.su.CHAR.TIMESET["9Day"]},
+			{"value": "10", "name": $.su.CHAR.TIMESET["10Day"]},
+			{"value": "11", "name": $.su.CHAR.TIMESET["11Day"]},
+			{"value": "12", "name": $.su.CHAR.TIMESET["12Day"]},
+			{"value": "13", "name": $.su.CHAR.TIMESET["13Day"]},
+			{"value": "14", "name": $.su.CHAR.TIMESET["14Day"]},
+			{"value": "15", "name": $.su.CHAR.TIMESET["15Day"]},
+			{"value": "16", "name": $.su.CHAR.TIMESET["16Day"]},
+			{"value": "17", "name": $.su.CHAR.TIMESET["17Day"]},
+			{"value": "18", "name": $.su.CHAR.TIMESET["18Day"]},
+			{"value": "19", "name": $.su.CHAR.TIMESET["19Day"]},
+			{"value": "20", "name": $.su.CHAR.TIMESET["20Day"]},
+			{"value": "21", "name": $.su.CHAR.TIMESET["21Day"]},
+			{"value": "22", "name": $.su.CHAR.TIMESET["22Day"]},
+			{"value": "23", "name": $.su.CHAR.TIMESET["23Day"]},
+			{"value": "24", "name": $.su.CHAR.TIMESET["24Day"]},
+			{"value": "25", "name": $.su.CHAR.TIMESET["25Day"]},
+			{"value": "26", "name": $.su.CHAR.TIMESET["26Day"]},
+			{"value": "27", "name": $.su.CHAR.TIMESET["27Day"]},
+			{"value": "28", "name": $.su.CHAR.TIMESET["28Day"]},
+			{"value": "29", "name": $.su.CHAR.TIMESET["29Day"]},
+			{"value": "30", "name": $.su.CHAR.TIMESET["30Day"]},
+			{"value": "31", "name": $.su.CHAR.TIMESET["31Day"]}
+		]
+	}).on("ev_change",function(){
+		//get_time_format();
+	});
+
+  $("span#t_tip_at_3").html($.su.CHAR.TIMESET.AT);
+
+	$("input#startDateHour").combobox({
+		fieldLabel: null,
+		inputCls:'s',
+		cls:"inline-block",
+		//tips: $.su.CHAR.TIMESET.COLON,
+		items: [
+			{"value": "0", "name": $.su.CHAR.TIMESET["0hour"], "selected": "selected"},
+			{"value": "1", "name": $.su.CHAR.TIMESET["1hour"]}, 
+			{"value": "2", "name": $.su.CHAR.TIMESET["2hour"]}, 
+			{"value": "3", "name": $.su.CHAR.TIMESET["3hour"]}, 
+			{"value": "4", "name": $.su.CHAR.TIMESET["4hour"]}, 
+			{"value": "5", "name": $.su.CHAR.TIMESET["5hour"]}, 
+			{"value": "6", "name": $.su.CHAR.TIMESET["6hour"]}, 
+			{"value": "7", "name": $.su.CHAR.TIMESET["7hour"]}, 
+			{"value": "8", "name": $.su.CHAR.TIMESET["8hour"]}, 
+			{"value": "9", "name": $.su.CHAR.TIMESET["9hour"]}, 
+			{"value": "10", "name": $.su.CHAR.TIMESET["10hour"]}, 
+			{"value": "11", "name": $.su.CHAR.TIMESET["11hour"]},
+			{"value": "12", "name": $.su.CHAR.TIMESET["12hour"]},
+			{"value": "13", "name": $.su.CHAR.TIMESET["13hour"]}, 
+			{"value": "14", "name": $.su.CHAR.TIMESET["14hour"]}, 
+			{"value": "15", "name": $.su.CHAR.TIMESET["15hour"]}, 
+			{"value": "16", "name": $.su.CHAR.TIMESET["16hour"]}, 
+			{"value": "17", "name": $.su.CHAR.TIMESET["17hour"]}, 
+			{"value": "18", "name": $.su.CHAR.TIMESET["18hour"]}, 
+			{"value": "19", "name": $.su.CHAR.TIMESET["19hour"]}, 
+			{"value": "20", "name": $.su.CHAR.TIMESET["20hour"]}, 
+			{"value": "21", "name": $.su.CHAR.TIMESET["21hour"]}, 
+			{"value": "22", "name": $.su.CHAR.TIMESET["22hour"]}, 
+			{"value": "23", "name": $.su.CHAR.TIMESET["23hour"]}
+		]
+	}).on("ev_change",function(){
+		//get_time_format();
+	});
+
+  $("span#t_tip_colon_3").html($.su.CHAR.TIMESET.COLON);
+
+	$("input#startDateMin").combobox({
+		fieldLabel: null,
+		inputCls:'s',
+		cls:"inline-block",
+		items: [
+			{"value": "0", "name": $.su.CHAR.TIMESET["0Minute"], "selected": "selected"},
+			{"value": "1", "name": $.su.CHAR.TIMESET["1Minute"]},
+			{"value": "2", "name": $.su.CHAR.TIMESET["2Minute"]},
+			{"value": "3", "name": $.su.CHAR.TIMESET["3Minute"]},
+			{"value": "4", "name": $.su.CHAR.TIMESET["4Minute"]},
+			{"value": "5", "name": $.su.CHAR.TIMESET["5Minute"]},
+			{"value": "6", "name": $.su.CHAR.TIMESET["6Minute"]},
+			{"value": "7", "name": $.su.CHAR.TIMESET["7Minute"]},
+			{"value": "8", "name": $.su.CHAR.TIMESET["8Minute"]},
+			{"value": "9", "name": $.su.CHAR.TIMESET["9Minute"]},
+			{"value": "10", "name": $.su.CHAR.TIMESET["10Minute"]},
+			{"value": "11", "name": $.su.CHAR.TIMESET["11Minute"]},
+			{"value": "12", "name": $.su.CHAR.TIMESET["12Minute"]},
+			{"value": "13", "name": $.su.CHAR.TIMESET["13Minute"]},
+			{"value": "14", "name": $.su.CHAR.TIMESET["14Minute"]},
+			{"value": "15", "name": $.su.CHAR.TIMESET["15Minute"]},
+			{"value": "16", "name": $.su.CHAR.TIMESET["16Minute"]},
+			{"value": "17", "name": $.su.CHAR.TIMESET["17Minute"]},
+			{"value": "18", "name": $.su.CHAR.TIMESET["18Minute"]},
+			{"value": "19", "name": $.su.CHAR.TIMESET["19Minute"]},
+			{"value": "20", "name": $.su.CHAR.TIMESET["20Minute"]},
+			{"value": "21", "name": $.su.CHAR.TIMESET["21Minute"]},
+			{"value": "22", "name": $.su.CHAR.TIMESET["22Minute"]},
+			{"value": "23", "name": $.su.CHAR.TIMESET["23Minute"]},
+			{"value": "24", "name": $.su.CHAR.TIMESET["24Minute"]},
+			{"value": "25", "name": $.su.CHAR.TIMESET["25Minute"]},
+			{"value": "26", "name": $.su.CHAR.TIMESET["26Minute"]},
+			{"value": "27", "name": $.su.CHAR.TIMESET["27Minute"]},
+			{"value": "28", "name": $.su.CHAR.TIMESET["28Minute"]},
+			{"value": "29", "name": $.su.CHAR.TIMESET["29Minute"]},
+			{"value": "30", "name": $.su.CHAR.TIMESET["30Minute"]},
+			{"value": "31", "name": $.su.CHAR.TIMESET["31Minute"]},
+			{"value": "32", "name": $.su.CHAR.TIMESET["32Minute"]},
+			{"value": "33", "name": $.su.CHAR.TIMESET["33Minute"]},
+			{"value": "34", "name": $.su.CHAR.TIMESET["34Minute"]},
+			{"value": "35", "name": $.su.CHAR.TIMESET["35Minute"]},
+			{"value": "36", "name": $.su.CHAR.TIMESET["36Minute"]},
+			{"value": "37", "name": $.su.CHAR.TIMESET["37Minute"]},
+			{"value": "38", "name": $.su.CHAR.TIMESET["38Minute"]},
+			{"value": "39", "name": $.su.CHAR.TIMESET["39Minute"]},
+			{"value": "40", "name": $.su.CHAR.TIMESET["40Minute"]},
+			{"value": "41", "name": $.su.CHAR.TIMESET["41Minute"]},
+			{"value": "42", "name": $.su.CHAR.TIMESET["42Minute"]},
+			{"value": "43", "name": $.su.CHAR.TIMESET["43Minute"]},
+			{"value": "44", "name": $.su.CHAR.TIMESET["44Minute"]},
+			{"value": "45", "name": $.su.CHAR.TIMESET["45Minute"]},
+			{"value": "46", "name": $.su.CHAR.TIMESET["46Minute"]},
+			{"value": "47", "name": $.su.CHAR.TIMESET["47Minute"]},
+			{"value": "48", "name": $.su.CHAR.TIMESET["48Minute"]},
+			{"value": "49", "name": $.su.CHAR.TIMESET["49Minute"]},
+			{"value": "50", "name": $.su.CHAR.TIMESET["50Minute"]},
+			{"value": "51", "name": $.su.CHAR.TIMESET["51Minute"]},
+			{"value": "52", "name": $.su.CHAR.TIMESET["52Minute"]},
+			{"value": "53", "name": $.su.CHAR.TIMESET["53Minute"]},
+			{"value": "54", "name": $.su.CHAR.TIMESET["54Minute"]},
+			{"value": "55", "name": $.su.CHAR.TIMESET["55Minute"]},
+			{"value": "56", "name": $.su.CHAR.TIMESET["56Minute"]},
+			{"value": "57", "name": $.su.CHAR.TIMESET["57Minute"]},
+			{"value": "58", "name": $.su.CHAR.TIMESET["58Minute"]},
+			{"value": "59", "name": $.su.CHAR.TIMESET["59Minute"]}
+		]
+	}).on("ev_change",function(){
+		//get_time_format();
+	});
+
+
+	$("input#endDateYear").combobox({
+		fieldLabel: $.su.CHAR.TIMESET.END,
+		//fieldLabel:null,
+		//tips: $.su.CHAR.TIMESET.SHORT_LINE,
+		inputCls:'s',
+		cls:"inline-block",
+		items: [
+			{"value": "1970", "name": $.su.CHAR.TIMESET["1970year"]},
+            {"value": "1971", "name": $.su.CHAR.TIMESET["1971year"]},
+            {"value": "1972", "name": $.su.CHAR.TIMESET["1972year"]},
+            {"value": "1973", "name": $.su.CHAR.TIMESET["1973year"]},
+            {"value": "1974", "name": $.su.CHAR.TIMESET["1974year"]},
+            {"value": "1975", "name": $.su.CHAR.TIMESET["1975year"]},
+            {"value": "1976", "name": $.su.CHAR.TIMESET["1976year"]},
+            {"value": "1977", "name": $.su.CHAR.TIMESET["1977year"]},
+            {"value": "1978", "name": $.su.CHAR.TIMESET["1978year"]},
+            {"value": "1979", "name": $.su.CHAR.TIMESET["1979year"]},
+            {"value": "1980", "name": $.su.CHAR.TIMESET["1980year"]},
+            {"value": "1981", "name": $.su.CHAR.TIMESET["1981year"]},
+            {"value": "1982", "name": $.su.CHAR.TIMESET["1982year"]},
+            {"value": "1983", "name": $.su.CHAR.TIMESET["1983year"]},
+            {"value": "1984", "name": $.su.CHAR.TIMESET["1984year"]},
+            {"value": "1985", "name": $.su.CHAR.TIMESET["1985year"]},
+            {"value": "1986", "name": $.su.CHAR.TIMESET["1986year"]},
+            {"value": "1987", "name": $.su.CHAR.TIMESET["1987year"]},
+            {"value": "1988", "name": $.su.CHAR.TIMESET["1988year"]},
+            {"value": "1989", "name": $.su.CHAR.TIMESET["1989year"]},
+            {"value": "1990", "name": $.su.CHAR.TIMESET["1990year"]},
+            {"value": "1991", "name": $.su.CHAR.TIMESET["1991year"]},
+            {"value": "1992", "name": $.su.CHAR.TIMESET["1992year"]},
+            {"value": "1993", "name": $.su.CHAR.TIMESET["1993year"]},
+            {"value": "1994", "name": $.su.CHAR.TIMESET["1994year"]},
+            {"value": "1995", "name": $.su.CHAR.TIMESET["1995year"]},
+            {"value": "1996", "name": $.su.CHAR.TIMESET["1996year"]},
+            {"value": "1997", "name": $.su.CHAR.TIMESET["1997year"]},
+            {"value": "1998", "name": $.su.CHAR.TIMESET["1998year"]},
+            {"value": "1999", "name": $.su.CHAR.TIMESET["1999year"]},
+            {"value": "2000", "name": $.su.CHAR.TIMESET["2000year"]},
+            {"value": "2001", "name": $.su.CHAR.TIMESET["2001year"]},
+            {"value": "2002", "name": $.su.CHAR.TIMESET["2002year"]},
+            {"value": "2003", "name": $.su.CHAR.TIMESET["2003year"]},
+            {"value": "2004", "name": $.su.CHAR.TIMESET["2004year"]},
+            {"value": "2005", "name": $.su.CHAR.TIMESET["2005year"]},
+            {"value": "2006", "name": $.su.CHAR.TIMESET["2006year"]},
+            {"value": "2007", "name": $.su.CHAR.TIMESET["2007year"]},
+            {"value": "2008", "name": $.su.CHAR.TIMESET["2008year"]},
+            {"value": "2009", "name": $.su.CHAR.TIMESET["2009year"]},
+            {"value": "2010", "name": $.su.CHAR.TIMESET["2010year"]},
+            {"value": "2011", "name": $.su.CHAR.TIMESET["2011year"]},
+            {"value": "2012", "name": $.su.CHAR.TIMESET["2012year"]},
+            {"value": "2013", "name": $.su.CHAR.TIMESET["2013year"]},
+			{"value": "2014", "name": $.su.CHAR.TIMESET["2014year"], "selected": "selected"},
+			{"value": "2015", "name": $.su.CHAR.TIMESET["2015year"]},
+			{"value": "2016", "name": $.su.CHAR.TIMESET["2016year"]},
+			{"value": "2017", "name": $.su.CHAR.TIMESET["2017year"]},
+			{"value": "2018", "name": $.su.CHAR.TIMESET["2018year"]},
+		  	{"value": "2019", "name": $.su.CHAR.TIMESET["2019year"]},
+			{"value": "2020", "name": $.su.CHAR.TIMESET["2020year"]},
+			{"value": "2021", "name": $.su.CHAR.TIMESET["2021year"]},
+			{"value": "2022", "name": $.su.CHAR.TIMESET["2022year"]},
+			{"value": "2023", "name": $.su.CHAR.TIMESET["2023year"]},
+			{"value": "2024", "name": $.su.CHAR.TIMESET["2024year"]},
+			{"value": "2025", "name": $.su.CHAR.TIMESET["2025year"]},
+			{"value": "2026", "name": $.su.CHAR.TIMESET["2026year"]},
+			{"value": "2027", "name": $.su.CHAR.TIMESET["2027year"]},
+			{"value": "2028", "name": $.su.CHAR.TIMESET["2028year"]},
+			{"value": "2029", "name": $.su.CHAR.TIMESET["2029year"]},
+			{"value": "2030", "name": $.su.CHAR.TIMESET["2030year"]}
+			
+		]
+	}).on("ev_change",function(){
+		//get_time_format();
+	});
+
+  $("span#t_tip_short_line_3").html($.su.CHAR.TIMESET.SHORT_LINE);
+
+	$("input#endDateMonth").combobox({
+		fieldLabel: null,
+		//tips: $.su.CHAR.TIMESET.SHORT_LINE,
+		inputCls:'s',
+		cls:"inline-block",
+		items: [
+			{"value": "1", "name": $.su.CHAR.TIMESET.Jan, "selected": "selected"},
+			{"value": "2", "name": $.su.CHAR.TIMESET.Feb},
+			{"value": "3", "name": $.su.CHAR.TIMESET.Mar},
+			{"value": "4", "name": $.su.CHAR.TIMESET.Apr},
+			{"value": "5", "name": $.su.CHAR.TIMESET.May},
+			{"value": "6", "name": $.su.CHAR.TIMESET.Jun},
+			{"value": "7", "name": $.su.CHAR.TIMESET.Jul},
+			{"value": "8", "name": $.su.CHAR.TIMESET.Aug},
+			{"value": "9", "name": $.su.CHAR.TIMESET.Sep},
+			{"value": "10", "name": $.su.CHAR.TIMESET.Oct},
+			{"value": "11", "name": $.su.CHAR.TIMESET.Nov},
+			{"value": "12", "name": $.su.CHAR.TIMESET.Dec}
+		]
+	}).on("ev_change",function(){
+		//get_time_format();
+	});
+
+  $("span#t_tip_short_line_4").html($.su.CHAR.TIMESET.SHORT_LINE);
+
+	$("input#endDateDay").combobox({
+		fieldLabel: null,
+		//tips: $.su.CHAR.TIMESET.AT,
+		inputCls:'s',
+		cls:"inline-block",
+		items: [
+		  {"value": "1", "name": $.su.CHAR.TIMESET["1Day"], "selected": "selected"},
+			{"value": "2", "name": $.su.CHAR.TIMESET["2Day"]},
+			{"value": "3", "name": $.su.CHAR.TIMESET["3Day"]},
+			{"value": "4", "name": $.su.CHAR.TIMESET["4Day"]},
+			{"value": "5", "name": $.su.CHAR.TIMESET["5Day"]},
+			{"value": "6", "name": $.su.CHAR.TIMESET["6Day"]},
+			{"value": "7", "name": $.su.CHAR.TIMESET["7Day"]},
+			{"value": "8", "name": $.su.CHAR.TIMESET["8Day"]},
+			{"value": "9", "name": $.su.CHAR.TIMESET["9Day"]},
+			{"value": "10", "name": $.su.CHAR.TIMESET["10Day"]},
+			{"value": "11", "name": $.su.CHAR.TIMESET["11Day"]},
+			{"value": "12", "name": $.su.CHAR.TIMESET["12Day"]},
+			{"value": "13", "name": $.su.CHAR.TIMESET["13Day"]},
+			{"value": "14", "name": $.su.CHAR.TIMESET["14Day"]},
+			{"value": "15", "name": $.su.CHAR.TIMESET["15Day"]},
+			{"value": "16", "name": $.su.CHAR.TIMESET["16Day"]},
+			{"value": "17", "name": $.su.CHAR.TIMESET["17Day"]},
+			{"value": "18", "name": $.su.CHAR.TIMESET["18Day"]},
+			{"value": "19", "name": $.su.CHAR.TIMESET["19Day"]},
+			{"value": "20", "name": $.su.CHAR.TIMESET["20Day"]},
+			{"value": "21", "name": $.su.CHAR.TIMESET["21Day"]},
+			{"value": "22", "name": $.su.CHAR.TIMESET["22Day"]},
+			{"value": "23", "name": $.su.CHAR.TIMESET["23Day"]},
+			{"value": "24", "name": $.su.CHAR.TIMESET["24Day"]},
+			{"value": "25", "name": $.su.CHAR.TIMESET["25Day"]},
+			{"value": "26", "name": $.su.CHAR.TIMESET["26Day"]},
+			{"value": "27", "name": $.su.CHAR.TIMESET["27Day"]},
+			{"value": "28", "name": $.su.CHAR.TIMESET["28Day"]},
+			{"value": "29", "name": $.su.CHAR.TIMESET["29Day"]},
+			{"value": "30", "name": $.su.CHAR.TIMESET["30Day"]},
+			{"value": "31", "name": $.su.CHAR.TIMESET["31Day"]}
+		]
+	}).on("ev_change",function(){
+		//get_time_format();
+	});
+
+  $("span#t_tip_at_4").html($.su.CHAR.TIMESET.AT);
+
+	$("input#endDateHour").combobox({
+		fieldLabel: null,
+		inputCls:'s',
+		cls:"inline-block",
+		//tips: $.su.CHAR.TIMESET.COLON,
+		items: [
+			{"value": "0", "name": $.su.CHAR.TIMESET["0hour"], "selected": "selected"},
+			{"value": "1", "name": $.su.CHAR.TIMESET["1hour"]}, 
+			{"value": "2", "name": $.su.CHAR.TIMESET["2hour"]}, 
+			{"value": "3", "name": $.su.CHAR.TIMESET["3hour"]}, 
+			{"value": "4", "name": $.su.CHAR.TIMESET["4hour"]}, 
+			{"value": "5", "name": $.su.CHAR.TIMESET["5hour"]}, 
+			{"value": "6", "name": $.su.CHAR.TIMESET["6hour"]}, 
+			{"value": "7", "name": $.su.CHAR.TIMESET["7hour"]}, 
+			{"value": "8", "name": $.su.CHAR.TIMESET["8hour"]}, 
+			{"value": "9", "name": $.su.CHAR.TIMESET["9hour"]}, 
+			{"value": "10", "name": $.su.CHAR.TIMESET["10hour"]}, 
+			{"value": "11", "name": $.su.CHAR.TIMESET["11hour"]},
+			{"value": "12", "name": $.su.CHAR.TIMESET["12hour"]},
+			{"value": "13", "name": $.su.CHAR.TIMESET["13hour"]}, 
+			{"value": "14", "name": $.su.CHAR.TIMESET["14hour"]}, 
+			{"value": "15", "name": $.su.CHAR.TIMESET["15hour"]}, 
+			{"value": "16", "name": $.su.CHAR.TIMESET["16hour"]}, 
+			{"value": "17", "name": $.su.CHAR.TIMESET["17hour"]}, 
+			{"value": "18", "name": $.su.CHAR.TIMESET["18hour"]}, 
+			{"value": "19", "name": $.su.CHAR.TIMESET["19hour"]}, 
+			{"value": "20", "name": $.su.CHAR.TIMESET["20hour"]}, 
+			{"value": "21", "name": $.su.CHAR.TIMESET["21hour"]}, 
+			{"value": "22", "name": $.su.CHAR.TIMESET["22hour"]}, 
+			{"value": "23", "name": $.su.CHAR.TIMESET["23hour"]}
+		]
+	}).on("ev_change",function(){
+		//get_time_format();
+	});
+
+  $("span#t_tip_colon_4").html($.su.CHAR.TIMESET.COLON);
+
+	$("input#endDateMin").combobox({
+		fieldLabel: null,
+		inputCls:'s',
+		cls:"inline-block",
+		items: [
+			{"value": "0", "name": $.su.CHAR.TIMESET["0Minute"], "selected": "selected"},
+			{"value": "1", "name": $.su.CHAR.TIMESET["1Minute"]},
+			{"value": "2", "name": $.su.CHAR.TIMESET["2Minute"]},
+			{"value": "3", "name": $.su.CHAR.TIMESET["3Minute"]},
+			{"value": "4", "name": $.su.CHAR.TIMESET["4Minute"]},
+			{"value": "5", "name": $.su.CHAR.TIMESET["5Minute"]},
+			{"value": "6", "name": $.su.CHAR.TIMESET["6Minute"]},
+			{"value": "7", "name": $.su.CHAR.TIMESET["7Minute"]},
+			{"value": "8", "name": $.su.CHAR.TIMESET["8Minute"]},
+			{"value": "9", "name": $.su.CHAR.TIMESET["9Minute"]},
+			{"value": "10", "name": $.su.CHAR.TIMESET["10Minute"]},
+			{"value": "11", "name": $.su.CHAR.TIMESET["11Minute"]},
+			{"value": "12", "name": $.su.CHAR.TIMESET["12Minute"]},
+			{"value": "13", "name": $.su.CHAR.TIMESET["13Minute"]},
+			{"value": "14", "name": $.su.CHAR.TIMESET["14Minute"]},
+			{"value": "15", "name": $.su.CHAR.TIMESET["15Minute"]},
+			{"value": "16", "name": $.su.CHAR.TIMESET["16Minute"]},
+			{"value": "17", "name": $.su.CHAR.TIMESET["17Minute"]},
+			{"value": "18", "name": $.su.CHAR.TIMESET["18Minute"]},
+			{"value": "19", "name": $.su.CHAR.TIMESET["19Minute"]},
+			{"value": "20", "name": $.su.CHAR.TIMESET["20Minute"]},
+			{"value": "21", "name": $.su.CHAR.TIMESET["21Minute"]},
+			{"value": "22", "name": $.su.CHAR.TIMESET["22Minute"]},
+			{"value": "23", "name": $.su.CHAR.TIMESET["23Minute"]},
+			{"value": "24", "name": $.su.CHAR.TIMESET["24Minute"]},
+			{"value": "25", "name": $.su.CHAR.TIMESET["25Minute"]},
+			{"value": "26", "name": $.su.CHAR.TIMESET["26Minute"]},
+			{"value": "27", "name": $.su.CHAR.TIMESET["27Minute"]},
+			{"value": "28", "name": $.su.CHAR.TIMESET["28Minute"]},
+			{"value": "29", "name": $.su.CHAR.TIMESET["29Minute"]},
+			{"value": "30", "name": $.su.CHAR.TIMESET["30Minute"]},
+			{"value": "31", "name": $.su.CHAR.TIMESET["31Minute"]},
+			{"value": "32", "name": $.su.CHAR.TIMESET["32Minute"]},
+			{"value": "33", "name": $.su.CHAR.TIMESET["33Minute"]},
+			{"value": "34", "name": $.su.CHAR.TIMESET["34Minute"]},
+			{"value": "35", "name": $.su.CHAR.TIMESET["35Minute"]},
+			{"value": "36", "name": $.su.CHAR.TIMESET["36Minute"]},
+			{"value": "37", "name": $.su.CHAR.TIMESET["37Minute"]},
+			{"value": "38", "name": $.su.CHAR.TIMESET["38Minute"]},
+			{"value": "39", "name": $.su.CHAR.TIMESET["39Minute"]},
+			{"value": "40", "name": $.su.CHAR.TIMESET["40Minute"]},
+			{"value": "41", "name": $.su.CHAR.TIMESET["41Minute"]},
+			{"value": "42", "name": $.su.CHAR.TIMESET["42Minute"]},
+			{"value": "43", "name": $.su.CHAR.TIMESET["43Minute"]},
+			{"value": "44", "name": $.su.CHAR.TIMESET["44Minute"]},
+			{"value": "45", "name": $.su.CHAR.TIMESET["45Minute"]},
+			{"value": "46", "name": $.su.CHAR.TIMESET["46Minute"]},
+			{"value": "47", "name": $.su.CHAR.TIMESET["47Minute"]},
+			{"value": "48", "name": $.su.CHAR.TIMESET["48Minute"]},
+			{"value": "49", "name": $.su.CHAR.TIMESET["49Minute"]},
+			{"value": "50", "name": $.su.CHAR.TIMESET["50Minute"]},
+			{"value": "51", "name": $.su.CHAR.TIMESET["51Minute"]},
+			{"value": "52", "name": $.su.CHAR.TIMESET["52Minute"]},
+			{"value": "53", "name": $.su.CHAR.TIMESET["53Minute"]},
+			{"value": "54", "name": $.su.CHAR.TIMESET["54Minute"]},
+			{"value": "55", "name": $.su.CHAR.TIMESET["55Minute"]},
+			{"value": "56", "name": $.su.CHAR.TIMESET["56Minute"]},
+			{"value": "57", "name": $.su.CHAR.TIMESET["57Minute"]},
+			{"value": "58", "name": $.su.CHAR.TIMESET["58Minute"]},
+			{"value": "59", "name": $.su.CHAR.TIMESET["59Minute"]}
+		]
+	}).on("ev_change",function(){
+		//get_time_format();
+	});
+	
+  //$("span#t_tip_error").html("");
+  
+	$("form#time_dst").form({
+		proxy: {url: TIME_DST_URL_NEW},
+		fields: [
+			{name: "dstStatus", mapping: "dstStatus"},
+			{name: "dstMode", mapping: "dstMode"},
+			{name: "modeCountry", mapping: "modeCountry"},
+			{name: "recurringTimeOffset", mapping: "recurringTimeOffset"},
+			{name: "startCount", mapping: "startCount"},
+			{name: "startWeekday", mapping: "startWeekday"},
+			{name: "startMonth", mapping: "startMonth"},
+			{name: "startHour", mapping: "startHour"},
+			{name: "startMin", mapping: "startMin"},
+			{name: "endCount", mapping: "endCount"},
+			{name: "endWeekday", mapping: "endWeekday"},
+			{name: "endMonth", mapping: "endMonth"},
+			{name: "endHour", mapping: "endHour"},
+			{name: "endMin", mapping: "endMin"},
+			{name: "dateTimeOffset", mapping: "dateTimeOffset"},
+			{name: "startDateYear", mapping: "startDateYear"},
+			{name: "startDateMonth", mapping: "startDateMonth"},
+			{name: "startDateDay", mapping: "startDateDay"},
+			{name: "startDateHour", mapping: "startDateHour"},
+			{name: "startDateMin", mapping: "startDateMin"},
+			{name: "endDateYear", mapping: "endDateYear"},
+			{name: "endDateMonth", mapping: "endDateMonth"},
+			{name: "endDateDay", mapping: "endDateDay"},
+		  {name: "endDateHour", mapping: "endDateHour"},
+			{name: "endDateMin", mapping: "endDateMin"}
+		],
+		validator:function(){
+         
+          var dstStatus = $("input#dstStatus").checkbox("getValue");
+          var dstMode = $("input#dstMode").radio("getValue");
+          
+          if((dstStatus != "dstStatus") && (dstStatus != "true"))
+          {
+          	 $("#startDateMin").textbox("setValid");
+		         $("#startDateMin").textbox("setNormal");
+		         //$("span#t_tip_error").html("");
+		         
+          	 return true;
+          }
+
+          if(0 == dstMode)
+          {
+          	 return true;
+          }
+          else if(1 == dstMode)
+          {  	
+         	var recurringTimeOffset = parseInt($("input#recurringTimeOffset").textbox("getValue"),10);
+		 	var startCount = parseInt($("input#startCount").combobox("getValue"),10);
+		 	var startWeekday = parseInt($("input#startWeekday").combobox("getValue"),10);
+		 	var startMonth = parseInt($("input#startMonth").combobox("getValue"),10);
+		 	var startHour = parseInt($("input#startHour").combobox("getValue"),10);
+		 	var startMin = parseInt($("input#startMin").combobox("getValue"),10);
+		 	var endCount = parseInt($("input#endCount").combobox("getValue"),10);
+		 	var endWeekday = parseInt($("input#endWeekday").combobox("getValue"),10);
+		 	var endMonth = parseInt($("input#endMonth").combobox("getValue"),10);
+		 	var endHour = parseInt($("input#endHour").combobox("getValue"),10);
+		 	var endMin = parseInt($("input#endMin").combobox("getValue"),10);
+
+		  	if((startCount == endCount) && (startWeekday == endWeekday) && (startMonth == endMonth))
+		  	{
+		  		 var start_time = startHour*60 + startMin;
+		  		 var end_time = endHour*60 +  endMin;
+		  		 if((end_time - start_time >=0) && (end_time - start_time <= recurringTimeOffset))
+		  		 {
+		  		 	$("#recurringTimeOffset").textbox("setError", $.su.CHAR.TIMESET.DATE_OFFSET_ERR);
+		  	  	return false;
+		  		 }
+		  	}
+
+		   return true;
+          }
+          
+		 		  var dateTimeOffset = parseInt($("input#dateTimeOffset").textbox("getValue"),10);
+		 		  var startDateYear = parseInt($("input#startDateYear").combobox("getValue"),10);
+		 		  var startDateMonth = parseInt($("input#startDateMonth").combobox("getValue"),10);
+		 		  var startDateDay = parseInt($("input#startDateDay").combobox("getValue"),10);
+		 		  var startDateHour = parseInt($("input#startDateHour").combobox("getValue"),10);
+		 		  var startDateMin = parseInt($("input#startDateMin").combobox("getValue"),10);
+		 		  var endDateYear = parseInt($("input#endDateYear").combobox("getValue"),10);
+		 		  var endDateMonth = parseInt($("input#endDateMonth").combobox("getValue"),10);
+		 		  var endDateDay = parseInt($("input#endDateDay").combobox("getValue"),10);
+		 		  var endDateHour = parseInt($("input#endDateHour").combobox("getValue"),10);
+		 		  var endDateMin = parseInt($("input#endDateMin").combobox("getValue"),10);
+
+		 		  if(2 == checkDate(startDateDay, startDateMonth, startDateYear))
+		 		  {
+		 		   	  $("#startDateDay").combobox("setError", $.su.CHAR.TIMESET.DATE_INVALID);
+			        return false;
+			    }
+
+		 		  if(2 == checkDate(endDateDay, endDateMonth, endDateYear))
+		 		  {
+		 		   	  $("#endDateDay").combobox("setError", $.su.CHAR.TIMESET.DATE_INVALID);
+			        return false;
+			    }
+
+		 		  if(startDateYear > endDateYear)
+		 		  {
+		 		  	 $("#startDateYear").combobox("setError", $.su.CHAR.TIMESET.START_YEAR_ERR);
+		         //$("span#t_tip_error").html($.su.CHAR.TIMESET.START_YEAR_ERR);
+				     return false;
+		 		  }
+
+		 		  if((startDateYear == endDateYear) && (startDateMonth > endDateMonth))
+		 		  {
+		 		  	 $("#startDateMonth").combobox("setError", $.su.CHAR.TIMESET.START_MONTH_ERR);
+		         //$("span#t_tip_error").html($.su.CHAR.TIMESET.START_MONTH_ERR);
+				     return false;
+		 		  }
+
+		 		  if((startDateYear == endDateYear) && (startDateMonth == endDateMonth) && (startDateDay > endDateDay))
+		 		  {
+		 		  	 $("#startDateDay").combobox("setError", $.su.CHAR.TIMESET.START_DAY_ERR);
+		         //$("span#t_tip_error").html($.su.CHAR.TIMESET.START_DAY_ERR);
+				     return false;
+		 		  }
+
+		 		  if((startDateYear == endDateYear) && (startDateMonth == endDateMonth) && (startDateDay == endDateDay) && (startDateHour > endDateHour))
+		 		  {
+		 		  	 $("#startDateHour").combobox("setError", $.su.CHAR.TIMESET.START_HOUR_ERR);
+		         //$("span#t_tip_error").html($.su.CHAR.TIMESET.START_HOUR_ERR);
+				     return false;
+		 		  }
+
+		 		  if((startDateYear == endDateYear) && (startDateMonth == endDateMonth) && (startDateDay == endDateDay) && (startDateHour == endDateHour) && (startDateMin > endDateMin))
+		 		  {
+		 		  	 $("#startDateMin").combobox("setError", $.su.CHAR.TIMESET.START_MINUTE_ERR);
+		         //$("span#t_tip_error").html($.su.CHAR.TIMESET.START_MINUTE_ERR);
+				     return false;
+		 		  }
+		 		  if((startDateYear == endDateYear) && (startDateMonth == endDateMonth) && (startDateDay == endDateDay))
+		 		  {
+		 		  	 var start_time = startDateHour*60 + startDateMin;
+		 		  	 var end_time = endDateHour*60 +  endDateMin;
+		 		  	 if(end_time - start_time <= dateTimeOffset)
+		 		  	 {
+		 		  	 	$("#dateTimeOffset").textbox("setError", $.su.CHAR.TIMESET.DATE_OFFSET_ERR);
+				     	return false;
+		 		  	 }	
+		 		  }
+
+		      $("#startDateMin").textbox("setValid");
+		      $("#startDateMin").textbox("setNormal");
+          //$("span#t_tip_error").html("");
+		 		  return true;
+		},
+		autoLoad: true,
+		submitBtn: "default"
+	}).on("ev_loadData", function(e, data){
+		  if(data.dstStatus == "true")
+		  {
+		  	setDstEn(true);
+		  }
+		  else
+		  {
+		  	setDstEn(false);
+		  }
+
+		  /*更新时间*/
+		  $("form#time_setting").form("load");
+		  time_interval(data);
+	});
+
+
+	var helptimesetting = new $.su.Help({
+			container: "div#help_time_setting",
+			content: ["TIME_SETTING", "DAYLIGHT_SAVING"]
+	});
+	
+		
+});
+</script>
+</body>
+
+</html>

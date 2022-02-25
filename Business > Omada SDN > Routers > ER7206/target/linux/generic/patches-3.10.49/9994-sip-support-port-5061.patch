@@ -1,0 +1,14 @@
+--- a/net/netfilter/nf_conntrack_sip.c	2021-09-01 07:12:45.000822252 -0400
++++ b/net/netfilter/nf_conntrack_sip.c	2021-09-01 07:16:21.017457613 -0400
+@@ -1705,8 +1705,10 @@
+ {
+ 	int i, j, ret;
+ 
+-	if (ports_c == 0)
++	if (ports_c == 0) {
+ 		ports[ports_c++] = SIP_PORT;
++		ports[ports_c++] = SIP_PORT + 1;
++	}
+ 
+ 	for (i = 0; i < ports_c; i++) {
+ 		memset(&sip[i], 0, sizeof(sip[i]));

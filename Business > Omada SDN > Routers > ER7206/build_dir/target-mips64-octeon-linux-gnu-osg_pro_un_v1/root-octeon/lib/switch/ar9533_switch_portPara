@@ -1,0 +1,291 @@
+#!/bin/sh
+
+# set port state
+# $1: port id
+# $2: on or off
+
+hex()
+{
+	echo `echo $1 |awk '{printf("%x"),$0}'`
+}
+
+set_port_state()
+{
+	local port=$1
+	local state=$2
+	local val=0
+        local reg=$(hex $((0x100*($port+1))))
+
+	if [ $state = "on" ]; then		
+		
+		swconfig_reg_write $reg 0x280	
+		swconfig_phy_reg_write $(($port-1)) 0 0x1000	
+	else		
+		swconfig_reg_write $reg 0x0	
+		swconfig_phy_reg_write $(($port-1)) 0 0x800		
+	fi
+
+
+}
+
+# set port flowcontrol
+# $1:port id
+# $2:state (on | off)
+set_port_flowcontrol()
+{
+	local port=$1
+	local state=$2
+	local phyMsk4=0
+	local val=0
+
+	local reg=$(hex $((0x100*($port+1))))
+
+	val=$(swconfig_reg_read $reg)
+	
+
+	if [ $state = "on" ]; then
+		val=`set_bit_value $val 5 1`
+		val=`set_bit_value $val 4 1`
+	else	
+		val=`set_bit_value $val 5 0`
+		val=`set_bit_value $val 4 0`
+	fi
+	val=$(hex $val)
+	swconfig_reg_write $reg 0x$val
+
+	
+}
+
+check_rsa()
+{
+	local rsa
+	local trytimes=60
+	local time=0
+	while [ $time -lt $trytimes ];do
+		if [ -f /tmp/rsa_check/rsa_result ]; then {
+			rsa=`cat /tmp/rsa_check/rsa_result`
+			if [ $rsa == "PASS" ]; then
+			    break
+			elif [ $rsa == "FAIL" ]; then
+			    break
+			else 
+				time=$(($time+1))
+			    sleep 1
+			fi
+		}
+		else
+			time=$(($time+1))
+			sleep 1
+		fi
+		
+	done
+	
+	if [ $time -eq $trytimes ]; then
+		echo "check signature failed " > /dev/console
+		rsa="FAIL"
+	fi
+
+	echo "$rsa"
+}
+
+# set port negotiation mode
+# $1:port id
+# $2:ng mode(auto |10MH |10MF |100MH |100MF |1000MF)
+# $3:flowcontrol
+set_ng_mode()
+{
+	local port=$1
+	local ng_mode=$2
+	local flowcontrol=$3
+	local val=0
+	local ctl=0
+	local adv=0
+
+	case $ng_mode in
+		"10MH")
+			ctl=`set_bit_value $ctl 13 0`
+			ctl=`set_bit_value $ctl 8 0`
+			;;
+		"10MF")
+			ctl=`set_bit_value $ctl 13 0`
+			ctl=`set_bit_value $ctl 8 1`
+			;;
+		"100MH")
+			ctl=`set_bit_value $ctl 13 1`
+			ctl=`set_bit_value $ctl 8 0`
+			;;
+		"100MF")
+			ctl=`set_bit_value $ctl 13 1`
+			ctl=`set_bit_value $ctl 8 1`
+			;;
+		"auto")
+			adv=`swconfig_phy_reg_read $(($port-1)) 0x4`
+			adv=`set_bit_value $adv 8 1`
+			adv=`set_bit_value $adv 7 1`
+			adv=`set_bit_value $adv 6 1`
+			adv=`set_bit_value $adv 5 1`
+			adv=$(hex $adv)
+			swconfig_phy_reg_write $(($port-1)) 0x4 0x$adv
+			ctl=`set_bit_value $ctl 12 1`
+			;;
+	esac
+
+	ctl=$(hex $ctl)
+
+	swconfig_phy_reg_write $(($port-1)) 0 0x$ctl
+
+
+
+}
+
+para_usage()
+{
+	echo ""
+	echo "Usage: switch -t para -o <get|set> -p <portsid> [-s state] [-f flowcontrol] [-n ng_mode]"
+	echo ""
+	echo "Example:"
+	echo "       switch -t para -o get"
+	echo "       switch -t para -o get -p 3"
+	echo "       switch -t para -o set -p 2 -s on -f on -n 100MH "
+	echo ""
+}
+
+# check ng_mode and portsid
+# $1: portsid
+# $2: ng_mode
+para_arg_check()
+{
+	local portsid=$1
+	local ng_mode=$2
+
+	if [ -z "$portsid" ]; then
+		echo "[para] the port is null. (1~5)"
+		para_usage
+		exit 0
+	fi
+
+	for i in $portsid; do
+		if [ `expr match $i "[0-9]"` = 0 ] || [ $i -lt 1 ] || [ $i -gt 5 ] ;then
+		echo "[para] the ports is invalid. (1~5)"
+		para_usage
+		exit 0
+		fi
+	done
+
+	if [ -z "$2" ];then
+		echo "[para] the ng_mode is null. (auto |10MH | 10MF | 100MH |100MF |1000MF)"
+		para_usage
+		exit 0
+	fi
+
+	if [ "$2" != "auto" ]&&[ "$2" != "10MH" ]&&[ "$2" != "10MF" ]&&[ "$2" != "100MH" ]&&[ "$2" != "100MF" ]&&[ "$2" != "1000MF" ]; then
+		echo "[para] the ng_mode is invalid. (auto |10MH | 10MF | 100MH |100MF |1000MF)"
+		para_usage
+		exit 0
+	fi
+}
+
+# print para info
+# $1: portsid
+print_para_info()
+{
+	if [ -z "$1" ]; then
+		for i in `seq 1 $MAX_PORT_NUM`; do
+			config_get state "port"$i "port_state"
+			config_get flowcontrol "port"$i "flowcontrol"
+			config_get ng_mode "port"$i "negotiation_mode"
+			echo "Port $i:"
+			echo "   state            : $state"
+			echo "   flowcontrol      : $flowcontrol"
+			echo "   negotiation_mode : $ng_mode"
+		done
+	else	
+		for i in $1; do
+			if [ `expr match $i "[0-9]"` = 0 ] || [ $i -lt 1 ] || [ $i -gt 5 ] ;then
+				echo "[para] the ports is invalid. (1~5)"
+				echo ""
+			else
+				config_get state "port"$i "port_state"
+				config_get flowcontrol "port"$i "flowcontrol"
+				config_get ng_mode "port"$i "negotiation_mode"
+				echo "Port $i:"
+				echo "   state            : $state"
+				echo "   flowcontrol      : $flowcontrol"
+				echo "   negotiation_mode : $ng_mode"
+				echo ""
+			fi
+		done 
+		
+	fi
+}
+
+
+# init rtl8367s switch port para
+# $1: portid
+# $2: port_state
+# $3: flowcontrol
+# $4: negotiation_mode
+ar9533_switch_port_para_init()
+{
+	local portid=$1
+	local port_state=$2
+	local flowcontrol=$3
+	local ng_mode=$4
+
+	# set port para state			
+	#set_port_state $portid $port_state 
+	local rsa=$(check_rsa)
+	if [ $rsa == "FAIL" ]; then {
+		[ $portid -ne 1 ] && {
+			set_port_state $portid off
+		}		
+	}
+	else
+		set_port_state $portid on
+	fi
+
+	sleep 1		
+
+	set_port_flowcontrol $portid $flowcontrol
+
+	if [ $port_state == "on" ];then
+
+		# set port negotiation mode			
+		set_ng_mode $portid $ng_mode $flowcontrol
+	fi
+}
+
+# rtl8367s switch port parameters
+# $1: op (get|set)
+# $2: portsid (1.2.3.4.5)
+# $3: port_state (on | off)
+# $4: flowcontrol (on | off)
+# $5: ng_mode (auto |10MH | 10MF | 100MH |100MF |1000MF)
+ar9533_switch_port_para()
+{
+	local op=$1
+	local portsid=$2
+	local state=$3
+	local flowcontrol=$4
+	local ng_mode=$5
+
+	if [ $op = "get" ]; then
+		print_para_info "$portsid"
+	elif [ $op = "set" ]; then
+		para_arg_check "$portsid" $ng_mode
+		for i in $portsid; do	
+			# set port para state
+			#set_port_state $i $state
+
+			set_port_flowcontrol $portid $flowcontrol
+
+			if [ $state == "on" ];then		
+
+				# set port negotiation mode			
+				set_ng_mode $i $ng_mode $flowcontrol
+			fi 
+		done
+	else
+		echo "[para] error op. (set | get)"
+	fi
+}

@@ -1,0 +1,19 @@
+diff -urN a/drivers/net/raeth/raether.c b/drivers/net/raeth/raether.c
+--- a/drivers/net/raeth/raether.c	2018-02-13 01:16:32.250098519 +0800
++++ b/drivers/net/raeth/raether.c	2018-03-01 18:38:46.322634661 +0800
+@@ -3578,6 +3578,7 @@
+ 	}
+ #endif
+ 
++#if 0
+ 	for(i=0;i<=4;i++)
+         {
+ 	//turn on PHY
+@@ -3585,6 +3586,7 @@
+ 	        regValue &= ~(0x1<<11);
+ 	        mii_mgr_write(i, 0x0, regValue);	
+ 	}
++#endif
+ 	
+ 	mii_mgr_read(31, 0x7808 ,&regValue);
+         regValue |= (3<<16); //Enable INTR

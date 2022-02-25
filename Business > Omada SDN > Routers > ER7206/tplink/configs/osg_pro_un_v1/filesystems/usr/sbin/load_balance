@@ -1,0 +1,476 @@
+#!/bin/sh
+
+#the period of get data
+CYCLE=5
+
+#the period of sleep
+INTERVAL=4
+
+#route table base num
+ID_BASE=7000
+
+#fwmark base numb
+MARK_BASE=768
+
+#max fwmark, support 255 ports
+MAX_MARK=255
+
+IPT="iptables -t mangle -w"
+
+MWAN3_CONFIG_NAME="mwan3"
+
+RUNNING_IDLE_IFACE=""
+
+. /lib/functions.sh
+. /lib/zone/zone_api.sh
+. /lib/balance/api.sh
+
+#read the load_balance config and get wan interfaces
+get_wan_interfaces()
+{
+	ifaces=`uci get load_balance.balance.use_iface 2>/dev/null`
+
+	echo "$ifaces"
+}
+
+#$1: interface
+get_all_interfaces()
+{
+	append all_infaces $1
+}
+
+get_lan_interfaces()
+{
+	local interfaces flag=0
+
+	ifaces=`uci get load_balance.balance.use_iface 2>/dev/null`	
+	
+	if [ -n "$ifaces" ]; then
+		for i in $ifaces; do
+			append interfaces $i
+		done
+	fi
+
+
+	echo "$interfaces"
+
+}
+
+get_lan_devices()
+{
+	local all_infaces g_devs interfaces
+
+	config_load $MWAN3_CONFIG_NAME
+	config_foreach get_all_interfaces interface
+
+
+	interfaces=`get_lan_interfaces`
+
+	if [ -n "$all_infaces" -a -n "$interfaces" ];then
+		for inface in $all_infaces; do
+			local flag=0
+			for tmp in $interfaces; do
+				if [ "$inface" == "$tmp" ];then
+					flag=1
+					break
+				fi
+			done
+
+			if [ $flag -eq 0 ]; then
+				dev=`zone_get_effect_devices $inface`
+				[ -n "$dev" ] && append g_devs $dev
+			fi
+		done
+	fi
+
+	lan_dev=`zone_get_effect_devices LAN`
+	append g_devs $lan_dev
+
+	
+	echo $g_devs
+}
+
+
+#get the iface's fwmark
+#$1 interfaces 
+#$2 iface
+get_fwmark()
+{
+	local mark=0
+	local count=0
+
+	for i in $1; do
+		let count++
+
+		[ "$count" -gt $MAX_MARK ] && logger -t load_balance -p warn "Could not support mark=[$count], when get fwmark." && return 
+
+		if [ "$i" == "$2" ]; then 			
+			mark=$(($MARK_BASE+$count))
+			break
+		fi
+	done
+	
+
+	echo $mark
+}
+
+rand()
+{
+	SEED=`tr -cd 0-9 </dev/urandom | head -c 8`
+	num=`echo $SEED $(($1+1)) |awk '{srand($1);printf "%d",rand()*10000%($2-1)+1}'`
+	echo $num
+}
+
+fastpath_hw_real_on()
+{
+	local nss_switch=`uci -q get ecm.global.enable`
+	local hwnat_switch=`uci -q get hwnat.global.enabled`
+	[ "$nss_switch" == "on" -o "$hwnat_switch" == "1" ]
+}
+
+
+get_lb_dev_bytes()
+{
+	local zone="$1"
+	local dev="$2"
+	local dir="$3"
+	local bx=0
+
+	if fastpath_hw_real_on; then
+		[ -n "$zone" ] && {
+			local port=$(uci get network.switch.wan_ports_value | awk -F'|' '{print $4}' | awk -v p=${zone:3:1} '{print $p}')
+			if [ "$dir" == "rx" ]; then
+				bx="$(switch -t statistic -o get -p ${port} | grep 'RxAll' | awk '{print $3}')"
+			else
+				bx="$(switch -t statistic -o get -p ${port} | grep 'TxAll' | awk '{print $3}')"
+			fi
+		}
+	else
+		if [ "$dir" == "rx" ]; then
+			bx=`cat /sys/class/net/$dev/statistics/rx_bytes`
+		else
+			bx=`cat /sys/class/net/$dev/statistics/tx_bytes`
+		fi
+	fi
+
+	echo -n "${bx:-0}"
+}
+
+#count the idle data
+#$1 interfaces
+get_idle_max_iface()
+{
+	local per_base=0 num=0 rand_num=0
+	local pre_rx
+	local pre_tx
+	local post_bps
+	local count=0
+	local max_idle_iface=""
+	local BANDWIDTH_GRANULARITY=2000
+	local min_rate_level=$(($BANDWIDTH_GRANULARITY+1))
+	local record_online_iface=""
+
+	for iface in $1; do		
+		state=`balance_get_state $iface`
+		if [ "$state" == "on" ];then
+			dev=`zone_get_effect_devices $iface`
+			if [ -d "/sys/class/net/"$dev ]; then
+				s_rx=$(get_lb_dev_bytes "$iface" "$dev" "rx")
+				s_tx=$(get_lb_dev_bytes "$iface" "$dev" "tx")
+				append pre_rx $s_rx
+				append pre_tx $s_tx
+			fi
+		fi
+	done
+
+	sleep $CYCLE
+
+	for iface in $1; do		
+	
+		state=`balance_get_state $iface`
+		if [ "$state" == "on" ];then
+			let count++
+
+			record_online_iface="$iface"
+
+			dev=`zone_get_effect_devices $iface`
+			if [ -d "/sys/class/net/"$dev ]; then
+				e_rx=$(get_lb_dev_bytes "$iface" "$dev" "rx")
+				e_tx=$(get_lb_dev_bytes "$iface" "$dev" "tx")
+
+				#up_bps=`qos_iface_get_uplink_bandwidth $iface`
+				up_bps=`uci get load_balance.weight.$iface 2>/dev/null`
+				[ -z "$up_bps" -o "$up_bps" = "0" ] && {
+					up_bps=`uci get qos.$iface.uplink 2>/dev/null`
+				}
+				[ -z "$up_bps" -o "$up_bps" = "0" ] && continue
+
+				#down_bps=`qos_iface_get_downlink_bandwidth $iface`
+				down_bps=`uci get load_balance.weight.$iface 2>/dev/null`
+				[ -z "$down_bps" -o "$down_bps" = "0" ] && {
+					down_bps=`uci get qos.$iface.downlink 2>/dev/null`
+				}
+				[ -z "$down_bps" -o "$down_bps" = "0" ] && continue
+
+				s_rx=`echo $pre_rx |cut -d " " -f $count`	
+				s_tx=`echo $pre_tx |cut -d " " -f $count`
+
+				#Bytes-->kb
+				tx=$(($(($(($e_tx-$s_tx))*8))/1024))
+				#(tx*BANDWIDTH_GRANULARITY)/up_bandwidth+1
+				tx_level=$(($(($(($tx*$BANDWIDTH_GRANULARITY))/$up_bps))+1))
+
+				#Bytes-->kb
+				rx=$(($(($(($e_rx-$s_rx))*8))/1024))
+				#(rx*BANDWIDTH_GRANULARITY)/up_bandwidth+1
+				rx_level=$(($(($(($rx*$BANDWIDTH_GRANULARITY))/$down_bps))+1))
+
+				if [ $tx_level -gt $rx_level ];then
+					max_cur_rate_level=$tx_level
+				else
+					max_cur_rate_level=$rx_level
+				fi
+
+				if [ $max_cur_rate_level -lt $min_rate_level ];then
+					min_rate_level=$max_cur_rate_level
+					max_idle_iface=$iface
+				fi
+			fi
+		fi
+
+	done
+
+	if [ -z "$max_idle_iface" -a -z "$RUNNING_IDLE_IFACE" ]; then
+		max_idle_iface="$record_online_iface"
+	fi
+
+	echo "$max_idle_iface"
+}
+
+#set route table and ip rule
+#$1 interfaces
+load_balance_set_ip_route()
+{
+	local count table_id route_args
+
+	for iface in $1; do
+		let count++
+
+		[ "$count" -gt $MAX_MARK ] && logger -t load_balance -p warn "Could not support more than mark=[$count]." && return 
+
+		state=`balance_get_state $iface`
+
+		[ "$state" != "on" ] && continue
+
+		#create route table
+		table_id=$(($ID_BASE+$count))
+
+		interface=`zone_get_effect_ifaces $iface`
+
+		#set ip rule		
+		mark=$(($MARK_BASE+$count))	
+		ip -4 rule del pref $(($table_id+1000))	&> /dev/null			
+		ip -4 rule add pref $(($table_id+1000)) fwmark $mark/0x7ff lookup $interface
+
+		#ip -4 rule add pref $(($table_id+1000)) fwmark $mark lookup $(($table_id+1000))
+		. /lib/zone/zone_api.sh
+		device=`zone_get_effect_devices $iface`
+		ip -4 rule del pref $table_id &> /dev/null
+		ip -4 rule add pref $table_id iif $device lookup main
+	done 
+}
+
+load_balance_set_general_iptables()
+{
+	if ! $IPT -S load_balance &> /dev/null; then		
+		$IPT -N load_balance		
+	fi
+
+	$IPT -F load_balance &> /dev/null	
+
+	##policy_route[TP_pr_hook]---->special_route[TP_sr_hook]------>isp_route---->load_balance--->default_balance--->wifidog
+	if ! $IPT -S PREROUTING | grep load_balance &> /dev/null; then
+		isp_route=`$IPT -n --line-number -L PREROUTING |grep isp_route`
+		if [ -n "$isp_route" ]; then
+			num=`echo $isp_route |cut -d " " -f 1`
+			let num++
+			$IPT -I PREROUTING $num -j load_balance
+		else
+			TP_specail_route=`$IPT -n --line-number -L PREROUTING |grep TP_sr_hook`
+			if [ -n "$TP_specail_route" ];then
+				num=`echo $TP_specail_route |cut -d " " -f 1`
+				let num++
+				$IPT -I PREROUTING $num -j load_balance
+			else
+				TP_policy_route=`$IPT -n --line-number -L PREROUTING |grep TP_pr_hook`
+				if [ -n "$TP_policy_route" ];then
+					num=`echo $TP_policy_route |cut -d " " -f 1`
+					let num++
+					$IPT -I PREROUTING $num -j load_balance
+				else
+					default_balance=`$IPT -n --line-number -L PREROUTING |grep default_balance`					
+					if [ -n "$default_balance" ];then
+						num=`echo $default_balance |cut -d " " -f 1`	
+						$IPT -I PREROUTING $num -j load_balance 
+					else
+						#check the wifidog
+						local wechat_num=0 trust_num=0 outgo_num=0 min_num=65535
+						wifidog_trust=`$IPT -n --line-number -L PREROUTING |grep WiFiDog_Trusted`
+						wifidog_outgo=`$IPT -n --line-number -L PREROUTING |grep WiFiDog_Outgoing`
+						wifidow_wechat=`$IPT -n --line-number -L PREROUTING |grep WiFiDog_Wechat`
+
+						if [ -n "$wifidog_wechat" ];then
+							wechat_num=`echo $wifidog_wechat |cut -d " " -f 1`   
+							[ $wechat_num -lt $min_num ] && min_num=$wechat_num
+						fi
+
+						if [ -n "$wifidog_trust" ]; then
+							trust_num=`echo $wifidog_trust |cut -d " " -f 1`
+							[ $trust_num -lt $min_num ] && min_num=$trust_num
+						fi
+
+						if [ -n "$wifidog_outgo" ]; then
+							outgo_num=`echo $wifidog_outgo |cut -d " " -f 1` 
+							[ $outgo_num -lt $min_num ] && min_num=$outgo_num
+						fi
+
+						if [ $min_num -eq 65535 ];then
+							$IPT -A PREROUTING -j load_balance
+						else
+							$IPT -I PREROUTING $num -j load_balance
+						fi
+					fi
+				fi
+			fi
+		fi
+	fi
+
+	if ! $IPT -S load_balance_new &> /dev/null; then		
+		$IPT -N load_balance_new				
+	fi
+
+	$IPT -F load_balance_new &> /dev/null
+
+	if ! $IPT -S load_balance_pre &> /dev/null; then		
+		$IPT -N load_balance_pre
+	fi	
+
+	$IPT -F load_balance_pre &> /dev/null
+
+	$IPT -A load_balance_pre -m balance_route --dev_set load_balance_set -j MARK --set-mark $MARK_BASE/0x7ff
+
+	#save conneted's mark to all packages
+	$IPT -A load_balance -j CONNMARK --restore-mark --nfmask 0x7ff --ctmask 0x7ff
+	#$IPT -A load_balance -m state ! --state NEW -j RETURN
+	$IPT -A load_balance -m mark ! --mark 0x0/0x7ff -j RETURN
+	$IPT -A load_balance -j load_balance_pre
+	$IPT -A load_balance -m mark --mark 0x0/0x7ff -j RETURN
+	$IPT -A load_balance -j MARK --set-mark 0x0/0x7ff
+	$IPT -A load_balance -j load_balance_new
+
+	#save package's mark to conneted
+	$IPT -A load_balance -j CONNMARK --save-mark --nfmask 0x7ff --ctmask 0x7ff
+}
+
+#set working iptables
+#$1 idle mark
+load_balance_set_work_iptables()
+{
+	local flag=0
+	#delete rule first
+	$IPT -F load_balance_new &> /dev/null			
+
+	lan_eth=`get_lan_devices`
+	for eth in $lan_eth;do
+		[ $flag -gt 0 ] && $IPT -A load_balance_new -m mark ! --mark 0x0/0x7ff -j RETURN
+		
+		#mark the first package
+		$IPT -A load_balance_new -i $eth -j MARK --set-mark $1/0x7ff
+		let flag++
+	done
+}
+
+# the daemon of load balance
+#$1 interfaces
+load_balance_daemon(){
+	local iface=""
+	
+	iface=`get_idle_max_iface "$1"`
+
+	if [ -n "$iface" ]; then
+		idle_mark=`get_fwmark "$1" $iface`
+
+		load_balance_set_work_iptables $idle_mark
+
+		RUNNING_IDLE_IFACE=$iface
+	fi
+}
+
+#close reverse pathfiltering
+set_rp_filter()
+{
+    for i in /proc/sys/net/ipv4/conf/*/rp_filter;do
+    	echo 1 > $i
+    done
+}
+
+if [ -e /var/run/load_balance.pid ] ; then
+	kill $(cat /var/run/load_balance.pid) &> /dev/null
+	rm /var/run/load_balance.pid &> /dev/null
+fi
+
+echo "$$" > /var/run/load_balance.pid
+
+
+#$1: interfaces
+load_balance_set_ipset()
+{
+	ipset -! create load_balance_set hash:iface
+
+	for iface in $1;do
+		device=`zone_get_effect_devices $iface`
+		if [ -n "$device" ];then
+			gw=`get_inface_gw $iface`
+			[ -n "$gw" ] && ipset add load_balance_set $device
+		fi
+	done
+}
+
+load_balance_check_inface_ifup()
+{
+	for iface in $1; do
+	
+		state=`balance_get_state $iface`
+
+		[ "$state" == "on" ] && let g_ifup_inface++
+	done
+}
+
+g_interfaces=`get_wan_interfaces`
+
+[ -z "$g_interfaces" ] && exit 1
+
+local g_ifup_inface=0
+load_balance_check_inface_ifup "$g_interfaces"
+
+if [ $g_ifup_inface -eq 0 ]; then
+	logger -t load_balance -p warn "All the inface in load_balance is ifdown."
+	exit 1
+fi       
+
+load_balance_set_ipset "$g_interfaces"
+
+load_balance_set_ip_route "$g_interfaces"
+
+load_balance_set_general_iptables
+
+while true; do
+
+	load_balance_daemon "$g_interfaces"
+
+	balance_policy_notify "$g_interfaces"
+
+	sleep $INTERVAL
+done
+
+exit 1

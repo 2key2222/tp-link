@@ -1,0 +1,19 @@
+Source-Makefile: package/qca/qca-nss-cfi/Makefile
+Package: kmod-qca-nss-cfi
+Submenu: Network Devices
+Version: <LINUX_VERSION>-2
+Depends: @TARGET_ipq806x +kmod-qca-nss-crypto @!LINUX_3_18
+Menu-Depends: 
+Provides: 
+Build-Depends: ocf-crypto-headers
+Section: kernel
+Category: Kernel modules
+Title: Kernel driver for NSS cfi
+Maintainer: 
+Source: 
+Type: ipkg
+Description: Kernel driver for NSS cfi
+
+@@
+
+

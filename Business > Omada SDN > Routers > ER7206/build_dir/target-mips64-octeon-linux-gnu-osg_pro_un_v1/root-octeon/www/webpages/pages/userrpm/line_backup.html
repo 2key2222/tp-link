@@ -1,0 +1,306 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>LINE_BACKUP</title>
+<style type="text/css">
+</style>
+</head>
+
+<body>
+<div class="func-container">
+    <div id="line_backup_list">
+        <div id="line_backup_grid">
+        </div>
+    </div>
+    <div id="line_backup_help">
+    </div>
+</div>
+
+<script type="text/javascript">
+try{
+    $
+}catch(e){
+    location.href = "/";
+};
+
+$(document).ready(function(e){    
+    var existInterface=[],
+        URL_LINE_BACKUP_LIST = $.su.url("/admin/balance?form=line_backup");
+
+    var line_backup_Proxy = new $.su.Proxy({
+        url: URL_LINE_BACKUP_LIST,
+    });
+
+    $("#line_backup_list").panel({
+        title: $.su.CHAR.LINE_BACKUP.SETTINGS,
+        collapsible: false
+    });
+
+    var ruleGrid = $("#line_backup_grid").grid({
+        editor: {
+            content:"default",
+            fields: [
+                {name: "master_iface"},
+                {name: "slave_iface"}, 
+                {name: "mode"}, 
+                {name: "timeobj"}, 
+                {name: "state"}
+            ],
+            validator: function(){
+                var $editor = $(ruleGrid.grid('getEditor')),
+                    editingId = $editor.editor('getEditingId'),
+                    $master = $editor.find('.combobox-value[name=master_iface]'),
+                    $slave = $editor.find('.combobox-value[name=slave_iface]'),
+                    value1 = [],
+                    value2,
+                    isOccupied = false;
+
+                    if(editingId == "add"){
+                            value1 = $master.combobox("getValue");
+                            $.each(value1, function(i, o){
+                                if(-1 != $.inArray(o, existInterface)){
+                                    isOccupied = true;
+                                    $master.combobox("setError", $.su.CHAR.LINE_BACKUP.ERR1);//"接口已被别的主备组占用");
+                                    return false;
+                                }
+                            });
+                            
+                            if (!isOccupied)
+                            {
+                                value2 = $slave.combobox("getValue");
+                                $.each(value2, function(i, o){
+                                    if(-1 != $.inArray(o, existInterface)){
+                                        isOccupied = true;
+                                        $slave.combobox("setError", $.su.CHAR.LINE_BACKUP.ERR1);//"接口已被别的主备组占用");
+                                        return false;
+                                    }
+
+                                    if(-1 != $.inArray(o, value1)){
+                                        isOccupied = true;
+                                        $slave.combobox("setError", $.su.CHAR.LINE_BACKUP.ERR2);//"主备接口冲突，请重新选择！");
+                                        return false;
+                                    }
+                                });
+                            }
+
+                            return !isOccupied;
+
+                        }else
+                        {
+                            return true;
+                        }
+
+            }
+        },
+        store:{
+            proxy: line_backup_Proxy,
+            fields: [
+                {name: "master_iface"},
+                {name: "slave_iface"}, 
+                {name: "mode"},
+                {name: "timeobj"}, 
+                {name: "state"},
+                {name: "t_master_label"},
+                {name: "t_slave_label"}
+            ],
+            autoLoad: true
+        },
+        paging:[],
+        columns: [
+            {
+                xtype: "checkcolumn"
+            },
+            {
+                xtype: "rownumberer"
+            },  
+            {
+                text: $.su.CHAR.LINE_BACKUP.MASTER_INTERFACE,
+                width: 120,
+                dataIndex: "master_iface",
+                editor: {
+                    xtype: "combobox",
+                    allowBlank: false,
+					multiSelect: true,
+                    vtype:"string_visible_allow_blank",
+                    items:[
+                        {name:"---",value:"---"}
+                    ]
+                },
+		renderer: function(dd, jindex, data) {
+			return data.t_master_label ? data.t_master_label : dd;
+		}
+            },
+            {
+                text: $.su.CHAR.LINE_BACKUP.SLAVE_INTERFACE,
+                width: 120,
+                dataIndex: "slave_iface",
+                editor: {
+                    xtype: "combobox",
+                    allowBlank: false,
+                    vtype:"string_visible_allow_blank",
+                    items:[
+                        {name:"---",value:"---"}
+                    ]
+                },
+		renderer: function(dd, jindex, data) {
+			return data.t_slave_label ? data.t_slave_label : dd;
+		}
+            },
+            {
+                text: $.su.CHAR.LINE_BACKUP.MODE,
+                width: 100,
+                dataIndex: "mode",
+                renderer: function(v)
+                {
+                    if(v == "timer")
+                    {
+                        return $.su.CHAR.LINE_BACKUP.TIMER_MODE;
+                    }
+                    else if(v == "fault_one")
+                    {
+                        return $.su.CHAR.LINE_BACKUP.FAULT_ONE_MODE;
+                    }
+                    else if(v == "fault_all")
+                    {
+                        return $.su.CHAR.LINE_BACKUP.FAULT_ALL_MODE;
+                    }
+                    else{
+                        return "--";
+                    }
+                },
+                editor: {
+                    allowBlank: false,
+                    xtype: "radio",
+                    columns: 2,
+                        items:[
+                            {boxlabel: $.su.CHAR.LINE_BACKUP.TIMER_MODE, name:'mode', inputValue:'timer',checked:true},
+                            {boxlabel: $.su.CHAR.LINE_BACKUP.FAULT_ONE_SETTING, name:'mode', inputValue:'fault_one'},
+                            {boxlabel: $.su.CHAR.LINE_BACKUP.FAULT_ALL_SETTING, name:'mode', inputValue:'fault_all'}
+                        ]               
+                }
+            },
+            {
+                text: $.su.CHAR.LINE_BACKUP.TIME,
+                width: 120,
+                dataIndex: "timeobj",
+                editor: { 
+                    xtype: "combobox",
+                    allowBlank: false,
+                    vtype:"string_visible_allow_blank",
+                    items:[
+                        {name:"Any",value:"Any",selected:true}
+                    ]
+                }
+            },
+            {
+                text: $.su.CHAR.LINE_BACKUP.STATUS,
+                xtype: "statuscolumn",
+                dataIndex: "state",
+                editor: {
+                    xtype: "checkbox",
+                    items:[
+                        {boxlabel: $.su.CHAR.LINE_BACKUP.ENABLE_RULE, name:'state', inputValue:'on', uncheckedValue:"off",checked:true}
+                    ]
+                }
+            },
+            {
+                xtype: "settings"
+            }    
+        ],
+        operation: 'prompt|add|delete'
+   }).on("ev_load", function(e,data, others){
+        if(others)
+        {
+            //console.log(others.max_rules)
+            maxrules = others.max_rules;
+        }
+
+        /*发送form请求,获取interface列表.用于显示于接口下拉框*/
+        var $editor = $(ruleGrid.grid('getEditor')),
+            store = ruleGrid.grid('getStore'),
+            interfaceItem=[],
+            interfaceProxy = new $.su.Proxy({
+                url: $.su.url('/admin/balance?form=interface'),
+                async: false
+            });
+
+
+        existInterface.length = 0;/* 清空数组 */
+        $.each(store.data, function(i, o){
+            if(o.slave_iface){
+                existInterface.push(o.slave_iface);
+            }
+            if(o.master_iface){
+                existInterface = existInterface.concat(o.master_iface);
+            }
+        });
+        $.unique(existInterface);
+
+        interfaceProxy.read({}, function(data){
+            for (var i=0; i< data.length; i++)
+            {               
+                if ("1" == data[i].balance)
+                {        
+                    interfaceItem.push({name:data[i].t_label,value:data[i].interface});    
+                }  
+            }   
+
+            var combobox = $editor.find('.combobox-value[name=master_iface]');
+            combobox.combobox('loadData',interfaceItem);
+            var combobox1 = $editor.find('.combobox-value[name=slave_iface]');
+            combobox1.combobox('loadData',interfaceItem);
+        });
+
+        /*发送form请求,获取时间对象列表 */
+        var timeItem=[];
+        var timeProxy = new $.su.Proxy({
+                url: $.su.url('/admin/time_mngt?form=timeobj_list'),
+                async: false
+        });  
+
+        timeProxy.read({}, function(data){                
+            for (i=0; i<data.length; i++){
+                timeItem.push({name:data[i].entry_name,value:data[i].entry_name});                    
+            } 
+            
+            var combobox = $editor.find('.combobox-value[name=timeobj]');
+            combobox.combobox('loadData',timeItem);
+        });
+    }).on("ev_insert", function(){
+        ruleGrid.grid("getStore").load();}
+    ).on("ev_remove", function(){
+        ruleGrid.grid("getStore").load();}
+    ).on("ev_update", function(){
+        ruleGrid.grid("getStore").load();});
+
+    var editor = $(ruleGrid.grid('getEditor'));
+    editor.on("ev_startEdit", function(e){
+        var modeRadio = $(editor.find(".radio-value[name=mode]"));
+        //console.log(modeRadio.radio("getValue"));
+        var value = modeRadio.radio("getValue");
+        if(("fault_one" == value)||("fault_all" == value)){
+            editor.find(".combobox-value[name=timeobj]").combobox("disable");
+        }else{
+            editor.find(".combobox-value[name=timeobj]").combobox("enable");
+        }
+    });
+
+    editor.find(".radio-value[name=mode]").on("ev_change", function(e, oldValue, newValue){
+        //console.log(oldValue,newValue)
+        if(("fault_one" == newValue)||("fault_all" == newValue)){
+            editor.find(".combobox-value[name=timeobj]").combobox("disable");
+        }else{
+            editor.find(".combobox-value[name=timeobj]").combobox("enable");
+        }
+    });
+
+    var helpLineBackup = new $.su.Help({
+        container: "div#line_backup_help",
+        content: ["LINE_BACKUP_SETTING", "LINE_BACKUP_LIST"]
+    });
+});
+</script>
+</body>
+
+</html>

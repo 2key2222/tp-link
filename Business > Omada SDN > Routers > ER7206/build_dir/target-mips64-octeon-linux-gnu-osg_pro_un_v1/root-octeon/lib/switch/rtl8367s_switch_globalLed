@@ -1,0 +1,26 @@
+#!/bin/sh
+
+# rtl8367s switch set led state
+# $1: state (on|pff)
+# sys led 0 means turn off(gpio low)
+# sfp led 1 means turn off(gpio high)
+rtl8367s_switch_global_led()
+{
+	local state=$1
+	if [ "$state" = "off" ]; then
+		swconfig dev switch0 reg set $RTL8367S_LED0_REG 0xaaaa
+		swconfig dev switch0 reg set $RTL8367S_LED1_REG 0xaaaa
+		echo 0 > /sys/class/leds/SYS_LED/brightness
+		/etc/init.d/sfp_led stop
+		echo none > /sys/class/leds/LAN_LED_0/trigger
+		echo 1 > /sys/class/leds/LAN_LED_0/brightness
+	elif [ "$state" = "on" ]; then
+		swconfig dev switch0 reg set $RTL8367S_LED0_REG 0x0000
+		swconfig dev switch0 reg set $RTL8367S_LED1_REG 0x0000
+		/etc/init.d/led start
+		/etc/init.d/sfp_led restart
+	else
+		echo "[led] state is invalid.(on | off)"
+		exit 0
+	fi
+}

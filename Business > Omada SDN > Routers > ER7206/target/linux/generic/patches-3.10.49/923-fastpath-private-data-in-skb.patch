@@ -1,0 +1,21 @@
+--- a/include/linux/skbuff.h	2020-03-28 13:55:28.680416182 +0800
++++ b/include/linux/skbuff.h	2020-03-28 13:56:48.924416182 +0800
+@@ -504,6 +504,7 @@
+ 		__u32		reserved_tailroom;
+ 	};
+ 
++	 unsigned long           shortcut_data;
+ #ifdef CONFIG_NF_CONNTRACK_EXTMARK
+ 	/** 
+ 	 * nfextmark 
+--- a/net/ipv4/ip_output.c	2020-03-28 13:55:47.700416182 +0800
++++ b/net/ipv4/ip_output.c	2020-03-28 13:57:37.665416182 +0800
+@@ -459,6 +459,8 @@
+ 	to->ipvs_property = from->ipvs_property;
+ #endif
+ 	skb_copy_secmark(to, from);
++
++	to->shortcut_data = from->shortcut_data;
+ }
+ 
+ /*

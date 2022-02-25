@@ -1,0 +1,168 @@
+#!/bin/sh
+# Copyright(c) 2011-2014 Shenzhen TP-LINK Technologies Co.Ltd.
+# file     build-ovpn-crt
+# brief    build OpenVPN certificate for server/client
+# author   Zhu Xianfeng<zhuxianfeng@tp-link.net>
+# version  1.0.0
+# date     02Dec14
+# history  arg 1.0.0, 02Dec14, Zhu Xianfeng, Create the file. 
+
+SECTIONNAME=$1
+action=$2
+
+. /lib/functions.sh
+. /lib/functions/network.sh
+. /lib/zone/zone_api.sh
+include /lib/network
+
+. /etc/easy-rsa/vars
+OPENVPN_DIR="/etc/openvpn"
+#TMP_OPENVPN_DIR="/tmp/etc/openvpn"
+export RANDFILE="/etc/.rnd"
+
+rebuild_crt()
+{
+	#. /etc/easy-rsa/vars
+	# 0. Initialize
+	clean-all
+
+	# 1. Build a root certificate
+	if [ -f "$OPENVPN_DIR/ca.crt" ]; then
+		#pkitool --initca
+		cp $OPENVPN_DIR/ca.crt $KEY_DIR/
+		cp $OPENVPN_DIR/ca.key $KEY_DIR/
+	else
+		pkitool --initca
+		cp $KEY_DIR/ca.crt $OPENVPN_DIR/
+		cp $KEY_DIR/ca.key $OPENVPN_DIR/
+	fi
+
+	# 2. Build Diffie-Hellman parameters
+	if [ -f "$OPENVPN_DIR/dh${KEY_SIZE}.pem" ]; then
+		#build-dh
+		cp $OPENVPN_DIR/dh${KEY_SIZE}.pem $KEY_DIR/
+	else
+		build-dh
+		cp $KEY_DIR/dh${KEY_SIZE}.pem $OPENVPN_DIR/
+	fi
+	
+	# 3. Initial database
+	: >$KEY_DIR/index.txt
+	echo "01" > $KEY_DIR/serial
+
+	#if [ ! -d $TMP_OPENVPN_DIR ]; then
+	#	mkdir $TMP_OPENVPN_DIR
+	#fi
+
+	# 4. Build server certificate/private key pair
+	pkitool --server server_$SECTIONNAME
+	cp $KEY_DIR/server_$SECTIONNAME.crt $OPENVPN_DIR/
+	cp $KEY_DIR/server_$SECTIONNAME.key $OPENVPN_DIR/
+
+	# 5. Build client certificate/private key pair, and config
+	pkitool client_$SECTIONNAME
+	#cp $KEY_DIR/client_$SECTIONNAME.key $OPENVPN_DIR/
+	#cp $KEY_DIR/client_$SECTIONNAME.crt $OPENVPN_DIR/
+	
+	# root certificate
+	local clnt_ovpn="$OPENVPN_DIR"/client_$SECTIONNAME.ovpn
+	# clean first
+	rm -rf $clnt_ovpn
+	
+	: > $clnt_ovpn
+	
+	echo "<ca>" >> $clnt_ovpn
+	cat $OPENVPN_DIR/ca.crt >> $clnt_ovpn
+	echo "</ca>" >> $clnt_ovpn
+	# client certificate 
+	echo "<cert>" >> $clnt_ovpn
+	sed -f $OPENVPN_DIR/crt.sed $KEY_DIR/client_$SECTIONNAME.crt >> $clnt_ovpn
+	echo "</cert>" >> $clnt_ovpn
+	# client private key
+	echo "<key>" >> $clnt_ovpn
+	cat $KEY_DIR/client_$SECTIONNAME.key >> $clnt_ovpn
+	echo "</key>" >> $clnt_ovpn
+}
+
+if [ "$action" = "rebuild" ]; then
+	rebuild_crt
+	# echo "success" >> /tmp/cert_generate.status
+	# cp -f $TMP_OPENVPN_DIR/* $OPENVPN_DIR/ 
+fi
+
+. /lib/functions.sh
+
+append_param()
+{
+	local cfg=$1
+	local val=$2
+	echo $val >> $cfg
+}
+
+client_config()
+{
+	local clnt_conf="$OPENVPN_DIR"/client_$SECTIONNAME.cfg
+	local dev="tun"
+	local proto="udp"
+	local port="1194"
+	local cipher="AES-128-CBC"
+	local persist_key=
+	local persist_tun=
+	local auth_user_pass=""
+	local wan=
+	local wanif=
+	local wanip=
+	
+	rm -rf $clnt_conf
+
+	config_load openvpn
+	config_get dev "$SECTIONNAME" dev
+	config_get proto "$SECTIONNAME" proto 
+	config_get port "$SECTIONNAME" port
+	config_get cipher "$SECTIONNAME" cipher
+	config_get persist_key "$SECTIONNAME" persist_key
+	config_get persist_tun "$SECTIONNAME" persist_tun
+	config_get auth_user_pass "$SECTIONNAME" auth_user_pass_verify
+	config_get wan "$SECTIONNAME" wan
+
+	: > $clnt_conf
+	append_param "$clnt_conf" "client"
+	#if [[ ${dev} == tun* ]];then
+	#	append_param "$clnt_conf" "dev tun"
+	#else
+	#	append_param "$clnt_conf" "dev tap"
+	#fi
+	append_param "$clnt_conf" "dev tun"
+	append_param "$clnt_conf" "proto $proto"
+	append_param "$clnt_conf" "float"
+	append_param "$clnt_conf" "nobind"
+	append_param "$clnt_conf" "cipher $cipher"
+	append_param "$clnt_conf" "comp-lzo adaptive"
+	append_param "$clnt_conf" "resolv-retry infinite"
+	append_param "$clnt_conf" "remote-cert-tls server"
+	
+	if [[ "$persist_key" = "1" ]]; then
+		append_param "$clnt_conf" "persist-key"
+	fi
+	if [[ "$persist_tun" == "1" ]]; then 
+		append_param "$clnt_conf" "persist-tun"
+	fi
+	if [[ "$auth_user_pass" != "" ]]; then 
+		append_param "$clnt_conf" "auth-user-pass"
+	fi
+		
+	#config_load zone
+	#config_get wanif "$wan" if_eth
+	#. /lib/functions/network.sh
+	#network_get_ipaddr wanip "$wanif"
+	local effect_iface=$(zone_get_effect_main_wan_ifaces ${wan})
+	network_get_ipaddr wanip ${effect_iface}
+	
+	if [ -n "$wanip" ]; then
+		append_param "$clnt_conf" "remote $wanip $port"
+	fi
+	
+}
+
+client_config
+

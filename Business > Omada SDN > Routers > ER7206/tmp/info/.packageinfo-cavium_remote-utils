@@ -1,0 +1,18 @@
+Source-Makefile: package/cavium/remote-utils/Makefile
+Package: remote-utils
+Version: 1-unknown
+Depends: +libc +USE_EGLIBC:librt +USE_EGLIBC:libpthread 
+Menu-Depends: 
+Provides: 
+Section: base
+Category: Cavium Octeon SDK
+Title: Cavium Octeon SDK debug utilities.
+Maintainer: 
+Source: 
+Type: ipkg
+Description:   Cavium Octeon SDK debug utilities
+http://www.cavium.com/
+
+@@
+
+

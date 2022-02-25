@@ -1,0 +1,64 @@
+<!DOCTYPE HTML><html>
+<head lang="zh-CN">
+	<meta charset="UTF-8"/>
+	<style>
+		*{
+			font-family: "Simsun";
+			position: relative;
+		}
+		.wrap{
+			width: 550px;
+			margin :0 auto;
+			padding: 25px;
+			text-align: center;
+			background: #EFF8FF;
+		}
+		.wordwrap{
+			width: 100px;
+			height: 100px;
+			margin: 0 auto;
+		}
+		h1{
+			color: #115b96;
+			font-size: 100px;
+			margin: 0;
+		}
+		h2{
+			
+			margin: 0 auto;
+			top:-85px;
+			color: #fff;
+			font-size: 60px;
+		}
+		p{
+			color: #444;
+			text-align: left;
+			font-size: 12px;
+		}
+	</style>
+</head>
+<body>
+	<div class="wrap">
+		<div class="wordwrap">
+			<h1>▲</h1>
+			<h2>!</h2>
+		</div>	
+		<p>您访问的网址已受限,相关访问信息可能已被记录。</p>
+		<p>您可以联系您所在网络的管理员以了解您的网络使用权限。</p>	
+	</div>
+	<script>
+		setTimeout(function() {
+			var url = window.location.href;
+			url = url.split("?redirect=");
+			if(url.length >= 2){
+				url = url[1];
+				var reg = new RegExp("https?:\/\/");
+				if(!reg.test(url)){
+					url = "http://" + url;
+				}
+				window.location.href = url;
+			}
+		}, 3000);
+	</script>
+</body>
+</html>

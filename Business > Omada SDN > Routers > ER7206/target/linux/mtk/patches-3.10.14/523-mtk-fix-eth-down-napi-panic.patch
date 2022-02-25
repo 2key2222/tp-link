@@ -1,0 +1,35 @@
+Index: linux-3.10.14/drivers/net/raeth/raether.c
+===================================================================
+--- linux-3.10.14.orig/drivers/net/raeth/raether.c	2014-12-30 19:51:14.923017812 +0800
++++ linux-3.10.14/drivers/net/raeth/raether.c	2014-12-30 19:53:47.094460135 +0800
+@@ -2981,6 +2981,15 @@
+ 	tasklet_kill(&ei_local->rx_tasklet);
+ #endif // WORKQUEUE_BH //
+ 
++#ifdef CONFIG_RAETH_NAPI
++	atomic_inc(&ei_local->irq_sem);
++#if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,35)
++	napi_disable(&ei_local->napi);
++#else
++	netif_poll_disable(dev);
++#endif
++#endif
++
+         for ( i = 0; i < NUM_RX_DESC; i++)
+         {
+                 if (ei_local->netrx0_skbuf[i] != NULL) {
+@@ -3057,14 +3066,6 @@
+ 
+ 	printk("Free TX/RX Ring Memory!\n");
+ 
+-#ifdef CONFIG_RAETH_NAPI
+-	atomic_inc(&ei_local->irq_sem);
+-#if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,35)
+-        napi_disable(&ei_local->napi);
+-#else
+-        netif_poll_disable(dev);
+-#endif
+-#endif
+ 
+ 	fe_reset();
+ 

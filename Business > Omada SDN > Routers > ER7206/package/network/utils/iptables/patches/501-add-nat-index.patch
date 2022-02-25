@@ -1,0 +1,122 @@
+--- a/extensions/libipt_DNAT.c	2013-11-22 19:18:13.000000000 +0800
++++ b/extensions/libipt_DNAT.c	2020-10-28 10:10:48.814428305 +0800
+@@ -8,10 +8,14 @@
+ #include <linux/netfilter_ipv4/ip_tables.h>
+ #include <linux/netfilter/nf_nat.h>
+ 
++#define NF_NAT_INDEX_MASK 0xFF000000
++#define NF_NAT_INDEX_SHIFT 24
++
+ enum {
+ 	O_TO_DEST = 0,
+ 	O_RANDOM,
+ 	O_PERSISTENT,
++	O_NAT_INDEX,
+ 	O_X_TO_DEST, /* hidden flag */
+ 	F_TO_DEST   = 1 << O_TO_DEST,
+ 	F_RANDOM    = 1 << O_RANDOM,
+@@ -32,6 +36,7 @@
+ "DNAT target options:\n"
+ " --to-destination [<ipaddr>[-<ipaddr>]][:port[-port]]\n"
+ "				Address to map destination to.\n"
++"[--nat-index [<index>]]	global index to bind for accounts.\n"
+ "[--random] [--persistent]\n");
+ }
+ 
+@@ -40,6 +45,7 @@
+ 	 .flags = XTOPT_MAND | XTOPT_MULTI},
+ 	{.name = "random", .id = O_RANDOM, .type = XTTYPE_NONE},
+ 	{.name = "persistent", .id = O_PERSISTENT, .type = XTTYPE_NONE},
++	{.name = "nat-index", .id = O_NAT_INDEX, .type = XTTYPE_UINT32},
+ 	XTOPT_TABLEEND,
+ };
+ 
+@@ -179,6 +185,9 @@
+ 	case O_PERSISTENT:
+ 		info->mr.range[0].flags |= NF_NAT_RANGE_PERSISTENT;
+ 		break;
++	case O_NAT_INDEX:
++		info->mr.range[0].flags |= ((cb->val.u32 << NF_NAT_INDEX_SHIFT) & NF_NAT_INDEX_MASK);
++		break;
+ 	}
+ }
+ 
+@@ -224,6 +233,8 @@
+ 			printf(" random");
+ 		if (info->mr.range[i].flags & NF_NAT_RANGE_PERSISTENT)
+ 			printf(" persistent");
++		if (info->mr.range[i].flags >> NF_NAT_INDEX_SHIFT)
++			printf(" nat-index %u", ((info->mr.range[i].flags & NF_NAT_INDEX_MASK) >> NF_NAT_INDEX_SHIFT));
+ 	}
+ }
+ 
+@@ -239,6 +250,8 @@
+ 			printf(" --random");
+ 		if (info->mr.range[i].flags & NF_NAT_RANGE_PERSISTENT)
+ 			printf(" --persistent");
++		if (info->mr.range[i].flags >> NF_NAT_INDEX_SHIFT)
++			printf(" --nat-index %u", ((info->mr.range[i].flags & NF_NAT_INDEX_MASK) >> NF_NAT_INDEX_SHIFT));
+ 	}
+ }
+ 
+--- a/extensions/libipt_SNAT.c	2013-11-22 19:18:13.000000000 +0800
++++ b/extensions/libipt_SNAT.c	2020-10-28 10:10:36.337430124 +0800
+@@ -8,10 +8,14 @@
+ #include <linux/netfilter_ipv4/ip_tables.h>
+ #include <linux/netfilter/nf_nat.h>
+ 
++#define NF_NAT_INDEX_MASK 0xFF000000
++#define NF_NAT_INDEX_SHIFT 24
++
+ enum {
+ 	O_TO_SRC = 0,
+ 	O_RANDOM,
+ 	O_PERSISTENT,
++	O_NAT_INDEX,
+ 	O_X_TO_SRC,
+ 	F_TO_SRC   = 1 << O_TO_SRC,
+ 	F_RANDOM   = 1 << O_RANDOM,
+@@ -32,6 +36,7 @@
+ "SNAT target options:\n"
+ " --to-source [<ipaddr>[-<ipaddr>]][:port[-port]]\n"
+ "				Address to map source to.\n"
++"[--nat-index [<index>]]	global index to bind for accounts.\n"
+ "[--random] [--persistent]\n");
+ }
+ 
+@@ -40,6 +45,7 @@
+ 	 .flags = XTOPT_MAND | XTOPT_MULTI},
+ 	{.name = "random", .id = O_RANDOM, .type = XTTYPE_NONE},
+ 	{.name = "persistent", .id = O_PERSISTENT, .type = XTTYPE_NONE},
++	{.name = "nat-index", .id = O_NAT_INDEX, .type = XTTYPE_UINT32},
+ 	XTOPT_TABLEEND,
+ };
+ 
+@@ -179,6 +185,9 @@
+ 	case O_PERSISTENT:
+ 		info->mr.range[0].flags |= NF_NAT_RANGE_PERSISTENT;
+ 		break;
++	case O_NAT_INDEX:
++		info->mr.range[0].flags |= ((cb->val.u32 << NF_NAT_INDEX_SHIFT) & NF_NAT_INDEX_MASK);
++		break;
+ 	}
+ }
+ 
+@@ -224,6 +233,8 @@
+ 			printf(" random");
+ 		if (info->mr.range[i].flags & NF_NAT_RANGE_PERSISTENT)
+ 			printf(" persistent");
++		if (info->mr.range[i].flags >> NF_NAT_INDEX_SHIFT)
++			printf(" nat-index %u", ((info->mr.range[i].flags & NF_NAT_INDEX_MASK) >> NF_NAT_INDEX_SHIFT));
+ 	}
+ }
+ 
+@@ -239,6 +250,8 @@
+ 			printf(" --random");
+ 		if (info->mr.range[i].flags & NF_NAT_RANGE_PERSISTENT)
+ 			printf(" --persistent");
++		if (info->mr.range[i].flags >> NF_NAT_INDEX_SHIFT)
++			printf(" --nat-index %u", ((info->mr.range[i].flags & NF_NAT_INDEX_MASK) >> NF_NAT_INDEX_SHIFT));
+ 	}
+ }
+ 

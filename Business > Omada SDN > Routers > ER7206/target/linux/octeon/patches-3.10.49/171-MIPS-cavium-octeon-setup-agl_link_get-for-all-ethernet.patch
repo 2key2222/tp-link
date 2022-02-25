@@ -1,0 +1,35 @@
+--- a/drivers/net/ethernet/octeon/ethernet-sgmii.c	2020-04-27 13:03:06.108412930 +0800
++++ b/drivers/net/ethernet/octeon/ethernet-sgmii.c	2020-04-27 13:03:38.513662698 +0800
+@@ -206,7 +206,6 @@
+ 			netif_carrier_off(dev);
+ 		cvm_oct_adjust_link(dev);
+ 	} else {
+-		cvmx_override_board_link_get = agl_link_get;
+ 		link_info = cvmx_helper_link_get(priv->ipd_port);
+ 		if (!link_info.s.link_up)
+ 			netif_carrier_off(dev);
+@@ -299,8 +298,6 @@
+ 
+ 	if (priv->phydev)
+ 		phy_disconnect(priv->phydev);
+-	else
+-		cvmx_override_board_link_get = NULL;
+ 	priv->phydev = NULL;
+ 
+ 	return cvm_oct_common_stop(dev);
+@@ -365,6 +362,7 @@
+ 	cvm_oct_common_init(dev);
+ 	dev->netdev_ops->ndo_stop(dev);
+ 	priv->link_change = cvm_oct_sgmii_link_change;
++	cvmx_override_board_link_get = agl_link_get;
+ 
+ 	return 0;
+ }
+@@ -373,6 +371,7 @@
+ {
+ 	struct octeon_ethernet *priv = netdev_priv(dev);
+ 
++	cvmx_override_board_link_get = NULL;
+ 	octeon_error_tree_disable(CVMX_ERROR_GROUP_ETHERNET,
+ 				  priv->ipd_port);
+ }

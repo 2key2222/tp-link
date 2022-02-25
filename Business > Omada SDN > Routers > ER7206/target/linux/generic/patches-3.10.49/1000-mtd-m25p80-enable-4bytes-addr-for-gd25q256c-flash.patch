@@ -1,0 +1,10 @@
+--- a/drivers/mtd/devices/m25p80.c	2015-10-15 11:59:50.000000000 +0800
++++ b/drivers/mtd/devices/m25p80.c	2016-03-30 17:20:15.000000000 +0800
+@@ -169,6 +169,7 @@
+ 	switch (JEDEC_MFR(jedec_id)) {
+ 	case CFI_MFR_MACRONIX:
+ 	case 0xEF /* winbond */:
++	case 0xC8 /* gigadevice */:
+ 		flash->command[0] = enable ? OPCODE_EN4B : OPCODE_EX4B;
+ 		return spi_write(flash->spi, flash->command, 1);
+ 	default:

@@ -1,0 +1,1564 @@
+diff -uNr a/drivers/mtd/devices/Kconfig b/drivers/mtd/devices/Kconfig
+--- a/drivers/mtd/devices/Kconfig	2014-09-02 04:41:51.000000000 -0400
++++ b/drivers/mtd/devices/Kconfig	2017-12-18 05:08:32.448306000 -0500
+@@ -279,4 +279,17 @@
+ 	  LinuxBIOS or if you need to recover a DiskOnChip Millennium on which
+ 	  you have managed to wipe the first block.
+ 
++config MTD_SLPFLASH
++	tristate "TP-LINK SLP generic purpose flash driver"
++    depends on MTD_SPI_RALINK || MTD_ANY_RALINK
++	help
++      This is a generic purpose flash driver for TP-LINK SLP Router.
++      It creates a char device and provides ioctl interface for user space
++      program to read, write or erase flash chip.
++
++      Basicly the driver invoke real spi flash driver functions to complete
++      these flash operations. And now, it depends on m25p80.
++
++	  Note that the 'write' cmd does erase operation at first.
++
+ endmenu
+diff -uNr a/drivers/mtd/devices/Makefile b/drivers/mtd/devices/Makefile
+--- a/drivers/mtd/devices/Makefile	2014-09-02 04:41:51.000000000 -0400
++++ b/drivers/mtd/devices/Makefile	2017-12-18 05:08:49.447179000 -0500
+@@ -16,6 +16,7 @@
+ obj-$(CONFIG_MTD_SPEAR_SMI)	+= spear_smi.o
+ obj-$(CONFIG_MTD_SST25L)	+= sst25l.o
+ obj-$(CONFIG_MTD_BCM47XXSFLASH)	+= bcm47xxsflash.o
++obj-$(CONFIG_MTD_SLPFLASH) 	+= slp_flash.o
+ 
+ 
+ CFLAGS_docg3.o			+= -I$(src)
+diff -uNr a/drivers/mtd/devices/slp_flash.c b/drivers/mtd/devices/slp_flash.c
+--- a/drivers/mtd/devices/slp_flash.c	1969-12-31 19:00:00.000000000 -0500
++++ b/drivers/mtd/devices/slp_flash.c	2016-12-15 20:52:08.012172500 -0500
+@@ -0,0 +1,1344 @@
++/******************************************************************************
++*
++* Copyright (c) 2014 TP-LINK Technologies CO.,LTD.
++* All rights reserved.
++*
++* FILE NAME		:   slp_flash.c
++* VERSION		:   1.0
++* DESCRIPTION	:   slp flash driver module, make cdev and provide ioctl interface for flash operations.
++*
++* AUTHOR		:   Wu Yin (wuyin@tp-link.net)
++* CREATE DATE	:   03/27/2014
++*
++* HISTORY		:
++* 01   03/27/2014  Wu Yin     Create.
++*
++******************************************************************************/
++#include <linux/fs.h>
++#include <linux/types.h>
++#include <linux/cdev.h>
++#include <linux/kernel.h>
++#include <linux/init.h>
++#include <linux/err.h>
++#include <linux/errno.h>
++#include <linux/module.h>
++#include <linux/device.h>
++#include <linux/ioctl.h>
++#include <linux/slab.h>
++#include <linux/mtd/mtd.h>
++#include <linux/spi/spi.h>
++#include <linux/reboot.h>
++
++#include "slp_flash.h"
++/*#include "../redboot.h"*/
++
++/* function declaration */
++static void slp_setup_cdev(struct slp_dev* dev, int major, int minor);
++static int slp_dev_init(struct mtd_info* mtd);
++static void slp_dev_cleanup(void);
++static int slp_dev_open(struct inode *inode, struct file *filp);
++static int slp_dev_release(struct inode *inode, struct file *filp);
++static long slp_dev_ioctl(struct file *filp, unsigned int cmd, unsigned long arg);
++static int slp_flash_read(struct mtd_info *mtd, loff_t from, size_t len, size_t *retlen, u_char *buf);
++static int slp_flash_write(struct mtd_info *mtd, loff_t to, size_t len, size_t *retlen, const u_char *buf);
++static int slp_flash_erase(struct mtd_info *mtd, struct erase_info *instr);
++
++
++/*extern int get_info_from_mtd_partition_name(char* partition_name, int *offset, int *size);
++
++static char* partition_names[] = {NULL, FACTORY_INFO_MTD_NAME, RADIO_MTD_NAME, UC_MTD_NAME, 
++									KERNEL_AND_ROMFS_MTD_NAME, TP_HEADER_MTD_NAME, JFFS2_MTD_NAME,
++									NORMAL_BOOT_MTD_NAME, KERNEL_MTD_NAME, FIRMWARE_MTD_NAME};
++
++static int tpheader_fields_lengths[] = {0, FW_ID_LEN, FW_DESC_LEN};*/
++
++struct slp_dev *slp_flash_dev = NULL;	/* global variant, init in slp_dev_init */
++struct class *slpClass = NULL;			/* global variant, init in slp_dev_init, destory in clean up */
++dev_t devno = 0;
++extern struct fis_image_desc *flash_sectors;
++
++struct file_operations slp_flash_ops = 
++{
++	.owner = THIS_MODULE,
++	
++	.unlocked_ioctl = slp_dev_ioctl,
++	.open = slp_dev_open,
++	.release = slp_dev_release,
++};
++
++/*
++ *	mutex for reboot cb and uc ioctl write operation
++ */
++static DEFINE_MUTEX(slp_flash_reboot_mutex);
++/*static reboot_in_progress = 0;*/
++
++/******************************************************************************
++* FUNCTION		: slp_flash_notify_sys()
++* AUTHOR		: Wu Yin (wuyin@tp-link.net)
++* DESCRIPTION	: acquire lock and notify uc ioctl write operation to return.
++* INPUT			: this; @code: what action is taking place; unused
++*
++* OUTPUT		: N/A
++* RETURN		: done code
++* OTHERS		:
++******************************************************************************/
++static int slp_flash_notify_sys(struct notifier_block *this, unsigned long code,
++	void *unused)
++{
++	switch (code) {
++		case SYS_RESTART:
++			/* indicate reboot is in progress */
++			mutex_lock(&slp_flash_reboot_mutex);
++			/*reboot_in_progress = 1;*/
++			mutex_unlock(&slp_flash_reboot_mutex);
++			break;
++
++		case SYS_HALT:
++		case SYS_POWER_OFF:
++			/* not implemented */
++			break;
++		}
++	
++	return NOTIFY_DONE;
++}
++
++/*
++ *	The flash cdev needs to learn about soft shutdowns in order to
++ *	sync with uc write ioctl operation.
++ */
++static struct notifier_block slp_flash_notifier = {
++	.notifier_call = slp_flash_notify_sys,
++};
++
++
++/*static inline int get_tpheader_field_offset(enum tpheader_index idx)
++{
++	if (idx == FWID)
++	{
++		return OFFSET_OF(TP_HEADER, fwId);
++	}
++	else if (idx == FW_DESCRIPTION)
++	{
++		return OFFSET_OF(TP_HEADER, fwDescription);
++	}
++	else
++	{
++		return -1;
++	}
++}*/
++
++/******************************************************************************
++* FUNCTION		: slp_dev_init()
++* AUTHOR		: Wu Yin (wuyin@tp-link.net)
++* DESCRIPTION	: slp flash cdev init, accept "mtd" argument.
++* INPUT			: struct mtd_info*
++*
++* OUTPUT		: N/A
++* RETURN		: int ret
++* OTHERS		:
++******************************************************************************/
++static int slp_dev_init(struct mtd_info* mtd)
++{
++	int ret = 0;
++	int slp_dev_major = SLP_FLASH_MAJOR;
++	int slp_dev_minor = SLP_FLASH_MINOR;
++	struct device *slpDevice = NULL;
++
++	if (slp_dev_major)
++	{
++		devno = MKDEV(slp_dev_major, slp_dev_minor);
++		ret = register_chrdev_region(devno, 1, SLP_FLASH_DEV_NAME);
++	}
++	else
++	{
++		ret = alloc_chrdev_region(&devno, slp_dev_minor, 1, SLP_FLASH_DEV_NAME);
++		slp_dev_major = MAJOR(devno);
++	}
++
++	if (ret < 0)
++	{
++		printk(KERN_WARNING SLP_FLASH_DEV_NAME ": can't get major %d\n", slp_dev_major);
++		return ret;
++	}
++
++	slp_flash_dev = (struct slp_dev *)kmalloc(sizeof(struct slp_dev), GFP_KERNEL);
++	if (!slp_flash_dev)
++	{
++		ret = -ENOMEM;
++		goto fail;
++	}
++
++	memset(slp_flash_dev, 0, sizeof(slp_flash_dev));
++
++	slp_flash_dev->mtd = mtd;
++	slp_setup_cdev(slp_flash_dev, slp_dev_major, slp_dev_minor);
++
++	/* for automatically create device node in /dev */
++	slpClass = class_create(THIS_MODULE, SLP_FLASH_CLASS_NAME);
++	if (IS_ERR(slpClass))
++	{
++		printk(KERN_ERR SLP_FLASH_CLASS_NAME " Failed in creating class.\n");
++		ret = -1;
++		goto fail;
++	}
++	slpDevice = device_create(slpClass, NULL, devno, NULL, SLP_FLASH_DEV_NAME);
++	if (IS_ERR(slpDevice))
++	{
++		printk(KERN_ERR SLP_FLASH_DEV_NAME " Failed in creating device.\n");
++		ret = -1;
++		goto fail;
++	}
++	printk (KERN_INFO "Registered character driver %s\n", SLP_FLASH_DEV_NAME);
++	return 0;
++	
++fail:
++	slp_dev_cleanup();
++	return ret;
++}
++
++/******************************************************************************
++* FUNCTION		: slp_setup_cdev()
++* AUTHOR		: Wu Yin (wuyin@tp-link.net)
++* DESCRIPTION	: SLP cdev setup function.
++* INPUT			: N/A
++*
++* OUTPUT		: N/A
++* RETURN		: N/A
++* OTHERS		:
++******************************************************************************/
++static void slp_setup_cdev(struct slp_dev* dev, int major, int minor)
++{
++	int err = 0;
++	int devno = MKDEV(major, minor);
++	
++	cdev_init(&dev->flash_cdev, &slp_flash_ops);
++	dev->flash_cdev.owner = THIS_MODULE;
++
++	err = cdev_add(&dev->flash_cdev, devno, 1);
++	if (err)
++	{
++		printk(KERN_NOTICE "Error %d adding slp_flash_dev", err);
++	}
++}
++
++/******************************************************************************
++* FUNCTION		: slp_dev_cleanup()
++* AUTHOR		: Wu Yin (wuyin@tp-link.net)
++* DESCRIPTION	: SLP cdev cleanup function against init.
++* INPUT		: N/A
++*
++* OUTPUT		: N/A
++* RETURN		: N/A
++* OTHERS		:
++******************************************************************************/
++static void slp_dev_cleanup(void)
++{
++	/* if device_create fail, no need to destroy slpDevice */
++	if (slpClass && !IS_ERR(slpClass))
++	{
++		class_destroy(slpClass);
++	}
++	
++	if (slp_flash_dev)
++	{
++		cdev_del(&(slp_flash_dev->flash_cdev));
++		kfree(slp_flash_dev);
++	}
++}
++
++/******************************************************************************
++* FUNCTION		: slp_dev_open()
++* AUTHOR		: Wu Yin (wuyin@tp-link.net)
++* DESCRIPTION	: SLP cdev open operation.
++* INPUT			: N/A
++*
++* OUTPUT		: N/A
++* RETURN		: N/A
++* OTHERS		:
++******************************************************************************/
++static int slp_dev_open(struct inode *inode, struct file *filp)
++{
++	struct slp_dev *dev = cdev_to_slp_dev(inode->i_cdev);
++	filp->private_data = dev;
++
++	if (filp->f_mode & 2) {
++		printk("You can't open the RO devices RW!\n");
++		return -EACCES;
++	}
++	
++	return 0;
++}
++
++/******************************************************************************
++* FUNCTION		: slp_dev_release()
++* AUTHOR		: Wu Yin (wuyin@tp-link.net)
++* DESCRIPTION	: SLP cdev release operation, basicly do nothing.
++* INPUT			: N/A
++*
++* OUTPUT		: N/A
++* RETURN		: N/A
++* OTHERS		:
++******************************************************************************/
++static int slp_dev_release(struct inode *inode, struct file *filp)
++{
++	return 0;
++}
++
++
++/******************************************************************************
++* FUNCTION		: slp_dev_ioctl()
++* AUTHOR		: Wu Yin (wuyin@tp-link.net)
++* DESCRIPTION	: SLP cdev ioctl operation, read and write flash implemented here.
++* INPUT			: N/A
++*
++* OUTPUT		: N/A
++* RETURN		: N/A
++* OTHERS		:
++******************************************************************************/
++static long slp_dev_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
++{
++	long ret = 0;							/* unlocked_ioctl proto return type */
++	int i = 0;
++	u_int32_t rem;
++	struct slp_dev *dev = filp->private_data;
++	struct mtd_info* mtd = dev->mtd;
++	struct erase_info *eraseInfo = NULL;
++
++	struct slp_spi_device_info info;
++	int matched_flash_founded = 0;
++	u_int8_t id[5] = {0};
++	u_int32_t jedec = 0x0;
++	u_int32_t buflen = 0;
++	extern struct flash_info *flash;
++
++	int partition_offset = 0;
++	int partition_size = 0;
++	enum partition_index partition_idx;
++	enum tpheader_index tpheader_idx;
++	int tphdr_field_offset = 0;
++
++	/* tmp buffer for r/w */
++	unsigned char* rwBuf = (unsigned char *)kmalloc(SLP_FLASH_SECTOR_SIZE, GFP_KERNEL);
++
++	ARG *pArg = (ARG*)arg;
++	u_int8_t* usrBuf = pArg->buf;
++	u_int32_t len = pArg->len;
++	u_int32_t addr = pArg->addr;
++	
++	size_t retlen = 0;
++	int addrStart, addrEnd;
++
++	int nSector = 0; 		/* Divide FLASH_SECTOR_SIZE */	
++	int oddLen = 0;			/* odd length (0 ~ FLASH_SECTOR_SIZE) */
++	
++	if (rwBuf == NULL)
++	{
++		ret = -ENOMEM;
++		goto free_and_out;
++	}
++	memset(rwBuf, 0, SLP_FLASH_SECTOR_SIZE);
++
++	/* ioctl validation check */
++	if (_IOC_TYPE(cmd) != SLP_IOC_MAGIC)
++	{
++		printk("cmd type error!\n");
++		ret = -ENOTTY;
++		goto free_and_out;
++	}
++	if (_IOC_NR(cmd) > SLP_IOC_MAXNR)
++	{
++		printk("cmd NR error!\n");
++		ret = -ENOTTY;
++		goto free_and_out;
++	}
++
++	switch (cmd)
++	{
++#if 0
++	case SLP_IOC_FLASH_READ:
++		if (!access_ok(VERIFY_WRITE, (void __user *)usrBuf, _IOC_SIZE(cmd)))
++		{
++			ret = -EFAULT;
++			goto free_and_out;
++		}
++
++		if (len > SLP_FLASH_SECTOR_SIZE)		/* not allow read beyond a sector size */
++		{
++			ret = -EPERM;
++			goto free_and_out;
++		}
++
++		ret = slp_flash_read(mtd, addr, len, &retlen, rwBuf);
++		if (ret || retlen != len)
++		{
++			printk("Read failed, ret:%ld, from:0x%x, size:%d\n", ret, addr, len);
++			goto free_and_out;
++		}
++
++		/* copy from kernel to user */
++		ret = copy_to_user(usrBuf, rwBuf, len);
++		if (ret)
++		{
++			printk("read copy_to_user failed\n");
++			goto free_and_out;
++		}
++		break;
++
++	case SLP_IOC_FLASH_WRITE:
++		/* check if addr is on sector boundary, if not, return EINVAL */
++		rem = addr % SLP_FLASH_SECTOR_SIZE;
++		if (rem)
++		{
++			ret = -EINVAL;
++			goto free_and_out;
++		}
++		
++		if (!access_ok(VERIFY_READ, (void __user *)usrBuf, _IOC_SIZE(cmd)))
++		{
++			ret = -EFAULT;
++			goto free_and_out;
++		}
++		
++		/* erase sectors first */
++		addrStart = addr & 0xFFFF0000;			/* first sector address to erase */
++		addrEnd = (addr + len) & 0xFFFF0000;	/* last sector address to erase */
++
++		/* init eraseInfo first */
++		eraseInfo = (struct erase_info *)kmalloc(sizeof(struct erase_info), GFP_KERNEL);
++		if (NULL == eraseInfo)
++		{
++			ret = -ENOMEM;
++			goto free_and_out;
++		}
++		memset(eraseInfo, 0, sizeof(struct erase_info));
++		
++		eraseInfo->mtd = mtd;
++		eraseInfo->callback = NULL;
++		eraseInfo->addr = addrStart;
++		eraseInfo->len = SLP_FLASH_SECTOR_SIZE;
++		
++		printk("Erase from %#X to %#X:\n", addr, addr + len);
++
++		do
++		{
++			ret = slp_flash_erase(mtd, eraseInfo);
++			if (ret)
++			{
++				printk(KERN_ERR "erase sector fail! addr: 0x%x erase sector size: 0x%x", addrStart, SLP_FLASH_SECTOR_SIZE);
++				goto free_and_out;
++			}
++			printk(".");
++			addrStart += SLP_FLASH_SECTOR_SIZE;
++			eraseInfo->addr = addrStart;
++		} while (addrStart < addrEnd);
++		printk("\n");
++
++		/* start write once in a sector */
++		printk("Program from %#X to %#X:\n", addr, addr + len);
++
++		nSector = len >> 16;
++		oddLen = len & 0x0000FFFF;
++
++		for (i = 0; i < nSector; i++)	
++		{
++			if (copy_from_user(rwBuf, usrBuf, SLP_FLASH_SECTOR_SIZE))
++			{
++				printk("config write copy_from_usr failed!\n");
++				goto free_and_out;				
++			}
++		
++			ret =  slp_flash_write(mtd, addr, SLP_FLASH_SECTOR_SIZE, &retlen, rwBuf);
++			printk(".");
++			if ((ret != 0) || (retlen != SLP_FLASH_SECTOR_SIZE))
++			{
++				printk("\nWrite to flash failed status:%ld retlen:%d\n", ret, retlen);
++				goto free_and_out;
++			}
++			addr += SLP_FLASH_SECTOR_SIZE;
++			usrBuf += SLP_FLASH_SECTOR_SIZE;
++		}
++
++		if (oddLen)
++		{
++			if (copy_from_user(rwBuf, usrBuf, oddLen))
++			{
++                		printk("config write copy_from_usr failed!\n");
++                		goto free_and_out;
++            }
++			ret = slp_flash_write(mtd, addr, oddLen, &retlen, rwBuf);
++			printk(".");
++			if ((ret != 0) || (retlen != oddLen))
++			{
++				printk("\nWrite to flash failed status:%ld retlen:%d\n", ret, retlen);
++				goto free_and_out;
++			}
++		}
++		
++		printk("\nwrite successfully\n");
++		break;
++
++	case SLP_IOC_FLASH_ERASE:
++		/* check if addr and len is on sector boundary, if not, return EINVAL */
++		rem = addr % SLP_FLASH_SECTOR_SIZE;
++		if (rem)
++		{
++			ret = -EINVAL;
++			goto free_and_out;
++		}
++		rem = len % SLP_FLASH_SECTOR_SIZE;
++		if (rem)
++		{
++			ret = -EINVAL;
++			goto free_and_out;
++		}
++		
++		addrStart = addr & 0xFFFF0000;			/* first sector address to erase */
++		addrEnd = (addr + len) & 0xFFFF0000;	/* last sector address to erase */
++
++		/* init eraseInfo first, erase use ramtd_erase instead of erase_sector 
++		because there are some unknown purpose operation in former makes erase_sector succeed */
++		eraseInfo = (struct erase_info *)kmalloc(sizeof(struct erase_info), GFP_KERNEL);
++		if (NULL == eraseInfo)
++		{
++			ret = -ENOMEM;
++			goto free_and_out;
++		}
++		memset(eraseInfo, 0, sizeof(struct erase_info));
++		
++		eraseInfo->mtd = mtd;
++		eraseInfo->callback = NULL;
++		eraseInfo->addr = addrStart;
++		eraseInfo->len = SLP_FLASH_SECTOR_SIZE;
++		
++		printk("Erase from %#X to %#X:", addr, addr + len);
++
++		do
++		{
++			ret = slp_flash_erase(mtd, eraseInfo);
++			if (ret)
++			{
++				printk(KERN_ERR "erase sector fail! addr: 0x%x erase sector size: 0x%x", addrStart, SLP_FLASH_SECTOR_SIZE);
++				goto free_and_out;
++			}
++			printk(".");
++			addrStart += SLP_FLASH_SECTOR_SIZE;
++			eraseInfo->addr = addrStart;
++		} while (addrStart < addrEnd);
++		printk("\nerase successfully\n");
++		break;
++#endif
++
++	case SLP_IOC_FLASH_UID_READ:
++		if (!access_ok(VERIFY_WRITE, (void __user *)usrBuf, _IOC_SIZE(cmd)) ||
++			!access_ok(VERIFY_WRITE, (void __user *)len, _IOC_SIZE(cmd)) || 
++			!access_ok(VERIFY_READ, (void __user *)len, _IOC_SIZE(cmd)))
++		{
++			ret = -EFAULT;
++			goto free_and_out;
++		}
++
++		ret = copy_from_user(&buflen, (u_int8_t *)len, 4);
++		if (ret)
++		{
++			printk("buflen copy_from_usr failed!\n");
++			goto free_and_out;
++		}
++		
++		down(&flash->lock);
++		ret = raspi_read_devid(id, 5);		
++		up(&flash->lock);
++		if (ret < 0)
++		{
++			printk("error %ld reading JEDEC ID\n", ret);
++			goto free_and_out;
++		}
++		jedec = id[0];
++		jedec = jedec << 8;
++		jedec |= id[1];
++		jedec = jedec << 8;
++		jedec |= id[2];
++
++		for (i = 0; i < ARRAY_SIZE(slp_flash_ids); i++) 
++		{
++			info = slp_flash_ids[i].info;
++			if (info.jedec_id == jedec)
++			{
++				matched_flash_founded = 1;
++
++				down(&flash->lock);
++				ret = bbu_mb_spic_trans(info.opcode, info.addr, rwBuf, info.read_delay, info.uid_len, SPIC_READ_BYTES, 0);
++				up(&flash->lock);
++				if (ret < 0)
++				{
++					printk("error %ld reading UID\n", ret);
++					goto free_and_out;
++				}
++				
++				if (buflen < info.uid_len)
++				{
++					ret = -EPERM;
++					goto free_and_out;
++				}
++				ret = copy_to_user(usrBuf, rwBuf, info.uid_len);
++				if (ret)
++				{
++					printk("UID copy_to_user failed\n");
++					goto free_and_out;
++				}
++				ret = copy_to_user((u_int8_t *)len, &info.uid_len, 4);
++				if (ret)
++				{
++					printk("UID len copy_to_user failed\n");
++					goto free_and_out;
++				}
++				break;
++			}
++		}
++
++		ret = matched_flash_founded ? 0 : -EFAULT;
++		break;
++
++	/*case SLP_IOC_FLASH_PARTITION_SIZE:
++		partition_idx = (enum partition_index)addr;
++		if (!access_ok(VERIFY_WRITE, (void __user *)len, _IOC_SIZE(cmd)))
++		{
++			ret = -EFAULT;
++			goto free_and_out;
++		}
++
++		ret = get_info_from_mtd_partition_name(partition_names[partition_idx], &partition_offset, &partition_size);
++		if (ret)
++		{
++			goto free_and_out;
++		}
++
++		ret = copy_to_user((u_int8_t *)len, &partition_size, 4);
++		if (ret)
++		{
++			printk("partition length copy_to_user failed\n");
++			goto free_and_out;
++		}
++		break;
++
++	case SLP_IOC_FLASH_PARTITION_READ:
++		partition_idx = (enum partition_index)addr;
++		if (!access_ok(VERIFY_WRITE, (void __user *)usrBuf, _IOC_SIZE(cmd)))
++		{
++			ret = -EFAULT;
++			goto free_and_out;
++		}
++		
++		ret = get_info_from_mtd_partition_name(partition_names[partition_idx], &partition_offset, &partition_size);
++		if (ret)
++		{
++			goto free_and_out;
++		}
++
++		if (len > partition_size)
++		{
++			ret = -EFAULT;
++			printk("length required is out of partition boundary\n");
++			goto free_and_out;
++		}
++		else if (0 == len)
++		{
++			nSector = partition_size >> 16;
++			oddLen = partition_size & 0x0000FFFF;
++		}
++		else
++		{
++			nSector = len >> 16;
++			oddLen = len & 0x0000FFFF;
++		}
++
++		for (i = 0; i < nSector; i++)	
++		{
++			ret = slp_flash_read(mtd, partition_offset, SLP_FLASH_SECTOR_SIZE, &retlen, rwBuf);
++			if (ret || (retlen != SLP_FLASH_SECTOR_SIZE))
++			{
++				printk("Read flash failed, ret:%ld, from:0x%x, len:0x%x, retlen:0x%x\n", ret, partition_offset, SLP_FLASH_SECTOR_SIZE, retlen);				
++				ret = -EFAULT;
++				goto free_and_out;
++			}
++			
++			ret = copy_to_user(usrBuf, rwBuf, SLP_FLASH_SECTOR_SIZE);
++			if (ret)
++			{
++				printk("read copy_to_user failed\n");
++				goto free_and_out;
++			}
++
++			partition_offset += SLP_FLASH_SECTOR_SIZE;
++			usrBuf += SLP_FLASH_SECTOR_SIZE;
++		}
++
++		if (oddLen)
++		{
++			ret = slp_flash_read(mtd, partition_offset, oddLen, &retlen, rwBuf);
++			if (ret || (retlen != oddLen))
++			{
++				printk("Read flash failed, ret:%ld, from:0x%x, len:0x%x, retlen:0x%x\n", ret, partition_offset, oddLen, retlen);
++				ret = -EFAULT;
++				goto free_and_out;
++			}
++
++			ret = copy_to_user(usrBuf, rwBuf, oddLen);
++			if (ret)
++			{
++				printk("read copy_to_user failed\n");
++				goto free_and_out;
++			}
++		}
++		
++		break;
++
++	case SLP_IOC_FLASH_PARTITION_WRITE:
++		partition_idx = (enum partition_index)addr;
++		if (!access_ok(VERIFY_READ, (void __user *)usrBuf, _IOC_SIZE(cmd)))
++		{
++			ret = -EFAULT;
++			goto free_and_out;
++		}
++
++		ret = get_info_from_mtd_partition_name(partition_names[partition_idx], &partition_offset, &partition_size);
++		if (ret)
++		{
++			goto free_and_out;
++		}
++
++		printk("start write %s partition... ", partition_names[partition_idx]);
++		addrStart = partition_offset & 0xFFFF0000;		
++		
++		eraseInfo = (struct erase_info *)kmalloc(sizeof(struct erase_info), GFP_KERNEL);
++		if (NULL == eraseInfo)
++		{
++			ret = -ENOMEM;
++			goto free_and_out;
++		}
++		memset(eraseInfo, 0, sizeof(struct erase_info));
++		
++		eraseInfo->mtd = mtd;
++		eraseInfo->callback = NULL;
++		eraseInfo->addr = addrStart;
++		eraseInfo->len = SLP_FLASH_SECTOR_SIZE;
++
++		if (partition_names[partition_idx] == UC_MTD_NAME)
++		{
++			mutex_lock(&slp_flash_reboot_mutex);
++			if (reboot_in_progress)
++			{
++				printk("system rebooting in progress, do nothing!\n");
++				mutex_unlock(&slp_flash_reboot_mutex);
++				ret = 0;
++				goto free_and_out;
++			}
++		}
++
++		do
++		{
++			ret = slp_flash_read(mtd, addrStart, SLP_FLASH_SECTOR_SIZE, &retlen, rwBuf);
++			if (ret || (retlen != SLP_FLASH_SECTOR_SIZE))
++			{
++				printk("Read flash failed, ret:%ld, from:0x%x, len:0x%x, retlen:0x%x\n", ret, addrStart, SLP_FLASH_SECTOR_SIZE, retlen);
++				ret = -EFAULT;
++				goto free_and_out;
++			}
++
++			if (partition_offset > addrStart)
++			{
++				len = addrStart + SLP_FLASH_SECTOR_SIZE - partition_offset;
++				len = len < partition_size ? len : partition_size;
++				if (copy_from_user(rwBuf + partition_offset - addrStart, usrBuf, len))
++				{
++					ret = -EFAULT;
++					printk("config write copy_from_usr failed!\n");
++					goto free_and_out;				
++				}
++			}
++			else
++			{
++				len = SLP_FLASH_SECTOR_SIZE > partition_size ? partition_size : SLP_FLASH_SECTOR_SIZE;
++				if (copy_from_user(rwBuf, usrBuf, len))
++				{
++					ret = -EFAULT;
++					printk("config write copy_from_usr failed!\n");
++					goto free_and_out;				
++				}
++			}
++			
++			ret = slp_flash_erase(mtd, eraseInfo);
++			if (ret)
++			{
++				printk(KERN_ERR "erase sector fail! addr: 0x%x erase sector size: 0x%x", addrStart, SLP_FLASH_SECTOR_SIZE);
++				goto free_and_out;
++			}
++			
++			ret =  slp_flash_write(mtd, addrStart, SLP_FLASH_SECTOR_SIZE, &retlen, rwBuf);
++			if ((ret != 0) || (retlen != SLP_FLASH_SECTOR_SIZE))
++			{
++				printk("\nWrite to flash failed status:%ld retlen:%d\n", ret, retlen);
++				ret = -EFAULT;
++				goto free_and_out;
++			}
++			
++			usrBuf += len;
++			addrStart += SLP_FLASH_SECTOR_SIZE;
++			partition_size -= len;
++			eraseInfo->addr = addrStart;
++		} while (partition_size != 0);
++
++		if (partition_names[partition_idx] == UC_MTD_NAME)
++		{
++			mutex_unlock(&slp_flash_reboot_mutex);
++		}
++
++		printk("done\n");
++		break;
++
++	case SLP_IOC_FLASH_PARTITION_ERASE:
++		partition_idx = (enum partition_index)addr;
++		ret = get_info_from_mtd_partition_name(partition_names[partition_idx], &partition_offset, &partition_size);
++		if (ret)
++		{
++			goto free_and_out;
++		}
++
++		printk("start erase %s partition... ", partition_names[partition_idx]);
++		addrStart = partition_offset & 0xFFFF0000;			
++		
++		eraseInfo = (struct erase_info *)kmalloc(sizeof(struct erase_info), GFP_KERNEL);
++		if (NULL == eraseInfo)
++		{
++			ret = -ENOMEM;
++			goto free_and_out;
++		}
++		memset(eraseInfo, 0, sizeof(struct erase_info));
++		
++		eraseInfo->mtd = mtd;
++		eraseInfo->callback = NULL;
++		eraseInfo->addr = addrStart;
++		eraseInfo->len = SLP_FLASH_SECTOR_SIZE;
++
++		do
++		{
++			if (partition_offset > addrStart || SLP_FLASH_SECTOR_SIZE > partition_size)
++			{
++				ret = slp_flash_read(mtd, addrStart, SLP_FLASH_SECTOR_SIZE, &retlen, rwBuf);
++				if (ret || (retlen != SLP_FLASH_SECTOR_SIZE))
++				{
++					printk("Read flash failed, ret:%ld, from:0x%x, len:0x%x, retlen:0x%x\n", ret, addrStart, SLP_FLASH_SECTOR_SIZE, retlen);
++					ret = -EFAULT;
++					goto free_and_out;
++				}
++
++				if (partition_offset > addrStart)
++				{
++					len = addrStart + SLP_FLASH_SECTOR_SIZE - partition_offset;
++					len = len < partition_size ? len : partition_size;
++					memset(rwBuf + partition_offset - addrStart, 0xff, len);
++				}
++				else
++				{
++					len = partition_size;
++					memset(rwBuf, 0xff, len);
++				}
++			}
++			else
++			{
++				len = SLP_FLASH_SECTOR_SIZE;
++			}
++			
++			ret = slp_flash_erase(mtd, eraseInfo);
++			if (ret)
++			{
++				printk(KERN_ERR "erase sector fail! addr: 0x%x erase sector size: 0x%x", addrStart, SLP_FLASH_SECTOR_SIZE);
++				goto free_and_out;
++			}
++
++			if (partition_offset > addrStart || SLP_FLASH_SECTOR_SIZE > partition_size)
++			{
++				ret =  slp_flash_write(mtd, addrStart, SLP_FLASH_SECTOR_SIZE, &retlen, rwBuf);
++				if ((ret != 0) || (retlen != SLP_FLASH_SECTOR_SIZE))
++				{
++					printk("\nWrite to flash failed status:%ld retlen:%d\n", ret, retlen);
++					ret = -EFAULT;
++					goto free_and_out;
++				}
++			}
++			
++			addrStart += SLP_FLASH_SECTOR_SIZE;
++			partition_size -= len;
++			eraseInfo->addr = addrStart;
++		} while (partition_size != 0);
++
++		printk("done\n");
++		break;
++
++
++	case SLP_IOC_FLASH_HEADER_FIELD_SIZE:
++		tpheader_idx = (enum tpheader_index)addr;
++		if (!access_ok(VERIFY_WRITE, (void __user *)len, _IOC_SIZE(cmd)))
++		{
++			ret = -EFAULT;
++			goto free_and_out;
++		}
++		
++		ret = copy_to_user((u_int8_t *)len, &tpheader_fields_lengths[tpheader_idx], 4);
++		if (ret)
++		{
++			printk("tp header field length copy_to_user failed\n");
++			goto free_and_out;
++		}
++
++		break;
++
++	case SLP_IOC_FLASH_HEADER_FIELD_READ:
++		tpheader_idx = (enum tpheader_index)addr;
++		if (!access_ok(VERIFY_WRITE, (void __user *)usrBuf, _IOC_SIZE(cmd)))
++		{
++			ret = -EFAULT;
++			goto free_and_out;
++		}
++
++		
++		ret = get_info_from_mtd_partition_name(TP_HEADER_MTD_NAME, &partition_offset, &partition_size);
++		if (ret)
++		{
++			goto free_and_out;
++		}
++
++		ret = slp_flash_read(mtd, partition_offset, partition_size, &retlen, rwBuf);
++		if (ret || (retlen != partition_size))
++		{
++			printk("Read flash failed, ret:%ld, from:0x%x, len:0x%x, retlen:0x%x\n", ret, partition_offset, partition_size, retlen);
++			ret = -EFAULT;
++			goto free_and_out;
++		}
++		
++		tphdr_field_offset = get_tpheader_field_offset(tpheader_idx);
++		ret = copy_to_user((u_int8_t *)usrBuf, (u_int8_t *)rwBuf + tphdr_field_offset, tpheader_fields_lengths[tpheader_idx]);
++		if (ret)
++		{
++			printk("tp header field copy_to_user failed\n");
++			goto free_and_out;
++		}
++		
++		break;
++
++	case SLP_IOC_FLASH_JFFS2_FAST_RESTORE:
++		if (!access_ok(VERIFY_READ, (void __user *)usrBuf, _IOC_SIZE(cmd)))
++		{
++			ret = -EFAULT;
++			goto free_and_out;
++		}
++
++		ret = get_info_from_mtd_partition_name(JFFS2_MTD_NAME, &partition_offset, &partition_size);
++		if (ret)
++		{
++			goto free_and_out;
++		}
++
++		if (0x0 != (partition_offset & 0x0000ffff))
++		{
++			printk("jffs2 partition not writeable\n");
++			ret = -EFAULT;
++			goto free_and_out;
++		}
++
++		if (len > SLP_FLASH_SECTOR_SIZE)
++		{
++			printk("JFFS2 EOF mark is too long\n");
++			ret = -EFAULT;
++			goto free_and_out;
++		}
++		printk("start jffs2 fast restore... ");
++		
++		eraseInfo = (struct erase_info *)kmalloc(sizeof(struct erase_info), GFP_KERNEL);
++		if (NULL == eraseInfo)
++		{
++			ret = -ENOMEM;
++			goto free_and_out;
++		}
++		memset(eraseInfo, 0, sizeof(struct erase_info));
++		
++		eraseInfo->mtd = mtd;
++		eraseInfo->callback = NULL;
++		eraseInfo->addr = partition_offset;
++		eraseInfo->len = SLP_FLASH_SECTOR_SIZE;
++
++		memset(rwBuf, 0xff, SLP_FLASH_SECTOR_SIZE);
++		if (copy_from_user(rwBuf, usrBuf, len))
++		{
++			printk("jffs2 EOF mark copy_from_usr failed!\n");
++			ret = -EFAULT;
++			goto free_and_out;				
++		}
++		
++		ret = slp_flash_erase(mtd, eraseInfo);
++		if (ret)
++		{
++			printk(KERN_ERR "erase sector fail! addr: 0x%x erase sector size: 0x%x", partition_offset, SLP_FLASH_SECTOR_SIZE);
++			goto free_and_out;
++		}
++	
++		ret =  slp_flash_write(mtd, partition_offset, len, &retlen, rwBuf);
++		if ((ret != 0) || (retlen != len))
++		{
++			printk("\nWrite to flash failed status:%ld retlen:%d\n", ret, retlen);
++			ret = -EFAULT;
++			goto free_and_out;
++		}
++
++		printk("done\n");
++		break;
++
++	case SLP_IOC_FLASH_MD5_CONFLICT_SAMPLE:
++		partition_idx = (enum partition_index)addr;
++		if (!access_ok(VERIFY_WRITE, (void __user *)usrBuf, _IOC_SIZE(cmd)))
++		{
++			ret = -EFAULT;
++			goto free_and_out;
++		}
++		
++		ret = get_info_from_mtd_partition_name(partition_names[partition_idx], &partition_offset, &partition_size);
++		if (ret)
++		{
++			goto free_and_out;
++		}
++
++		if (len * MD5_CONFLICT_SAMPLE_FREQ >= partition_size)
++		{
++			printk("sample points are beyond partition boundary\n");
++			ret = -EFAULT;
++			goto free_and_out;
++		}
++
++		for (i = 0; i < len; i++)
++		{
++			ret = slp_flash_read(mtd, partition_offset + i * MD5_CONFLICT_SAMPLE_FREQ, 1, &retlen, &rwBuf[i]);
++			if (ret || (retlen != 1))
++			{
++				printk("Read flash failed, ret:%ld, from:0x%x, len:0x%x, retlen:0x%x\n", ret, partition_offset + i * MD5_CONFLICT_SAMPLE_FREQ, 1, retlen);
++				ret = -EFAULT;
++				goto free_and_out;
++			}
++		}
++
++		ret = copy_to_user((u_int8_t *)usrBuf, (u_int8_t *)rwBuf, len);
++		if (ret)
++		{
++			printk("flash md5 conflict sample copy_to_user failed\n");
++			goto free_and_out;
++		}
++
++		break;*/
++		
++	default:
++		ret = -ENOIOCTLCMD;
++		goto free_and_out;
++		break;
++	}
++	
++free_and_out:
++	if (rwBuf)
++	{
++		kfree(rwBuf);
++	}
++	if (eraseInfo)
++	{
++		kfree(eraseInfo);
++	}
++	
++	return ret;
++}
++
++/*int get_radio_size(void)
++{
++	int radio_offset = 0;
++	int radio_len = 0;
++	
++	get_info_from_mtd_partition_name(RADIO_MTD_NAME, &radio_offset, &radio_len);
++	return radio_len;
++}
++EXPORT_SYMBOL(get_radio_size);
++
++int get_radio_data(u_int8_t* buf, int offset, int len)
++{
++	int ret = 0;
++	int retlen = 0;
++	int radio_offset = 0;
++	int radio_len = 0;
++
++	get_info_from_mtd_partition_name(RADIO_MTD_NAME, &radio_offset, &radio_len);
++	if (offset + len > radio_len)
++	{
++		printk("radio data read is beyond partition boundary\n");
++		return -1;
++	}
++
++	ret = slp_flash_read(slp_flash_dev->mtd, radio_offset + offset, len, &retlen, buf);
++	if (ret || (retlen != len))
++	{
++		printk("Read flash failed, ret:%d, from:0x%x, len:0x%x, retlen:0x%x\n", ret, radio_offset + offset, len, retlen);
++		ret = -EFAULT;
++		return ret;
++	}
++
++	return 0;
++}
++EXPORT_SYMBOL(get_radio_data);*/
++
++/* add APIs which shall be used by kernel and kernel modules, by Wu Yin, 17Oct14 */
++/*int slp_kernel_flash_read(u_int8_t* buf, u_int32_t len, u_int32_t addr)
++{
++	extern struct flash_info *flash;
++	struct mtd_info* mtd = NULL;
++	size_t retlen = 0;
++	int ret = 0;
++
++	if (NULL == flash)
++	{
++		printk(KERN_ERR "slp_flash_read init fail!");
++		return -EFAULT;
++	}
++	
++	mtd = &flash->mtd;
++	if (NULL == mtd)
++	{
++		printk(KERN_ERR "slp_flash_read init fail!");
++		return -EFAULT;
++	}
++
++	if (NULL == buf)
++	{
++		printk(KERN_ERR "buf is NULL!");
++		return -EFAULT;
++	}
++
++	if (len > SLP_FLASH_SECTOR_SIZE)		
++	{
++		return -EPERM;
++	}
++
++	ret = slp_flash_read(mtd, addr, len, &retlen, buf);
++	if (ret || retlen != len)
++	{
++		printk("Read failed, ret:%d, from:0x%x, size:%d\n", ret, addr, len);
++		return ret;
++	}
++
++	return 0;
++}
++EXPORT_SYMBOL(slp_kernel_flash_read);*/
++
++/*int slp_kernel_flash_write(u_int8_t* buf, u_int32_t len, u_int32_t addr)
++{
++	extern struct flash_info *flash;
++	struct mtd_info* mtd = NULL;
++	size_t retlen = 0;
++	u_int32_t rem;
++	int ret = 0;
++	int i = 0;
++	struct erase_info *eraseInfo = NULL;
++	int addrStart, addrEnd;
++	int nSector = len >> 16; 					
++	int oddLen = len & 0x0000FFFF;			
++
++	if (NULL == flash)
++	{
++		printk(KERN_ERR "slp_flash_write init fail!");
++		return -EFAULT;
++	}
++	
++	mtd = &flash->mtd;
++	if (NULL == mtd)
++	{
++		printk(KERN_ERR "slp_flash_write init fail!");
++		return -EFAULT;
++	}
++	
++	if (NULL == buf)
++	{
++		printk(KERN_ERR "buf is NULL!");
++		return -EFAULT;
++	}
++
++	
++	rem = addr % SLP_FLASH_SECTOR_SIZE;
++	if (rem)
++	{
++		return -EINVAL;
++	}
++
++	
++	addrStart = addr & 0xFFFF0000;			
++	addrEnd = (addr + len) & 0xFFFF0000;	
++
++	
++	eraseInfo = (struct erase_info *)kmalloc(sizeof(struct erase_info), GFP_KERNEL);
++	if (NULL == eraseInfo)
++	{
++		return -ENOMEM;
++	}
++	memset(eraseInfo, 0, sizeof(struct erase_info));
++
++	eraseInfo->mtd = mtd;
++	eraseInfo->callback = NULL;
++	eraseInfo->addr = addrStart;
++	eraseInfo->len = SLP_FLASH_SECTOR_SIZE;
++
++	printk("Erase from %#X to %#X:\n", addr, addr + len);
++
++	do
++	{
++		ret = slp_flash_erase(mtd, eraseInfo);
++		if (ret)
++		{
++			printk(KERN_ERR "erase sector fail! addr: 0x%x erase sector size: 0x%x", addrStart, SLP_FLASH_SECTOR_SIZE);
++			return ret;
++		}
++		printk(".");
++		addrStart += SLP_FLASH_SECTOR_SIZE;
++		eraseInfo->addr = addrStart;
++	} while (addrStart < addrEnd);
++	printk("\n");
++
++	
++	printk("Program from %#X to %#X:\n", addr, addr + len);
++
++	for (i = 0; i < nSector; i++)	
++	{
++		ret =  slp_flash_write(mtd, addr, SLP_FLASH_SECTOR_SIZE, &retlen, buf + SLP_FLASH_SECTOR_SIZE*i);
++		printk(".");
++		if ((ret != 0) && (retlen != SLP_FLASH_SECTOR_SIZE))
++		{
++			printk("\nWrite to flash failed status:%d retlen:%d\n", ret, retlen);
++			return ret;
++		}
++		addr += SLP_FLASH_SECTOR_SIZE;
++	}
++
++	if (oddLen)
++	{
++		ret = slp_flash_write(mtd, addr, oddLen, &retlen, buf + SLP_FLASH_SECTOR_SIZE*i);
++		printk(".");
++		if ((ret != 0) || (retlen != oddLen))
++		{
++			printk("\nWrite to flash failed status:%d retlen:%d\n", ret, retlen);
++			return ret;
++		}
++	}
++
++	printk("\nwrite successfully\n");
++	return 0;
++
++}
++EXPORT_SYMBOL(slp_kernel_flash_write);*/
++
++/*int slp_kernel_flash_erase(u_int32_t len, u_int32_t addr)
++{
++	extern struct flash_info *flash;
++	struct mtd_info* mtd = NULL;
++	u_int32_t rem;
++	int ret = 0;
++	struct erase_info *eraseInfo = NULL;
++	int addrStart, addrEnd;
++
++	if (NULL == flash)
++	{
++		printk(KERN_ERR "slp_flash_write init fail!");
++		return -EFAULT;
++	}
++	
++	mtd = &flash->mtd;
++	if (NULL == mtd)
++	{
++		printk(KERN_ERR "slp_flash_write init fail!");
++		return -EFAULT;
++	}
++
++	
++	rem = addr % SLP_FLASH_SECTOR_SIZE;
++	if (rem)
++	{
++		return -EINVAL;
++	}
++	rem = len % SLP_FLASH_SECTOR_SIZE;
++	if (rem)
++	{
++		return -EINVAL;
++	}
++	
++	addrStart = addr & 0xFFFF0000;			
++	addrEnd = (addr + len) & 0xFFFF0000;	
++	
++	 
++	
++	eraseInfo = (struct erase_info *)kmalloc(sizeof(struct erase_info), GFP_KERNEL);
++	if (NULL == eraseInfo)
++	{
++		return -ENOMEM;
++	}
++	memset(eraseInfo, 0, sizeof(struct erase_info));
++	
++	eraseInfo->mtd = mtd;
++	eraseInfo->callback = NULL;
++	eraseInfo->addr = addrStart;
++	eraseInfo->len = SLP_FLASH_SECTOR_SIZE;
++	
++	printk("Erase from %#X to %#X:", addr, addr + len);
++	
++	do
++	{
++		ret = slp_flash_erase(mtd, eraseInfo);
++		if (ret)
++		{
++			printk(KERN_ERR "erase sector fail! addr: 0x%x erase sector size: 0x%x", addrStart, SLP_FLASH_SECTOR_SIZE);
++			return ret;
++		}
++		printk(".");
++		addrStart += SLP_FLASH_SECTOR_SIZE;
++		eraseInfo->addr = addrStart;
++	} while (addrStart < addrEnd);
++	printk("\nerase successfully\n");
++
++	return 0;
++}
++EXPORT_SYMBOL(slp_kernel_flash_erase);*/
++
++static int __init slp_flash_init(void)
++{
++	int ret = 0;
++	extern struct flash_info *flash;
++	
++	/* setup slp flash cdev, by Wu Yin, 11Mar14 */
++	ret = slp_dev_init(&flash->mtd);
++	if (0 != ret)
++	{
++		printk(KERN_ERR "SLP flash cdev init fail!");
++	}
++
++	/*ret = register_reboot_notifier(&slp_flash_notifier);
++	if (ret)
++	{
++		slp_dev_cleanup();
++	}*/
++
++	return ret;
++}
++
++
++static void __exit slp_flash_exit(void)
++{
++	slp_dev_cleanup();
++}
++
++/* must init after ralink spi flash module, in case externed flash not initlized yet */
++late_initcall(slp_flash_init);
++module_exit(slp_flash_exit);
++
++// MODULE_LICENSE("GPL");
++// MODULE_AUTHOR("Wu Yin");
++// MODULE_DESCRIPTION("Cdev driver for SLP flash operations");
++
++
+diff -uNr a/drivers/mtd/devices/slp_flash.h b/drivers/mtd/devices/slp_flash.h
+--- a/drivers/mtd/devices/slp_flash.h	1969-12-31 19:00:00.000000000 -0500
++++ b/drivers/mtd/devices/slp_flash.h	2016-12-15 20:58:34.053694000 -0500
+@@ -0,0 +1,168 @@
++#ifndef __SLP_FLASH_H__
++#define __SLP_FLASH_H__
++
++#include <linux/fs.h>
++#include <linux/ioctl.h>
++#include <linux/semaphore.h>
++
++#define IOCTL_SLP_FLASH_READ				0x00
++#define IOCTL_SLP_FLASH_WRITE				0x01
++#define IOCTL_SLP_FLASH_ERASE				0x02
++#define IOCTL_SLP_FLASH_UID_READ			0x03
++#define IOCTL_SLP_FLASH_PARTITION_SIZE		0x04
++#define IOCTL_SLP_FLASH_PARTITION_READ		0x05
++#define IOCTL_SLP_FLASH_PARTITION_WRITE		0x06
++#define IOCTL_SLP_FLASH_PARTITION_ERASE		0x07
++#define IOCTL_SLP_FLASH_HEADER_FIELD_SIZE	0x08
++#define IOCTL_SLP_FLASH_HEADER_FIELD_READ	0x09
++#define IOCTL_SLP_FLASH_JFFS2_FAST_RESTORE	0x0a	/* pass jffs EOF mark buf and len */
++#define IOCTL_SLP_FLASH_MD5_CONFLICT_SAMPLE	0x0b	
++
++#define SLP_IOC_MAGIC						0xDF	/* some number not existed in ioctl-number.txt */
++#define SLP_IOC_FLASH_READ					_IOR(SLP_IOC_MAGIC, IOCTL_SLP_FLASH_READ, char)
++#define SLP_IOC_FLASH_WRITE					_IOW(SLP_IOC_MAGIC, IOCTL_SLP_FLASH_WRITE, char)
++#define SLP_IOC_FLASH_ERASE					_IO(SLP_IOC_MAGIC, IOCTL_SLP_FLASH_ERASE)
++#define SLP_IOC_FLASH_UID_READ				_IOR(SLP_IOC_MAGIC, IOCTL_SLP_FLASH_UID_READ, char)
++#define SLP_IOC_FLASH_PARTITION_SIZE		_IOR(SLP_IOC_MAGIC, IOCTL_SLP_FLASH_PARTITION_SIZE, char)
++#define SLP_IOC_FLASH_PARTITION_READ		_IOR(SLP_IOC_MAGIC, IOCTL_SLP_FLASH_PARTITION_READ, char)
++#define SLP_IOC_FLASH_PARTITION_WRITE		_IOW(SLP_IOC_MAGIC, IOCTL_SLP_FLASH_PARTITION_WRITE, char)
++#define SLP_IOC_FLASH_PARTITION_ERASE		_IO(SLP_IOC_MAGIC, IOCTL_SLP_FLASH_PARTITION_ERASE)
++#define SLP_IOC_FLASH_HEADER_FIELD_SIZE		_IOR(SLP_IOC_MAGIC, IOCTL_SLP_FLASH_HEADER_FIELD_SIZE, char)
++#define SLP_IOC_FLASH_HEADER_FIELD_READ		_IOR(SLP_IOC_MAGIC, IOCTL_SLP_FLASH_HEADER_FIELD_READ, char)
++#define SLP_IOC_FLASH_JFFS2_FAST_RESTORE	_IOW(SLP_IOC_MAGIC, IOCTL_SLP_FLASH_JFFS2_FAST_RESTORE, char)
++#define SLP_IOC_FLASH_MD5_CONFLICT_SAMPLE	_IOR(SLP_IOC_MAGIC, IOCTL_SLP_FLASH_MD5_CONFLICT_SAMPLE, char)
++
++#define MD5_CONFLICT_SAMPLE_FREQ			0x400
++
++#define SLP_IOC_MAXNR	14
++
++enum partition_index {
++	FACTORY_INFO = 1,
++	RADIO = 2,
++	UC = 3,
++	KERNEL_AND_ROMFS = 4,
++	TPHEADER = 5,
++	JFFS2 = 6,
++	NORMAL_BOOT = 7,
++	KERNEL = 8,
++	FIRMWARE = 9
++};
++
++enum tpheader_index {
++	FWID = 1,
++	FW_DESCRIPTION = 2,
++};
++
++#define OFFSET_OF(T, member) ((int)(&(((T*)0)->member)))
++
++/* ioctl structure */
++typedef struct 
++{
++	u_int32_t addr;		/* read/write/erase flash offset or partition index*/
++	u_int8_t* buf;		/* user-space buf, useless when erase */
++	u_int32_t len;		/* read/write/erase length */
++}ARG;
++
++
++/* slp flash cdev structure definations, add by Wu Yin, 11Mar14 */
++#define SLP_FLASH_MAJOR 222
++#define SLP_FLASH_MINOR 0
++#define SLP_FLASH_DEV_NAME "slp_flash_chrdev"
++#define SLP_FLASH_CLASS_NAME "slp_device"
++
++#define SLP_FLASH_SECTOR_SIZE (64 * 1024)
++
++#define	OPCODE_RDID	0x9f	/* Read JEDEC ID */
++#define SLP_SPI_NAME_SIZE	32
++
++/* macro defined in ralink spi flash driver */
++#define SPIC_READ_BYTES (1<<0)
++#define SPIC_WRITE_BYTES (1<<1)
++
++struct slp_dev
++{
++	struct cdev flash_cdev;
++	struct mtd_info *mtd;			/* get mtd pointer from m25p80 init */
++};
++
++/* need ralink flash structure here, add by Wu Yin, 26Sep14 */
++struct chip_info {
++	char		*name;
++	u8		id;
++	u32		jedec_id;
++	unsigned long	sector_size;
++	unsigned int	n_sectors;
++	char		addr4b;
++};
++
++struct flash_info {
++	struct semaphore	lock;
++	struct mtd_info		mtd;
++	struct chip_info	*chip;
++	u8			command[5];
++};
++
++
++struct slp_spi_device_info
++{
++	u32 jedec_id;
++	u8 opcode;		/* code addr len */
++	u32 addr;		/* usually 24-bit addr, value is 0 */
++	u8 read_delay;	/* delay from write to read uid */
++	u32 uid_len;	/* UID length for this flash */
++};
++
++struct slp_spi_device_id {
++	char name[SLP_SPI_NAME_SIZE];
++	struct slp_spi_device_info info;
++};
++
++enum slp_spi_flash_uid_len
++{
++	FLASH_UID_LEN_64_BIT = 8,
++	FLASH_UID_LEN_96_BIT = 12,
++	FLASH_UID_LEN_128_BIT = 16,
++};
++
++static const struct slp_spi_device_id slp_flash_ids[] = 
++{
++	{ "w25q64", 	{.jedec_id=0xef4017, .opcode=0x4b, .addr=0, 	.read_delay=1, .uid_len=FLASH_UID_LEN_64_BIT} },
++	{ "w25q32", 	{.jedec_id=0xef4016, .opcode=0x4b, .addr=0, 	.read_delay=1, .uid_len=FLASH_UID_LEN_64_BIT} },
++	{ "w25q128FW",	{.jedec_id=0xef6018, .opcode=0x4b, .addr=0, 	.read_delay=1, .uid_len=FLASH_UID_LEN_64_BIT} },
++	{ "gd25q64CSIG",{.jedec_id=0xc84017, .opcode=0x4b, .addr=0, 	.read_delay=1, .uid_len=FLASH_UID_LEN_64_BIT} }, 
++	{ "gd25q32CSIG",{.jedec_id=0xc84016, .opcode=0x4b, .addr=0, 	.read_delay=1, .uid_len=FLASH_UID_LEN_64_BIT} }, 
++	{ "mx25l6405d", {.jedec_id=0xc22017, .opcode=0x5a, .addr=0x1e0, .read_delay=1, .uid_len=FLASH_UID_LEN_128_BIT} },
++	{ "mx25l3205d", {.jedec_id=0xc22016, .opcode=0x5a, .addr=0x1e0, .read_delay=1, .uid_len=FLASH_UID_LEN_128_BIT} },
++	{ "s25FL256S",	{.jedec_id=0x010219, .opcode=0x4b, .addr=0, 	.read_delay=1, .uid_len=FLASH_UID_LEN_128_BIT} },
++	{ "gd25q128C",  {.jedec_id=0xc84018, .opcode=0x4b, .addr=0,     .read_delay=1, .uid_len=FLASH_UID_LEN_128_BIT} },
++	{ "W25Q128BV",  {.jedec_id=0xef4018, .opcode=0x4b, .addr=0,     .read_delay=1, .uid_len=FLASH_UID_LEN_128_BIT} },
++	{ "mx25l12805d",{.jedec_id=0xc22018, .opcode=0x5a, .addr=0x8c,  .read_delay=6, .uid_len=FLASH_UID_LEN_128_BIT} },
++};
++
++extern int ramtd_read(struct mtd_info *mtd, loff_t from, size_t len, size_t *retlen, u_char *buf);
++extern int ramtd_write(struct mtd_info *mtd, loff_t to, size_t len, size_t *retlen, const u_char *buf);
++extern int ramtd_erase(struct mtd_info *mtd, struct erase_info *instr);
++extern int raspi_read_devid(u8 *rxbuf, int n_rx);
++extern int bbu_mb_spic_trans(const u8 code, const u32 addr, u8 * buf, const size_t n_tx, const size_t n_rx, int flag, int lcd);
++
++static inline struct slp_dev *cdev_to_slp_dev(struct cdev* cdev)
++{
++	return container_of(cdev, struct slp_dev, flash_cdev);
++}
++
++static inline int slp_flash_read(struct mtd_info *mtd, loff_t from, size_t len, size_t *retlen, u_char *buf)
++{
++	return ramtd_read(mtd, from, len, retlen, buf);
++}
++
++static inline int slp_flash_write(struct mtd_info *mtd, loff_t to, size_t len, size_t *retlen, const u_char *buf)
++{
++	return ramtd_write(mtd, to, len, retlen, buf);
++}
++
++static inline int slp_flash_erase(struct mtd_info *mtd, struct erase_info *instr)
++{
++	return ramtd_erase(mtd, instr);
++}
++
++#endif /* __SLP_FLASH_H__ */
+diff -uNr a/drivers/mtd/ralink/ralink_bbu_spi.c b/drivers/mtd/ralink/ralink_bbu_spi.c
+--- a/drivers/mtd/ralink/ralink_bbu_spi.c	2017-12-18 12:23:42.196684600 -0500
++++ b/drivers/mtd/ralink/ralink_bbu_spi.c	2017-12-18 07:52:25.462772000 -0500
+@@ -822,7 +822,7 @@
+ /*
+  * read SPI flash device ID
+  */
+-static int raspi_read_devid(u8 *rxbuf, int n_rx)
++int raspi_read_devid(u8 *rxbuf, int n_rx)
+ {
+ 	u8 code = OPCODE_RDID;
+ 	int retval;

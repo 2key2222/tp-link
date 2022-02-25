@@ -1,0 +1,110 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>diagnostic_info</title>
+</head>
+
+<body>
+<div class="func-container">
+	<div id="dia_enable_panel">
+        <div id="intro1"></div>
+    	<form id="dia_enable">
+            <input id="ssh_port_switch" name="ssh_port_switch"/>
+            <input type="text"  id="ssh_port" name="ssh_port" />	
+		</form>
+	</div>
+    <div id="dia_info_panel">
+        <div id="intro2"></div>
+        <form id="dia_info"></form>
+        <button type="button" id="dia_download"></button>
+    </div>
+
+	<div id="help_diagnostic_info"></div>
+</div>
+
+<script type="text/javascript">
+try{
+    $
+}catch(e){
+    location.href = "/";
+};
+
+$(document).ready(function(e){
+	var DIA_ENABLE_URL = $.su.url("/admin/diagnose?form=setting"); 
+    var DIA_INFO_URL = $.su.url("/admin/diagnose?form=log"); 
+    var DIA_ENABLE_PROXY = new $.su.Proxy({
+        url: DIA_ENABLE_URL
+    });
+    var DIA_INFO_PROXY = new $.su.Proxy({
+        url: DIA_INFO_URL
+    });
+
+    $("#intro1").text($.su.CHAR.DIA_INFO.INTRO1);
+    $("#intro2").text($.su.CHAR.DIA_INFO.INTRO2);
+
+	$("#dia_enable_panel").panel({
+		title: $.su.CHAR.DIA_INFO.FUNCTION
+	});
+
+    $("#ssh_port_switch").checkbox({
+        fieldLabel:$.su.CHAR.DIA_INFO.FUNCTION,
+        items:[
+            {boxlabel: $.su.CHAR.DIA_INFO.ENABLE, inputValue:"on", uncheckedValue:"off"}
+        ]
+    })
+
+    $("#ssh_port").textbox({
+        value:"22"
+    });
+
+    $("#ssh_port").textbox("hide");
+
+    var dia_enable_form = $("#dia_enable").form({
+        proxy: DIA_ENABLE_PROXY,
+        fields: [
+            {name: "ssh_port_switch"},
+            {name: "ssh_port"}
+        ],
+        submitBtn:"default"
+    });
+
+
+    $("#dia_info_panel").panel({
+        title: $.su.CHAR.DIA_INFO.INFO
+    });
+
+    var dia_info_form = $("#dia_info").form({
+        proxy: DIA_INFO_PROXY,
+        submitBtn:null,
+        autoLoad:false,
+        formEnctype: "multipart/form-data",
+        traditional: true,
+        hiddenFrame: true,
+    });
+
+    $("#dia_download").button({
+        text: $.su.CHAR.DIA_INFO.DOWNLOAD,
+        handler:function(){
+            dia_info_form.form("submit", {operation:"download"}, function(data){
+
+            }, function(error){
+
+            }, function(fail){
+
+            });
+        }
+    });
+
+	
+
+    var dia_info_help = new $.su.Help({
+		container: "div#help_diagnostic_info",
+		content: ["DIA_ENABLE"]
+	});
+
+});
+</script>
+</body>
+
+</html>

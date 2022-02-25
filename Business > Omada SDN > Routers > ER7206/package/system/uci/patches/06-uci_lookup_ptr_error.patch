@@ -1,0 +1,12 @@
+--- a/libuci.c	2020-12-18 06:32:18.741317638 -0500
++++ b/libuci.c	2020-12-18 06:33:47.740609703 -0500
+@@ -258,7 +258,8 @@
+     strcat(opt_name, "[0].");
+     strcat(opt_name, option);
+    
+-    if (uci_lookup_ptr(ctx, &ptr, opt_name, true) != UCI_OK) {
++    if ((uci_lookup_ptr(ctx, &ptr, opt_name, true) != UCI_OK)
++	|| !(ptr.flags & UCI_LOOKUP_COMPLETE)) {
+         uci_perror(ctx, "lookup ptr");
+         printf("uci_lookup_ptr not ok");
+         uci_free_context(ctx);

@@ -1,0 +1,280 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>DHCP_SERVER</title>
+</head>
+
+<body>
+<div class="func-container">
+	 <div id="lan-ipv4">
+	 	<form id="lan-ipv4-setting">
+	    	<input type="text"  id="start_ip_address" name="ipaddr_start" value="" />
+	    	<input type="text"  id="end_ip_address" name="ipaddr_end" value="" />
+	    	<input   id="lease_time" name="leasetime" value="" />
+	    	<input   id="gateway" name="gateway" value="" />
+	        <input   id="domain" name="domain" value="" /> 
+	    	<input   id="dns1" name="pri_dns" value="" />
+	    	<input   id="dns2" name="snd_dns" value="" />
+	    	<input   id="option60" name="option60" value="" />
+	    	<input   id="option66" name="option66" value="" />
+	    	<input   id="option138" name="option138" value="" />	
+	    	<input   id="option150" name="option150" value="" />
+	    	<input   id="option159" name="option159" value="" />
+	    	<input   id="option160" name="option160" value="" />
+	    	<input   id="option176" name="option176" value="" />
+	    	<input   id="option242" name="option242" value="" />
+			<input type="text"  id="dhcpServer" name="enable" value=""/>
+	    </form>
+	 </div>
+
+
+    <div id="dhcp_server_help"></div>
+</div>
+
+<script type="text/javascript">
+try{
+    $
+}catch(e){
+    location.href = "/";
+};
+
+$(document).ready(function(e){
+	var maxrules = 0
+
+	$("div.func-container").page({
+		title: $.su.CHAR.DHCP_SERVER.TITLE,
+		help: ""	//可能是个调用的id 也可能是个url
+	});
+	
+	//ipv4
+	$("div#lan-ipv4").panel({
+		title: $.su.CHAR.DHCP_SERVER.SETTINGS
+	});
+
+
+	/*var lanIP = 0;
+	var lanMask = 0;*/
+
+	/*var lanProxy = new $.su.Proxy({
+		url: $.su.url('/admin/network?form=status_ipv4'),
+		async: false
+	});
+
+	lanProxy.read({}, function(data){
+		lanIP = data.lan_ipv4_ipaddr;
+		lanMask = data.lan_ipv4_netmask;
+	});*/
+
+
+	$("input#start_ip_address").textbox({
+		fieldLabel: $.su.CHAR.DHCP_SERVER.IP_ADDR_START,
+		allowBlank: false,
+		textFormat: $.su.format.ip,
+		vtype: 'ip'
+	});
+
+	$("input#end_ip_address").textbox({
+		fieldLabel: $.su.CHAR.DHCP_SERVER.IP_ADDR_END,
+		allowBlank: false,
+		textFormat: $.su.format.ip,
+		vtype: 'ip'
+	});
+
+	$("input#lease_time").textbox({
+		fieldLabel:$.su.CHAR.DHCP_SERVER.LEASETIME,
+            tips: $.su.CHAR.DHCP_SERVER.LEASENOTE,
+            tipsCls: 'l',
+            textFormat: $.su.format.number,
+            allowBlank: false,
+            value:"120",
+            vtype: {
+                vtype: "number",
+                max: 2880,
+                min: 1
+            }
+	});
+
+	$("input#gateway").textbox({
+		fieldLabel: $.su.CHAR.DHCP_SERVER.GATEWAY,
+		tips: $.su.CHAR.DHCP_SERVER.OPTIONAL,
+		textFormat: $.su.format.ip,
+		vtype: 'ip',
+	});
+
+	$("input#domain").textbox({
+		fieldLabel: $.su.CHAR.DHCP_SERVER.DOMAIN,
+		tips: $.su.CHAR.DHCP_SERVER.OPTIONAL,
+		vtype: 'domain',
+		maxLength:253
+	});
+
+	$("input#dns1").textbox({
+		fieldLabel: $.su.CHAR.DHCP_SERVER.PRIMARYDNS,
+		tips: $.su.CHAR.DHCP_SERVER.OPTIONAL,
+		textFormat: $.su.format.ip,
+		vtype: 'ip'
+	});
+
+	$("input#dns2").textbox({
+		fieldLabel: $.su.CHAR.DHCP_SERVER.SECONDARYDNS,
+		tips: $.su.CHAR.DHCP_SERVER.OPTIONAL,
+		textFormat: $.su.format.ip,
+		vtype: 'ip'
+	});
+
+	$("#option60").textbox({
+		fieldLabel: $.su.CHAR.DHCP_SERVER.OPT60,
+		tips: $.su.CHAR.DHCP_SERVER.OPTIONAL,
+		vtype: 'string_visible_username'
+	});
+
+	$("#option66").textbox({
+		fieldLabel: $.su.CHAR.DHCP_SERVER.OPT66,
+		tips: $.su.CHAR.DHCP_SERVER.OPTIONAL,
+		maxLength:253
+	});
+
+	$("#option138").textbox({
+		fieldLabel: $.su.CHAR.DHCP_SERVER.OPT138,
+		tips: $.su.CHAR.DHCP_SERVER.OPTIONAL,
+		textFormat: $.su.format.ip,
+		vtype: 'ip'
+	});
+	
+	$("#option150").textbox({
+		fieldLabel: $.su.CHAR.DHCP_SERVER.OPT150,
+		tips: $.su.CHAR.DHCP_SERVER.OPTIONAL,
+		maxLength:253
+	});
+	$("#option159").textbox({
+		fieldLabel: $.su.CHAR.DHCP_SERVER.OPT159,
+		tips: $.su.CHAR.DHCP_SERVER.OPTIONAL,
+		maxLength:253
+	});
+	$("#option160").textbox({
+		fieldLabel: $.su.CHAR.DHCP_SERVER.OPT160,
+		tips: $.su.CHAR.DHCP_SERVER.OPTIONAL,
+		maxLength:253
+	});
+	$("#option176").textbox({
+		fieldLabel: $.su.CHAR.DHCP_SERVER.OPT176,
+		tips: $.su.CHAR.DHCP_SERVER.OPTIONAL,
+		maxLength:253
+	});
+	$("#option242").textbox({
+		fieldLabel: $.su.CHAR.DHCP_SERVER.OPT242,
+		tips: $.su.CHAR.DHCP_SERVER.OPTIONAL,
+		maxLength:253
+	});
+
+	$("input#dhcpServer").checkbox({
+		fieldLabel:$.su.CHAR.GRID.STATUS,
+		items: [
+			{boxlabel: $.su.CHAR.DHCP_SERVER.ENABLE, inputValue:'on', uncheckedValue:'off',checked:true}
+		]
+	});
+
+	var ipv4Proxy = new $.su.Proxy({
+		url: $.su.url('/admin/dhcps?form=setting')
+	});
+
+
+	var dhcpLanSettingForm = $("form#lan-ipv4-setting").form({
+		proxy: ipv4Proxy,
+		fields: [
+			{name: "ipaddr_start", mapping: "ipaddr_start"},
+			{name: "ipaddr_end", mapping: "ipaddr_end"},
+			{name: "leasetime", mapping: "leasetime"},
+			{name: "gateway", mapping: "gateway"},
+			 {name: "domain", mapping: "domain"},
+			{name: "pri_dns", mapping: "pri_dns"},
+			{name: "snd_dns", mapping: "snd_dns"},
+			{name: "option60", mapping: "option60"},
+			{name: "option66", mapping: "option66"},
+			{name: "option138", mapping: "option138"},
+			{name: "option150", mapping: "option150"},
+			{name: "option159", mapping: "option159"},
+			{name: "option160", mapping: "option160"},
+			{name: "option176", mapping: "option176"},
+			{name: "option242", mapping: "option242"},
+			{name: "enable", mapping: "enable"}
+		],
+		submitBtn: "default",
+		validator: function(){
+			var ipStart = $("input#start_ip_address").textbox('getValue');
+			var ipEnd = $("input#end_ip_address").textbox('getValue');
+
+			ipStart = $.su.func.ipToInt(ipStart);
+			ipEnd = $.su.func.ipToInt(ipEnd);
+
+			if(ipEnd - ipStart >= Number(maxrules)){
+				$("input#end_ip_address").textbox('setError', $.su.CHAR.DHCP_SERVER.IPNUM_ERR + maxrules);// "用于分配的IP地址应少于256个");
+				return false;
+			}
+			/*var ipStart = $("input#start_ip_address").textbox('getValue');
+			var ipEnd = $("input#end_ip_address").textbox('getValue');
+
+			var defaultGateway = $("input#gateway").textbox('getValue');
+
+			if( $.su.func.ipToInt(ipStart) > $.su.func.ipToInt( ipEnd )  ){
+				$("form#lan-ipv4-setting").form('setError',  $.su.CHAR.ERROR['00000053']);
+				$('input#end_ip_address').textbox('setError');
+				return false;
+			}
+			 
+			 
+			if( !$.su.func.isSameNet( ipStart, lanIP, lanMask) ){
+				$("form#lan-ipv4-setting").form('setError',  $.su.CHAR.ERROR['00000054']);
+				$('input#start_ip_address').textbox('setError');
+				return false;
+			}
+
+			if( !$.su.func.isSameNet( ipEnd, lanIP, lanMask)  ){
+				$("form#lan-ipv4-setting").form('setError',  $.su.CHAR.ERROR['00000054']);
+				$('input#end_ip_address').textbox('setError');
+				return false;
+			}
+
+			if( $.su.func.isNetIp(ipStart, lanMask) ||  $.su.func.isBroadCastIp(ipStart, lanMask)  ){
+				$("form#lan-ipv4-setting").form('setError',  $.su.CHAR.ERROR['00000059']);
+				$('input#start_ip_address').textbox('setError');
+				return false;
+			}
+			if( $.su.func.isNetIp(ipEnd, lanMask) ||  $.su.func.isBroadCastIp(ipEnd, lanMask)  ){
+				$("form#lan-ipv4-setting").form('setError',  $.su.CHAR.ERROR['00000059']);
+				$('input#end_ip_address').textbox('setError');
+				return false;
+			}
+
+			if( defaultGateway && !$.su.func.isSameNet( defaultGateway, lanIP, lanMask) ){
+                    $("form#lan-ipv4-setting").form('setError',  $.su.CHAR.ERROR['00000045']);
+                    $('input#gateway').textbox('setError');
+                    return false;
+                }
+
+                if( $.su.func.isNetIp(defaultGateway, lanMask) ||  $.su.func.isBroadCastIp(defaultGateway, lanMask)  ){
+                    $("form#lan-ipv4-setting").form('setError',  $.su.CHAR.ERROR['00000059']);
+                    $('input#gateway').textbox('setError');
+                    return false;
+                }*/
+
+			return true;
+		}
+	}).on("ev_loadData", function(e, data){
+		if (data && data.maxleases){
+			maxrules = data.maxleases;
+		}
+	})
+
+	var helpDhcpServer = new $.su.Help({
+		container: "div#dhcp_server_help",
+		content: ["DHCP_SERVER_SETTINGS"]
+	});
+
+
+});
+</script>
+</body>
+
+</html>

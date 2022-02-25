@@ -1,0 +1,106 @@
+--- a/file.c	2015-11-04 11:11:42.000000000 +0800
++++ b/file.c	2015-11-04 11:02:24.000000000 +0800
+@@ -58,6 +58,8 @@ enum file_hdr {
+ 	HDR_IF_MATCH,
+ 	HDR_IF_NONE_MATCH,
+ 	HDR_IF_RANGE,
++	HDR_HOST,
++	HDR_REFERER,
+ 	__HDR_MAX
+ };
+ 
+@@ -779,6 +781,57 @@ uh_invoke_handler(struct client *cl, str
+ 	uh_invoke_script(cl, d, pi);
+ }
+ 
++static bool __check_referer(const char*host, const char *referer)
++{
++	if(!host || !referer)
++	{
++		return false;
++	}
++
++	const char   *host_start = host;
++	const char   *referer_start = referer;
++	const char   *referer_end = NULL;
++	const char   *http_pre = {"http://"};
++    const char   *https_pre = {"https://"};
++	int          http_pre_len = strlen(http_pre);
++
++	if(!strncmp(host_start, http_pre, http_pre_len))
++	{
++		host_start += http_pre_len;
++	}
++    else if(!strncmp(host_start, https_pre, http_pre_len + 1))
++    {
++        host_start += (http_pre_len + 1);
++    }
++
++	if(!strncmp(referer_start, http_pre, http_pre_len))
++	{
++		referer_start += http_pre_len;
++	}
++    else if(!strncmp(referer_start, https_pre, http_pre_len + 1))
++    {
++        referer_start += (http_pre_len + 1);
++    }
++
++	referer_end = referer_start;
++	while('\0' != *referer_end && '/' != *referer_end)
++	{
++		referer_end ++;
++	}
++	
++	if(strlen(host_start) != referer_end - referer_start)
++	{
++		return false;
++	}
++
++	if(strncmp(host_start, referer_start, referer_end - referer_start))
++	{
++		return false;
++	}
++
++	return true;
++}
++
+ static bool __handle_file_request(struct client *cl, char *url)
+ {
+ 	static const struct blobmsg_policy hdr_policy[__HDR_MAX] = {
+@@ -788,11 +841,14 @@ static bool __handle_file_request(struct
+ 		[HDR_IF_MATCH] = { "if-match", BLOBMSG_TYPE_STRING },
+ 		[HDR_IF_NONE_MATCH] = { "if-none-match", BLOBMSG_TYPE_STRING },
+ 		[HDR_IF_RANGE] = { "if-range", BLOBMSG_TYPE_STRING },
++		[HDR_HOST] = { "host", BLOBMSG_TYPE_STRING },
++		[HDR_REFERER] = { "referer", BLOBMSG_TYPE_STRING },
+ 	};
+ 	struct dispatch_handler *d;
+ 	struct blob_attr *tb[__HDR_MAX];
+ 	struct path_info *pi;
+ 
++
+ 	pi = uh_path_lookup(cl, url);
+ 	if (!pi)
+ 		return false;
+@@ -804,6 +860,21 @@ static bool __handle_file_request(struct
+ 	if (tb[HDR_AUTHORIZATION])
+ 		pi->auth = blobmsg_data(tb[HDR_AUTHORIZATION]);
+ 
++    if(strcmp(url,"/") && strcmp(url, "/webpages/login.html") && strcmp(url, "/webpages/index.html") && strcmp(url, "/webpages/cs_dis.html"))
++    {
++        if(tb[HDR_HOST] && tb[HDR_REFERER])
++        {
++            if(false == __check_referer(blobmsg_data(tb[HDR_HOST]), blobmsg_data(tb[HDR_REFERER])))
++            {
++                return false;
++            }
++        }
++        else
++        {
++            return false;
++        }
++    }
++
+ 	if (!uh_auth_check(cl, pi))
+ 		return true;
+ 

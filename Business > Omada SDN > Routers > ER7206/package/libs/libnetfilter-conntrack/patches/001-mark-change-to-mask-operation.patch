@@ -1,0 +1,11 @@
+--- a/src/conntrack/compare.c	2013-01-23 22:48:16.653177671 +0800
++++ b/src/conntrack/compare.c	2020-03-12 17:44:16.997417908 +0800
+@@ -287,7 +287,7 @@
+ 	 const struct nf_conntrack *ct2,
+ 	 unsigned int flags)
+ {
+-	return (ct1->mark == ct2->mark);
++	return ((ct1->mark & ct2->mark) == ct1->mark);
+ }
+ 
+ static int 

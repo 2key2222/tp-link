@@ -1,0 +1,102 @@
+#!/bin/sh
+
+
+# get port state
+# $1: portid
+get_port_state()
+{
+	local port=$1
+	local val=0
+	local bit=0
+	local reg=0
+
+	local port_state=0
+	local port_speed=0
+	local port_dup_mode=0
+	local port_flowcontrol=0
+
+	val=`swconfig_phy_reg_read $(($port-1)) $S17_PHY_CONTROL`
+	bit=`get_bit_value $val 11`
+
+	if [ $bit -eq 1 ]; then
+		port_state="disable"
+	else
+		val=`swconfig_phy_reg_read $(($port-1)) $S17_PHY_SPEC_STATUS`
+		bit=`get_bit_value $val 10`
+		if [ $bit -eq 1 ]; then
+			port_state="connected"
+		else
+			port_state="disconnected"
+		fi
+	fi
+
+	bit=`get_bit_value $val 11`
+	if [ "$port_state" = "connected" ] && [ $bit -eq 1 ]; then
+		# get speed
+		speed=$(($(($val & 0xc000)) >> 14))		
+		if [ $speed -eq 2 ]; then
+			port_speed="1000M"
+		elif [ $speed -eq 1 ]; then
+			port_speed="100M"
+		else
+			port_speed="10M"
+		fi
+	
+		# get duplex mode
+		bit=`get_bit_value $val 13`
+		if [ $bit -eq 1 ]; then
+			port_dup_mode="Full"
+		else
+			port_dup_mode="Half"
+		fi
+
+		#get flowcontrol
+		reg=`echo $(($S17_P1STATUS_REG + $(($(($port-1))*4)))) | awk '{printf("0x%x"), $0}'`
+		val=`swconfig_reg_read $reg`
+		bit=`get_bit_value $val 5`
+		bit1=`get_bit_value $val 4`
+
+		if [ $bit -eq 1 ] || [ $bit1 -eq 1 ]; then
+			port_flowcontrol="on"
+		else
+			port_flowcontrol="off"
+		fi
+	fi
+
+	echo "Port $port:"
+	echo "   state       : $port_state "
+	echo "   speed       : $port_speed "
+	echo "   dup_mode    : $port_dup_mode "
+	echo "   flowcontrol : $port_flowcontrol "
+	echo ""
+}
+
+
+stata_arg_check()
+{
+	local portsid=$1
+
+	for i in $portsid; do
+		if [ `expr match $i "[0-9]"` = 0 ] || [ $i -lt 1 ] || [ $i -gt 5 ] ;then
+		echo "[state] port is invalid. (1~5)"
+		exit 0
+		fi
+	done
+}
+# ar8327 switch get port state
+# $1: op (get)
+# $2: portsid (1.2.3.4.5)
+ar8327_switch_port_state()
+{
+	local op=$1
+	local portsid=$2
+
+	if [ $op = "get" ]; then	
+		stata_arg_check "$portsid"
+		for i in $portsid; do			
+			get_port_state $i
+		done
+	else
+		echo "[state] error op. (get)"
+	fi
+}

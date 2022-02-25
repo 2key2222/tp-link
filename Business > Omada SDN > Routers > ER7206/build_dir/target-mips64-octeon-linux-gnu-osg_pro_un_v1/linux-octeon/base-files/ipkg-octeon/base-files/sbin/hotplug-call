@@ -1,0 +1,26 @@
+#!/bin/sh
+# Copyright (C) 2006-2010 OpenWrt.org
+
+export HOTPLUG_TYPE="$1"
+
+. /lib/functions.sh
+
+PATH=/bin:/sbin:/usr/bin:/usr/sbin
+LOGNAME=root
+USER=root
+export PATH LOGNAME USER
+export DEVICENAME="${DEVPATH##*/}"
+
+[ \! -z "$1" -a -d /etc/hotplug.d/$1 ] && {
+    #hp_start=$(date +%s)
+	for script in $(ls /etc/hotplug.d/$1/* 2>&-); do (
+        #script_start=$(date +%s)
+		[ -f $script ] && . $script
+        #script_end=$(date +%s)
+        #time_cost=`expr $script_end - $script_start`
+        #echo "cost $time_cost seconds at $script | ACTION=$ACTION INTERFACE=$INTERFACE DEVICENAME=$DEVICENAME" > /dev/console
+	); done
+    #hp_end=$(date +%s)
+    #hp_cost=`expr $hp_end - $hp_start`
+    #echo "HOTPLUG_TYPE $HOTPLUG_TYPE cost $hp_cost seconds at $script | ACTION=$ACTION INTERFACE=$INTERFACE DEVICENAME=$DEVICENAME" > /dev/console
+}

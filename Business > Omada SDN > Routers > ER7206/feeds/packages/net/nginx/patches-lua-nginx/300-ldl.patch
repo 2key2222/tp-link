@@ -1,0 +1,21 @@
+--- a/lua-nginx-module-0.10.5/config	2016-07-21 15:28:49.068927723 +0800
++++ b/lua-nginx-module-0.10.5/config	2016-07-21 15:28:55.692927685 +0800
+@@ -1,5 +1,5 @@
+ ngx_feature="Lua library"
+-ngx_feature_libs="-llua -lm"
++ngx_feature_libs="-llua -lm -ldl"
+ ngx_feature_name=
+ ngx_feature_run=no
+ ngx_feature_incs="#include <lauxlib.h>"
+@@ -125,9 +125,9 @@
+         NGX_TEST_LD_OPT="$ngx_lua_opt_L $NGX_TEST_LD_OPT"
+ 
+         if [ $NGX_RPATH = YES ]; then
+-            ngx_feature_libs="-R$LUA_LIB $ngx_lua_opt_L -llua -lm -ldl"
++            ngx_feature_libs="-R$LUA_LIB -L$LUA_LIB -llua -lm -ldl"
+         else
+-            ngx_feature_libs="$ngx_lua_opt_L -llua -lm -ldl"
++            ngx_feature_libs="-L$LUA_LIB -llua -lm -ldl"
+         fi
+ 
+         . auto/feature

@@ -1,0 +1,109 @@
+#!/bin/sh
+
+
+statistic_usage()
+{
+	echo ""
+	echo "Usage: switch -t statistic -o <get |flush> [-p portsid]"
+	echo ""
+	echo "Example:"
+	echo "       switch -t statistic -o get"
+	echo "       switch -t statistic -o get -p \"1 2\" "
+	echo "       switch -t statistic -o flush -p \"1 2 4\" "
+	echo ""
+}
+
+statistic_arg_check()
+{
+	local portsid=$1
+
+	for i in $portsid; do
+		if [ `expr match $i "[0-9]"` = 0 ] || [ $i -lt 1 ] || [ $i -gt 5 ] ;then
+		echo "[statistic] the port is invalid. (1~5)"
+		statistic_usage
+		exit 0
+		fi
+	done
+}
+
+# convert statistic to standard format
+# $1: port
+get_port_standard_statistic()
+{
+	swconfig_get_port_mib $1 | awk 'BEGIN{t=0;o=0;}
+		/Rx64Byte/						{t+=gensub(/.*: ([0-9]+).*/, "\\1", "1");}
+		/Rx128Byte/						{t+=gensub(/.*: ([0-9]+).*/, "\\1", "1");}
+		/Rx256Byte/						{t+=gensub(/.*: ([0-9]+).*/, "\\1", "1");}
+		/Rx512Byte/						{t+=gensub(/.*: ([0-9]+).*/, "\\1", "1");}
+		/Rx1024Byte/					{t+=gensub(/.*: ([0-9]+).*/, "\\1", "1");}
+		/Rx1518Byte/					{t+=gensub(/.*: ([0-9]+).*/, "\\1", "1");}
+		/RxMaxByte/						{t+=gensub(/.*: ([0-9]+).*/, "\\1", "1");}
+		/RxGoodByte/					{o+=gensub(/.*: ([0-9]+).*/, "\\1", "1");}
+		/RxBadByte/						{o+=gensub(/.*: ([0-9]+).*/, "\\1", "1");}
+		/RxUniCast/						{print(gensub(/.*: ([0-9]+).*/, "RxUnicast : \\1", "1"));}
+		/RxBroad/						{print(gensub(/.*: ([0-9]+).*/, "RxBroad : \\1", "1"));}
+		/RxPause/						{print(gensub(/.*: ([0-9]+).*/, "RxPause : \\1", "1"));}
+		/RxMulti/						{print(gensub(/.*: ([0-9]+).*/, "RxMulti : \\1", "1"));}
+		/RxRunt/						{print(gensub(/.*: ([0-9]+).*/, "RxLitte : \\1", "1"));}
+		/RxTooLong/						{print(gensub(/.*: ([0-9]+).*/, "RxTooLong : \\1", "1"));}
+		/TxUniCast/						{print(gensub(/.*: ([0-9]+).*/, "TxUnicast : \\1", "1"));}
+		/TxBroad/						{print(gensub(/.*: ([0-9]+).*/, "TxBroad : \\1", "1"));}
+		/TxPause/						{print(gensub(/.*: ([0-9]+).*/, "TxPause : \\1", "1"));}
+		/TxMulti/						{print(gensub(/.*: ([0-9]+).*/, "TxMulti : \\1", "1"));}
+		/TxByte/						{print(gensub(/.*: ([0-9]+).*/, "TxAll : \\1", "1"));}
+		END{print("RxNormal : "t);print("RxAll : "o)}'
+}
+
+
+# flush switch port statistic
+# $1: portsid (1.2.3.4.5)
+flush_port_statistic()
+{
+	if [ -z "$1" ]; then
+		# if input portsid = null, flush all mibs
+		swconfig_reset_all_mibs
+	else
+		statistic_arg_check "$1"
+
+		for i in $1; do
+			swconfig_reset_port_mib $i
+		done
+	fi
+
+	
+}
+# get switch port statistic
+# $1: portsid
+get_port_statistic()
+{
+	local ports=$1
+
+	# if input portsid = null, get all mibs
+	if [ -z "$ports" ]; then
+		ports="1 2 3 4 5"
+	else
+		statistic_arg_check "$ports"
+	fi	
+
+	for i in $ports; do
+		get_port_standard_statistic $i
+	done
+	
+}
+
+# ar8327 switch port statistic
+# $1: op (get|flush)
+# $2: portsid (1.2.3.4.5)
+ar8327_switch_port_statistic()
+{
+	local op=$1
+	local portsid=$2
+
+	if [ $op = "get" ]; then	
+		get_port_statistic "$portsid"
+	elif [ $op = "flush" ]; then
+		flush_port_statistic "$portsid"
+	else
+		echo "[statistic] error op. (get | flush)"
+	fi
+}

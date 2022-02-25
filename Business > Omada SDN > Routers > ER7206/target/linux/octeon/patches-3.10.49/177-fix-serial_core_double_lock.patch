@@ -1,0 +1,50 @@
+--- a/include/linux/serial_core.h	2021-07-04 21:50:41.305841558 -0400
++++ b/include/linux/serial_core.h	2021-07-09 09:12:54.673735937 -0400
+@@ -46,6 +46,7 @@
+  */
+ struct uart_ops {
+ 	unsigned int	(*tx_empty)(struct uart_port *);
++	unsigned int	(*tx_empty_nolock)(struct uart_port *);
+ 	void		(*set_mctrl)(struct uart_port *, unsigned int mctrl);
+ 	unsigned int	(*get_mctrl)(struct uart_port *);
+ 	void		(*stop_tx)(struct uart_port *);
+--- a/drivers/tty/serial/serial_core.c	2021-07-04 21:50:41.290841166 -0400
++++ b/drivers/tty/serial/serial_core.c	2021-07-09 09:10:55.557502196 -0400
+@@ -2020,7 +2020,7 @@
+ 
+ 	tmout = 10000;
+ 	free = uart_circ_chars_free(circ);
+-	while ((free > 0) || !port->ops->tx_empty(port)) {
++	while ((free > 0) || (port->ops->tx_empty_nolock ? !port->ops->tx_empty_nolock(port) : !port->ops->tx_empty(port))) {
+ 		port->ops->poll(port, UART_POLL_FLAGS_TX);
+ 
+ 		if (free != uart_circ_chars_free(circ)) {
+--- a/drivers/tty/serial/8250/8250_core.c	2021-07-04 21:50:41.288841114 -0400
++++ b/drivers/tty/serial/8250/8250_core.c	2021-07-09 09:16:04.717895216 -0400
+@@ -1799,6 +1799,18 @@
+ 	return (lsr & BOTH_EMPTY) == BOTH_EMPTY ? TIOCSER_TEMT : 0;
+ }
+ 
++static unsigned int serial8250_tx_empty_nolock(struct uart_port *port)
++{
++	struct uart_8250_port *up =
++		container_of(port, struct uart_8250_port, port);
++	unsigned int lsr;
++
++	lsr = serial_port_in(port, UART_LSR);
++	up->lsr_saved_flags |= lsr & LSR_SAVE_FLAGS;
++
++	return (lsr & BOTH_EMPTY) == BOTH_EMPTY ? TIOCSER_TEMT : 0;
++}
++
+ static unsigned int serial8250_get_mctrl(struct uart_port *port)
+ {
+ 	struct uart_8250_port *up =
+@@ -2784,6 +2796,7 @@
+ }
+ static struct uart_ops serial8250_pops = {
+ 	.tx_empty	= serial8250_tx_empty,
++	.tx_empty_nolock = serial8250_tx_empty_nolock,
+ 	.set_mctrl	= serial8250_set_mctrl,
+ 	.get_mctrl	= serial8250_get_mctrl,
+ 	.stop_tx	= serial8250_stop_tx,

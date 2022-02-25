@@ -1,0 +1,97 @@
+choice
+    prompt "choice soc type of this profile"
+    default ATH79_SOC_QCA9558 
+    depends on PACKAGE_kmod-ethernet
+    help
+      Select the SOC type of your board.
+
+    config ATH79_SOC_QCA9558
+        bool "QCA 955x"
+        help
+          WDR7500 etc.
+
+    config ATH79_SOC_QCA9533
+        bool "QCA 9533"
+        help
+          tl-wr841n-v9 fx300-v1 etc.
+
+    config ATH79_SOC_QCA9531
+        bool "QCA 9531"
+        help
+          WDR5300 etc.
+
+    config ATH79_SOC_QCA9561
+        bool "QCA 9561"
+        help
+          H69RT etc.
+
+    config ATH79_SOC_QCA9563
+        bool "QCA 9563"
+		select ETHERNET_PACKET_MANGLE
+        help
+          H610RD etc.
+endchoice
+
+choice
+    prompt "choice switch type of this profile"
+    default RTL8367S 
+    depends on PACKAGE_kmod-ethernet
+    help
+      Select the switch type of your board.
+
+    config RTL8367S
+        bool "RTL8367S"
+        help
+          TL-WVR1300Gv2 TL-WVR900G 4.0 TL-WVR450G 6.0 etc.
+
+    config RTL8370MB
+        bool "RTL8370MB"
+        help
+          TL-WVR458Gv2 etc.
+endchoice
+
+config AG71XX_PLC_CONNECTED_PORT
+    int "the port number which connected to PLC for PLC products"
+    default 0
+    depends on PACKAGE_kmod-ethernet
+    help
+      this option is used to disable flow control of this port, if this 
+      product has problem that PLC bootloader continue sending PAUSE frame 
+      cause gmac tx timeout.
+      default is 0 which means not enable this option, here assumed that PLC 
+      connected port never use port 0.
+
+config AG71XX_LAN_WAN_PHY_SWAP
+    bool "connect phy0 directly to GMAC0 as WAN port"
+    default n
+    depends on PACKAGE_kmod-ethernet
+    help
+      this option is used for products which connect phy0 directly to GMAC0 as
+	  WAN port. default is no since normally phy4 is used, and only set to yes
+    	  if use phy0 instead of phy4. This feature is used only for QCA9561 now.
+      attention: config with uboot feature together.
+
+config AG71XX_S17_EXCHANGE_MAC06
+    bool "exchange mac0 and mac6 for s17 switch"
+    default n
+    depends on PACKAGE_kmod-ethernet
+    help
+      this configuration is for h610rdv1, which serdes and mac0 rgmii is connected to
+      ar8337, must swap mac0 and mac6 in order to let mac6 connect to rgmii.
+
+config AG71XX_DISABLE_GMAC_RXFC
+    bool "disable gmac rx flow control"
+    default n
+    depends on PACKAGE_kmod-ethernet
+    help
+      in qca956x, when switch buffer if full, gmac receive PAUSE frame often cause tx 
+      timeout. Base on QCA Simon suggestion, disable GMAC rxfc will let frame dropped 
+      by switch instead of gmac, which avoid the driver problem.
+
+config AG71XX_DISABLE_GMAC_TXFC
+    bool "disable gmac tx flow control"
+    default n
+    depends on PACKAGE_kmod-ethernet
+    help
+      wdr7500v5 has problem which large mount of igmp packets cause tx timeout, disable 
+      GMAC tx flow control won't cause this problem.

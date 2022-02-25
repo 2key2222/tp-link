@@ -1,0 +1,61 @@
+config port mirror
+	option state "off"
+	option mode "both"
+	option mirrorport 5
+	option mirroredports "1"
+
+config port 'port1'
+	option port_state "on"
+	option flowcontrol "off"
+	option negotiation_mode	"auto"
+	option ingress_state "off"
+	option ingress_mode "all"
+	option ingress_rate "1000"
+	option egress_state "off"
+	option egress_rate "1000"
+	option pvlan_id  "7"
+
+config port 'port2'
+	option port_state "on"
+	option flowcontrol "off"
+	option negotiation_mode	"auto"
+	option ingress_state "off"
+	option ingress_mode "all"
+	option ingress_rate "1000"
+	option egress_state "off"
+	option egress_rate "1000"
+	option pvlan_id  "8"
+
+config port 'port3'
+	option port_state "on"
+	option flowcontrol "off"
+	option negotiation_mode	"auto"
+	option ingress_state "off"
+	option ingress_mode "all"
+	option ingress_rate "1000"
+	option egress_state "off"
+	option egress_rate "1000"
+	option pvlan_id  "1"
+
+config port 'port4'
+	option port_state "on"
+	option flowcontrol "off"
+	option negotiation_mode	"auto"
+	option ingress_state "off"
+	option ingress_mode "all"
+	option ingress_rate "1000"
+	option egress_state "off"
+	option egress_rate "1000"
+	option pvlan_id  "1"
+
+config port 'port5'
+	option port_state "on"
+	option flowcontrol "off"
+	option negotiation_mode	"auto"
+	option ingress_state "off"
+	option ingress_mode "all"
+	option ingress_rate "1000"
+	option egress_state "off"
+	option egress_rate "1000"
+	option pvlan_id  "1"
+ 

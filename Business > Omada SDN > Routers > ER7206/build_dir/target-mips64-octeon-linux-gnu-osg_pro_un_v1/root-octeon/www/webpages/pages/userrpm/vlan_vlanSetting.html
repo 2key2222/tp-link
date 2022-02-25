@@ -1,0 +1,581 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<style type="text/css">
+    #preview-frame{
+        border: none;
+        width: 400px;
+        height: 600px;
+    }
+</style>
+<title>Vlan Setting</title>
+</head>
+
+<body>
+<div class="func_container">
+    <div id="func_setting">
+        <div id="vlansetting_editor">
+            <input id="vlan_id" name="vlan" value=""/>
+            <input id="vlan_name" name="name" value=""/>
+            <table id="port_set">
+                <tr>
+                    <th>
+                        <span class="content">Port</span>
+                    </th>
+                    <th style="display:none">
+                        <span id="link-type" class="content"></span>
+                    </th>
+                    <th>
+                        <span id="tag-type" class="content"></span>
+                    </th>                       
+                </tr>
+            </table>
+            <input id="notice" name="desc" value=""/> 
+        </div>
+        <div id="vlansetting_list"></div>
+    </div>
+    <div id="vlansetting_help"></div>
+</div>
+
+<script type="text/javascript">
+
+//<![CDATA[
+try{
+    $
+}catch(e){
+    location.href = "/";
+};
+$(document).ready(function(e){
+    var URL_GLOBAL = $.su.url("/admin/vlansetting?form=vlansettinglist");
+	var URL_PORT = $.su.url("/admin/vlansetting?form=portsettinglist");
+    $("#port_set").panel({
+        title:  $.su.CHAR.VLAN.PORTSET+":"//"端口设置"
+    });
+    var firstLoad = true;
+    var VlanNum = 1;
+    var MaxNum = 0;
+    var webAddItemsNum = 0;
+    var ReserveNum = 0;
+    var MaxProxy = new $.su.Proxy({
+    url: $.su.url('/admin/vlansetting?form=vlanmax'),
+        async: true
+    });
+    MaxProxy.read({}, function(data){
+        MaxNum = data.max;
+        ReserveNum = data.reserve;
+    });
+
+    var GeneralFlag = 0;
+    var helpvlansetting;
+    var LtypeProxy = new $.su.Proxy({
+    url: $.su.url('/admin/vlansetting?form=porttype'),
+        async: true
+    });
+    LtypeProxy.read({}, function(data){
+        for (var k=0; k<data.length; k++){
+            if("general"==data[k].ltype){
+                GeneralFlag = 1;
+                break;
+            }
+        }
+        if(1 != GeneralFlag){
+            helpvlansetting = new $.su.Help({
+                container: "div#vlansetting_help",
+                content: ["VLAN_VLAN_SETTING_NO_GENERAL", "VLAN_VLANLIST"]
+            });
+        }
+    });
+
+	/*
+		VLAN USER: lan/wan/igmp/iptv/system/web
+		PORT USER: lan/wan/igmp/iptv/system/web/lan web/wan web
+		
+		I use the 'user' property for 'class selector'.
+	*/
+	var vlanUserTable = ["igmp", "iptv", "lan", "wan", "web", "system"];
+	var vlanShowTable = {	/* [show] --> show this vlan */
+							/* [only] --> show this vlan's ports only*/
+							/* [check]--> at least select one port */
+						"igmp":{"show":0, "only":1, "check": 1},
+						"iptv":{"show":0, "only":1, "check": 1},
+						"lan": {"show":1, "only":0, "check": 1},
+						"wan": {"show":1, "only":1, "check": 1},
+						"web": {"show":1, "only":0, "check": 0},
+						"system":{"show":0, "only":1, "check": 1}
+						};
+	/* user mapped to port group
+	   group: glan, gwan, giptv
+	*/
+	var user2groups = {
+		"":   ["glan", "gwan1", "gwan2", "gwan3", "gwan4"],
+		"lan": ["glan"],
+		"wan": ["gwan1", "gwan2", "gwan3", "gwan4"],
+		"web": ["glan", "gwan1", "gwan2", "gwan3", "gwan4"],
+		"system": ["glan", "gwan1", "gwan2", "gwan3", "gwan4"],
+		"igmp": ["glan"],
+		"iptv": ["giptv"]
+	};
+
+	var portSettings = []
+	var portLinkTypes = []
+    var linktypeProxy = new $.su.Proxy({
+		url: $.su.url('/admin/vlansetting?form=linktype'),
+			async: true
+		});
+    linktypeProxy.read({}, function(data){
+		for (var i = 0; i < data.length; i++) {
+			portLinkTypes[parseInt(data[i].port)] = data[i].type;
+		}
+	});
+
+    $("span#link-type").html($.su.CHAR.VLAN.LINKTYPE);
+    $("span#tag-type").html($.su.CHAR.VLAN.TAGTYPE);
+
+    $("#func_setting").panel({
+        title: $.su.CHAR.VLAN.VLANLIST//"VLAN列表"
+    });
+
+    $('#vlan_id').textbox({
+        fieldLabel: "VLAN ID",
+        inputCls: 'xl',
+        tipsCls: 's',
+        maxLength: 4,
+        allowBlank: false,
+        vtype: {
+            vtype: "number",
+            max: 4094,
+            min: 1
+        },
+        tips: "(1-4094)"
+        // validator: function(val){
+        //     if (valid_vlan[Number(val)] && 1 == valid_vlan[Number(val)])
+        //     {
+        //         return true;   
+        //     }
+        //     else
+        //     {
+        //         return $('#vlan_id').textbox("setError","The range of VLAN ID should be "+vlanid_range_tip);
+        //         //return false;
+        //     }
+        // }
+    });
+
+    $('#vlan_name').textbox({
+        fieldLabel: $.su.CHAR.VLAN.NAME,//"名称",
+        inputCls: 'xl',
+        tipsCls: 's',
+        maxLength: 50,
+        allowBlank: false,
+        vtype: 'string_visible_allow_blank',
+        tips: $.su.CHAR.AC_WPORTAL.AUTH_GROUP_NAME_TIP
+    });
+    //console.log("range:",vlanid_range);
+    
+    $('#notice').textbox({
+        fieldLabel: $.su.CHAR.AC_WPORTAL.AUTH_GROUP_NOTE,
+        inputCls: 'xl',
+        tipsCls: 's',
+        maxLength: 50,
+        vtype: "string_visible_allow_blank",
+        tips: $.su.CHAR.AC_WPORTAL.AUTH_GROUP_NOTE_TIP
+    });
+	
+    var globalProxy = new $.su.Proxy({
+        url: URL_GLOBAL,
+		timeout: 2000*1000
+    });
+    var portProxy = new $.su.Proxy({
+		url: URL_PORT
+	});
+	portProxy.read({}, function(data){
+		portSettings = []
+		for (var i = 0; i < data.length; i++) {
+			if (!(data[i].users instanceof Array))
+				data[i].users = []
+			if (!(data[i].vlans instanceof Array))
+				data[i].vlans = []
+			if (!(data[i].group instanceof Array))
+				data[i].group = []
+			/* gwan */
+			for (var g = 0; g < data[i].group.length; g++) {
+				if (data[i].group[g] == "gwan") {
+					data[i].group[g] = "gwan" + (i + 1)
+				}
+			}
+			portSettings[parseInt(data[i].port)] = data[i];
+		}
+	});
+
+    var vlansettingGrid = $('#vlansetting_list').grid({
+        store: {
+            proxy: globalProxy,
+            autoLoad: true,
+            fields: [
+                {name: "vlan"},
+                {name: "name"},
+                {name: "ports"},
+                {name: "desc"},
+                {name: "users"}
+            ],
+            rmField: ["vlan_id"],
+            strEncode: [','],
+			keyProperty: "vlan"
+        },
+        
+        editor: {
+                validator:function(){
+                var editor  = $(vlansettingGrid.grid("getEditor"));
+                var store   = vlansettingGrid.grid("getStore");
+                var keyProperty = store.keyProperty;
+                var grid_array  = store.data;
+                var editingId = editor.editor("getEditingId"); 
+                var i = 0;
+
+                if($.isArray(grid_array) && grid_array.length > 0)
+                {
+                    for(var k = 0; k < grid_array.length;k++)
+                    {
+                        var data = grid_array[k];
+                        if (data[keyProperty] == editingId)
+                        {
+                            continue;
+                        }
+                    }
+                }
+                
+                return true;
+            },
+            content: '#vlansetting_editor',
+            fields: [
+                {name: "vlan"},
+                {name: "name"},
+                {name: "desc"}
+            ]
+        },
+        paging:{},
+        columns: [
+            {
+                xtype: 'checkcolumn',
+                width: 15
+            },
+            {
+                xtype: 'rownumberer',
+                width: 20
+            },
+            {
+                text: "VLAN ID",
+                width: 30,
+                //dataIndex: "vlan"
+				renderer : function(dd, index, data) {
+					return data.vlan ? data.vlan : "";
+				}
+            },
+            {
+                text: $.su.CHAR.VLAN.NAME,//"名称",
+                width: 65,
+				renderer : function(dd, index, data) {
+					return data.name ? $.su.func.escapeHtml(data.name) : "";
+				}
+            },
+            {
+                text: $.su.CHAR.VLAN.PORTSET,//"端口设置",//show in table
+                width: 135, 
+                //dataIndex: 'tag_type1',
+                renderer:  function(dd, index, data){
+                    var result = "";
+					var ports = data.ports;
+					if (ports){
+						var portlist = ports.split(" ")
+						var porthtml = []
+						for (var i = 0; i < portlist.length; i++){
+							var porttag = portlist[i].match(/([0-9]+|t)/g)
+							var port = parseInt(porttag[0])
+							var tag = porttag[1]
+							if (!isNaN(port) && port >= 0) {
+								switch (tag) {
+									case "t":
+										porthtml[port] = port + "(" + $.su.CHAR.VLAN.TAG + ") "
+										break;
+									default:
+										porthtml[port] = port + "(" + $.su.CHAR.VLAN.UNTAG + ") "
+										break;
+								}
+							}
+						}
+						for (var i = 0; i < porthtml.length; i++) {
+							if (porthtml[i])
+								result += porthtml[i]
+						}
+					}
+					
+                    return result;    
+                }    
+            },
+            {
+                text: $.su.CHAR.AC_WPORTAL.AUTH_GROUP_NOTE,
+                width: 85,
+				renderer : function(dd, index, data) {
+					return data.desc ? $.su.func.escapeHtml(data.desc) : "";
+				}
+            },
+            {
+                width: 30,
+                text: $.su.CHAR.GRID.OPERATION,
+                dataIndex: "none",
+                renderer: function(dd, index, data){
+                    var inHTML="<div class=\"button-container interface-operation\" style=\"text-align:center\">";
+                    inHTML +=   "<a href=\"javascript:void(0);\" data-index=\""+index+"\" data-key=\""+data.vlan+"\" title=\""+ $.su.CHAR.OPERATION.EDIT +"\" class=\"grid-content-btn grid-content-btn-edit btn-edit\">";
+                    inHTML +=       "<span class=\"icon\"></span>";
+                    inHTML +=       "<span class=\"text\">"+$.su.CHAR.OPERATION.EDIT+"</span>";
+                    inHTML +=   "</a>";
+                    //console.log("["+data.vlan_id+"]");
+                    //if(Number(data.vlan_id) != 1){
+                        inHTML +=   "<a href=\"javascript:void(0);\" data-index=\""+index+"\" data-key=\""+data.vlan+"\" title=\""+ $.su.CHAR.OPERATION.DELETE +"\" class=\"grid-content-btn grid-content-btn-delete btn-delete\">";
+                        inHTML +=       "<span class=\"icon\"></span>";
+                        inHTML +=       "<span class=\"text\">"+$.su.CHAR.OPERATION.DELETE+"</span>";
+                        inHTML +=   "</a>";
+                    //}
+                    inHTML +="</div>";
+                    return inHTML;
+                }
+
+               /*xtype: "settings",
+               width: 30*/
+            }
+        ],
+        
+        operation: 'prompt|add|delete'
+        
+    }).on('ev_load',  function(e, data, others){
+        if (others){
+            VlanNum = others.totalNum;
+        }
+	webAddItemsNum = 0;
+        for (var i = 0; i < data.length; i++) {
+			if (!data[i].users)
+				continue;
+			if (data[i].users == "web")
+				webAddItemsNum++;
+			if (vlanShowTable[data[i].users].show != "1")
+				vlansettingGrid.grid('disableRow', i);
+		}
+    }).on('ev_insert',function(){
+        vlansettingGrid.grid("getStore").load();
+    }).on('ev_update',function(){
+        vlansettingGrid.grid("getStore").load();
+    }).on('ev_remove',function(){
+        vlansettingGrid.grid("getStore").load();
+    }).on('ev_failed',function(){
+        vlansettingGrid.grid("getStore").load();
+    }).on('ev_error',function(){
+        vlansettingGrid.grid("getStore").load();
+    });
+    var $gridEditor = $(vlansettingGrid.grid('getEditor'));
+    
+	function array_intersect(a1, a2){
+		var result = []
+		var p = 0
+		for (var m = 0; m < a1.length; m++){
+			for (var n = 0; n < a2.length; n++){
+				if (a1[m] == a2[n]){
+					result[p] = a1[m]
+					p = p + 1
+				}
+			}
+		}
+		return result
+	}
+
+	function trCover(tr){
+		port = tr.id.match(/([0-9]+)/g)
+		var container = $(tr).find('#if_onoff' + port).checkbox("getContainer")
+		var alreadyDisabled = container.find("label.checkbox-label").hasClass("disabled")
+		if (!alreadyDisabled)
+			$(tr).find('#if_onoff' + port).checkbox('disable')
+		$(tr).find('#tag_type' + port).combobox('disable')
+	}
+
+	function trUnCover(tr){
+		port = tr.id.match(/([0-9]+)/g)
+		$(tr).find('#if_onoff' + port).checkbox('enable')
+		$(tr).find('#tag_type' + port).combobox('enable')
+	}
+	
+	function selectPortList(selectors) {
+			var selectstrs = []
+			for (var i = 0; i < selectors.length; i++) {
+				if (selectors[i] != "")
+					selectstrs[i] = "#port_set tbody tr." + selectors[i]
+				else
+					selectstrs[i] = "#port_set tbody tr"
+			}
+
+			return $(selectstrs.join(",")).toArray()
+	}
+
+	function drawPortList(drawGroups, drawVids, check){
+		$("#port_set tbody").empty()
+		for (var link_port = 0; link_port < portSettings.length; link_port++){
+			/* insert a new port row */
+			var grpClass = ""
+			var vidClass  = ""
+
+			if (portSettings[link_port] == undefined)
+				continue;
+			
+			grpClass = portSettings[link_port].group.join(" ")
+			vidClass  = portSettings[link_port].vlans.join(" ").replace(/t/g, "")
+			var portRow = "<tr id=\"portRow" + link_port + "\" class = \"" + vidClass + " " + grpClass +"\">"
+			portRow += "<th><input id=\"if_onoff" + link_port + "\" name=\"if_onoff" + link_port + "\" value=\"\"/></th>"
+			portRow += "<th style=\"display:none\"><input id=\"link_type" + link_port + "\" name=\"link_type" + link_port + "\" value=\"\"/></th>"
+			portRow += "<th><input id=\"tag_type" + link_port + "\" name=\"tag_type" + link_port + "\" value=\"\"/></th>"
+			portRow += "</tr>"
+
+			$("#port_set tbody").append($(portRow))
+
+			$('#link_type'+link_port).textbox({
+				inputCls: 'xl'
+			});
+
+			$('#tag_type'+link_port).combobox({
+				inputCls: 'xl',
+				 items:[
+					{value:"u", name: $.su.CHAR.VLAN.UNTAG},
+					{value:"t", name: $.su.CHAR.VLAN.TAG}
+				 ]
+			});
+
+			$("#if_onoff"+link_port).checkbox({
+				items: [
+					{boxlabel: link_port, inputValue: "1", uncheckedValue: "0"}
+				]
+			}).on('ev_change', function (e, oldValue, newValue){
+				var selectors;
+				var checkPorts = [];
+
+				$("#port_set tbody tr").each(function(i, o){trCover(o)})
+
+				selectors = selectPortList(drawGroups);
+				selectors = array_intersect(selectors, selectPortList(drawVids));
+				for (var p = 0; p < portSettings.length; p++) {
+					if (portSettings[p] == undefined)
+						continue;
+					if ($("#if_onoff" + p).checkbox("getValue1")[0] != "1")
+						continue;
+					checkPorts.push(p);
+					selectors = array_intersect(selectors, selectPortList(portSettings[p].group))
+				}
+				
+				$(selectors).each(function(i, o){trUnCover(o)})
+
+				if (checkPorts.length == 1 && check) {
+					$("#if_onoff" + checkPorts[0]).checkbox("disable")
+					$("#portRow" + checkPorts[0]).find(".checkbox-checkbox").prop("disabled", false)
+				} else {
+					for (var n = 0; n < checkPorts.length; n++) {
+						$("#if_onoff" + checkPorts[n]).checkbox("enable")
+					}
+				}
+			});
+
+			link_type = portLinkTypes[link_port];
+			link_type = link_type?link_type:"general";
+			var textbox = $gridEditor.find('#link_type'+link_port);
+			if("access"==link_type){
+				ltype = $.su.CHAR.VLAN.ACCESS;
+			}else if("trunk"==link_type){
+				ltype = $.su.CHAR.VLAN.TRUNK;
+			}else if("general"==link_type){
+				ltype = $.su.CHAR.VLAN.GENERAL;
+			}
+			textbox.textbox('setValue', ltype);
+			textbox.textbox('disable');
+
+			var combobox = $gridEditor.find('#tag_type'+link_port);
+			if(link_type == "access"){
+				combobox.combobox("setValue", "u");
+				combobox.combobox('disable');
+			}else if(link_type == "trunk"){
+				combobox.combobox("setValue", "t");
+				combobox.combobox('disable');
+			}else if(link_type == "general"){
+				combobox.combobox("setValue", "t");
+			}
+			
+			$('#if_onoff' + link_port).checkbox("setValue", "0")
+		}
+	}
+
+    $($gridEditor).on("ev_startEdit", function(e, index, key){
+		var drawGroups = [];
+		var drawVids = [];
+		var check = 0;
+
+        if("add" == index && VlanNum >= MaxNum){
+            $gridEditor.editor("cancelEdit");
+            if ($.su.app && $.su.app.errorOperation && $.su.app.errorOperation.denied){
+                $.su.app.errorOperation.denied(80008);
+            } 
+            return;       
+        }
+
+        if(("add" == index) && (webAddItemsNum >= (MaxNum-ReserveNum))){
+            $gridEditor.editor("cancelEdit");
+            if ($.su.app && $.su.app.errorOperation && $.su.app.errorOperation.denied){
+                $.su.app.errorOperation.denied(80008);
+            } 
+            return;       
+        }
+
+		if ("add" != index) {
+			var rowdata = this.grid.get(0).store.getDataByIndex(index)
+			if (rowdata.users){
+				drawGroups = user2groups[rowdata.users]
+				drawVids  = vlanShowTable[rowdata.users].only ? [rowdata.vlan] : [""];
+				check = vlanShowTable[rowdata.users].check
+			}
+		} else {
+			drawGroups = user2groups[""];
+			drawVids=[""]
+		}
+
+		drawPortList(drawGroups, drawVids, check)
+
+		if ("add" != index) {
+			$("#vlan_id").textbox('disable');
+			var rowdata = this.grid.get(0).store.getDataByIndex(index)
+			if (rowdata.ports){
+				var portlist = rowdata.ports.split(" ")
+				var porthtml = []
+				for (var i = 0; i < portlist.length; i++){
+					var porttag = portlist[i].match(/([0-9]+|t)/g)
+					var port = parseInt(porttag[0])
+					var tag = porttag[1] ? "t" : "u"
+					if (!isNaN(port) && port >= 0) {
+						$('#if_onoff' + port).checkbox("setValue", "1")
+						$('#tag_type' + port).combobox("setValue", tag)
+					}
+				}
+			}
+		} else {
+			$("#vlan_id").textbox('enable');
+		}
+
+		firstLoad = false;
+    }).on("ev_submit", function (e){
+	});
+
+    helpvlansetting = new $.su.Help({
+        container: "div#vlansetting_help",
+        content: ["VLAN_VLAN_SETTING", "VLAN_VLANLIST"]
+    });
+
+});
+
+
+//]]>
+</script>
+</body>
+
+</html>

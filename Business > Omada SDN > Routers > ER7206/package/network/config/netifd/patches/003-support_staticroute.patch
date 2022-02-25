@@ -1,0 +1,227 @@
+diff -Naur netifd-2014-09-08/.dep_files netifd-tplink/.dep_files
+--- netifd-2014-09-08/.dep_files	1970-01-01 08:00:00.000000000 +0800
++++ netifd-tplink/.dep_files	2015-08-07 14:58:47.000000000 +0800
+@@ -0,0 +1 @@
++8b79bfc973f469e56a1c43953711d711
+diff -Naur netifd-2014-09-08/interface.c netifd-tplink/interface.c
+--- netifd-2014-09-08/interface.c	2014-09-24 15:02:13.000000000 +0800
++++ netifd-tplink/interface.c	2015-08-07 14:50:51.000000000 +0800
+@@ -199,8 +199,17 @@
+ static void
+ interface_flush_state(struct interface *iface)
+ {
+-	if (iface->l3_dev.dev)
++	struct device *dev = iface->l3_dev.dev;
++
++	if (dev)
++	{
+ 		device_release(&iface->l3_dev);
++
++		if ((iface->main_dev.dev != dev) && dev->external)
++		{
++			device_remove_user(&iface->l3_dev);
++		}
++	}
+ 	interface_data_flush(iface);
+ }
+ 
+diff -Naur netifd-2014-09-08/interface-ip.c netifd-tplink/interface-ip.c
+--- netifd-2014-09-08/interface-ip.c	2014-09-24 15:02:13.000000000 +0800
++++ netifd-tplink/interface-ip.c	2015-08-07 14:58:40.000000000 +0800
+@@ -40,6 +40,7 @@
+ 	ROUTE_SOURCE,
+ 	ROUTE_ONLINK,
+ 	ROUTE_TYPE,
++        ROUTE_ENABLE,
+ 	__ROUTE_MAX
+ };
+ 
+@@ -54,7 +55,8 @@
+ 	[ROUTE_VALID] = { .name = "valid", .type = BLOBMSG_TYPE_INT32 },
+ 	[ROUTE_SOURCE] = { .name = "source", .type = BLOBMSG_TYPE_STRING },
+ 	[ROUTE_ONLINK] = { .name = "onlink", .type = BLOBMSG_TYPE_BOOL },
+-	[ROUTE_TYPE] = { .name = "type", .type = BLOBMSG_TYPE_STRING }
++	[ROUTE_TYPE] = { .name = "type", .type = BLOBMSG_TYPE_STRING },
++        [ROUTE_ENABLE] = { .name = "enable", .type = BLOBMSG_TYPE_BOOL }
+ };
+ 
+ const struct uci_blob_param_list route_attr_list = {
+@@ -275,6 +277,40 @@
+ }
+ 
+ void
++interface_ip_add_pre_route(struct interface_ip_settings *ip, union if_addr *nexthop, bool v6)
++{
++        struct interface    *iface     = ip->iface;
++        struct device_route *pre_route = NULL;
++
++        if (v6) {
++                /* ignore */
++                return;
++        } 
++
++        if (!iface) {
++                /* look for locally addressable target first */
++                if (interface_ip_find_addr_target(iface, nexthop, v6)) {
++                        goto found;
++                }
++        } else {
++                if (__find_ip_addr_target(ip, nexthop, v6)) {
++                        goto found;
++                }
++        }
++
++        /* 静态IP拨号设置若Gateway与IP不在同一网段，添加一条目的地为Gateway的静态路�? */
++        pre_route = calloc(1, sizeof(*pre_route));
++        memcpy(&pre_route->addr, nexthop, sizeof(union if_addr));
++        pre_route->mask  = 32;
++        pre_route->flags = DEVADDR_INET4;
++        vlist_add(&ip->route, &pre_route->node, pre_route);
++
++found:
++        /* Found a route entry to reach nexthop already. */
++        return;
++}
++
++void
+ interface_ip_add_route(struct interface *iface, struct blob_attr *attr, bool v6)
+ {
+ 	struct interface_ip_settings *ip;
+@@ -282,9 +318,20 @@
+ 	struct device_route *route;
+ 	int af = v6 ? AF_INET6 : AF_INET;
+ 	bool is_proto_route = !!iface;
++        /*bool enable = 0;*/
+ 
+ 	blobmsg_parse(route_attr, __ROUTE_MAX, tb, blobmsg_data(attr), blobmsg_data_len(attr));
+ 
++        /*do not add route when route is disabled.*/
++        if ((cur = tb[ROUTE_ENABLE]) != NULL)
++        {
++                /*enable = blobmsg_get_bool(cur);*/
++                if (!blobmsg_get_bool(cur))
++                {
++                        return;
++                }
++        }
++
+ 	if (!iface) {
+ 		if ((cur = tb[ROUTE_INTERFACE]) == NULL)
+ 			return;
+@@ -322,6 +369,7 @@
+ 			DPRINTF("Failed to parse route gateway: %s\n", (char *) blobmsg_data(cur));
+ 			goto error;
+ 		}
++        interface_ip_add_pre_route(ip, &route->nexthop, v6);
+ 	}
+ 
+ 	if ((cur = tb[ROUTE_METRIC]) != NULL) {
+@@ -999,6 +1047,11 @@
+ 	}
+ }
+ 
++int interface_ip_resolve_v6_rtable(int ifindex)
++{
++        return ifindex + 1000;
++}
++
+ void
+ interface_add_dns_server(struct interface_ip_settings *ip, const char *str)
+ {
+diff -Naur netifd-2014-09-08/interface-ip.h netifd-tplink/interface-ip.h
+--- netifd-2014-09-08/interface-ip.h	2014-09-24 15:02:13.000000000 +0800
++++ netifd-tplink/interface-ip.h	2015-08-07 14:48:28.000000000 +0800
+@@ -152,6 +152,7 @@
+ void interface_add_dns_search_list(struct interface_ip_settings *ip, struct blob_attr *list);
+ void interface_write_resolv_conf(void);
+ 
++void interface_ip_add_pre_route(struct interface_ip_settings *ip, union if_addr *nexthop, bool v6);
+ void interface_ip_add_route(struct interface *iface, struct blob_attr *attr, bool v6);
+ 
+ void interface_ip_update_start(struct interface_ip_settings *ip);
+@@ -167,5 +168,6 @@
+ 		struct in6_addr *excl_addr, uint8_t excl_length, const char *pclass);
+ void interface_ip_set_ula_prefix(const char *prefix);
+ void interface_refresh_assignments(bool hint);
++int interface_ip_resolve_v6_rtable(int ifindex);
+ 
+ #endif
+diff -Naur netifd-2014-09-08/proto.c netifd-tplink/proto.c
+--- netifd-2014-09-08/proto.c	2014-09-24 15:02:13.000000000 +0800
++++ netifd-tplink/proto.c	2015-08-07 14:49:13.000000000 +0800
+@@ -284,6 +284,36 @@
+ }
+ 
+ static bool
++parse_static_gateway_option(struct interface *iface, struct blob_attr *attr, bool v6)
++{
++    struct device_route *route;
++    const char *str = blobmsg_data(attr);
++    int af = v6 ? AF_INET6 : AF_INET;
++
++    route = calloc(1, sizeof(*route));
++    if (!inet_pton(af, str, &route->nexthop)) {
++        interface_add_error(iface, "proto", "INVALID_GATEWAY", &str, 1);
++        free(route);
++        return false;
++    }
++
++    route->mask = 0;
++    route->flags = (v6 ? DEVADDR_INET6 : DEVADDR_INET4);
++    route->metric = iface->metric;
++
++    unsigned int table = (v6) ? iface->ip6table : iface->ip4table;
++    if (table) {
++		route->table = table;
++		route->flags |= DEVROUTE_SRCTABLE;
++    }
++
++    interface_ip_add_pre_route(&iface->proto_ip, &route->nexthop, v6);
++    vlist_add(&iface->proto_ip.route, &route->node, route);
++
++    return true;
++}
++
++static bool
+ parse_prefix_option(struct interface *iface, const char *str, size_t len)
+ {
+ 	char buf[128] = {0}, *saveptr;
+@@ -420,7 +450,7 @@
+ 		goto out;
+ 
+ 	if ((cur = tb[OPT_GATEWAY])) {
+-		if (n_v4 && !parse_gateway_option(iface, cur, false))
++                if (n_v4 && !parse_static_gateway_option(iface, cur, false))
+ 			goto out;
+ 	}
+ 
+@@ -598,6 +628,18 @@
+ 	iface->proto_handler = proto;
+ }
+ 
++bool 
++interface_proto_valid(struct interface *iface)
++{
++        const struct proto_handler *proto = iface->proto_handler;
++
++        if (proto && (proto != &no_proto)) {
++                return true;
++        } else {
++                return false;
++        }
++}
++
+ int
+ interface_proto_event(struct interface_proto_state *proto,
+ 		      enum interface_proto_cmd cmd, bool force)
+diff -Naur netifd-2014-09-08/proto.h netifd-tplink/proto.h
+--- netifd-2014-09-08/proto.h	2014-09-24 15:02:13.000000000 +0800
++++ netifd-tplink/proto.h	2015-08-07 14:49:31.000000000 +0800
+@@ -70,6 +70,7 @@
+ void add_proto_handler(struct proto_handler *p);
+ void proto_init_interface(struct interface *iface, struct blob_attr *attr);
+ void proto_attach_interface(struct interface *iface, const char *proto_name);
++bool interface_proto_valid(struct interface *iface);
+ int interface_proto_event(struct interface_proto_state *proto,
+ 			  enum interface_proto_cmd cmd, bool force);
+ 

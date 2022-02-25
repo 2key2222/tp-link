@@ -1,0 +1,45 @@
+--- a/drivers/net/ethernet/octeon/ethernet-sgmii.c      2017-01-11 19:31:42.261201523 +0800
++++ b/drivers/net/ethernet/octeon/ethernet-sgmii.c      2017-01-11 19:32:17.282200478 +0800
+@@ -41,6 +41,8 @@
+ #include <asm/octeon/cvmx-gmxx-defs.h>
+ #include <asm/octeon/cvmx-npei-defs.h>
+ 
++#include <asm/octeon/cvmx-helper-board.h>
++
+ #define INT_BIT_LOC_FAULT 20
+ #define INT_BIT_REM_FAULT 21
+ 
+@@ -82,6 +84,16 @@
+ 	return NOTIFY_DONE;
+ }
+ 
++cvmx_helper_link_info_t agl_link_get(int port)
++{
++        cvmx_helper_link_info_t result;
++
++        result.s.full_duplex = 1;
++        result.s.link_up = 1;
++        result.s.speed = 1000;
++        return result;
++}
++
+ int cvm_oct_sgmii_open(struct net_device *dev)
+ {
+ 	struct octeon_hw_status_reg sr[3];
+@@ -109,6 +121,7 @@
+ 			netif_carrier_off(dev);
+ 		cvm_oct_adjust_link(dev);
+ 	} else {
++		cvmx_override_board_link_get = agl_link_get;
+ 		link_info = cvmx_helper_link_get(priv->ipd_port);
+ 		if (!link_info.s.link_up)
+ 			netif_carrier_off(dev);
+@@ -201,6 +214,8 @@
+ 
+ 	if (priv->phydev)
+ 		phy_disconnect(priv->phydev);
++	else
++		cvmx_override_board_link_get = NULL;
+ 	priv->phydev = NULL;
+ 
+ 	return cvm_oct_common_stop(dev);

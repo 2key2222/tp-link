@@ -1,0 +1,1069 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Advanced</title>
+</head>
+
+<body>
+
+<div class="content-container">
+
+<div id="menu-advanced" class="menu-container">
+</div>
+
+<div id="func-advanced" class="function-container">
+</div>
+
+</div><!-- content-container -->
+
+<script type="text/javascript">
+//<![CDATA[
+try{
+    $
+}catch(e){
+    location.href = "/";
+};
+
+$(document).ready(function(e){
+/************菜单部分的响�?***************/
+
+var advMenuList = {
+    "testMenu2":{
+        text: "testMenu2",
+        children: {
+            "subMenu1": {
+                text: "subMenu1",
+                children: {
+                    "tabMenu1": {
+                        text: "tabMenu1",
+                        url: "blank1.html"
+                    },
+                    "tabMenu2": {
+                        text: "tabMenu2",
+                        url: "blank2.html"
+                    }
+                }
+            },
+            "subMenu2": {
+                text: "subMenu2",
+                children: {
+                    "tabMenu3": {
+                        text: "tabMenu3",
+                        url: "blank3.html"
+                    },
+                    "tabMenu4": {
+                        text: "tabMenu4",
+                        url: "blank4.html"
+                    }
+                }
+            }
+        }
+    },
+    "testMenu3":{
+        text: "testMenu3",
+        children: {
+            "subMenu1": {
+                text: "subMenu1",
+                children: {
+                    "tabMenu1": {
+                        text: "tabMenu1",
+                        url: "blank1.html"
+                    },
+                    "tabMenu2": {
+                        text: "tabMenu2",
+                        url: "blank2.html"
+                    }
+                }
+            },
+            "subMenu2": {
+                text: "subMenu2",
+                children: {
+                    "tabMenu3": {
+                        text: "tabMenu3",
+                        url: "blank3.html"
+                    },
+                    "tabMenu4": {
+                        text: "tabMenu4",
+                        url: "blank4.html"
+                    }
+                }
+            }
+        }
+    },
+    "testMenu4":{
+        text: "testMenu4",
+        children: {
+            children: {
+                "tabMenu1": {
+                    text: "tabMenu1",
+                    url: "blank1.html"
+                },
+                "tabMenu2": {
+                    text: "tabMenu2",
+                    url: "blank2.html"
+                }
+            }
+        }
+    },
+    "running-status":{
+        text:$.su.CHAR.MENU.RUN_STATUS,
+        children: {
+            "status": {
+                text: $.su.CHAR.MENU.SYS_STATUS,
+                children: {
+                    "status":{
+                        text: $.su.CHAR.MENU.SYS_STATUS,
+                        url: "system_state.html"
+                    }   
+                }      
+            },
+            "statistics":{                
+                text: $.su.CHAR.MENU.STATISTICS,
+                children: {
+                    "ifstat": {
+                        text: $.su.CHAR.MENU.IFSTAT,
+                        url: "ifstat.html"
+                    },
+                    "ip_stats": {
+                        text: $.su.CHAR.MENU.IP_STATS,
+                        url: "ip_stats.html"
+                    }
+                }
+            }
+
+        }
+    },
+    "wizard": {
+        text: $.su.CHAR.MENU.WIZARD,
+        url: "wizard.html"
+    },
+	"basic-setting":{		
+		text: $.su.CHAR.MENU.BASIC_SETTING,
+		children:{
+            "system-mode":{
+                text: $.su.CHAR.MENU.SYSTEM_MODE,
+                children: {
+                    "system-mode": {
+                        text: $.su.CHAR.MENU.SYSTEM_MODE,
+                        url: "system_mode.html"
+                    }
+                }
+            },
+            "wan-setting":{
+                text: $.su.CHAR.MENU.INTERFACE_WAN,
+                children: {
+                    "interface-mode": {
+                        text: $.su.CHAR.MENU.WAN_MODE,
+                        url: "interface_mode.html"
+                    },
+                    "wan-setting": {
+                        text: $.su.CHAR.MENU.INTERFACE_WAN,
+                        url: "interface_wan.html"
+                    },
+                    "wan-setting-1": {
+                        text: $.su.CHAR.MENU.INTERFACE_WAN1,
+                        url: "interface_wan.html"
+                    },
+                    "wan-setting-2": {
+                        text: $.su.CHAR.MENU.INTERFACE_WAN2,
+                        url: "interface_wan.html"
+                    },
+                    "wan-setting-3": {
+                        text: $.su.CHAR.MENU.INTERFACE_WAN3,
+                        url: "interface_wan.html"
+                    },
+                    "wan-setting-4": {
+                        text: $.su.CHAR.MENU.INTERFACE_WAN4,
+                        url: "interface_wan.html"
+                    },
+
+                    "wan-setting-standalone-1": {
+                        text: $.su.CHAR.MENU.INTERFACE_WAN1,
+                        url: "interface_wan_standalone.html"
+                    },
+                    "wan-setting-standalone-2": {
+                        text: $.su.CHAR.MENU.INTERFACE_WAN2,
+                        url: "interface_wan_standalone.html"
+                    },
+                    "wan-setting-standalone-3": {
+                        text: $.su.CHAR.MENU.INTERFACE_WAN3,
+                        url: "interface_wan_standalone.html"
+                    },
+                    "wan-setting-standalone-4": {
+                        text: $.su.CHAR.MENU.INTERFACE_WAN4,
+                        url: "interface_wan_standalone.html"
+                    }
+                }
+            },
+            
+			"lan-settings":{
+				text: $.su.CHAR.MENU.LAN,
+                children: {
+                    "lan-settings": {
+                        text: $.su.CHAR.MENU.LAN,
+                        url: "dhcp_lan_settings.html"
+                    },
+                    "lan-settings-standalone": {
+                        text: $.su.CHAR.MENU.LAN,
+                        url: "dhcp_lan_settings_standalone.html"
+                    },
+                    "dhcp-server": {
+                        text: $.su.CHAR.MENU.DHCP_SERVER,
+                        url: "dhcp_server.html"
+                    },
+					"clientlist": {
+                        text: $.su.CHAR.MENU.DHCP_CLIENT,
+                        url: "dhcp_client.html"
+                    },
+					"static": {
+                        text: $.su.CHAR.MENU.DHCP_STATIC,
+                        url: "dhcp_static.html"
+                    }
+                }
+			},
+            'iptv': {
+                 text:$.su.CHAR.IPTV.IPTV,
+                 children:{
+                    "iptv":{
+                         text:$.su.CHAR.IPTV.IPTV,
+                         url:"iptv.html"
+                     }
+                 }
+             },
+            "interface-mac":{
+                text: $.su.CHAR.MENU.MAC_SETTING,
+                children: {
+                    "interface-mac": {
+                        text: $.su.CHAR.MENU.MAC_SETTING,
+                        url: "interface_mac.html"
+                    }
+                }
+            },
+            "switch":{
+                text:$.su.CHAR.MENU.SWITCH,
+                children:{
+                    "switch-portStatistics":{
+                        text:$.su.CHAR.MENU.PORT_STATISTICS,
+                        url:"switch_portStatistics.html"
+                    },
+                    "switch-portMonitor":{
+                        text:$.su.CHAR.MENU.PORT_MONITOR,
+                        url:"switch_portMonitor.html"
+                    },
+                    "switch-portLimit":{
+                        text:$.su.CHAR.MENU.PORT_LIMIT,
+                        url:"switch_portLimit.html"
+                    },
+                    "switch-portParameter":{
+                        text:$.su.CHAR.MENU.PORT_PARAMETER,
+                        url:"switch_Parameter.html"
+                    },
+                    "switch-portStatus":{
+                        text:$.su.CHAR.MENU.PORT_STATUS,
+                        url:"switch_portStatus.html"
+                    },
+                    "switch-portVlan":{
+                        text:$.su.CHAR.MENU.PORT_VLAN,
+                        url:"switch_portVlan.html"
+                    },
+
+                }
+            },
+			"vlan":{
+                text: $.su.CHAR.VLAN.TITLE, //"VLAN设置",
+                children:{
+                    "vlan-vlanSetting":{
+                        text: $.su.CHAR.VLAN.TITLE, //"VLAN设置",
+                        url:"vlan_vlanSetting.html"
+                    },
+                    "vlan-portSetting":{
+                        text: $.su.CHAR.VLAN.PORTSET, //"端口设置",
+                        url:"vlan_portSetting.html"
+                    },
+                    "vlan-relationTbl":{
+                        text: $.su.CHAR.VLAN.RELATION, //"关联表",
+                        url:"vlan_relationTbl.html"
+                    }
+                }
+			},
+            "ipv6":{
+                text: $.su.CHAR.MENU.IPV6,
+                children: {
+                    "ipv6-lan": {
+                        text: $.su.CHAR.MENU.IPV6_LAN,
+                        url: "ipv6_lan.html"
+                    },
+                    "ipv6-wan1": {
+                        text: $.su.CHAR.MENU.IPV6_WAN1,
+                        url: "ipv6.html"
+                    },
+                    "ipv6-wan2": {
+                        text: $.su.CHAR.MENU.IPV6_WAN2,
+                        url: "ipv6.html"
+                    },
+                    "ipv6-wan3": {
+                        text: $.su.CHAR.MENU.IPV6_WAN3,
+                        url: "ipv6.html"
+                    },
+                    "ipv6-wan4": {
+                        text: $.su.CHAR.MENU.IPV6_WAN4,
+                        url: "ipv6.html"
+                    }
+                }
+            }
+		}
+	},
+    "wireless":{        
+        text: $.su.CHAR.MENU.WIRELESS,
+        children:{
+            "wireless-setting":{                
+                text: $.su.CHAR.MENU.WIRELESS_SETTING,
+                children: {
+                    "wireless-basic": {
+                        text: $.su.CHAR.MENU.WIRELESS_BASIC,
+                        url: "wireless_basic.html"
+                    },
+                    "wireless-ssid": {
+                        text: $.su.CHAR.MENU.WIRELESS_SSID,
+                        url: "wireless_multi_ssid.html"
+                    },
+                    "wireless-wds": {
+                        text: $.su.CHAR.MENU.WIRELESS_WDS,
+                        url: "wireless_wds.html"
+                    },
+                    "wireless-advanced": {
+                        text: $.su.CHAR.MENU.WIRELESS_ADVANCED,
+                        url: "wireless_advanced.html"
+                    }
+                }
+            },
+            "wireless-visitor":{
+                text: $.su.CHAR.MENU.WIRELESS_VISITOR,
+                children: {
+                    "wireless-visitor": {
+                        text: $.su.CHAR.MENU.WIRELESS_VISITOR,
+                        url: "wireless_visitor.html"
+                    }
+                }
+            },
+            "wireless-mac":{
+                text: $.su.CHAR.MENU.WIRELESS_MAC,
+                children: {
+                    "wireless-mac": {
+                        text: $.su.CHAR.MENU.WIRELESS_MAC_SETTING,
+                        url: "wireless_mac_filter.html"
+                    }
+                }
+            },
+            "wireless-host":{
+                text: $.su.CHAR.MENU.WIRELESS_HOST,
+                children: {
+                    "wireless-host": {
+                        text: $.su.CHAR.MENU.WIRELESS_HOST,
+                        url: "wireless_host_state.html"
+                    }
+                }
+            }
+        }
+    },
+
+    "wireless-2-4g":{        
+        text: $.su.CHAR.MENU.WIRELESS_2_4G,
+        children:{
+            "wireless-setting":{                
+                text: $.su.CHAR.MENU.WIRELESS_SETTING,
+                children: {
+                    "wireless-basic": {
+                        text: $.su.CHAR.MENU.WIRELESS_BASIC,
+                        url: "wireless_basic.html"
+                    },
+                    "wireless-ssid": {
+                        text: $.su.CHAR.MENU.WIRELESS_SSID,
+                        url: "wireless_multi_ssid.html"
+                    },
+                    "wireless-wds": {
+                        text: $.su.CHAR.MENU.WIRELESS_WDS,
+                        url: "wireless_wds.html"
+                    },
+                    "wireless-advanced": {
+                        text: $.su.CHAR.MENU.WIRELESS_ADVANCED,
+                        url: "wireless_advanced.html"
+                    }
+                }
+            },
+            "wireless-mac":{
+                text: $.su.CHAR.MENU.WIRELESS_MAC,
+                children: {
+                    "wireless-mac": {
+                        text: $.su.CHAR.MENU.WIRELESS_MAC_SETTING,
+                        url: "wireless_mac_filter.html"
+                    }
+                }
+            },
+            "wireless-host":{
+                text: $.su.CHAR.MENU.WIRELESS_HOST,
+                children: {
+                    "wireless-host": {
+                        text: $.su.CHAR.MENU.WIRELESS_HOST,
+                        url: "wireless_host_state.html"
+                    }
+                }
+            }
+        }
+    },
+
+    "wireless-5g":{
+        text: $.su.CHAR.MENU.WIRELESS_5G,
+        children:{
+            "wireless-setting":{
+                text: $.su.CHAR.MENU.WIRELESS_SETTING,
+                children: {
+                    "wireless-basic": {
+                        text: $.su.CHAR.MENU.WIRELESS_BASIC,
+                        url: "wireless_basic_5g.html"
+                    },
+                    "wireless-ssid": {
+                        text: $.su.CHAR.MENU.WIRELESS_SSID,
+                        url: "wireless_multi_ssid_5g.html"
+                    },
+                    "wireless-wds": {
+                        text: $.su.CHAR.MENU.WIRELESS_WDS,
+                        url: "wireless_wds_5g.html"
+                    },
+                    "wireless-advanced": {
+                        text: $.su.CHAR.MENU.WIRELESS_ADVANCED,
+                        url: "wireless_advanced_5g.html"
+                    }
+                }
+            },
+            "wireless-mac":{
+                text: $.su.CHAR.MENU.WIRELESS_MAC,
+                children: {
+                    "wireless-mac": {
+                        text: $.su.CHAR.MENU.WIRELESS_MAC_SETTING,
+                        url: "wireless_mac_filter_5g.html"
+                    }
+                }
+            },
+            "wireless-host":{
+                text: $.su.CHAR.MENU.WIRELESS_HOST,
+                children: {
+                    "wireless-host": {
+                        text: $.su.CHAR.MENU.WIRELESS_HOST,
+                        url: "wireless_host_state_5g.html"
+                    }
+                }
+            }
+        }
+    },
+    
+	"object-mngt":{		
+		text: $.su.CHAR.MENU.OBJECT_MNGT,
+		children:{
+			"ip-group":{				
+				text: $.su.CHAR.MENU.IP_GROUP,
+                children: {
+                    "group": {
+                        text: $.su.CHAR.MENU.IP_GROUP_GROUP,
+                        url: "ipgroup_group.html"
+                    },
+					"address": {
+                        text: $.su.CHAR.MENU.IP_GROUP_ADDRESS,
+                        url: "ipgroup_address.html"
+                    }/*,
+					"view": {
+                        text: $.su.CHAR.MENU.IP_GROUP_VIEW,
+                        url: "ipgroup_view.html"
+                    }
+                    */
+                }
+			},
+			"time-mngt":{				
+				text: $.su.CHAR.MENU.TIME_MNGT,
+                children: {
+                    "time-mngt": {
+                        text: $.su.CHAR.MENU.TIME_MNGT,
+                        url: "time_mngt.html"
+                    }
+                }
+			},
+			"ippool":{				
+				text: $.su.CHAR.MENU.IP_POOL,
+                children: {
+                    "ippool": {
+                        text: $.su.CHAR.MENU.IP_POOL,
+                        url: "ippool.html"
+                    }
+                }
+			},
+			"service":{				
+				text: $.su.CHAR.MENU.SERVICE,
+                children: {
+                    "service": {
+                        text: $.su.CHAR.MENU.SERVICE,
+                        url: "service.html"
+                    }
+                }
+			},
+			"usermngr":{				
+				text: $.su.CHAR.MENU.USERMNGR,
+                children: {
+                    "usermngr": {
+                        text: $.su.CHAR.MENU.USERMNGR,
+                        url: "usermngr_user.html"
+                    }
+                }
+			}
+		}
+	},
+	
+    
+	"transmisson-control":{		
+		text: $.su.CHAR.MENU.TRANSMISSION_CONTROL,
+		children:{
+			"nat":{				
+				text: $.su.CHAR.MENU.NAT,
+                children: {
+                    "napt": {
+                        text: $.su.CHAR.MENU.NAPT,
+                        url: "napt.html"
+                    },
+                    "one-nat": {
+                        text: $.su.CHAR.MENU.ONE_NAT,
+                        url: "one_nat.html"
+                    },
+                    "virtual-server": {
+                        text: $.su.CHAR.MENU.VIRTUAL_SERVER,
+                        url: "virtual_server.html"
+                    },
+                    "port-trigger": {
+                        text: $.su.CHAR.MENU.PORT_TRIGGER,
+                        url: "port_trigger.html"
+                    },
+					"alg": {
+                        text: $.su.CHAR.MENU.ALG,
+                        url: "alg.html"
+                    },
+					"nat-dmz": {
+                        text: $.su.CHAR.MENU.NAT_DMZ,
+                        url: "nat_dmz.html"
+                    }
+                }
+			},
+			"qos":{				
+				text: $.su.CHAR.MENU.QOS,
+                children: {
+                    "qos": {
+                        text: $.su.CHAR.MENU.QOS,
+                        url: "qos.html"
+                    }
+                }
+			},
+			"session-limit":{				
+				text: $.su.CHAR.MENU.SESSION_LIMIT,
+                children: {
+                    "session-limit": {
+                        text: $.su.CHAR.MENU.SESSION_LIMIT,
+                        url: "session_limits.html"
+                    },
+					"session-monitor": {
+                        text: $.su.CHAR.MENU.SESSION_MONITOR,
+                        url: "session_monitor.html"
+                    }
+                }
+			},
+			"balance":{				
+				text: $.su.CHAR.MENU.BALANCE,
+                children: {
+                    "basic-setting": {
+                        text: $.su.CHAR.MENU.BALANCE_BASIC,
+                        url: "balance_basic.html"
+                    },
+                    "policy-routing": {
+                        text: $.su.CHAR.MENU.POLICY_ROUTING,
+                        url: "policy_routing.html"
+                    },
+					"isp-routing": {
+                        text: $.su.CHAR.MENU.ISP_ROUTING,
+                        url: "isp_routing.html"
+                    },
+					"line-backup": {
+                        text: $.su.CHAR.MENU.LINE_BACKUP,
+                        url: "line_backup.html"
+                    },
+                    "online": {
+                        text: $.su.CHAR.MENU.ONLINE,
+                        url: "online.html"
+                    }
+                }
+			},
+			"routing":{				
+				text: $.su.CHAR.MENU.ROUTING,
+                children: {
+                    "policy-routing": {
+                        text: $.su.CHAR.MENU.POLICY_ROUTING,
+                        url: "policy_routing.html"
+                    },
+                    "static-routing": {
+                        text: $.su.CHAR.MENU.STATIC_ROUTING,
+                        url: "static_routing.html"
+                    },
+					"system-routetbl": {
+                        text: $.su.CHAR.MENU.SYSTEM_ROUTETBL,
+                        url: "system_routetbl.html"
+                    }
+                }
+			}
+		}
+	},
+	"firewall":{		
+		text: $.su.CHAR.MENU.FIREWALL,
+		children:{
+			"arp-defense":{				
+				text: $.su.CHAR.MENU.ARP_DEFENSE,
+                children: {
+                    "imb": {
+                        text: $.su.CHAR.MENU.IMB,
+                        url: "imb.html"
+                    },
+					"arp-scan": {
+                        text: $.su.CHAR.MENU.ARP_SCAN,
+                        url: "arp_scan.html"
+                    },
+					"arp-list": {
+                        text: $.su.CHAR.MENU.ARP_LIST,
+                        url: "arp_list.html"
+                    }
+                }
+			},
+			"macFiltering":{
+                text: $.su.CHAR.MENU.MAC_FILTERING,
+                children: {
+                    "macFiltering": {
+                        text: $.su.CHAR.MENU.MAC_FILTERING,
+                        url: "macFiltering.html"
+                    }
+                }
+            },
+            "attack-defense":{
+                text: $.su.CHAR.MENU.ATTACK_DEFENSE,
+                children: {
+                    "attack-defense": {
+                        text: $.su.CHAR.MENU.ATTACK_DEFENSE,
+                        url: "attack-defense.html"
+                    }
+                }
+            },
+            "access-control":{
+                text: $.su.CHAR.MENU.ACCESS_CONTROL,
+                children: {
+                    "acl": {
+                        text: $.su.CHAR.MENU.ACCESS_CONTROL,
+                        url: "access_control.html"
+                    }
+                }
+            },
+            "app-control":{
+                text: $.su.CHAR.MENU.APP_CONTROL,
+                children: {
+                    "tabMenu3": {
+                        text: "tabMenu3",
+                        url: "static_routing.html"
+                    }
+                }
+            }
+		}
+	},
+
+	"behavior-control":{		
+		text: $.su.CHAR.MENU.BEHAVIOR_CONTROL,
+		children:{
+            "appdist":{             
+                text: $.su.CHAR.MENU.APP_CONTROL,
+                children: {
+                    "appdist": {
+                        text: $.su.CHAR.MENU.APP_CONTROL,
+                        url: "appdist.html"
+                    },
+                    "bwlist-qq": {
+                        text: $.su.CHAR.MENU.BWLIST_QQ,
+                        url: "bwlist_qq.html"
+                    }       
+                }
+            },
+            "websiteFilter": {
+                text: $.su.CHAR.MENU.WEB_FILTERING,
+                children: {
+                    "websiteFilter":{
+                         text: $.su.CHAR.MENU.WEB_FILTER,
+                         url: "web_filter.html"
+                    },
+                    "websiteGroup": {
+                        text: $.su.CHAR.MENU.WEB_GROUP,
+                        url: "web_group.html"
+                    },
+                    "url-filtering": {
+                        text: $.su.CHAR.MENU.URL_FILTERING,
+                        url: "url_filtering.html"
+                    }        
+                }           
+            },
+            "websiteSecurity": {
+                text: $.su.CHAR.MENU.WEB_SECURITY,
+                children: {
+                    "websiteSecurity":{
+                        text: $.su.CHAR.MENU.WEB_SECURITY,
+                        url: "web_security.html"
+                    }        
+                }        
+            },
+            "behavior_audit":{             
+                text: $.su.CHAR.MENU.BEHAVIOR_AUDIT,
+                children: {
+                    "actionCheck":{
+                        text: $.su.CHAR.MENU.BEHAVIOR_AUDIT,
+                        url: "action_check.html"
+                    }                       
+                }
+            },
+			
+			"appdist_database": {
+				text: $.su.CHAR.MENU.APP_DATABASE,
+				children: {
+                    "appdist-database": {
+                        text: $.su.CHAR.MENU.APP_DATABASE,
+                        url: "appdist_database.html"
+                    }
+				}	
+			}
+		}
+	},
+
+	"vpn":{		
+		text: $.su.CHAR.MENU.VPN,
+		children:{
+			"ipsec":{				
+				text: $.su.CHAR.MENU.IPSEC,
+                children: {
+                    "ipsec-setting": {
+                        text: $.su.CHAR.MENU.IPSEC_POLICY_TITLE,
+                        url: "ipsec_tunnel.html"
+                    },
+					"ipsec-sa": {
+                        text: $.su.CHAR.MENU.IPSEC_SA_TITLE,
+                        url: "ipsec_sa.html"
+                    }
+                }
+			},
+			"l2tp":{				
+				text: $.su.CHAR.MENU.L2TP,
+                children: {
+                    "l2tp-server": {
+                        text: $.su.CHAR.MENU.L2TP_SERVER,
+                        url: "l2tp_server.html"
+                    },
+					"l2tp-client": {
+                        text: $.su.CHAR.MENU.L2TP_CLIENT,
+                        url: "l2tp_client.html"
+                    },
+                    "l2tp-global": {
+                        text: $.su.CHAR.MENU.L2TP_PARAMS,
+                        url: "l2tp_global.html"
+                    },
+					"l2tp-tunnel": {
+                        text: $.su.CHAR.MENU.L2TP_TUNNEL,
+                        url: "l2tp_tunnel.html"
+                    }
+                }
+			},
+			"pptp":{				
+				text: $.su.CHAR.MENU.PPTP,
+                children: {
+                    "pptp-server": {
+                        text: $.su.CHAR.MENU.PPTP_SERVER,
+                        url: "pptp_server.html"
+                    },
+					"pptp-client": {
+                        text: $.su.CHAR.MENU.PPTP_CLIENT,
+                        url: "pptp_client.html"
+                    },
+                    "pptp-global": {
+                        text: $.su.CHAR.MENU.PPTP_PARAMS,
+                        url: "pptp_global.html"
+                    },
+					"pptp-tunnel": {
+                        text: $.su.CHAR.MENU.PPTP_TUNNEL,
+                        url: "pptp_tunnel.html"
+                    }
+                }
+			},
+			"vpn-user":{				
+				text: $.su.CHAR.MENU.VPN_USER,
+                children: {
+                    "vpn-user": {
+                        text: $.su.CHAR.MENU.VPN_USER,
+                        url: "vpn_user.html"
+                    }
+                }
+			}
+            
+		}
+	},
+        "portal":{      
+        text: $.su.CHAR.MENU.AUTH_MNGT,
+        children:{
+            "usermngr":{                
+                text: $.su.CHAR.MENU.USERMNGR,
+                children: {
+                    "usermngr": {
+                        text: $.su.CHAR.MENU.USERMNGR,
+                        url: "usermngr_user.html"
+                    },
+                    "infomngr" :{
+                        text: $.su.CHAR.MENU.AUTH_USERBACKUP,
+                        url: "usermngr_backup.html"
+                    }
+                }
+            },
+            "wportal":{
+                text: $.su.CHAR.MENU.AUTH_SETTING,//"认证设置",
+                children: {
+                    "wportal": {
+                        text: $.su.CHAR.MENU.AUTH_WEB,//"Web认证",
+                        url: "wportal.html"
+                    },
+                    "wechat": {
+                        text: $.su.CHAR.MENU.AUTH_WECHAT,//"微信认证",
+                        url: "wechat.html"
+                    },
+                    "wifi": {
+                        text: $.su.CHAR.MENU.AUTH_WECHAT_WIFI,//"微信连Wi-Fi",
+                        url: "wechat_wifi.html"
+                    },
+                    "wire": {
+                        text: $.su.CHAR.MENU.AUTH_WECHAT_WIFI,//"微信连Wi-Fi",
+                        url: "wechat_wifi_wire.html"
+                    },
+                    "free": {
+                        text: $.su.CHAR.MENU.AUTH_NONE,//"免认证策略",
+                        url: "wportal_free.html"
+                    }
+                }
+            },
+            "sessmngr":{
+                text:$.su.CHAR.MENU.SESS_MNGR,//"认证状态",
+                children:{
+                    "sessmngr": {
+                        text: $.su.CHAR.MENU.SESS_MNGR,//"认证状态",
+                        url:"sessmngr.html"
+                    }
+                }
+
+            }
+        }
+    },
+	"sys-services":{		
+		text: $.su.CHAR.MENU.SYS_SERVICES,
+		children:{
+			"ddns":{				
+				text: $.su.CHAR.MENU.DDNS,
+                children: {
+
+                    "phddns": {
+                        text: $.su.CHAR.MENU.PHDDNS,
+                        url: "phddns.html"
+                    },
+                        "cmxddns": {
+                        text: $.su.CHAR.MENU.CMXDDNS,
+                        url: "cmxddns.html"
+                    },
+                     "dyn3322ddns": {
+                        text: $.su.CHAR.MENU.DNY3322DDNS,
+                        url: "dyn3322ddns.html"
+                    },
+                    "noipddns":{             
+                        text: $.su.CHAR.MENU.NOIPDDNS,//"NO-IP",
+                        url: "noipddns.html"
+                    },
+                    "dynddns":{          
+                        text: $.su.CHAR.MENU.DYNDDNS,//"DynDNS",
+                        url: "dynddns.html"
+                    }
+                }
+			},
+			"dnsproxy":{				
+				text: $.su.CHAR.MENU.DNSPROXY,
+                children: {
+                    "dnsproxy": {
+                        text: $.su.CHAR.MENU.DNSPROXY,
+                        url: "dnsproxy.html"
+                    }
+                }
+			},
+            "upnp":{
+                text: $.su.CHAR.MENU.UPNP,
+                children: {
+                    "upnp": {
+                        text: $.su.CHAR.MENU.UPNP,
+                        url: "upnp.html"
+                    }
+                }
+            },
+            "print-server":{
+                text: $.su.CHAR.MENU.PRINT_SERVER,
+                children: {
+                    "print-server": {
+                        text: $.su.CHAR.MENU.PRINT_SERVER,
+                        url: "print_server.html"
+                    }
+                }
+            }
+
+		}
+	},
+	"sys-tools":{		
+		text: $.su.CHAR.MENU.SYS_TOOLS,
+		children:{
+			"account-mngt":{				
+				text: $.su.CHAR.MENU.ACCOUNT,
+                children: {
+                    "account": {
+                        text: $.su.CHAR.MENU.ACCOUNT,
+                        url: "account_mngt.html"
+                    },
+					"remote-mngt": {
+                        text: $.su.CHAR.MENU.REMOTE_MNGT,
+                        url: "remote_mngt.html"
+                    },
+					"account-config": {
+                        text: $.su.CHAR.MENU.ACCOUNT_CONFIG,
+                        url: "account_config.html"
+                    }
+                }
+			},
+			"firmware":{				
+				text: $.su.CHAR.MENU.FIRMWARE,
+                children: {
+                    "managing": {
+                        text: $.su.CHAR.MENU.MANAGING,
+                        url: "firmware_managing.html"
+                    },
+                    "reseting": {
+                        text: $.su.CHAR.MENU.RESETING,
+                        url: "firmware_reseting.html"
+                    },
+                    "factory": {
+                        text: $.su.CHAR.MENU.FACTORY,
+                        url: "firmware_factory.html"
+                    },
+					"backup-restore": {
+                        text: $.su.CHAR.MENU.BACKUP_RESTORE,
+                        url: "firmware_backuprestore.html"
+                    },
+					"reboot": {
+                        text: $.su.CHAR.MENU.REBOOT,
+                        url: "firmware_reboot.html"
+                    },
+					"upgrade": {
+                        text: $.su.CHAR.MENU.UPGRADE,
+                        url: "firmware_upgrade.html"
+                    }
+                }
+			},
+			"controller-setting":{
+				text: $.su.CHAR.MENU.CONTROLLER_SETTING,
+				children: {
+					"controller-setting": {
+						text: $.su.CHAR.MENU.CONTROLLER_SETTING,
+						url: "controller_setting.html"
+					}
+				}
+			},
+			"snmp":{				
+				text: $.su.CHAR.MENU.SNMP,
+                children: {
+                    "snmp": {
+                        text: $.su.CHAR.MENU.SNMP,
+                        url: "snmp.html"
+                    }
+                }
+			},
+
+			"diagnostic":{				
+				text: $.su.CHAR.MENU.DIAGNOSTIC,
+                children: {
+                    "diagnostic": {
+                        text: $.su.CHAR.MENU.DIAGNOSTIC,
+                        url: "diagnostic.html"
+                    },
+                    "dia_info": {
+                        text: $.su.CHAR.MENU.DIA_INFO,
+                        url: "dia_info.html"
+                    }
+                }
+			},
+			"time-setting":{				
+				text: $.su.CHAR.MENU.TIME_SETTING,
+                children: {
+                    "time-setting": {
+                        text: $.su.CHAR.MENU.TIME_SETTING,
+                        url: "time_setting.html"
+                    }
+                }
+			},
+			"system-log":{                
+                text: $.su.CHAR.MENU.SYSTEM_LOG,//"系统日志",
+                children: {
+                    "system-log": {
+                        text: $.su.CHAR.MENU.SYSTEM_LOG,//"系统日志",
+                        url: "system_log.html"
+                    }
+                }
+            },
+            "system_params":{                
+                text: $.su.CHAR.MENU.SYSTEM_PARAMS,
+                children: {
+                    "system_params": {
+                        text: $.su.CHAR.MENU.SYSTEM_PARAMS,
+                        url: "system_params.html"
+                    }
+                }
+            }
+		}
+	}
+	
+ };
+
+var menuAdvanced = new $.su.Menu({
+    data: $.su.url("/admin/menu?form=advanced_menu"),
+    urlPath: "./pages/userrpm/",
+    container: "div#menu-advanced",
+    tabMenuContainer: "#tab-menu",
+    list: advMenuList,
+    idTag: "advanced",
+    cls: "advanced",
+    handlers: {
+        init: function(e){
+            this.goTo("running-status", "status");
+        },
+        goTo: function(e, name, url){
+            if(window.autoRefreshId){
+                clearInterval(window.autoRefreshId);
+            }
+        	$.su.app.menuGoTo(name, url, true);
+        }
+    }
+});
+//
+
+$.su.menu = null;
+delete $.su.menu;
+$.su.menu = {};
+$.su.menu.advanced = menuAdvanced;
+
+});
+//]]>
+</script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+Index: linux-3.10.14/drivers/net/raeth/raether.c
+===================================================================
+--- linux-3.10.14.orig/drivers/net/raeth/raether.c	2014-09-12 10:48:07.000000000 +0800
++++ linux-3.10.14/drivers/net/raeth/raether.c	2014-10-09 09:41:50.073543584 +0800
+@@ -3963,6 +3963,13 @@
+ 		mii_mgr_read(i, 26, &phy_val);// EEE setting
+ 		phy_val |= (1 << 5);
+ 		mii_mgr_write(i, 26, phy_val);
++#else
++		//disable EEE 
++		mii_mgr_write(i, 13, 0x7); 
++		mii_mgr_write(i, 14, 0x3C); 
++		mii_mgr_write(i, 13, 0x4007); 
++		mii_mgr_write(i, 14, 0x0); 
++
+ #endif
+ 		mii_mgr_write(i, 30, 0xa000);
+ 		mii_mgr_write(i, 31, 0xa000); // change L2 page

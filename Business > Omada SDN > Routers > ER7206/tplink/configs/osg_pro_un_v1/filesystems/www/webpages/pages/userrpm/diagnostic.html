@@ -1,0 +1,590 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Diagnostic</title>
+
+</head>
+
+<body>
+<div class="func-container">
+	 <div id="diag">
+	 	<form id="diag_setting">
+	    	<input type="text"  id="type" name="type" value="" />
+	    	<input type="hidden"  id="type_hidden" name="type_hidden" value="0" />
+
+	    	<input type="text"  id="ipaddr_ping" name="ipaddr_ping" value="" />
+			
+	    	<input type="text"  id="ipaddr_trace" name="ipaddr_trace" value="" />
+			
+			<input id="iface_ping" name="iface_ping" value="" />
+			
+	    	<input id="iface_trace" name="iface_trace" value="" />
+
+	    	<input id="ipaddr_hidden" type="hidden"  name="ipaddr" value="" />
+			
+			<input id="iface_hidden" type="hidden"  name="iface" value="" />
+
+	    	<div class="part-seperate ">
+	    		<button type="button" id="start" name="start"></button>
+	    	</div>
+	    	
+	    	<div id="adv_btn" class="advanced-block part-seperate" type="button">
+				<span class="advanced-icon"></span>
+				<span class="advanced-text"></span>
+			</div>
+
+			
+
+
+			<div id="basic_btn" class="basic-block part-seperate" type="button" style="display:none">
+				<span class="basic-icon"></span>
+				<span class="basic-text"></span>
+			</div>
+	    	<!-- <button type="button" id="basic" name="basic"></button> -->
+	    	<div id="pingCnt" class="hidden">
+		    	<input type="text"  id="count" name="count" value="" />
+		    	<input type="text"  id="pkt" name="pktsize" value="" />
+		    	<!-- <input type="text"  id="timeout" name="timeout" value="" /> -->
+	    	</div>
+	    	
+	    	<div id="traceCnt" class="hidden">
+		    	<input type="text"  id="ttl" name="ttl" value="" />
+	    	</div>
+	    	<div class="">
+	    		<textarea type="text"  id="my_result" name="my_result" value="" readonly></textarea>
+	    	</div>
+			
+	    </form>
+	   
+	    <input type="hidden"  id="adv_diag_just_for_timmmer" />
+	 </div>
+
+	<div id="help_diagnostic"></div>
+</div>
+
+<script type="text/javascript">
+try{
+    $
+}catch(e){
+    location.href = "/";
+};
+
+$(document).ready(function(e){
+	/*var DIAG_SET_URL = "./data/diag.set.json";*/
+	var DIAG_SET_URL_NEW = $.su.url("/admin/diagnostic?form=diag");
+
+	var req_interval = false;
+	var count = 0;
+
+	var stage = "none";
+
+	$("span.advanced-text").html($.su.CHAR.NAV.ADVANCED);
+
+	$("div.func-container").page({
+		title: $.su.CHAR.DIAG.TITLE,
+		help: ""	//可能是个调用的id 也可能是个url
+	});
+
+	$("div#diag").panel({
+		title: $.su.CHAR.DIAG.TITLE,
+		collapsible: false
+	});
+
+	$('#pingCnt').fieldset({
+		fields: [
+			{name: "count"},
+			{name: "pktsize"}
+		]
+	}).hide();
+
+	$('#traceCnt').fieldset({
+		fields: [
+			{name: "ttl"}
+		]
+	}).hide();
+
+	$("input#type").radio({
+		fieldLabel: $.su.CHAR.DIAG.DIAGNOSTIC_TOOL,
+		columns:2,
+		labelCls:'l',
+		items:[
+			{boxlabel: $.su.CHAR.DIAG.PING, inputValue: '0'},
+			{boxlabel: $.su.CHAR.DIAG.TRACE, inputValue: '1'}
+		]
+	}).on("ev_change", function(e, oldValue, newValue){
+		$('#basic_btn').hide();
+		$('#adv_btn').show();
+		$("input#ipaddr_ping").textbox('reset');
+		$("input#ipaddr_ping").textbox('setNormal');
+		$("input#ipaddr_trace").textbox('reset');
+		$("input#ipaddr_trace").textbox('setNormal');
+		
+		/*$("input#iface_ping").textbox('reset');
+		$("input#iface_ping").textbox('setNormal');
+		$("input#iiface_trace").textbox('reset');
+		$("input#iiface_trace").textbox('setNormal');*/
+		
+		switch(newValue)
+		{
+			case '0':
+				$("#type").val(0);
+				$("button#start").find("span").html($.su.CHAR.DIAG.START);
+				
+				$("div#pingCnt").fieldset("hide");
+				$("div#traceCnt").fieldset("hide");
+
+				$("input#ipaddr_ping").textbox("show");
+				$("input#ipaddr_ping").textbox("enable");
+				$("input#iface_ping").combobox("show");
+				$("input#iface_ping").combobox("enable");
+				
+				$("input#ipaddr_trace").textbox("disable");
+				$("input#ipaddr_trace").textbox("hide");
+				$("input#iface_trace").combobox("disable");
+				$("input#iface_trace").combobox("hide");
+				break;
+			case '1':
+
+				$("#type").val(1);
+				$("button#start").find("span").html($.su.CHAR.DIAG.START);
+				// $("button#basic").find("span").html($.su.CHAR.DIAG.ADVANCED);
+				$("div#pingCnt").fieldset("hide");
+				$("div#traceCnt").fieldset("hide");
+
+				$("input#ipaddr_ping").textbox("hide");
+				$("input#ipaddr_ping").textbox("disable");
+				$("input#iface_ping").combobox("hide");
+				$("input#iface_ping").combobox("disable");
+				
+				$("input#ipaddr_trace").textbox("enable");
+				$("input#ipaddr_trace").textbox("show");
+				$("input#iface_trace").combobox("enable");
+				$("input#iface_trace").combobox("show");
+				break;
+		}
+	});
+
+	$("input#ipaddr_ping").textbox({
+		fieldLabel: $.su.CHAR.DIAG.IPADDR,
+		labelCls:'l',
+		allowBlank:false,
+		vtype:"ip_domain",
+		tipsCls:"s",
+		maxLength:253,
+		cls:"inline"
+	});
+	
+	$("input#iface_ping").combobox({
+		fieldLabel: $.su.CHAR.DIAG.IFACE,
+		labelCls:'l',
+		allowBlank: false,
+		items:[
+			{value:"---", name: "---", selected: true}
+		]
+	}).on("ev_change",function(e,oldValue,newValue){
+	});
+
+	$("input#ipaddr_trace").textbox({
+		fieldLabel: $.su.CHAR.DIAG.IPADDR,
+		labelCls:'l',
+		allowBlank:false,
+		vtype:"ip_domain",
+		tipsCls:"s",
+		maxLength:253,
+		cls:"inline hidden"
+	});
+	
+	$("input#iface_trace").combobox({
+		fieldLabel:$.su.CHAR.DIAG.IFACE,
+		labelCls:'l',
+		allowBlank:false,
+		items:[
+			{value: "---", name: "---", selected: true}
+		]
+	}).on("ev_change",function(e,oldValue,newValue){		
+	});
+
+
+	$("input#ipaddr_trace").textbox("hide");
+	$("input#ipaddr_trace").textbox("disable");
+	
+	$("input#iface_trace").combobox("hide");
+	$("input#iface_trace").combobox("disable");
+
+	$("input#count").textbox({
+		fieldLabel: $.su.CHAR.DIAG.COUNT,
+		labelCls:'l',
+
+		
+		vtype:{
+			vtype:"number",
+			min:1,
+			max:50
+		},
+		maxLength:2,
+		textFormat:$.su.format.number,
+		allowBlank:false,
+		min:1,
+		max:50,
+		// validator:function(val){
+		// 	if((val >= 1) && (val <= 50))
+		// 	{
+		// 		return true;
+		// 	}
+		// 	else
+		// 	{
+		// 		return $.su.CHAR.ERROR["00000043"];
+		// 	}
+		// },
+		tips:$.su.CHAR.DIAG.COUNTUNIT
+	});
+
+
+	$("input#pkt").textbox({
+		fieldLabel: $.su.CHAR.DIAG.PKT,
+		labelCls:'l',
+		vtype:{
+			vtype:"number",
+			min:4,
+			max:1472
+		},
+		maxLength:4,
+		textFormat:$.su.format.number,
+		allowBlank:false,
+		// textFormat:$.su.format.number,
+		min:4,
+		max:1472,
+		// validator:function(val){
+		// 	if((val >= 4) && (val <= 1472))
+		// 	{
+		// 		return true;
+		// 	}
+		// 	else
+		// 	{
+		// 		return $.su.CHAR.ERROR["00000044"];
+		// 	}
+		// },
+		tips:$.su.CHAR.DIAG.PKTUNIT
+	});
+
+
+
+	$("input#ttl").textbox({
+		fieldLabel: $.su.CHAR.DIAG.TTL,
+		labelCls:'l',
+		vtype:{
+			vtype:"number",
+			min:1,
+			max:30
+		},
+		maxLength:2,
+		textFormat:$.su.format.number,
+		allowBlank:false,
+		// min:4,
+		// max:1472,
+		// validator:function(val){
+		// 	if((val >= 1) && (val <= 30))
+		// 	{
+		// 		return true;
+		// 	}
+		// 	else
+		// 	{
+		// 		return $.su.CHAR.ERROR["00000046"];
+		// 	}
+		// },
+		tips:"(1-30)"
+	});
+
+	function getRealIpaddr()
+	{
+		var type = $("input#type").radio("getValue");
+		if(type == 1)
+		{
+			$("#ipaddr_hidden").val($("#ipaddr_trace").textbox("getValue"));
+		}
+		else
+		{
+			$("#ipaddr_hidden").val($("#ipaddr_ping").textbox("getValue"));
+		}
+		
+		
+	}
+	
+	function getRealIface()
+	{
+		var type = $("input#type").radio("getValue");
+		if(type == 1)
+		{
+			$("#iface_hidden").val($("#iface_trace").combobox("getValue"));
+		}
+		else
+		{
+			$("#iface_hidden").val($("#iface_ping").combobox("getValue"));
+		}
+		
+		
+	}
+
+
+	
+	function getResult(opt)
+	{
+		
+		if($("#adv_diag_just_for_timmmer")[0])
+		{
+			if(count != 0)
+			{
+				opt = "continue";
+			}
+			getRealIpaddr();
+			getRealIface();
+			$("input#type").radio("enableItem",[0,1]);
+			$("form#diag_setting").form('submit', {method:opt}, function(data){
+				
+				if(parseInt(data.finish, 10) == 1)
+				{
+					clearInterval(req_interval);
+					req_interval =  false;
+					count = 0;
+					$("button#start").button("setText", $.su.CHAR.DIAG.START);
+					//$("input#type").radio("enableItem",[0,1]);
+					//$("input#type").radio("enable");
+
+					stage = "stop";
+					var type = $("input#type").radio("getValue");
+					if(type == 0)
+					{
+						$("input#ipaddr_ping").textbox('enable');
+						$("input#iface_ping").combobox('enable');
+						if(!$("adv_btn").is(":visible"))
+						{
+							$("input#count").textbox('enable');
+							$("input#pkt").textbox('enable');
+						}
+					}
+					else
+					{
+						$("input#ipaddr_trace").textbox('enable');
+						$("input#iface_trace").combobox('enable');
+						if(!$("basic_btn").is(":visible"))
+						{
+							$("input#ttl").textbox('enable');
+						}
+		
+					}
+				}
+
+				
+			},null,null,false);
+			var type = $("input#type").radio("getValue");
+				if(type == 0)
+				{
+					$("input#ipaddr_ping").textbox('disable');
+					$("input#iface_ping").combobox('disable');
+					$("input#count").textbox('disable');
+					$("input#pkt").textbox('disable');
+				}
+				else
+				{
+					$("input#ipaddr_trace").textbox('disable');
+					$("input#iface_trace").combobox('disable');
+					$("input#ttl").textbox('disable');
+				}
+			//$("input#type").radio("disableItem",[0,1]);
+			
+			count++;
+		}
+	}
+
+
+	// $("button#start").button({
+	// 	text: $.su.CHAR.DIAG.START,	
+	// }).css("margin-left","200px");
+	$("button#start").button({
+	 	text: $.su.CHAR.DIAG.START,	
+	 	handler:function(){
+
+	 		if(!$("form#diag_setting").form("validate"))
+	 		{	 			
+	 			return false;
+	 		}
+	 		var val = $(this).find("span").html();
+	 		var opt = "start";
+			// var type = $("input#type").switchbutton("getValue");
+			var type = $("input#type").radio("getValue");
+			if(val == $.su.CHAR.DIAG.START)
+			{
+				$("button#start").button("setText", $.su.CHAR.DIAG.STOP);
+				// $(this).find("span").html($.su.CHAR.DIAG.STOP);
+				opt = "start";
+			}
+			else
+			{
+				$("input#type").radio("enableItem",[0,1]);
+				//$("input#type").radio("enable")
+				$("button#start").button("setText", $.su.CHAR.DIAG.START);
+				//$(this).find("span").html($.su.CHAR.DIAG.START);
+				opt = "stop";
+			}
+
+			if(opt == "stop")
+			{
+				stage = "stop";
+				getRealIpaddr();
+				getRealIface();
+				
+				$("input#type").radio("enableItem",[0,1]);
+				$("form#diag_setting").form('submit', {method:opt}, function(data){
+		
+				if(data.type=="0")
+				{
+					$("input#ipaddr_ping").textbox('enable');
+					$("input#iface_ping").combobox('enable');
+					if(!$("adv_btn").is(":visible"))
+					{
+						$("input#count").textbox('enable');
+						$("input#pkt").textbox('enable');
+					}
+				}
+				else
+				{
+					$("input#ipaddr_trace").textbox('enable');
+					$("input#iface_trace").combobox('enable');
+					if(!$("adv_btn").is(":visible"))
+					{
+						$("input#ttl").textbox('enable');
+					}
+					}
+
+				},null,null,false);
+				clearInterval(req_interval);
+				req_interval =  false;
+				count = 0;
+				$("button#start").button("setText", $.su.CHAR.DIAG.START);
+	
+				}
+			else
+			{
+				stage = "start";
+				$("input#type").radio("disableItem",[0,1]);
+				//$("input#type").radio("disable")				
+				req_interval = setInterval(function(){getResult(opt)}, 1000);
+			}
+			
+	 	},
+	 	// cls:"inline"
+	 })
+
+
+
+	// $("button#basic").button({
+	//  	text: $.su.CHAR.DIAG.ADVANCED,	
+	//  	cls:"inline"
+	//  })
+	
+	$("textarea#my_result").textarea({
+		fieldLabel: null,
+		inputCls:'dig xxxl fixed-height'
+	});
+	
+
+
+
+	//这里多个表格调用一个proxy，proxy需要单独定义！
+	$("form#diag_setting").form({
+		proxy: {url:DIAG_SET_URL_NEW, timeout:2000},
+		fields: [
+			{name: "type", mapping: "type"},
+			{name: "ipaddr", mapping: "ipaddr"},
+			{name: "ipaddr_ping", mapping: "ipaddr"},
+			{name: "ipaddr_trace", mapping: "ipaddr"},
+			{name: "iface_ping", mapping: "iface"},
+			{name: "iface_trace", mapping: "iface"},
+			{name: "count", mapping: "count"},
+			{name: "pktsize", mapping: "pktsize"},
+			// {name: "timeout", mapping: "timeout"},
+			{name: "ttl", mapping: "ttl"},
+			{name: "finish", mapping: "finish"},
+			{name: "my_result", mapping: "my_result"}
+		],
+		submitBtn: null
+	}).on("ev_validatechange", function(){
+	});
+	
+	var interfaceItem=[];
+    var interfaceProxy = new $.su.Proxy({
+        url: $.su.url('/admin/interface?form=status'),
+        async: false
+    });
+    interfaceProxy.read({}, function(data){
+        var i = 0;
+        for (i=0; i<data.normal.length; i++){
+            interfaceItem.push({name:data.normal[i].t_label,value:data.normal[i].t_name});                
+        }
+		for (i=0; i<data.vpn.length; i++){
+            interfaceItem.push({name:data.vpn[i].t_label,value:data.vpn[i].t_name});
+        }
+		var ifacePing = $("input#iface_ping");
+		var ifaceTrace = $("input#iface_trace");
+		ifacePing.combobox('loadData',interfaceItem);
+		ifaceTrace.combobox('loadData',interfaceItem);		           
+    });
+	
+
+	// });
+	// //console.log("before");
+	$("span.advanced-text").html($.su.CHAR.DIAG.ADVANCED);
+	// //console.log("after");
+	$("span.basic-text").html($.su.CHAR.DIAG.ADVANCED);
+	$("div#basic_btn").hide();
+
+	$("div#adv_btn").on('click',function(){
+		if(stage == "start")
+		{
+			return false;
+		}
+		var type = $("input#type").radio("getValue");
+		// //console.log(type);
+		if(type == "0")
+		{
+			$("div#pingCnt").fieldset("show");
+			$("div#traceCnt").fieldset("hide");
+		}
+		else
+		{
+			$("div#pingCnt").fieldset("hide");
+			$("div#traceCnt").fieldset("show");
+		}
+		// $('#pppoe-adv').slideDown();
+		$(this).hide();
+		$('#basic_btn').show();
+	});
+	$("div#basic_btn").on('click',function(){
+		// //console.log("basic_btn click");
+		if(stage == "start")
+		{
+			return false;
+		}
+		$("div#pingCnt").fieldset("hide");
+		$("div#traceCnt").fieldset("hide");
+		// $('#pppoe-adv').slideUp();
+		$(this).hide();
+		$('#adv_btn').show();
+	});
+
+	var helpDiagnostic = new $.su.Help({
+		container: "div#help_diagnostic",
+		content: ["DIGNOSTIC"]
+	});
+
+
+	 $.su.app.runningModule.addUnloadHandler(function(){
+	 	clearInterval(req_interval);
+	 });
+
+});
+</script>
+</body>
+
+</html>

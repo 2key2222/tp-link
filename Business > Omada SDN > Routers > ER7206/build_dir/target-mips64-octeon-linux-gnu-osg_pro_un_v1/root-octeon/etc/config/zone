@@ -1,0 +1,21 @@
+config zone 'LAN'
+	option if_eth 'lan'
+	option dev_eth 'agl0'
+
+config zone 'WAN1'
+	option if_eth 'wan1_eth'
+	option dev_eth 'eth0'
+
+config zone 'WAN2'
+	option if_eth 'wan2_eth'
+	option dev_eth 'eth1'
+	
+config zone 'WAN3'
+	option if_eth 'wan3_eth'
+	option dev_eth 'eth3'
+
+config zone 'WAN4'
+	option if_eth 'wan4_eth'
+	option dev_eth 'eth4'
+
+config zone 'VPN'

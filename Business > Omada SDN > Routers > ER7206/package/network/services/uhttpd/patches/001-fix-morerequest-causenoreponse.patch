@@ -1,0 +1,29 @@
+--- a/file.c	2014-12-31 09:20:15.000000000 +0800
++++ b/file.c	2015-09-25 10:50:08.551488249 +0800
+@@ -36,6 +36,7 @@
+ static LIST_HEAD(dispatch_handlers);
+ static LIST_HEAD(pending_requests);
+ static int n_requests;
++static int is_pending = 0;
+ 
+ struct deferred_request {
+ 	struct list_head list;
+@@ -680,6 +681,10 @@
+ 
+ 	n_requests++;
+ 	d->handle_request(cl, url, pi);
++	if (cl->state == CLIENT_STATE_DATA && is_pending) {
++        is_pending = 0;
++		client_poll_post_data(cl);
++	}
+ }
+ 
+ static void uh_complete_request(struct client *cl)
+@@ -696,6 +701,7 @@
+ 		list_del(&dr->list);
+ 
+ 		dr->called = true;
++		is_pending = 1;
+ 		uh_invoke_script(dr->cl, dr->d, dr->path ? &dr->pi : NULL);
+ 	}
+ }

@@ -1,0 +1,98 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>SYSTEM_ROUTETBL</title>
+</head>
+
+<body>
+<div class="func-container">
+	 <div id="systemRoute">
+	 	<div id="systemRouteGrid">
+	     		
+		</div>
+	 </div>
+
+	 <div id="advanced_routing_help"></div>
+</div>
+
+<script type="text/javascript">
+try{
+    $
+}catch(e){
+    location.href = "/";
+};
+
+$(document).ready(function(e){
+	var URL_SYSTEM = $.su.url("/admin/routing?form=system_routetbl"); 
+	$("#systemRoute").panel({
+        title: $.su.CHAR.MENU.SYSTEM_ROUTETBL
+    });
+
+	$("div#systemRouteGrid").grid({
+		store:{
+			proxy: {
+				url: URL_SYSTEM
+			},
+			fields: [
+				{name: "dest"},
+				{name: "mask"},
+				{name: "gateway"},
+				{name: "interface"},
+				{name: "metric"},
+				{name: "t_label"}
+			],
+			autoLoad: true
+		},
+		minLines: 0,
+		columns: [
+			{
+				text: $.su.CHAR.GRID.ID, 
+				xtype: "rownumberer",
+				width:40
+			},
+			{
+				text: $.su.CHAR.ROUTING.DESTINATION_NETWORK, 
+				width:200,
+				dataIndex: "dest"
+			},
+			{
+				text: $.su.CHAR.ROUTING.SUBNET_MASK, 
+				width:200,
+				dataIndex: "mask"
+			},
+			{
+				text: $.su.CHAR.ROUTING.GATEWAY, 
+				width:200,
+				dataIndex: "gateway"
+			},
+			{
+				text: $.su.CHAR.ROUTING.INTERFACE, 
+				width:200,
+				dataIndex: "interface",
+				renderer: function(dd, jindex, data) {
+					return data.t_label ? data.t_label : dd;
+				}
+			},
+			{
+				text: $.su.CHAR.ROUTING.METRIC, 
+				/*width:40,*/
+				dataIndex: "metric"
+			}
+		],
+		operation: [{
+			xtype: "totalCount",
+			cls: "left",
+			fieldLabel: $.su.CHAR.ROUTING.CLIENT_NUMBER
+		},"refresh"]
+	});
+
+	var helpAdvancedRouting = new $.su.Help({
+		container: "div#advanced_routing_help",
+		content: ["ADVANCED_ROUTING_SYSTEM_ROUTING_TABLE"]
+	});
+});
+</script>
+</body>
+
+</html>

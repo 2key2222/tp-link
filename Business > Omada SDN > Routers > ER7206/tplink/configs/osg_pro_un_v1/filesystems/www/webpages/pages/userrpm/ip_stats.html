@@ -1,0 +1,371 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>SYSTEM_ROUTETBL</title>
+</head>
+
+<body>
+<div class="func-container">
+
+    <div id="function_setting">
+        <form id="ipstat_setting">
+            <input id="status" name="status" value=""/>
+            <input type="text" id="ip" name="ip" value="" />
+            <span>/</span>
+            <input type="text" id="mask" name="mask" value="" />
+        </form>
+    </div>
+
+	 <div id="ipstat_list">
+	 	<div id="ipstat_list_grid">
+	     		
+		</div>
+        <div id="sort_remind"></div>
+	 </div>
+
+	 <div id="ip_stats_help"></div>
+</div>
+
+<script type="text/javascript">
+try{
+    $
+}catch(e){
+    location.href = "/";
+};
+
+$(document).ready(function(e){
+    var URL_STATS_SETTING = $.su.url("/admin/ipstats?form=setting");
+	var URL_STATS_LIST = $.su.url("/admin/ipstats?form=list");
+    var list_proxy = new $.su.Proxy({
+        url: URL_STATS_LIST,
+        /* async: false*/
+    });
+    $("#function_setting").panel({
+        title: $.su.CHAR.IP_STATS.TITLE_SETTING,
+        collapsible: false
+    });
+
+    var setting_proxy = new $.su.Proxy({
+        url: URL_STATS_SETTING,
+        /* async: false*/
+    });
+
+    $("input#status").checkbox({
+        /*fieldLabel: $.su.CHAR.SESSIONLIMIT.TITLE,*/
+        items: [
+            {boxlabel: $.su.CHAR.IP_STATS.SETTING_STATUS, inputValue: "on", uncheckedValue: "off"}
+        ]
+   });
+    
+    $("input#ip").textbox({
+		fieldLabel: $.su.CHAR.IP_STATS.SETTING_IP_MASK,
+		cls: 'inline part-seperate',
+		allowBlank: false,
+		textFormat: $.su.format.ip,
+		vtype: {
+			vtype: 'ip',
+			allowAllZeroFlag: true,
+		}
+	});
+	
+	$("input#mask").textbox({
+		fieldLabel: null,
+		cls: 'inline part-seperate',
+		allowBlank: false,
+        vtype: {
+            vtype: "netmask",
+            allowAllOneFlag: true,
+            allowAllZeroFlag: true
+        },
+        validator: function(v){
+            return true;
+        }
+	});  
+   
+   $("#ipstat_setting").form({
+        proxy: setting_proxy,
+        fields: [
+            {name: "status", mapping: "status"},
+            {name: "ip", mapping: "ip"},
+            {name: "mask", mapping: "mask"}
+        ],
+        submitBtn: "default"
+    });
+
+    $("#ipstat_list").panel({
+        title: $.su.CHAR.IP_STATS.TITLE_LIST,
+        collapsible: false
+    }); 
+
+    function filter(v){
+        if(parseInt(v) > 1024*1024*1024){
+            v = v * 1.0 / (1024*1024*1024);
+            return v.toFixed(1) + "G";
+        }
+        if(parseInt(v) > 1024*1024){
+            v = v * 1.0 / (1024*1024);
+            return v.toFixed(1) + "M";
+        }
+        return v;
+    }
+
+	var ip_grid = $("div#ipstat_list_grid").grid({
+		store:{
+			proxy: {
+				url: URL_STATS_LIST
+			},
+			fields: [
+				{name: "addr"},
+                {name: "tx_bps"},
+                {name: "rx_bps"},
+                {name: "tx_pps"},
+                {name: "rx_pps"},
+                {name: "tx_bytes"},
+				{name: "rx_bytes"},
+                {name: "tx_pkts"},
+				{name: "rx_pkts"}
+			],
+			autoLoad: true
+		},
+		minLines: 0,
+		columns: [
+			{
+				text: $.su.CHAR.GRID.ID, 
+				xtype: "rownumberer",
+				width:70,
+                hidden:true
+			},
+			{
+				text: $.su.CHAR.IP_STATS.ADDR, 
+				width:120,
+				dataIndex: "addr"
+			},
+            {
+				text: $.su.CHAR.IP_STATS.TX_BPS, 
+				width:90,
+				dataIndex: "tx_bps"
+			},
+            {
+				text: $.su.CHAR.IP_STATS.RX_BPS, 
+				width:90,
+				dataIndex: "rx_bps"
+			},
+            {
+				text: $.su.CHAR.IP_STATS.TX_PPS, 
+				width:110,
+				dataIndex: "tx_pps"
+			},
+            {
+				text: $.su.CHAR.IP_STATS.RX_PPS, 
+				width:110,
+				dataIndex: "rx_pps"
+			},
+            {
+				text: $.su.CHAR.IP_STATS.TX_BYTES, 
+				width:80,
+				dataIndex: "tx_bytes",
+                renderer: function(v){
+                    return filter(v);
+                }
+			},
+			{
+				text: $.su.CHAR.IP_STATS.RX_BYTES, 
+				width:80,
+				dataIndex: "rx_bytes",
+                renderer: function(v){
+                    return filter(v);
+                }
+			},
+            {
+				text: $.su.CHAR.IP_STATS.TX_PKTS, 
+				width:80,
+				dataIndex: "tx_pkts",
+                renderer: function(v){
+                    return filter(v);
+                }
+			},
+			{
+				text: $.su.CHAR.IP_STATS.RX_PKTS, 
+				width:80,
+				dataIndex: "rx_pkts",
+                renderer: function(v){
+                    return filter(v);
+                }
+			}
+		],
+		operation: [{
+			xtype: "totalCount",
+			cls: "left",
+			fieldLabel: $.su.CHAR.IP_STATS.ENTRY_NUM
+		},"clear","refresh","autoRefresh"],
+		autoRefresh: true
+	}).on("ev_clear", function(e, obj, action){
+        list_proxy.write({method:'clear'}, function(data){
+            ip_grid.grid("getStore").load();
+        });
+    });
+
+    var dataIndex = "tx_bps";
+    var order = "down";
+    function dataSort(x, y) {
+        if(order == "down"){
+            if(dataIndex == "addr"){
+                var xip = $.su.func.ipToInt(x[dataIndex]);
+                var yip = $.su.func.ipToInt(y[dataIndex]);
+                if (xip > yip) {
+                    return -1;
+                }else if (xip < yip) {
+                    return 1;
+                }
+            }else{
+                if (parseInt(x[dataIndex]) > parseInt(y[dataIndex])) {
+                    return -1;
+                }else if (parseInt(x[dataIndex]) < parseInt(y[dataIndex])) {
+                    return 1;
+                }
+            }
+        }else{
+            if(dataIndex == "addr"){
+                var xip = $.su.func.ipToInt(x[dataIndex]);
+                var yip = $.su.func.ipToInt(y[dataIndex]);
+                if (xip > yip) {
+                    return 1;
+                }else if (xip < yip) {
+                    return -1;
+                }
+            }else{
+                if (parseInt(x[dataIndex]) > parseInt(y[dataIndex])) {
+                    return 1;
+                }else if (parseInt(x[dataIndex]) < parseInt(y[dataIndex])) {
+                    return -1;
+                }
+            }
+        }
+    }
+
+    ip_grid.delegate("th.grid-header-1", "click", function(e){
+        var store = ip_grid.grid("getStore");
+        var data = store.data;
+        dataIndex = "addr";
+        store.loadData(data.sort(dataSort));
+        if(order == "down"){
+            order = "up";
+        }else{
+            order = "down";
+        }
+    });
+
+    ip_grid.delegate("th.grid-header-2", "click", function(e){
+        var store = ip_grid.grid("getStore");
+        var data = store.data;
+        dataIndex = "tx_bps";
+        store.loadData(data.sort(dataSort));
+        if(order == "down"){
+            order = "up";
+        }else{
+            order = "down";
+        }
+    });
+
+    ip_grid.delegate("th.grid-header-3", "click", function(e){
+        var store = ip_grid.grid("getStore");
+        var data = store.data;
+        dataIndex = "rx_bps";
+        store.loadData(data.sort(dataSort));
+        if(order == "down"){
+            order = "up";
+        }else{
+            order = "down";
+        }
+    });
+    ip_grid.delegate("th.grid-header-4", "click", function(e){
+        var store = ip_grid.grid("getStore");
+        var data = store.data;
+        dataIndex = "tx_pps";
+        store.loadData(data.sort(dataSort));
+        if(order == "down"){
+            order = "up";
+        }else{
+            order = "down";
+        }
+    });
+    ip_grid.delegate("th.grid-header-5", "click", function(e){
+        var store = ip_grid.grid("getStore");
+        var data = store.data;
+        dataIndex = "rx_pps";
+        store.loadData(data.sort(dataSort));
+        if(order == "down"){
+            order = "up";
+        }else{
+            order = "down";
+        }
+    });
+
+    ip_grid.delegate("th.grid-header-6", "click", function(e){
+        var store = ip_grid.grid("getStore");
+        var data = store.data;
+        dataIndex = "tx_bytes";
+        store.loadData(data.sort(dataSort));
+        if(order == "down"){
+            order = "up";
+        }else{
+            order = "down";
+        }
+    });
+    ip_grid.delegate("th.grid-header-7", "click", function(e){
+        var store = ip_grid.grid("getStore");
+        var data = store.data;
+        dataIndex = "rx_bytes";
+        store.loadData(data.sort(dataSort));
+        if(order == "down"){
+            order = "up";
+        }else{
+            order = "down";
+        }
+    });
+
+    ip_grid.delegate("th.grid-header-8", "click", function(e){
+        var store = ip_grid.grid("getStore");
+        var data = store.data;
+        dataIndex = "tx_pkts";
+        store.loadData(data.sort(dataSort));
+        if(order == "down"){
+            order = "up";
+        }else{
+            order = "down";
+        }
+    });
+    ip_grid.delegate("th.grid-header-9", "click", function(e){
+        var store = ip_grid.grid("getStore");
+        var data = store.data;
+        dataIndex = "rx_pkts";
+        store.loadData(data.sort(dataSort));
+        if(order == "down"){
+            order = "up";
+        }else{
+            order = "down";
+        }
+    });
+
+
+    $("th").css({
+        "color": "#005564",
+        "cursor": "pointer"
+    });
+
+    $("#sort_remind").text($.su.CHAR.IFSTAT.TIPS);//"如需要按指定内容排序，请点击表头切换排序方式");
+    $(".grid-panel").css("marginBottom","40px");
+
+
+
+
+	var ip_stats_help = new $.su.Help({
+		container: "div#ip_stats_help",
+		content: ["IP_STATS_SETTING", "IP_STATS_LIST"]
+	});
+});
+</script>
+</body>
+
+</html>

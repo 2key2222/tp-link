@@ -1,0 +1,160 @@
+#!/bin/sh /etc/rc.common
+
+ROUTE_NUM=30
+
+ERROR_RET="RTNETLINK answers: No such process"
+EXIST_RET="RTNETLINK answers: File exists"
+
+ERROR_NUM=-1
+
+CONFIG_NAME="static_route"
+
+#$1: [ key target netmask gateway metric interface ]
+#$2: op [ add | del ]
+handle_static_route()
+{
+	local target netmask gateway metric interface
+
+	[ -n "$1" ] || return 0
+
+	key=`echo "$1" |cut -d "," -f 1`
+	target=`echo "$1" |cut -d "," -f 2`
+	netmask=`echo "$1" |cut -d "," -f 3`
+	gateway=`echo "$1" |cut -d "," -f 4`
+	metric=`echo "$1" |cut -d "," -f 5`
+	interface=`echo "$1" |cut -d "," -f 6`
+	
+	if [ $gateway == "NA" ]; then
+		if [ $interface == "NA" ]; then
+			return 0
+		fi
+		dev=`zone_get_effect_devices $interface`
+		[ -n "$dev" ] || return 0
+		ret=`snete dev $dev ip route $2 $target/$netmask dev $dev metric $metric table $ROUTE_NUM 2>&1`
+		search=$(snete -f dev $dev)
+		if [ $search == "vnet" ]; then
+			config_load vnetwork
+			config_get ipaddr "vwan" ipaddr ''
+			ret=`dnete ip route $2 $target/$netmask via $ipaddr table $ROUTE_NUM 2>&1`
+		elif [ $search == "dnet" ]; then
+			config_load vnetwork
+			config_get ippeer "vwan" ippeer ''
+			ret=`vnete ip route $2 $target/$netmask via $ippeer table $ROUTE_NUM 2>&1`
+		fi
+	else
+		if [ $interface == "NA" ]; then
+			ret=`vnete ip route $2 $target/$netmask via $gateway metric $metric table $ROUTE_NUM 2>&1`
+			if [ -n "$ret" ]; then
+				ret=`dnete ip route $2 $target/$netmask via $gateway metric $metric table $ROUTE_NUM 2>&1`
+				config_load vnetwork
+				config_get ippeer "vwan" ippeer ''
+				ret=`vnete ip route $2 $target/$netmask via $ippeer table $ROUTE_NUM 2>&1`
+			else
+				config_load vnetwork
+				config_get ipaddr "vwan" ipaddr ''
+				ret=`dnete ip route $2 $target/$netmask via $ipaddr table $ROUTE_NUM 2>&1`
+			fi
+		else
+			dev=`zone_get_effect_devices $interface`
+			[ -n "$dev" ] || return 0
+			ret=`snete dev $dev ip route $2 $target/$netmask via $gateway dev $dev metric $metric table $ROUTE_NUM 2>&1`
+			search=$(snete -f dev $dev)
+			if [ $search == "vnet" ]; then
+				config_load vnetwork
+				config_get ipaddr "vwan" ipaddr ''
+				ret=`dnete ip route $2 $target/$netmask via $ipaddr table $ROUTE_NUM 2>&1`
+			elif [ $search == "dnet" ]; then
+				config_load vnetwork
+				config_get ippeer "vwan" ippeer ''
+				ret=`vnete ip route $2 $target/$netmask via $ippeer table $ROUTE_NUM 2>&1`
+			fi
+		fi
+	fi
+
+	if [ "$2" == "append" ]; then
+		if [ -z "$ret" ] || $(echo -n "$ret" | grep -q "$EXIST_RET") ;then
+			add_lan=1
+			route_set_state $key "on"
+			return 0
+		else
+			route_set_state $key "off"
+			return $ERROR_NUM
+		fi
+	else
+		route_del_state $key 
+	fi
+}
+
+#$1: [ key target netmask gateway metric interface ]
+add_static_route()
+{
+	local add_lan=0
+
+	. /lib/zone/zone_api.sh
+	. /lib/route/route_api.sh
+
+	handle_static_route "$1" "append"
+
+	#add ip rule
+	ret=`dnete ip rule list |grep $ROUTE_NUM:`
+	if [ -z "$ret" ]; then
+		dnete ip rule add pref $ROUTE_NUM table $ROUTE_NUM
+
+		#add lan interface default route rule
+		[ $add_lan -eq 1 ] && add_lan_default_route
+	fi
+
+	ret=`vnete ip rule list |grep $ROUTE_NUM:`
+	if [ -z "$ret" ]; then
+		vnete ip rule add pref $ROUTE_NUM table $ROUTE_NUM
+
+		#add lan interface default route rule
+		[ $add_lan -eq 1 ] && add_lan_default_route
+	fi
+}
+
+calc_static_route()
+{
+	config_get enable $1 enable
+
+	if [ "$enable" -eq 1 ];then
+		let rule_num++
+	fi
+}
+
+#$1: [ key target netmask gateway metric interface ]
+del_static_route()
+{
+	local rule_num=0
+
+	. /lib/functions.sh
+	. /lib/zone/zone_api.sh
+	. /lib/route/route_api.sh
+
+	handle_static_route "$1" "del"
+
+	config_load $CONFIG_NAME
+	config_foreach calc_static_route route
+
+	[ $rule_num -eq 0 ] && anete ip route flush table $ROUTE_NUM  &> /dev/null
+
+	#del ip rule if not route info
+	ret=`dnete ip route list table $ROUTE_NUM`
+	if [ -z "$ret" ]; then
+		dnete ip rule del pref $ROUTE_NUM table $ROUTE_NUM
+	fi
+
+	ret=`vnete ip route list table $ROUTE_NUM`
+	if [ -z "$ret" ]; then
+		vnete ip rule del pref $ROUTE_NUM table $ROUTE_NUM
+	fi
+}
+
+#$1: old: [ key target netmask gateway metric interface ]
+#$2: new: [ key target netmask gateway metric interface ]
+update_static_route()
+{
+	del_static_route "$1"
+	add_static_route "$2"
+}
+

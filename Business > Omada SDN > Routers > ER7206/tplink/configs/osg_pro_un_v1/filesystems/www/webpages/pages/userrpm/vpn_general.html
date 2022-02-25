@@ -1,0 +1,91 @@
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>General</title>
+</head>
+
+<body>
+
+
+<div class="func-container">
+	
+
+	<div id="settings">
+	 	<form  id="general-setting">
+	 		
+				<input id="netbios_passthrough" name="netbios_passthrough" type="text" />
+
+				<input id="vpn_to_internet" name="vpn_to_internet" type="text" />
+				
+
+
+	    </form>
+	    
+	 </div>
+
+	<div id="vpn_general_help"></div>
+</div>
+
+<script type="text/javascript">
+
+var VPN_GENERAL_URL = $.su.url("/admin/vpn_general?form=setting");
+
+$(document).ready(function(e){
+
+
+$("#netbios_passthrough").checkbox({
+		fieldLabel: $.su.CHAR.VPN_GENERAL.NETBIOS_PASSTHROUGH,
+		labelCls: 'm',
+		tips:"",
+		items: [
+			{boxlabel: $.su.CHAR.VPN_GENERAL.ENABLE, inputValue: "on", uncheckedValue: "off"}
+		]
+	});
+
+	$("#vpn_to_internet").checkbox({
+		fieldLabel: $.su.CHAR.VPN_GENERAL.VPN_TO_INTERNET,
+		labelCls: 'm',
+		tips:"",
+		items: [
+			{boxlabel: $.su.CHAR.VPN_GENERAL.ENABLE, inputValue: "on", uncheckedValue: "off"}
+		]
+	});
+
+	var Proxy = new $.su.Proxy({
+		url: VPN_GENERAL_URL,
+		autoLoad:false
+	});
+
+
+	var form = $("form#general-setting").form({
+		proxy: Proxy,
+		fields: [
+			{name: "netbios_passthrough", mapping: "netbios_passthrough"},
+			{name: "vpn_to_internet", mapping: "vpn_to_internet"},
+			
+		],
+		autoLoad:true,
+		showPrompt: false,
+		callback:function(e,result){
+			
+		},
+		submitBtn: "default"
+	}).on("ev_beforeLoadData", function(e, data){
+		
+
+	}).on("ev_loadData", function(e, localData){
+		    
+     });
+
+
+
+
+});
+
+
+
+
+</script>
+</body>
+</html>

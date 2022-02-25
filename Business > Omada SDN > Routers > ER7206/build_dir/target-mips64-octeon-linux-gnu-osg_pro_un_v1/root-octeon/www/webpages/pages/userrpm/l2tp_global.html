@@ -1,0 +1,103 @@
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>General</title>
+</head>
+
+<body>
+
+
+<div class="func-container">
+	
+
+	<div id="func-setting">
+        <form id="l2tp-func-settings">
+            <input id="hello-interval" name="l2tphellointerval" value=""/>
+            <input id="ehco-interval" name="lcpechointerval" value=""/>
+            <input id="netbios_passthrough" name="netbios_passthrough" value=""/>
+            <input id="vpn_to_internet" name="vpn_to_internet" value=""/>
+        </form>
+    </div>
+
+	<div id="vpn_general_help"></div>
+</div>
+
+<script type="text/javascript">
+
+var URL_L2TP_SERVER_GLOBAL = $.su.url("/admin/l2tp?form=global");
+
+$(document).ready(function(e){
+
+
+	$("#func-setting").panel({
+        title: $.su.CHAR.L2TP_SERVER.PANEL_GLOBAL,
+        collapsible: false
+    });
+
+
+$("#ehco-interval").textbox({
+        fieldLabel: $.su.CHAR.L2TP_SERVER.HELLO_INTERVAL,
+        allowBlank: false,
+        tips: $.su.CHAR.L2TP_SERVER.HELLO_INTERVAL_TIPS,
+        validator: function(v){
+            return (new $.su.vtype({vtype: "number", min: 0, max: 120}).validate(v));
+        }
+    });
+    $("#hello-interval").textbox({
+        fieldLabel: $.su.CHAR.L2TP_SERVER.ECHO_INTERVAL,
+        allowBlank: false,
+        tips: $.su.CHAR.L2TP_SERVER.ECHO_INTERVAL_TIPS,
+        validator: function(v){
+            return (new $.su.vtype({vtype: "number", min: 60, max: 1000}).validate(v));
+        }
+    });
+
+     $("#netbios_passthrough").checkbox({
+        fieldLabel: $.su.CHAR.VPN_GENERAL.NETBIOS_PASSTHROUGH,
+        labelCls: 'm',
+        tips:"",
+        items: [
+            {boxlabel: $.su.CHAR.VPN_GENERAL.ENABLE, inputValue: "on", uncheckedValue: "off"}
+        ]
+    });
+
+    $("#vpn_to_internet").checkbox({
+        fieldLabel: $.su.CHAR.VPN_GENERAL.VPN_TO_INTERNET,
+        labelCls: 'm',
+        tips:"",
+        items: [
+            {boxlabel: $.su.CHAR.VPN_GENERAL.ENABLE, inputValue: "on", uncheckedValue: "off"}
+        ]
+    });
+
+    $("#vpn_to_internet").checkbox("hide");
+
+    $("#l2tp-func-settings").form({
+        proxy: new $.su.Proxy({
+            url: URL_L2TP_SERVER_GLOBAL
+        }),
+        fields: [
+            {name: "lcpechointerval", mapping: "lcpechointerval"},
+            {name: "l2tphellointerval", mapping: "l2tphellointerval"},
+            {name: "netbios_passthrough",mapping: "netbios_passthrough"},
+            {name: "vpn_to_internet", mapping: "vpn_to_internet"}
+        ],
+        submitBtn: "default"
+    });
+
+    var helpL2tpGeneral = new $.su.Help({
+        container: "div#vpn_general_help",
+        content: ["L2TP_GLOBAL"]
+    }); /* TODO */
+
+
+
+});
+
+
+
+
+</script>
+</body>
+</html>

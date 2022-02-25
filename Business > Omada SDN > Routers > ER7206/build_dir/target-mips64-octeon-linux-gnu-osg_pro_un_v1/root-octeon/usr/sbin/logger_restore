@@ -1,0 +1,6 @@
+#!/bin/sh
+
+kill -USR1 $(cat /var/run/loggerd.pid)
+if [ $? -ne 0 ]; then
+    mtd erase log
+fi

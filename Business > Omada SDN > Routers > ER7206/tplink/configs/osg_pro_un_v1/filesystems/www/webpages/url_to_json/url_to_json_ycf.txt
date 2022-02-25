@@ -1,0 +1,326 @@
+/cgi-bin/luci/;stok=12345/admin/wireless?form=region wireless.region.json
+/cgi-bin/luci/;stok=12345/admin/wireless?form=wireless_2g wireless.24g.json
+/cgi-bin/luci/;stok=12345/admin/wireless?form=wireless_5g wireless.5g.json
+/cgi-bin/luci/;stok=12345/admin/wireless?form=wireless_2g&form=wireless_5g wireless.2g.5g.json
+/cgi-bin/luci/;stok=12345/admin/wireless?form=wps_pin wps.pin.json
+/cgi-bin/luci/;stok=12345/admin/wireless?form=wps_connect wps.query.json
+/cgi-bin/luci/;stok=12345/admin/wireless?form=maclist macFiltering.json
+/cgi-bin/luci/;stok=12345/admin/wireless?form=macfilter macFiltering.rule.json
+/cgi-bin/luci/;stok=12345/admin/wireless?form=devlist macFiltering.result.json
+/cgi-bin/luci/;stok=12345/admin/wireless?form=statistics wireless.statistics.json
+/cgi-bin/luci/;stok=12345/admin/wireless?form=guest guestSettings.json
+/cgi-bin/luci/;stok=12345/admin/wireless?form=guest_2g guestSettings.2g.json
+/cgi-bin/luci/;stok=12345/admin/wireless?form=guest_5g guestSettings.5g.json
+/cgi-bin/luci/;stok=12345/admin/disk_setting?form=metadata disk.query.json
+/cgi-bin/luci/;stok=12345/admin/disk_setting?form=remove disk.remove.json
+/cgi-bin/luci/;stok=12345/admin/disk_setting?form=scan disk.scan.json
+/cgi-bin/luci/;stok=12345/admin/disk_setting?form=contents&serial=123456789 disk.list.json
+/cgi-bin/luci/;stok=12345/admin/disk_setting?form=contents&serial=123456780 disk.list2.json
+/cgi-bin/luci/;stok=12345/admin/disk_setting?form=contents&serial=123456781 disk.list2.json
+
+/cgi-bin/luci/;stok=12345/admin/folder_sharing?form=account   usb.acc.json
+/cgi-bin/luci/;stok=12345/admin/folder_sharing?form=volumn   usb.volumn.json
+/cgi-bin/luci/;stok=12345/admin/folder_sharing?form=tree   usb.tree.json
+/cgi-bin/luci/;stok=12345/admin/folder_sharing?form=settings   usb.setGrid.json
+/cgi-bin/luci/;stok=12345/admin/folder_sharing?form=server   usb.folder.json
+/cgi-bin/luci/;stok=12345/admin/folder_sharing?form=auth   usb.auth.json
+/cgi-bin/luci/;stok=12345/admin/folder_sharing?form=mode   usb.shareAll.json
+/cgi-bin/luci/;stok=12345/admin/folder_sharing?form=all   usb.shareAllGrid.json
+/cgi-bin/luci/;stok=12345/admin/folder_sharing?form=partial   usb.folderGrid.json
+/cgi-bin/luci/;stok=12345/admin/folder_sharing?form=guest   usb.guest.json
+/cgi-bin/luci/;stok=12345/admin/folder_sharing?form=media   usb.media.json
+
+/cgi-bin/luci/;stok=12345/admin/print_server usb.print.json
+
+/cgi-bin/luci/;stok=12345/admin/qos?form=enable qos.status.json
+/cgi-bin/luci/;stok=12345/admin/qos?form=settings qos.set.json
+/cgi-bin/luci/;stok=12345/admin/qos?form=add qos.add.json
+
+/cgi-bin/luci/;stok=12345/admin/qos?form=list qos.rule.json
+/cgi-bin/luci/;stok=12345/admin/qos?form=applist qos.applist.json
+/cgi-bin/luci/;stok=12345/admin/qos?form=upgrade qos.upgrade.json
+
+/cgi-bin/luci/;stok=12345/admin/iptv?form=setting iptv.settings.json
+
+
+
+/cgi-bin/luci/;stok=12345/admin/wireless?form=syspara_2g syspara.w24g.json
+/cgi-bin/luci/;stok=12345/admin/wireless?form=syspara_5g syspara.w5g.json
+/cgi-bin/luci/;stok=12345/admin/wireless?form=survey_2g sys.survey2g.json
+/cgi-bin/luci/;stok=12345/admin/wireless?form=survey_5g sys.survey5g.json
+/cgi-bin/luci/;stok=12345/admin/wireless?form=syspara_wps syspara.wps.json
+/cgi-bin/luci/;stok=12345/admin/wireless?form=wds_2g sys.wds2g.json
+/cgi-bin/luci/;stok=12345/admin/wireless?form=wds_5g sys.wds5g.json
+
+/cgi-bin/luci/;stok=12345/admin/syslog?form=log log.grid.json
+/cgi-bin/luci/;stok=12345/admin/syslog?form=mail syslog.mail.json
+/cgi-bin/luci/;stok=12345/admin/syslog?form=filter syslog.filter.json
+/cgi-bin/luci/;stok=12345/admin/syslog?form=types syslog.types.json
+
+/cgi-bin/luci/;stok=12345/admin/time?form=settings time.set.json
+/cgi-bin/luci/;stok=12345/admin/time?form=dst time.dst.json
+
+/cgi-bin/luci/;stok=12345/admin/diag?form=diag diag.set.json
+
+/cgi-bin/luci/;stok=12345/admin/traffic?form=status   statistic.set.json
+/cgi-bin/luci/;stok=12345/admin/traffic?form=lists   statistic.grid.json
+
+/cgi-bin/luci/;stok=12345/admin/security_settings?form=dos_setting   syspara.level.json
+
+
+/cgi-bin/luci/;stok=12345/admin/administration?form=testmail account.testmail.json
+/cgi-bin/luci/;stok=12345/admin/administration?form=mode   account.set.json
+/cgi-bin/luci/;stok=12345/admin/administration?form=local   account.grid.json
+/cgi-bin/luci/;stok=12345/admin/administration?form=view   macFiltering.result.json
+/cgi-bin/luci/;stok=12345/admin/administration?form=remote   account.remote.json
+/cgi-bin/luci/;stok=12345/admin/administration?form=recovery	account.recover.json
+/cgi-bin/luci/;stok=12345/admin/administration?form=account	  account.pwd.json
+
+
+/cgi-bin/luci/;stok=12345/admin/firmware?form=upgrade firmware.set.json
+/cgi-bin/luci/;stok=12345/admin/cloud_account?form=detect_upgrade_status cloud.upgrade.status.json
+/cgi-bin/luci/;stok=12345/admin/cloud_account?form=check_support cloud.support.json
+/cgi-bin/luci/;stok=12345/admin/firmware?form=config   system.backup.json
+/cgi-bin/luci/;stok=/forget_password?form=password login.json
+/cgi-bin/luci/;stok=/forget_password?form=vercode login.json
+
+/cgi-bin/luci/;stok=12345/admin/ledgeneral?form=setting led.json
+/cgi-bin/luci/;stok=12345/admin/syslog?form=mode syslog.mode_debug.json
+/cgi-bin/luci/;stok=12345/admin/route?form=config advanceRouting.staticRoute.json
+/cgi-bin/luci/;stok=12345/admin/openvpn?form=openvpn_cert openvpn.cert.json
+/cgi-bin/luci/;stok=12345/admin/openvpn?form=config openvpn.config.json
+/cgi-bin/luci/;stok=12345/admin/pptpd?form=accounts pptpvpn.account.json
+/cgi-bin/luci/;stok=12345/admin/pptpd?form=config pptpvpn.config.json
+/cgi-bin/luci/;stok=12345/admin/vpnconn?form=config vpn.connections.json
+
+/cgi-bin/luci/;stok=12345/locale?form=country locale.country.json
+/cgi-bin/luci/;stok=12345/admin/locale?form=country locale.country.json
+/cgi-bin/luci/;stok=12345/admin/access_control?form=guest_network access.enable.json
+/cgi-bin/luci/;stok=12345/admin/traffic?form=dev_name statistic.device.json
+/cgi-bin/luci/;stok=12345/admin/status?form=router lan.status.json
+/cgi-bin/luci/;stok=12345/admin/diag?form=port_mirror port.enable.json
+/cgi-bin/luci/;stok=12345/admin/traffic?form=data statistic.traffic.json
+/cgi-bin/luci/;stok=12345/admin/traffic?form=dev_name statistic.device.json
+/cgi-bin/luci/;stok=12345/admin/time?form=hour24 time.24.json
+
+/cgi-bin/luci/;stok=12345/admin/feedback?form=info feedback.deviceinfo.json
+/cgi-bin/luci/;stok=12345/admin/feedback?form=content feedback.content.json
+
+/cgi-bin/luci/;stok=12345/admin/feedback?form=content feedback.content.json
+
+/cgi-bin/luci/;stok=12345/admin/auth?form=portal-logo logo.upload.json
+/cgi-bin/luci/;stok=12345/admin/auth?form=portal-background background.upload.json
+
+/cgi-bin/luci/;stok=12345/admin/wireless?form=syspara_5g  wireless.5g.json
+
+/cgi-bin/luci/;stok=12345/admin/cloud_account?form=check_device check.device.json
+/cgi-bin/luci/;stok=12345/admin/cloud_account?form=user_login quicksetup.cloud_login.json
+/cgi-bin/luci/;stok=12345/admin/cloud_account?form=cloud_upgrade account.cloud.upgrade.json
+/cgi-bin/luci/;stok=12345/admin/cloud_account?form=get_token device.token.json
+/cgi-bin/luci/;stok=/login?form=get_token device.token.json
+/cgi-bin/luci/;stok=12345/admin/cloud_account?form=get_deviceInfo device.info.json
+/cgi-bin/luci/;stok=/login?form=get_deviceInfo device.info.json
+/cgi-bin/luci/;stok=12345/admin/cloud_account?form=check_login account.check.login.json
+/cgi-bin/luci/;stok=12345/admin/cloud_account?form=check_internet account.check.internet.json
+/cgi-bin/luci/;stok=12345/admin/ddns?form=tplink ddns.check.login.json
+/cgi-bin/luci/;stok=12345/admin/system?form=logout sys.logout.json
+
+/cgi-bin/luci/;stok=/login?form=initial_login login.initial.json
+/cgi-bin/luci/;stok=/login?form=check_factory_default login.first_log.json
+/cgi-bin/luci/;stok=/login?form=cloud_login login.cloud_login.json
+
+/cgi-bin/luci/;stok=12345/admin/wireless?form=portal_content protal.save.config.json
+/cgi-bin/luci/;stok=12345/admin/wireless?form=wifidog  protal.logo.image.json
+
+/cgi-bin/luci/;stok=12345/admin/interface_wan?form=wanmode wan_mode.json
+/cgi-bin/luci/;stok=12345/admin/wizard?form=routeInfo routeInfo.json
+
+/cgi-bin/luci/;stok=/userconfig?form=cfg_save cfg_save.json
+/cgi-bin/luci/;stok=12345/admin/system?form=getproduct  getproduct.json
+/cgi-bin/luci/;stok=12345/admin/ac_apdb?form=chlist chlist.json
+/cgi-bin/luci/;stok=12345/userconfig?form=cfg_save cfg_save.userconfig.json
+/cgi-bin/luci/;stok=12345/ap_upgrade_status?form=status_get status_get.json
+/cgi-bin/luci/;stok=12345/apmngr_status?form=status    status.json
+/cgi-bin/luci/;stok=12345/admin/sys_status?form=cpu_log cpu_log.json
+/cgi-bin/luci/;stok=12345/admin/sys_status?form=cpu_usage  cpu_usage.json
+/cgi-bin/luci/;stok=12345/admin/sys_status?form=mem_usage  mem_usage.json
+/cgi-bin/luci/;stok=12345/admin/interface?form=quickshow  quickshow.json
+/cgi-bin/luci/;stok=12345/admin/sys_status?form=cpu_num cpu_num.json
+
+/cgi-bin/luci/;stok=12345/admin/ipstats?form=setting ipstats_setting.json
+/cgi-bin/luci/;stok=12345/admin/ipstats?form=list ipstats_list.json
+/cgi-bin/luci/;stok=12345/admin/time_mngt?form=timeobj_list timeobj_list.json
+/cgi-bin/luci/;stok=12345/admin/interface_wan?form=wanconfig wanconfig.json
+/cgi-bin/luci/;stok=12345/admin/interface_wan?form=proto proto.json
+/cgi-bin/luci/;stok=12345/admin/interface_wan?form=status if_wan.status.json
+/cgi-bin/luci/;stok=12345/admin/dhcps?form=lan lan.json
+/cgi-bin/luci/;stok=12345/admin/mac_setting?form=macconfig macconfig.json
+/cgi-bin/luci/;stok=12345/admin/ipv6?form=lan_ipv6 ipv6.lan.json
+/cgi-bin/luci/;stok=12345/admin/ipv6?form=wan_ipv6_protos ipv6.proto.json
+/cgi-bin/luci/;stok=12345/admin/ipv6?form=wan_ipv6_status ipv6.status.json
+/cgi-bin/luci/;stok=12345/admin/ipv6?form=wanv6_status_info ipv6.wanv6_info.json
+
+/cgi-bin/luci/;stok=12345/admin/ipgroup?form=ipgroup_reservation ipgroup_reservation.json
+/cgi-bin/luci/;stok=12345/admin/ipgroup?form=ipscope_list ipscope_list.json
+/cgi-bin/luci/;stok=12345/admin/ipgroup?form=ipscope_reservation ipscope_reservation.json
+/cgi-bin/luci/;stok=12345/admin/time_mngt?form=timeobj timeobj.json
+/cgi-bin/luci/;stok=12345/admin/ippool?form=pool_list ippool.list.json
+/cgi-bin/luci/;stok=12345/admin/service?form=service service.json
+/cgi-bin/luci/;stok=12345/admin/nat?form=napt napt.json
+/cgi-bin/luci/;stok=12345/admin/nat?form=one_nat one_nat.json
+
+/cgi-bin/luci/;stok=12345/admin/qos?form=global qos.global.json
+/cgi-bin/luci/;stok=12345/admin/ipgroup?form=ipgroup_list qos.iplist.json
+/cgi-bin/luci/;stok=12345/admin/qos?form=rule qos.rule.json
+/cgi-bin/luci/;stok=12345/admin/session_limits?form=status sesslimits.status.json
+/cgi-bin/luci/;stok=12345/admin/session_limits?form=rule_list sesslimits.list.json
+/cgi-bin/luci/;stok=12345/admin/balance?form=line_backup link.backup.json
+/cgi-bin/luci/;stok=12345/admin/policy_route?form=policy_route policy_route.json
+/cgi-bin/luci/;stok=12345/admin/routing?form=static_routing static_route.json
+
+/cgi-bin/luci/;stok=12345/admin/imb?form=get_ipaddr imb.getip.json
+/cgi-bin/luci/;stok=12345/admin/imb?form=enable imb.enable.json
+/cgi-bin/luci/;stok=12345/admin/arp_defense?form=arp_scan arp_scan.json
+/cgi-bin/luci/;stok=12345/admin/arp_defense?form=arp_scan_result arp_scan_result.json
+/cgi-bin/luci/;stok=12345/admin/mac_filter?form=mode macfilter.mode.json
+/cgi-bin/luci/;stok=12345/admin/mac_filter?form=mac_list macfilter.list.json
+/cgi-bin/luci/;stok=12345/admin/access_ctl?form=acl_inner access_ctl.json
+
+/cgi-bin/luci/;stok=12345/admin/appdist?form=global_appdist global_appdist.json
+/cgi-bin/luci/;stok=12345/admin/appdist?form=rule_appdist rule_appdist.json
+/cgi-bin/luci/;stok=12345/admin/webfilter?form=webfilter_global webfilter_global.json
+/cgi-bin/luci/;stok=12345/admin/webfilter?form=webfilter_list webfilter_list.json
+/cgi-bin/luci/;stok=12345/admin/url_filter?form=enable urlfilter.enable.json
+/cgi-bin/luci/;stok=12345/admin/url_filter?form=url_list urlfilter.list.json
+/cgi-bin/luci/;stok=12345/admin/web_security?form=global_enable websec.enable.json
+/cgi-bin/luci/;stok=12345/admin/web_security?form=rule_list websec.list.json
+
+/cgi-bin/luci/;stok=12345/admin/ipsec?form=conn ipsec.conn.json
+/cgi-bin/luci/;stok=12345/admin/l2tp?form=server l2tp.server.json
+/cgi-bin/luci/;stok=12345/admin/l2tp?form=client l2tp.client.json
+/cgi-bin/luci/;stok=12345/admin/online?form=interface online.iface.json
+/cgi-bin/luci/;stok=12345/admin/l2tp?form=global l2tp.global.json
+/cgi-bin/luci/;stok=12345/admin/pptp_server?form=server_enable pptp.server.json
+/cgi-bin/luci/;stok=12345/admin/pptp_client?form=client_list pptp.client.json
+/cgi-bin/luci/;stok=12345/admin/pptp_global?form=global pptp.global.json
+/cgi-bin/luci/;stok=12345/admin/pppox?form=usermanager usermanager.json
+
+/cgi-bin/luci/;stok=12345/admin/balance?form=interface balance.interface.json
+/cgi-bin/luci/;stok=12345/admin/balance?form=balance_basic balance_basic.json
+/cgi-bin/luci/;stok=12345/admin/balance?form=balance_global balance_global.json
+/cgi-bin/luci/;stok=12345/admin/online?form=online online.json
+/cgi-bin/luci/;stok=12345/admin/online?form=state online.status.json
+/cgi-bin/luci/;stok=12345/admin/routing?form=system_routetbl system_routetbl.json
+
+/cgi-bin/luci/;stok=12345/admin/arplist?form=getzone getzone.json
+/cgi-bin/luci/;stok=12345/admin/arplist?form=getlist getlist.json
+/cgi-bin/luci/;stok=12345/admin/dos_defense?form=logenable logenable.json
+/cgi-bin/luci/;stok=12345/admin/dos_defense?form=settings dos.setting.json
+/cgi-bin/luci/;stok=12345/admin/flood_defense?form=settings flood.setting.json
+
+/cgi-bin/luci/;stok=12345/admin/websort?form=websort_list websort_list.json
+/cgi-bin/luci/;stok=12345/admin/appdist_db?form=input_database input_database.json
+
+/cgi-bin/luci/;stok=12345/admin/l2tp?form=global4server global4server.json
+/cgi-bin/luci/;stok=12345/admin/l2tp?form=global4client global4client.json
+
+/cgi-bin/luci/;stok=12345/admin/wportal?form=wportal wportal.json
+/cgi-bin/luci/;stok=12345/admin/freeStrategy?form=strategy_list freeStrategy.json
+/cgi-bin/luci/;stok=12345/admin/usermngr?form=usermngr usermngr.json
+/cgi-bin/luci/;stok=12345/admin/interface?form=status interface.status1.json
+
+/cgi-bin/luci/;stok=12345/admin/phddns?form=phddns phddns.json
+/cgi-bin/luci/;stok=12345/admin/cmxddns?form=cmxddns cmxddns.json
+/cgi-bin/luci/;stok=12345/admin/dynddns?form=dynddns dynddns.json
+/cgi-bin/luci/;stok=12345/admin/noipddns?form=noipddns noip.json
+/cgi-bin/luci/;stok=12345/admin/upnp?form=upnp_global upnp_global.json
+/cgi-bin/luci/;stok=12345/admin/upnp?form=server_rule upnplist.json
+
+/cgi-bin/luci/;stok=12345/admin/remote_mngt?form=remote_mngt remote_mngt.json
+/cgi-bin/luci/;stok=12345/admin/diagnostic?form=diag diag.json
+
+
+/cgi-bin/luci/;stok=12345/admin/ac_wstation?form=group group.json
+/cgi-bin/luci/;stok=12345/admin/ac_wstation?form=wsta_list wsta_list.json
+/cgi-bin/luci/;stok=12345/admin/ap_status?form=ap_list ap_list.json
+/cgi-bin/luci/;stok=12345/admin/ap_status?form=radio_info radio_info.json
+/cgi-bin/luci/;stok=12345/admin/ap_status?form=ssid ssid.json
+/cgi-bin/luci/;stok=12345/admin/ac_sessmngr?form=sessmngr sessmngr.json
+/cgi-bin/luci/;stok=12345/admin/ac_nonsense?form=nonsense nonsense.json
+
+/cgi-bin/luci/;stok=12345/admin/interface?form=interface interface.all.json
+/cgi-bin/luci/;stok=12345/admin/interface?form=status2 interface.status2.json
+/cgi-bin/luci/;stok=12345/admin/interface?form=vlan ifvlan.json
+/cgi-bin/luci/;stok=12345/admin/dhcps?form=alloc_target alloc_target.json
+/cgi-bin/luci/;stok=12345/admin/dhcps?form=server dhcps.json
+/cgi-bin/luci/;stok=12345/admin/dhcps?form=client client.json
+/cgi-bin/luci/;stok=12345/admin/dhcps?form=reservation reservation.json
+
+/cgi-bin/luci/;stok=12345/admin/vlansetting?form=vlanmax vlanmax.json
+/cgi-bin/luci/;stok=12345/admin/vlansetting?form=vlansettinglist vlansettinglist.json
+/cgi-bin/luci/;stok=12345/admin/vlansetting?form=profiletype  profiletype.json
+/cgi-bin/luci/;stok=12345/admin/vlansetting?form=porttype  porttype.json
+/cgi-bin/luci/;stok=12345/admin/vlansetting?form=linktype  linktype.json
+/cgi-bin/luci/;stok=12345/admin/vlansetting?form=portsettinglist portsettinglist.json
+/cgi-bin/luci/;stok=12345/admin/vlansetting?form=relationlist relationlist.json
+
+/cgi-bin/luci/;stok=12345/admin/switch?form=statistic switch.statistic.json
+/cgi-bin/luci/;stok=12345/admin/switch?form=mirror switch.mirror.json
+/cgi-bin/luci/;stok=12345/admin/switch?form=rateControl switch.rateControl.json
+/cgi-bin/luci/;stok=12345/admin/switch?form=para switch.para.json
+/cgi-bin/luci/;stok=12345/admin/switch?form=state switch.state.json
+
+/cgi-bin/luci/;stok=12345/admin/apmngr?form=global apmngr.global.json
+/cgi-bin/luci/;stok=12345/admin/apmngr?form=grouplist apmngr.grouplist.json
+/cgi-bin/luci/;stok=12345/admin/apmngr?form=model_list apmngr.modellist.json
+/cgi-bin/luci/;stok=12345/admin/apmngr?form=aplist apmngr.aplist.json
+/cgi-bin/luci/;stok=12345/admin/ap_upgrade?form=version_list apup.version.json
+/cgi-bin/luci/;stok=12345/admin/ac_balance?form=ac_balance ac_balance.json
+
+/cgi-bin/luci/;stok=12345/admin/ac_rdmngr?form=group rdgroup.json
+/cgi-bin/luci/;stok=12345/admin/ac_rdmngr?form=rdentry rdentry.json
+/cgi-bin/luci/;stok=12345/admin/rate_setting?form=rate-setting rate-setting.json
+/cgi-bin/luci/;stok=12345/admin/band_navigation?form=band_navigation_setting band_navigation_setting.json
+
+/cgi-bin/luci/;stok=12345/admin/ac_wservice?form=wserv_list wserv_list.json
+
+/cgi-bin/luci/;stok=12345/admin/ac_macauth_group?form=macgrouplist macgrouplist.json
+/cgi-bin/luci/;stok=12345/admin/ac_macauth_mac?form=maclist maclist.json
+
+/cgi-bin/luci/;stok=12345/admin/ac_template?form=templatelist templatelist.json
+/cgi-bin/luci/;stok=12345/admin/ac_wportal?form=wportallist wportallist.json
+/cgi-bin/luci/;stok=12345/admin/ac_template?form=webtemplates webtemplates.json
+/cgi-bin/luci/;stok=12345/admin/ac_authgroup?form=authgroups authgroups.json
+/cgi-bin/luci/;stok=12345/admin/ac_onekey?form=onekeylist onekeylist.json
+/cgi-bin/luci/;stok=12345/admin/ac_template?form=onekeytemplates onekeytemplates.json
+/cgi-bin/luci/;stok=12345/admin/ac_remote_portal?form=remotelist remotelist.json
+
+/cgi-bin/luci/;stok=12345/admin/ac_free_strategy?form=free_strategylist free_strategylist.json
+/cgi-bin/luci/;stok=12345/admin/ac_portal_para?form=global_para global_para.json
+/cgi-bin/luci/;stok=12345/admin/ac_usermngr?form=userlist userlist.json
+/cgi-bin/luci/;stok=12345/admin/ac_authgroup?form=servergrouplist servergrouplist.json
+/cgi-bin/luci/;stok=12345/admin/ac_radius?form=radiuslist radiuslist.json
+
+/cgi-bin/luci/;stok=12345/admin/ac_multi_link?form=global mullink.global.json
+
+/cgi-bin/luci/;stok=12345/admin/administration?form=management sys.management.json
+/cgi-bin/luci/;stok=12345/admin/interface?form=status3 interface.status3.json
+/cgi-bin/luci/;stok=12345/admin/ifstat?form=list ifstat.list.json
+/cgi-bin/luci/;stok=12345/admin/logger?form=setting logger.setting.json
+/cgi-bin/luci/;stok=12345/admin/logger?form=loglist logger.loglist.json
+
+
+/cgi-bin/luci/;stok=12345/admin/wlan_basic?form=basic wireless.basic.json
+/cgi-bin/luci/;stok=12345/admin/wlan_mssid?form=mssid wireless.mssid.json
+/cgi-bin/luci/;stok=12345/admin/wlan_wds?form=all_wds wireless.wds_all.json
+/cgi-bin/luci/;stok=12345/admin/wlan_wds?form=wds_config wireless.wds.json
+/cgi-bin/luci/;stok=12345/admin/wlan_wds?form=scan_ap wireless.aplist.json
+/cgi-bin/luci/;stok=12345/admin/wlan_wds?form=status wireless.wds_status.json
+/cgi-bin/luci/;stok=12345/admin/wlan_advanced?form=adv wireless.advanced.json
+/cgi-bin/luci/;stok=12345/admin/wlan_advanced?form=channel_list wireless.advanced.chlist.json
+/cgi-bin/luci/;stok=12345/admin/wlan_visitor?form=visitor wireless.visitor.json
+/cgi-bin/luci/;stok=12345/admin/wlan_visitor?form=max_maxuser wireless.visitor.maxuser.json
+/cgi-bin/luci/;stok=12345/admin/wlan_macfilter?form=rules wireless_mac_filter_rules.json
+/cgi-bin/luci/;stok=12345/admin/wlan_macfilter?form=config wireless_mac_filter.json
+/cgi-bin/luci/;stok=12345/admin/wlan_station?form=ssidlist wireless_host_ssidList.json
+/cgi-bin/luci/;stok=12345/admin/wlan_station?form=stainfo wireless_host_sta.json

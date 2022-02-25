@@ -1,0 +1,346 @@
+#!/bin/sh
+
+# $@: bit1 bit2 ... 
+set_portbits()
+{
+	local var=0
+	for i in $@; do
+		var=$(($var | (1 << ($i - 1))))
+	done
+	echo $var | xargs printf 0x%x
+}
+
+# $1: vlanid
+mt7628_get_vlan_index()
+{
+	local vlan=$1
+
+	#echo "vlan is $vlan" > /dev/console
+
+	local base_addr=80
+	for i in `seq 0 15`
+	do
+		local reg_addr=$((4*($i/2) + $base_addr))
+		reg_addr=$(echo $reg_addr | xargs printf %x)
+		local result=$(swconfig dev switch0 reg get 0x$reg_addr 2>/dev/null)
+		local val=${result#*\[}
+		val=${val%*\]}
+		val=$((($val >> (($i%2)*12)) & 0xFFF))
+		if [ $vlan = $val ] ; then
+			echo $i
+			break
+		fi
+	done
+}
+
+# get vlan member by vlanidx
+# $1: vlanidx
+mt7628_get_portmap_by_vlanidx()
+{
+	local vlanidx=$1
+	local reg_addr
+	if [ -z $vlanidx ] || [ $vlanidx -lt 0 ] || [ $vlanidx -gt 15 ]; then
+		echo "[error] vlanidx is error.(0~15)"
+		exit 0
+	fi
+
+	let reg_addr=vlanidx/4*4+0x70
+	reg_addr=$(echo $reg_addr | xargs printf %x)
+
+	local result=$(swconfig dev switch0 reg get 0x$reg_addr 2>/dev/null)
+	local var=${result#*\:\[}
+	var=${var%*\]}
+	var=$((($var >> (($vlanidx%4)*8)) & 0xFF))
+
+	echo $var | xargs printf 0x%x
+}
+
+# set vlan member by vlanidx
+# $1: vlanidx
+# $2: portmap
+mt7628_set_portmap_by_vlanidx()
+{
+	local vlanidx=$1
+	local portmap=$2
+	local reg_addr
+	local reg_val
+	local bit_off
+	if [ -z $vlanidx ] || [ $vlanidx -lt 0 ] || [ $vlanidx -gt 15 ]; then
+		echo "[error] vlanidx is error.(0~15)"
+		exit 0
+	fi
+
+	let reg_addr=vlanidx/4*4+0x70
+	reg_addr=$(echo $reg_addr | xargs printf %x)
+
+	reg_val=$(swconfig dev switch0 reg get 0x$reg_addr 2>/dev/null)
+	reg_val=${reg_val#*\:\[}
+	reg_val=${reg_val%*\]}
+	[ -n "$reg_val" ] && {
+		bit_off=$((($vlanidx%4)*8))
+		reg_val=$((($reg_val & (~(0xFF << $bit_off))) | (($portmap & 0xFF) << $bit_off)))
+		reg_val=$(echo $reg_val | xargs printf %x)
+
+		swconfig dev switch0 reg set 0x$reg_addr 0x$reg_val 2>/dev/null
+	} || {
+		echo "[mirror] set vlan member error" > /dev/console
+	}
+}
+
+# get all vlan of port
+# $1: portid
+mt7628_get_port_vlan()
+{
+	local portid=$1
+	local loop=0
+	local vlanid=-1
+	local retvlan=""
+
+	if [ -z $portid ] || [ `expr match $portid "[0-9]"` = 0 ] || [ $portid -lt 1 ] || [ $portid -gt 5 ];then
+		echo "[mirror] port is error.(1~5)"
+		exit 0
+	fi
+	
+	let portid=portid-1
+	vlanid=$(uci get vlan.@switch_vlan[$loop].vlan 2>/dev/null)
+	while [ "x$vlanid" != 'x' ];do
+		uci get vlan.@switch_vlan[$loop].ports 2>/dev/null | grep -q "$portid" && {
+			retvlan="$vlanid $retvlan"
+		}
+
+		loop=$(($loop+1))
+		vlanid=$(uci get vlan.@switch_vlan[$loop].vlan 2>/dev/null)
+	done
+
+	echo "[mirror]mt7628_get_port_vlan:	portid=$portid retvlan=$retvlan" > /dev/console
+	echo $retvlan
+}
+
+# set MAC Learning reg
+# $1: reg value
+mt7628_set_maclearning_reg()
+{
+	local reg_mlv=$1
+	local reg_val
+
+	# reg 0x94 -- PORT CONTROL1 ,  bit8-14 - Disable Source MAC Learning
+	reg_val=$(swconfig dev switch0 reg get 0x94 2>/dev/null)
+	reg_val=${reg_val#*\:\[}
+	reg_val=${reg_val%*\]}
+
+	[ -n "$reg_val" ] && {
+		reg_val=$((($reg_val & (~(0x7F << 8))) | (($reg_mlv & 0x7F) << 8)))
+		reg_val=$(echo $reg_val | xargs printf %x)
+
+		swconfig dev switch0 reg set 0x94 0x$reg_val 2>/dev/null
+	}
+}
+
+# clear MAC learning reg
+mt7628_clear_maclearning_reg()
+{
+	local reg_val
+	reg_val=$(swconfig dev switch0 reg get 0x94 2>/dev/null)
+	reg_val=${reg_val#*\:\[}
+	reg_val=${reg_val%*\]}
+
+	[ -n "$reg_val" ] && {
+		reg_val=$(($reg_val & (~(0x7F << 8))))
+		reg_val=$(echo $reg_val | xargs printf %x)
+	} || {
+		reg_val=0x0
+	}
+	swconfig dev switch0 reg set 0x94 0x$reg_val 2>/dev/null
+}
+
+clear_port_mirror()
+{
+	# enable MAC Learning
+	mt7628_clear_maclearning_reg
+
+	# reset
+	swconfig dev switch0 reg set 0xa0 1 2>/dev/null
+
+	# reload vlan
+	swconfig dev switch0 load vlan
+}
+
+# enable port mirror
+# $1:mirror mode
+# $2:mirror port id
+# $3:mirrored port list
+enable_port_mirror()
+{
+	local mode=$1
+	local mirrorport=$2
+	local mirroredPortlist=$3
+	local portvlan=""
+	local vlanidx=-1
+	local portmap
+	local reg_sal
+
+	let mirrorport=mirrorport-1
+
+	# step0: first reload vlan
+	swconfig dev switch0 load vlan
+
+	# step1: add mirrorport to the vlan member of mirrordPortlist
+	for var in $mirroredPortlist; do
+		# get vlanid of every mirrored port
+		portvlan=$(mt7628_get_port_vlan $var)
+		for vid in $portvlan; do
+			# get mapped vlanidx of vlanid in switch chip
+			vlanidx=$(mt7628_get_vlan_index $vid)
+
+			portmap=$(mt7628_get_portmap_by_vlanidx $vlanidx)
+			portmap=$(($portmap | (1 << $mirrorport)))
+
+			mt7628_set_portmap_by_vlanidx $vlanidx $portmap
+
+			echo "[mirror]enable_port_mirror:	port=$var vlan=$vid vlanidx=$vlanidx portmap=$(echo $portmap | xargs printf 0x%x)" > /dev/console
+		done
+	done
+
+	# step2: disable mac learning
+	case $mode in
+		"ingress")
+			# disable CPU port mac learning
+			reg_sal=$(set_portbits $(($CPU_PORT+1)))
+			mt7628_set_maclearning_reg $reg_sal
+			;;
+		"egress")
+			# disble mirrored ports mac learning
+			reg_sal=$(set_portbits $mirroredPortlist)
+			mt7628_set_maclearning_reg $reg_sal
+			;;
+		"both")
+			# disable mirrored ports and CPU port mac learning
+			reg_sal=$(set_portbits $mirroredPortlist $(($CPU_PORT+1)))
+			mt7628_set_maclearning_reg $reg_sal
+			;;
+		*)
+			echo "[mirror] mode error" > /dev/console
+			;;
+	esac
+
+	#step3: clear mac learning table
+	ralink-switch clear
+	# reset
+	# swconfig dev switch0 reg set 0xa0 1
+}
+
+mirror_usage()
+{
+	echo ""
+	echo "Usage: switch -t mirror -o <get|set> [-s state] [-m mode] [-P mirrorport] [-p mirroredports]"
+	echo ""
+	echo "Example:"
+	echo "       switch -t mirror -o get"
+	echo "       switch -t mirror -o set -s on -m ingress -P 3 -p \"1 2 4\" "
+	echo ""
+}
+
+# check mode mirror port and mirrored portlist
+# exit when arg is invalid
+# $1: mode
+# $2: mirror port
+# $3: mirrored ports
+mirror_arg_check()
+{
+	local mode=$1
+	local portid=$2
+	local ports=$3
+
+	if [ "$mode" != "" ] && [ "$mode" != "ingress" ] && [ "$mode" != "egress" ] && [ "$mode" != "both" ]; then
+		echo "[mirror] mode is error. (ingress | egress | both)"
+		mirror_usage
+		exit 0 
+	fi 
+
+	# check input portid
+	if [ -z $portid ] || [ `expr match $portid "[0-9]"` = 0 ] || [ $portid -lt 1 ] || [ $portid -gt 5 ];then
+		echo "[mirror] port is error.(1~5)"
+		mirror_usage
+		exit 0
+	fi
+
+	if [ -z "$ports" ]; then
+		echo "[mirror] mirrored port is null.(1~5)"
+		mirror_usage
+		exit 0
+	fi
+
+	for i in $ports; do		
+		if [ `expr match $i "[0-9]"` = 0 ] || [ $i -lt 1 ] || [ $i -gt 5 ] || [ $i -eq $portid ];then
+			echo "[mirror] mirrored port is error.(1~5)"
+			mirror_usage
+			exit 0
+		fi
+	done
+}
+ 
+
+print_mirror_info()
+{
+	config_get state "mirror" state     
+	config_get mode "mirror" mode  
+	config_get mirrorport "mirror" mirrorport
+	config_get mirroredports "mirror" mirroredports
+
+	echo "Mirror state   :  $state" 
+	echo "Mirror mode    :  $mode"
+	echo "Mirror port    :  $mirrorport"
+	echo "Mirrored ports :  $mirroredports"
+	echo ""
+} 
+
+# init mt7628 switch port mirror
+# $1: state
+# $2: mirror mode
+# $3: mirror port
+# $4: mirrored ports
+mt7628_switch_port_mirror_init()
+{
+	if [ "$1" = "on" ]; then		
+		#mirror_arg_check $mode $portid "$mirroredPorts"
+		enable_port_mirror $2 $3 "$4"
+	elif [ "$1" = "off" ]; then
+		clear_port_mirror
+	else
+		echo "[mirror] state is invalid.(on | off)"
+		exit 0
+	fi
+}
+
+# mt7628 switch port mirror
+# $1:op (get|set)
+# $2:state (on | off)
+# $3:mirror mode (ingress | egress | both)
+# $4:mirror port id (1 | 2 | 3 | 4 | 5)
+# $5:mirrored port list (1.2.3...)
+mt7628_switch_port_mirror()
+{
+	local op=$1
+	local state=$2
+	local mode=$3
+	local portid=$4
+	local mirroredPorts=$5	
+
+	#get port mirror info
+	if [ "$op" = "get" ]; then
+		print_mirror_info
+	elif [ "$op" = "set" ]; then
+		if [ "$state" = "off" ]; then
+			clear_port_mirror
+		elif [ "$state" = "on" ]; then
+			mirror_arg_check $mode $portid "$mirroredPorts"
+			enable_port_mirror $mode $portid "$mirroredPorts"
+		else
+			echo "[mirror] state is invalid.(on | off)"
+			exit 0
+		fi
+
+	else
+		echo "[mirror] error op. (set | get)"
+	fi
+}

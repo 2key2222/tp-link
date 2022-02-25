@@ -1,0 +1,68 @@
+#!/bin/sh
+
+OP=$1
+INTERVAL=1
+OLD_LINK_STATUS=2
+LAST_BLINK=0
+
+if [ "${OP}" == "start" ];then
+	pre_rx=`cat /proc/net/dev|grep -w eth0|awk '{print $3}'`
+	pre_tx=`cat /proc/net/dev|grep -w eth0|awk '{print $11}'`
+	while true
+	do
+		read LINK_STATUS < /proc/sfp
+		if [ "$LINK_STATUS" == "1" ];then
+			cur_rx=`cat /proc/net/dev|grep -w eth0|awk '{print $3}'`
+			cur_tx=`cat /proc/net/dev|grep -w eth0|awk '{print $11}'`
+			diff_rx=$(($cur_rx-$pre_rx))
+			diff_tx=$(($cur_tx-$pre_tx))
+			if [ $diff_rx -gt 20 ];then
+				freq=50
+			elif [ $diff_tx -gt 20 ];then
+				freq=50
+			elif [ $diff_rx -gt 10 ];then
+				freq=100
+			elif [ $diff_tx -gt 10 ];then
+				freq=100
+			else
+				freq=250
+			fi
+			if [ $cur_rx != $pre_rx ];then
+				if [ $LAST_BLINK -eq 0 ];then
+					echo timer > /sys/class/leds/LAN_LED_0/trigger
+				fi
+				LAST_BLINK=1
+				echo $freq > /sys/class/leds/LAN_LED_0/delay_on
+				echo $freq > /sys/class/leds/LAN_LED_0/delay_off
+			elif [ $cur_tx != $pre_tx ];then
+				if [ $LAST_BLINK -eq 0 ];then
+					echo timer > /sys/class/leds/LAN_LED_0/trigger
+				fi
+				LAST_BLINK=1
+				echo $freq > /sys/class/leds/LAN_LED_0/delay_on
+				echo $freq > /sys/class/leds/LAN_LED_0/delay_off
+			elif [ $OLD_LINK_STATUS!=$LINK_STATUS ];then
+				if [ "$LINK_STATUS" == "1" ];then
+					echo none > /sys/class/leds/LAN_LED_0/trigger
+					echo 0 > /sys/class/leds/LAN_LED_0/brightness
+					LAST_BLINK=0
+				else
+					echo none > /sys/class/leds/LAN_LED_0/trigger
+					echo 1 > /sys/class/leds/LAN_LED_0/brightness
+					LAST_BLINK=0
+				fi
+			fi
+			OLD_LINK_STATUS=$LINK_STATUS
+			pre_rx=$cur_rx
+			pre_tx=$cur_tx
+		else
+			if [ "$OLD_LINK_STATUS" != "$LINK_STATUS" ];then
+				echo none > /sys/class/leds/LAN_LED_0/trigger
+				echo 1 > /sys/class/leds/LAN_LED_0/brightness
+				LAST_BLINK=0
+			fi
+			OLD_LINK_STATUS=$LINK_STATUS
+		fi
+		sleep ${INTERVAL}
+	done
+fi

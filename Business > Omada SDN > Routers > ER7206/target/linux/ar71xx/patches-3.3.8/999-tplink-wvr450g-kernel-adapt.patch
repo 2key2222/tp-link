@@ -1,0 +1,45 @@
+Index: linux-3.3.8/drivers/net/ethernet/atheros/ag71xx/ag71xx_mdio.c
+===================================================================
+--- linux-3.3.8.orig/drivers/net/ethernet/atheros/ag71xx/ag71xx_mdio.c	2015-03-30 17:39:07.579070753 +0800
++++ linux-3.3.8/drivers/net/ethernet/atheros/ag71xx/ag71xx_mdio.c	2015-03-30 17:39:19.924070911 +0800
+@@ -20,6 +20,8 @@
+ #define AG71XX_MDIO_RETRY	1000
+ #define AG71XX_MDIO_DELAY	5
+ 
++#define ATHR_PHY_CONTROL	0
++
+ static inline void ag71xx_mdio_wr(struct ag71xx_mdio *am, unsigned reg,
+ 				  u32 value)
+ {
+@@ -206,8 +208,15 @@
+ 	am->mii_bus->phy_mask = pdata->phy_mask;
+ 
+ 	for (i = 0; i < PHY_MAX_ADDR; i++)
++	{
+ 		am->mii_irq[i] = PHY_POLL;
+ 
++		#ifdef CONFIG_ATH79_MACH_TL_WVR450G
++		//reset all phys	
++	    	(void)ag71xx_mdio_write(am->mii_bus, i, ATHR_PHY_CONTROL, 0x1000);		 
++		#endif
++	}
++
+ 	ag71xx_mdio_wr(am, AG71XX_REG_MAC_CFG1, 0);
+ 
+ 	err = mdiobus_register(am->mii_bus);
+Index: linux-3.3.8/arch/mips/kernel/setup.c
+===================================================================
+--- linux-3.3.8.orig/arch/mips/kernel/setup.c	2015-06-15 19:04:48.791076260 +0800
++++ linux-3.3.8/arch/mips/kernel/setup.c	2015-06-15 19:06:01.855835360 +0800
+@@ -534,7 +534,11 @@
+ 	strlcpy(boot_command_line, arcs_cmdline, COMMAND_LINE_SIZE);
+ #endif
+ 	strlcpy(command_line, boot_command_line, COMMAND_LINE_SIZE);
++#ifdef CONFIG_ATH79_MACH_TL_WVR450G
++	strlcat(command_line, " board=TL-WVR450G root=/dev/mtdblock2 mtdparts=spi0.0:128k(bootloader)ro,3072k(kernel),4992k(rootfs)", COMMAND_LINE_SIZE);
+ 
++	pr_info("@@----debug cmdline=[ %s ]\n", command_line);
++#endif
+ 	*cmdline_p = command_line;
+ 
+ 	parse_early_param();

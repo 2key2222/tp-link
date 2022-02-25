@@ -1,0 +1,31 @@
+--- a/drivers/net/raeth/raether.c
++++ a/drivers/net/raeth/raether.c
+@@ -4045,7 +4045,12 @@ void mt7628_ephy_init(void)
+ 
+ 	for(i=0; i<5; i++){
+ 		mii_mgr_write(i, 31, 0x8000); //change L0 page
+-		mii_mgr_write(i,  0, 0x3100);
++		
++		mii_mgr_read(i,  0, &phy_val);
++		phy_val |= (1 << 8);
++		phy_val |= (1 << 12);
++		phy_val |= (1 << 13);
++		mii_mgr_write(i,  0, phy_val);
+ 
+ #if defined (CONFIG_RAETH_8023AZ_EEE)	
+ 		mii_mgr_read(i, 26, &phy_val);// EEE setting
+@@ -4406,12 +4411,13 @@ void rt305x_esw_init(void)
+ 		val &= ~0x1f0000;
+ 	sysRegWrite(RT2880_AGPIOCFG_REG, val);
+ 
++#if 0
+ 	val = sysRegRead(RSTCTRL);
+ 	val = val | RALINK_EPHY_RST;
+ 	sysRegWrite(RSTCTRL, val);
+ 	val = val & ~(RALINK_EPHY_RST);
+ 	sysRegWrite(RSTCTRL, val);
+-
++#endif
+ 
+ 	val = sysRegRead(RALINK_SYSCTL_BASE + 0x64);
+ #if defined (CONFIG_ETH_ONE_PORT_ONLY)

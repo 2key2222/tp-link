@@ -1,0 +1,31 @@
+--- a/arch/mips/cavium-octeon/executive/cvmx-agl.c	2017-03-07 19:41:27.780008000 +0800
++++ b/arch/mips/cavium-octeon/executive/cvmx-agl.c	2017-03-07 19:28:24.004084000 +0800
+@@ -116,6 +116,7 @@
+ int cvmx_agl_link_set(int port, cvmx_helper_link_info_t link_info, int mode)
+ {
+ 	cvmx_agl_gmx_prtx_cfg_t agl_gmx_prtx;
++	union cvmx_agl_prtx_ctl agl_prtx_ctl;
+ 
+ 	/* Disable GMX before we make any changes. */
+ 	agl_gmx_prtx.u64 = cvmx_read_csr(CVMX_AGL_GMX_PRTX_CFG(port));
+@@ -186,6 +187,20 @@
+ 
+ 	/* Write the new GMX setting with the port still disabled. */
+ 	cvmx_write_csr(CVMX_AGL_GMX_PRTX_CFG(port), agl_gmx_prtx.u64);
++	if (OCTEON_IS_MODEL(OCTEON_CN70XX)) 
++	{
++	    agl_prtx_ctl.u64 = cvmx_read_csr(CVMX_AGL_PRTX_CTL(port));
++	    printk(KERN_ERR "before modify:port=%d, reg=%llx, val=%llx\r\n", port, CVMX_AGL_PRTX_CTL(port), agl_prtx_ctl.u64);
++	
++	    agl_prtx_ctl.s.clkrx_byp = 1;
++	    agl_prtx_ctl.s.clkrx_set = 0;
++	    agl_prtx_ctl.s.clktx_byp = 1;
++	    agl_prtx_ctl.s.clktx_set = 0;
++		
++	    cvmx_write_csr(CVMX_AGL_PRTX_CTL(port), agl_prtx_ctl.u64);
++	    agl_prtx_ctl.u64 = cvmx_read_csr(CVMX_AGL_PRTX_CTL(port));
++	    printk(KERN_ERR "after modify:port=%d, reg=%llx, val=%llx\r\n", port, CVMX_AGL_PRTX_CTL(port), agl_prtx_ctl.u64);
++	}
+ 
+ 	/* Read GMX CFG again to make sure the config is completed. */
+ 	agl_gmx_prtx.u64 = cvmx_read_csr(CVMX_AGL_GMX_PRTX_CFG(port));

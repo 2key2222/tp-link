@@ -1,0 +1,112 @@
+#!/bin/sh
+
+
+statistic_usage()
+{
+	echo ""
+	echo "Usage: switch -t statistic -o <get |flush> [-p portsid]"
+	echo ""
+	echo "Example:"
+	echo "       switch -t statistic -o get"
+	echo "       switch -t statistic -o get -p \"1 2\" "
+	echo "       switch -t statistic -o flush -p \"1 2 4\" "
+	echo ""
+}
+
+statistic_arg_check()
+{
+	local portsid=$1
+
+	for i in $portsid; do
+		if [ `expr match $i "[0-9]"` = 0 ] || [ $i -lt 1 ] || [ $i -gt 5 ] ;then
+		echo "[statistic] the port is invalid. (1~5)"
+		statistic_usage
+		exit 0
+		fi
+	done
+}
+
+# flush switch port statistic
+# $1: portsid (1.2.3.4.5)
+flush_port_statistic()
+{
+	if [ -z "$1" ]; then
+		# if input portsid = null, flush all mibs
+		#swconfig_reset_all_mibs
+		for i in `seq 0 $(($MAX_PORT_NUM-1))`;do
+			swconfig dev switch0 port $i set reset_mib
+		done
+	else
+		statistic_arg_check "$1"
+
+		for i in $1; do
+			swconfig_reset_port_mib $(($i-1))
+		done
+	fi
+
+	
+}
+
+# convert statistic to standard format
+# $1: port
+get_port_standard_statistic()
+{
+	swconfig_get_port_mib $(($1-1)) | awk 'BEGIN{t=0;o=0;}
+		/etherStatsUndersizePkts/		{t+=gensub(/.*: ([0-9]+).*/, "\\1", "1");}
+		/etherStatsOversizePkts/		{t+=gensub(/.*: ([0-9]+).*/, "\\1", "1");}
+		/etherStatsPkts64Octets/		{t+=gensub(/.*: ([0-9]+).*/, "\\1", "1");}
+		/etherStatsPkts65to127Octets/	{t+=gensub(/.*: ([0-9]+).*/, "\\1", "1");}
+		/etherStatsPkts128to255Octets/	{t+=gensub(/.*: ([0-9]+).*/, "\\1", "1");}
+		/etherStatsPkts256to511Octets/	{t+=gensub(/.*: ([0-9]+).*/, "\\1", "1");}
+		/etherStatsPkts512to1023Octets/	{t+=gensub(/.*: ([0-9]+).*/, "\\1", "1");}
+		/etherStatsPkts1024toMaxOctets/	{t+=gensub(/.*: ([0-9]+).*/, "\\1", "1");}
+		/ifInUcastPkts/					{print(gensub(/.*: ([0-9]+).*/, "RxUnicast : \\1", "1"));}
+		/ifInBroadcastPkts/				{print(gensub(/.*: ([0-9]+).*/, "RxBroad : \\1", "1"));}
+		/dot3InPauseFrames/				{print(gensub(/.*: ([0-9]+).*/, "RxPause : \\1", "1"));}
+		/ifInMulticastPkts/				{print(gensub(/.*: ([0-9]+).*/, "RxMulti : \\1", "1"));}
+		/etherStatsUndersizePkts/		{print(gensub(/.*: ([0-9]+).*/, "RxLitte : \\1", "1"));}
+		/ifInOctets/					{print(gensub(/.*: ([0-9]+).*/, "RxAll : \\1", "1"));}
+		/etherStatsOversizePkts/		{print(gensub(/.*: ([0-9]+).*/, "RxTooLong : \\1", "1"));}
+		/ifOutUcastPkts/				{print(gensub(/.*: ([0-9]+).*/, "TxUnicast : \\1", "1"));o+=gensub(/.*: ([0-9]+).*/, "\\1", "1");}
+		/ifOutBrocastPkts/				{print(gensub(/.*: ([0-9]+).*/, "TxBroad : \\1", "1"));o+=gensub(/.*: ([0-9]+).*/, "\\1", "1");}
+		/dot3OutPauseFrames/			{print(gensub(/.*: ([0-9]+).*/, "TxPause : \\1", "1"));}
+		/ifOutMulticastPkts/			{print(gensub(/.*: ([0-9]+).*/, "TxMulti : \\1", "1"));o+=gensub(/.*: ([0-9]+).*/, "\\1", "1");}
+		/ifOutOctets/					{print(gensub(/.*: ([0-9]+).*/, "TxAll : \\1", "1"));}
+		END{t-=o;print("RxNormal : "t)}'
+}
+
+# get switch port statistic
+# $1: portsid
+get_port_statistic()
+{
+	local ports=$1
+
+	# if input portsid = null, get all mibs
+	if [ -z "$ports" ]; then
+		ports="1 2 3 4 5"
+	else
+		statistic_arg_check "$ports"
+	fi	
+
+	for i in $ports; do
+		get_port_standard_statistic "$i"
+	done
+	
+}
+
+# rtl8367s switch port statistic
+# $1: op (get|flush)
+# $2: portsid (1.2.3.4.5)
+rtl8367s_switch_port_statistic()
+{
+	local op=$1
+	local portsid=$2
+
+	if [ $op = "get" ]; then	
+		get_port_statistic "$portsid"
+	elif [ $op = "flush" ]; then
+		flush_port_statistic "$portsid"
+	else
+		echo "[statistic] error op. (get | flush)"
+	fi
+}

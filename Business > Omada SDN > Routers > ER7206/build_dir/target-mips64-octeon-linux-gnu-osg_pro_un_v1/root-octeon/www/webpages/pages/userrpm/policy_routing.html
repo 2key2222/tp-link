@@ -1,0 +1,322 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>POLICY_ROUTING</title>
+<style type="text/css">
+</style>
+</head>
+
+<body>
+<div class="func-container">
+    <div id="policy_rule_list">
+        <div id="policy_rule_grid">
+        </div>
+    </div>
+    <div id="policy_routing_hlep">    </div>
+</div>
+
+<script type="text/javascript">
+try{
+    $
+}catch(e){
+    location.href = "/";
+};
+
+
+$(document).ready(function(e){    
+    var URL_POLICY_RULE_LIST = $.su.url("/admin/policy_route?form=policy_route");
+
+    var policy_rule_Proxy = new $.su.Proxy({
+        url: URL_POLICY_RULE_LIST,
+    });
+
+    $("#policy_rule_list").panel({
+        title: $.su.CHAR.POLICY_ROUTE.RULE_LIST,
+        collapsible: false
+    });
+
+
+
+    var ruleGrid = $("#policy_rule_grid").grid({
+        editor: {
+            content:"default",
+            fields: [
+                {name: "name"},
+                {name: "service_type"},
+                {name: "src_ipgroup"},
+                {name: "dst_ipgroup"},
+                {name: "interfaces"},
+                {name: "timeobj"},
+                {name: "mode"},
+                {name: "comment"},
+                {name: "state"},
+                {name: "index"}
+            ]
+        },
+        paging:[],
+        store:{
+            proxy: policy_rule_Proxy,
+            fields: [
+                {name: "name"},
+                {name: "service_type"},
+                {name: "src_ipgroup"},
+                {name: "dst_ipgroup"},
+                {name: "interfaces"},
+                {name: "timeobj"},
+                {name: "mode"},
+                {name: "comment"},
+                {name: "state"},
+                {name: "index"},
+                {name: "t_label"},
+            ],
+            autoLoad: true
+        },
+        columns: [
+            {
+                xtype: "checkcolumn"
+            },
+            {
+                xtype: "rownumberer"
+            },
+            {
+                text: $.su.CHAR.POLICY_ROUTE.RULE_NAME,
+                width: 60,
+                dataIndex: "name",
+                editor: {
+                    xtype: "textbox",
+                    allowBlank: false,
+                    vtype:"name"
+                }
+            },
+            {
+                text: $.su.CHAR.POLICY_ROUTE.SERVICE_TYPE,
+                width: 90,
+                dataIndex: "service_type",
+                editor: {
+                    xtype: "combobox",
+                    allowBlank: false,                
+                    vtype:"string_visible_allow_blank",
+                    items:[
+                        {name:"ALL",value:"ALL", selected:true}
+                    ]
+                }
+            },
+            {
+                text: $.su.CHAR.POLICY_ROUTE.SRC_ADDR,
+                width: 100,
+                dataIndex: "src_ipgroup",
+                editor: {
+                    xtype: "combobox",  
+                    allowBlank: false,                      
+                    vtype:"string_visible_allow_blank",
+                    items:[
+                        {name:"IPGROUP_ANY",value:"IPGROUP_ANY", selected:true}
+                    ]
+                }
+            },
+            {
+                text: $.su.CHAR.POLICY_ROUTE.DST_ADDR,
+                width: 100,
+                dataIndex: "dst_ipgroup",
+                editor: {
+                    xtype: "combobox",
+                    allowBlank: false,                    
+                    vtype:"string_visible_allow_blank",
+                    items:[
+                        {name:"IPGROUP_ANY",value:"IPGROUP_ANY", selected:true}
+                    ]
+                }
+            },
+            {
+                text: $.su.CHAR.POLICY_ROUTE.INTERFACE,
+                width: 90,
+                dataIndex: "interfaces",
+                editor: {
+                    xtype: "combobox",
+                    allowBlank: false,
+                    multiSelect: true,
+                    vtype:"string_visible_allow_blank",
+                    items:[
+                        {name:"---",value:"---"}
+                    ]
+                },
+		renderer: function(dd, jindex, data) {
+			return data.t_label ? data.t_label.toString() : dd;
+		}
+            },
+            {
+                text: $.su.CHAR.POLICY_ROUTE.TIME,
+                width: 100,
+                dataIndex: "timeobj",
+                editor: {
+                    xtype: "combobox",
+                    allowBlank: false,                      
+                    vtype:"string_visible_allow_blank",
+                    items:[
+                        {name:"Any",value:"Any", selected:true}
+                    ]
+                }
+            },
+            {
+                text: $.su.CHAR.POLICY_ROUTE.MODE,
+                width: 50,
+                dataIndex: "mode",
+                editor: {
+                    xtype: "combobox",
+                    allowBlank: false,                      
+                    vtype:"string_visible_allow_blank",
+                    items:[
+                        {name:"Priority",value:"Priority", selected:true},
+                        {name:"Only",value:"Only"}
+                    ]
+                }
+            },
+            {
+                text: $.su.CHAR.POLICY_ROUTE.COMMENT,
+                dataIndex: "comment",
+                xtype:"comment",  
+                editor: {
+                    xtype: "textbox",
+                    tips: $.su.CHAR.POLICY_ROUTE.OPTIONAL,
+                    allowBlank: true,
+                    maxLength: 50,
+                    vtype:"string_visible_allow_blank"
+                }
+            },
+            {
+                text: $.su.CHAR.POLICY_ROUTE.INDEX,
+                dataIndex: "index",
+                hidden:true,
+                editor: {
+                    xtype: "textbox",
+                    tips: $.su.CHAR.POLICY_ROUTE.OPTIONAL,
+                    allowBlank: true,
+                    vtype:"number"
+                }
+            },
+ 
+            {
+                text: $.su.CHAR.POLICY_ROUTE.STATUS,
+                width: 90,
+                xtype: "statuscolumn",
+                dataIndex: "state",
+                editor: {
+                    xtype: "checkbox",
+                    items:[
+                        {boxlabel: $.su.CHAR.POLICY_ROUTE.ENABLE_RULE, name:'state', inputValue:'on',uncheckedValue:"off",checked:true}
+                    ]
+                }
+            },
+            {
+                xtype: "settings"
+            }
+
+        ],
+        operation: 'prompt|add|delete'
+    }).on("ev_load", function(e,data, others){
+        if(others)
+        {
+            //console.log(others.max_rules)
+            maxrules = others.max_rules;
+        }
+                 
+    }
+    ).on("ev_insert", function(){
+        ruleGrid.grid("getStore").load();}
+    ).on("ev_remove", function(){
+        ruleGrid.grid("getStore").load();}
+    ).on("ev_update", function(){
+        ruleGrid.grid("getStore").load();});
+
+    var i;
+    var editor = ruleGrid.grid('getEditor');
+    var combobox;
+
+    /*发送form请求,获取服务类型列表*/
+        var serviceItem=[];
+        var serviceProxy = new $.su.Proxy({
+                url: $.su.url('/admin/service?form=service'),
+                async: false   
+        });  
+        serviceProxy.read({}, function(data){ 
+                for (i=0; i<data.length; i++){
+                    serviceItem.push({name:data[i].name,value:data[i].name});                       
+                } 
+
+                combobox = $(editor).find('.combobox-value[name=service_type]');
+                combobox.combobox('loadData',serviceItem);
+        });
+
+        
+        /*发送form请求,获取地址列表*/
+        var src_ipgroupItem=[];
+        var dst_ipgroupItem=[];
+        var ipgroupProxy = new $.su.Proxy({
+                url: $.su.url('/admin/ipgroup?form=ipgroup_list'),
+                async: false
+        });  
+        ipgroupProxy.read({}, function(data){                
+                for (i=0; i<data.length; i++){
+                    if(data[i].name != "IPGROUP_LAN")
+                    {
+                        dst_ipgroupItem.push({name:data[i].name,value:data[i].name});
+                    }  
+
+                    src_ipgroupItem.push({name:data[i].name,value:data[i].name});                                         
+                }                  
+                
+                combobox = $(editor).find('.combobox-value[name=src_ipgroup]');
+                combobox.combobox('loadData',src_ipgroupItem);
+                combobox = $(editor).find('.combobox-value[name=dst_ipgroup]');
+                combobox.combobox('loadData',dst_ipgroupItem);
+        });
+
+        /*发送form请求,获取interface列表.用于显示于接口下拉框*/
+        var interfaceItem=[];
+        var interfaceProxy = new $.su.Proxy({
+                url: $.su.url('/admin/interface?form=status'),
+                async: false
+        });     
+        interfaceProxy.read({}, function(data){ 
+                for (i=0; i<data.normal.length; i++){
+                    //interfaceItem.push({name:data.normal[i].t_label,value:data.normal[i].t_name});   
+
+                    if(!$.su.func.isLan(data.normal[i].t_name))
+                    {    
+                        interfaceItem.push({name:data.normal[i].t_label,value:data.normal[i].t_name});     
+                    }                    
+                }
+                for (i=0; i<data.vpn.length; i++){                       
+                    interfaceItem.push({name:data.vpn[i].t_label,value:data.vpn[i].t_name}); 
+                }                       
+
+                combobox = $(editor).find('.combobox-value[name=interfaces]');
+                combobox.combobox('loadData',interfaceItem);
+        });   
+
+        /*发送form请求,获取时间对象列表 */
+        var timeItem=[];
+        var timeProxy = new $.su.Proxy({
+                url: $.su.url('/admin/time_mngt?form=timeobj_list'),
+                async: false
+        });  
+
+        timeProxy.read({}, function(data){                
+            for (i=0; i<data.length; i++){
+                timeItem.push({name:data[i].entry_name,value:data[i].entry_name});                    
+            } 
+            
+            var combobox = $(editor).find('.combobox-value[name=timeobj]');
+            combobox.combobox('loadData',timeItem);
+        });         
+
+    var helpIspRouting = new $.su.Help({
+        container: "div#policy_routing_hlep",
+        content: ["POLICY_ROUTING_SETTING", "POLICY_ROUTING_LIST"]
+    });
+});
+</script>
+</body>
+
+</html>

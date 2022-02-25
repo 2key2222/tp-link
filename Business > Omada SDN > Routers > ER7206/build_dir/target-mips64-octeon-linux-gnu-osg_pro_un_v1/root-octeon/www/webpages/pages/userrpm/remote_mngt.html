@@ -1,0 +1,276 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>REMOTE_MNGT</title>
+<style type="text/css">
+</style>
+</head>
+
+<body>
+<div class="func-container">
+    <div id="remote_mngt_list">
+        <div id="remote_mngt_grid">
+        </div>
+    </div>
+
+    <div id="remote_mngt_list_help"></div>
+</div>
+
+<script type="text/javascript">
+try{
+    $
+}catch(e){
+    location.href = "/";
+};
+
+
+function maskIntToMaskAddr(int_mask)
+
+{
+
+    var mask_addr = "";
+
+    if(parseInt(int_mask,10) < 0 || parseInt(int_mask,10) > 32)
+
+    {
+
+        return mask_addr;
+
+    }
+
+    var mask_num = parseInt(int_mask,10)/8;
+
+    var i = 0;
+
+    for(;i<=(mask_num-1);i++)
+
+    {
+
+        if(i != 0) mask_addr += ".";
+
+        mask_addr += "255";
+
+    }
+
+
+
+    if(mask_num < 4)
+
+    {
+
+        var maskTmp = parseInt(int_mask,10)%8;
+
+        maskTmp = (255 << (8-maskTmp)) & 255;
+
+        if( mask_num >= 1 )mask_addr += ".";
+
+        mask_addr += maskTmp.toString();
+
+    
+
+        for(i = mask_num+1 ; i<4 ; i++)
+
+        {
+
+            if(i!=0)mask_addr += ".";
+
+            mask_addr += "0";
+
+        }
+
+    }
+
+    return mask_addr;
+
+}
+
+function logicAnd(int_a,int_b)
+{
+	var binary_a = parseInt(int_a,10).toString(2);
+	var binary_b = parseInt(int_b,10).toString(2);
+	var len = (binary_a.length < binary_b.length) ? binary_a.length : binary_b.length;
+
+	if (len != 32)
+	{
+		return int_a&int_b;
+	}
+	
+	var cut = Math.abs(binary_a.length - binary_b.length);
+	var temp = '';
+
+	for (var i = 0 ; i < cut; i++)
+	{
+		temp = temp + '0';
+	}
+	
+	if (binary_a.length > binary_b.length)
+	{
+		binary_b = temp + binary_b;
+	}
+	else
+	{
+		binary_a = temp + binary_a;
+	}
+	var res = 0;
+	for (var i=len-1; i >= 0; i--)
+	{
+		if (binary_a.charAt(i)&binary_b.charAt(i) == 1)
+		{
+			if((len-1-i) >24)
+			{
+				res = Number(res) + 256*Number((1<<(len-9-i)));
+			}
+			else
+			{
+				res = Number(res) + Number((1<<(len-1-i)));
+			}
+		}
+	}
+	return res;
+}
+
+$(document).ready(function(e){
+    var maxIpMask;
+    var URL_REMOTE_MNGT_LIST = $.su.url("/admin/remote_mngt?form=remote_mngt");
+
+
+	$("#remote_mngt_list").panel({
+		title: $.su.CHAR.REMOTE_MNGT.MAPPING_LIST,
+		collapsible: false
+	});
+
+	var remoteMngtProxy = new $.su.Proxy({
+		url: URL_REMOTE_MNGT_LIST
+	});
+
+
+	var naptGrid = $("#remote_mngt_grid").grid({
+        editor: {
+			validator:function()
+			{
+				var editor  = $(naptGrid.grid("getEditor"));
+
+				var subnet  = editor.find("[name=ipaddr]").subnet("getValue");
+				var ipArray = subnet.split('/');
+				var ipAddr	= ipArray[0];
+				var mask    = ipArray[1];
+
+				var store 	= naptGrid.grid("getStore");
+				var keyProperty = store.keyProperty;
+				var grid_array  = store.data;
+				
+				var editingId = editor.editor("getEditingId"); 
+				
+				if($.isArray(grid_array) && grid_array.length > 0)
+				{
+					for(var k = 0; k < grid_array.length;k++)
+					{
+						var data = grid_array[k];
+						
+						if(data[keyProperty] == editingId)
+						{
+							continue;
+						}
+						else
+						{
+							var iSubnet     = data['ipaddr'].split('/');
+							var iIpAddr		= iSubnet[0];
+							var iMask		= iSubnet[1];
+							var tempMask 	= (iMask > mask)? mask:iMask;
+							var minMask  	= $.su.func.ipToInt(maskIntToMaskAddr(tempMask));
+							var ip_sample 	= logicAnd($.su.func.ipToInt(ipAddr),minMask);
+							var ip_net      = logicAnd($.su.func.ipToInt(iIpAddr),minMask);
+
+							//console.log(ip_sample);
+							//console.log(ip_net);
+							if(ip_sample == ip_net)
+							{
+								$($("#remote_mngt_grid").grid("getEditor")).form('setError',  $.su.CHAR.ERROR['00000076']);
+								return false;
+							}
+						}
+					}
+				}
+				//console.log(maskIntToMaskAddr(mask));
+				var ip_sample_x = logicAnd($.su.func.ipToInt(ipAddr),$.su.func.ipToInt(maskIntToMaskAddr(mask)));
+				var ip_net_ip   = $.su.func.intToIp(ip_sample_x);
+				var calSubnet   = ip_net_ip + '/' + mask;
+				editor.find("[name=ipaddr]").subnet("setValue",calSubnet);
+				//console.log(ip_net_ip);
+				//console.log(calSubnet);
+				//console.log(editor.find("[name=ipaddr]").subnet("getValue"));
+				return true;
+
+	},
+            content:"default",
+            fields: [
+                {name: "ipaddr"},
+                {name: "enabled"}
+            ]
+        },
+		store:{
+			proxy: remoteMngtProxy,
+			fields: [
+		 		{name: "ipaddr"},
+                {name: "enabled"},
+                		{name: "edit"}
+			],
+			autoLoad: true
+		},
+		paging:[],
+		columns: [
+			{
+				xtype: "checkcolumn"
+			},
+			{
+				xtype: "rownumberer"
+			},
+			{
+				text: $.su.CHAR.REMOTE_MNGT.IP_RANGE,
+				dataIndex: "ipaddr",
+                editor: {
+                    xtype: "subnet",
+                    text: $.su.CHAR.REMOTE_MNGT.IP_RANGE_IP,
+                    allowBlank: false
+                },
+                width: 150
+			},
+            {
+                text: $.su.CHAR.REMOTE_MNGT.STATUS,
+                xtype: "statuscolumn",
+                dataIndex: "enabled",
+                editor: {
+                    xtype: "checkbox",
+                    fieldLabel: '',
+                    items: [
+                        {boxlabel: $.su.CHAR.REMOTE_MNGT.ENABLE_THIS_ENTRY, inputValue:'on', uncheckedValue:'off'}
+                    ]
+                }
+            },
+            {
+                xtype: "settings",
+                renderer: function (op, dd, jndex, data){
+                    if ((op == "edit") && (data.edit == "off")) return false;
+                    return true;
+                },
+            }
+		],
+		operation: 'prompt|add|delete'
+	}).on("ev_load", function(e,data, others){
+			if(others)/* 通过json里的others参数传递动态阀值 */
+			{
+				maxrules = others.max_rules;
+				maxIpMask = others.max_ip_mask;
+			}
+		});
+
+    var helpNaptGrid = new $.su.Help({
+        container: "div#remote_mngt_list_help",
+        content: "REMOTE_MNGT"
+    });
+
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,40 @@
+--- a/drivers/spi/spi.c
++++ b/drivers/spi/spi.c
+@@ -52,6 +52,25 @@
+ }
+ 
+ static ssize_t
++device_id_show(struct device *dev, struct device_attribute *a, char *buf)
++{
++	const struct spi_device	*spi = to_spi_device(dev);
++	int			tmp;
++	u8			code = 0x4b;
++	u8			id[13];
++	u32*			jedec;
++	u32*      ext_jedec;
++	tmp = spi_write_then_read(spi, &code, 1, id, 13);
++	if (tmp < 0) {
++		return sprintf(buf, "none\n");
++	}
++	jedec = &id[5];
++	ext_jedec = &id[9] ;
++	
++	return sprintf(buf, "%08x%08x\n", *jedec,*ext_jedec);
++}
++
++static ssize_t
+ modalias_show(struct device *dev, struct device_attribute *a, char *buf)
+ {
+ 	const struct spi_device	*spi = to_spi_device(dev);
+@@ -61,9 +80,11 @@
+ 
+ static struct device_attribute spi_dev_attrs[] = {
+ 	__ATTR_RO(modalias),
++	__ATTR_RO(device_id),
+ 	__ATTR_NULL,
+ };
+ 
++
+ /* modalias support makes "modprobe $MODALIAS" new-style hotplug work,
+  * and the sysfs version makes coldplug work too.
+  */

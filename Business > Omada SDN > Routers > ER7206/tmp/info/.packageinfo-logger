@@ -1,0 +1,18 @@
+Source-Makefile: package/logger/Makefile
+Package: liblogger
+Submenu: Apps
+Version: 1.0
+Depends: +libc +USE_EGLIBC:librt +USE_EGLIBC:libpthread +libuci +libiconv-full
+Menu-Depends: 
+Provides: 
+Section: TP-LINK
+Category: @@@@@ TPLINK Proprietary
+Title: Sytem Log libs
+Maintainer: TP-LINK
+Source: 
+Type: ipkg
+Description: Sytem Log libs
+TP-LINK
+@@
+
+

@@ -1,0 +1,11 @@
+--- a/kernel/include/linux/netfilter/ipset/ip_set_hash.h
++++ b/kernel/include/linux/netfilter/ipset/ip_set_hash.h
+@@ -6,7 +6,7 @@
+ 
+ #define IPSET_DEFAULT_HASHSIZE		1024
+ #define IPSET_MIMINAL_HASHSIZE		64
+-#define IPSET_DEFAULT_MAXELEM		65536
++#define IPSET_DEFAULT_MAXELEM		(8*2*65536)		/* For IP-Port Group, 8:#IP-Subnet, 2:TCP&UDP, 65536:#Port(0-65535) */
+ #define IPSET_DEFAULT_PROBES		4
+ #define IPSET_DEFAULT_RESIZE		100
+ 

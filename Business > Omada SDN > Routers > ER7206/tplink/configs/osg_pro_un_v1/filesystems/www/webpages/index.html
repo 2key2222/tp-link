@@ -1,0 +1,1089 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+
+<link rel="shortcut icon" href="favicon.ico"/>
+<!-- <link rel="icon" type="img/vnd.microsoft.icon" href="favicon.ico"/> -->
+
+<!-- <link type="text/css" href="css/reset.css" rel="stylesheet" /> -->
+<link type="text/css" href="css/widget.css" rel="stylesheet" />
+
+<link type="text/css" href="themes/old/css/widget.css" rel="stylesheet" />
+<link type="text/css" href="themes/old/css/style.css" rel="stylesheet" />
+
+<!--[if lte IE 8]>
+<meta http-equiv="X-UA-Compatible" content="IE=8" />
+<link href="themes/old/css/ie.css" rel="stylesheet" type="text/css" />
+<![endif]-->
+
+<!--[if lte IE 7]>
+<link href="themes/old/css/ie.css" rel="stylesheet" type="text/css" />
+<![endif]-->
+
+<!--[if lte IE 6]>
+<link href="themes/old/css/ie.css" rel="stylesheet" type="text/css" />
+<![endif]-->
+
+
+<title>Opening...</title>
+<script type="text/javascript"> 
+	function goTopEx() { 
+		var obj = document.getElementById("goTopBtn"); 
+		var obj1 = document.getElementById("goBottomBtn"); 
+		obj.onclick = function() { 
+			$("div.top-main").scrollTop(0);
+		}
+		obj1.onclick = function() { 
+			$("div.top-main").scrollTop($("div.top-main")[0].scrollHeight);
+		}
+		obj.onmouseover = function(e) { 
+			$(".scrollToTop").css({  
+				"background":"url(./themes/old/img/up_disabled.png) no-repeat top center"
+			});
+		}
+		obj.onmouseout = function(e) { 
+			$(".scrollToTop").css({  
+				"background":"url(./themes/old/img/up_nomal.png) no-repeat top center"
+			});
+		}
+		obj1.onmouseover = function(e) { 
+			$(".scrollToBottom").css({  
+				"background":"url(./themes/old/img/down_disabled.png) no-repeat top center"
+			});
+		}
+		obj1.onmouseout = function(e) { 
+			$(".scrollToBottom").css({  
+				"background":"url(./themes/old/img/down_nomal.png) no-repeat top center"
+			});
+		}
+	} 
+	function scrollFunc(){
+		var obj = document.getElementById("goTopBtn"); 
+		var obj1 = document.getElementById("goBottomBtn"); 
+		$("div.top-main").scrollTop() > 0 ? obj.style.display = "": obj.style.display = "none"; 
+
+		if($("div.top-main").height() ==  $("div.top-main")[0].scrollHeight){
+			
+			obj1.style.display = "none";
+			return;
+		}else{
+			$("div.top-main").scrollTop() + $("div.top-main").height() > $("div.top-main")[0].scrollHeight - 18? obj1.style.display = "none": obj1.style.display = "inline-block"; 
+		}
+
+		
+	}
+</script> 
+<style> 
+#goTopBtn { 
+POSITION: fixed; TEXT-ALIGN: center; LINE-HEIGHT: 30px; WIDTH: 100px; TOP: 450px; HEIGHT: 33px; FONT-SIZE: 12px; CURSOR: pointer; RIGHT: 20px; _position: absolute; _right: auto ;z-index:99;
+} 
+#goBottomBtn { 
+POSITION: fixed; TEXT-ALIGN: center; LINE-HEIGHT: 30px; WIDTH: 100px; TOP: 480px; HEIGHT: 33px; FONT-SIZE: 12px; CURSOR: pointer; RIGHT: 20px; _position: absolute; _right: auto ;z-index:99;display: none;
+} 
+.scrollToTop {
+	display: block;
+	width: 80px;
+	height: 23px;
+	padding: 3px 5px;
+	line-height: 12px;
+	text-align: center;
+	color: red;
+	text-decoration: none;
+	background: url(./themes/old/img/up_disabled.png) no-repeat top center;
+}
+.scrollToBottom {
+	display: block;
+	width: 80px;
+	height: 23px;
+	padding: 3px 5px;
+	line-height: 12px;
+	text-align: center;
+	color: red;
+	text-decoration: none;
+	background: url(./themes/old/img/down_disabled.png) no-repeat top center;
+}
+</style> 
+</head>
+
+<body>
+
+<noscript>
+	<meta http-equiv="refresh" content="0; url=error.html"/>
+</noscript>
+
+<!--主界面-->
+<div class="top" id="top-wrapper">
+	<div class="top-bg">
+		<div class="top-bg-l"></div>
+		<!-- <div class="top-bg-r"></div> -->
+	</div><!-- background -->
+	<div class="top-header">
+		<div class="top-header-wrap">
+			<h1 id="product-tag" onclick="javascript:window.open('http://www.tp-link.com/en/');"></h1>
+			<div class="top-nav" id="top-nav" style="display: none">
+				<!-- 菜单需要考虑的问题：1、动态加载；2、字符由charset控制 -->
+				<ul id="ul-nav">
+					<li class="fst">
+						<div class="nav-wrap">
+							<a class="nav" name="quick_setup" href="pages/frame/quick-setup.html">
+								<span></span>
+							</a>
+						</div>
+					</li>
+					<li>
+						<div class="nav-wrap">
+							<a class="nav" name="basic" href="pages/frame/basic.html">
+						<span></span>
+							</a>
+						</div>
+					</li>
+					<li>
+						<div class="nav-wrap">
+							<a class="nav" name="advanced" href="pages/frame/advanced.html">
+						<span></span>
+							</a>
+						</div>
+					</li>
+				</ul><!-- <li class="separator"></li> -->
+			</div><!-- top-nav -->
+			
+			<div id="top-control" class="top-control">
+				<!--<div id="lan-select" class="lan-select-container">
+					<select id="lan-select">
+						<option>English</option>
+						<option>中文</option>
+					</select>--><!-- lan-select -->
+				<!--</div>-->
+				<div class="lan-select-container">
+					<input id="lan-select" />
+				</div>
+
+<!--				<a class="top-control-btn" id="top-control-reboot" href="javascript:void(0);" >
+					&lt;!&ndash;<span class="icon"></span>&ndash;&gt;
+					<span id="txt-reboot" class="text"></span>
+				</a>-->
+                <div id="product-type" class="top-banner"></div>
+                <div id="product-name" class="top-banner"></div>
+			</div>
+		</div>
+	</div><!-- top-header -->
+	<div class="user-info" style="display:none;">
+		<div id="user-info">
+			<span id="user-info-name"></span>
+			<span id="user-login-time"></span>
+		</div>
+		<a class="top-control-btn" id="top-control-logout" href="javascript:void(0);" >
+            <!--<span class="icon"></span>-->
+            <span id="txt-logout" class="text"></span>
+        </a>
+        <a class="top-control-btn" id="top-control-save-config" href="javascript:void(0);" >
+            <!--<span class="icon"></span>-->
+            <span id="config-save" class="text"></span>
+        </a>
+        <a class="top-control-btn" id="top-control-config-status" href="javascript:void(0);" >
+            <!--<span class="icon"></span>-->
+            <span id="config-status" class="text"></span>
+        </a>
+	</div>
+    <div class="tab-menu-wrapper">
+        <div id="tab-menu" class="tab-menu">
+
+<!--
+            <ul id="tab-menu-ul-3578729847" class="tab-menu-ul">
+                <li class="fst selected">
+                    <div class="nav-wrap">
+                        <a class="nav" name="quick_setup" href="pages/frame/quick-setup.html">
+                            <span>tabMenu11</span>
+                        </a>
+                    </div>
+                </li>
+                <li class="">
+                    <div class="nav-wrap">
+                        <a class="nav" name="advanced" href="pages/frame/advanced2.html">
+                            <span>tabMenu12</span>
+                        </a>
+                    </div>
+                </li>
+            </ul>
+-->
+        </div>
+        
+    </div>
+	
+	<div class="top-main" onscroll='scrollFunc()'>
+		<div class="top-main-wrap">
+			<div class="top-content">
+				<div id="goBottomBtn"><a title="Go to Bottom" class="scrollToBottom"></a></div> 
+				<div class="top-content-wrap" id="top-content">
+				</div>
+				<div style="display:none" id="goTopBtn"><a title="Back to Top" class="scrollToTop"></a></div> 
+				<script type="text/javascript">goTopEx();</script> 
+			</div><!-- top-content -->
+			
+			
+			<div class="top-footer">
+				<div class="top-footer-wrap">
+					<span id="product-info">
+						<span id="firmware-version-title"></span>
+						<span id="firmware-version-content"></span>
+						<span id="hardware-version-title"></span>
+						<span id="hardware-version-content"></span>
+					</span>
+							
+					<span class="help-faq">
+						<a id="btn-faq" class="btn-faq" href="http://www.tp-link.com/en/Support/" target="_blank"></a>
+					</span>
+
+					<div class="clear"></div>
+				</div>
+			</div><!-- top-footer -->
+		</div>
+	</div>
+
+</div><!-- top-wrapper -->
+
+<!--遮蔽层-->
+<div id="mask" class="mask"></div>
+<!--loading-->
+<div class="loading-container" id="loading-container">
+	<div class="loading-container-wrap">
+		<div class="loading-container-inner">
+			<div class="loading-waiting-icon"></div>
+		</div>
+	</div>
+</div>
+
+<!-- 重启和登出的确认 -->
+<div id="reboot_confirm_msg" class="hidden warning">
+	<div id="reboot_confirm_qa">
+		<h4 class="title">
+			<span class="icon"></span>
+			<span class="text" id="reboot-confirm-msg-text"></span>
+		</h4>
+	</div>
+
+	<div id="loading_msg" class="reboot-loading-msg hidden">
+		<p id="reboot_progressbar_text" class="reboot-progressbar-text"></p>
+		<input id="reboot_loading_progressbar" />
+	</div>
+</div>
+
+<div id="logout_confirm_msg" class="hidden warning">
+	<div class="reboot-confirm-qa">
+		<h4 class="title">
+			<span class="icon"></span>
+			<span class="text" id="logout_confirm_msg_text"></span>
+		</h4>
+	</div>
+</div>
+
+<div id="save_config_confirm_msg" class="hidden warning">
+	<div class="reboot-confirm-qa">
+		<h4 class="title">
+			<span class="icon"></span>
+			<span class="text" id="save_config_confirm_msg_text"></span>
+		</h4>
+	</div>
+</div>
+
+<!-- 提示用户设置登录名和密码 -->
+<div id="reset-user-msg-container" class="hidden">
+	<div id="reset-user-form">
+		<!--<h4 id="reset-user-title" class="title title"></h4>-->
+		<div class="reset-user-content">
+			<input id="reset-user-new-username" name="new_acc" />
+			<input id="reset-user-new-password" name="new_pwd" />
+			<input id="reset-user-confirm-password" name="cfm_pwd" />
+			<input id="reset-user-confirm-password-status" />
+		</div>
+		<button type="button" id="btn-reset-user"></button>
+	</div>
+</div>
+
+<!-- 快速配置对话框 -->
+<div id="wizard-msg">
+    <div id="wizard-form"></div>
+</div>
+
+<!--全局警告提示框-->
+<div id="global-warning-msg" class="hidden warning">
+	<h4 class="title">
+		<span class="icon"></span>
+		<span class="text" id="global-warning-text"></span>
+	</h4>
+</div>
+
+<!--
+以下是js部分
+-->
+
+<!--<script type="text/javascript" src="http://192.168.1.101:1070/target/target-script-min.js#anonymous"></script>-->
+
+<!--  jquery框架加载  -->
+<script type="text/javascript" src="js/libs/jquery.min.js"></script>
+<script type="text/javascript" src="js/libs/jquery.scrollTo.min.js"></script>
+<!-- <script type="text/javascript" src="js/libs/jquery.json-2.4.min.js"></script> -->
+<!-- <script type="text/javascript" src="js/libs/jquery.extend.js"></script> -->
+<!-- <script type="text/javascript" src="js/libs/jquery.cookies.min.js"></script> -->
+
+<!--  语言部分加载  -->
+
+<!-- <script id="lan-js" type="text/javascript" src="locale/en_US/lan.js"></script>
+<link id="lan-css" type="text/css" rel="stylesheet" href="locale/en_US/lan.css" /> -->
+
+<script type="text/javascript" src="js/su/locale.js"></script>
+<script type="text/javascript">
+//<![CDATA[
+	try{
+		$.su.locale.URL_LAN_CHECK = $.su.url("/locale?form=lang");//"./data/lan.json";
+		$.su.locale.get();
+	}catch(error){
+		location.href = "./error.html";
+	};
+//]]>
+</script>
+
+<!--  引入框架代码， 最后需要统一到一个文件下面  -->
+<!--<script type="text/javascript" src="js/su/su.full.min.js"></script>
+<script type="text/javascript" src="js/libs/encrypt.js"></script>-->
+<script type="text/javascript" src="js/libs/encrypt.js"></script>
+<script type="text/javascript" src="js/su/su.js"></script>
+<!--[if lte IE 8]>
+<script type="text/javascript" src="js/libs/excanvas.js"></script>
+	<script type="text/javascript" src="js/libs/html5.js"></script>
+<![endif]-->
+
+<script type="text/javascript" src="js/libs/jquery.flot.js"></script>
+
+<script type="text/javascript" src="js/su/data/proxy.js"></script>
+<script type="text/javascript" src="js/su/data/store.js"></script>
+<script type="text/javascript" src="js/su/data/treestore.js"></script>
+
+<script type="text/javascript" src="js/su/widget/widget.js"></script>
+
+<script type="text/javascript" src="js/su/widget/window/panel.js"></script>
+<script type="text/javascript" src="js/su/widget/window/page.js"></script>
+<script type="text/javascript" src="js/su/widget/window/wizard.js"></script>
+<script type="text/javascript" src="js/su/widget/window/msg.js"></script>
+<script type="text/javascript" src="js/su/widget/window/foldertree.js"></script>
+<script type="text/javascript" src="js/su/widget/window/keyword.js"></script>
+
+<script type="text/javascript" src="js/su/widget/grid/grid.js"></script>
+<script type="text/javascript" src="js/su/widget/grid/editor.js"></script>
+<script type="text/javascript" src="js/su/widget/grid/paging.js"></script>
+
+<script type="text/javascript" src="js/su/widget/form/form.js"></script>
+<script type="text/javascript" src="js/su/widget/form/fieldset.js"></script>
+<script type="text/javascript" src="js/su/widget/form/combobox.js"></script>
+<script type="text/javascript" src="js/su/widget/form/checkbox.js"></script>
+<script type="text/javascript" src="js/su/widget/form/radio.js"></script>
+<script type="text/javascript" src="js/su/widget/form/textbox.js"></script>
+<script type="text/javascript" src="js/su/widget/form/subnet.js"></script>
+<script type="text/javascript" src="js/su/widget/form/portrange.js"></script>
+<script type="text/javascript" src="js/su/widget/form/textarea.js"></script>
+<script type="text/javascript" src="js/su/widget/form/button.js"></script>
+<script type="text/javascript" src="js/su/widget/form/time.js"></script>
+<script type="text/javascript" src="js/su/widget/form/file.js"></script>
+<!--<script type="text/javascript" src="js/su/widget/form/buttongroup.js"></script>-->
+<script type="text/javascript" src="js/su/widget/form/timepicker.js"></script>
+<script type="text/javascript" src="js/su/widget/form/progressbar.js"></script>
+<script type="text/javascript" src="js/su/widget/form/waitingbar.js"></script>
+<!--<script type="text/javascript" src="js/su/widget/form/tip.js"></script>
+<script type="text/javascript" src="js/su/widget/form/region.js"></script>-->
+<script type="text/javascript" src="js/su/widget/form/password.js"></script>
+<script type="text/javascript" src="js/su/widget/form/status.js"></script>
+<script type="text/javascript" src="js/su/widget/form/slider.js"></script>
+<script type="text/javascript" src="js/su/widget/form/switch.js"></script>
+
+<!--  运行时代码  -->
+<script type="text/javascript">
+//<![CDATA[
+$(document).ready(function(e){
+	/*加载产品信息*/
+	var MODEL_NAME = $.su.locale.model;
+	var MODEL_DESC = MODEL_NAME.match(/[^ ]*/);
+	if(typeof MODEL_DESC != "string"){
+		MODEL_DESC = MODEL_DESC[0];
+	}
+	document.title = MODEL_DESC;
+	$("#product-type").html(MODEL_DESC);
+	$("#product-name").html($.su.CHAR.PRODUCTINFO[MODEL_DESC]);
+
+	// 获取无线信息
+	$.su.radioCount = parseInt($.su.locale.radio, 10);
+
+//获得token
+try{
+	$.su.url.stok = localStorage.getItem("token") || (function(){
+		var stok = "12345",
+			href = top.location.href;
+		var stokPos = href.indexOf("stok=");
+		if (stokPos >= 0){
+			stok = href.substring(stokPos+5);
+		};
+		return stok;
+	})();
+}catch(e){
+	var h = function(){
+		location.href = "/";
+	};
+	
+	if (logoutProxy){
+		logoutProxy.write({}, h, h, h)
+	};
+};
+
+//用户登出url
+var URL_LOGOUT = $.su.url("/admin/system?form=logout"); //"./data/login.json"
+var URL_REBOOT = $.su.url("/admin/system?form=reboot"); //"./data/login.json"
+var URL_SAVE_CONFIG = $.su.url("/userconfig?form=cfg_save");
+
+var logoutProxy = new $.su.Proxy({
+	url: URL_LOGOUT,
+	autoLoad: false
+});
+
+var rebootProxy = new $.su.Proxy({
+	url: URL_REBOOT,
+	autoLoad: false
+});
+
+var saveConfigProxy = new $.su.Proxy({
+	url: URL_SAVE_CONFIG,
+	autoLoad: false
+});
+
+
+//index页面初始化
+/**********SRT*多语言选择框*SRT*********/
+//注意：需要判断是否更改，否则不发送信息~
+var lanSelectCombo = $("input#lan-select").combobox({
+	cls: "top-lan-select",
+	items: [
+		{"value": "en_US", "name": $.su.CHAR.LANGUAGE.EN_US}//,
+		//{"value": "zh_CN", "name": $.su.CHAR.LANGUAGE.ZH_CN}
+	],
+	fieldLabel: null
+}).on("ev_click", function(e, vOld, vNew){
+	//console.log(vOld, vNew)
+	if (vOld[0] == vNew[0]){
+		return;
+	};
+	$.su.locale.set(vNew[0], function(){
+		lanSelectCombo.combobox("setValue", [$.su.locale.locale]);
+	}, function(){
+		lanSelectCombo.combobox("setValue", [$.su.locale.locale]);
+	});
+}).combobox("setValue", [$.su.locale.locale]);
+
+//$("title").text($.su.locale.model);
+//document.title = $.su.locale.model;
+//$("h1#product-tag").text($.su.locale.model);
+
+$("span#txt-logout").text($.su.CHAR.CONTROL.LOGOUT);
+$("span#config-save").text($.su.CHAR.CONTROL.SAVE_CONFIG);
+$("span#txt-reboot").text($.su.CHAR.CONTROL.SUPPORT);
+
+$("span#firmware-version-title").html($.su.CHAR.INDEX.FIRMWARE_VERSION);
+$("span#hardware-version-title").html($.su.CHAR.INDEX.HARDWARE_VERSION);
+$("a#btn-faq").html($.su.CHAR.INDEX.HELP_SUPPORT);
+
+if ($.su.locale.force){
+	lanSelectCombo.combobox("hide");
+};
+/**********END*多语言选择框*END*********/
+
+function getCpuNum(){
+	var URL_GET_CPU_NUM = $.su.url("/admin/sys_status?form=cpu_num"); 
+	var getCpuNumProxy = new $.su.Proxy({
+		url: URL_GET_CPU_NUM,
+		autoLoad: false
+	});
+    getCpuNumProxy.read({"method":"get", "params":{}}, function(data){
+	$.su.cpuNum = data.cpu_num;
+        }
+    );
+}
+getCpuNum();
+
+/**********STR*用户登录信息*STR**********/
+var rebootConfirmMsg = $("div#reboot_confirm_msg").msg({
+	type: "confirm",
+	global: true,
+	cls: 'reboot-confirm-size',
+	closeBtn: false,
+	okHandler: function(e){
+		$('div#reboot_confirm_qa').hide();
+		$('div#loading_msg').show();
+		rebootConfirmMsg.msg('hideButtons');
+		
+		rebootProxy.write();
+		reboot_pro_bar.progressbar("reset").progressbar('animate',  0, 1, 60*1000, function(){
+			if (localStorage){
+				localStorage.setItem("token", "");
+			};
+			location.href = "/";
+		});
+		
+		return false;
+	},
+	cancelHandler: function(){
+		rebootConfirmMsg.msg('hide');
+	}
+});
+
+/*var rebootLoadingMsg = $("div#reboot-loading-msg").msg({
+	type: "window",
+	global: true
+});*/
+
+var logoutConfirmMsg = $("div#logout_confirm_msg").msg({
+	type: "confirm",
+	global: true,
+	closeBtn: false,
+	cls: "reboot-confirm-size",
+	okHandler: function(e){
+		var h = function(){
+			if (localStorage){
+				localStorage.setItem("token", "");
+			};
+			location.href = "/";
+		};
+		//localStorage.getItem("token")
+		logoutProxy.write({}, h, h);
+	}
+});
+
+var saveConfigConfirmMsg = $("div#save_config_confirm_msg").msg({
+    type: "confirm",
+    global: true,
+    closeBtn: false,
+    cls: "reboot-confirm-size",
+    okHandler: function(e){
+        saveConfigProxy.write( {"id":1, "method":"set"}, function(data){
+            var getData = $.extend({status: null}, data);
+            var text;
+            switch(getData.status){
+                case 'Saved':
+                    text = "";
+                    break;
+                case 'Saving':
+                    text = "";
+                    break;
+                case  'Not Saved':
+                    text = $.su.CHAR.CONTROL.CONFIG_SATAYUS_NOT_SAVED;
+                    break;
+                default :
+                    text = "";
+
+            }
+            $("span#config-status").text(text);
+        } );
+    }
+});
+
+function refreshConfigStatus(){
+    saveConfigProxy.write( {"id":1, "method":"get"}, function(data){
+        var getData = $.extend({status: null}, data);
+        var text;
+        /*
+        if(getData.config_status == "Default"){
+        	$("body").hide();
+        	location.href = "./login.html";
+        	return false;
+        }
+        */
+        switch(getData.status){
+            case 'Saved':
+                text = "";
+                break;
+            case 'Saving':
+                text = "";
+                break;
+            case  'Not Saved':
+                text = $.su.CHAR.CONTROL.CONFIG_SATAYUS_NOT_SAVED;
+                break;
+            default :
+                text = "";
+
+        }
+        $("span#config-status").text(text);
+    } );
+}
+
+refreshConfigStatus();
+window.indexPageConfTimeout = window.indexPageConfTimeout || setInterval(refreshConfigStatus, 50000000);
+
+var reboot_pro_bar = $('input#reboot_loading_progressbar').progressbar({
+	width: 326,
+	height: 6,
+	isProgressbar: true,
+	cls: 'reboot-loading-probar'
+});
+
+$('span#reboot-confirm-msg-text').html($.su.CHAR.INDEX.CONFIRM_REBOOT);
+$('p#reboot_progressbar_text').html($.su.CHAR.INDEX.REBOOTING);
+$('span#logout_confirm_msg_text').html($.su.CHAR.INDEX.CONFIRM_LOGOUT);
+$('span#save_config_confirm_msg_text').html($.su.CHAR.INDEX.CONFIRM_SAVE_CONFIG);
+
+$("a#top-control-logout").click(function(e){
+	logoutConfirmMsg.msg("show");
+});
+
+$("a#top-control-save-config").click(function(e){
+	saveConfigConfirmMsg.msg("show");
+});
+
+$("a#top-control-reboot").click(function(e){
+	//rebootConfirmMsg.msg("show");
+    window.location = "http://www.tp-link.com/en/support.html";
+});
+
+/**********END*用户登录信息*END**********/
+
+/**********SRT*警告信息*SRT**********/
+var warningMsg = $("div#global-warning-msg").msg({
+	type: "alert",
+	global: true,
+	cls: "m",
+	closeBtn: false
+});
+
+/**********END*警告信息*END**********/
+
+/**********SRT*软硬件版本信息*SRT*********/
+
+// var firmwareProxy = new $.su.Proxy({
+// 	async: false,
+// 	url: $.su.url("/admin/firmware?form=upgrade")
+// });
+
+var firstLog = false;
+
+/*for top-footer display is none*/
+// firmwareProxy.read({}, function(data){
+// 	var firmware = $("span#firmware-version-content");
+// 	var hardware = $("span#hardware-version-content");
+// 	if (data){
+// 		if (data.firmware_version){
+// 			firmware.html(data.firmware_version);
+// 		}else{
+// 			firmware.css("display", "none");
+// 		};
+// 		if (data.hardware_version){
+// 			hardware.html(data.hardware_version);
+// 		}else{
+// 			hardware.css("display", "none");
+// 		};
+// 		/*
+// 		if (data.is_default == true){
+// 			firstLog = true;
+// 		};
+// 		*/
+// 	}else{
+// 		$("span#product-info").css("display", "none");
+// 	};
+// }, function(){
+// 	$("span#product-info").css("display", "none");
+// }, function(){
+// 	$("span#product-info").css("display", "none");
+// });
+
+/**********END*软硬件版本信息*END*********/
+
+/**********STR*app定义*STR*********/
+$.su.app = {
+	/*runningModule: $({
+		name: ""
+	}),
+	init: function(){
+		$.su.app.runningModule.on("ev_unload", function(e, name){
+			$.su.app.runningModule[0]["name"] = name;
+			//console.log("ev_unload");
+			$.su.app.runningModule.off("ev_beforeunload");
+		});
+	},*/
+	runningModule: {
+		name: "",
+		addUnloadHandler: function(fn){
+			if ($.isFunction(fn)){
+				this.unloadHandlers.push(fn);
+			}
+		},
+		clearUnloadHandler: function(){
+			this.unloadHandlers = [];
+		},
+		unload: function(oldN, newN){
+			this.name = newN;
+			var handlers = this.unloadHandlers;
+			for (var index in handlers){
+				var fn = handlers[index];
+				if ($.isFunction(fn)){
+					fn();
+				}
+			};
+			this.clearUnloadHandler();
+		},
+		unloadHandlers: []
+	},
+	errorOperation: {
+		denied: function(error_code){
+			var msg = $("div#global-warning-msg");
+			$("span#global-warning-text").html($.su.CHAR.ERROR_CODE[error_code]);
+			if (msg.is(":hidden")){
+				msg.msg("show");
+			}
+			if(error_code == 704){
+				setTimeout(function() {
+					location.href = "./login.html";
+				}, 2000);	
+				msg.msg("hideButtons");
+			}
+		},
+		userConflict: function(){
+			//操作中用户冲突的回调
+		}
+	},
+	navGoTo: function(name, url){
+		var contentContainer = $("div#top-content");
+		//旧模块卸载
+		$.su.Manager.removeLocal();
+		$.su.loading.show();
+
+		/*if (name != "quick_setup"){
+			//非quicksetup
+			
+			
+			contentContainer.load(url, {}, function(response,status,xhr){
+				$.su.layout.doLayout();
+				$.su.loading.hide();
+			});
+		}else{*/
+			//$.su.app.runningModule.trigger("ev_beforeunload", [$.su.app.runningModule[0].name, name]);
+		var runningModule = $.su.app.runningModule;
+			runningModule.unload(runningModule.name, name);
+
+		contentContainer.load(url, {}, function(response,status,xhr){
+			//$.su.app.runningModule.trigger("ev_unload", [name]);
+			$.su.layout.doLayout();
+			//$.su.loading.hide();
+		});
+
+		//}
+	},
+	menuGoTo: function(name, url, isAdvanced){
+		var contentContainer = isAdvanced ? $("div#func-advanced") : $("div#func-basic");
+		//旧模块卸载
+		$.su.Manager.removeLocal();
+		//var runningModule = $.su.app.runningModule;
+		//$.su.app.runningModule.trigger("ev_beforeunload", [$.su.app.runningModule[0].name, name]);
+		//console.log("menuGoTo", runningModule)
+		var runningModule = $.su.app.runningModule;
+			runningModule.unload(runningModule.name, name);
+
+		$.su.loading.show();
+		if(url != "./pages/userrpm/system_state.html"){contentContainer.addClass("unvisibility");}
+		contentContainer.load(url, {}, function(response,status,xhr){
+			//$.su.app.runningModule.trigger("ev_unload", [name]);
+			
+			$.su.layout.doLayout();
+			/*$("div.top-main").scrollTo({
+				top: 0,
+				left: 0
+			}, 100);*/
+			scrollFunc();
+			if(url != "./pages/userrpm/system_state.html"){contentContainer.removeClass("unvisibility");}
+			$("div.top-main").scrollTo(0);
+			$.su.loading.hide();
+		});
+	}   
+};
+//$.su.app.init();
+/**********END*app定义*END*********/
+
+/**********STR*快速配置*STR**********/
+var wanProxy = new $.su.Proxy({url: $.su.url("/admin/interface_wan?form=wanmode")});
+wanProxy.read({}, function(data){
+    if(data && data.wanmode){
+    	$.su.isSingleWan = data.singlewan || 0;
+        $.su.wanCount = data.wanmode;
+    }
+});
+
+$.su.wizard = (function(){
+    var wizardMsg = $('#wizard-msg').msg({
+        autoshow: false,
+        global: true,
+        //title: '快速配置',
+        type: "window",
+        cancelHandler: function(){
+            $.su.msgManager.remove('wizard-reboot-msg');
+        }
+    });
+    var wizardForm = $('#wizard-form');
+    var url = './pages/userrpm/wizard.html';
+    return {
+        show: function(){
+            wizardForm.load(url, {}, function(){
+                wizardMsg.msg('show');
+            });
+        },
+        hide: function(){
+            wizardMsg.msg('close');
+        }
+    }
+})();
+
+var wizardProxy = new $.su.Proxy({
+    url: $.su.url("/admin/wizard?form=routeInfo")
+});
+
+wizardProxy.read({}, function(data){
+    if(data && data.wizard_flag === "on" && !$.su.isSingleWan){
+        //$.su.wizard.show();
+    }
+    // if(data && data.radio){
+    //     $.su.radioCount = parseInt(data.radio, 10);
+    // }else{
+    //     $.su.radioCount = 0;
+    // }
+});
+
+/**********END*快速配置*END*********/
+
+/**********STR*菜单部分效果*STR**********/
+$.su.nav = (function(){
+	var nav = {};
+	//字符串初始化
+	var navItems = $("ul#ul-nav li a");
+	navItems.each(function(index, element){
+		var me = $(element),
+			name = me.attr("name");
+		me.html("<span>"+$.su.CHAR.NAV[name.toUpperCase()]+"</span>");
+	});
+	
+	navItems.on("click", function(e){
+		e.preventDefault();
+		var me = $(this),
+			name = me.attr("name");
+		
+		$.su.nav.goTo(name);
+
+	});
+	
+	nav.goTo = function(name){ 
+		var item = $("ul#ul-nav li a[name='"+name+"']");
+		var url = item.attr("href");
+
+		$("ul#ul-nav li").removeClass("selected");
+		item.closest("li").addClass("selected");
+		$.su.app.navGoTo(name, url);
+	};
+
+	return nav;
+})();
+
+if (0&&firstLog){
+	$.su.nav.goTo("advanced");
+
+	var resetUserMsg = $("div#reset-user-msg-container").msg({
+		type: "window",
+		global: true,
+		title: $.su.CHAR.QUICK_SETUP.RESET_USER_TITLE,
+		cls: "l reset-user"
+	});
+
+	//$("h4#reset-user-title").html($.su.CHAR.QUICK_SETUP.RESET_USER_TITLE);
+
+	$("input#reset-user-new-username").textbox({
+		fieldLabel: $.su.CHAR.QUICK_SETUP.NEW_USERNAME,
+		allowBlank: false,
+		vtype:"ascii_visible",
+		minLength:1,
+		maxLength:15
+	});
+	setTimeout(function(){
+		$("input#reset-user-new-username").focus();
+	},10);
+	
+	var passwordCheck = function(new_pwd, cfm_val){
+		if(cfm_val == new_pwd){
+			resetUserConfirmPassword.password('setNormal');
+			resetUserConfirmPasswordStatus.status("setSuccess");
+			return true;
+		}else{
+			resetUserConfirmPasswordStatus.status("setFailed");
+			return false;
+		};
+	};
+
+	var resetUserNewPassword = $("input#reset-user-new-password").password({
+		fieldLabel: $.su.CHAR.QUICK_SETUP.NEW_PASSWORD,
+		showLevel: true,
+		allowBlank: false,
+		vtype:"ascii_visible",
+		minLength:1,
+		maxLength:15
+	}).on("ev_change ev_validatechange", function(){
+		var new_pwd = resetUserNewPassword.password("getValue");
+		var cfm_val = resetUserConfirmPassword.password("getValue");
+
+		resetUserConfirmPasswordStatus.status('setNormal');
+		resetUserConfirmPassword.password('setNormal');
+		if(new_pwd == '' || cfm_val == '')  return;
+		passwordCheck(new_pwd, cfm_val);
+	});
+
+	var resetUserConfirmPassword = $("input#reset-user-confirm-password").password({
+		fieldLabel: $.su.CHAR.QUICK_SETUP.CONFIRM_PASSWORD,
+		showLevel: false,
+		allowBlank: false,
+		cls: "inline-block",
+		vtype:"ascii_visible",
+		minLength:1,
+		maxLength:15
+	}).on("ev_validatechange", function(){
+		var new_pwd = resetUserNewPassword.password("getValue");
+		var cfm_val = resetUserConfirmPassword.password("getValue");
+		if(new_pwd == '' || cfm_val == '')  return;
+
+		if (!passwordCheck(new_pwd, cfm_val)){
+			resetUserConfirmPassword.password("setError");
+		};
+	}).on("ev_change", function(e, value, key, keyCode){
+		//var new_pwd = resetUserNewPassword.password("getValue");
+		//var cfm_val = resetUserConfirmPassword.password("getValue");
+		resetUserConfirmPasswordStatus.status('setNormal');
+		//if (passwordCheck(new_pwd, cfm_val)){
+			if (key == "Enter" || keyCode == 13){
+				if(!$("button#btn-reset-user").prop('disabled')){
+					$("button#btn-reset-user").button("disable");
+					resetUserConfirmPassword.password("doEncrypt");
+					resetUserForm.form("submit", {
+						"operation": "set"
+					}, function(){
+						resetUserMsg.msg("close");
+					});
+					setTimeout(function(){
+						$("button#btn-reset-user").button("enable");
+					},500);
+				}
+			}
+		//};
+	});
+
+	var resetUserConfirmPasswordStatus = $("input#reset-user-confirm-password-status").status({
+		cls: "inline-block"
+	});
+
+	$("button#btn-reset-user").button({
+		text: $.su.CHAR.QUICK_SETUP.CONFIRM,
+		cls: "submit",
+		handler: function(){
+			resetUserForm.form("submit", {
+				"operation": "set"
+			}, function(){
+				resetUserMsg.msg("close");
+			});
+		}
+	});
+
+	var resetUserForm = $("div#reset-user-form").form({
+		proxy: {
+			url: $.su.url("/admin/administration?form=account")
+		},
+		fields: [
+			{name: "new_acc", mapping: "new_acc"},
+			{name: "new_pwd", mapping: "new_pwd"},
+			{name: "cfm_pwd", mapping: "cfm_pwd"}
+		],
+		submitBtn: "#btn-reset-user",
+		validator: function(){
+			var p1 = resetUserNewPassword.password("getValue");
+			var p2 = resetUserConfirmPassword.password("getValue");
+			if (p1 === p2){
+				resetUserConfirmPasswordStatus.status("setSuccess");
+				return true;
+			}else{
+				resetUserConfirmPassword.password("setError", $.su.CHAR.ERROR["00000080"]);
+				return false;
+			}
+		}
+	});
+	//console.log("show resetUserMsg")
+	resetUserMsg.msg("show");
+}else{
+	$.su.nav.goTo("advanced");
+	$("div#reset-user-msg-container").remove();
+};
+/**********END*菜单部分效果*END**********/
+
+/**********SRT*布局调整*SRT*********/
+$.su.layout.doLayout = function(){
+	//alert("layout");
+	//console.log($.su.app.runningModule.name);
+
+	var mh = $("div.menu-container").height(),
+		hh = $("div.top-header").height(),
+		fh = $("div.top-footer").height(),
+        tabh = $("div.tab-menu-wrapper").height(),
+        uih = $("div.user-info").height(),
+		wh = $(window).height();
+
+	//$("div.function-container").css("height", "inherit");
+
+	$("div.top-main").css({
+		height: wh - hh -tabh
+	});
+
+	var th = $("div.top-main").height(),
+		ch = wh - hh - tabh - uih,// - fh
+		h = Math.max(mh, ch);
+
+	$("body").css({
+		"height": wh
+	});
+
+	var c = $("div.function-container");
+	var pT = parseInt(c.css("paddingTop"), 10);
+	var pB = parseInt(c.css("paddingBottom"), 10);
+
+	$("div.function-container").css({
+		"min-height": ch - pT - pB
+	});
+
+	//alert(wh, hh, fh, mh, ch, h, pT, pB);
+		
+	if ($.su.app.runningModule.name === "quick_setup"){
+		var wh = $(window).height(),
+			fh = $("div.top-footer").height(),
+			hh = $("div.top-header").height();
+
+		var c = $("div#quicksetup-form").css("height", "inherit");
+
+		var ch = $("div#top-content").height(),
+			h = ch;
+
+		if (fh+hh+ch >= wh){
+			c.css("height", h);
+		}else{
+			c.css("height", wh - hh - fh);
+		};
+		
+	};
+};
+/**********END*布局调整*END*********/
+
+/**页面初始化**/
+$(window).on("resize load", function(){
+	$.su.layout.doLayout();
+});
+
+
+});
+//]]>
+</script>
+</body>
+</html>

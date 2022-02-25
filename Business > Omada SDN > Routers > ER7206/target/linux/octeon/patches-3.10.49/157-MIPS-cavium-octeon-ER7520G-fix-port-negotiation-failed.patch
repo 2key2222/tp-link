@@ -1,0 +1,38 @@
+diff -Naur a/drivers/net/ethernet/octeon/ethernet-mdio.c b/drivers/net/ethernet/octeon/ethernet-mdio.c
+--- a/drivers/net/ethernet/octeon/ethernet-mdio.c	2015-10-07 19:42:32.000000000 +0800
++++ b/drivers/net/ethernet/octeon/ethernet-mdio.c	2015-10-16 17:02:02.000000000 +0800
+@@ -419,8 +419,13 @@
+ 	struct octeon_ethernet *priv = netdev_priv(dev);
+ 	cvmx_helper_link_info_t link_info;
+ 
+-	if (priv->last_link != priv->phydev->link) {
++        if (priv->last_link != priv->phydev->link 
++          || priv->last_speed != priv->phydev->speed
++          || priv->last_duplex != priv->phydev->duplex) {
+ 		priv->last_link = priv->phydev->link;
++                priv->last_speed = priv->phydev->speed;
++                priv->last_duplex = priv->phydev->duplex;
++
+ 		link_info.u64 = 0;
+ 		link_info.s.link_up = priv->last_link ? 1 : 0;
+ 		link_info.s.full_duplex = priv->phydev->duplex ? 1 : 0;
+@@ -496,6 +501,7 @@
+ 		return -ENODEV;
+ 
+ 	priv->last_link = 0;
++        priv->last_speed = 0;
+ 	phy_start_aneg(priv->phydev);
+ 
+ 	return 0;
+diff -Naur a/drivers/net/ethernet/octeon/octeon-ethernet.h b/drivers/net/ethernet/octeon/octeon-ethernet.h
+--- a/drivers/net/ethernet/octeon/octeon-ethernet.h	2015-10-07 19:42:32.000000000 +0800
++++ b/drivers/net/ethernet/octeon/octeon-ethernet.h	2015-10-16 17:00:25.000000000 +0800
+@@ -89,6 +89,8 @@
+ 
+ 	struct phy_device *phydev;
+ 	int last_link;
++        unsigned int last_duplex;
++        unsigned int last_speed;
+ 	/* Last negotiated link state */
+ 	u64 link_info;
+ 	/* Called periodically to check link status */

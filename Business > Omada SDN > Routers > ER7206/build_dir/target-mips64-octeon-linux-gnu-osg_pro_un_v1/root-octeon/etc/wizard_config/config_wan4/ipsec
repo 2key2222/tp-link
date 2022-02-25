@@ -1,0 +1,86 @@
+#config ike_proposal 
+#       option  name  'ike_pro1'
+#       option  auth  'md5'
+#       option  encrypt '3des'
+#       option  dh_group 'modp1024'
+#       option  ref      1
+ 
+#config ike_proposal 
+#       option  name  'ike_pro2'
+#       option  auth  'md5'
+#       option  encrypt 'aes128'
+#       option  dh_group 'modp1024'
+#       option  ref      1
+ 
+
+#config ike_stage1
+#       option name    'ike_ph1_name'
+#	   #exchange_mode value:main,aggresive
+#       option exchange_mode 'main'
+#       option lifetime 38430
+#       option dpd_enable enable
+#	   #Combination with 'dpd_enable'(1~300s)
+#       option dpd_interval   20	   
+#       option ike_version    'ikev1'       
+#       list ike_proposal 'ike_pro1'
+#       list ike_proposal 'ike_pro2'
+#       option ref   1
+ 
+#config ike_stage2_proposal
+#       option name  'ph2_proposal1'
+#       option  hash 'md5'
+#       option  encrypt '3des'
+#       option  encapsulation_mode 'esp'
+#       option  ref      1
+ 
+#config ike_stage2_proposal
+#       option name  'ph2_proposal2'
+#       option  hash 'md5'
+#       option  encrypt 'aes128'
+#       option  encapsulation_mode 'esp'
+#       option  ref      1
+	   
+#config ike_stage2
+#       option name    'ike_ph2_name'
+#		#not used 
+#	   option compression 'disable'
+#	   option lifetime 		36225
+#	   #mode value: tunnel,transport
+#       option mode  'tunnel'
+#	   #perfect forward security: none ,modp768, modp1024, modp1536,
+#	   option pfs 	'modp768'
+#	   list ike_stage2_proposal  'ph2_proposal1'
+#	   list ike_stage2_proposal  'ph2_proposal2'
+#	   option ref 1
+            
+
+
+
+#config connection 
+#	option name    'ipsec_policy'
+#	#'domain_name' or 'ipv4' or 'if_name'
+#	option local_binding_type 'if_name'
+#	option local_binding 'WAN1'
+#	#'domain_name' or 'ipv4' or 'if_name'
+#   option remote_peer_type 'domain_name'
+#	option  remote_peer 'www.ustc.edu.cn'
+#	#define interested flow	
+#	#port name or 1~65535
+#	option local_port	0
+#	option local_network	'192.168.2.0/24'
+#	#text or 0~255
+#	option protocol  0 
+#	option remote_port 0 
+#	#option remote_network 	'192.168.2.0/24'
+#	option ike_stage2    'ike_ph2_name'
+#	option ike_stage1    'ike_ph1_name'
+#	#config_mode value 'enable' or 'disable'
+#	option config_mode 		'enable'
+#	option ip_pool 		'%yang_pool'
+#	#responder or initiator
+#	option connection_type	'responder'
+#	option status 	'enable'
+
+	
+	
+	

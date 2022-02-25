@@ -1,0 +1,130 @@
+diff -Naur uci/libuci.c uci_tp/libuci.c
+--- uci/libuci.c	2014-09-24 15:01:58.000000000 +0800
++++ uci_tp/libuci.c	2015-09-06 09:33:52.951457122 +0800
+@@ -231,3 +231,98 @@
+ 	ctx->backend = uci_to_backend(e);
+ 	return 0;
+ }
++
++int uci_get_profile(char* config, char* option)
++{
++
++
++    struct uci_context *ctx = uci_alloc_context();
++    struct uci_package *p = NULL;
++    struct uci_ptr ptr;
++    char   opt_name[255];
++    int ret;
++   
++    /* load /var/state/dos_protection */
++    uci_set_confdir(ctx, "/etc/profile.d");
++    ret = uci_load(ctx, "profile", &p);
++    if (ret != UCI_OK)
++    { 
++        printf("uci_load not ok");
++        return -1;
++    }
++
++
++    strncpy(opt_name, "profile" , 255);
++    strcat(opt_name, ".@");
++    strcat(opt_name, config);
++    strcat(opt_name, "[0].");
++    strcat(opt_name, option);
++   
++    if (uci_lookup_ptr(ctx, &ptr, opt_name, true) != UCI_OK) {
++        uci_perror(ctx, "lookup ptr");
++        printf("uci_lookup_ptr not ok");
++        uci_free_context(ctx);
++        return -1;
++    }
++
++    if (!strcmp(ptr.o->v.string, "on"))
++    {
++        uci_free_context(ctx);
++        return 1;
++    }
++
++    else if (!strcmp(ptr.o->v.string, "off"))
++    {
++        uci_free_context(ctx);
++        return 0;
++    }
++
++    else
++    {
++    	ret = atoi(ptr.o->v.string);
++    	uci_free_context(ctx);
++        return ret;
++    }
++
++}
++
++int uci_get_profile_global(char* dest, char* option)
++{
++
++
++    struct uci_context *ctx = uci_alloc_context();
++    struct uci_package *p = NULL;
++    struct uci_ptr ptr;
++    char   opt_name[255];
++    int ret;
++   
++    /* load /var/state/dos_protection */
++    uci_set_confdir(ctx, "/etc/profile.d");
++    ret = uci_load(ctx, "profile", &p);
++    if (ret != UCI_OK)
++    { 
++        printf("uci_load not ok");
++        uci_free_context(ctx);
++        return -1;
++    }
++
++
++    strncpy(opt_name, "profile" , 255);
++    strcat(opt_name, ".@");
++    strcat(opt_name, "global");
++    strcat(opt_name, "[0].");
++    strcat(opt_name, option);
++   
++    if (uci_lookup_ptr(ctx, &ptr, opt_name, true) != UCI_OK) {
++        uci_perror(ctx, "lookup ptr");
++        printf("uci_lookup_ptr not ok");
++        uci_free_context(ctx);
++        return -1;
++    }
++
++    strcpy(dest, ptr.o->v.string);
++    uci_free_context(ctx);
++    return 0;
++ 
++}
++
+diff -Naur uci/uci.h uci_tp/uci.h
+--- uci/uci.h	2014-09-24 15:01:58.000000000 +0800
++++ uci_tp/uci.h	2015-09-06 09:22:12.000000000 +0800
+@@ -131,6 +131,24 @@
+ extern int uci_load(struct uci_context *ctx, const char *name, struct uci_package **package);
+ 
+ /**
++ * uci_get_profile: Get profile config
++ * @config: module name
++ * @option: option name
++ * @return: option value ("on" return 1, "off" return 0)
++ *
++ */
++extern int uci_get_profile(char* config, char* option);
++
++/**
++ * uci_get_profile_global: Get profile config
++ * @option: write option value to this string
++ * @option: option name
++ * @return: option value (string)
++ *
++ */
++extern int uci_get_profile_global(char* dest, char* option);
++
++/**
+  * uci_unload: Unload a config file from the uci context
+  *
+  * @ctx: uci context

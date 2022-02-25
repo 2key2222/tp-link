@@ -1,0 +1,59 @@
+#!/bin/sh
+. /lib/zone/zone_api.sh
+
+dnete ip -f inet addr | grep -E '^[0-9]+:|^[[:space:]]+inet' | while read line;
+do
+	fmly=$(echo $line | awk -F ' ' '{print$1}')
+	line=$(echo $line | awk -F ' ' '{print$2}' | awk -F  ':' '{print$1}')
+	if [ "$fmly" != "inet" ];
+	then
+		ifname="${line%%@*}"
+		iface=""
+		zone=""
+
+		# Fastpath to resolve the zone of ifname, not by slowpath of zone api:
+		# LAN: ifname = br-lan.
+		# WAN: ifname is saved in network config section for dhcp/static.
+		# WAN: ifname is special string format --> pppoe-{iface}/l2tp-{iface}/pptp-{iface}
+		_ZONE_IFACS_="wan1_eth wan1_poe wan2_eth wan2_poe wan3_eth wan3_poe wan4_eth wan4_poe lan"
+		for iface in ${_ZONE_IFACS_}
+		do
+			if [ "$iface" = "lan" -a "$ifname" = "br-lan" ]; then
+				zone="LAN"
+				break
+			elif [ "$(uci -q get network.$iface.ifname)" = "$ifname" ]; then
+				zone=WAN"${iface:3:1}"
+				break
+			elif [ "${ifname%%$iface}" != "$ifname" ]; then
+				zone=WAN"${iface:3:1}"
+				break
+			fi
+		done
+
+		lan=0
+		[ "${zone:0:3}" == "LAN" ] && lan=1
+	else
+		[ -n "$zone" ] && {
+			[ "${line%%/*}" == "${line##*/}" ] && line="$line/32"
+			echo "$zone $ifname ${line%%/*} ${line##*/} ${lan}"
+		}
+	fi
+done
+
+each_vnet()
+{
+	[ "$1" == "vwan" ] && return
+
+	config_get zone "$1" "zone" ""
+	config_get ipaddr "$1" "ipaddr" ""
+	config_get netmask "$1" "netmask" ""
+	config_get ifname "$1" "ifname" ""
+
+	prefix=$(ipcalc -p $ipaddr $netmask)
+	prefix=${prefix/PREFIX=/}
+
+	echo $zone $ifname $ipaddr $prefix 1
+}
+
+config_load vnetwork
+config_foreach each_vnet vinterface

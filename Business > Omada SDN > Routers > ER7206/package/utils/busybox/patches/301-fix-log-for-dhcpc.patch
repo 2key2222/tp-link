@@ -1,0 +1,82 @@
+--- a/networking/udhcp/dhcpc.c	2018-04-26 10:44:29.442204700 +0800
++++ b/networking/udhcp/dhcpc.c	2018-04-26 13:57:28.525205074 +0800
+@@ -40,10 +40,7 @@
+ #define DHCP_CLIENT_START_REQUEST		12155
+ #define DHCP_CLIENT_REBIND_FAIL			12156
+ #define DHCP_CLIENT_DISCOVER_TIMEOUT	12157
+-#define DHCP_CLIENT_REQUEST_TIMEOUT	12158
+-#define DHCP_CLIENT_IP_CONFLICT	12159
+-#define DHCP_CLIENT_SUCC_INIT 12160
+-#define DHCP_CLIENT_FAIL_INIT 12161
++#define DHCP_CLIENT_REQUEST_TIMEOUT	    12158
+ 
+ #define DHCP_CLIENT_LOGGER_REG(info_id,...)			\
+ 	logger_reg(LOGGER_MODULE_ID_DHCP_CLIENT,info_id,##__VA_ARGS__)
+@@ -220,6 +217,7 @@
+ }
+ 
+ static char router_x[32] = {0};
++static char subnet_x[32] = "255.255.255.0";
+ 
+ #if ENABLE_LONG_OPTS
+ static const char udhcpc_longopts[] ALIGN1 =
+@@ -764,6 +762,10 @@
+ 	if (tmp) {
+ 		strncpy(router_x, tmp, 31);
+ 	}
++	tmp = getenv("subnet");
++	if (tmp) {
++		strncpy(subnet_x, tmp, 31);
++	}
+ 	/* call script */
+ 	log1("Executing %s %s", client_config.script, name);
+ 	argv[0] = (char*) client_config.script;
+@@ -1554,7 +1556,6 @@
+ 			NULL,
+ 			client_config.client_mac)
+ 	) {
+-		DHCP_CLIENT_LOGGER_REG(DHCP_CLIENT_FAIL_INIT);
+ 		return 1;
+ 	}
+ 
+@@ -1611,7 +1612,6 @@
+ 	if (get_zone_by_dev(client_config.interface, zone_namex) != 0)
+ 		strcpy(zone_namex, "unknown");
+ 
+-    DHCP_CLIENT_LOGGER_REG(DHCP_CLIENT_SUCC_INIT);
+ 	/* Main event loop. select() waits on signal pipe and possibly
+ 	 * on sockfd.
+ 	 * "continue" statements in code below jump to the top of the loop.
+@@ -1921,7 +1921,18 @@
+ 					send_decline(/*xid,*/ server_addr, packet.yiaddr);
+ 
+ 					state = INIT_SELECTING;
+-					DHCP_CLIENT_LOGGER_REG(DHCP_CLIENT_IP_CONFLICT,LOGGER_PARAM_STRING,zone_namex/*client_config.interface*/,LOGGER_PARAM_IPV4,ntohl(requested_ip));
++					{
++						fill_envp(&packet);
++						char *tmp = getenv("router");
++						if (tmp) {
++							strncpy(router_x, tmp, 31);
++						}
++						tmp = getenv("subnet");
++						if (tmp) {
++							strncpy(subnet_x, tmp, 31);
++						}
++					}
++					DHCP_CLIENT_LOGGER_REG(DHCP_CLIENT_SET_FAIL,LOGGER_PARAM_STRING,zone_namex/*client_config.interface*/,LOGGER_PARAM_IPV4,ntohl(requested_ip), LOGGER_PARAM_STRING, subnet_x, LOGGER_PARAM_STRING, router_x);
+ 					sleep(5);
+ 				}
+ 			}
+@@ -2003,10 +2014,10 @@
+ 					
+ 				if(state == REQUESTING){
+ 					/****/
+-			DHCP_CLIENT_LOGGER_REG(DHCP_CLIENT_GET_IP_SUC,LOGGER_PARAM_STRING,zone_namex/*client_config.interface*/,LOGGER_PARAM_IPV4,ntohl(requested_ip),LOGGER_PARAM_IPV4,ntohl(router_xx));
++			DHCP_CLIENT_LOGGER_REG(DHCP_CLIENT_GET_IP_SUC,LOGGER_PARAM_STRING,zone_namex/*client_config.interface*/,LOGGER_PARAM_IPV4,ntohl(requested_ip),LOGGER_PARAM_STRING, subnet_x, LOGGER_PARAM_IPV4,ntohl(router_xx));
+ 				}else{
+ 					/****/
+-			DHCP_CLIENT_LOGGER_REG(DHCP_CLIENT_REBIND_SUC,LOGGER_PARAM_STRING,zone_namex/*client_config.interface*/,LOGGER_PARAM_IPV4,ntohl(requested_ip),LOGGER_PARAM_IPV4,ntohl(router_xx));
++			DHCP_CLIENT_LOGGER_REG(DHCP_CLIENT_REBIND_SUC,LOGGER_PARAM_STRING,zone_namex/*client_config.interface*/,LOGGER_PARAM_IPV4,ntohl(requested_ip),LOGGER_PARAM_STRING, subnet_x, LOGGER_PARAM_IPV4,ntohl(router_xx));
+ 				}
+ 
+ 				state = BOUND;

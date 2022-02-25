@@ -1,0 +1,39 @@
+--- a/networking/udhcp/signalpipe.c	2020-04-15 18:42:17.680415459 +0800
++++ b/networking/udhcp/signalpipe.c	2020-04-15 18:43:07.039973968 +0800
+@@ -43,6 +43,7 @@
+ 		+ (1 << SIGUSR1)
+ 		+ (1 << SIGUSR2)
+ 		+ (1 << SIGTERM)
++		+ (1 << SIGALRM)
+ 		, signal_handler);
+ }
+ 
+--- a/networking/udhcp/dhcpc.c	2020-04-15 18:42:41.579413440 +0800
++++ b/networking/udhcp/dhcpc.c	2020-04-15 19:20:03.125029847 +0800
+@@ -1841,6 +1841,7 @@
+ 				state = RENEWING;
+ 				client_config.first_secs = 0; /* make secs field count from 0 */
+ 				change_listen_mode(LISTEN_KERNEL);
++				alarm(8); /* add timeout event (8 seconds) for dhcp renew */
+ 				log1("Entering renew state");
+ 				DHCP_CLIENT_LOGGER_REG(DHCP_CLIENT_START_REQUEST,LOGGER_PARAM_STRING,zone_namex);
+ 				/* fall right through */
+@@ -1928,6 +1929,10 @@
+ 			perform_release(server_addr, requested_ip);
+ 			timeout = INT_MAX;
+ 			continue;
++		case SIGALRM:
++			already_waited_sec += (unsigned)monotonic_sec() - timestamp_before_wait;
++			udhcp_run_script(NULL, "renew_timeout");
++			continue;
+ 		case SIGTERM:
+ 			bb_info_msg("Received SIGTERM");
+ 			goto ret0;
+@@ -2209,6 +2214,7 @@
+ 				/* xid = random_xid(); ...but why bother? */
+ 				already_waited_sec = (unsigned)monotonic_sec() - lease_at_server;
+ 				already_waited_sec = (already_waited_sec > timeout) ? timeout : already_waited_sec;
++				alarm(0); /* delete timeout event for dhcp renew */
+ 				continue; /* back to main loop */
+ 			}
+ 			if (*message == DHCPNAK) {

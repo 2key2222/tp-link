@@ -1,0 +1,73 @@
+--- a/networking/ntpd.c	2018-04-23 09:08:41.928893018 +0800
++++ b/networking/ntpd.c	2018-04-23 09:06:22.992893164 +0800
+@@ -48,6 +48,7 @@
+ #include <netinet/ip.h> /* For IPTOS_LOWDELAY definition */
+ #include <sys/resource.h> /* setpriority */
+ #include <sys/timex.h>
++#include "logger.h"
+ #ifndef IPTOS_LOWDELAY
+ # define IPTOS_LOWDELAY 0x10
+ #endif
+@@ -378,6 +379,16 @@
+ 
+ static const int const_IPTOS_LOWDELAY = IPTOS_LOWDELAY;
+ 
++static int logTimeout = 0;
++static double ntpd_init_time = 0.0;
++#define MAX_RENEW_SUCC_SEC 2
++#define LOGGER_MODULE_ID_SNTP_CLIENT 92
++#define LOGGER_ID_SNTP_INIT_SUCC 13846
++#define LOGGER_ID_SNTP_INIT_FAIL 13847
++#define LOGGER_ID_SNTP_RENEW_FAIL 13848
++
++#define SNTP_CLIENT_LOGGER_REG(info_id,...)			\
++ 	logger_reg(LOGGER_MODULE_ID_SNTP_CLIENT,info_id,##__VA_ARGS__)
+ 
+ #define VERB1 if (MAX_VERBOSE && G.verbose)
+ #define VERB2 if (MAX_VERBOSE >= 2 && G.verbose >= 2)
+@@ -2096,7 +2107,7 @@
+ 	if (BURSTPOLL != 0)
+ 		G.poll_exp = BURSTPOLL; /* speeds up initial sync */
+ 	G.last_script_run = G.reftime = G.last_update_recv_time = gettime1900d(); /* sets G.cur_time too */
+-
++	ntpd_init_time = G.last_update_recv_time;
+ 	/* Parse options */
+ 	peers = NULL;
+ 	opt_complementary = "dd:p::wn"; /* d: counter; p: list; -w implies -n */
+@@ -2158,6 +2169,7 @@
+ 		| (1 << SIGCHLD)
+ 		, SIG_IGN
+ 	);
++	//SNTP_CLIENT_LOGGER_REG(LOGGER_ID_SNTP_INIT_SUCC);
+ }
+ 
+ int ntpd_main(int argc UNUSED_PARAM, char **argv) MAIN_EXTERNALLY_VISIBLE;
+@@ -2197,6 +2209,19 @@
+ 		double nextaction;
+ 
+ 		/* Nothing between here and poll() blocks for any significant time */
++		gettime1900d();
++		if((G.cur_time-ntpd_init_time>BIGOFF_INTERVAL && G.last_update_recv_time==ntpd_init_time)||G.cur_time-G.last_update_recv_time > ((1<<MAXPOLL)+1<<(MAXPOLL-1)))
++		{
++			if(!logTimeout)
++			{
++				SNTP_CLIENT_LOGGER_REG(LOGGER_ID_SNTP_RENEW_FAIL);
++				logTimeout = 1;
++			}
++		}
++		else if(G.cur_time-G.last_update_recv_time < MAX_RENEW_SUCC_SEC && logTimeout)
++		{
++			logTimeout = 0;
++		}
+ 
+ 		nextaction = G.cur_time + 3600;
+ 
+@@ -2321,7 +2346,7 @@
+  have_reachable_peer: ;
+ 		}
+ 	} /* while (!bb_got_signal) */
+-
++ 	//SNTP_CLIENT_LOGGER_REG(LOGGER_ID_SNTP_INIT_FAIL);
+ 	remove_pidfile(CONFIG_PID_FILE_PATH "/ntpd.pid");
+ 	kill_myself_with_sig(bb_got_signal);
+ }

@@ -1,0 +1,310 @@
+--- a/drivers/net/ethernet/octeon/ethernet.c	2020-10-12 10:17:12.346431674 +0800
++++ b/drivers/net/ethernet/octeon/ethernet.c	2020-10-12 10:31:38.433787583 +0800
+@@ -861,6 +861,14 @@
+ 				continue;
+ 			pip_prt_tagx.u64 = cvmx_read_csr(CVMX_PIP_PRT_TAGX(port));
+ 			pip_prt_tagx.s.grp = pow_receive_group;
++#ifdef CONFIG_HW_FASTPATH_HOOK
++			pip_prt_tagx.s.tag_mode = 0;
++			pip_prt_tagx.s.ip4_dprt_flag = 1;
++			pip_prt_tagx.s.ip4_sprt_flag = 1;
++			pip_prt_tagx.s.ip4_pctl_flag = 1;
++			pip_prt_tagx.s.ip4_dst_flag = 1;
++			pip_prt_tagx.s.ip4_src_flag = 1;
++#endif
+ 			cvmx_write_csr(CVMX_PIP_PRT_TAGX(port), pip_prt_tagx.u64);
+ 		}
+ 	}
+--- a/drivers/net/ethernet/octeon/ethernet-rx.c	2020-10-12 10:17:12.347431674 +0800
++++ b/drivers/net/ethernet/octeon/ethernet-rx.c	2020-10-12 10:32:24.134594787 +0800
+@@ -323,6 +323,127 @@
+ 	return ktime_sub_ns(ktimebase, ptpbase - ptptime);
+ }
+ 
++#ifdef CONFIG_HW_FASTPATH_HOOK
++#ifdef __BIG_ENDIAN_BITFIELD
++#define HARDWARE_CHECK_MASK (0x00004000000F7F00)
++#define HARDWARE_VALID_MASK (0x0000000000040000)
++enum {
++	HARDWARE_VLAN_VALID   = (1 << 47),
++	HARDWARE_VLAN_STACKED = (1 << 46),
++	HARDWARE_IPCOMP       = (1 << 19),
++	HARDWARE_TCP_OR_UDP   = (1 << 18),
++	HARDWARE_IPSEC        = (1 << 17),
++	HARDWARE_IPV6         = (1 << 16),
++	HARDWARE_L4_ERR       = (1 << 14),
++	HARDWARE_FRAGMENT     = (1 << 13),
++	HARDWARE_EXCEPTION    = (1 << 12),
++	HARDWARE_BROADCAST    = (1 << 11),
++	HARDWARE_MULTICAST    = (1 << 10),
++	HARDWARE_NOIP         = (1 << 9),
++	HARDWARE_RCVERR       = (1 << 8),
++};
++#else
++#define HARDWARE_CHECK_MASK (0x00FEF00000020000)
++#define HARDWARE_VALID_MASK (0x0000200000000000)
++enum {
++	HARDWARE_VLAN_VALID   = (1 << 16),
++	HARDWARE_VLAN_STACKED = (1 << 17),
++	HARDWARE_IPCOMP       = (1 << 44),
++	HARDWARE_TCP_OR_UDP   = (1 << 45),
++	HARDWARE_IPSEC        = (1 << 46),
++	HARDWARE_IPV6         = (1 << 47),
++	HARDWARE_L4_ERR       = (1 << 49),
++	HARDWARE_FRAGMENT     = (1 << 50),
++	HARDWARE_EXCEPTION    = (1 << 51),
++	HARDWARE_BROADCAST    = (1 << 52),
++	HARDWARE_MULTICAST    = (1 << 53),
++	HARDWARE_NOIP         = (1 << 54),
++	HARDWARE_RCVERR       = (1 << 55),
++};
++#endif
++
++#define OCTEON_NET_DEV(dev)	((dev)->netdev_ops->ndo_start_xmit == cvm_oct_xmit_lockless)
++
++extern int (*athrs_accel_nat_recv)(struct sk_buff *skb, int (* xmit)(struct sk_buff *));
++
++ /* skb must be kfree by this xmit callback. */
++static int hardware_send_xmit(struct sk_buff *skb)
++{
++	struct net_device *dev = skb->dev;
++	int protocol = cpu_to_be16(ETH_P_8021Q);
++	int ret = 0;
++
++	if (likely(is_vlan_dev(dev) && OCTEON_NET_DEV(vlan_dev_real_dev(dev)))) {
++		skb = __vlan_put_tag(skb, protocol, vlan_dev_vlan_id(dev));
++		skb->protocol = protocol;
++		skb->dev = vlan_dev_real_dev(dev);
++		ret = cvm_oct_xmit_lockless(skb, skb->dev);
++		vlan_dev_tx_stats(dev, ret == NET_XMIT_SUCCESS || ret == NET_XMIT_CN, skb);
++		return ret;
++	} else if (!OCTEON_NET_DEV(dev)) {
++		return dev_queue_xmit(skb);
++	} else {
++		return cvm_oct_xmit_lockless(skb, skb->dev);
++	}
++}
++
++static int hardware_xmit(struct net_device *dev, struct sk_buff *skb, cvmx_wqe_t *work)
++{
++	int (* accel_recv)(struct sk_buff *skb, int (* xmit)(struct sk_buff *));
++	int protocol = skb->protocol;
++	struct iphdr *iphdr = NULL;
++	struct net_device *vlan_dev = NULL;
++	int len = skb->len;
++
++	accel_recv = rcu_dereference(athrs_accel_nat_recv);
++	if (!accel_recv) {
++		return -1;
++	}
++
++	/* checking for ipv4 & no frag & no vlan stacked */
++	if (!((work->word2.u64 & HARDWARE_CHECK_MASK) == HARDWARE_VALID_MASK)) {
++		return -1;
++	}
++
++	/* move header */
++	if (protocol == cpu_to_be16(ETH_P_8021Q)) {
++		if (!(vlan_dev = vlan_dev_get(dev, protocol, skb))) {
++			return -1;
++		}
++		__skb_pull(skb, VLAN_HLEN);
++		skb->protocol = cpu_to_be16(ETH_P_IP);
++		skb->dev = vlan_dev;
++		skb_reset_network_header(skb);
++		skb_reset_transport_header(skb);
++	} else if (protocol == cpu_to_be16(ETH_P_IP)) {
++		skb_reset_network_header(skb);
++		skb_reset_transport_header(skb);
++	} else {
++		return -1;
++	}
++
++	/* just accelerate for udp now */
++	iphdr = (struct iphdr *)skb_network_header(skb);
++	if (IPPROTO_UDP == iphdr->protocol) {
++		if (accel_recv(skb, hardware_send_xmit)) {
++			if (vlan_dev) {
++				vlan_dev_rx_stats(vlan_dev, len);
++			}
++			return 0;
++		}
++	}
++
++	/* recover header */
++	if (protocol == cpu_to_be16(ETH_P_8021Q)) {
++		__skb_push(skb, VLAN_HLEN);
++		skb->protocol = cpu_to_be16(ETH_P_8021Q);
++		skb->dev = dev;
++	}
++
++	return -1;	
++}
++#endif
++
+ #undef CVM_OCT_NAPI_68
+ #include "ethernet-napi.c"
+ 
+--- a/drivers/net/ethernet/octeon/ethernet-napi.c	2020-10-12 10:17:12.347431674 +0800
++++ b/drivers/net/ethernet/octeon/ethernet-napi.c	2020-10-12 13:02:45.943924889 +0800
+@@ -383,7 +383,13 @@
+ 					callback_result = priv->intercept_cb(priv->netdev, work, skb);
+ 					switch (callback_result) {
+ 					case CVM_OCT_PASS:
++#ifdef CONFIG_HW_FASTPATH_HOOK
++						if (hardware_xmit(skb->dev, skb, work) < 0) {
++							netif_receive_skb(skb);
++						}
++#else
+ 						netif_receive_skb(skb);
++#endif
+ 						break;
+ 					case CVM_OCT_DROP:
+ 						dev_kfree_skb_any(skb);
+@@ -411,7 +417,13 @@
+ 						break;
+ 					}
+ 				} else {
++#ifdef CONFIG_HW_FASTPATH_HOOK
++					if (hardware_xmit(skb->dev, skb, work) < 0) {
++						netif_receive_skb(skb);
++					}
++#else
+ 					netif_receive_skb(skb);
++#endif
+ 					callback_result = CVM_OCT_PASS;
+ 				}
+ 			} else {
+--- a/drivers/net/ethernet/octeon/ethernet-xmit.c	2020-10-12 10:17:12.348431674 +0800
++++ b/drivers/net/ethernet/octeon/ethernet-xmit.c	2020-10-12 13:07:30.614921334 +0800
+@@ -239,6 +239,18 @@
+ 		pko_command.s.dontfree = 0;
+ 
+ 	/* Check if we can use the hardware checksumming */
++#ifdef CONFIG_HW_FASTPATH_HOOK
++	if (USE_HW_TCPUDP_CHECKSUM && (skb->protocol == htons(ETH_P_8021Q)) && (vlan_eth_hdr(skb)->h_vlan_encapsulated_proto == htons(ETH_P_IP)) &&
++	    (ip_hdr(skb)->version == 4) && (ip_hdr(skb)->ihl == 5) &&
++	    ((ip_hdr(skb)->frag_off == 0) || (ip_hdr(skb)->frag_off == htons(1 << 14)))
++	    && ((ip_hdr(skb)->protocol == IPPROTO_TCP) || (ip_hdr(skb)->protocol == IPPROTO_UDP))) {
++		/* Use hardware checksum calc */
++		pko_command.s.ipoffp1 = sizeof(struct vlan_ethhdr) + 1;
++		if (unlikely(priv->imode == CVMX_HELPER_INTERFACE_MODE_SRIO))
++			pko_command.s.ipoffp1 += 8;
++	}
++	else
++#endif
+ 	if (USE_HW_TCPUDP_CHECKSUM && (skb->protocol == htons(ETH_P_IP)) &&
+ 	    (ip_hdr(skb)->version == 4) && (ip_hdr(skb)->ihl == 5) &&
+ 	    ((ip_hdr(skb)->frag_off == 0) || (ip_hdr(skb)->frag_off == htons(1 << 14)))
+--- a/include/linux/if_vlan.h	2014-07-18 06:58:15.000000000 +0800
++++ b/include/linux/if_vlan.h	2020-10-12 10:12:27.932428278 +0800
+@@ -101,6 +101,10 @@
+ 				 const struct net_device *by_dev);
+ 
+ extern bool vlan_uses_dev(const struct net_device *dev);
++
++extern struct net_device *vlan_dev_get(struct net_device *real_dev, int protocol, struct sk_buff *skb);
++extern int vlan_dev_rx_stats(struct net_device *vlan_dev, int len);
++extern int vlan_dev_tx_stats(struct net_device *vlan_dev, int success, struct sk_buff *skb);
+ #else
+ static inline struct net_device *
+ __vlan_find_dev_deep(struct net_device *real_dev,
+@@ -155,6 +158,21 @@
+ {
+ 	return false;
+ }
++
++static inline struct net_device *vlan_dev_get(struct net_device *real_dev, int protocol, struct sk_buff *skb)
++{
++	return NULL;
++}
++
++static inline int vlan_dev_rx_stats(struct net_device *vlan_dev, int len)
++{
++	return -1;
++}
++
++static inline int vlan_dev_tx_stats(struct net_device *vlan_dev, int success, struct sk_buff *skb)
++{
++	return -1;
++}
+ #endif
+ 
+ static inline bool vlan_hw_offload_capable(netdev_features_t features,
+--- a/net/8021q/vlan_core.c	2020-10-12 10:17:11.843431674 +0800
++++ b/net/8021q/vlan_core.c	2020-10-12 10:23:05.355432586 +0800
+@@ -412,3 +412,44 @@
+ 	return vlan_info->grp.nr_vlan_devs ? true : false;
+ }
+ EXPORT_SYMBOL(vlan_uses_dev);
++
++struct net_device *vlan_dev_get(struct net_device *real_dev, int protocol, struct sk_buff *skb)
++{
++	u16 vlan_tci = ntohs(((struct vlan_hdr *) skb->data)->h_vlan_TCI);
++	u16 vlan_id = (vlan_tci & VLAN_VID_MASK);
++
++	return vlan_find_dev(real_dev, protocol, vlan_id);
++}
++EXPORT_SYMBOL(vlan_dev_get);
++
++int vlan_dev_rx_stats(struct net_device *vlan_dev, int len)
++{
++	struct vlan_pcpu_stats *rx_stats;
++
++	rx_stats = this_cpu_ptr(vlan_dev_priv(vlan_dev)->vlan_pcpu_stats);
++	
++	u64_stats_update_begin(&rx_stats->syncp);
++	rx_stats->rx_packets++;
++	rx_stats->rx_bytes += len;
++	u64_stats_update_end(&rx_stats->syncp);
++	return 0;
++}
++EXPORT_SYMBOL(vlan_dev_rx_stats);
++
++int vlan_dev_tx_stats(struct net_device *vlan_dev, int success, struct sk_buff *skb)
++{
++	if (likely(success)) {
++		struct vlan_pcpu_stats *stats;
++		stats = this_cpu_ptr(vlan_dev_priv(vlan_dev)->vlan_pcpu_stats);
++		u64_stats_update_begin(&stats->syncp);
++		stats->tx_packets++;
++		stats->tx_bytes += skb->len;
++		u64_stats_update_end(&stats->syncp);
++	} else {
++		this_cpu_inc(vlan_dev_priv(vlan_dev)->vlan_pcpu_stats->tx_dropped);
++	}
++
++	return 0;
++}
++EXPORT_SYMBOL(vlan_dev_tx_stats);
++
+--- a/net/core/dev.c	2020-10-12 10:17:12.491431674 +0800
++++ b/net/core/dev.c	2020-10-12 10:18:57.045434216 +0800
+@@ -3466,6 +3466,8 @@
+ 
+ int (*athrs_fast_nat_recv)(struct sk_buff *skb) __rcu __read_mostly;
+ EXPORT_SYMBOL_GPL(athrs_fast_nat_recv);
++int (*athrs_accel_nat_recv)(struct sk_buff *skb, int (* xmit)(struct sk_buff *)) __rcu __read_mostly;
++EXPORT_SYMBOL_GPL(athrs_accel_nat_recv);
+ 
+ static int __netif_receive_skb_core(struct sk_buff *skb, bool pfmemalloc)
+ {
+--- a/drivers/net/ethernet/octeon/Kconfig	2020-10-12 16:46:45.789431992 +0800
++++ b/drivers/net/ethernet/octeon/Kconfig	2020-10-12 18:05:29.675431426 +0800
+@@ -9,6 +9,7 @@
+ 	select NET_VENDOR_OCTEON
+ 	select OCTEON_ETHERNET_MEM
+ 	select OCTEON_ETHERNET_COMMON
++	select HW_FASTPATH_HOOK
+ 	help
+ 	  This driver supports the builtin ethernet ports on Cavium
+ 	  Inc.' products in the Octeon family. This driver supports the
+--- a/drivers/net/ethernet/octeon/Kconfig	2020-10-12 16:46:52.026431656 +0800
++++ b/drivers/net/ethernet/octeon/Kconfig	2020-10-12 16:46:45.789431992 +0800
+@@ -52,3 +52,6 @@
+ 
+ config OCTEON_ETHERNET_COMMON
+ 	tristate
++
++config HW_FASTPATH_HOOK
++	bool

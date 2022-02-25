@@ -1,0 +1,197 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Reboot</title>
+</head>
+
+<body>
+<div class="func-container">
+	<div id="reboot_cnt">
+	 	<div id="reboot-setting">
+	    	<p id="rebootNote" name="rebootNote"  class="note first-line"></p>
+	    	 
+	    	<button type="button" id="reboot" name="reboot"></button>
+			<!-- <span id="reboot_error_str" class="error"></span> -->
+	    </div>
+	</div>
+	<div id="reboot_alert_cnt">
+		<h4 class="title"  id="reboot_confirm_cnt">
+			<span class="icon"></span>
+	 		<span class="text" id="reboot_confirm_content"></span>
+	 	</h4>
+	 	<div id="reboot_pro_cnt" class="reboot-loading-msg hidden">
+	    	<input id="reboot_pro_bar" type="text" />
+	    </div>
+	</div> 
+
+	<div id="reboot_failed_cnt">
+		<h4 class="title">
+			<span class="icon" ></span>
+			<span class="text" id="reboot_error_str"></span>
+		</h4>
+	</div> 
+
+	<div id="help_reboot"></div>
+</div>
+
+<script type="text/javascript">
+try{
+    $
+}catch(e){
+    location.href = "/";
+};
+
+$(document).ready(function(e){
+	var reboot_total_time = 2*60*1000;
+	var reboot_query_interval = false;
+	rebootTime = 2*60*1000;
+	// var reboot_count = 0;
+
+	var BACKUP_URL_NEW = $.su.url("/admin/firmware?form=config"); 
+
+	$("div.func-container").page({
+		title: $.su.CHAR.BACKUP.REBOOT,
+		help: ""	//可能是个调用的id 也可能是个url
+	});
+
+	$("#reboot_cnt").panel({
+		title: $.su.CHAR.BACKUP.REBOOT,
+		collapsible: false
+
+	});
+
+	$("#reboot_note").html($.su.CHAR.BACKUP.REBOOT_WARN);
+
+
+	$("#reboot-setting").form({
+		// proxy:{url: "./data/system.reboot.json"},
+		proxy:{url: BACKUP_URL_NEW},
+		formEnctype: "multipart/form-data",
+		traditional: true,
+		hiddenFrame: true,
+		autoLoad: false
+	});
+
+	var reboot_proxy = new $.su.Proxy({
+		url: BACKUP_URL_NEW
+	});
+
+	var get_time_proxy = new $.su.Proxy({
+		url: BACKUP_URL_NEW
+	});
+
+	function hideProMsg()
+	{
+		reboot_pro_bar.waitingbar("stop");
+		reboot_pro_bar.waitingbar("reset");
+
+		$("#reboot_alert_cnt").hide();
+		$("#reboot_pro_cnt").hide();
+
+		clearTimeout(timeout);
+		
+
+	}
+
+
+	var timeout = 0;
+	var rebootInterval = 0;
+	var isRebootFinish = false;
+	function reboot_write()
+	{
+		reboot_proxy.write({method:'reboot'}, function(data){
+		},function(){
+			hideProMsg();
+		},function(){
+			hideProMsg();		
+		});
+		reboot_pro_bar.waitingbar("run");
+		timeout = setTimeout(function() {
+			rebootInterval = setInterval(function(){
+				$.ajax({
+				    url: "./login.html",
+				    async: true,
+				    dataType: "html",
+
+				    success: function(data){
+				    	isRebootFinish = true;
+				    },
+				    error: function(){
+				        isRebootFinish = false;
+				    }
+				});
+		        		    
+			    if(isRebootFinish){
+			    	clearInterval(rebootInterval);
+			    	location.href= "./login.html";
+			    }
+			}, 1000);
+		}, rebootTime);
+	}
+
+	$("#reboot_failed_cnt").msg({
+		cls: 'warning reboot-confirm-size',
+		type: "alert"
+	});
+
+	$("#reboot_alert_cnt").msg({
+		okHandler:function(){
+			$("#reboot_alert_cnt").msg('hideButtons');
+            $('#reboot_confirm_cnt').hide();
+            $("#reboot_pro_cnt").show();
+			reboot_write();
+			return false;
+		},
+		// cls:"m warning",
+		cancelHandler:function(){
+			return true;
+		},
+		cls: 'warning reboot-confirm-size',
+   	    closeBtn: false,
+		type: "confirm"
+	});
+
+	var reboot_pro_bar  = $('input#reboot_pro_bar').waitingbar({
+		fieldLabel: $.su.CHAR.BACKUP.REBOOT_TIP,//"重启路由器需要一些时间，请稍等",
+		labelCls:"xxl"
+	});
+
+	
+	$("#reboot").button({
+		text: $.su.CHAR.BACKUP.REBOOTBTN,
+		handler: function(){
+			$("#reboot_alert_cnt").msg("show");
+		},
+		cls: "submit"
+	});
+
+	$.su.app.runningModule.addUnloadHandler(function(){
+	    if(reboot_query_interval)
+	    {
+	    	clearTimeout(reboot_query_interval);
+			reboot_query_interval = false;
+	    }
+
+	    reboot_pro_bar.waitingbar("stop");
+		reboot_pro_bar.waitingbar("reset");
+	});
+
+
+	$("#reboot_confirm_content").html($.su.CHAR.BACKUP.REBOOT_CONFIRM_CONTENT);
+
+	get_time_proxy.write({method:'get'}, function(data){
+
+		rebootTime = Number(data.totaltime*1000 || rebootTime);
+
+	});
+
+	var helpBackup = new $.su.Help({
+		container: "div#help_reboot",
+		content: ["REBOOT"]
+	});
+});
+</script>
+</body>
+
+</html>

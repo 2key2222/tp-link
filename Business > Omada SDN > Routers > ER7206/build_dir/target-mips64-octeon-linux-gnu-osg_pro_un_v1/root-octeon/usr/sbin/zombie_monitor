@@ -1,0 +1,43 @@
+#!/bin/sh 
+
+. /lib/functions.sh
+CHECK_UPDATE=15
+
+while [ 1 ]
+do       
+    local boot_done    
+    local count
+    local zombie
+	
+	[ -f /tmp/boot_done ] && {
+	    echo "System boot done! Exit the zombie monitor process." > /dev/console
+		exit 0
+	}
+	
+	zombie=`ps |grep -wc Z`
+	echo "zombie=$zombie"
+	if [ $zombie -gt 1 ];then
+	    local real="true"
+	    echo "Detect zombie process[$zombie] 1 times..." > /dev/console
+		for count in 2 3
+		do  
+			sleep 5
+			zombie=""
+			zombie=`ps |grep -wc Z`
+			if [ $zombie -gt 1 ];then
+			    echo "Detect zombie process[$zombie] $count times..." > /dev/console
+			else
+			    echo "Zombie process not exit" > /dev/console
+			    real="false"
+			    break 
+			fi
+		done
+		
+		[ $real == "true" ] && {
+			echo "Zombie process[$zombie] is really exist!!! Now Restart the procd process..." > /dev/console
+			/etc/init.d/loggerd restart
+		}
+	else
+	    sleep $CHECK_UPDATE
+	fi 
+done

@@ -1,0 +1,855 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+		<title>Usermngr</title>
+		<style type="text/css">
+		</style>
+	</head>
+	<body>
+		<div class="func-container">
+			<div id="usermngr_user">
+				<div id="usermngr_user_grid" class="natSeries">
+				</div>
+			</div>
+			<div id="own_editor">
+				<input id="userType" name="userType" value="formal">
+				<input id="userName" name="userName">
+				<input id="password" name="password" value="">
+				<input id="expireTime" name="expireTime" value = "2016-12-31">
+				<input id="validPeriod" name="validPeriod" value = "00:00-24:00">
+				
+				<div id="div_macBind">
+					<input id="macBindType" name="macBindType" value="none">
+					<div id="div_macBindAddr" hidden>
+						<input id="macBindAddr" name="macBindAddr" value="">
+					</div>
+				</div>
+				
+				<input id="maxUser" name="maxUser" value = "1">
+				<input id="upBand" name="upBand" value = "0">
+				<input id="downBand" name="downBand" value = "0">
+				
+				<div id="div_note">
+					<input id="noteName" name="noteName" value="">
+					<input id="noteTel" name="noteTel" value="">
+				</div>
+				
+				<input id="noteNote" name="noteNote" value="">
+				<input id="enable" name="enable">
+			</div>
+			<span id="usermngr_notice" class="hidden"></span>
+			<div id="usermngr_help"></div>
+		</div>
+
+		
+<script type="text/javascript">
+		//<![CDATA[
+try{
+$
+}catch(e){
+location.href = "/";
+};
+
+var bandwidthMin = 10, bandwidthMax = 1000000;
+
+function emptyVerify(str)
+{
+
+	var codeStr = /^\s*$/;
+
+	if(codeStr.test(str))return true;
+
+	else return false;
+
+}
+
+function checkMaxUser(value)
+{
+	var userType = $("input#userType").combobox("getValue");
+	var macBindType =  $("input#macBindType").combobox("getValue");
+
+	if(('formal' == userType &&('none' != macBindType && value != 1)))
+	{
+
+		//console.log('maxUser must be 1 when macBindType is static or dynamic');
+        $("div#usermngr_user_grid").form('setError', $.su.CHAR.USERMNGR.TIPS1);// "设置MAC地址绑定时，同时登录用户数必须设为1");
+		//$("input#maxUser").textbox("setValue",1);
+		return false;
+	}
+	return true;
+}
+
+function checkBand(value)
+{
+
+	if(parseInt(value) != 0 && (value > bandwidthMax || value < bandwidthMin))
+	{
+		return false;
+	}
+	return true;
+}
+function checkExpTime(value)
+{  
+        var userType = $("input#userType").combobox("getValue");
+        if('formal' == userType)
+        {
+        	// MM/DD/YYYY
+	        var result = value.match(/^([1-9]|0[1-9]|1[0-2])\/([1-9]|0[1-9]|1[0-9]|2[0-9]|3[0-1])\/([0-9]{4})$/);
+	        if(result==null)
+	        {
+	            return false;
+	        }
+
+	        return $.su.vtype.types["date"].validator(value);
+
+        }
+        else if('free' == userType)
+        {
+        	 if(isNaN(value))
+        	 { 
+        	 	return false;
+        	 }
+
+        	 if(parseInt(value) > 1440 || parseInt(value) < 1)
+        	 {
+        	 	return false;
+        	 }
+        }
+
+
+        return true; 
+
+}
+
+function checkTmScale(period)
+{
+	var tmScaleArr = new Array();
+	var tmTmp 	= period.split('-');
+	//console.log(tmTmp.length);
+	if(tmTmp.length <= 1)
+	{
+		//console.log('illegal validPeriod');
+		return false;
+	}
+	var tmStart 	= tmTmp[0].split(':');
+	var tmEnd 	= tmTmp[1].split(':');
+
+	if(tmStart.length <= 1 || tmEnd.length <= 1)
+	{
+		//console.log('illegal validPeriod');
+		return false;
+	}
+
+	tmScaleArr[0]	= parseInt(tmStart[0]);
+	tmScaleArr[1] 	= parseInt(tmStart[1]);
+	tmScaleArr[2] 	= parseInt(tmEnd[0]);
+	tmScaleArr[3] 	= parseInt(tmEnd[1]);
+
+	var sHour = tmScaleArr[0];
+	var sMin = tmScaleArr[1];
+	var eHour = tmScaleArr[2];
+	var eMin = tmScaleArr[3];
+
+	// 为空验证 和 数字是否为正确格式 验证
+	for(var m=0; m<tmScaleArr.length; m++)
+	{
+		if(emptyVerify(tmScaleArr[m].value))
+		{	
+			return false;
+		}
+	}
+	
+	if(sHour < 0 || sHour >24 || sMin < 0 || sMin > 59 || eHour < 0 || eHour >24 || eMin < 0 || eMin > 59)
+	{
+		return false;
+	}
+
+	if((sHour == 24) && (sMin != 0))
+	{
+		return false;
+	}
+	if((eHour == 24) && (eMin != 0))
+	{
+		return false;
+	}
+	
+	return true;		
+}
+
+$(document).ready(function(e){
+
+	var URL_USERMNGR = $.su.url("/admin/usermngr?form=usermngr");
+	$("span#usermngr_notice").html($.su.CHAR.USERMNGR.NOTICE);
+	$("div.func-container").page({
+		title: $.su.CHAR.USERMNGR.TITLE,
+			help: ""	//可能是个调用的id 也可能是个url
+	});
+	$('div#usermngr_user').panel({
+		title: $.su.CHAR.USERMNGR.MAPPING_LIST,
+		collapsible: false
+	});
+	
+	$("input#userType").combobox({
+		fieldLabel: $.su.CHAR.USERMNGR.USERTYPE,
+		inputCls: "l",
+		items: [
+			{"value": "formal", "name": $.su.CHAR.USERMNGR.FORMALUSER, selected:"selected"},
+			{"value": "free", "name": $.su.CHAR.USERMNGR.FREEUSER}
+		]
+	}).on('ev_change', function(e, oldValue, newValue){
+		var value = newValue[0],
+		$editor = $(o.grid("getEditor"));
+		if('formal' == value)
+		{
+			$('div#div_macBind').form("show");
+			$('div#div_note').form("show");
+			
+			//$("input#macBindType").combobox('enable');
+			//$("input#macBindAddr").textbox('enable');
+			//$("input#expireTime").textbox("setValue",'2016-12-31');
+
+			var date = new Date();
+			var time = "12/31/" + date.getFullYear()
+			$("input#expireTime").textbox("setValue", time);
+			$("input#expireTime").textbox("setTips",$.su.CHAR.TIME_SETTING.DATEFORMAT);//'(格式：MM/DD/YYYY)');
+			$("input#expireTime").textbox("setFieldLabel",$.su.CHAR.USERMNGR.LATE);//"有效期至");
+			$('div#div_macBindAddr').form("hide");
+			$("input#macBindAddr").textbox('disable');
+		}
+		else
+		{
+			$('div#div_macBind').hide();
+			$('div#div_note').hide();
+			
+			//$("input#macBindType").combobox('disable');
+			$("input#macBindAddr").textbox('disable');
+			$("input#expireTime").textbox("setValue",30);
+			$("input#expireTime").textbox("setTips",'(1-1440)');
+			$("input#expireTime").textbox("setFieldLabel",$.su.CHAR.USERMNGR.SURFING_TIME);//"上网时长(分钟)");
+
+		}
+	
+	});
+	$("input#userName").textbox({
+		fieldLabel: $.su.CHAR.USERMNGR.USERNAME,
+		vtype:"name",
+		maxLength:100,
+		allowBlank:false,
+		tips: $.su.CHAR.USERMNGR.OPTIONAL//'(1-100个字符)'				
+	});
+	$("input#password").textbox({
+		fieldLabel: $.su.CHAR.USERMNGR.PASSWORD,
+		vtype:"password",
+		maxLength:100,
+		allowBlank:false,
+		tips: $.su.CHAR.USERMNGR.OPTIONAL,//'(1-100个字符)' ,			
+		validator:function(v)
+		{
+			var reg=new RegExp(/[\'\,]/g);
+			if(v.match(reg) && v.match(reg).length>0){
+				return $.su.CHAR.USERMNGR.TEXT_ERR;//"存在不合法字符，请重新输入";
+			}
+			return true;
+		}				
+
+	});
+	$("input#expireTime").textbox({
+		fieldLabel: $.su.CHAR.USERMNGR.LATE,//"有效期至",
+		vtype:"string_visible_allow_blank",
+		maxLength:20,
+		allowBlank:false,
+		tips: $.su.CHAR.TIME_SETTING.DATEFORMAT,
+		validator: function(value)
+		{
+			return checkExpTime(value);
+		}
+	});
+	$("input#validPeriod").textbox({
+		fieldLabel: $.su.CHAR.USERMNGR.VALIDPERIOD,
+		vtype:"string_visible_allow_blank",
+		maxLength:20,
+		allowBlank:false,
+		tips: $.su.CHAR.USERMNGR.TIPS3,//'（格式为xx:xx-xx:xx）' ,
+		validator: function(value)
+		{
+			return checkTmScale(value);
+		}
+	});
+	$("input#macBindType").combobox({
+		fieldLabel: $.su.CHAR.USERMNGR.MACBINDTYPE,
+		inputCls: "l",
+		items: [
+			{"value": "none",   "name": $.su.CHAR.USERMNGR.BINDNONE, selected:"selected"},
+			{"value": "static", "name": $.su.CHAR.USERMNGR.BINDSTATIC},
+			{"value": "dynamic", "name": $.su.CHAR.USERMNGR.BINDDYNAMIC}
+		],
+		allowBlank:false
+	}).on('ev_change', function(e, oldValue, newValue){
+		var value = newValue[0],
+		$editor = $(o.grid("getEditor"));
+
+		if('static' == value)
+		{
+			$('div#div_macBindAddr').form("show");
+			$("input#macBindAddr").textbox('enable');
+		}
+		else
+		{
+			$('div#div_macBindAddr').form("hide");
+			$("input#macBindAddr").textbox('disable');
+		}
+
+	});
+	$("input#macBindAddr").textbox({
+		fieldLabel: $.su.CHAR.USERMNGR.MACBINDADDR,
+		allowBlank:false,
+		vtype:'mac',
+		tips: $.su.CHAR.USERMNGR.TIPS4,//'（格式为xx-xx-xx-xx-xx-xx）' ,
+	});
+	$("input#maxUser").textbox({
+		fieldLabel: $.su.CHAR.USERMNGR.MAXUSER,
+		textFormat: $.su.format.number,
+		vtype: {
+		vtype: "number",
+		max: 1024,
+		min: 1
+		},
+		allowBlank:false,
+		validator: function(value)
+		{
+            return true;
+			//return checkMaxUser(value);
+		},	
+		tips: '(1-1024)' 				
+
+	});
+	$("input#upBand").textbox({
+		fieldLabel: $.su.CHAR.USERMNGR.UPBAND,
+		textFormat: $.su.format.number,
+		vtype: {
+		vtype: "number"
+		},
+		allowBlank:false,
+		validator: function(value)
+		{
+			if(false == checkBand(value)) 
+			{
+				return $.su.CHAR.USERMNGR.BAND_ERR.replace("%min", bandwidthMin.toString()).replace("%max", bandwidthMax.toString());			
+			}
+			return true;
+		},
+		tipsCls: 'l'			
+	});
+	$("input#downBand").textbox({
+		fieldLabel: $.su.CHAR.USERMNGR.DOWNBAND,
+		textFormat: $.su.format.number,
+		vtype: {
+		vtype: "number"
+		},
+		allowBlank:false,
+		validator: function(value)
+		{
+			if(false == checkBand(value)) 
+			{
+				return $.su.CHAR.USERMNGR.BAND_ERR.replace("%min", bandwidthMin.toString()).replace("%max", bandwidthMax.toString());			
+			}
+			return true;
+		},
+		tipsCls: 'l'
+		});
+	$("input#noteName").textbox({
+		fieldLabel: $.su.CHAR.USERMNGR.NOTENAME,
+		vtype:"string_visible_allow_blank",
+		maxLength:50,
+		allowBlank:true,
+		tips: $.su.CHAR.USERMNGR.OPTIONAL1,//'(1-50个字符，可选)' ,				
+		validator:function(v)
+		{
+			var reg=new RegExp(/\'/g);
+			if(v.match(reg) && v.match(reg).length>0){
+				return $.su.CHAR.USERMNGR.TEXT_ERR;//"存在不合法字符，请重新输入";
+			}
+			return true;
+		}			
+	});
+	$("input#noteTel").textbox({
+		fieldLabel: $.su.CHAR.USERMNGR.NOTETEL,
+		vtype:"string_visible_allow_blank",
+		maxLength:50,
+		allowBlank:true,
+		tips: $.su.CHAR.USERMNGR.OPTIONAL1,//'(1-50个字符，可选)' ,				
+		validator:function(v)
+		{
+			var reg=new RegExp(/\'/g);
+			if(v.match(reg) && v.match(reg).length>0){
+				return $.su.CHAR.USERMNGR.TEXT_ERR;//"存在不合法字符，请重新输入";
+			}
+			return true;
+		} 		
+		
+	});
+	$("input#noteNote").textbox({
+		fieldLabel: $.su.CHAR.USERMNGR.NOTE,
+		vtype:"string_visible_allow_blank",
+		maxLength:50,
+		allowBlank:true,
+		tips: $.su.CHAR.USERMNGR.OPTIONAL1,//'(1-50个字符，可选)' ,				
+		validator:function(v)
+		{
+			var reg=new RegExp(/\'/g);
+			if(v.match(reg) && v.match(reg).length>0){
+				return $.su.CHAR.USERMNGR.TEXT_ERR;//"存在不合法字符，请重新输入";
+			}
+			return true;
+		}		
+		
+	});
+           $("input#enable").checkbox({
+		fieldLabel:$.su.CHAR.USERMNGR.ENABLE,
+		defaultValue:["on"],
+		items: [
+			{boxlabel: $.su.CHAR.VIRTUAL_SERVERS.ENABLE_THIS_ENTRY, uncheckedValue:"off", inputValue: "on", id: "chk_enable",  checked:true}
+		]
+	});
+	var usermngrProxy = new $.su.Proxy({
+		url: URL_USERMNGR
+	});
+	var o = $("div#usermngr_user_grid").grid({
+		store:{
+			proxy: usermngrProxy,
+			fields: [
+				{name: "userType"},
+				{name: "userName"},
+				{name: "password"},
+				{name: "expireTime"},
+				{name: "validPeriod"},
+				{name: "macBindType"},
+				{name: "macBindAddr"},
+				{name: "maxUser"},
+				{name: "upBand"},
+				{name: "downBand"},
+				{name: "noteName"},
+				{name: "noteTel"},
+				{name: "noteNote"},
+				{name: "enable"}
+			],
+			autoLoad: true
+		},
+		editor: {
+			validator:function()
+			{
+                var store   = o.grid("getStore");
+                var keyProperty = store.keyProperty;
+                var grid_array  = store.data;
+                var editingId = editor.editingId; 
+                var name = $("input#userName").textbox('getValue');
+
+                if($.isArray(grid_array) && grid_array.length > 0)
+                {
+                    for(var k = 0; k < grid_array.length;k++)
+                    {
+                        var data = grid_array[k];
+                        if(data[keyProperty] == editingId)
+                        {
+                            continue;
+                        }
+                        else if(data["userName"] == name)
+                        {
+                            $("div#usermngr_user_grid").form('setError', $.su.CHAR.USERMNGR.WARN);//"用户名已被使用，请重新输入");
+                            //console.log('conflict name');
+                            return false;
+                        }
+                    }
+                }
+				return checkMaxUser($("input#maxUser").textbox('getValue'));
+			},
+			content: "#own_editor",
+			
+			fields: [
+				{name: "userType"},
+				{name: "userName"},
+				{name: "password"},
+				{name: "expireTime"},
+				{name: "validPeriod"},
+				{name: "macBindType"},
+				{name: "macBindAddr"},
+				{name: "maxUser"},
+				{name: "upBand"},
+				{name: "downBand"},
+				{name: "noteName"},
+				{name: "noteTel"},
+				{name: "noteNote"},
+				{name: "enable"}
+			]
+			
+		},
+		paging: {},
+		columns: [
+			{
+				xtype: "checkcolumn"
+			},
+			{
+				text: $.su.CHAR.USERMNGR.ID,
+				xtype: "rownumberer"
+			},
+			{
+				text: $.su.CHAR.USERMNGR.USERTYPE,
+				width: 80,
+				dataIndex: "userType",
+				renderer:function (v)
+				{
+					if('formal' == v)
+						return $.su.CHAR.USERMNGR.FORMALUSER;//'正式用户';
+					else
+						return $.su.CHAR.USERMNGR.FREEUSER;//'免费用户';
+				}
+			},
+			{
+				text: $.su.CHAR.USERMNGR.USERNAME,
+				width: 100,
+				dataIndex: "userName",
+			},
+			{
+				text: $.su.CHAR.USERMNGR.EXPIRETIME,
+				width: 100,
+				dataIndex: "expireTime",
+			},
+			{
+				text: $.su.CHAR.USERMNGR.MACBINDADDR,
+				width: 130,
+				dataIndex: "macBindAddr",
+			},
+			{
+				text: $.su.CHAR.USERMNGR.NOTE,
+				dataIndex: "noteNote"
+			},
+            {
+                xtype: 'statuscolumn',
+                width: 90,
+                dataIndex: 'enable'
+            },
+			{
+				xtype: "settings"
+			}
+		],
+		operation: "prompt|add|delete"
+	}).on("ev_load", function(e,data, others){
+			if(others)/* 閫氳繃json閲岀殑others鍙傛暟浼犻€掑姩鎬侀榾鍊?*/
+			{
+				//console.log(others.max_rules);
+				maxrules = others.max_rules;
+				bandwidthMax = others.bandwidth*1000;
+			}
+		});
+
+	var editor = o.grid("getEditor");
+	$(editor).on("ev_startEdit", function(e, index, key){
+
+                var bandwidth_tips = $.su.CHAR.USERMNGR.TIPS5.replace("%min", bandwidthMin.toString()).replace("%max", bandwidthMax.toString());			
+		$("input#upBand").textbox("setTips", bandwidth_tips);
+		$("input#downBand").textbox("setTips", bandwidth_tips);
+
+		 if (index == "add"){
+	    		$("input#userType").combobox("enableStyle");
+	    		$("input#userName").textbox("enableStyle");
+
+	    		var date = new Date();
+				var time = "12/31/" + date.getFullYear()
+				$("input#expireTime").textbox("setValue", time);
+	    	}
+	    	else{
+	    		//console.log(index)
+	    		$("input#userType").combobox("disableStyle");
+	    		$("input#userName").textbox("disableStyle");
+	    	}
+		var userType = $("input#userType").textbox('getValue');
+		var macBindType = $("input#macBindType").textbox('getValue');
+		//console.log(userType)
+		if('formal' == userType)
+		{
+			$('div#div_macBind').form("show");
+			$('div#div_note').form("show");
+
+			$("input#expireTime").textbox("setTips",$.su.CHAR.TIME_SETTING.DATEFORMAT);//'(格式：MM/DD/YYYY)');
+			$("input#expireTime").textbox("setFieldLabel",$.su.CHAR.USERMNGR.LATE);//"有效期至");
+
+
+			if('static' == macBindType)
+			{
+				$('div#div_macBindAddr').form("show");
+				$("input#macBindAddr").textbox('enable');
+			}
+			else
+			{
+				$('div#div_macBindAddr').form("hide");
+				$("input#macBindAddr").textbox('disable');
+			}		
+		}
+		else
+		{
+			$('div#div_macBind').hide();
+			$('div#div_note').hide();
+
+			$("input#expireTime").textbox("setTips",'(1-1440)');
+			$("input#expireTime").textbox("setFieldLabel",$.su.CHAR.USERMNGR.SURFING_TIME);//"上网时长(分钟)");
+			
+			$("input#macBindAddr").textbox('disable');
+		}
+
+		
+	});
+	var helpUsermngr = new $.su.Help({
+		container: "div#usermngr_help",
+		content: "USERMNGR_USER"
+	});
+});
+
+/*已移动到另一页面
+$(document).ready(function(e){
+    var loadcfg_total_time = 1*1000;
+    // var loadcfg_step1_time = 3*1000;
+    // var loadcfg_mid_val = 0.2;
+    var loadcfg_query_interval = false;
+    // var loadcfg_step2_query_flag = false;
+    // var loadcfg_count = 0;
+    var loadcfg_pro_id = false;
+
+    var BACKUP_URL = "./data/system.backup.json";
+
+    var BACKUP_URL_NEW = $.su.url("/admin/usermngr?form=config"); 
+    $("div.func-container").page({
+        title: $.su.CHAR.BACKUP.TITLE,
+        help: ""    //可能是个调用的id 也可能是个url
+    });
+
+    $("#backup_cnt").panel({
+        title: $.su.CHAR.BACKUP.BACKUP,
+        collapsible: false
+    });
+
+    $("#loadcfg_cnt").panel({
+        title: $.su.CHAR.BACKUP.RESTORE,
+        collapsible: false
+    });
+    
+    $("#file").file({
+        fieldLabel: $.su.CHAR.BACKUP.FILE,
+        allowBlank:false,
+        extension: "csv"
+    });
+
+    $("#backup-setting").form({
+        proxy:{url: BACKUP_URL_NEW},
+        formEnctype: "multipart/form-data",
+        traditional: true,
+        hiddenFrame: true,
+        autoLoad: false
+    });
+
+    $("#loadcfg-setting").form({
+        proxy:{url: BACKUP_URL_NEW},
+        formEnctype: "multipart/form-data",
+        traditional: true,
+        hiddenFrame: true,
+        fields: [
+            {"name": "archive"}
+        ],
+        autoLoad: true
+    });
+
+    var loadcfg_proxy = new $.su.Proxy({
+        url: BACKUP_URL_NEW
+    });
+    
+
+    $("#backup").button({
+        text: $.su.CHAR.BACKUP.BACKUPBTN,
+        cls: "submit",
+        handler: function(){
+            $("#backup-setting").form('submit', {operation:'backup'});
+        }
+    });
+
+    $("#loadcfg").button({
+        text: $.su.CHAR.BACKUP.RESTOREBTN,
+        handler: function(){
+            if($("#loadcfg-setting").form('validate'))
+            {
+                $("#loadcfg_alert_cnt").msg("show");
+            }
+            else
+            {
+                return false;
+            }
+
+        },
+        cls: "submit"
+    });
+
+    
+
+    function loadcfg_getResult()
+    {
+        loadcfg_proxy.read({'method':'loadcfg'}, function(data){
+        }, function(errcode){
+            // console.dir(arguments);
+            function showAlertMag()
+            {
+                $("#loadcfg_failed_cnt").msg("show", function(){
+                });
+            }
+            if(loadcfg_pro_id){
+                clearTimeout(loadcfg_pro_id);
+                loadcfg_pro_id = false;
+            }
+            function hideProMsg()
+            {
+                clearTimeout(loadcfg_query_interval);
+                loadcfg_pro_bar.progressbar("stop");
+                loadcfg_pro_bar.progressbar("reset");
+                loadcfg_query_interval = false;
+
+                $("#loadcfg_alert_cnt").hide();
+                $("#loadcfg_alert_cnt").msg("close", function(){
+                    $("#loadcfg_alert_cnt").msg('showButtons');
+                    $('#loadcfg_confirm_cnt').show();
+                    $("#loadcfg_pro_cnt").hide();
+                });
+            }
+            // console.log(errcode);
+            if(errcode == "err_form")
+            {
+                $("#error_str").html($.su.CHAR.ERROR["00000001"]);
+                hideProMsg();
+                showAlertMag();
+            }
+            else if(errcode == "err_check")
+            {
+                
+                $("#error_str").html($.su.CHAR.ERROR["00000002"]);
+                hideProMsg();
+                showAlertMag();
+            }
+            else if(errcode == "err_sizex")
+            {
+                $("#error_str").html($.su.CHAR.ERROR["00000003"]);
+                hideProMsg();
+                showAlertMag();
+            }
+            else if(errcode == "err_flash")
+            {
+                $("#error_str").html($.su.CHAR.ERROR["00000004"]);
+                hideProMsg();
+                showAlertMag();
+            }
+            else if(errcode == "err_reboot")
+            {
+                $("#error_str").html($.su.CHAR.ERROR["00000005"]);
+                hideProMsg();
+                showAlertMag();
+            }
+            else if(errcode == "err_other")
+            {
+                $("#error_str").html($.su.CHAR.ERROR["00000006"]);
+                hideProMsg();
+                showAlertMag();
+            }
+            else if(errcode == "err_failed")
+            {
+                $("#error_str").html($.su.CHAR.ERROR["00000136"]);
+                hideProMsg();
+                showAlertMag();
+            }
+            else
+            {
+                hideProMsg();
+            }       
+        });
+    }
+
+    function loadcfg_write()
+    {
+        $("#loadcfg-setting").form('submit',{operation:"loadcfg"}, function(){
+                // $("#loadcfg_pro_cnt").fadeIn(200);
+            clearTimeout(loadcfg_query_interval);
+                //console.log(loadcfg_total_time);
+            loadcfg_query_interval = setTimeout(loadcfg_getResult,1000);
+            if(loadcfg_pro_id){
+                clearTimeout(loadcfg_pro_id);
+                loadcfg_pro_id = false;
+            }
+            loadcfg_pro_id = setTimeout(function(){
+                loadcfg_pro_bar.progressbar("animate", 0, 1, loadcfg_total_time, function(){
+                    if (localStorage){
+                        localStorage.setItem("token", "");
+                    };
+                       // location.href = "/";
+                       $("#loadcfg_alert_cnt").msg("close");
+            });
+            },1200);
+
+        },function(){
+            clearTimeout(loadcfg_query_interval);
+            loadcfg_getResult();
+        },function(){
+            
+        });
+    }
+
+    $("#loadcfg_failed_cnt").msg({
+        cls: 'warning reboot-confirm-size',
+        type: "alert"
+    });
+
+    $("#loadcfg_alert_cnt").msg({
+        okHandler:function(){
+            $("#loadcfg_alert_cnt").msg('hideButtons');
+            $('#loadcfg_confirm_cnt').hide();
+            $("#loadcfg_pro_cnt").show();
+            loadcfg_write();
+            return false;
+        },
+        cancelHandler:function(){
+            return true;
+        },
+        cls: 'warning reboot-confirm-size',
+        closeBtn: false,
+        type: "confirm"
+    });
+
+
+    var loadcfg_pro_bar  = $('input#loadcfg_pro_bar').progressbar({
+        fieldLabel: null,
+        cls: 'inline',
+        width: 326,
+        height: 6,
+        value: 0
+    }); 
+
+    $("#confirm_content").html($.su.CHAR.FIMWARE.CONFIRM_CONTENT);
+
+    $.su.app.runningModule.addUnloadHandler(function(){
+        if(loadcfg_query_interval)
+        {
+            clearTimeout(loadcfg_query_interval);
+            loadcfg_query_interval = false;
+        }
+
+        loadcfg_pro_bar.progressbar("stop");
+        loadcfg_pro_bar.progressbar("reset");
+    });
+
+
+    $("#loadcfg_confirm_content").html($.su.CHAR.BACKUP.RESTORE_CONFIRM_CONTENT);
+
+    var helpBackup = new $.su.Help({
+        container: "div#help_backup",
+        content: ["BACKUP", "RESTORE"]
+    });
+
+});
+*/
+</script>
+</body>
+</html>

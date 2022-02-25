@@ -1,0 +1,440 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>ROUTING</title>
+</head>
+
+<body>
+<div class="func-container">
+	 
+
+	 <div id="staticRoute">
+	 	<div id="staticRouteGrid">
+	     		
+		</div>
+		<div id="add_staticRoute">
+		    <input id="route_name" name="name"/>
+			<input id="route_target" name="target"/>
+			<input id="route_netmask" name="netmask"/>
+			<input id="route_gateway" name="gateway"/>
+			<input id="route_interface" name="interface"/>
+			<input id="route_metric" name="metric"/>
+			<input id="route_note" name="note"/>
+			<input id="route_enable" name="enable"/>
+		</div>
+	 </div>
+
+
+
+	 <div id="advanced_routing_help"></div>
+</div>
+
+<script type="text/javascript">
+try{
+    $
+}catch(e){
+    location.href = "/";
+};
+
+function logicAnd(int_a,int_b)
+{
+	var binary_a = parseInt(int_a,10).toString(2);
+	var binary_b = parseInt(int_b,10).toString(2);
+	var len = (binary_a.length < binary_b.length) ? binary_a.length : binary_b.length;
+
+	if (len != 32)
+	{
+		return int_a&int_b;
+	}
+	
+	var cut = Math.abs(binary_a.length - binary_b.length);
+	var temp = '';
+
+	for (var i = 0 ; i < cut; i++)
+	{
+		temp = temp + '0';
+	}
+	
+	if (binary_a.length > binary_b.length)
+	{
+		binary_b = temp + binary_b;
+	}
+	else
+	{
+		binary_a = temp + binary_a;
+	}
+	var res = 0;
+	for (var i=len-1; i >= 0; i--)
+	{
+		if (binary_a.charAt(i)&binary_b.charAt(i) == 1)
+		{
+			if((len-1-i) >24)
+			{
+				res = Number(res) + 256*Number((1<<(len-9-i)));
+			}
+			else
+			{
+				res = Number(res) + Number((1<<(len-1-i)));
+			}
+		}
+	}
+	return res;
+}
+$(document).ready(function(e){
+	var URL_STATIC = $.su.url("/admin/routing?form=static_routing");  
+	
+	/*var lanIP = 0;
+	var lanMask = 0;
+	var wanIP = 0;
+	var wanMask = 0;
+	var wanSndIP = 0;
+	var wanSndMask = 0;
+
+	var lanProxy = new $.su.Proxy({
+		url: $.su.url('/admin/network?form=status_ipv4')
+	});
+
+	lanProxy.read({}, function(data){
+		lanIP = data.lan_ipv4_ipaddr;
+		lanMask = data.lan_ipv4_netmask;
+		wanIP = data.wan_ipv4_ipaddr;
+		wanMask = data.wan_ipv4_netmask;
+		data.wan_ipv4_snd_ipaddr?wanSndIP=data.wan_ipv4_snd_ipaddr:1;
+		data.wan_ipv4_snd_netmask?wanSndMask=data.wan_ipv4_snd_netmask:1;	
+	});*/
+
+
+	$("div.func-container").page({
+		title: $.su.CHAR.ROUTING.STATIC_ROUTING,
+		help: ""	//可能是个调用的id 也可能是个url
+	});
+	
+	
+
+	$("div#staticRoute").panel({
+		title: $.su.CHAR.ROUTING.STATIC_ROUTING,
+		collapsible: false
+	});
+
+
+	$("div#systemRoute").panel({
+		title: $.su.CHAR.ROUTING.SYSTEM_ROUTING_TABLE,
+		collapsible: false
+	});
+
+	$("input#route_name").textbox({
+		fieldLabel: $.su.CHAR.ROUTING.NAME,
+		labelCls: 's',
+		maxLength: 32,
+		allowBlank: false,
+		vtype: 'name'
+	});
+	
+	$("input#route_target").textbox({
+		fieldLabel: $.su.CHAR.ROUTING.DESTINATION_NETWORK,
+		labelCls: 's',
+		textFormat: $.su.format.ip,
+		allowBlank: false,
+		vtype: {
+            vtype: "ip",
+            allowAllZeroFlag: true
+        }
+	});
+
+	$("input#route_netmask").textbox({
+		fieldLabel: $.su.CHAR.ROUTING.SUBNET_MASK,
+		labelCls: 's',
+		allowBlank: false,
+        vtype: {
+            vtype: "netmask",
+            allowAllOneFlag: true,
+            allowAllZeroFlag: true
+        }
+	});
+
+	$("input#route_gateway").textbox({
+		fieldLabel: $.su.CHAR.ROUTING.DEFAULT_GATEWAY,
+		labelCls: 's',
+		textFormat: $.su.format.ip,
+		allowBlank: false,
+        vtype: {
+            vtype: "ip",
+            allowAllZeroFlag: true
+        }
+	});
+
+	$("input#route_interface").combobox({
+		fieldLabel: $.su.CHAR.ROUTING.INTERFACE,
+		labelCls: 's',
+		allowBlank: false,
+		items: [
+			{name:"---",value:'---'}
+		]
+	});
+	
+	$("input#route_metric").textbox({
+		fieldLabel: $.su.CHAR.ROUTING.METRIC,
+		tips: $.su.CHAR.ROUTING.METRIC_NOTE,
+		defaultValue: 0,
+		allowBlank: false,
+		labelCls: 's',
+        vtype: {
+            vtype: "number",
+            max: 15,
+            min: 0
+        }
+	});
+
+	$("input#route_note").textbox({
+		fieldLabel: $.su.CHAR.ROUTING.DESCRIPTION,
+		tips: $.su.CHAR.ROUTING.OPTIONAL,
+		defaultValue: " ",
+		labelCls: 's',
+		maxLength: 32,
+		allowBlank: true,
+		vtype: 'string_visible_allow_blank'
+	});
+
+	/*$("input#route_reachability").textbox({
+		fieldLabel: $.su.CHAR.ROUTING.REACHABILITY,
+		labelCls: 's',
+		maxLength: 32,
+		allowBlank: false,
+		vtype: 'string_visible_allow_blank'
+	});*/
+
+	$("input#route_enable").checkbox({
+		fieldLabel:  $.su.CHAR.ROUTING.STATUS,
+		labelCls: 's',
+		items: [
+			{boxlabel: $.su.CHAR.ROUTING.ENABLE, inputValue:'on', uncheckedValue:'off',checked:true}
+		]
+	});
+
+	var staticRouteGrid =$("div#staticRouteGrid").grid({
+		store:{
+			proxy: {
+				url: URL_STATIC
+			},
+			fields: [
+			    {name: "name"},
+				{name: "target"},
+				{name: "netmask"},
+				{name: "gateway"},
+				{name: "interface"},
+				{name: "metric"},
+				{name: "note"},				
+				{name: "reachability"},
+				{name: "enable"},
+				{name: "t_label"},
+			],
+			autoLoad: true
+		},
+		minLines: 0,
+		editor: {			
+			content: "#add_staticRoute",
+			fields: [
+				{name: "name"},
+				{name: "target"},
+				{name: "netmask"},
+				{name: "gateway"},
+				{name: "interface"},
+				{name: "metric"},
+				{name: "note"},
+				{name: "reachability"},
+				{name: "enable"}				
+			],
+			validator: function(){
+			
+				var editor  = $(staticRouteGrid.grid("getEditor"));
+				var target  = editor.find("[name=target]").textbox("getValue");
+				var netmask  = editor.find("[name=netmask]").textbox("getValue");
+				
+				//console.log(target);
+				//console.log(netmask);
+
+				var ip_sample_x = logicAnd($.su.func.ipToInt(target),$.su.func.ipToInt(netmask));
+				var calTarget   = $.su.func.intToIp(ip_sample_x);
+	
+				editor.find("[name=target]").textbox("setValue",calTarget);
+				//console.log(calTarget);
+				//console.log(editor.find("[name=target]").textbox("getValue"));
+				/*var destination_ip = $('input#route_target').textbox('getValue');
+				var subnetMask  = $('input#route_netmask').textbox('getValue');
+				var gateway = $("input#route_gateway").textbox('getValue');
+
+				var keyNum = false;
+
+				var editorList = $("div#staticRouteGrid").grid('getEditor');
+
+				if( $("div#staticRouteGrid").grid('isEditing') ){
+					keyNum = $(editorList).editor('getEditingId');
+				}
+
+				for(var i=0; i< $("div#staticRouteGrid").grid('getStore').data.length; i++ ){
+					if(  !keyNum || ($("div#staticRouteGrid").grid('isEditing') && keyNum!=$("div#staticRouteGrid").grid('getStore').data[i].key)  )
+					{
+						if( destination_ip==$("div#staticRouteGrid").grid('getStore').data[i].target && subnetMask==$("div#staticRouteGrid").grid('getStore').data[i].netmask && gateway==$("div#staticRouteGrid").grid('getStore').data[i].gateway  ){
+							$('input#route_target').textbox('setError');
+							$($("div#staticRouteGrid").grid("getEditor")).form('setError',  $.su.CHAR.ERROR['00000107'] );
+							return false;
+						}						
+					}
+				}*/
+/*
+				if( !$.su.func.isNetIp( $("input#route_target").textbox('getValue'), $("input#route_netmask").textbox('getValue')) ){
+					$($("div#staticRouteGrid").grid("getEditor")).form('setError',  $.su.CHAR.ERROR['00000049'] );
+					return false;
+				}
+
+
+				if( $.su.func.isSameNet(destination_ip, lanIP, lanMask) ){
+					$('input#route_target').textbox('setError',   $.su.CHAR.ERROR['00000092'] );
+					return false;
+				}
+
+				if( $.su.func.isSameNet(destination_ip, wanIP, wanMask) ){
+					$('input#route_target').textbox('setError',   $.su.CHAR.ERROR['00000093'] );
+					return false;
+				}
+
+				if( wanSndIP!=0 && $.su.func.isSameNet(destination_ip, wanSndIP, wanSndMask) ){
+					$('input#route_target').textbox('setError',   $.su.CHAR.ERROR['00000093'] );
+					return false;
+				}
+
+				if( $.su.func.ipContain(destination_ip, subnetMask, lanIP, lanMask) ){
+					$('input#route_target').textbox('setError',   $.su.CHAR.ERROR['00000090'] );
+					return false;
+				}
+
+				if( $.su.func.ipContain(destination_ip, subnetMask, wanIP, wanMask) ){
+					$('input#route_target').textbox('setError',   $.su.CHAR.ERROR['00000091'] );
+					return false;
+				}
+
+
+				if( wanSndIP!=0 && $.su.func.ipContain(destination_ip, subnetMask, wanSndIP, wanSndMask) ){
+					$('input#route_target').textbox('setError',   $.su.CHAR.ERROR['00000091'] );
+					return false;
+				}
+			
+*/
+				return true;
+			}
+		},
+		paging:[],
+		columns: [
+			{
+				xtype: "checkcolumn",
+				width: 25
+			},
+			{
+				text: $.su.CHAR.GRID.ID, 
+				xtype: "rownumberer",
+				width: 25
+			},
+			{
+				text: $.su.CHAR.ROUTING.NAME, 
+				width:70,
+				dataIndex: "name"
+			},
+			{
+				text: $.su.CHAR.ROUTING.DESTINATION_NETWORK, 
+				width:75,
+				dataIndex: "target"
+			},
+			{
+				text: $.su.CHAR.ROUTING.SUBNET_MASK, 
+				width:75,
+				dataIndex: "netmask"
+			},
+			{
+				text: $.su.CHAR.ROUTING.DEFAULT_GATEWAY, 
+				width:75,
+				dataIndex: "gateway"
+			},
+			{
+			    text: $.su.CHAR.ROUTING.INTERFACE, 
+			 	width:70,
+			 	dataIndex: "interface",
+				renderer: function(dd, jindex, data) {
+					return data.t_label ? data.t_label : dd;
+				}
+		    },
+			{
+			    text: $.su.CHAR.ROUTING.METRIC, 
+			 	width:40,
+			 	dataIndex: "metric"
+		    },
+			{
+				text: $.su.CHAR.ROUTING.DESCRIPTION, 
+				width:5,
+				hidden:true,
+				dataIndex: "note",
+				xtype:"comment"
+			},
+			/*{
+				text: $.su.CHAR.ROUTING.REACHABILITY, 
+				width:60,
+				dataIndex: "reachability",
+				renderer: function(v)
+                {            
+                	if(v == "on")
+                	{
+                		return $.su.CHAR.ROUTING.REACH;
+                	}
+                	else
+                	{
+                		return $.su.CHAR.ROUTING.NONREACH;
+                	}                	
+                }
+			},*/
+			{
+				text: $.su.CHAR.GRID.STATUS, 
+				width:60,
+				dataIndex: "enable",
+				xtype: "statuscolumn"
+			},
+			{
+				xtype: "settings",
+				width:50
+			}
+		],
+		operation: "prompt|add|delete"
+	}).on("ev_load", function(e,data, others){
+        if(others)/* 通过json里的others参数传递动态阀值 */
+        {
+            maxrules = others.max_rules;
+            //console.log(maxIpMask);
+        }
+		
+		var interfaceProxy = new $.su.Proxy({
+				url: $.su.url('/admin/interface?form=status'),
+				async: false
+		});		
+		interfaceProxy.read({}, function(data){				
+					var i
+					var interfaceItem=[];
+					for (i=0; i<data.normal.length; i++){
+						interfaceItem.push({name:data.normal[i].t_label,value:""+data.normal[i].t_name});						
+					}
+					for (i=0; i<data.vpn.length; i++){						
+						interfaceItem.push({name:data.vpn[i].t_label,value:""+data.vpn[i].t_name});	
+					}				
+					var editor = $("div#staticRouteGrid").grid('getEditor');
+					var combobox = $(editor).find('.combobox-value[name=interface]');
+						combobox.combobox('loadData',interfaceItem);					
+		});	
+	});
+
+	var helpAdvancedRouting = new $.su.Help({
+		container: "div#advanced_routing_help",
+		content: ["ADVANCED_ROUTING_STATIC_ROUTING"]
+	});
+});
+</script>
+</body>
+
+</html>

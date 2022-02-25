@@ -1,0 +1,256 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<style type="text/css">
+    #mac-list{
+        margin-bottom: 40px;
+    }
+</style>
+<title>Interface MAC</title>
+</head>
+
+<body>
+<div class="func-container">
+    <div id="func-setting">
+        <div id="mac-list"></div>
+        <input id="button-submit"/>
+    </div>
+    <div id="mac_alert_cnt">
+        <div id="mac_pro_cnt" class="reboot-loading-msg">
+            <input id="mac_pro_bar" type="text" />
+        </div>
+    </div> 
+    <div id="interface-mac-help"></div>
+</div>
+
+<script type="text/javascript">
+
+//<![CDATA[
+try{
+    $
+}catch(e){
+    location.href = "/";
+};
+$(document).ready(function(e){
+    var URL_WANMODE = $.su.url('/admin/interface_wan?form=wanmode');
+    var URL_MAC = $.su.url('/admin/mac_setting?form=macconfig');
+    var wanCount = 1;
+	var wanNumbers = [];
+
+    $("#func-setting").panel({
+        title: $.su.CHAR.MENU.MAC_SETTING
+    });
+
+    var wanProxy = new $.su.Proxy({
+        url: URL_WANMODE
+    });
+    var macProxy = new $.su.Proxy({
+        url: URL_MAC
+    });
+
+    $("#mac_alert_cnt").msg({
+        cls: 'warning reboot-confirm-size',
+        type: "confirm",
+        closeBtn: false,
+        okHandler:function(){},
+        cancelHandler:function(){}
+    });
+
+    $("#mac_alert_cnt").msg("hideButtons");
+    
+    $("#mac_pro_bar").waitingbar({
+        fieldLabel:$.su.CHAR.INTERFACE_MAC.MAC_WATING,// "设置MAC地址可能需要一些时间，请您耐心等待",
+        labelCls:"xxxl"
+    });
+
+    var $list = $('#mac-list').grid({
+        store: new $.su.Store(),
+        columns: [
+            {
+                text: $.su.CHAR.INTERFACE_MAC.INTERFACE,//'接口',
+                width: 100,
+                dataIndex: "name"
+            },
+            {
+                text: $.su.CHAR.INTERFACE_MAC.CURRENT_MAC,//'当前MAC地址',
+                width: 100,
+                dataIndex: "wanId",
+                renderer:function(data, index){
+                    if(data !== 'lan'){
+                        return '<input id="intf-wan-' + data + '"/>';
+                    }else{
+                        return '<input id="intf-lan"/>';
+                    }
+                }
+            },
+            {
+                text: $.su.CHAR.INTERFACE_MAC.SET,//'设置',
+                width: 150,
+                dataIndex: "wanId",
+                renderer:function(data, index){
+                    if(data !== 'lan'){
+                        return '<input id="button-recover-' + data + '"/>\n' +
+                                '<input id="button-clone-' + data + '"/>';
+                    }else{
+                        return '<input id="button-recover-lan"/>';
+                    }
+                }
+            }]
+    });
+
+    $('#button-submit').button({
+        text: $.su.CHAR.OPERATION.SAVE,//'设置',
+        cls: 'form-submit',
+        handler: function(){
+            var tempData = {wanmode: wanCount}, usedMac = [], $interface;
+            for(var i = 0; i < wanCount; i++){
+				if (($.inArray(String(i+1), wanNumbers) != -1) || ($.inArray(i+1, wanNumbers) != -1)) {
+					$interface = $('#intf-wan-' + (i + 1));
+					if($interface.textbox('validate') !== true){
+						return;
+					}
+					if($.inArray($interface.textbox('getValue').toLowerCase(), usedMac) !== -1){
+						$interface.textbox('setError', $.su.CHAR.INTERFACE_MAC.MAC_ERR1);//'不同的接口不能设置相同的MAC');
+						return;
+					}else{
+						tempData['wan' + (i + 1) + '_mac'] = $interface.textbox('getValue');
+						usedMac[i] = $interface.textbox('getValue').toLowerCase();
+					}
+				}
+            }
+            $interface = $('#intf-lan');
+            if($interface.textbox('validate') !== true){
+                return;
+            }
+            if($.inArray($interface.textbox('getValue').toLowerCase(), usedMac) !== -1){
+                $interface.textbox('setError', $.su.CHAR.INTERFACE_MAC.MAC_ERR1);//'不同的接口不能设置相同的MAC');
+                return;
+            }else{
+                tempData['lan_mac'] = $interface.textbox('getValue');
+            }
+            macProxy.write({params: tempData}, function(data){
+                loadGrid(data);
+            });
+
+            $("#mac_alert_cnt").msg("show");
+            $("#mac_pro_bar").waitingbar("run");
+            setTimeout(function() {
+                $("#mac_alert_cnt").msg("close",function(){
+                    $("#mac_pro_bar").waitingbar("stop");
+                });
+            }, 15000);
+        }
+    });
+
+    wanProxy.read({}, function(data){
+        var gridData = [];
+        var  i = 0, j = 0;
+        var wanx = false;
+        if(data && data.wanmode){
+            wanCount = parseInt(data.wanmode, 10);
+			wanNumbers = data.wan_numbers;
+            if(!$.isNumeric(wanCount)) wanCount = 1;
+            if (data.singlewan && parseInt(data.singlewan, 10) == 1) {
+                wanCount = 1;
+                wanx = "WAN";
+            }
+            for(i = 0; i < data.wan_names.length; i++){
+                for (j = 0; j < data.wan_numbers.length; j++) {
+                    if (data.wan_names[i].index == data.wan_numbers[j]) {
+                        gridData.push({
+                            name: data.wan_names[i].name,
+                            wanId: data.wan_names[i].index
+                        })
+                   }
+               }
+            }
+            gridData.push({
+                name: 'LAN',
+                wanId: 'lan'
+            });
+            $list.grid('load', gridData);
+
+            for(i = 0; i < data.wan_names.length; i++){
+                for (j = 0; j < data.wan_numbers.length; j++) {
+                    if (data.wan_names[i].index == data.wan_numbers[j]) {
+                        wid = data.wan_names[i].index;
+                        $('#intf-wan-' + wid).textbox({
+                            fieldLabel: null,
+                            vtype: 'mac',
+                            allowBlank: false
+                        });
+                        $('#button-recover-' + wid).button({
+                            fieldLabel: null,
+                            text: $.su.CHAR.INTERFACE_MAC.FACTORY,//'恢复出厂MAC',
+                            cls: 'inline',
+                            handler: recoverMac(wid)
+                        });
+                        $('#button-clone-' + (wid)).button({
+                            fieldLabel: null,
+                            text: $.su.CHAR.INTERFACE_MAC.CLONE,//'克隆管理主机MAC',
+                            cls: 'inline',
+                            handler: cloneMac(wid)
+                        });
+                    }
+                }
+            }
+            $('#intf-lan').textbox({
+                fieldLabel: null,
+                vtype: 'mac',
+                allowBlank: false
+            });
+            $('#button-recover-lan').button({
+                fieldLabel: null,
+                text: $.su.CHAR.INTERFACE_MAC.FACTORY,//'恢复出厂MAC',
+                cls: 'inline',
+                handler: recoverMac(0)
+            });
+            macProxy.read({params: {wanmode: wanCount}}, function(data){
+                loadGrid(data);
+            });
+        }
+    });
+
+    function loadGrid(data){
+        if(!data){
+            return;
+        }else{
+            for(var i = 0; i < wanCount; i++){
+                $('#intf-wan-' + (i + 1)).textbox('setValue', data['wan' + (i + 1) + '_mac']);
+            }
+            $('#intf-lan').textbox('setValue', data['lan_mac']);
+        }
+    }
+
+    function recoverMac(wanId){
+        return function(){
+            macProxy.write({method: 'recover', params: {'wan_id': wanId}}, function(data){
+                if(wanId !== 0){
+                    $('#intf-wan-' + wanId).textbox('setValue', data['recovery_mac']);
+                }else{
+                    $('#intf-lan').textbox('setValue', data['recovery_mac']);
+                }
+            });
+        }
+    }
+
+    function cloneMac(wanId){
+        return function(){
+            macProxy.write({method: 'clone', params: {'wan_id': wanId}}, function(data){
+                $('#intf-wan-' + wanId).textbox('setValue', data['clone_mac']);
+            });
+        }
+    }
+
+    var helper = new $.su.Help({
+        container: "div#interface-mac-help",
+        content: "INTERFACE_MAC"
+    });
+});
+
+//]]>
+</script>
+</body>
+
+</html>

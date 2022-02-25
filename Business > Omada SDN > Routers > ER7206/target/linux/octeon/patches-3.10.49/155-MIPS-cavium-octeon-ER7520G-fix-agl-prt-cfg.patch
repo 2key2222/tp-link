@@ -1,0 +1,18 @@
+--- a/arch/mips/cavium-octeon/executive/cvmx-helper-agl.c
++++ b/arch/mips/cavium-octeon/executive/cvmx-helper-agl.c
+@@ -145,6 +145,15 @@ int __cvmx_helper_agl_probe(int interfac
+         agl_prtx_ctl.s.clkrx_byp =
+             cvmx_helper_get_agl_rx_clock_delay_bypass(interface,
+                                   port);
++
++        /**
++         * lwr's changes. 21Sep15
++         */
++        agl_prtx_ctl.s.drv_byp = 1;
++        agl_prtx_ctl.s.drv_pctl = 0x1f;
++        agl_prtx_ctl.s.drv_nctl = 0x1f;
++
++
+     }
+     cvmx_write_csr(CVMX_AGL_PRTX_CTL(port), agl_prtx_ctl.u64);
+     /* Force write out before wait */

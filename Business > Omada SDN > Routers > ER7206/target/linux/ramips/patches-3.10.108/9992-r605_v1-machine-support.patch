@@ -1,0 +1,49 @@
+diff -uprN a/arch/mips/ralink/Kconfig b/arch/mips/ralink/Kconfig
+--- a/arch/mips/ralink/Kconfig	2018-09-03 10:13:13.000000000 +0800
++++ b/arch/mips/ralink/Kconfig	2019-08-02 10:39:46.423492171 +0800
+@@ -434,3 +434,6 @@ config  RALINK_SYSTICK
+ 	select GENERIC_CLOCKEVENTS_BROADCAST if RALINK_MT7621
+ 	default n
+ 
++config MTK_MACH_TL_R605_V1
++	bool "TP-LINK TL-R605 V1 support"
++
+diff -uprN a/arch/mips/ralink/Makefile b/arch/mips/ralink/Makefile
+--- a/arch/mips/ralink/Makefile	2018-09-03 10:13:13.000000000 +0800
++++ b/arch/mips/ralink/Makefile	2019-08-02 20:24:28.485064387 +0800
+@@ -16,6 +16,10 @@ EXTRA_CFLAGS += -Werror
+ obj-y    := reset.o init.o irq.o \
+             memory.o printf.o cmdline.o setup.o time.o patchinfo.o
+ 
++ifndef CONFIG_RALINK_GPIO
++	obj-y += gpio.o
++endif
++
+ ifeq ($(CONFIG_MIPS_MT_SMP),y)
+ 	obj-y += malta-amon.o
+ endif
+@@ -38,6 +42,8 @@ obj-$(CONFIG_RALINK_RT5350) +=  ehci_ohc
+ obj-$(CONFIG_RALINK_RT6855) +=  ehci_ohci.o udc.o
+ obj-$(CONFIG_RALINK_MT7620) +=  ehci_ohci.o udc.o
+ obj-$(CONFIG_RALINK_MT7628) +=  ehci_ohci.o udc.o
++obj-$(CONFIG_RALINK_MT7621) +=  ehci_ohci.o udc.o dev-gpio-buttons.o dev-leds-gpio.o
++obj-$(CONFIG_MTK_MACH_TL_R605_V1) += mach-tl-r605-v1.o
+ 
+ ifeq ($(CONFIG_SND_MT76XX_SOC), y)
+ obj-y += mt_audio.o
+diff -uprN a/arch/mips/kernel/setup.c b/arch/mips/kernel/setup.c
+--- a/arch/mips/kernel/setup.c	2018-09-03 10:13:11.000000000 +0800
++++ b/arch/mips/kernel/setup.c	2019-08-02 10:36:34.677619019 +0800
+@@ -641,6 +641,12 @@ static void __init arch_mem_init(char **
+ #endif
+ 	strlcpy(command_line, boot_command_line, COMMAND_LINE_SIZE);
+ 
++#ifdef CONFIG_MTK_MACH_TL_R605_V1
++		strlcpy(command_line, " board=OSGv1 console=ttyS1,115200 root=31:04 init=/sbin/init mtdparts=raspi:256k(u-boot)ro,192k(u-boot-fs),64k(extra-para),1472k(kernel),14400k(rootfs)", COMMAND_LINE_SIZE);
++	
++		pr_info("@@----debug cmdline=[ %s ]\n", command_line);
++#endif
++
+ 	*cmdline_p = command_line;
+ 
+ 	parse_early_param();

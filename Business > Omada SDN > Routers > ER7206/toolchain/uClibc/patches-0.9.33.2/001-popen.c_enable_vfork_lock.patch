@@ -1,0 +1,11 @@
+--- a/libc/stdio/popen.c
++++ b/libc/stdio/popen.c
+@@ -31,8 +31,6 @@
+ #include <sys/syscall.h>
+ #if ! defined __NR_vfork
+ # define vfork fork
+-# define VFORK_LOCK		((void) 0)
+-# define VFORK_UNLOCK		((void) 0)
+ #endif
+ 
+ #ifndef VFORK_LOCK

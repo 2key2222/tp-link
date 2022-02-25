@@ -1,0 +1,12 @@
+--- a/include/linux/netfilter/nfnetlink.h	2015-07-09 20:47:15.931297000 +0800
++++ b/include/linux/netfilter/nfnetlink.h	2015-07-10 20:21:31.023013800 +0800
+@@ -49,7 +49,8 @@
+ #define NFNL_SUBSYS_OSF			5
+ #define NFNL_SUBSYS_IPSET		6
+ #define NFNL_SUBSYS_ACCT		7
+-#define NFNL_SUBSYS_COUNT		8
++#define NFNL_SUBSYS_URLSET		8
++#define NFNL_SUBSYS_COUNT		9
+ 
+ #ifdef __KERNEL__
+ 

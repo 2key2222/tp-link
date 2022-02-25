@@ -1,0 +1,239 @@
+#!/bin/sh
+
+TB_OP_READ=0
+TB_OP_WRITE=1
+TB_TARGET_CVLAN=3
+PORT_VLAN_MAX=5
+
+#$1:vid
+# return bitmap of ports
+get_same_vid_ports()
+{
+	local vid=$1
+	local mask=0
+
+	for i in `seq 1 $MAX_PORT_NUM`; do		
+		config_get cfg_vid "port"$i "pvlan_id"
+
+		if [ $vid == $cfg_vid ]; then
+			mask=$(($mask|$((1<<$(($i-1))))))
+		fi	
+	done
+
+	echo $mask
+}
+
+# set port vlan
+# $1: vid
+# $2: mbrMask
+# $3: untagMask
+set_vlan_entry()
+{
+	local vid=$1	
+	local reg_data=0
+	local mbr=$2
+	local untag=$3
+	local value=0
+	local value1=0
+
+	value=$(($(($mbr & 0xff)) | $(($(($untag&0xff)) << 8))))
+	swconfig_reg_write $RTL8367C_REG_TABLE_WRITE_DATA0 $value
+
+	#swconfig_reg_write $RTL8367C_REG_TABLE_WRITE_DATA1 $value
+
+	value1=$(($(($(($mbr&0x700)) >> 8)) | $(($(($(($untag&0x700)) >> 8)) << 3))))
+	swconfig_reg_write $RTL8367C_REG_TABLE_WRITE_DATA2 $value1
+
+	#Write Address (VLAN_ID)
+	swconfig_reg_write $RTL8367C_REG_TABLE_ACCESS_ADDR $vid
+
+	value=`swconfig_reg_read $RTL8367C_REG_TABLE_ACCESS_CTRL`
+	reg_data=$(($(($TB_OP_WRITE<<3))|$TB_TARGET_CVLAN))
+	value=$(($value|$reg_data))
+
+	#Write Command
+	swconfig_reg_write $RTL8367C_REG_TABLE_ACCESS_CTRL $value
+}
+
+RTL8367B_PORT0_VIDX_MASK=0x1f
+
+#$1: port (0~7)
+#$2: index
+set_vlan_vid()
+{
+	local reg=0
+	local port=$1
+	local index=$2
+	local offset=0
+	local vidx_mask=0
+	local val=0
+
+	reg=`echo $(($RTL8367B_REG_VLAN_PVID_CTRL0+$(($port>>1)))) |awk '{printf("%x"),$0}'`
+	val=`swconfig_reg_read $reg`
+
+	offset=$(($(($port&1)) << 3))
+	vidx_mask=$(($RTL8367B_PORT0_VIDX_MASK<<$offset))
+	val=$(($val | $(($vidx_mask&$index))))
+	swconfig_reg_write $reg $val
+}
+
+#$1:index
+#$2:mbrMask
+#$3:vid
+set_vlan_member_config()
+{
+	local index=$1
+	local mbrMask=$2
+	local vid=$3
+
+	#set mbrMask
+	reg=`echo $(($RTL8367C_REG_VLAN_MEMBER_CONFIGURATION0_CTRL0+$(($index*4)))) |awk '{printf("%x"),$0}'`
+	value=$(($mbrMask & 0x7ff)) 
+	swconfig_reg_write $reg $value
+
+	#set vid
+	reg=`echo $(($(($RTL8367C_REG_VLAN_MEMBER_CONFIGURATION0_CTRL0+$(($index*4))))+3)) |awk '{printf("%x"),$0}'`
+	value=$(($vid & 0x1fff))
+	swconfig_reg_write $reg $value
+}
+
+# set port vlan
+set_port_vlan()
+{
+	local mbrMask=0
+	local mask=0
+	local untagMask=0x3f
+
+	#clear port_vlan_id 2,3,4,5 member(set to 0)
+	for i in `seq 2 $PORT_VLAN_MAX`; do	
+		set_vlan_entry $i $mbrMask $untagMask
+	done
+
+	for i in `seq 2 $PORT_VLAN_MAX`;do
+		mbrMask=`get_same_vid_ports $i`
+
+		mbrMask=$(($mbrMask|$((1<<5))))
+
+		set_vlan_entry $i $mbrMask $untagMask
+	done
+
+	#use the index=vid+10
+	for i in `seq 2 $MAX_PORT_NUM`;do
+		config_get vid "port"$i "pvlan_id"
+
+		mbrMask=`get_same_vid_ports $vid`
+		set_vlan_member_config $(($vid+10)) $mbrMask $vid 
+
+		set_vlan_vid $(($i-1)) $(($vid+10))
+	done
+}
+
+pvlan_usage()
+{
+	echo ""
+	echo "Usage: switch -t pvlan -o <get|set> [-v vid] [-p portsid]"
+	echo ""
+	echo "Example:"
+	echo "       switch -t pvlan -o get"
+	echo "       switch -t pvlan -o get -v 2"
+	echo "       switch -t pvlan -o set -v 2 -p \"3 4 5\" "
+	echo ""
+}
+
+# print portvlan info
+# $1: vid
+print_portVlan_info()
+{
+	local ports=""
+	local vid=$1
+
+	if [ "$vid" != "" ]; then
+		if [ `expr match $vid "[0-9]"` = 0 ] || [ $vid -lt 1 ] || [ $vid -gt $PORT_VLAN_MAX ]; then
+			echo "[pvlan] vid is invalid. (1~13)"
+			pvlan_usage
+			exit 0
+		fi
+
+		for i in `seq 1 $MAX_PORT_NUM`; do			
+			config_get cfg_vid "port"$i "pvlan_id"
+			if [ $vid = $cfg_vid ] ; then
+				ports=$ports" "$i
+			fi	
+		done
+		if [ "$ports" != "" ]; then
+			echo "Port VLAN: $vid"
+			echo "    ports:$ports"	
+		fi
+	else
+		for i in `seq 1 $PORT_VLAN_MAX`; do
+			for j in `seq 1 $MAX_PORT_NUM`; do				
+				config_get cfg_vid "port"$j "pvlan_id"
+				if [ $cfg_vid = $i ] ; then
+					ports=$ports" "$j
+				fi	
+			done
+			if [ "$ports" != "" ]; then
+				echo "Port VLAN: $i"
+				echo "    ports:$ports"
+				ports=""
+			fi
+		done
+	fi
+}
+
+# check vid and ports
+# $1: vid
+# $2: ports
+pvlan_arg_check()
+{
+	local vid=$1
+	local portsid=$2
+
+	if [ -z $vid ] || [ `expr match $vid "[0-9]"` = 0 ] || [ $vid -lt 1 ] || [ $vid -gt $PORT_VLAN_MAX ]; then
+		echo "[pvlan] vid is invalid. (1~13)"
+		pvlan_usage
+		exit 0
+	fi
+
+	if [ -z "$portsid" ]; then
+		echo "[pvlan] the ports is null. (1~5)"
+		pvlan_usage
+		exit 0
+	fi
+
+	for i in $portsid; do
+		if [ `expr match $i "[0-9]"` = 0 ] || [ $i -lt 1 ] || [ $i -gt 5 ] ;then
+		echo "[pvlan] the port is invalid. (1~5)"
+		pvlan_usage
+		exit 0
+		fi
+	done
+}
+
+# init rtl8367s switch port vlan
+# $1: ports
+rtl8367s_switch_port_pvlan_init()
+{	
+	set_port_vlan
+}
+
+# rtl8367s switch port vlan
+# $1: op (get|set)
+# $2: vid (1.2.3...)
+# $3: portid (1.2.3.4.5)
+rtl8367s_switch_port_pvlan()
+{
+	local op=$1
+	local vid=$2
+	local portsid=$3
+
+	if [ "$op" = "get" ]; then	
+		print_portVlan_info $2
+	elif [ "$op" = "set" ]; then	
+		pvlan_arg_check $vid "$portsid"
+		set_port_vlan $vid "$portsid"	
+	else
+		echo "[pvlan] error op. (set | get)"
+		pvlan_usage
+	fi
+}

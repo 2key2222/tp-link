@@ -1,0 +1,92 @@
+#!/bin/sh
+
+
+statistic_usage()
+{
+	echo ""
+	echo "Usage: switch -t statistic -o <get |flush> [-p portsid]"
+	echo ""
+	echo "Example:"
+	echo "       switch -t statistic -o get"
+	echo "       switch -t statistic -o get -p \"1 2\" "
+	echo "       switch -t statistic -o flush -p \"1 2 4\" "
+	echo ""
+}
+
+statistic_arg_check()
+{
+	local portsid=$1
+
+	for i in $portsid; do
+		if [ `expr match $i "[0-9]"` = 0 ] || [ $i -lt 1 ] || [ $i -gt $MAX_PORT_NUM ] ;then
+		echo "[statistic] the port is invalid. "
+		statistic_usage
+		exit 0
+		fi
+	done
+}
+
+# flush switch port statistic
+# $1: portsid (1.2.3.4.5...)
+flush_port_statistic()
+{
+	if [ -z "$1" ]; then
+		# if input portsid = null, flush all mibs
+		#swconfig_reset_all_mibs
+		for i in `seq 1 $MAX_PORT_NUM`;do
+			local phy_id=`get_phy_port_id $i`
+			[ -n "$phy_id" ] || return
+
+			swconfig dev switch0 port $phy_id set reset_mib
+		done
+	else
+		statistic_arg_check "$1"
+
+		for i in $1; do
+			local phy_id=`get_phy_port_id $i`
+			[ -n "$phy_id" ] || continue
+
+			swconfig_reset_port_mib $phy_id
+		done
+	fi
+
+	
+}
+# get switch port statistic
+# $1: portsid
+get_port_statistic()
+{
+	local ports=$1
+
+	# if input portsid = null, get all mibs
+	if [ -z "$ports" ]; then
+		ports="1 2 3 4 5"
+	else
+		statistic_arg_check "$ports"
+	fi	
+
+	for i in $ports; do
+		local phy_id=`get_phy_port_id $i`
+		[ -n "$phy_id" ] || continue
+
+		swconfig_get_port_mib $phy_id
+	done
+	
+}
+
+# mt7628 switch port statistic
+# $1: op (get|flush)
+# $2: portsid (1.2.3.4.5...)
+mt7628_switch_port_statistic()
+{
+	local op=$1
+	local portsid=$2
+
+	if [ $op = "get" ]; then	
+		get_port_statistic "$portsid"
+	elif [ $op = "flush" ]; then
+		flush_port_statistic "$portsid"
+	else
+		echo "[statistic] error op. (get | flush)"
+	fi
+}

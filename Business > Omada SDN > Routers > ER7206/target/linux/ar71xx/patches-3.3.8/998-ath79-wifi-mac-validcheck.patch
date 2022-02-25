@@ -1,0 +1,50 @@
+--- a/arch/mips/ath79/dev-eth.c
++++ b/arch/mips/ath79/dev-eth.c
+@@ -997,7 +997,7 @@ void ath79_init_eth_pdata(unsigned int i
+ 
+ 	if (!is_valid_ether_addr(pdata->mac_addr)) {
+ 		random_ether_addr(pdata->mac_addr);
+-		printk(KERN_DEBUG
++		printk(KERN_ERR
+ 			"ar71xx: using random MAC address for eth%d\n",
+ 			ath79_eth_instance);
+ 	}
+--- a/arch/mips/ath79/dev-wmac.c
++++ b/arch/mips/ath79/dev-wmac.c
+@@ -366,6 +366,16 @@ void ath79_init_wmac_pdata(u8 *cal_data,
+ 		       sizeof(ath79_wmac_data.eeprom_data));
+ 
+ 	if (mac_addr) {
++		/* wifi dev mac valid check
++			without which, wlan0 can not enable for
++			'Could not set interface wlan0 flags (UP): Cannot assign requested address'
++		 */
++        if (!is_valid_ether_addr(mac_addr)) {
++            random_ether_addr(mac_addr);
++            printk(KERN_ERR"ar71xx: using random MAC address for wmac%s\n",
++                ath79_wmac_data.eeprom_name);
++        }
++
+ 		memcpy(ath79_wmac_mac, mac_addr, sizeof(ath79_wmac_mac));
+ 		ath79_wmac_data.macaddr = ath79_wmac_mac;
+ 	}
+--- a/arch/mips/ath79/mach-tl-wvr300.c
++++ b/arch/mips/ath79/mach-tl-wvr300.c
+@@ -104,6 +104,7 @@ static void __init tl_wvr300_setup(void)
+ {
+ 	u8 *mac = (u8 *) KSEG1ADDR(0x1f01fc00);
+ 	u8 *ee = (u8 *) KSEG1ADDR(0x1fff1000);
++	u8 wmac_addr[ETH_ALEN] = {0};
+ 
+ 	ath79_register_leds_gpio(-1, ARRAY_SIZE(tl_wvr300_leds_gpio),
+ 				 tl_wvr300_leds_gpio);
+@@ -133,7 +134,8 @@ static void __init tl_wvr300_setup(void)
+ 	ath79_eth1_data.phy_if_mode = PHY_INTERFACE_MODE_GMII;
+ 	ath79_register_eth(1);
+ 
+-	ath79_register_wmac(ee, mac);
++	memcpy(wmac_addr, mac, ETH_ALEN);
++	ath79_register_wmac(ee,wmac_addr);
+ }
+ 
+ MIPS_MACHINE(ATH79_MACH_TL_WVR300, "TL-WVR300", "TP-LINK TL-WVR300 V1/2/3",

@@ -1,0 +1,107 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<style type="text/css">
+</style>
+<title>Wireless Advanced</title>
+</head>
+
+<body>
+<div class="func-container">
+    <div id="func-setting">
+        <form id="wireless-advanced-setting">
+            <input id="radio" name="radio_id" type="hidden" value="0"/>
+            <input id="wmm-setting" name="wmm" value=""/>
+            <input id="power-setting" name="txpower" value=""/>
+            <input id="beacon-setting" name="beacon" value=""/>
+        </form>
+    </div>
+
+    <div id="wireless-advanced-help"></div>
+</div>
+
+<script type="text/javascript">
+
+//<![CDATA[
+try{
+    $
+}catch(e){
+    location.href = "/";
+};
+$(document).ready(function(e){
+    var URL_FORM = $.su.url('/admin/wireless_adv?form=adv');
+    var radio = 1;// 0: 2.4GHz, 1: 5GHz
+
+    $('#radio').val(radio);
+
+    $("#func-setting").panel({
+        title: "功能设置"
+    });
+
+    var $wmm = $("#wmm-setting").radio({
+        fieldLabel: 'WMM',
+        columns: 2,
+        items:[
+            {boxlabel: '启用', name:'wmm', inputValue:'1', checked: true},
+            {boxlabel: '禁用', name:'wmm', inputValue: '0'}
+        ]
+    });
+
+    $("#power-setting").combobox({
+        fieldLabel: '发射功率',
+        items:[
+            {name:"高",value:"2", selected: true},
+            {name:"中",value:"1"},
+            {name:"低",value:"0"}
+        ]
+    });
+
+    $('#beacon-setting').textbox({
+        fieldLabel: 'Beacon时槽',
+        allowBlank:false,
+        value: 100,
+        vtype: {
+            vtype: "number",
+            max: 1000,
+            min: 40
+        },
+        tips: '（40-1000）'
+    });
+
+    var proxy = new $.su.Proxy({
+        url: URL_FORM
+    });
+
+    $("#wireless-advanced-setting").form({
+        proxy: proxy,
+        autoLoad: false,
+        fields: [
+            {name: "wmm", mapping: "wmm"},
+            {name: "txpower", mapping: "txpower"},
+            {name: "beacon",mapping: "beacon"}
+        ],
+        submitBtn: "default"
+    }).on("ev_loadData", function(e, data){
+        if(data){
+            if(data.mode && (data.mode.toString() == '1' || data.mode.toString() == '2' || data.mode.toString() == '3')){
+                $wmm.radio("disable");
+            }else{
+                $wmm.radio("enable");
+            }
+        }
+    });
+
+    proxy.read({params: {radio_id: radio}});
+
+    var helpInfo = new $.su.Help({
+        container: "#wireless-advanced-help",
+        content: "WIRELESS_ADVANCED"
+    });
+});
+
+//]]>
+</script>
+</body>
+
+</html>

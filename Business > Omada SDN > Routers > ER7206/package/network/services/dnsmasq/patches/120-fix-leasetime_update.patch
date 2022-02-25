@@ -1,0 +1,150 @@
+diff -Naur dnsmasq-2.71/src/dnsmasq.c dnsmasq-2.71.new/src/dnsmasq.c
+--- dnsmasq-2.71/src/dnsmasq.c	2015-08-13 16:24:25.000000000 +0800
++++ dnsmasq-2.71.new/src/dnsmasq.c	2015-08-26 08:44:33.000000000 +0800
+@@ -217,6 +217,11 @@
+ #endif
+   
+ #ifdef HAVE_DHCP
++#if 1
++  dhcp_common_init();
++  lease_init(now);
++  dhcp_init();
++#else
+   /* Note that order matters here, we must call lease_init before
+      creating any file descriptors which shouldn't be leaked
+      to the lease-script init process. We need to call common_init
+@@ -230,6 +235,7 @@
+   
+   if (daemon->dhcp || daemon->relay4)
+     dhcp_init();
++#endif
+   
+ #  ifdef HAVE_DHCP6
+   if (daemon->doing_ra || daemon->doing_dhcp6 || daemon->relay6)
+@@ -1181,10 +1187,12 @@
+ 	
+       case EVENT_ALARM:
+ #ifdef HAVE_DHCP
++        lease_prune(NULL, now);
++	lease_update_file(now);
+ 	if (daemon->dhcp || daemon->doing_dhcp6)
+ 	  {
+-	    lease_prune(NULL, now);
+-	    lease_update_file(now);
++	    /*lease_prune(NULL, now);
++	    lease_update_file(now);*/
+ 	  }
+ #ifdef HAVE_DHCP6
+ 	else if (daemon->doing_ra)
+@@ -1349,6 +1357,7 @@
+   if (daemon->port != 0)
+     cache_reload();
+   
++  lease_update_file(now); 
+ #ifdef HAVE_DHCP
+   if (daemon->dhcp || daemon->doing_dhcp6)
+     {
+@@ -1357,7 +1366,7 @@
+       reread_dhcp();
+       dhcp_update_configs(daemon->dhcp_conf);
+       lease_update_from_configs(); 
+-      lease_update_file(now); 
++      /*lease_update_file(now); */
+       lease_update_dns(1);
+     }
+ #ifdef HAVE_DHCP6
+diff -Naur dnsmasq-2.71/src/rfc2131.c dnsmasq-2.71.new/src/rfc2131.c
+--- dnsmasq-2.71/src/rfc2131.c	2014-05-17 03:21:55.000000000 +0800
++++ dnsmasq-2.71.new/src/rfc2131.c	2015-08-26 09:11:24.000000000 +0800
+@@ -27,7 +27,7 @@
+ 
+ static int sanitise(unsigned char *opt, char *buf);
+ static struct in_addr server_id(struct dhcp_context *context, struct in_addr override, struct in_addr fallback);
+-static unsigned int calc_time(struct dhcp_context *context, struct dhcp_config *config, unsigned char *opt);
++static unsigned int calc_time(struct dhcp_context *context, struct dhcp_config *config, unsigned char *opt, time_t now);
+ static void option_put(struct dhcp_packet *mess, unsigned char *end, int opt, int len, unsigned int val);
+ static void option_put_string(struct dhcp_packet *mess, unsigned char *end, 
+ 			      int opt, char *string, int null_term);
+@@ -1036,7 +1036,7 @@
+       
+       log_packet("DHCPOFFER" , &mess->yiaddr, emac, emac_len, iface_name, NULL, NULL, mess->xid);
+       
+-      time = calc_time(context, config, option_find(mess, sz, OPTION_LEASE_TIME, 4));
++      time = calc_time(context, config, option_find(mess, sz, OPTION_LEASE_TIME, 4), now);
+       clear_packet(mess, end);
+       option_put(mess, end, OPTION_MESSAGE_TYPE, 1, DHCPOFFER);
+       option_put(mess, end, OPTION_SERVER_IDENTIFIER, INADDRSZ, ntohl(server_id(context, override, fallback).s_addr));
+@@ -1319,7 +1319,7 @@
+ 	      hostname_auth = 1;
+ 	    }
+ 	  
+-	  time = calc_time(context, config, option_find(mess, sz, OPTION_LEASE_TIME, 4));
++	  time = calc_time(context, config, option_find(mess, sz, OPTION_LEASE_TIME, 4), now);
+ 	  lease_set_hwaddr(lease, mess->chaddr, clid, mess->hlen, mess->htype, clid_len, now, do_classes);
+ 	  
+ 	  /* if all the netids in the ignore_name list are present, ignore client-supplied name */
+@@ -1484,10 +1484,17 @@
+   return hwaddr;
+ }
+ 
+-static unsigned int calc_time(struct dhcp_context *context, struct dhcp_config *config, unsigned char *opt)
++static unsigned int calc_time(struct dhcp_context *context, struct dhcp_config *config, unsigned char *opt, time_t now)
+ {
+   unsigned int time = have_config(config, CONFIG_TIME) ? config->lease_time : context->lease_time;
+   
++  /* If the IP address has been declined, DHCP Server offer another address, and the lease time could 
++     not be 0xffff_ffff, set lease time DECLINE_BACKOFF(10min) */
++  if (have_config(config, CONFIG_ADDR) && have_config(config, CONFIG_DECLINED) &&
++			   difftime(now, config->decline_time) < (float)DECLINE_BACKOFF){
++		time = DECLINE_BACKOFF;
++  }
++  
+   if (opt)
+     { 
+       unsigned int req_time = option_uint(opt, 0, 4);
+diff -Naur dnsmasq-2.71/src/util.c dnsmasq-2.71.new/src/util.c
+--- dnsmasq-2.71/src/util.c	2014-05-17 03:21:55.000000000 +0800
++++ dnsmasq-2.71.new/src/util.c	2015-08-26 08:59:55.000000000 +0800
+@@ -304,6 +304,32 @@
+   return 1;
+ }
+     
++static time_t 
++_getSystemRuntime(void)
++{
++    char    *filename = "/proc/uptime"; 
++    char    buf[64]   = {0};
++    int     fd = -1;
++    int     time;
++
++    if (-1 == (fd = open(filename, O_RDONLY)))
++    {
++        return -1;
++
++    }
++
++    if (0 >= read(fd, buf, 64))
++    {
++        close(fd);
++        return -1;
++    }
++    close(fd);
++
++    time = (int)atof(buf);
++
++    return (time_t)time;
++}
++
+ time_t dnsmasq_time(void)
+ {
+ #ifdef HAVE_BROKEN_RTC
+@@ -315,7 +341,8 @@
+ 
+   return (time_t)(times(&dummy)/tps);
+ #else
+-  return time(NULL);
++  /*return time(NULL);*/
++  return _getSystemRuntime();
+ #endif
+ }
+ 

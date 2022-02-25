@@ -1,0 +1,20 @@
+--- a/drivers/mtd/devices/m25p80.c	2016-08-11 14:07:21.763436961 +0800
++++ b/drivers/mtd/devices/m25p80.c	2016-08-11 15:02:28.345552551 +0800
+@@ -285,7 +285,7 @@
+ 	u32 addr,len;
+ 	uint32_t rem;
+ 
+-	pr_debug("%s: %s at 0x%llx, len %lld\n", dev_name(&flash->spi->dev),
++	pr_info("%s: %s at 0x%llx, len %lld\n", dev_name(&flash->spi->dev),
+ 			__func__, (long long)instr->addr,
+ 			(long long)instr->len);
+ 
+@@ -405,7 +405,7 @@
+ 	struct spi_transfer t[2];
+ 	struct spi_message m;
+ 
+-	pr_debug("%s: %s to 0x%08x, len %zd\n", dev_name(&flash->spi->dev),
++	pr_info("%s: %s to 0x%08x, len %zd\n", dev_name(&flash->spi->dev),
+ 			__func__, (u32)to, len);
+ 
+ 	spi_message_init(&m);

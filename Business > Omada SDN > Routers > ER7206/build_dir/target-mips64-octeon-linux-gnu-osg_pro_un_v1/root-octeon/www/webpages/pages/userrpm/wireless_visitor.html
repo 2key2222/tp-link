@@ -1,0 +1,284 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<style type="text/css">
+    .input-width{
+        width: 255px;
+    }
+    .combobox-width{
+        width: 229px;
+    }
+    div.widget-container div.widget-fieldlabel-wrap.m + div.widget-wrap-outer{
+            max-width: 650px;
+        }
+</style>
+<title>Wireless Advanced</title>
+</head>
+
+<body>
+<div class="func_container">
+    <div id="func_setting">
+        <form id="wireless_visitor_setting">
+            <input id="enable" name="enable" value=""/>
+            <input id="ssid_setting" name="ssid" value=""/>
+            <input id="ssid_encode" name="ssid_encode" value=""/>
+            <input id="sec_type" name="sec_type" value=""/>
+            <input id="password_setting" name="password" value=""/>
+
+<!--             <div id="wireless_visitor_adv_btn" class="advanced-block part-seperate" type="button" >
+                <span class="advanced-icon"></span>
+                <span class="advanced-text"></span>
+            </div>  
+            <div id="wireless_visitor_basic_btn" class="basic-block part-seperate hidden" type="button" >
+                <span class="basic-icon"></span>
+                <span class="basic-text"></span>
+            </div>      
+
+            <div id="wireless_visitor_adv" class="hidden" >
+                <div id="adv_tips"></div>
+                <input id="upstream_setting" name="upstream" value=""/>
+                <input id="downstream_setting" name="downstream" value=""/>
+                <input id="maxuser_setting" name="maxuser" value=""/>
+            </div> -->
+        </form>
+    </div>
+
+    <div id="wireless_visitor_help"></div>
+</div>
+
+<script type="text/javascript">
+
+//<![CDATA[
+try{
+    $
+}catch(e){
+    location.href = "/";
+};
+$(document).ready(function(e){
+
+    var inputCls = "input-width";
+    var comboboxCls = "combobox-width";
+    var VISITOR_URL = $.su.url("/admin/wlan_visitor?form=visitor");
+    // var MAX_MAXUSER_URL = $.su.url("/admin/wlan_visitor?form=max_maxuser");
+    var visitorProxy = new $.su.Proxy({
+        url: VISITOR_URL
+    });
+    // var max_maxuserProxy = new $.su.Proxy({
+    //     url: MAX_MAXUSER_URL
+    // });
+
+    // var max_maxuser = 10;
+
+    var panel = $("#func_setting").panel({
+        title: $.su.CHAR.WIRELESS_VISITOR.VISITOR,
+        help: $("#wireless_visitor_help")
+    });
+
+    var enable = $("#enable").checkbox({
+        fieldLabel: $.su.CHAR.WIRELESS_VISITOR.VISITOR_STATE,
+        items:[
+            {boxlabel: $.su.CHAR.OPERATION.ENABLE, inputValue:'on', uncheckedValue: "off"}
+        ]
+    });
+
+    var ssid = $("#ssid_setting").textbox({
+        fieldLabel: $.su.CHAR.WIRELESS_VISITOR.WIRELESS_NAME,
+        inputCls: inputCls,
+        allowBlank: false,
+        autoTrim: false,
+        maxLength: 32,
+        vtype: "string_wireless_name"
+    }).on("ev_change", function(e, newValue){
+        var encode = ssid_encode.combobox("getValue")[0];
+        if (/.*[\u4e00-\u9fa5]+.*$/.test(newValue)) {
+            if (encode == 0) {
+                ssid_encode.combobox("show").combobox("setValue", "1");
+            }
+        }
+        else {
+            ssid_encode.combobox("setValue", "0").combobox("hide");
+        }
+    });
+
+    var ssid_encode = $("#ssid_encode").combobox({
+        fieldLabel: $.su.CHAR.WIRELESS_ENCODE.ENCODE,
+        inputCls: comboboxCls,
+        allowBlank: false,
+        autoTrim: false,
+        items:[
+            {name: $.su.CHAR.WIRELESS_ENCODE.ENCODE_NO, value:"0" , selected: true},
+            {name: $.su.CHAR.WIRELESS_ENCODE.ENCODE_UTF8, value:"1"},
+            {name: $.su.CHAR.WIRELESS_ENCODE.ENCODE_GBK, value:"2"}
+        ]
+    }).combobox("hide").combobox("hideItem", "0");
+
+    var password = $("#password_setting").textbox({
+        fieldLabel: $.su.CHAR.WIRELESS_VISITOR.WIRELESS_PASSWD,
+        tipsCls: "xxl",
+        inputCls: inputCls,
+        allowBlank: false,
+        maxLength: 64,
+        vtype: "strange_pwd",
+        tips: $.su.CHAR.ENCRYPTION.ENCRYPT_PSK_PASSWD_TIPS,
+    }).textbox("hide").textbox("disable");
+
+    var sec_type = $("#sec_type").combobox({
+        fieldLabel: $.su.CHAR.ENCRYPTION.ENCRYPT,
+        inputCls: comboboxCls,
+        multiSelect: false,
+        items:[
+            {name: $.su.CHAR.ENCRYPTION.NO_PASSWD, value:"0" , selected: true},
+            {name: $.su.CHAR.ENCRYPTION.HAS_PASSWD, value:"1"},
+        ]
+    }).on("ev_change", function(e, oldValue, newValue){
+        if (newValue == "0") {
+            password.textbox("hide");
+            password.textbox("disable");
+        }
+        else {
+            password.textbox("show");
+            password.textbox("enable");
+        }
+    });
+
+    /*
+    var upstream = $("#upstream_setting").textbox({
+        fieldLabel: $.su.CHAR.WIRELESS_VISITOR.UPSTREAM_RATE,
+        allowBlank: false,
+        inputCls: inputCls,
+        validator: function(v) {
+            if (new $.su.vtype('number').validate(v) === true) {
+                if (v == 0 || (v >= 100 && v <= 1000000)) {
+                    return true;
+                }
+                else {
+                    return $.su.CHAR.WIRELESS_VISITOR.RATE_ERROR_TIPS;
+                }
+            }
+            else {
+                return $.su.CHAR.VTYPETEXT.NUMBER;
+            }
+        },
+        tips: $.su.CHAR.WIRELESS_VISITOR.RATE_TIPS
+    });
+
+    var downstream = $("#downstream_setting").textbox({
+        fieldLabel: $.su.CHAR.WIRELESS_VISITOR.DOWNSTREAM_RATE,
+        allowBlank: false,
+        inputCls: inputCls,
+        validator: function(v) {
+            if (new $.su.vtype('number').validate(v) === true) {
+                if (v == 0 || (v >= 100 && v <= 1000000)) {
+                    return true;
+                }
+                else {
+                    return $.su.CHAR.WIRELESS_VISITOR.RATE_ERROR_TIPS;
+                }
+            }
+            else {
+                return $.su.CHAR.VTYPETEXT.NUMBER;
+            }
+        },
+        tips: $.su.CHAR.WIRELESS_VISITOR.RATE_TIPS
+    });
+
+    var maxuser = $("#maxuser_setting").textbox({
+        fieldLabel: $.su.CHAR.WIRELESS_VISITOR.MAX_CONN_DEV,
+        inputCls: inputCls,
+        validator: function(v) {
+            if (new $.su.vtype('number').validate(v) === true) {
+                if (v > max_maxuser) {
+                    return $.su.CHAR.WIRELESS_VISITOR.GREATER_THAN_LIMITATION;
+                }
+                else if (v < 1) {
+                    return $.su.CHAR.WIRELESS_VISITOR.LOWER_THAN_ONE;
+                }
+                else {
+                    return true;
+                }
+            }
+            else {
+                return $.su.CHAR.VTYPETEXT.NUMBER;
+            }
+        }
+    });
+
+    max_maxuserProxy.read({}, function(data){
+        max_maxuser = data.max_maxuser;
+        // maxuser.textbox("setTips", "（1-"+max_maxuser.toString()+"，空则默认设置为最大值"+max_maxuser.toString()+"）");
+        maxuser.textbox("setTips", $.su.CHAR.WIRELESS_VISITOR.MAX_CONN_DEV_TIPS.replace(/\%d\%/g, max_maxuser.toString()));
+    }, function(error){
+        if ($.su.app && $.su.app.errorOperation && $.su.app.errorOperation.denied){
+            $.su.app.errorOperation.denied(error);
+        }
+    })
+
+    $("#adv_tips").text($.su.CHAR.WIRELESS_VISITOR.ADVANCED_TIPS)
+
+    $("span.advanced-text").html($.su.CHAR.WIRELESS_VISITOR.ADVANCED);
+    $("span.basic-text").html($.su.CHAR.WIRELESS_VISITOR.ADVANCED);
+
+    $("#wireless_visitor_adv").fieldset({
+        fields: [           
+            {name: "specific_ip"}
+        ]
+    }); 
+
+    $("div#wireless_visitor_adv_btn").on('click',function(){
+        $('#wireless_visitor_adv').fieldset('show');
+        $(this).hide();
+        $('#wireless_visitor_basic_btn').css('display', 'inline-block');
+    });
+    
+    $("div#wireless_visitor_basic_btn").on('click',function(){
+        $('#wireless_visitor_adv').fieldset('hide');
+        $(this).hide();
+        $('#wireless_visitor_adv_btn').css('display', 'inline-block');
+    }); 
+    */
+    var form = $("#wireless_visitor_setting").form({
+        fields: [
+            {name:"enable", mapping:"enable"},
+            {name:"ssid", mapping:"ssid"},
+            {name:"ssid_encode", mapping:"ssid_encode"},
+            {name:"sec_type", mapping:"sec_type"},
+            {name:"password", mapping:"password"},
+            // {name:"upstream", mapping:"upstream"},
+            // {name:"downstream", mapping:"downstream"},
+            // {name:"maxuser", mapping:"maxuser"}
+        ],
+        proxy: visitorProxy,
+        autoLoad: true,
+        submitBtn: "default",
+        // validator: function() {
+        //     var data = form.form("serialize");
+        //     if (parseInt(data.maxuser) > parseInt(data.max_maxuser)) {
+        //         maxuser.textbox("setError", $.su.CHAR.WIRELESS_VISITOR.GREATER_THAN_LIMITATION+data.max_maxuser.toString());
+        //         return false;
+        //     } 
+        //     else {
+        //         return true;
+        //     }
+        // }
+    }).on("ev_loadData", function(e, data){
+        if (data.ssid_encode != "0") {
+            ssid_encode.combobox("show");
+        }
+        if (data.sec_type && data.sec_type == "1") {
+            password.textbox("show");
+            password.textbox("enable");
+        }
+    });
+
+    var helper = new $.su.Help({
+        container: "div#wireless_visitor_help",
+        content: ["WIRELESS_VISITOR"/*, "WIRELESS_VISITOR_ADVANCED"*/]
+    });
+
+});
+
+</script>
+</body>
+
+</html>

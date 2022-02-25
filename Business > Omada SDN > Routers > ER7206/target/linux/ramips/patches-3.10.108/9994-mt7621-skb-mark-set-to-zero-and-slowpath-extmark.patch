@@ -1,0 +1,64 @@
+--- a/drivers/net/raeth/raether_qdma.c	2019-12-30 16:23:18.570424572 +0800
++++ b/drivers/net/raeth/raether_qdma.c	2019-12-30 16:58:00.433757213 +0800
+@@ -64,6 +64,10 @@
+ #include "../../../net/nat/hw_nat/ra_nat.h"
+ #endif
+ 
++#ifdef CONFIG_NF_CONNTRACK_EXTMARK
++#define HWNAT_SLOWPATH_EXTMARK 0x4
++#endif
++
+ #if !defined(CONFIG_RA_NAT_NONE)
+ /* bruce+
+  */
+@@ -1523,11 +1527,17 @@
+ #ifdef CONFIG_PSEUDO_SUPPORT
+ 	PSEUDO_ADAPTER *pAd;
+ #endif
+-
++	skb->mark = 0;
+ #if !defined(CONFIG_RA_NAT_NONE)
+ 	if(ra_sw_nat_hook_tx!= NULL)
+ 	{
+ 		//	   spin_lock_irqsave(&ei_local->page_lock, flags);
++#if defined(CONFIG_NF_CONNTRACK_EXTMARK)
++		if((unsigned int)(skb->extmark & HWNAT_SLOWPATH_EXTMARK) == (unsigned int)HWNAT_SLOWPATH_EXTMARK){
++			//	   	spin_unlock_irqrestore(&ei_local->page_lock, flags);
++		}
++		else {
++#endif
+ 		if(ra_sw_nat_hook_tx(skb, gmac_no)==1){
+ 			//	   	spin_unlock_irqrestore(&ei_local->page_lock, flags);
+ 		}else{
+@@ -1536,6 +1546,9 @@
+ 			//	   	spin_unlock_irqrestore(&ei_local->page_lock, flags);
+ 			return 0;
+ 		}
++#if defined(CONFIG_NF_CONNTRACK_EXTMARK)
++		}
++#endif
+ 	}
+ #endif
+ 
+--- a/drivers/net/raeth/raether.c	2020-01-21 20:00:15.460424250 +0800
++++ b/drivers/net/raeth/raether.c	2020-01-21 20:06:59.407424214 +0800
+@@ -6310,13 +6310,13 @@
+ 
+         LANWANPartition();
+ 	mt7530_phy_setting();
+-	for(i=0;i<=4;i++)
+-	{
++	//for(i=0;i<=4;i++)
++	//{
+ 		/*turn on PHY*/
+-		mii_mgr_read(i, 0x0 ,&regValue);
+-		regValue &= ~(0x1<<11);
+-		mii_mgr_write(i, 0x0, regValue);
+-	}
++	//	mii_mgr_read(i, 0x0 ,&regValue);
++	//	regValue &= ~(0x1<<11);
++	//	mii_mgr_write(i, 0x0, regValue);
++	//}
+ 
+ 	mii_mgr_read(31, 0x7808 ,&regValue);
+ 	regValue |= (3<<16); //Enable INTR

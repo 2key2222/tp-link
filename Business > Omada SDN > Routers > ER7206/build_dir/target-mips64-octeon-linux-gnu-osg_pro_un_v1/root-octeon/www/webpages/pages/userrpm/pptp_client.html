@@ -1,0 +1,739 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>PPTP_CLIENT</title>
+<style type="text/css">
+</style>
+</head>
+
+<body>
+<div class="func-container">
+
+    <div id="pptp_client_lists">
+		<div id="pptp_client_lists_grid"> 
+		</div>
+	</div>
+
+    <div id = "own_editor">
+        <input id = "tunnelname" name = "tunnelname" >
+        <input id = "username" name = "username" >
+        <input id = "password" name = "password" >
+        <input id = "outif" name = "outif" >
+        <input id = "pns" name = "pns" >
+        <input id = "mppeencryption" name = "mppeencryption" >
+        <input id = "remotesubnet" name = "remotesubnet" >
+        <input id = "uplink" name = "uplink" >
+        <input id = "downlink" name = "downlink" >
+        <input id = "workmode" name = "workmode" >
+        <input id = "enable" name = "enable" >
+        <input id = "balance" name = "balance" >
+    </div>
+
+	<div id="pptp_client_help">	</div>
+</div>
+
+<script type="text/javascript">
+try{
+    $
+}catch(e){
+    location.href = "/";
+};
+
+/**
+ *function name:maskIntToMaskAddr(intMask)
+ * describe:convert the mask from int to addr
+ */
+function maskIntToMaskAddr(intMask)
+{
+    var maskAddr = "";
+    if(parseInt(intMask,10) < 0 || parseInt(intMask,10) > 32)
+    {
+        return maskAddr;
+    }
+
+    var maskNum = parseInt(intMask,10)/8;
+    var i = 0;
+
+    for(;i<=(maskNum-1);i++)
+    {
+        if(i != 0) maskAddr += ".";
+        maskAddr += "255";
+    }
+
+    if(maskNum < 4)
+    {
+        var maskTmp = parseInt(intMask,10)%8;
+        maskTmp = (255 << (8-maskTmp)) & 255;
+        if( maskNum >= 1 )maskAddr += ".";
+        maskAddr += maskTmp.toString();
+
+        for(i = maskNum+1 ; i<4 ; i++)
+        {
+            if(i!=0)maskAddr += ".";
+            maskAddr += "0";
+        }
+    }
+
+    return maskAddr;
+}
+/**
+ *function name:logicAnd(intNuma,intNumb)
+ * describe:do the logic and between two int number
+ */
+function logicAnd(intNuma,intNumb)
+{
+    var binaryNuma = parseInt(intNuma,10).toString(2);
+    var binaryNumb = parseInt(intNumb,10).toString(2);
+    var len = (binaryNuma.length < binaryNumb.length) ? binaryNuma.length : binaryNumb.length;
+
+    if (len != 32)
+    {
+        return intNuma&intNumb;
+    }
+    var cut = Math.abs(binaryNuma.length - binaryNumb.length);
+    var temp = '';
+
+    for (var i = 0 ; i < cut; i++)
+    {
+        temp = temp + '0';
+    }
+
+    if (binaryNuma.length > binaryNumb.length)
+    {
+        binaryNumb = temp + binaryNumb;
+    }
+    else
+    {
+        binaryNuma = temp + binaryNuma;
+    }
+    var res = 0;
+    for (var i=len-1; i >= 0; i--)
+    {
+        if (binaryNuma.charAt(i)&binaryNumb.charAt(i) == 1)
+        {
+            if((len-1-i) >24)
+            {
+                res = Number(res) + 256*Number((1<<(len-9-i)));
+            }
+            else
+            {
+                res = Number(res) + Number((1<<(len-1-i)));
+            }
+        }
+    }
+    return res;
+}
+
+$(document).ready(function(e){
+	var URL_PPTP_CLIENT_LISTS = $.su.url("/admin/pptp_client?form=client_list");
+	//var URL_PPTP_CLIENT_GLOBAL = $.su.url("/admin/pptp_client?form=client_global"); 
+	var URL_BALANCE = $.su.url("/admin/balance?form=interface");
+    var URL_ONLINE = $.su.url("/admin/online?form=interface");
+
+    var interfaceItem = [];
+    var firstload = true;
+    var pptpinterface = [];
+
+
+    /*for IE8*/
+    if (!Array.prototype.indexOf)
+    {
+      Array.prototype.indexOf = function(elt /*, from*/)
+      {
+        var len = this.length >>> 0;
+        var from = Number(arguments[1]) || 0;
+        from = (from < 0)
+             ? Math.ceil(from)
+             : Math.floor(from);
+        if (from < 0)
+          from += len;
+
+        for (; from < len; from++)
+        {
+          if (from in this &&
+              this[from] === elt)
+            return from;
+        }
+        return -1;
+      };
+    }
+
+	$("#pptp_client_lists").panel({
+		title: $.su.CHAR.PPTP_CLIENT_SETTING.CLIENT_LISTS_TITLE,
+		collapsible: false
+	});
+	
+
+    $('#tunnelname').textbox({
+        fieldLabel: $.su.CHAR.PPTP_CLIENT_SETTING.TUNNEL_NAME,
+        allowBlank: false,
+        maxLength: 12,
+        vtype:"name",
+        tips: $.su.CHAR.INTERFACE.IFNAMETIPS,
+        validator: function(v) 
+        {
+            if(new $.su.vtype({vtype:'name'}).validate(v) !== true)
+            {
+                return $.su.CHAR.VTYPETEXT.NAME;
+            }
+            if (v.length > 12)
+            {
+                return $.su.CHAR.PPTP_CLIENT_SETTING.WRONG_NAME_LENGTH;
+            }
+            var reg = new RegExp(/^\d/);
+            if(reg.test(v)){
+                return $.su.CHAR.PPTP_CLIENT_SETTING.NO_NUM_BEGIN;
+            }
+            return true;
+        }        
+    });
+
+    $('#username').textbox({
+        fieldLabel: $.su.CHAR.PPTP_CLIENT_SETTING.USER_NAME,
+        allowBlank: false,
+        maxLength: 64,
+        validator: function(v) 
+        {
+            if(new $.su.vtype({vtype:'string_visible_username'}).validate(v) !== true)
+            {
+                return $.su.CHAR.VTYPETEXT.SSID
+            }
+            if (v.indexOf(" ") >= 0  || v.indexOf("\\") >= 0)
+            {
+                return $.su.CHAR.PPTP_CLIENT_SETTING.WRONG_NAME;
+            }
+            if (v.length > 64)
+            {
+                return $.su.CHAR.PPTP_CLIENT_SETTING.WRONG_NAME_LENGTH;
+            }
+            return true;
+        }      
+    });
+
+    $('#password').password({
+        fieldLabel: $.su.CHAR.PPTP_CLIENT_SETTING.PASSWORD,
+        allowBlank: false,
+        maxLength: 128,
+        validator: function(v) 
+        {
+            if(new $.su.vtype({vtype:'password'}).validate(v) !== true)
+            {
+                return $.su.CHAR.VTYPETEXT.PWD;
+            } 
+            if (v.indexOf(" ") >= 0)
+            {
+                return $.su.CHAR.VTYPETEXT.PWD;
+            }
+            if (v.length > 128)
+            {
+                return $.su.CHAR.PPTP_CLIENT_SETTING.WRONG_NAME_LENGTH;
+            }
+            return true;
+        } 
+    });
+
+    $('#outif').combobox({
+        fieldLabel:$.su.CHAR.PPTP_CLIENT_SETTING.OUT_IF,
+        allowBlank: false,
+        vtype:"string_visible_allow_blank",
+        items:[
+            {value:"---", name: "---"}
+        ]
+    });
+
+    $('#pns').textbox({
+        fieldLabel: $.su.CHAR.PPTP_CLIENT_SETTING.PNS,
+        allowBlank: false,
+        vtype:"ip_domain",
+        maxLength:253
+    });
+
+    $('#mppeencryption').combobox({
+        fieldLabel:$.su.CHAR.PPTP_CLIENT_SETTING.MMPE_ENC,
+        allowBlank: false,
+        vtype:"string_visible_allow_blank",
+        items:[
+            {value:"1", name: $.su.CHAR.PPTP_CLIENT_SETTING.MMPE_ENC_YES},
+            {value:"0", name: $.su.CHAR.PPTP_CLIENT_SETTING.MMPE_ENC_NO }
+        ]
+    });
+
+    $('#remotesubnet').subnet({
+        fieldLabel: $.su.CHAR.PPTP_CLIENT_SETTING.REMOTE_SUBNET,
+        allowBlank: false
+    });
+
+    $('#uplink').textbox({
+        fieldLabel: $.su.CHAR.INTERFACE.UPLINK,
+        allowBlank: false,
+        value: "1000000",
+        tips: "Kbps (100-1000000)",
+        vtype: {
+            vtype: "number",
+            max: 1000000,
+            min: 100
+        }
+    });
+
+    $('#downlink').textbox({
+        fieldLabel: $.su.CHAR.INTERFACE.DOWNLINK,
+        allowBlank: false,
+        value: "1000000",
+        tips: "Kbps (100-1000000)",
+        vtype: {
+            vtype: "number",
+            max: 1000000,
+            min: 100
+        }
+    });
+
+    $('#workmode').radio({
+        fieldLabel:$.su.CHAR.PPTP_CLIENT_SETTING.WORK_MODE,
+        columns: 2,
+        items:[
+            {inputValue:"nat", boxlabel: $.su.CHAR.PPTP_CLIENT_SETTING.WORK_MODE_NAT, checked: true},
+            {inputValue:"route", boxlabel: $.su.CHAR.PPTP_CLIENT_SETTING.WORK_MODE_ROUTE }
+        ]
+    });
+
+    $('#enable').checkbox({
+        fieldLabel:$.su.CHAR.POLICY_ROUTE.STATUS,
+        columns: 1,
+        items:[
+            {boxlabel: $.su.CHAR.PPTP_CLIENT_SETTING.ENABLE, name:'enable', inputValue:'on', uncheckedValue: "off", checked:true}
+        ]
+    });
+
+    $('#balance').checkbox({
+        fieldLabel:$.su.CHAR.INTERFACE.BALANCE,
+        allowBlank: false,
+        items: [
+            {boxlabel: "", inputValue:'1', uncheckedValue:'0'}
+        ]
+    });
+
+    $("#balance").checkbox('hide');
+
+	var tunnelListsProxy = new $.su.Proxy({
+		url: [URL_PPTP_CLIENT_LISTS, URL_BALANCE, URL_ONLINE],
+		combineKey: ["tunnelname", "interface", "interface"]
+	});
+
+	var clientGrid = $("#pptp_client_lists_grid").grid({
+        maxRulesProperty: "client_list_max",
+		editor:
+		{
+			validator:function()
+			{
+				var editor  = $(clientGrid.grid("getEditor"));
+				var ruleName = editor.find(".text-text[name=username]").textbox("getValue");
+				var tunnelName = editor.find(".text-text[name=tunnelname]").textbox("getValue");
+				var store 	= clientGrid.grid("getStore");
+				var keyProperty = store.keyProperty;
+				var grid_array  = store.data;
+				var editingId = editor.editor("getEditingId");
+                var remoteSubnet  = editor.find("[name=remotesubnet]").subnet("getValue");
+                var outifx = editor.find("#outif").combobox("getValue")
+                var pnsx = editor.find(".text-text[name=pns]").textbox("getValue");
+                var otherVPNInterface = [];
+                var phyInterface = [];
+                var TUNNEL_NAME_BAN_LIST = [
+                    "VPN",
+                    "NORMAL",
+                    "SETTING",
+                    "LOOPBACK",
+                    "LOCAL",
+                    "MAIN",
+                    "DEFAULT",
+                    "UNSPEC",
+                    "GE1","GE2","GE3","GE4","GE5",
+                    "GLOBAL",
+                    "ONLINE_CHECK",
+					"RESERVED",
+					"VALUES"
+                ];
+
+                var isBaned = false;
+                var isModified = false;
+                if("add" == editingId){
+                    isModified = true;
+                }else{
+                    $(grid_array).each(function(i, obj){
+
+                        if(obj.key == editingId){
+                            if(obj.tunnelname != tunnelName){
+                                isModified = true;
+                                return false;
+                            }
+                        }
+                    });
+                }
+
+
+                $(TUNNEL_NAME_BAN_LIST).each(function(i, obj){
+                    if(obj == tunnelName.toUpperCase()){
+                        isBaned = true;
+                        return false;
+                    }
+                });
+
+                if (isBaned && isModified)
+                {
+                    //$($("div#pptp_client_lists_grid").grid("getEditor")).form('setError', "隧道名称" + tunnelName + "被系统保留，禁止使用！");
+                    editor.find(".text-text[name=tunnelname]").textbox("setError", $.su.CHAR.PPTP_CLIENT_SETTING.TUNNELNAME_ERR.replace("%T%",tunnelName));//"隧道名称" + tunnelName + "被系统保留，请更换后重试！");
+                    return false;
+                }
+               
+
+                /* get the vpn interface and the normal interface from the proxy */
+                var interfaceProxy = new $.su.Proxy({
+                    url: $.su.url('/admin/interface?form=status'),
+                    async: false
+                });
+                interfaceProxy.read({}, function(data){
+                            var i;
+                            for (i=0; i<data.vpn.length; i++){
+                                otherVPNInterface.push(data.vpn[i].t_name);
+                            }
+                            for (i=0; i<data.normal.length; i++){
+                                phyInterface.push(data.normal[i].t_name);
+                            }
+                });
+
+				/* check the grid, the username and the tunnelname can't be repeated */
+				if($.isArray(grid_array) && grid_array.length > 0)
+				{
+					for(var index = 0; index < grid_array.length; index ++)
+					{
+						var data = grid_array[index];
+                        /* remove the tunnelnames which are in the grid from the vpn interface */
+                        var interfaceIndex = otherVPNInterface.indexOf(data["tunnelname"]);
+                        if(-1 != interfaceIndex)
+                        {
+                            otherVPNInterface.splice(interfaceIndex,1);
+                        }
+
+						if(data[keyProperty] == editingId)
+						{
+							continue;
+						}
+						else if(/*(data["username"] == ruleName) || */(data["tunnelname"] == tunnelName) )
+						{
+							$($("div#pptp_client_lists_grid").grid("getEditor")).form('setError', $.su.CHAR.PPTP_CLIENT_SETTING.TUNNELNAME_ERR1);//"隧道名称不能重复！");
+							return false;
+						}
+                        else if((data["outif"] == outifx && data["pns"] == pnsx ) )
+                        {
+                            $($("div#pptp_client_lists_grid").grid("getEditor")).form('setError', $.su.CHAR.PPTP_CLIENT_SETTING.TUNNELNAME_ERR2);//"出接口和服务器地址不能同时与其他PPTP客户端相同！");
+                            return false;
+                        }
+					}
+				}
+
+                /* the interface can't be repeated with l2tp interface */
+                var interfaceLen = otherVPNInterface.length;
+                if(0 != interfaceLen)
+                {
+                    for(var index = 0; index < interfaceLen; index ++)
+                    {
+                        if(otherVPNInterface[index] == tunnelName)
+                        {
+                            $($("div#pptp_client_lists_grid").grid("getEditor")).form('setError', $.su.CHAR.PPTP_CLIENT_SETTING.TUNNELNAME_ERR3);//"与L2TP客户端隧道名称不能重复！");
+                            return false;
+                        }
+                    }
+                }
+
+                /* the interface can't be repeated with phy interface */
+                interfaceLen = phyInterface.length;
+                if(0 != interfaceLen)
+                {
+                    for(var index = 0; index < interfaceLen; index ++)
+                    {
+                        if(phyInterface[index] == tunnelName)
+                        {
+                            $($("div#pptp_client_lists_grid").grid("getEditor")).form('setError', $.su.CHAR.PPTP_CLIENT_SETTING.TUNNELNAME_ERR4);//"与物理接口名称不能重复！");
+                            return false;
+                        }
+                    }
+                }
+
+                /* check and set the value of the remotesubnet */
+                var ipArray = remoteSubnet.split('/');
+                var ipAddr	= ipArray[0];
+                var mask    = ipArray[1];
+                var newIntIP = logicAnd($.su.func.ipToInt(ipAddr),$.su.func.ipToInt(maskIntToMaskAddr(mask)));
+                var newNetIP  = $.su.func.intToIp(newIntIP);
+                var newRemoteSubnet   = newNetIP + '/' + mask;
+                editor.find("[name=remotesubnet]").subnet("setValue",newRemoteSubnet);
+
+                if((mask == 0) || (ipAddr == "0.0.0.0"))
+                {
+                    $("#balance").checkbox('setValue', '1');
+                }
+                else
+                {
+                    $("#balance").checkbox('setValue', '0');
+                }
+
+				return true;
+			},
+			content:"#own_editor",
+			fields:
+			[
+				{name:"tunnelname"},
+				{name:"username"},
+				{name:"password"},
+				{name:"pns"},
+				{name:"outif"},
+				{name:"mppeencryption"},
+				{name:"workmode"},
+				{name:"remotesubnet"},
+                {name: "uplink"},
+                {name: "downlink"},
+				{name:"enable"},
+				{name: "balance"}
+			]
+		},
+		store:
+		{
+			proxy:tunnelListsProxy,
+			extraProperty: "tunnelname",
+			fields:
+			[
+				{name:"tunnelname"},
+				{name:"username"},
+				{name:"password"},
+				{name:"pns"},
+				{name:"outif"},
+				{name:"workmode"},
+				{name:"mppeencryption"},
+				{name:"remotesubnet"},
+                {name: "uplink"},
+                {name: "downlink"},
+                {name:"enable"},
+				{name: "balance"},
+				{name: "t_outif_label"}
+			],
+			autoLoad:true
+		},
+		columns:
+		[
+			{
+				xtype: "checkcolumn"
+			},
+			{
+				xtype: "rownumberer"
+			},
+			{
+				text: $.su.CHAR.PPTP_CLIENT_SETTING.TUNNEL_NAME,				
+				width: 100,
+				dataIndex: "tunnelname"
+
+			},
+			{
+				text: $.su.CHAR.PPTP_CLIENT_SETTING.USER_NAME,				
+				width: 100,
+				dataIndex: "username"
+			},
+			{
+				text: $.su.CHAR.PPTP_CLIENT_SETTING.PASSWORD,				
+				width: $.su.CHAR.SETTING.PPTP_CLIENT_SETTING.PASS_WORD_WIDTH,
+				dataIndex: "password",
+				hidden:true
+			},
+			{
+				text: $.su.CHAR.PPTP_CLIENT_SETTING.PNS,
+                width: 110,
+                dataIndex: "pns"
+			},
+			{
+				text: $.su.CHAR.PPTP_CLIENT_SETTING.OUT_IF,
+				width: 60,
+				dataIndex: "outif",
+				renderer: function(dd, jindex, data) {
+					return data.t_outif_label ? data.t_outif_label : dd;
+				}
+			},
+			{
+                text: $.su.CHAR.PPTP_CLIENT_SETTING.MMPE_ENC,
+                width: 90,
+                dataIndex: "mppeencryption",
+                renderer: function(v){
+                    if (v=="1"){
+                        return $.su.CHAR.PPTP_CLIENT_SETTING.MMPE_ENC_YES;
+                    }else if(v == "0"){
+                        return $.su.CHAR.PPTP_CLIENT_SETTING.MMPE_ENC_NO;
+                    }else{
+                        return "--";
+                    }
+                }
+            },
+			{
+				text: $.su.CHAR.PPTP_CLIENT_SETTING.REMOTE_SUBNET,
+				width: 120,
+				dataIndex: "remotesubnet"
+			},
+			{
+				text: $.su.CHAR.PPTP_CLIENT_SETTING.WORK_MODE,
+				width: 60,
+				dataIndex: "workmode",
+				renderer: function(v){
+                    if ( v == "nat" ){
+                        return $.su.CHAR.PPTP_CLIENT_SETTING.WORK_MODE_NAT;
+                    }else if(v == "route"){
+                        return $.su.CHAR.PPTP_CLIENT_SETTING.WORK_MODE_ROUTE;
+                    }else{
+                        return "--";
+                    }
+                }
+			},
+			{
+				text: $.su.CHAR.PPTP_CLIENT_SETTING.STATUS,				
+                width: 90,	
+				dataIndex: "enable",
+				xtype: "statuscolumn",
+                trueValue: "on",
+                falseValue: "off"
+			},
+			{
+                text: $.su.CHAR.INTERFACE.BALANCE,
+                width:$.su.CHAR.SETTING.L2TP_CLIENT.STATUS_WIDTH,               
+                hidden: true,             
+                dataIndex: "balance"
+            },
+			{
+                xtype: "settings"
+            }
+		],
+		operation:'prompt|add|delete'
+	}).on("ev_load", function(e, data, others){
+		if(others && others.client_list_max)
+        {
+            maxrules = others.client_list_max;
+        }
+		var interfaceProxy = new $.su.Proxy({
+				url: $.su.url('/admin/interface?form=status'),
+				async: false
+		});
+        if (firstload) {
+            var data = $pptpStore.data
+            for (var i = 0; i < data.length; i++)
+            {
+                pptpinterface.push(data[i].tunnelname);
+            }
+		    interfaceProxy.read({}, function(data){
+                var i
+                for (i=0; i<data.normal.length; i++){
+					if (!$.su.func.isLan(data.normal[i].t_name))
+						interfaceItem.push({name:data.normal[i].t_label,value:data.normal[i].t_name});	
+                }
+                /*for (i=0; i<data.vpn.length; i++){
+                    interfaceItem.push({name:data.vpn[i].t_label,value:data.vpn[i].t_name});                     
+                }*/
+                var editor = clientGrid.grid('getEditor');
+                var combobox = $(editor).find('.combobox-value[name=outif]');
+                combobox.combobox('loadData',interfaceItem);
+            });
+            firstload = false;
+        }					
+	}).on("ev_startEdit",function(e,index,key){
+             
+            var editor  = $(clientGrid.grid("getEditor"));
+            var comboInterface = $(editor).find('.combobox-value[name=outif]');
+
+            if (index == 'add') {
+                editor.find(".text-text[name=tunnelname]").textbox("enable");
+                editor.find('#password').password('setValue', '');
+                /*if(interfaceItem.length !== 0) {
+                    comboInterface.combobox('loadData',interfaceItem);
+                }*/
+            }
+            else
+            {
+                editor.find(".text-text[name=tunnelname]").textbox("disable");
+                var data = $pptpStore.data;
+                var keyProperty = $pptpStore.keyProperty;
+                var delitem = false;
+
+                for (var i = 0; i < data.length; i++)
+                {
+                    if (data[i][keyProperty] == key) 
+                    {
+                        delitem = data[i].tunnelname;
+                        break;
+                    }
+
+                }
+                var interfaceItemx = [];
+                for (var i = 0; i < interfaceItem.length; i++)
+                {
+                    if (delitem != interfaceItem[i].name)
+                        interfaceItemx.push(interfaceItem[i]);
+                }
+                var bindif = comboInterface.combobox('getValue');
+                /*if(interfaceItemx.length !== 0) {
+                    comboInterface.combobox('loadData',interfaceItemx);
+                }*/
+                comboInterface.combobox("setValue", bindif);
+            }
+            
+    }).on("ev_insert", function(e, index, data){
+        pptpinterface.push(data[0].tunnelname);
+        interfaceItem.push({name:data[0].tunnelname, value:data[0].tunnelname});
+        var editor = clientGrid.grid('getEditor');
+        var comboInterface = $(editor).find('.combobox-value[name=outif]');
+        /*if(interfaceItem.length !== 0) {
+            comboInterface.combobox('loadData',interfaceItem);
+        }*/
+        /*reloadGrid({});*/
+    }).on("ev_remove", function(e, keys){
+        var data = $pptpStore.data;
+        var keyProperty = $pptpStore.keyProperty
+        var delitem = {}
+        var miditem = {}
+        var pptpinterfacex = [];
+
+        for (var k = 0; k < data.length; k++) {
+            miditem[data[k].tunnelname] = true;
+            pptpinterfacex.push(data[k].tunnelname)
+        }
+        for (var k = 0; k < pptpinterface.length; k++)
+        {
+            if (miditem[pptpinterface[k]] !== true)
+                delitem[pptpinterface[k]] = true;
+        }
+        pptpinterface = pptpinterfacex;
+
+        var interfaceItemx = []
+        for (var i = 0; i < interfaceItem.length; i++)
+        {
+            if (delitem[interfaceItem[i].name] != true)
+                interfaceItemx.push(interfaceItem[i]);
+
+        }
+
+        interfaceItem = interfaceItemx;
+        var editor = clientGrid.grid('getEditor');
+        var comboInterface = $(editor).find('.combobox-value[name=outif]');
+        /*if(interfaceItem.length !== 0) {
+            comboInterface.combobox('loadData',interfaceItem);
+        }*/
+    });
+    
+    var $pptpStore = clientGrid.grid('getStore');
+    var $pptpEditor = $(clientGrid.grid('getEditor'));
+	
+	
+    var helpIpsecTunnel = new $.su.Help({
+        container: "div#pptp_client_help",
+        content: ["PPTP_CLIENT_SET"]
+    });	
+});	
+       
+
+</script>
+</body>
+
+</html>

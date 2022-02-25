@@ -1,0 +1,46 @@
+--- a/drivers/net/ppp/ppp_generic.c	2020-06-11 09:26:05.988434890 +0800
++++ b/drivers/net/ppp/ppp_generic.c	2020-06-11 09:27:44.539492557 +0800
+@@ -2937,6 +2937,23 @@
+ 	kfree(pch);
+ }
+ 
++void ppp_dev_add_stats(struct net_device *dev, struct sk_buff *skb, int len, int rx)
++{
++	struct ppp *ppp = netdev_priv(dev);
++
++	if (rx) {
++		ppp_recv_lock(ppp);
++		++ppp->stats64.rx_packets;
++		ppp->stats64.rx_bytes += len;
++		ppp_recv_unlock(ppp);
++	} else {
++		ppp_xmit_lock(ppp);
++		++ppp->stats64.tx_packets;
++		ppp->stats64.tx_bytes += len;
++		ppp_xmit_unlock(ppp);
++	}
++}
++
+ int ppp_dev_unencrypted_index(struct ppp_channel *chan)
+ {
+ 	struct channel *pch = chan->ppp;
+@@ -3027,6 +3044,7 @@
+ EXPORT_SYMBOL(ppp_dev_name);
+ EXPORT_SYMBOL(ppp_dev_index);
+ EXPORT_SYMBOL(ppp_dev_unencrypted_index);
++EXPORT_SYMBOL(ppp_dev_add_stats);
+ EXPORT_SYMBOL(ppp_input);
+ EXPORT_SYMBOL(ppp_input_error);
+ EXPORT_SYMBOL(ppp_output_wakeup);
+--- a/include/linux/ppp_channel.h	2020-06-11 09:26:14.405439019 +0800
++++ b/include/linux/ppp_channel.h	2020-06-11 09:28:06.052436308 +0800
+@@ -81,6 +81,9 @@
+ /* Get the device index  associated with a channel (unencrypted), or 0, if none */
+ extern int ppp_dev_unencrypted_index(struct ppp_channel *chan);
+ 
++/* Add stats for ppp channel netdevice */
++extern void ppp_dev_add_stats(struct net_device * dev, struct sk_buff * skb, int len, int rx);
++
+ /*
+  * SMP locking notes:
+  * The channel code must ensure that when it calls ppp_unregister_channel,

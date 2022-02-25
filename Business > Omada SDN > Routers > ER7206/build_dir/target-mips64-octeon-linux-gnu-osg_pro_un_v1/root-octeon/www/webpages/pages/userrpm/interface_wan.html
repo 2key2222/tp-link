@@ -1,0 +1,1114 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<style type="text/css">
+    .wan-func-container .panel-container{
+        /*display: inline-block;*/
+        /*overflow: hidden;*/
+        float: left;
+    }
+    #form-wan{
+        /*border-right: 1px solid #484848;*/
+    }
+    #link-detail{
+        margin-left: 10px;
+    }
+    .detail{
+        width: 100%;
+    }
+    .detail td{
+        text-align: left;
+        height: 30px;
+        padding: 0 10px 3px 0;
+        min-width: 80px;
+    }
+    .detail .detail-key{
+        width: 130px;
+    }
+    .detail .detail-value{
+        width: 140px;
+    }
+</style>
+<title>Interface Mode</title>
+</head>
+
+<body>
+<div class="wan-func-container">
+    <div id="func-setting">
+        <form id="form-wan">
+            <input type="hidden" value="1" name="wan_id" id="wan_id"/>
+            <input id="link-mode" name="proto" />
+            <input id="static-ip" name="ipaddr" class="first protocol static"/>
+            <input id="static-mask" name="netmask" class="first protocol static"/>
+            <input id="static-gateway" name="gateway" class="first protocol static"/>
+            <input id="dhcp-hostname" name="hostname" class="first protocol dhcp"/>
+            <input id="username" name="username" class="first protocol pppoe l2tp pptp bigpond"/>
+            <input id="password" name="password" class="first protocol pppoe l2tp pptp bigpond"/>
+            <input id="dial" name="t_dialtype" class=""/>
+            <input id="link-type" name="t_linktype" class="first protocol pppoe l2tp pptp bigpond"/>
+            <input id="time-object" name="t_timeobj" class="first protocol pppoe l2tp pptp bigpond"/>
+            <input id="interface-up-bandwidth" name="uplink"/>
+            <input id="interface-down-bandwidth" name="downlink"/>
+            <input id="echo-interval" name="lcpechointerval" value="2" class="hidden"/>
+            <input id="echo-retry" name="lcpechofailure" value="5" class="hidden"/>
+            <input id="interface-mtu" name="mtu" class=""/>
+            <input id="service-name" name="service" class="first protocol pppoe"/>
+			<input id="auth-server" name="authserver" class="first protocol bigpond" />
+			<input id="auth-domain" name="authdomain" class="first protocol bigpond" />
+            <input id="main-dns" name="dns1" class="first protocol static dhcp pppoe l2tp pptp"/>
+            <input id="backup-dns" name="dns2" class="first protocol static dhcp pppoe l2tp pptp"/>
+			<input id="vlanid" name="vlanid" />
+			<input id="dhcp-unicast" name="unicast" class="first protocol dhcp" />
+		</form>
+		<form id="second-form-wan" class="first protocol pppoe l2tp pptp">
+			<input type="hidden" value="1" name="wan_id" id="alias_wan_id"/>
+			<input type="hidden" value="dhcp" name="main_proto" id="main_proto"/>
+			<input id="second-conn" name="proto"/>
+            <input id="second-server-name" name="server" class="second protocol others l2tp pptp" />
+            <input id="second-ip" name="ipaddr" class="second protocol static dhcp pppoe l2tp pptp"/>
+            <input id="second-mask" name="netmask" class="second protocol static dhcp pppoe l2tp pptp"/>
+            <input id="second-gateway" name="gateway" class="second protocol static dhcp l2tp pptp"/>
+            <input id="second-main-dns" name="dns1" class="second protocol static dhcp l2tp pptp"/>
+            <input id="second-backup-dns" name="dns2" class="second protocol static dhcp l2tp pptp"/>
+			<!--<table id="dhcp-link-detail" class="link-detail-table detail" style="display: none;">
+				<tr>
+					<td class="detail-key" id="second-link-detail-key-ip"></td>
+					<td class="detail-value" id="second-link-detail-value-ip"></td>
+				</tr>
+				<tr>
+					<td class="detail-key" id="second-link-detail-key-mask"></td>
+					<td class="detail-value" id="second-link-detail-value-mask"></td>
+				</tr>
+				<tr>
+					<td class="detail-key" id="second-link-detail-key-gateway"></td>
+					<td class="detail-value" id="second-link-detail-value-gateway"></td>
+				</tr>
+				<tr>
+					<td class="detail-key" id="second-link-detail-key-dns"></td>
+					<td class="detail-value" id="second-link-detail-value-dns"></td>
+				</tr>
+				<tr>
+					<td class="detail-key" id="second-link-detail-key-dns2"></td>
+					<td class="detail-value" id="second-link-detail-value-dns2"></td>
+				</tr>-->
+			</table>
+		</form>
+		<form>
+            <input id="submit-button" />
+            <input id="connect-button" />
+            <input id="disconnect-button" />
+        </form>
+    </div>
+
+    <div id="link-detail" style="width: 323px;">
+        <table class="link-detail-table detail">
+            <tr>
+                <td class="detail-key" id="link-detail-key-status"></td>
+                <td class="detail-value" id="link-detail-value-status"></td>
+            </tr>
+            <tr>
+                <td class="detail-key" id="link-detail-key-ip"></td>
+                <td class="detail-value" id="link-detail-value-ip"></td>
+            </tr>
+            <tr>
+                <td class="detail-key" id="link-detail-key-mask"></td>
+                <td class="detail-value" id="link-detail-value-mask"></td>
+            </tr>
+            <tr>
+                <td class="detail-key" id="link-detail-key-gateway"></td>
+                <td class="detail-value" id="link-detail-value-gateway"></td>
+            </tr>
+            <tr>
+                <td class="detail-key" id="link-detail-key-dns"></td>
+                <td class="detail-value" id="link-detail-value-dns"></td>
+            </tr>
+            <tr>
+                <td class="detail-key" id="link-detail-key-dns2"></td>
+                <td class="detail-value" id="link-detail-value-dns2"></td>
+            </tr>
+        </table>
+        <table class="link-detail-table detail" id="second-status">
+            <tr>
+                <td class="detail-key"></td>
+            </tr>
+            <tr>
+                <td class="detail-key" id="second-link-detail" style="width:100%" colspan="2"></td>
+            </tr>
+            <tr>
+                <td class="detail-key" id="second-link-detail-key-ip"></td>
+                <td class="detail-value" id="second-link-detail-value-ip"></td>
+            </tr>
+            <tr>
+                <td class="detail-key" id="second-link-detail-key-mask"></td>
+                <td class="detail-value" id="second-link-detail-value-mask"></td>
+            </tr>
+            <tr id="second-link-detail-gw">
+                <td class="detail-key" id="second-link-detail-key-gateway"></td>
+                <td class="detail-value" id="second-link-detail-value-gateway"></td>
+            </tr>
+            <tr id="second-link-detail-dns1">
+                <td class="detail-key" id="second-link-detail-key-dns"></td>
+                <td class="detail-value" id="second-link-detail-value-dns"></td>
+            </tr>
+            <tr id="second-link-detail-dns2">
+                <td class="detail-key" id="second-link-detail-key-dns2"></td>
+                <td class="detail-value" id="second-link-detail-value-dns2"></td>
+            </tr>
+        </table>
+    </div>
+    <div style="clear: both;"></div>
+
+    <div id="wan-help"></div>
+</div>
+
+<script type="text/javascript">
+
+//<![CDATA[
+try{
+    $
+}catch(e){
+    location.href = "/";
+};
+$(document).ready(function(e){
+    var currentWan = 1;
+    var refreshTimeout = 0;
+    var mtuMin = 576, mtuMax = 1500;
+    var bandwidthMin = 100, bandwidthMax = 1000000;
+    var waitConnect = 30;
+    var isConnecting = false, isDisconnecting = false;
+    var connectAttemption = 0;
+    var URL_FORM = $.su.url('/admin/interface_wan?form=wanconfig');
+    var URL_STATUS = $.su.url('/admin/interface_wan?form=status');
+    var URL_PROTO = $.su.url('/admin/interface_wan?form=proto');
+    var URL_INTERFACE =$.su.url("/admin/interface?form=status2");
+    var $protocol = $('.first.protocol');
+    var $protoStatic = $('.first.static');
+    var $protoDhcp = $('.first.dhcp');
+    var $protoPppoe = $('.first.pppoe');
+	var $protoL2tp = $('.first.l2tp');
+	var $protoPptp = $('.first.pptp');
+	var $protoBpa = $('.first.bigpond');
+	var $secondProto = $('.second.protocol');
+    var currentProto = 'dhcp';
+	var secondaryProto = 'none';
+    var INTERFACE_PROXY = new $.su.Proxy({
+            url: URL_INTERFACE
+        });
+
+    var IP_ARR = [];
+
+	var secondConnItems = {
+		l2tp:
+				[{
+					boxlabel: $.su.CHAR.INTERFACE.DHCP, inputValue: "dhcp", checked: true
+				},{
+					boxlabel: $.su.CHAR.INTERFACE.STATIC_IP, inputValue: "static"
+				}],
+		pptp:
+				[{
+					boxlabel: $.su.CHAR.INTERFACE.DHCP, inputValue: "dhcp", checked: true
+				},{
+					boxlabel: $.su.CHAR.INTERFACE.STATIC_IP, inputValue: "static"
+				}],
+		pppoe:
+				[{
+					boxlabel: $.su.CHAR.INTERFACE.CONN_NONE, inputValue: "none", checked: true
+				},{
+					boxlabel: $.su.CHAR.INTERFACE.DHCP, inputValue: "dhcp"
+				},{
+					boxlabel: $.su.CHAR.INTERFACE.STATIC_IP, inputValue: "static"
+				}]
+	};
+			
+    var $lis = $('.tab-menu-ul:visible>li');
+    $.each($lis, function(i, li){
+        var $li = $(li);
+        if($li.hasClass('selected')){
+            currentWan = i;
+            return false;
+        }
+    });
+    $('#wan_id').val(currentWan);
+	$('#alias_wan_id').val(currentWan);
+
+    $("#func-setting").panel({
+        title: $.su.CHAR.INTERFACE.LINKSET//"连接设置"
+    });
+    $("#link-detail").panel({
+        title: $.su.CHAR.INTERFACE.LINKSTATUS//"连接状态"
+    });
+    $("#second-link-detail").html($.su.CHAR.INTERFACE.SECOND_CONN);
+
+    $('#link-mode').combobox({
+        fieldLabel: $.su.CHAR.INTERFACE.LINKTYPE,
+        alwaysTrigger: true,
+        items:[
+            {value:"static", name: $.su.CHAR.INTERFACE.STATIC_IP},//"固定IP地址"},
+            {value:"dhcp", name: $.su.CHAR.INTERFACE.DHCP},//"自动获取IP地址"
+            {value:"pppoe", name: $.su.CHAR.INTERFACE.PPPOE},//"PPPoE拨号"}
+			{value:"l2tp", name: $.su.CHAR.INTERFACE.L2TP},
+			{value:"pptp", name: $.su.CHAR.INTERFACE.PPTP},
+			{value:"bigpond", name: $.su.CHAR.INTERFACE.BPA}
+        ]
+    }).on("ev_change", function(e, oldValue, newValue){
+        var value = newValue[0];
+        if(value === "static"){
+            mtuMax = 1500;
+            $mtu.textbox("setTips", $.su.CHAR.INTERFACE.MTUOPTIONAL);
+            $.su.func.hideWidgets($protocol);
+            $.su.func.showWidgets($protoStatic);
+            $buttonConnect.button('hide');
+            $buttonDisconnect.button('hide');
+        }else if(value === "dhcp"){
+            mtuMax = 1500;
+            $mtu.textbox("setTips", $.su.CHAR.INTERFACE.MTUOPTIONAL);
+            $.su.func.hideWidgets($protocol);
+            $.su.func.showWidgets($protoDhcp);
+            $buttonConnect.button('show');
+            $buttonDisconnect.button('show');
+        }else if(value === "pppoe"){
+            mtuMax = 1492;
+            $mtu.textbox("setTips", $.su.CHAR.INTERFACE.MTUPPPOE);
+            $.su.func.hideWidgets($protocol);
+            $.su.func.showWidgets($protoPppoe);
+            $buttonConnect.button('show');
+            $buttonDisconnect.button('show');
+            var linkTypeValue = $linkType.combobox('getValue');
+            if(linkTypeValue.length === 0){
+                linkTypeValue = 'auto';
+            }
+            $linkType.combobox("setValue", linkTypeValue);
+        }else if(value === "l2tp"){
+            mtuMax = 1460;
+            $mtu.textbox("setTips", $.su.CHAR.INTERFACE.MTUL2TP);
+            $.su.func.hideWidgets($protocol);
+            $.su.func.showWidgets($protoL2tp);
+            $buttonConnect.button('show');
+            $buttonDisconnect.button('show');
+            var linkTypeValue = $linkType.combobox('getValue');
+            if(linkTypeValue.length === 0){
+                linkTypeValue = 'auto';
+            }
+            $linkType.combobox("setValue", linkTypeValue);
+		}else if(value === "pptp"){
+            mtuMax = 1420;
+            $mtu.textbox("setTips", $.su.CHAR.INTERFACE.MTUPPTP);
+            $.su.func.hideWidgets($protocol);
+            $.su.func.showWidgets($protoPptp);
+            $buttonConnect.button('show');
+            $buttonDisconnect.button('show');
+            var linkTypeValue = $linkType.combobox('getValue');
+            if(linkTypeValue.length === 0){
+                linkTypeValue = 'auto';
+            }
+            $linkType.combobox("setValue", linkTypeValue);
+		}else if (value === "bigpond"){
+            mtuMax = 1500;
+            $mtu.textbox("setTips", $.su.CHAR.INTERFACE.MTUOPTIONAL);
+            $.su.func.hideWidgets($protocol);
+            $.su.func.showWidgets($protoBpa);
+            $buttonConnect.button('show');
+            $buttonDisconnect.button('show');
+            var linkTypeValue = $linkType.combobox('getValue');
+            if(linkTypeValue.length === 0){
+                linkTypeValue = 'auto';
+            }
+            $linkType.combobox("setValue", linkTypeValue);
+		}
+
+		$('#main_proto').val(value);
+        if(value === "l2tp" || value === "pptp" || value === "pppoe"){
+			$('#second-conn').radio("loadData", secondConnItems[value]);
+			var sconn = $('#second-conn').radio('getValue');
+			if (sconn)
+				$('#second-conn').trigger('ev_change', ["none", sconn]);
+			$('#second-status').css('display', 'table');
+			$('#second-link-detail-gw').css('display', 'table-row');
+			$('#second-link-detail-dns1').css('display', 'table-row');
+			$('#second-link-detail-dns2').css('display', 'table-row');
+			if (value == "pppoe") {
+				$('#second-link-detail-gw').css('display', 'none');
+				$('#second-link-detail-dns1').css('display', 'none');
+				$('#second-link-detail-dns2').css('display', 'none');
+			}
+		}
+		else
+			$('#second-status').css('display', 'none');
+
+        protoProxy.read({params: {wan_id: currentWan, proto: value}}, function(data){
+            if(data){
+                delete data.proto;
+                $formWan.form('loadData', data);
+				if(value === "l2tp" || value === "pptp" || value === "pppoe"){
+					if (data.second_proto) {
+						secondaryProto = data.second_proto
+						$("#second-conn").radio("setValue", secondaryProto)
+						$('#second-conn').trigger('ev_change', ["none", secondaryProto]);
+					}
+					else
+						secondaryProto = "none"
+					secondProtoProxy.read({params: {wan_id: currentWan, proto: secondaryProto, main_proto: value}}, function(data){
+						if(data){
+							delete data.proto;
+							$secondFormWan.form('loadData', data);
+						}
+					});
+				}
+				if (oldValue != value && !isConnecting) {
+					isConnecting = false;
+					$('#link-detail-value-status').text($.su.CHAR.INTERFACE.DISCONNECTED);//'未连接');
+					refreshStatus()
+				}
+            }
+        });
+    });
+    $('#vlanid').combobox({
+        fieldLabel: $.su.CHAR.INTERFACE.BINDVLAN,
+        alwaysTrigger: false,
+        items:[]
+    })
+    $('#static-ip').textbox({
+        fieldLabel: $.su.CHAR.INTERFACE.IPADDR,
+        allowBlank: false,
+        vtype: "ip"
+    });
+    $('#static-mask').textbox({
+        fieldLabel: $.su.CHAR.INTERFACE.NETMASK,
+        allowBlank: false,
+        vtype: "netmask"
+    });
+    $('#static-gateway').textbox({
+        fieldLabel: $.su.CHAR.INTERFACE.GATEWAY,
+        vtype: {
+            vtype: 'ip',
+            disallowFirstZeroFlag:false,
+            allowAllZeroFlag:true
+        },
+        tips: $.su.CHAR.INTERFACE.OPTIONAL
+        //hint:"0.0.0.0"
+        //validator: function(v) {
+        //    if(v == "0.0.0.0" || (new $.su.vtype('ip').validate(v) === true)){
+        //       return true;
+        //    }
+        //    return "IP格式错误";
+        //}
+    });
+    $('#dhcp-hostname').textbox({
+        fieldLabel: $.su.CHAR.INTERFACE.HOSTNAME,
+        vtype: "string_visible",
+        tips: $.su.CHAR.INTERFACE.OPTIONAL
+    });
+    $mtu = $('#interface-mtu').textbox({
+        fieldLabel: "MTU",
+        value: "1500",
+        tips: $.su.CHAR.INTERFACE.MTUOPTIONAL,
+        vtype: "number",
+        validator: function(value){
+            value = parseInt(value, 10);
+            if(value < mtuMin || value > mtuMax){
+                var str = $.su.CHAR.VTYPETEXT.NUMBER_MIN_MAX.replace("%min", mtuMin.toString()).replace("%max", mtuMax.toString());
+                return str;
+            }else{
+                return true;
+            }
+        }
+    });
+    $('#main-dns').textbox({
+        fieldLabel: $.su.CHAR.INTERFACE.DNS1,
+        vtype: {
+            vtype: 'ip',
+            disallowFirstZeroFlag:false,
+            allowAllZeroFlag:true
+        },
+        tips: $.su.CHAR.INTERFACE.OPTIONAL
+        //hint:"0.0.0.0"
+    });
+    $('#backup-dns').textbox({
+        fieldLabel: $.su.CHAR.INTERFACE.DNS2,
+        vtype: {
+            vtype: 'ip',
+            disallowFirstZeroFlag:false,
+            allowAllZeroFlag:true
+        },
+        tips: $.su.CHAR.INTERFACE.OPTIONAL
+        //hint:"0.0.0.0"
+    });
+
+    $('#interface-up-bandwidth').textbox({
+        fieldLabel: $.su.CHAR.INTERFACE.UPLINK,
+        allowBlank: false,
+        value: "1000000",
+        //tips: "Kbps (100-1000000)",
+        vtype: "number",
+        validator: function(value){
+            value = parseInt(value, 10);
+            if(value < bandwidthMin || value > bandwidthMax){
+                var str = $.su.CHAR.VTYPETEXT.NUMBER_MIN_MAX.replace("%min", bandwidthMin.toString()).replace("%max", bandwidthMax.toString());
+                return str;
+            }else{
+                return true;
+            }
+        }
+
+    });
+    $('#interface-down-bandwidth').textbox({
+        fieldLabel: $.su.CHAR.INTERFACE.DOWNLINK,
+        allowBlank: false,
+        value: "1000000",
+        //tips: "Kbps (100-1000000)",
+        vtype: "number",
+        validator: function(value){
+            value = parseInt(value, 10);
+            if(value < bandwidthMin || value > bandwidthMax){
+                var str = $.su.CHAR.VTYPETEXT.NUMBER_MIN_MAX.replace("%min", bandwidthMin.toString()).replace("%max", bandwidthMax.toString());
+                return str;
+            }else{
+                return true;
+            }
+        }
+    });
+    $('#username').textbox({
+        fieldLabel: $.su.CHAR.INTERFACE.USERNAME,
+        allowBlank: false,
+        maxLength: 255,
+        validator: function(v)
+        {
+            if(new $.su.vtype({vtype:'string_visible_username'}).validate(v) !== true)
+            {
+                return $.su.CHAR.L2TP_CLIENT.WRONG_NAME;
+            }
+            if (v.indexOf(" ") >= 0 || v.indexOf("\\") >= 0)
+            {
+                return $.su.CHAR.L2TP_CLIENT.WRONG_NAME;
+            }
+            if (v.length > 255)
+            {
+                return $.su.CHAR.L2TP_CLIENT.WRONG_NAME_LENGTH;
+            }
+            return true;
+        }
+    });
+    $('#password').password({
+        fieldLabel: $.su.CHAR.INTERFACE.PASSWORD,
+        allowBlank: false,
+        maxLength: 255,
+        showLevel: false,
+        vtype: "password",
+        validator: function(v)
+        {
+            if(new $.su.vtype({vtype:'password'}).validate(v) !== true)
+            {
+                return $.su.CHAR.L2TP_CLIENT.WRONG_NAME;
+            }
+            if (v.indexOf(" ") >= 0)
+            {
+                return $.su.CHAR.L2TP_CLIENT.WRONG_NAME;
+            }
+            if (v.length > 255)
+            {
+                return $.su.CHAR.PPTP_CLIENT_SETTING.WRONG_NAME_LENGTH;
+            }
+            return true;
+        }
+    });
+    $('#dial').combobox({
+        fieldLabel: $.su.CHAR.INTERFACE.SPECIAL_DIAL,//"特殊拨号",
+        alwaysTrigger: true,
+        items:[
+            {value:"normal", name: $.su.CHAR.INTERFACE.NORMAL_DIAL, selected: true}//"正常拨号模式"
+        ]
+    }).combobox('hide');
+    var $linkType = $('#link-type').combobox({
+        fieldLabel: $.su.CHAR.INTERFACE.LINKMODE,
+        alwaysTrigger: true,
+        items:[
+            {value:"auto", name: $.su.CHAR.INTERFACE.AUTOLINK, selected: true},
+            {value:"manual", name: $.su.CHAR.INTERFACE.MANUALLINK},
+            {value:"time", name: $.su.CHAR.INTERFACE.TIMELINK}
+        ]
+    }).on("ev_change", function(e, oldValue, newValue){
+        var value = newValue[0];
+        if(value === "time"){
+            $.su.func.showWidgets($timeObj);
+        }else{
+            $.su.func.hideWidgets($timeObj);
+        }
+    });
+    var $timeObj = $('#time-object').combobox({
+        fieldLabel: $.su.CHAR.INTERFACE.TIMEOBJ,
+        allowBlank: false,
+        alwaysTrigger: true,
+        items:[
+            {value:"---", name: "---", selected: true}
+        ]
+    });
+    $('#time-object').combobox("autoWidth");
+
+    /*$('#echo-interval').textbox({
+        fieldLabel: $.su.CHAR.INTERFACE.CHECKINTERVAL,
+        tips: $.su.CHAR.INTERFACE.LCPINTERVALOPTIONAL,
+        value: "30",
+        vtype: {
+            vtype: "number",
+            max: 60,
+            min: 1
+        }
+    });
+    $('#echo-retry').textbox({
+        fieldLabel: $.su.CHAR.INTERFACE.CHECKRETRYTIMES,
+        tips: $.su.CHAR.INTERFACE.LCPRETRYOPTIONAL,
+        value: "5",
+        vtype: {
+            vtype: "number",
+            max: 10,
+            min: 1
+        }
+    });*/
+    $('#service-name').textbox({
+        fieldLabel: $.su.CHAR.INTERFACE.SERVICENAME,
+        tips: $.su.CHAR.INTERFACE.SERVICEOPTIONAL,
+        maxLength:128,
+        validator: function(v) {
+            if(new $.su.vtype('string_visible_username').validate(v) === false)
+            {
+                return $.su.CHAR.INTERFACE.WRONG_NAME;
+            }
+            if (v.indexOf(" ") >= 0)
+            {
+                return $.su.CHAR.L2TP_CLIENT.WRONG_NAME;
+            }
+            if (v.length > 128)
+            {
+                return $.su.CHAR.INTERFACE.WRONG_NAME_LENGTH;
+            }
+            return true;
+        }
+    });
+
+	$("#auth-server").textbox({
+		fieldLabel: $.su.CHAR.INTERFACE.AUTH_SERVER,
+		maxLength: 31,
+		minLength: 0,
+		vtype: 'string_visible'
+	});
+	
+	$("#auth-domain").textbox({
+		fieldLabel: $.su.CHAR.INTERFACE.AUTH_DOMAIN,
+		maxLength: 31,
+		minLength: 0,
+		vtype: 'string_visible'
+	});
+
+	$("#dhcp-unicast").checkbox({
+		fieldLabel: "",
+		items: [
+			{boxlabel: $.su.CHAR.INTERFACE.GETIP_UNICAST, inputValue: "on", uncheckedValue: "off"}
+		]
+	});
+
+	$('#second-conn').radio({
+        fieldLabel: $.su.CHAR.INTERFACE.SECOND_CONN,
+        columns: 3,
+        items: []
+    }).on('ev_change', function(e, oldValue, newValue){
+		var firstp = $("#link-mode").combobox("getValue")[0];
+		var select = newValue;
+		$.su.func.hideWidgets($secondProto);
+		switch (firstp) {
+		case "l2tp":
+			$.su.func.showWidgets($secondProto.filter("."+firstp+".others"));
+			break;
+		case "pptp":
+			$.su.func.showWidgets($secondProto.filter("."+firstp+".others"));
+			break;
+		default:
+			break;
+		}
+
+		var secondProtoSelect = $secondProto.filter("."+firstp+"."+select);
+		switch (select) {
+		case "none": /* None */
+			break;
+		case "static":	/* static ip */
+			$.su.func.showWidgets(secondProtoSelect);
+			$.each(secondProtoSelect, function (i, o) {$(o)[o.xtype]('enable');});
+			break;
+		case "dhcp": /* dhcp */
+			$.su.func.showWidgets(secondProtoSelect);
+			$.each(secondProtoSelect, function (i, o) {$(o)[o.xtype]('disable');});
+			break;
+		default:
+			break;
+		}
+		secondProtoProxy.read({params: {wan_id: currentWan, proto: select, main_proto: firstp}}, function(data){
+			if(data){
+				delete data.proto;
+				$secondFormWan.form('loadData', data);
+			}
+		});
+    });	
+
+	$('#second-server-name').textbox({
+        fieldLabel: $.su.CHAR.INTERFACE.SERVER_NAME,
+		allowBlank: false,
+        vtype: "ip_domain",
+        maxLength:253
+    });
+
+    $('#second-ip').textbox({
+        fieldLabel: $.su.CHAR.INTERFACE.IPADDR,
+        allowBlank: false,
+        vtype: "ip"
+    });
+    $('#second-mask').textbox({
+        fieldLabel: $.su.CHAR.INTERFACE.NETMASK,
+        allowBlank: false,
+        vtype: "netmask"
+    });
+    $('#second-gateway').textbox({
+        fieldLabel: $.su.CHAR.INTERFACE.GATEWAY,
+        vtype: {
+            vtype: 'ip',
+            disallowFirstZeroFlag:false,
+            allowAllZeroFlag:true
+        },
+        tips: $.su.CHAR.INTERFACE.OPTIONAL
+    });
+
+    $('#second-main-dns').textbox({
+        fieldLabel: $.su.CHAR.INTERFACE.DNS1,
+        vtype: {
+            vtype: 'ip',
+            disallowFirstZeroFlag:false,
+            allowAllZeroFlag:true
+        },
+        tips: $.su.CHAR.INTERFACE.OPTIONAL
+    });
+    $('#second-backup-dns').textbox({
+        fieldLabel: $.su.CHAR.INTERFACE.DNS2,
+        vtype: {
+            vtype: 'ip',
+            disallowFirstZeroFlag:false,
+            allowAllZeroFlag:true
+        },
+        tips: $.su.CHAR.INTERFACE.OPTIONAL
+    });
+	
+    function cal_mask_length(mask){
+        if(!mask){
+            return 0;
+        }
+        var mask_str = mask.split(".");
+        var mask_length = 0;
+        for(var i = 0; i < mask_str.length; i++){
+            mask_str[i] = parseInt(mask_str[i]).toString(2); 
+            mask_length += mask_str[i].replace(/0/g, "").length;
+        }
+        return mask_length;
+    }
+
+	function wan_connecting(){
+		if($linkType.combobox("getValue") == "auto" && 
+			($("#link-mode").combobox("getValue") == "pppoe" ||
+			$("#link-mode").combobox("getValue") == "l2tp" ||
+			$("#link-mode").combobox("getValue") == "pptp" ||
+			$("#link-mode").combobox("getValue") == "bigpond")){
+			if ($("#link-mode").combobox("getValue") != "pppoe")
+				$('#link-detail-value-status').text($.su.CHAR.INTERFACE.CONNECTING);//'正在连接');
+			isConnecting = true;
+			connectAttemption = 0;
+			waitConnect = 30;
+			if ($("#link-mode").combobox("getValue") == "l2tp") {
+				waitConnect = 45;
+			}
+		}
+		if($("#link-mode").combobox("getValue") == "dhcp"){
+			$('#link-detail-value-status').text($.su.CHAR.INTERFACE.CONNECTING);//'正在连接');
+			isConnecting = true;
+			connectAttemption = 0;
+			waitConnect = 15;
+		}
+		setTimeout(function() {
+			refreshStatus();
+		}, 500);
+	}
+
+	function wan_reconnecting()
+	{
+		if($("#link-mode").combobox("getValue") != "dhcp"){
+			wan_connecting();
+		}
+	}
+
+    $('#submit-button').button({
+        text: $.su.CHAR.OPERATION.SAVE,//'设置',
+        cls: 'inline-block form-submit',
+        handler: function(){
+            if($formWan.form('validate') !== true){
+                return false;
+            }
+			if ($secondFormWan.form('validate') != true)
+				return false;
+
+            var my_ip = $('#static-ip').textbox("getValue");
+            var my_mask =  $('#static-mask').textbox("getValue");
+            var my_mask_length = cal_mask_length(my_mask);
+
+            if($('#link-mode').combobox("getValue") == "static"){
+                for(var i = 0; i < IP_ARR.length; i++){
+                    if($.su.func.isLan(IP_ARR[i].iface)){
+                        var lan_ip = IP_ARR[i].ipaddr;
+                        var lan_mask = IP_ARR[i].netmask;
+                        var lan_mask_length = cal_mask_length(lan_mask);
+                        var smaller_mask = my_mask_length < lan_mask_length ? my_mask : lan_mask;
+                        smaller_mask = $.su.func.ipToInt(smaller_mask);
+                        if(($.su.func.ipToInt(lan_ip) & smaller_mask) == ($.su.func.ipToInt(my_ip) & smaller_mask)){
+                            $('#static-ip').textbox("setError", $.su.CHAR.INTERFACE.ERR1);//"WAN口IP地址不能与LAN口IP地址处于同一子网");
+                            return false;
+                        }
+                    }
+                    if(IP_ARR[i].iface.match("WAN") && IP_ARR[i].iface.match(/\d/) && IP_ARR[i].iface.match(/\d/) != currentWan){
+                        var wan_ip = IP_ARR[i].ipaddr;
+                        if(wan_ip == my_ip){
+                            $('#static-ip').textbox("setError", $.su.CHAR.INTERFACE.ERR2);//"与其他WAN口IP冲突");
+                            return false;
+                        }
+                    }
+                }
+				var ipInt = $.su.func.ipToInt(my_ip);
+				var netMaskInt = $.su.func.ipToInt(my_mask);
+				if ((ipInt & (~netMaskInt)) == 0 || (ipInt & (~netMaskInt)) == (~netMaskInt)) {
+					$('#static-ip').textbox("setError", $.su.CHAR.DHCP_STATIC.ERR4);
+					return false;
+				}
+            }
+            
+
+            if($("#static-gateway").textbox("getValue") == "0.0.0.0"){
+                $("#static-gateway").textbox("setValue", "");
+                $("#static-gateway").focus().blur();
+            }
+            if($("#main-dns").textbox("getValue") == "0.0.0.0"){
+                $("#main-dns").textbox("setValue", "");
+                $("#main-dns").focus().blur();
+            }
+            if($("#backup-dns").textbox("getValue") == "0.0.0.0"){
+                $("#backup-dns").textbox("setValue", "");
+                $("#backup-dns").focus().blur();
+            }
+            $.su.loading.show();
+
+			if ($("#link-mode").combobox("getValue") == "pppoe" ||
+				$("#link-mode").combobox("getValue") == "l2tp" ||
+				$("#link-mode").combobox("getValue") == "pptp") {
+				$secondFormWan.form('submit', {}, function(){
+					$formWan.form('submit', {}, function(){
+						$.su.loading.hide();
+						wan_connecting();
+					},function(error){
+						$.su.loading.hide();
+					},function(error){
+						$.su.loading.hide();
+					});
+				},function(err){
+					$.su.loading.hide();
+				},function(err){
+					$.su.loading.hide();
+				},false);
+			} else {
+				$formWan.form('submit', {}, function(){
+					$.su.loading.hide();
+					wan_connecting();
+				},function(error){
+					$.su.loading.hide();
+				},function(error){
+					$.su.loading.hide();
+				});
+			}
+        }
+    });
+    var connectProxy = new $.su.Proxy({url: $.su.url('/admin/interface_wan?form=connect')});
+    var $buttonConnect = $('#connect-button').button({
+        text: $.su.CHAR.INTERFACE.CONNECT,//'连接',
+        cls: 'inline-block form-submit',
+        handler: function(){
+            $formWan.form("prompt", true, $.su.CHAR.INTERFACE.CONNECTING);//"正在连接");
+            $('#link-detail-value-status').text($.su.CHAR.INTERFACE.CONNECTING);//'正在连接');
+            $buttonConnect.button('disable');
+            isConnecting = true;
+            connectAttemption = 0;
+            connectProxy.write({params: {wan_id: currentWan}}, function(){
+                wan_connecting();
+            });
+        }
+    });
+    var disconnectProxy = new $.su.Proxy({url: $.su.url('/admin/interface_wan?form=disconnect')});
+    var $buttonDisconnect = $('#disconnect-button').button({
+        text: $.su.CHAR.INTERFACE.DISCONNECT,//'断开',
+        cls: 'inline-block form-submit',
+        handler: function(){
+            $formWan.form("prompt", true, $.su.CHAR.INTERFACE.DISCONNECTING);//"正在断开连接");
+			$('#link-detail-value-status').text($.su.CHAR.INTERFACE.DISCONNECTING);//'正在断开连接');
+            isConnecting = false;
+            connectAttemption = 0;
+            disconnectProxy.write({params: {wan_id: currentWan}}, function(){
+                wan_reconnecting();
+            });
+        }
+    });
+
+	var second_proxy = new $.su.Proxy({
+        url: URL_FORM
+    });
+	var $secondFormWan = $("#second-form-wan").form({
+        proxy: second_proxy,
+        autoLoad: false,
+        fields:[
+            {name: "proto", mapping: "proto"},
+            {name: "server", mapping: "server"},
+            {name: "ipaddr", mapping: "ipaddr"},
+            {name: "netmask", mapping: "netmask"},
+            {name: "gateway", mapping: "gateway"},
+            {name: "dns1", mapping: "dns1"},
+            {name: "dns2", mapping: "dns2"},
+        ],
+        submitBtn: false
+    }).on("ev_loadData", function(e, data){
+		
+	});
+    var proxy = new $.su.Proxy({
+        url: URL_FORM
+    });
+
+    var $formWan = $("#form-wan").form({
+        proxy: proxy,
+        autoLoad: false,
+        fields:[
+            {name: "t_isup", mapping: "t_isup"},
+            {name: "t_type", mapping: "t_type"},
+            {name: "proto", mapping: "proto"},
+            {name: "ipaddr", mapping: "ipaddr"},
+            {name: "netmask", mapping: "netmask"},
+            {name: "gateway", mapping: "gateway"},
+            {name: "hostname", mapping: "hostname"},
+            {name: "username", mapping: "username"},
+            {name: "password", mapping: "password"},
+            {name: "t_dialtype", mapping: "t_dialtype"},
+            {name: "t_linktype", mapping: "t_linktype"},
+            {name: "t_timeobj", mapping: "t_timeobj"},
+            {name: "lcpechointerval", mapping: "lcpechointerval"},
+            {name: "lcpechofailure", mapping: "lcpechofailure"},
+            {name: "service", mapping: "service"},
+            {name: "mtu", mapping: "mtu"},
+            {name: "dns1", mapping: "dns1"},
+            {name: "dns2", mapping: "dns2"},
+            {name: "uplink", mapping: "uplink"},
+            {name: "downlink", mapping: "downlink"},
+			{name: "authserver", mapping: "authserver"},
+			{name: "authdomain", mapping: "authdomain"},
+			{name: "vlanid", mapping: "vlanid"},
+			{name: "unicast", mapping: "unicast"}
+        ],
+        submitBtn: false
+    }).on("ev_loadData", function(e, data){
+        if(data){
+		if(data.bandwidth){
+			var bandwidth_tips = 'Kbps (100-' + data.bandwidth*1000 + ')';
+			$("#interface-up-bandwidth").textbox("setTips", bandwidth_tips);
+			$("#interface-down-bandwidth").textbox("setTips", bandwidth_tips);
+			bandwidthMax = data.bandwidth*1000;
+		}
+
+            if(data.proto) {
+				currentProto = data.proto;
+				$('#main_proto').val(currentProto);
+            }else{
+                // clearTimeout(refreshTimeout); //去掉这一句，不然切换协议时proto为undefined，状态就不会刷新了
+            }
+
+			if(currentProto === "l2tp" || currentProto === "pptp" || currentProto === "pppoe"){
+				if (data.second_proto) {
+					secondaryProto = data.second_proto
+					$("#second-conn").radio("setValue", secondaryProto)
+					$('#second-conn').trigger('ev_change', ["none", secondaryProto]);
+				} else
+					secondaryProto = "none"
+			}
+			if (data.proto) {
+                //isConnecting = true;
+                //$('#link-detail-value-status').text('正在连接');
+                connectAttemption = 0;
+                refreshStatus();
+			}
+			if (data.vlantable){
+				vlanitems = []
+				for (var i = 0; i < data.vlantable.length; i++) {
+					data.vlantable[i] = data.vlantable[i].replace(/t/, "")
+					vlanitems.push({value:data.vlantable[i], name:data.vlantable[i]})
+				}
+				$('#vlanid').combobox('loadData', vlanitems)
+			}
+			if (data.vlanid){
+				$('#vlanid').combobox('setValue', data.vlanid);
+			}
+        }
+        INTERFACE_PROXY.read({}, function(data){
+            var interface_data = data.normal;
+            IP_ARR = [];
+            for(var i = 0; i < interface_data.length; i++){
+                var interface_obj = {};
+                interface_obj.ipaddr = interface_data[i].ipaddr;
+                interface_obj.netmask = interface_data[i].netmask;
+                interface_obj.iface = interface_data[i].t_name;
+                if(interface_obj.ipaddr){
+                    IP_ARR.push(interface_obj);
+                }
+            }
+        },function(error){},function(fail){});
+    });
+
+    $('#link-detail-key-status').text($.su.CHAR.INTERFACE.IFSTATUS);
+    $('#link-detail-key-ip').text($.su.CHAR.INTERFACE.IPADDR);
+    $('#link-detail-key-mask').text($.su.CHAR.INTERFACE.NETMASK);
+    $('#link-detail-key-gateway').text($.su.CHAR.INTERFACE.GATEWAY);
+    $('#link-detail-key-dns').text($.su.CHAR.INTERFACE.DNS1);
+    $('#link-detail-key-dns2').text($.su.CHAR.INTERFACE.DNS2);
+    $('#link-detail-value-status').text('---');
+    $('#link-detail-value-ip').text('0.0.0.0');
+    $('#link-detail-value-mask').text('0.0.0.0');
+    $('#link-detail-value-gateway').text('0.0.0.0');
+    $('#link-detail-value-dns').text('0.0.0.0');
+    $('#link-detail-value-dns2').text('0.0.0.0');
+
+    $('#second-link-detail-key-ip').text($.su.CHAR.INTERFACE.IPADDR);
+    $('#second-link-detail-key-mask').text($.su.CHAR.INTERFACE.NETMASK);
+    $('#second-link-detail-key-gateway').text($.su.CHAR.INTERFACE.GATEWAY);
+    $('#second-link-detail-key-dns').text($.su.CHAR.INTERFACE.DNS1);
+    $('#second-link-detail-key-dns2').text($.su.CHAR.INTERFACE.DNS2);
+    $('#second-link-detail-value-ip').text('0.0.0.0');
+    $('#second-link-detail-value-mask').text('0.0.0.0');
+    $('#second-link-detail-value-gateway').text('0.0.0.0');
+    $('#second-link-detail-value-dns').text('0.0.0.0');
+    $('#second-link-detail-value-dns2').text('0.0.0.0');
+
+    /*$('#second-link-detail-key-ip').text($.su.CHAR.INTERFACE.IPADDR);
+    $('#second-link-detail-key-mask').text($.su.CHAR.INTERFACE.NETMASK);
+    $('#second-link-detail-key-gateway').text($.su.CHAR.INTERFACE.GATEWAY);
+    $('#second-link-detail-key-dns').text($.su.CHAR.INTERFACE.DNS1);
+    $('#second-link-detail-key-dns2').text($.su.CHAR.INTERFACE.DNS2);
+    $('#second-link-detail-value-ip').text('0.0.0.0');
+    $('#second-link-detail-value-mask').text('0.0.0.0');
+    $('#second-link-detail-value-gateway').text('0.0.0.0');
+    $('#second-link-detail-value-dns').text('0.0.0.0');
+    $('#second-link-detail-value-dns2').text('0.0.0.0');*/
+	
+    //$('#link-mode').combobox('setValue', 'dhcp');
+    $protocol.each(function(i, o){
+        $(o)[o.xtype]('hide');
+    });
+	$.su.func.hideWidgets($secondProto);
+	$('#second-status').css('display', 'none');
+
+    var timeItem=[];
+    var timeProxy = new $.su.Proxy({
+        url: $.su.url('/admin/time_mngt?form=timeobj_list')
+    });
+
+    timeProxy.read({}, function(data){
+        for (var i = 0; i < data.length; i++){
+            if(data[i].entry_name != "Any"){
+            timeItem.push({name:data[i].entry_name,value:data[i].entry_name});
+        }
+        }
+        $timeObj.combobox('loadData',timeItem);
+    });
+    proxy.read({params: {wan_id: currentWan}});
+
+    var statusProxy = new $.su.Proxy({
+        url: URL_STATUS
+    });
+
+    function refreshStatus(){
+        clearTimeout(refreshTimeout);
+        if(!$.contains(document, $formWan[0])){
+            return;
+        }
+
+		var wproto = $("#link-mode").combobox("getValue")[0];
+		if (wproto == "pppoe" || wproto == "l2tp" || wproto == "pptp") {
+			statusProxy.read({params: {wan_id: currentWan, proto: secondaryProto, main_proto: wproto}}, function(data){
+				$('#second-link-detail-value-ip').text(data.ipaddr?data.ipaddr:'0.0.0.0');
+				$('#second-link-detail-value-mask').text(data.netmask?data.netmask:'0.0.0.0');
+				$('#second-link-detail-value-gateway').text(data.gateway?data.gateway:'0.0.0.0');
+				$('#second-link-detail-value-dns').text(data.dns1?data.dns1:'0.0.0.0');
+				$('#second-link-detail-value-dns2').text(data.dns2?data.dns2:'0.0.0.0');
+				var sconn = $('#second-conn').radio('getValue');
+				if (sconn == secondaryProto && sconn == "dhcp") {
+					$('#second-ip').textbox('setValue', data.ipaddr?data.ipaddr:'0.0.0.0');
+					$('#second-mask').textbox('setValue', data.netmask?data.netmask:'0.0.0.0');
+					$('#second-gateway').textbox('setValue', data.gateway?data.gateway:'0.0.0.0');
+					$('#second-main-dns').textbox('setValue', data.dns1?data.dns1:'0.0.0.0');
+					$('#second-backup-dns').textbox('setValue', data.dns2?data.dns2:'0.0.0.0');
+				}
+			});
+		}
+        statusProxy.read({params: {wan_id: currentWan, proto: wproto}}, function(data){
+            if(data){
+                var $status = $('#link-detail-value-status');
+                if(isConnecting && !data.t_isup){
+                    if(connectAttemption < waitConnect){
+                        $status.text($.su.CHAR.INTERFACE.CONNECTING);//'正在连接');
+                    }else{
+                        isConnecting = false;
+                        connectAttemption = 0;
+                        $status.text($.su.CHAR.INTERFACE.DISCONNECTED);//'未连接');
+                        $buttonConnect.button('enable');
+                    }
+                }else if(isConnecting && data.t_isup){
+                    isConnecting = false;
+                    connectAttemption = 0;
+                    $status.text($.su.CHAR.INTERFACE.CONNECTED);//'已连接');
+                    $buttonConnect.button('enable');
+                }else{
+                    $status.text(data.t_isup?$.su.CHAR.INTERFACE.CONNECTED:$.su.CHAR.INTERFACE.DISCONNECTED);//'未连接');
+                }
+                $('#link-detail-value-ip').text(data.ipaddr?data.ipaddr:'0.0.0.0');
+                $('#link-detail-value-mask').text(data.netmask?data.netmask:'0.0.0.0');
+                $('#link-detail-value-gateway').text(data.gateway?data.gateway:'0.0.0.0');
+                $('#link-detail-value-dns').text(data.dns1?data.dns1:'0.0.0.0');
+                $('#link-detail-value-dns2').text(data.dns2?data.dns2:'0.0.0.0');
+                if(isConnecting && connectAttemption < waitConnect){
+                    connectAttemption++;
+                    refreshTimeout = setTimeout(refreshStatus, 1000);
+                }else{
+                    refreshTimeout = setTimeout(refreshStatus, 10000);
+                }
+            }
+        }, function(){
+			refreshTimeout = setTimeout(refreshStatus, 10000);
+		}, function(){
+			refreshTimeout = setTimeout(refreshStatus, 10000);
+		});
+    }
+
+    var protoProxy = new $.su.Proxy({
+        url: URL_PROTO
+    });
+
+	var secondProtoProxy = new $.su.Proxy({
+		url: URL_PROTO
+	});
+
+    var ip_stats_help = new $.su.Help({
+        container: "div#wan-help",
+        content: ["INTERFACE_WAN","WAN_STATUS"]
+    });
+
+});
+
+//]]>
+</script>
+</body>
+
+</html>

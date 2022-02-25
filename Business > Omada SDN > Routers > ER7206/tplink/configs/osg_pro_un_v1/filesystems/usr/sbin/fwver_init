@@ -1,0 +1,50 @@
+#!/bin/sh
+. /lib/functions.sh
+
+#rewrite by scripts/ptn_offset_set.sh when compiling dkmgt module.
+PTN_TABLE_OFFSET=0x01900000
+
+fw_mtd=$(find_mtd_part "firmware")
+if [ -z "${fw_mtd}" ]; then
+	echo "MTD[firmware] not found, failed to get firmware version!!!" >/dev/console
+	exit -1
+fi
+
+real_ptn_off=${PTN_TABLE_OFFSET}
+$(cat /proc/cmdline | grep -q "DKMGT_IMAGE_TYPE=ubi") && {
+	real_ptn_off=0x0 #ubi id
+	ubi_opts="-w ubi"
+}
+
+## init firmware-info
+echo "cd /tmp && dkmgt_firmware_make -R -f ${fw_mtd} -p ${real_ptn_off} -n firmware-info -o firmware-info.json ${ubi_opts}" >/dev/console
+
+cd /tmp && dkmgt_firmware_make -R -f ${fw_mtd} -p ${real_ptn_off} -n firmware-info -o firmware-info.json ${ubi_opts}
+RC=$?
+
+if [ -f /tmp/firmware-info.json ];then
+    cat /tmp/firmware-info.json >/dev/console
+fi
+
+if [ ${RC} -ne 0 ]; then
+	echo "######: Init Firmware version *FAILED* !!" >/dev/console
+	exit -1
+fi
+
+echo "######: Init Firmware version *SUCCESS* !!" >/dev/console
+
+
+## init device-info
+echo "cd /tmp && dkmgt_firmware_make -R -f ${fw_mtd} -p ${real_ptn_off} -n device-info -o device-info.json ${ubi_opts}" >/dev/console
+
+cd /tmp && dkmgt_firmware_make -R -f ${fw_mtd} -p ${real_ptn_off} -n device-info -o device-info.json ${ubi_opts}
+RC=$?
+
+if [ ${RC} -ne 0 ]; then
+	echo "######: Init model version *FAILED* !!" >/dev/console
+	exit -1
+fi
+
+echo "######: Init model version *SUCCESS* !!" >/dev/console
+
+exit 0

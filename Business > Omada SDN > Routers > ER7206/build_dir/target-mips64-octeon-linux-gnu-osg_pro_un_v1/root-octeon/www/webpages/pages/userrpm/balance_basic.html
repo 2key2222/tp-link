@@ -1,0 +1,157 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>BALANCE_BASIC</title>
+<style type="text/css"></style>
+</head>
+
+<body>
+<div class="func-container">
+    <div id="global_setting">
+        <form id="balance_global_settings">
+            <input id="balance_global_enable" name="global_state" value=""/> 
+        </form>
+    </div>
+    <div id="function_setting">
+        <form id="balance_basic_settings">
+            <input id="special_route_enable" name="special_state" value=""/> 
+            <input id="load_balance_enable" name="balance_state" value=""/>
+            <input id="interface_list" name="use_iface" value=""/>           
+        </form>
+    </div>
+
+    <hr/>
+    <div class="notice">
+        <h6 id="note"></h6>
+        <ul>
+            <li id="note1"></li>
+            <li id="note2"></li>
+            <li id="note3"></li>
+            <li id="note4"></li>
+        </ul>
+    </div>
+
+    <div id="balance_basic_hlep">    </div>
+
+<script type="text/javascript">
+try{
+    $
+}catch(e){
+    location.href = "/";
+};
+
+
+$(document).ready(function(e){
+    var URL_BALANCE_BASIC_ENABLE = $.su.url("/admin/balance?form=balance_basic");
+    var URL_BALANCE_GLOBAL_ENABLE = $.su.url("/admin/balance?form=balance_global");
+
+    var enable_balance_basic_Proxy = new $.su.Proxy({
+        url: URL_BALANCE_BASIC_ENABLE,   
+    });
+
+    var enable_balance_global_Proxy = new $.su.Proxy({
+        url: URL_BALANCE_GLOBAL_ENABLE,   
+    });
+    $("h6#note").html("qqq");
+    $("h6#note").html($.su.CHAR.BALANCE_SETTING.NOTE);
+    $("li#note1").html($.su.CHAR.BALANCE_SETTING.NOTE1);
+    $("li#note2").html($.su.CHAR.BALANCE_SETTING.NOTE2);
+    $("li#note3").html($.su.CHAR.BALANCE_SETTING.NOTE3);
+    //$("li#note4").html($.su.CHAR.BALANCE_SETTING.NOTE4);
+
+    $("#global_setting").panel({
+        title: $.su.CHAR.BALANCE_SETTING.GLOBAL_SETTINGS,
+        collapsible: false
+    });
+
+    $("#function_setting").panel({
+        title: $.su.CHAR.BALANCE_SETTING.SETTINGS,
+        collapsible: false
+    });
+
+    $("#special_route_enable").checkbox({        
+        items: [
+            {boxlabel: $.su.CHAR.BALANCE_SETTING.SPECIAL_SETTING, inputValue: "on", uncheckedValue: "off"}
+        ]
+   }); 
+
+    $("#load_balance_enable").checkbox({
+        cls:'inline',        
+        items: [
+            {boxlabel: $.su.CHAR.BALANCE_SETTING.LOAD_BALANCE_SETTING, inputValue: "on", uncheckedValue: "off"}
+        ]
+   }).on("ev_change", function(e, oldValue, newValue){
+        var val = (newValue[0] == "balance_state" || newValue[0]=="on" )? "on" : "off";
+        switch(val)
+        {
+            case "on":
+
+                $("#interface_list").combobox("enable");
+                $("#interface_list").combobox("reset");
+                break;
+            case "off":
+                $("#interface_list").combobox("disable");
+                $("#interface_list").combobox("setValue", "---");
+                break;
+        }
+   });
+
+    $("#interface_list").combobox({   
+        multiSelect: true ,  
+        cls:'inline',
+        labelCls:'xxxxxs',
+        items:[
+                {name:"---",value:"---"}
+            ]
+    });
+
+    var interfaceItem=[];
+    var interfaceProxy = new $.su.Proxy({
+            url: $.su.url('/admin/balance?form=interface'),
+            async: false
+    });     
+
+    interfaceProxy.read({}, function(data){
+	for (var i=0; i< data.length; i++){
+		if(data[i].balance == 1)        	    
+			interfaceItem.push({name:data[i].t_label,value:data[i].interface});     
+        }
+            var combobox = $('#interface_list');
+            combobox.combobox('loadData',interfaceItem); 
+    });   
+
+    $("#balance_basic_settings").form({
+        proxy: enable_balance_basic_Proxy,
+        fields: [
+            {name: "special_state", mapping: "special_state"},      
+            {name: "balance_state", mapping: "balance_state"},                  
+            {name: "use_iface", mapping: "use_iface"}
+        ],
+        submitBtn: "default"
+    }) 
+
+    $("#balance_global_enable").checkbox({        
+        items: [
+            {boxlabel: $.su.CHAR.BALANCE_SETTING.ENABLE_BALANCE, inputValue: "on", uncheckedValue: "off"}
+        ]
+   }); 
+
+    $("#balance_global_settings").form({
+        proxy: enable_balance_global_Proxy,
+        fields: [
+            {name: "global_state", mapping: "global_state"}  
+        ],
+        submitBtn: "default"
+    }) 
+
+    var helpBalanceBasic = new $.su.Help({
+        container: "div#balance_basic_hlep",
+        content: ["BALANCE_GLOBAL_SETTING","BALANCE_BASIC_SETTING"]
+    });
+
+});
+</script>
+</body>
+
+</html>

@@ -1,0 +1,116 @@
+diff -ruN a/include/linux/skbuff.h b/include/linux/skbuff.h
+--- a/include/linux/skbuff.h	2016-12-17 13:09:16.888054800 +0800
++++ b/include/linux/skbuff.h	2016-12-06 07:22:28.368709300 +0800
+@@ -485,6 +485,7 @@
+ 	 * headers if needed
+ 	 */
+ 	__u8			encapsulation:1;
++       __u8			fast_forwarded:1;
+ 	/* 7/9 bit hole (depending on ndisc_nodetype presence) */
+ 	kmemcheck_bitfield_end(flags2);
+ 
+diff -ruN a/net/bridge/br_if.c b/net/bridge/br_if.c
+--- a/net/bridge/br_if.c	2014-07-18 06:58:15.000000000 +0800
++++ b/net/bridge/br_if.c	2016-12-17 13:06:24.562055100 +0800
+@@ -465,3 +465,30 @@
+ 	rtnl_unlock();
+ 
+ }
++
++
++/* Update bridge statistics for bridge packets processed by offload engines */
++void br_dev_update_stats(struct net_device *dev, struct rtnl_link_stats64 *nlstats)
++{
++	struct net_bridge *br;
++	struct br_cpu_netstats *stats;
++
++	/*
++	 * Is this a bridge?
++	 */
++	if (!(dev->priv_flags & IFF_EBRIDGE))
++		return;
++
++	br = netdev_priv(dev);
++	stats = per_cpu_ptr(br->stats, 0);
++
++	u64_stats_update_begin(&stats->syncp);
++	stats->rx_packets += nlstats->rx_packets;
++	stats->rx_bytes += nlstats->rx_bytes;
++	stats->tx_packets += nlstats->tx_packets;
++	stats->tx_bytes += nlstats->tx_bytes;
++	u64_stats_update_end(&stats->syncp);
++}
++EXPORT_SYMBOL_GPL(br_dev_update_stats);
++
++
+diff -ruN a/net/core/dev.c b/net/core/dev.c
+--- a/net/core/dev.c	2016-12-15 12:19:38.764354200 +0800
++++ b/net/core/dev.c	2016-12-17 13:06:24.623055100 +0800
+@@ -2583,8 +2583,14 @@
+ 			}
+ 		}
+ 
++		/*
++		 * If this skb has been fast forwarded then we don't want it to
++		 * go to any taps (by definition we're trying to bypass them).
++		 */
++		if (unlikely(!skb->fast_forwarded)) {
+ 		if (!list_empty(&ptype_all))
+ 			dev_queue_xmit_nit(skb, dev);
++		}
+ 
+ #ifdef CONFIG_ETHERNET_PACKET_MANGLE
+ 		if (!dev->eth_mangle_tx ||
+@@ -3441,6 +3447,9 @@
+ 	}
+ }
+ 
++int (*athrs_fast_nat_recv)(struct sk_buff *skb) __rcu __read_mostly;
++EXPORT_SYMBOL_GPL(athrs_fast_nat_recv);
++
+ static int __netif_receive_skb_core(struct sk_buff *skb, bool pfmemalloc)
+ {
+ 	struct packet_type *ptype, *pt_prev;
+@@ -3450,6 +3459,7 @@
+ 	bool deliver_exact = false;
+ 	int ret = NET_RX_DROP;
+ 	__be16 type;
++	int (*fast_recv)(struct sk_buff *skb);
+ 
+ 	net_timestamp_check(!netdev_tstamp_prequeue, skb);
+ 
+@@ -3482,6 +3492,14 @@
+ 			goto unlock;
+ 	}
+ 
++	fast_recv = rcu_dereference(athrs_fast_nat_recv);
++	if (fast_recv) {
++		if (fast_recv(skb)) {
++			ret = NET_RX_SUCCESS;
++			goto unlock;
++		}
++	}
++
+ #ifdef CONFIG_NET_CLS_ACT
+ 	if (skb->tc_verd & TC_NCLS) {
+ 		skb->tc_verd = CLR_TC_NCLS(skb->tc_verd);
+diff -ruN a/net/netfilter/nf_conntrack_proto_tcp.c b/net/netfilter/nf_conntrack_proto_tcp.c
+--- a/net/netfilter/nf_conntrack_proto_tcp.c	2016-12-17 13:21:53.019053500 +0800
++++ b/net/netfilter/nf_conntrack_proto_tcp.c	2016-12-06 07:22:28.389709300 +0800
+@@ -32,12 +32,14 @@
+ #include <net/netfilter/ipv6/nf_conntrack_ipv6.h>
+ 
+ /* Do not check the TCP window for incoming packets  */
+-static int nf_ct_tcp_no_window_check __read_mostly = 1;
++int nf_ct_tcp_no_window_check __read_mostly = 0;
++EXPORT_SYMBOL_GPL(nf_ct_tcp_no_window_check);
+ 
+ /* "Be conservative in what you do,
+     be liberal in what you accept from others."
+     If it's non-zero, we mark only out of window RST segments as INVALID. */
+-static int nf_ct_tcp_be_liberal __read_mostly = 0;
++int nf_ct_tcp_be_liberal __read_mostly = 0;
++EXPORT_SYMBOL_GPL(nf_ct_tcp_be_liberal);
+ 
+ /* If it is set to zero, we disable picking up already established
+    connections. */

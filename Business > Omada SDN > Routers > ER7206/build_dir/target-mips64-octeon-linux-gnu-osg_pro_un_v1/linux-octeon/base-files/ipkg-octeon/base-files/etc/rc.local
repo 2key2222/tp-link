@@ -1,0 +1,17 @@
+# Put your custom commands here that should be executed once
+# the system init finished. By default this file does nothing.
+
+irq_balance()
+{
+    local irqnum=`cat /proc/interrupts | awk -F: '/eth/ {print $1}' | sed 's/[^0-9]//g'`
+    
+    [ "1" == `cat /proc/irq/${irqnum}/smp_affinity` ] && {
+        local core_num=`cat /proc/cpuinfo | grep -w processor | awk 'END{print NR}'`
+        local mask=`awk "BEGIN{f=lshift(1,$core_num)-1; print f}"`
+        echo `printf %x $mask` > /proc/irq/${irqnum}/smp_affinity
+    }
+}
+irq_balance
+
+
+exit 0

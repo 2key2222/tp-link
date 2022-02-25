@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <style type="text/css">
+        .key-wrapper{
+            margin: 0px 5px 5px 0;
+        }
+        .keyLength-gap{
+            padding-left: 30px;
+        }
+        .input-width{
+            width: 255px;
+        }
+        .combobox-width{
+            width: 229px;
+        }
+        div.widget-container div.widget-fieldlabel-wrap.m + div.widget-wrap-outer{
+            max-width: 650px;
+        }
+    </style>
+</head>
+<body>
+<div id="func_settings">
+    <form id="mssid_form">
+        <input id="radio_id" name="radio_id" type="hidden" value="0"/>
+        <input id="mssid_isolation" name="mssid_isolation"/>
+    </form>
+</div>
+<div id="mssid_list">
+    <div id="mssid_list_g"></div>
+</div>
+<div id="wiress_param">
+    <input id="radio_id_2" name="radio_id" type="hidden" value="0"/>
+    <input id="key_idx" name="key_idx" type="hidden"/>
+    <input id="ssid" name="ssid"/>
+    <input id="ssid_encode" name="ssid_encode"/>
+    <input id="sta_isolation" name="sta_isolation"/>
+    <input id="broadcast" name="broadcast"/>
+    <input id="enable" name="enable"/>
+    <input id="sec_type" name="sec_type"/>
+    <div id="psk">
+        <input id="psk_auth_type" name="psk_auth_type" class="psk"/>
+        <input id="psk_sec_alg" name="psk_sec_alg" class="psk"/>
+        <input id="psk_pwd" name="psk_pwd" class="psk"/>
+        <input id="psk_update_period" name="psk_update_period" class="psk"/>
+    </div>
+    <div id="wpa">
+        <input id="wpa_auth_type" name="wpa_auth_type" class="wpa"/>
+        <input id="wpa_sec_alg" name="wpa_sec_alg" class="wpa"/>
+        <input id="wpa_radius_ip" name="wpa_radius_ip" class="wpa"/>
+        <input id="wpa_radius_port" name="wpa_radius_port" class="wpa"/>
+        <input id="wpa_radius_pwd" name="wpa_radius_pwd" class="wpa"/>
+        <input id="wpa_update_period" name="wpa_update_period" class="wpa"/>
+    </div>
+    <div id="wep">
+        <input id="wep_auth_type" name="wep_auth_type" class="wep"/>
+        <input id="wep_sec_format" name="wep_sec_format" class="wep"/>
+        <input id="wep_key_slt" name="wep_key_slt" class="wep"/>
+
+        <div class="key-wrapper">
+            <input id="wep_key1" name="wep_key1" class="wep key"/>
+            <input id="wep_key_len1" name="wep_key_len1" class="wep keyLength"/>
+        </div>
+
+        <div class="key-wrapper">
+            <input id="wep_key2" name="wep_key2" class="wep key"/>
+            <input id="wep_key_len2" name="wep_key_len2" class="wep keyLength"/>
+        </div>
+
+        <div class="key-wrapper">
+            <input id="wep_key3" name="wep_key3" class="wep key"/>
+            <input id="wep_key_len3" name="wep_key_len3" class="wep keyLength"/>
+        </div>
+
+        <div class="key-wrapper">
+            <input id="wep_key4" name="wep_key4" class="wep key"/>
+            <input id="wep_key_len4" name="wep_key_len4" class="wep keyLength"/>
+        </div>
+
+    </div>
+    
+</div>
+
+<!--
+<hr/>
+<div class="notice">
+    <h6 >注意：</h6>
+    <ul>
+        <li>开启Multi-SSID后，WDS功能将失效。</li>
+    </ul>
+</div>
+-->
+<div id="confirm-msg">
+    <h4 class="title">
+        <span class="icon"></span>
+        <span class="text" id="confirm-msg-text"></span>
+    </h4>
+</div>
+<div id="wireless-mssid-help"></div>
+<script type="application/javascript">
+    //<![CDATA[
+    try {
+        $
+    } catch (e) {
+        location.href = "/";
+    }
+    ;
+    $(document).ready(function (e) {
+        var globalUrl = "/admin/wlan_mssid?form=global";
+        var radio_id  = 0;
+        var globalProxy = new $.su.Proxy({url: $.su.url(globalUrl)});
+
+        var inputCls = "input-width";
+        var comboboxCls = "combobox-width";
+        var is_11n_only = null;
+        var is_wep_tkip = null;
+        var wep_key_idx = null;
+        var firstLoad = true;
+
+        var mssidUrl = "/admin/wlan_mssid?form=mssid";
+        var mssidProxy = new $.su.Proxy({url: $.su.url(mssidUrl)});
+
+        $("#radio_id").val(radio_id);
+        $("#radio_id_2").val(radio_id);
+
+        $("#func_settings").panel({
+            title: $.su.CHAR.WIRELESS_MSSID.FUNC_SET,
+            help: $("#wireless-mssid-help"),
+            collapsible: false
+        });
+
+        $("#mssid_list").panel({
+            title: $.su.CHAR.WIRELESS_MSSID.MSSID_LIST,
+            collapsible: false
+        });
+
+        var mssid_isolation = $("#mssid_isolation").checkbox({
+            fieldLabel: $.su.CHAR.WIRELESS_MSSID.SSID_ISOLATION,
+            items:[
+                {boxlabel: $.su.CHAR.OPERATION.ENABLE, inputValue:'on', uncheckedValue: "off"}
+            ]
+        });
+
+        globalProxy.read({
+            params: {
+                radio_id: radio_id
+            }
+        }, function(jsonData) {
+            if (jsonData.mssid_isolation == "on") {
+                mssid_isolation.checkbox("setValue", "on");
+            }
+            else {
+                mssid_isolation.checkbox("setValue", "off");
+            }
+        });
+
+        //功能设置
+        $("#mssid_form").form({
+            proxy: globalProxy,
+            fields: [
+                {name: "radio_id",        mapping: "radio_id"},
+                {name: "mssid_isolation", mapping: "mssid_isolation"}
+            ],
+            submitBtn: "default",
+            autoLoad: false
+        });
+
+        //Multi-SSID设置
+        var Mssid = (function initMssid(){
+            var $form = $("#wiress_param_f"),
+                    $ssid = $("#ssid"),
+                    $ssid_encode = $("#ssid_encode"),
+                    $broadcast = $("#broadcast"),
+                    $staIsolation = $("#sta_isolation"),
+                    $enable = $("#enable"),
+                    $secType = $("#sec_type");
+
+            $ssid.textbox({
+                fieldLabel: $.su.CHAR.WIRELESS_MSSID.WIRELESS_NAME,
+                inputCls: inputCls,
+                allowBlank: false,
+                autoTrim: false,
+                maxLength: 32,
+                vtype: "string_wireless_name"
+            }).on("ev_change", function(e, newValue){
+                var encode = $ssid_encode.combobox("getValue")[0];
+                if (/.*[\u4e00-\u9fa5]+.*$/.test(newValue)) {
+                    if (encode == 0) {
+                        $ssid_encode.combobox("show").combobox("setValue", "1");
+                    }
+                }
+                else {
+                    $ssid_encode.combobox("setValue", "0").combobox("hide");
+                }
+            });
+
+            $ssid_encode.combobox({
+                fieldLabel: $.su.CHAR.WIRELESS_ENCODE.ENCODE,
+                allowBlank: false,
+                autoTrim: false,
+                inputCls: comboboxCls,
+                items:[
+                    {name: $.su.CHAR.WIRELESS_ENCODE.ENCODE_NO, value:"0" , selected: true},
+                    {name: $.su.CHAR.WIRELESS_ENCODE.ENCODE_UTF8, value:"1"},
+                    {name: $.su.CHAR.WIRELESS_ENCODE.ENCODE_GBK, value:"2"}
+                ]
+            }).combobox("hide").combobox("hideItem", "0");
+
+            $staIsolation.checkbox({
+                fieldLabel: $.su.CHAR.WIRELESS_MSSID.AP_ISOLATION,
+                items:[
+                    {boxlabel: $.su.CHAR.OPERATION.ENABLE, inputValue:'on', uncheckedValue: "off"}
+                ]
+            });
+
+            $broadcast.checkbox({
+                fieldLabel: $.su.CHAR.WIRELESS_MSSID.SSID_BROADCAST,
+                items:[
+                    {boxlabel: $.su.CHAR.OPERATION.ENABLE, inputValue:'on', uncheckedValue: "off"}
+                ]
+            });
+
+            $enable.checkbox({
+                fieldLabel: $.su.CHAR.WIRELESS_MSSID.STATUS,
+                items:[
+                    {boxlabel: $.su.CHAR.OPERATION.ENABLE, inputValue:'on', uncheckedValue: "off"}
+                ]
+            });
+
+            $secType.combobox({
+                fieldLabel: $.su.CHAR.ENCRYPTION.ENCRYPT,
+                inputCls: comboboxCls,
+                multiSelect:false,
+                allowBlank: false,
+                items:[
+                    {name: $.su.CHAR.ENCRYPTION.NO_ENCRYPT,value:"0" , selected: true},
+                    {name: $.su.CHAR.ENCRYPTION.WPA_PSK_ENCRYPT,value:"1"},
+                    {name: $.su.CHAR.ENCRYPTION.WPA_ENCRYPT,value:"2"},
+                    {name: $.su.CHAR.ENCRYPTION.WEP_ENCRYPT,value:"3"}
+                ]
+            }).on('ev_change', function(e, oldValue, newValue){
+                onSecTypeChange(newValue);
+            });
+
+            //PSK
+            var PSK = (function(){
+                var $authType = $("#psk_auth_type"),
+                        $secAlg = $("#psk_sec_alg"),
+                        $pwd = $("#psk_pwd"),
+                        $updatePeriod = $("#psk_update_period"),
+                        $psk = $("#psk");
+
+                $authType.combobox({
+                    fieldLabel: $.su.CHAR.ENCRYPTION.ENCRYPT_PSK_TYPE,
+                    inputCls: comboboxCls,
+                    multiSelect:false,
+                    allowBlank: false,
+                    items:[
+                        {name: $.su.CHAR.ENCRYPTION.ENCRYPT_PSK_AUTO,value:"0" , selected: true},
+                        {name: $.su.CHAR.ENCRYPTION.ENCRYPT_PSK_WPA_PSK,value:"1"},
+                        {name: $.su.CHAR.ENCRYPTION.ENCRYPT_PSK_WPA2_PSK,value:"2"}
+                    ]
+                });
+
+                $secAlg.combobox({
+                    fieldLabel:$.su.CHAR.ENCRYPTION.ENCRYPT_ALGORITHM,
+                    inputCls: comboboxCls,
+                    multiSelect:false,
+                    allowBlank: false,
+                    items:[
+                        {name: $.su.CHAR.ENCRYPTION.ENCRYPT_ALGORITHM_AUTO,value:"0" , selected: true},
+                        {name: $.su.CHAR.ENCRYPTION.ENCRYPT_ALGORITHM_TKIP,value:"1"},
+                        {name: $.su.CHAR.ENCRYPTION.ENCRYPT_ALGORITHM_AES,value:"2"}
+                    ]
+                });
+
+                $pwd.textbox({
+                    fieldLabel: $.su.CHAR.ENCRYPTION.ENCRYPT_PSK_PASSWD,
+                    inputCls: inputCls,
+                    tipsCls: "xxl",
+                    allowBlank: false,
+                    maxLength: 64,
+                    vtype: "strange_pwd",
+                    tips: $.su.CHAR.ENCRYPTION.ENCRYPT_PSK_PASSWD_TIPS
+                });
+
+                $updatePeriod.textbox({
+                    fieldLabel: $.su.CHAR.ENCRYPTION.PASSWD_UPDATE_PERIOD,
+                    inputCls: inputCls,
+                    tipsCls: "xxl",
+                    allowBlank:false,
+                    maxLength: 9,
+                    tips: $.su.CHAR.ENCRYPTION.PASSWD_UPDATE_PERIOD_TIPS,
+                    vtype: "update_period",
+                    value: 86400
+                });
+
+                return {
+                    $elements: {
+                        $secAlg: $secAlg
+                    },
+                    show: function(){
+                        $.su.func.showWidgets($psk.find("input.psk"));
+                    },
+                    hide: function(){
+                        $.su.func.hideWidgets($psk.find("input.psk"));
+                    },
+                    disbleTKIP: function(){
+                        $secAlg.combobox("disableItem", [1]);
+                    },
+                    enableTKIP: function(){
+                        $secAlg.combobox("enableItem", [1]);
+                    }
+                };
+            })();
+
+            //WPA
+            var WPA = (function(){
+                var $authType = $("#wpa_auth_type"),
+                        $secAlg = $("#wpa_sec_alg"),
+                        $radiusIp = $("#wpa_radius_ip"),
+                        $radiusPort = $("#wpa_radius_port"),
+                        $radiusPwd = $("#wpa_radius_pwd"),
+                        $updatePeriod = $("#wpa_update_period"),
+                        $wpa = $("#wpa");
+
+                $authType.combobox({
+                    fieldLabel:$.su.CHAR.ENCRYPTION.ENCRYPT_WPA_TYPE,
+                    inputCls: comboboxCls,
+                    multiSelect:false,
+                    allowBlank: false,
+                    items:[
+                        {name: $.su.CHAR.ENCRYPTION.ENCRYPT_WPA_AUTO,value:"0" , selected: true},
+                        {name: $.su.CHAR.ENCRYPTION.ENCRYPT_WPA_WPA,value:"1"},
+                        {name: $.su.CHAR.ENCRYPTION.ENCRYPT_WPA_WPA2,value:"2"}
+                    ]
+                });
+
+                $secAlg.combobox({
+                    fieldLabel:$.su.CHAR.ENCRYPTION.ENCRYPT_ALGORITHM,
+                    inputCls: comboboxCls,
+                    multiSelect:false,
+                    allowBlank: false,
+                    items:[
+                        {name: $.su.CHAR.ENCRYPTION.ENCRYPT_ALGORITHM_AUTO,value:"0" , selected: true},
+                        {name: $.su.CHAR.ENCRYPTION.ENCRYPT_ALGORITHM_TKIP,value:"1"},
+                        {name: $.su.CHAR.ENCRYPTION.ENCRYPT_ALGORITHM_AES,value:"2"}
+                    ]
+                });
+
+                $radiusIp.textbox({
+                    fieldLabel: $.su.CHAR.ENCRYPTION.ENCRYPT_RADIUS_SERVER,
+                    inputCls: inputCls,
+                    allowBlank:false,
+                    vtype: "ip"
+                });
+
+                $radiusPort.textbox({
+                    fieldLabel: $.su.CHAR.ENCRYPTION.ENCRYPT_RADIUS_PORT,
+                    inputCls: inputCls,
+                    tipsCls: "xxl",
+                    allowBlank:false,
+                    vtype: {
+                        vtype: "number",
+                        max: 65535,
+                        min: 0
+                    },
+                    tips: $.su.CHAR.ENCRYPTION.ENCRYPT_RADIUS_PORT_TIPS
+                });
+
+                $radiusPwd.textbox({
+                    allowBlank:false,
+                    inputCls: inputCls,
+                    tipsCls: "xxl",
+                    tips: $.su.CHAR.ENCRYPTION.ENCRYPT_PSK_PASSWD_TIPS,
+                    vtype: "strange_pwd",
+                    maxLength: 64,
+                    fieldLabel: $.su.CHAR.ENCRYPTION.ENCRYPT_RADIUS_PASSWD
+                });
+
+                $updatePeriod.textbox({
+                    fieldLabel: $.su.CHAR.ENCRYPTION.PASSWD_UPDATE_PERIOD,
+                    inputCls: inputCls,
+                    tipsCls: "xxl",
+                    allowBlank:false,
+                    maxLength: 9,
+                    tips: $.su.CHAR.ENCRYPTION.PASSWD_UPDATE_PERIOD_TIPS,
+                    vtype: "update_period",
+                    value: 86400
+                });
+
+                return {
+                    show: function(){
+                        $.su.func.showWidgets($wpa.find("input.wpa"));
+                    },
+                    hide: function(){
+                        $.su.func.hideWidgets($wpa.find("input.wpa"));
+                    },
+                    disbleTKIP: function(){
+                        $secAlg.combobox("disableItem", [1]);
+                    },
+                    enableTKIP: function(){
+                        $secAlg.combobox("enableItem", [1]);
+                    }
+                }
+            })();
+
+            //WEP
+            var WEP = (function(){
+                var $authType = $("#wep_auth_type"),
+                        $secFormat = $("#wep_sec_format"),
+                        $keySlt = $("#wep_key_slt"),
+                        $keys = $("#wep").find(".key"),
+                        $keyLens = $("#wep").find(".keyLength"),
+                        $wep = $("#wep");
+
+                $authType.combobox({
+                    fieldLabel:$.su.CHAR.ENCRYPTION.ENCRYPT_WEP_TYPE,
+                    inputCls: comboboxCls,
+                    multiSelect:false,
+                    allowBlank: false,
+                    items:[
+                        {name:$.su.CHAR.ENCRYPTION.ENCRYPT_WEP_AUTO,value:"0", selected: true},
+                        {name:$.su.CHAR.ENCRYPTION.ENCRYPT_WEP_OPEN,value:"1"},
+                        {name:$.su.CHAR.ENCRYPTION.ENCRYPT_WEP_SHARE,value:"2"}
+                    ]
+                });
+
+                $secFormat.combobox({
+                    fieldLabel:$.su.CHAR.ENCRYPTION.ENCRYPT_WEP_KEY_FORMAT,
+                    inputCls: comboboxCls,
+                    multiSelect:false,
+                    allowBlank: false,
+                    items:[
+                        {name:$.su.CHAR.ENCRYPTION.ENCRYPT_WEP_KEY_HEX,value:"0" , selected: true},
+                        {name:$.su.CHAR.ENCRYPTION.ENCRYPT_WEP_KEY_ASCII,value:"1"}
+                    ]
+                });
+
+                $keySlt.radio({
+                    fieldLabel: $.su.CHAR.ENCRYPTION.ENCRYPT_WEP_KEY_SLT,
+                    columns: 4,
+                    items: [
+                        {boxlabel: $.su.CHAR.ENCRYPTION.ENCRYPT_WEP_KEY_1, inputValue: "0", checked:true},
+                        {boxlabel: $.su.CHAR.ENCRYPTION.ENCRYPT_WEP_KEY_2, inputValue: "1"},
+                        {boxlabel: $.su.CHAR.ENCRYPTION.ENCRYPT_WEP_KEY_3, inputValue: "2"},
+                        {boxlabel: $.su.CHAR.ENCRYPTION.ENCRYPT_WEP_KEY_4, inputValue: "3"}
+                    ]
+                });
+
+                $keys.each(function(index, e){
+                    var $e = $(e);
+                    $e.textbox({
+                        fieldLabel: $.su.CHAR.ENCRYPTION.ENCRYPT_WEP_KEY,
+                        labelCls: "xxs",
+                        cls: "inline",
+                        allowBlank: false
+                    });
+                });
+
+                $keyLens.each(function(index, e){
+                    var $e = $(e);
+                    $e.combobox({
+                        fieldLabel: $.su.CHAR.ENCRYPTION.ENCRYPT_WEP_KEY_TYPE,
+                        labelCls: "xxs",
+                        multiSelect:false,
+                        allowBlank: false,
+                        cls: "inline keyLength-gap",
+                        items:[
+                            {name:$.su.CHAR.ENCRYPTION.ENCRYPT_WEP_KEY_FORBIDDEN,value:"0", selected: true},
+                            {name:$.su.CHAR.ENCRYPTION.ENCRYPT_WEP_KEY_64,value:"1"},
+                            {name:$.su.CHAR.ENCRYPTION.ENCRYPT_WEP_KEY_128,value:"2"},
+                            {name:$.su.CHAR.ENCRYPTION.ENCRYPT_WEP_KEY_152,value:"3"}
+                        ]
+                    }).on('ev_change', function(ev, oldValue, newValue){
+                                onKeyLengthChange(newValue, index);
+                            });
+
+                    onKeyLengthChange($e.combobox("getValue"), index);
+                });
+
+                function onKeyLengthChange(newValue, index){
+                    if(newValue == 0){
+                        $keys.eq(index).textbox("disable");
+                        $keySlt.radio("disableItem", [index]);
+                    }else{
+                        $keys.eq(index).textbox("enable");
+                        $keySlt.radio("enableItem",[index]);
+                    }
+                };
+
+                return {
+                    show: function(){
+                        $.su.func.showWidgets($wep.find("input.wep"));
+                        $keyLens.each(function(index, e){
+                            onKeyLengthChange($(e).combobox("getValue"), index);
+                        });
+                    },
+                    hide: function(){
+                        $.su.func.hideWidgets($wep.find("input.wep"));
+                        $keyLens.each(function(index, e){
+                            onKeyLengthChange($(e).combobox("getValue"), index);
+                        });
+                    }
+                };
+            })();
+
+            var onSecTypeChange = (function(newValue){
+                PSK.hide();
+                WPA.hide();
+                WEP.hide();
+                switch(newValue[0]){
+                    case "0"://关闭无线安全选项
+                        break;
+                    case "1"://PSK
+                        PSK.show();
+                        break;
+                    case "2"://WPA
+                        WPA.show();
+                        break;
+                    case "3"://WEP
+                        WEP.show();
+                        break;
+                    default :
+                        break;
+                }
+                return arguments.callee;
+            })($secType.combobox("getValue"));
+            return {
+                $elements:{
+                    $enable: $enable,
+                    $ssid_encode: $ssid_encode,
+                    $secType: $secType,
+                    $broadcast: $broadcast,
+                    $staIsolation: $staIsolation
+                },
+                disableWep: function(){
+                    $secType.combobox("disableItem", [3]);
+                },
+                enableWep:function(){
+                    $secType.combobox("enableItem", [3]);
+                },
+                disableTKIP: function(){
+                    PSK.disbleTKIP();
+                    WPA.disbleTKIP();
+                },
+                enableTKIP: function(){
+                    PSK.enableTKIP();
+                    WPA.enableTKIP();
+                },
+                AddSltAES: function(){
+                    PSK.$elements.$secAlg.combobox("setValue", "2");
+                }
+            };
+
+        })();
+
+        //Multi-SSID列表
+        var MssidList = (function initMssidList(){
+            var $list = $("#mssid_list_g"),
+                    $panel = $("#mssid_list");
+
+            $list.grid({
+                maxRulesProperty: "max_rules",
+                editor: {
+                    content:"#wiress_param",
+                    fields: [
+                        {name: "ssid", mapping: "ssid"},
+                        {name: "radio_id", mapping: "radio_id"},
+                        {name: "ssid_encode", mapping: "ssid_encode"},
+                        {name: "key_idx", mapping: "key_idx"},
+
+                        {name: "sta_isolation", mapping: "sta_isolation"},
+                        {name: "enable", mapping: "enable"},
+                        {name: "broadcast", mapping: "broadcast"},
+                        {name: "sec_type", mapping: "sec_type"},
+
+                        {name: "psk_auth_type", mapping: "psk_auth_type"},
+                        {name: "psk_sec_alg", mapping: "psk_sec_alg"},
+                        {name: "psk_pwd", mapping: "psk_pwd"},
+                        {name: "psk_update_period", mapping: "psk_update_period"},
+
+                        {name: "wpa_auth_type", mapping: "wpa_auth_type"},
+                        {name: "wpa_sec_alg", mapping: "wpa_sec_alg"},
+                        {name: "wpa_radius_ip", mapping: "wpa_radius_ip"},
+                        {name: "wpa_radius_port", mapping: "wpa_radius_port"},
+                        {name: "wpa_radius_pwd", mapping: "wpa_radius_pwd"},
+                        {name: "wpa_update_period", mapping: "wpa_update_period"},
+
+                        {name: "wep_auth_type", mapping: "wep_auth_type"},
+                        {name: "wep_sec_format", mapping: "wep_sec_format"},
+                        {name: "wep_key_slt", mapping: "wep_key_slt"},
+                        {name: "wep_key1", mapping: "wep_key1"},
+                        {name: "wep_key_len1", mapping: "wep_key_len1"},
+                        {name: "wep_key2", mapping: "wep_key2"},
+                        {name: "wep_key_len2", mapping: "wep_key_len2"},
+                        {name: "wep_key3", mapping: "wep_key3"},
+                        {name: "wep_key_len3", mapping: "wep_key_len3"},
+                        {name: "wep_key4", mapping: "wep_key4"},
+                        {name: "wep_key_len4", mapping: "wep_key_len4"}
+                    ],
+                    validator: function() {
+                        var nameList = $list.grid('getStore').data;
+                        var editor = $($list.grid('getEditor'))
+                        var editingId = editor.editor("getEditingId");
+                        var ssid_encode_val = $("#ssid_encode").combobox("getValue")[0];
+                        var ssid_val = $("#ssid").textbox("getValue");
+                        for (var i = 0; i < nameList.length; i++) {
+                            if (editingId != nameList[i].key) {
+                                if (ssid_encode_val == nameList[i].ssid_encode && ssid_val == nameList[i].ssid) {
+                                    $("#ssid").textbox("setError", $.su.CHAR.WIRELESS_MSSID.EXISTED_SSID);
+                                    return false;
+                                }
+                            }
+                        }
+                        return true;
+                    }
+                },
+                store:{
+                    proxy: mssidProxy,
+                    extraProperty: ["radio_id"],
+                    fields: [
+                        {name: "radio_id", mapping: "radio_id"},
+                        {name: "key_idx", mapping: "key_idx"},
+
+                        {name: "ssid", mapping: "ssid"},
+                        {name: "ssid_encode", mapping: "ssid_encode"},
+                        {name: "broadcast", mapping: "broadcast"},
+                        {name: "sta_isolation", mapping: "sta_isolation"},
+                        {name: "enable", mapping: "enable"},
+                        {name: "sec_type", mapping: "sec_type"},
+
+                        {name: "psk_auth_type", mapping: "psk_auth_type"},
+                        {name: "psk_sec_alg", mapping: "psk_sec_alg"},
+                        {name: "psk_pwd", mapping: "psk_pwd"},
+                        {name: "psk_update_period", mapping: "psk_update_period"},
+
+                        {name: "wpa_auth_type", mapping: "wpa_auth_type"},
+                        {name: "wpa_sec_alg", mapping: "wpa_sec_alg"},
+                        {name: "wpa_radius_ip", mapping: "wpa_radius_ip"},
+                        {name: "wpa_radius_port", mapping: "wpa_radius_port"},
+                        {name: "wpa_radius_pwd", mapping: "wpa_radius_pwd"},
+                        {name: "wpa_update_period", mapping: "wpa_update_period"},
+
+                        {name: "wep_auth_type", mapping: "wep_auth_type"},
+                        {name: "wep_sec_format", mapping: "wep_sec_format"},
+                        {name: "wep_key_slt", mapping: "wep_key_slt"},
+                        {name: "wep_key1", mapping: "wep_key1"},
+                        {name: "wep_key_len1", mapping: "wep_key_len1"},
+                        {name: "wep_key2", mapping: "wep_key2"},
+                        {name: "wep_key_len2", mapping: "wep_key_len2"},
+                        {name: "wep_key3", mapping: "wep_key3"},
+                        {name: "wep_key_len3", mapping: "wep_key_len3"},
+                        {name: "wep_key4", mapping: "wep_key4"},
+                        {name: "wep_key_len4", mapping: "wep_key_len4"}
+                    ],
+                    autoLoad: false
+                },
+                paging:[],
+                columns: [
+                    {
+                        xtype: "checkcolumn",
+                        width: 40
+                    },
+                    {
+                        xtype: "rownumberer",
+                        width: 40
+                    },
+                    {
+                        text: $.su.CHAR.WIRELESS_MSSID.WIRELESS_NAME_2,
+                        dataIndex: "ssid",
+                        width: 180
+                    },
+                    {
+                        text: $.su.CHAR.WIRELESS_MSSID.WIRELESS_PASSWD,
+                        dataIndex: "sec_type",
+                        width: 160,
+                        renderer: function(v, f, data){
+                            v = v.toString();
+                            switch(v){
+                                case "0":
+                                    return $.su.CHAR.WIRELESS_MSSID.NO_PASSWD;
+                                case "1":
+                                    return data["psk_pwd"];
+                                case "2":
+                                    // return data["wpa_radius_pwd"];
+                                    return $.su.CHAR.ENCRYPTION.WPA_ENCRYPT;
+                                case "3":
+                                    return $.su.CHAR.ENCRYPTION.WEP_ENCRYPT;
+                            }
+                        }
+                    },
+                    {
+                        text: $.su.CHAR.WIRELESS_MSSID.AP_ISOLATION,
+                        dataIndex: "sta_isolation",
+                        width: 125,
+                        renderer: function(v) {
+                            if (v == "on") {
+                                return $.su.CHAR.GRID.ENABLED;
+                            }
+                            else {
+                                return $.su.CHAR.GRID.DISABLED;
+                            }
+                        }
+                    },
+                    {
+                        text: $.su.CHAR.WIRELESS_MSSID.SSID_BROADCAST,
+                        dataIndex: "broadcast",
+                        width: 125,
+                        renderer: function(v) {
+                            if (v == "on") {
+                                return $.su.CHAR.GRID.ENABLED;
+                            }
+                            else {
+                                return $.su.CHAR.GRID.DISABLED;
+                            }
+                        }
+                    },
+                    {
+                        text: $.su.CHAR.GRID.STATUS,
+                        dataIndex: "enable",
+                        width: 100,
+/*                        renderer: function(v){
+                            if(v == "on"){
+                                return "已启用";
+                            }else{
+                                return "已禁用";
+                            }
+                        },*/
+                        xtype:	"statuscolumn"
+                    },
+                    {
+                        text: $.su.CHAR.GRID.OPERATION,
+                        dataIndex: "none",
+                        width: 100,
+                        renderer: function(dd, index, data){
+                            var inHTML="<div class=\"button-container interface-operation\">";
+                            inHTML +=	"<a href=\"javascript:void(0);\" data-index=\""+index+"\" data-key=\""+data.key+"\" title=\""+ $.su.CHAR.OPERATION.EDIT +"\" class=\"grid-content-btn grid-content-btn-edit btn-edit\">";
+                            inHTML +=		"<span class=\"icon\"></span>";
+                            inHTML +=		"<span class=\"text\">"+$.su.CHAR.OPERATION.EDIT+"</span>";
+                            inHTML +=	"</a>";
+                            if(data.key_idx != 2){
+                                inHTML += 	"<a href=\"javascript:void(0);\" data-index=\""+index+"\" data-key=\""+data.key+"\" title=\""+ $.su.CHAR.OPERATION.DELETE +"\" class=\"grid-content-btn grid-content-btn-delete btn-delete\">";
+                                inHTML +=		"<span class=\"icon\"></span>";
+                                inHTML += 		"<span class=\"text\">"+$.su.CHAR.OPERATION.DELETE+"</span>";
+                                inHTML += 	"</a>";
+                            }
+                            inHTML +="</div>";
+                            return inHTML;
+                        }
+                    }
+                ],
+                operation: 'prompt|add|delete'
+            }).on('ev_load', function(){
+                MssidList.hideFirstCheckbox();
+            });
+
+            var $store = $($list.grid("getStore")),
+                    $editor = $($list.grid("getEditor"));
+            $store.on("ev_loaddata", function(e, data, others){
+                is_11n_only = others.is_11n_only == "true" || others.is_11n_only == true ? true : false;
+                is_wep_tkip = others.is_wep_tkip == "true" || others.is_wep_tkip == true ? true : false;
+                wep_key_idx = parseInt(others.wep_key_idx) > 1 ? true : false;
+            });
+
+            $store.on("ev_update", function(){
+                // MssidList.hideFirstCheckbox();
+                MssidList.reloadGrid({
+                    radio_id: radio_id
+                    }, function(){
+                });
+            });
+
+            $editor.on('ev_startEdit', function(e, index, key){
+
+                var gridData = $list.grid("getStore").data;
+                if (index != "add") {
+                    $("#key_idx").val(gridData[index].key_idx);
+                    if (gridData[index].ssid_encode != "0") {
+                        Mssid.$elements.$ssid_encode.combobox("show"); 
+                    }
+                    else {
+                        Mssid.$elements.$ssid_encode.combobox("hide"); 
+                    }
+                } else {
+                    Mssid.$elements.$secType.combobox("setValue", "1");
+                    Mssid.$elements.$broadcast.checkbox("setValue", "off");
+                    Mssid.$elements.$staIsolation.checkbox("setValue", "off");
+                    Mssid.$elements.$ssid_encode.combobox("hide"); 
+                    Mssid.AddSltAES();
+                }
+
+                setFormState(index, gridData);
+            });
+
+            return {
+                $elements:{
+                    $grid: $list
+                },
+                reloadGrid: function(data, callback){
+                    var interfaceStore = $list.grid('getStore');
+                    var $interfaceEditor = $($list.grid('getEditor'));
+
+                    if($interfaceEditor.editor('isEditing')){
+                        $interfaceEditor.editor('cancelEdit');
+                    }
+                    interfaceStore.keyLength = 0;
+                    interfaceStore.load(data, callback);
+                },
+                hideFirstCheckbox: function(){
+                    /*用于指定某一行不能被selected*/
+                    var tr = $list.find("tr.grid-content-tr:eq(0)");
+                    tr.addClass("unavailable");
+                    /*用于隐藏指定行的checkbox*/
+                    var td = $(tr).find("td.grid-content-td:eq(0)");
+                    $(td).find("span.icon").replaceWith("<span></span>");
+                    /*隐藏禁用按钮*/
+                    var td = $(tr).find("td.grid-content-td:eq(5)");
+                    $(td).find("span.icon").css({
+                        "visibility":"hidden"
+                    });
+
+                    $(td).find("a:first").css("cursor","default").click(function(e){
+                        e.preventDefault();
+                        e.stopPropagation();
+                    });
+                }
+            }
+        })();
+
+        MssidList.reloadGrid({
+            radio_id: radio_id
+        }, function(){
+        });
+
+        function setFormState(index, data){
+            //1. 如果已经有ssid使用wep或者wpa-tkip或者psk-tkip，前端根据isweptkip=true在用户配置11n模式时提示错误。
+            // 11n和wep，wpa-tkip,psk-tkip冲突
+/*            if(is_wep_tkip){
+                Basic.$elements.$mode.combobox("disableItem", [2]);
+            }else{
+                Basic.$elements.$mode.combobox("enableItem", [2]);
+            }*/
+
+            //2. 如果用户已经配置11n模式，则修改或添加ssid为wep或者wpa-tkip或者psk-tkip时前端根据is11nonly=true提示错误。
+            //11n和wep，wpa-tkip,psk-tkip冲突
+            //3. 如果已经有ssid使用wep加密，则需要隐藏其他ssid的wep项，wpa-tkip或者psk-tkip依然可以显示。
+
+            // var data = MssidList.$elements.$grid.grid("getStore").data;
+            // var hasTKIP = false;
+
+            // if ((data[0].psk_sec_alg == 1 && data[0].sec_type == 1) || (data[0].wpa_sec_alg == 1 && data[0].sec_type == 2)) {
+            //     //console.log(data[i].sec_type, data[i].psk_sec_alg, data[i].wpa_sec_alg)
+            //     hasTKIP = true;
+            // }
+
+            if (is_11n_only) {
+                Mssid.disableTKIP();
+                Mssid.disableWep();
+            } else {
+                Mssid.enableTKIP();
+                if (wep_key_idx && $("#sec_type").combobox("getValue") != 3)
+                    Mssid.disableWep();
+                else
+                    Mssid.enableWep();
+            }
+        }
+        var helpInfo = new $.su.Help({
+            container: "#wireless-mssid-help",
+            content: ["WIRELESS_MSSID", "WIRELESS_MSSID_LIST"]
+        });
+    });
+</script>
+</body>
+</html>

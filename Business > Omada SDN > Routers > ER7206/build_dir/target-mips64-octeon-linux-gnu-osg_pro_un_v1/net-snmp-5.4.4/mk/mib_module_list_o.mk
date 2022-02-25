@@ -1,0 +1,59 @@
+# contents below built automatically by configure; do not edit by hand
+mib_module_list_o= \
+	host/hr_device.o \
+	host/hr_disk.o \
+	host/hr_filesys.o \
+	host/hr_network.o \
+	host/hr_partition.o \
+	host/hr_proc.o \
+	host/hr_storage.o \
+	host/hr_system.o \
+	ieee802dot11.o \
+	mibII/at.o \
+	mibII/icmp.o \
+	mibII/ip.o \
+	mibII/snmp_mib.o \
+	mibII/sysORTable.o \
+	mibII/system_mib.o \
+	mibII/tcp.o \
+	mibII/udp.o \
+	mibII/vacm_context.o \
+	mibII/vacm_vars.o \
+	snmpv3/snmpEngine.o \
+	snmpv3/snmpMPDStats.o \
+	snmpv3/usmStats.o \
+	snmpv3/usmUser.o \
+	ucd-snmp/disk.o \
+	ucd-snmp/dlmod.o \
+	ucd-snmp/extensible.o \
+	ucd-snmp/loadave.o \
+	ucd-snmp/memory.o \
+	ucd-snmp/pass.o \
+	ucd-snmp/proc.o \
+	ucd-snmp/vmstat.o \
+	util_funcs.o \
+	if-mib/ifXTable/ifXTable.o \
+	mibII/kernel_linux.o \
+	mibII/ipAddr.o \
+	mibII/var_route.o \
+	mibII/route_write.o \
+	mibII/tcpTable.o \
+	mibII/udpTable.o \
+	tunnel/tunnel.o \
+	hardware/cpu/cpu.o \
+	hardware/cpu/cpu_linux.o \
+	hardware/memory/hw_mem.o \
+	hardware/memory/memory_linux.o \
+	if-mib/data_access/interface.o \
+	if-mib/ifTable/ifTable_interface.o \
+	if-mib/ifTable/ifTable_data_access.o \
+	if-mib/ifTable/ifTable.o \
+	if-mib/ifXTable/ifXTable_interface.o \
+	if-mib/ifXTable/ifXTable_data_access.o \
+	if-mib/data_access/interface_linux.o \
+	if-mib/data_access/interface_ioctl.o \
+	ip-mib/data_access/ipaddress_common.o \
+	ip-mib/data_access/ipaddress_linux.o \
+	ip-mib/data_access/ipaddress_ioctl.o
+
+# end configure generated code

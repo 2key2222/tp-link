@@ -1,0 +1,30 @@
+diff -urpN a/net/nat/hw_nat/mcast_tbl.c b/net/nat/hw_nat/mcast_tbl.c
+--- a/net/nat/hw_nat/mcast_tbl.c	2020-07-30 21:16:13.686205200 +0800
++++ b/net/nat/hw_nat/mcast_tbl.c	2020-07-30 19:16:59.157781300 +0800
+@@ -69,7 +69,7 @@ int foe_mcast_entry_ins(uint16_t vlan_id
+ 
+     DOWN(mtbl_lock);
+ 
+-    printk("%s: vid=%x mac=%x:%x:%x:%x:%x:%x mc_px_en=%x mc_px_qos_en=%x \n", __FUNCTION__, vlan_id, dst_mac[0],dst_mac[1],dst_mac[2],dst_mac[3],dst_mac[4],dst_mac[5], mc_px_en, mc_px_qos_en);
++    MCAST_PRINT("%s: vid=%x mac=%x:%x:%x:%x:%x:%x mc_px_en=%x mc_px_qos_en=%x \n", __FUNCTION__, vlan_id, dst_mac[0],dst_mac[1],dst_mac[2],dst_mac[3],dst_mac[4],dst_mac[5], mc_px_en, mc_px_qos_en);
+     //update exist entry
+     if((entry_num = mcast_entry_get(vlan_id, dst_mac)) >= 0) {
+ 	mcast_h = GET_PPE_MCAST_H(entry_num);
+@@ -130,7 +130,7 @@ int foe_mcast_entry_qid(uint16_t vlan_id
+     ppe_mcast_h *mcast_h;
+ 
+     DOWN(mtbl_lock);
+-    printk("%s: vid=%x mac=%x:%x:%x:%x:%x:%x mc_qos_qid=%d\n", __FUNCTION__, vlan_id, dst_mac[0],dst_mac[1],dst_mac[2],dst_mac[3],dst_mac[4],dst_mac[5], mc_qos_qid);
++    MCAST_PRINT("%s: vid=%x mac=%x:%x:%x:%x:%x:%x mc_qos_qid=%d\n", __FUNCTION__, vlan_id, dst_mac[0],dst_mac[1],dst_mac[2],dst_mac[3],dst_mac[4],dst_mac[5], mc_qos_qid);
+     //update exist entry
+     if((entry_num = mcast_entry_get(vlan_id, dst_mac)) >= 0) {
+ 	mcast_h = GET_PPE_MCAST_H(entry_num);
+@@ -154,7 +154,7 @@ int foe_mcast_entry_del(uint16_t vlan_id
+     ppe_mcast_l *mcast_l;
+ 
+     DOWN(mtbl_lock);
+-    printk("%s: vid=%x mac=%x:%x:%x:%x:%x:%x mc_px_en=%x mc_px_qos_en=%x mc_qos_qid=%d\n", __FUNCTION__, vlan_id, dst_mac[0],dst_mac[1],dst_mac[2],dst_mac[3],dst_mac[4],dst_mac[5], mc_px_en, mc_px_qos_en, mc_qos_qid);
++    MCAST_PRINT("%s: vid=%x mac=%x:%x:%x:%x:%x:%x mc_px_en=%x mc_px_qos_en=%x mc_qos_qid=%d\n", __FUNCTION__, vlan_id, dst_mac[0],dst_mac[1],dst_mac[2],dst_mac[3],dst_mac[4],dst_mac[5], mc_px_en, mc_px_qos_en, mc_qos_qid);
+     if((entry_num = mcast_entry_get(vlan_id, dst_mac)) >= 0) {
+ 	mcast_h = GET_PPE_MCAST_H(entry_num);
+ 	mcast_l = GET_PPE_MCAST_L(entry_num);

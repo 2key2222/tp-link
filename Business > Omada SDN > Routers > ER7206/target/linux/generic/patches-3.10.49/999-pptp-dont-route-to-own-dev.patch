@@ -1,0 +1,67 @@
+--- a/drivers/net/ppp/pptp.c	2020-03-26 19:40:37.627415638 +0800
++++ b/drivers/net/ppp/pptp.c	2020-03-26 19:43:10.820416690 +0800
+@@ -186,6 +186,8 @@
+ 	struct iphdr  *iph;
+ 	int    max_headroom;
+ 
++	int pptp_ifindex;
++
+ 	if (sk_pppox(po)->sk_state & PPPOX_DEAD)
+ 		goto tx_error;
+ 
+@@ -198,6 +200,11 @@
+ 		goto tx_error;
+ 
+ 	tdev = rt->dst.dev;
++	/* can't route to own dev */
++	pptp_ifindex = ppp_dev_index(chan);
++	if (tdev->ifindex == pptp_ifindex) {
++		goto tx_error;
++	}
+ 
+ 	max_headroom = LL_RESERVED_SPACE(tdev) + sizeof(*iph) + sizeof(*hdr) + 2;
+ 
+--- a/drivers/net/ppp/ppp_generic.c	2020-03-26 19:40:45.845416356 +0800
++++ b/drivers/net/ppp/ppp_generic.c	2020-03-26 19:44:41.463416337 +0800
+@@ -2937,6 +2937,21 @@
+ 	kfree(pch);
+ }
+ 
++/* Return the PPP net device index */
++int ppp_dev_index(struct ppp_channel *chan)
++{
++	struct channel *pch = chan->ppp;
++	int ifindex = 0;
++
++	if (pch) {
++		read_lock_bh(&pch->upl);
++		if (pch->ppp && pch->ppp->dev)
++			ifindex = pch->ppp->dev->ifindex;
++		read_unlock_bh(&pch->upl);
++	}
++	return ifindex;
++}
++
+ static void __exit ppp_cleanup(void)
+ {
+ 	/* should never happen */
+@@ -2993,6 +3008,7 @@
+ EXPORT_SYMBOL(ppp_channel_index);
+ EXPORT_SYMBOL(ppp_unit_number);
+ EXPORT_SYMBOL(ppp_dev_name);
++EXPORT_SYMBOL(ppp_dev_index);
+ EXPORT_SYMBOL(ppp_input);
+ EXPORT_SYMBOL(ppp_input_error);
+ EXPORT_SYMBOL(ppp_output_wakeup);
+--- a/include/linux/ppp_channel.h	2020-03-26 19:44:59.705416370 +0800
++++ b/include/linux/ppp_channel.h	2020-03-26 19:45:58.883416617 +0800
+@@ -66,6 +66,9 @@
+ /* Detach a channel from its PPP unit (e.g. on hangup). */
+ extern void ppp_unregister_channel(struct ppp_channel *);
+ 
++/* Get the device index  associated with a channel, or 0, if none */
++extern int ppp_dev_index(struct ppp_channel *);
++
+ /* Get the channel number for a channel */
+ extern int ppp_channel_index(struct ppp_channel *);
+ 

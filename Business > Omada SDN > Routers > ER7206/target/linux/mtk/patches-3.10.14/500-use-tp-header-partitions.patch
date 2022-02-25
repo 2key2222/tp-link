@@ -1,0 +1,91 @@
+diff -urN a/arch/mips/ralink/cmdline.c b/arch/mips/ralink/cmdline.c
+--- a/arch/mips/ralink/cmdline.c	2014-09-02 16:41:06.000000000 +0800
++++ b/arch/mips/ralink/cmdline.c	2016-12-01 00:12:21.060110796 +0800
+@@ -43,7 +43,8 @@
+ 
+ #if defined (CONFIG_RT2880_ROOTFS_IN_FLASH)
+ #ifdef CONFIG_SYSFS
+-char rt2880_cmdline[]="console=ttyS1,57600n8 root=/dev/mtdblock5";
++//char rt2880_cmdline[]="console=ttyS1,57600n8 root=/dev/mtdblock5";
++char rt2880_cmdline[]="console=ttyS1,115200n8 root=/dev/mtdblock2 rootfstype=squashfs,jffs2 noinitrd";
+ #else
+ char rt2880_cmdline[]="console=ttyS1,57600n8 root=1f05";
+ #endif
+diff -urN a/drivers/mtd/mtdcore.c b/drivers/mtd/mtdcore.c
+--- a/drivers/mtd/mtdcore.c	2014-09-02 16:41:51.000000000 +0800
++++ b/drivers/mtd/mtdcore.c	2016-12-01 00:08:51.057445623 +0800
+@@ -40,6 +40,7 @@
+ 
+ #include <linux/mtd/mtd.h>
+ #include <linux/mtd/partitions.h>
++#include <linux/root_dev.h>
+ 
+ #include "mtdcore.h"
+ 
+@@ -408,6 +409,14 @@
+ 	   of this try_ nonsense, and no bitching about it
+ 	   either. :) */
+ 	__module_get(THIS_MODULE);
++       if (!strcmp(mtd->name, "rootfs") &&
++            config_enabled(CONFIG_MTD_ROOTFS_ROOT_DEV) &&
++            ROOT_DEV == 0) {
++            pr_notice("mtd: device %d (%s) set to be root filesystem\n",
++                mtd->index, mtd->name);
++            ROOT_DEV = MKDEV(MTD_BLOCK_MAJOR, mtd->index);
++        }
++            
+ 	return 0;
+ 
+ fail_added:
+diff -urN a/drivers/mtd/ralink/ralink_bbu_spi.c b/drivers/mtd/ralink/ralink_bbu_spi.c
+--- a/drivers/mtd/ralink/ralink_bbu_spi.c	2014-09-12 10:48:10.000000000 +0800
++++ b/drivers/mtd/ralink/ralink_bbu_spi.c	2016-12-01 00:10:42.402538354 +0800
+@@ -44,6 +44,10 @@
+ #endif
+ 
+ #if defined(CONFIG_SUPPORT_OPENWRT)
++static const char *slp_part_probes[] = {
++	"tp-link",
++    	NULL,
++    };
+ static struct mtd_partition rt2880_partitions[] = {
+ 	{
+                 name:           "ALL",
+@@ -1613,8 +1617,8 @@
+ 				ntohl(hdr.ih_ksz));
+ 	}
+ #endif
+-	add_mtd_partitions(&flash->mtd, rt2880_partitions, ARRAY_SIZE(rt2880_partitions));
+-
++	//add_mtd_partitions(&flash->mtd, rt2880_partitions, ARRAY_SIZE(rt2880_partitions));
++       mtd_device_parse_register(&flash->mtd, slp_part_probes, NULL, NULL, 0); 
+ 	return &flash->mtd;
+ }
+ 
+diff -urN a/drivers/mtd/ralink/ralink_spi.c b/drivers/mtd/ralink/ralink_spi.c
+--- a/drivers/mtd/ralink/ralink_spi.c	2014-09-12 10:48:10.000000000 +0800
++++ b/drivers/mtd/ralink/ralink_spi.c	2016-12-01 00:11:46.336863754 +0800
+@@ -40,6 +40,13 @@
+ 
+ #if defined (CONFIG_SUPPORT_OPENWRT)
+ 
++static const char *slp_part_probes[] = {
++	"tp-link",
++    	NULL,
++    };
++
++
++
+ static struct mtd_partition rt2880_partitions[] = {
+      {
+             name:           "ALL",
+@@ -1521,7 +1528,8 @@
+ #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,22)
+ 	return add_mtd_partitions(&flash->mtd, rt2880_partitions, ARRAY_SIZE(rt2880_partitions));
+ #else
+-	add_mtd_partitions(&flash->mtd, rt2880_partitions, ARRAY_SIZE(rt2880_partitions));
++	//add_mtd_partitions(&flash->mtd, rt2880_partitions, ARRAY_SIZE(rt2880_partitions));
++       mtd_device_parse_register(&flash->mtd, slp_part_probes, NULL, NULL, 0);
+ 	return &flash->mtd;
+ #endif
+ }

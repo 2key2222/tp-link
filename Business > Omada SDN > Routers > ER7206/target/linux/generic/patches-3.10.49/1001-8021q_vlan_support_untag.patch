@@ -1,0 +1,133 @@
+diff -Naur a/include/uapi/linux/if_vlan.h b/include/uapi/linux/if_vlan.h
+--- a/include/uapi/linux/if_vlan.h	2015-10-11 15:30:48.000000000 +0800
++++ b/include/uapi/linux/if_vlan.h	2015-10-11 15:55:35.000000000 +0800
+@@ -27,7 +27,9 @@
+ 	SET_VLAN_NAME_TYPE_CMD,
+ 	SET_VLAN_FLAG_CMD,
+ 	GET_VLAN_REALDEV_NAME_CMD, /* If this works, you know it's a VLAN device, btw */
+-	GET_VLAN_VID_CMD /* Get the VID of this VLAN (specified by name) */
++        GET_VLAN_VID_CMD, /* Get the VID of this VLAN (specified by name) */
++        SET_VLAN_UNTAG,
++        GET_VLAN_UNTAG
+ };
+ 
+ enum vlan_flags {
+@@ -56,6 +58,7 @@
+ 		unsigned int name_type;
+ 		unsigned int bind_type;
+ 		unsigned int flag; /* Matches vlan_dev_priv flags */
++                unsigned int untag;
+         } u;
+ 
+ 	short vlan_qos;   
+diff -Naur a/net/8021q/vlan.c b/net/8021q/vlan.c
+--- a/net/8021q/vlan.c	2014-07-18 06:58:14.000000000 +0800
++++ b/net/8021q/vlan.c	2015-10-11 15:55:46.000000000 +0800
+@@ -503,6 +503,7 @@
+ 	case DEL_VLAN_CMD:
+ 	case GET_VLAN_REALDEV_NAME_CMD:
+ 	case GET_VLAN_VID_CMD:
++        case SET_VLAN_UNTAG:
+ 		err = -ENODEV;
+ 		dev = __dev_get_by_name(net, args.device1);
+ 		if (!dev)
+@@ -589,6 +590,14 @@
+ 		      err = -EFAULT;
+ 		break;
+ 
++        case SET_VLAN_UNTAG:
++                err = -EPERM;
++                if (!ns_capable(net->user_ns, CAP_NET_ADMIN))
++                        break;
++                err = vlan_dev_set_untag(dev,
++                                         args.u.untag);
++                break;
++
+ 	default:
+ 		err = -EOPNOTSUPP;
+ 		break;
+diff -Naur a/net/8021q/vlan_dev.c b/net/8021q/vlan_dev.c
+--- a/net/8021q/vlan_dev.c	2014-07-18 06:58:14.000000000 +0800
++++ b/net/8021q/vlan_dev.c	2015-10-11 15:56:16.000000000 +0800
+@@ -164,8 +164,9 @@
+ 	 * NOTE: THIS ASSUMES DIX ETHERNET, SPECIFICALLY NOT SUPPORTING
+ 	 * OTHER THINGS LIKE FDDI/TokenRing/802.3 SNAPs...
+ 	 */
+-	if (veth->h_vlan_proto != vlan->vlan_proto ||
+-	    vlan->flags & VLAN_FLAG_REORDER_HDR) {
++        if ((veth->h_vlan_proto != vlan->vlan_proto ||
++            vlan->flags & VLAN_FLAG_REORDER_HDR) 
++            && (!vlan->untag)) {
+ 		u16 vlan_tci;
+ 		vlan_tci = vlan->vlan_id;
+ 		vlan_tci |= vlan_dev_get_egress_qos_mask(dev, skb);
+@@ -290,6 +291,32 @@
+ 	return 0;
+ }
+ 
++int vlan_dev_set_untag(const struct net_device *dev, u32 untag)
++{
++        struct vlan_dev_priv *vlan = vlan_dev_priv(dev);
++
++        if (untag != 0 && untag != 1)
++        {
++           return -EINVAL;
++        }
++
++        vlan->untag = untag;
++        return 0;
++}
++
++int vlan_dev_get_untag(const struct net_device *dev, u32 *untag)
++{
++        struct vlan_dev_priv *vlan = vlan_dev_priv(dev);
++
++        if (NULL == untag)
++        {
++           return -EINVAL;
++        }
++
++        *untag = vlan->untag;
++        return 0;
++}
++
+ void vlan_dev_get_realdev_name(const struct net_device *dev, char *result)
+ {
+ 	strncpy(result, vlan_dev_priv(dev)->real_dev->name, 23);
+diff -Naur a/net/8021q/vlan.h b/net/8021q/vlan.h
+--- a/net/8021q/vlan.h	2014-07-18 06:58:14.000000000 +0800
++++ b/net/8021q/vlan.h	2015-10-11 15:55:57.000000000 +0800
+@@ -75,6 +75,8 @@
+ #ifdef CONFIG_NET_POLL_CONTROLLER
+ 	struct netpoll				*netpoll;
+ #endif
++
++        unsigned int                            untag;
+ };
+ 
+ static inline struct vlan_dev_priv *vlan_dev_priv(const struct net_device *dev)
+@@ -181,6 +183,9 @@
+ int vlan_dev_change_flags(const struct net_device *dev, u32 flag, u32 mask);
+ void vlan_dev_get_realdev_name(const struct net_device *dev, char *result);
+ 
++int vlan_dev_set_untag(const struct net_device *dev, u32 untag);
++int vlan_dev_get_untag(const struct net_device *dev, u32 *untag);
++
+ int vlan_check_real_dev(struct net_device *real_dev,
+ 			__be16 protocol, u16 vlan_id);
+ void vlan_setup(struct net_device *dev);
+diff -Naur a/net/8021q/vlanproc.c b/net/8021q/vlanproc.c
+--- a/net/8021q/vlanproc.c	2015-10-11 14:56:56.000000000 +0800
++++ b/net/8021q/vlanproc.c	2015-10-11 15:56:04.000000000 +0800
+@@ -291,9 +291,9 @@
+ 
+ 	stats = dev_get_stats(vlandev, &temp);
+ 	seq_printf(seq,
+-		   "%s  VID: %d	 REORDER_HDR: %i  dev->priv_flags: %hx\n",
++                   "%s  VID: %d  REORDER_HDR: %i  dev->priv_flags: %hx  UNTAG: %d\n",
+ 		   vlandev->name, vlan->vlan_id,
+-		   (int)(vlan->flags & 1), vlandev->priv_flags);
++                   (int)(vlan->flags & 1), vlandev->priv_flags,vlan->untag);
+ 
+ 	seq_printf(seq, fmt64, "total frames received", stats->rx_packets);
+ 	seq_printf(seq, fmt64, "total bytes received", stats->rx_bytes);

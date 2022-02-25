@@ -1,0 +1,43 @@
+#!/bin/sh
+
+. /lib/functions/network.sh
+network_flush_cache
+
+local ifs="$1"
+local ups=""
+local poe=""
+local eth=""
+for f in $ifs ;
+do
+	__network_ifstatus st $f .state && {
+		[ "$st" = "connected" ] && {
+			ups=$ups' '$f
+			if [ ${f:5:3} == "poe" ] ; then
+				poe=$poe' '$f
+			else
+				eth=$eth' '$f
+			fi
+		}
+	}
+done
+
+for f in $poe ;
+do
+	ifdown $f
+done
+
+sleep 1s
+for f in $eth ;
+do
+	ifdown $f
+done
+
+sleep 1s
+ubus call network reload
+
+for f in $ups ;
+do
+	ifup $f
+done
+
+

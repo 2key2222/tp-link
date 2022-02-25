@@ -1,0 +1,23 @@
+#!/bin/sh
+# Copyright (C) 2006 OpenWrt.org
+# Copyright (C) 2010 Vertical Communications
+
+do_mount_root() {
+	ramoverlay
+	find_mount_jffs2
+    rootfs_init_etc_ramfs
+	boot_run_hook preinit_mount_root
+	
+	defFlag=`grep -o Default /tmp/userconfig/userconfig_default.tmp`
+	if [ -n "$defFlag" ] && [ $defFlag = 'Default' ];
+	then
+		#set dftmac from tddp flash
+		/usr/bin/tddpd dftmac
+		/lib/cfg_save/config.sh save
+	else
+	   echo "no"
+	fi
+	
+}
+
+[ "$INITRAMFS" = "1" ] || boot_hook_add preinit_main do_mount_root

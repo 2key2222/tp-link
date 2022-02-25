@@ -1,0 +1,174 @@
+#!/bin/sh
+
+. /lib/functions.sh
+. /lib/netifd/netifd-proto.sh
+. /lib/ipv6/lanv6_server.sh
+
+export PATH=$PATH:/usr/bin:/usr/sbin:/bin:/sbin
+IFNAME=$ifname
+INTERFACE=$interface
+STATE=$new_dhcpc_state
+
+LOG_MODULE_IPV6=89
+LOG_IPV6_PPPV6_UP=13705
+
+find_interface() {
+	local cfg="$1"
+	config_get_bool en "$cfg" enabled 0
+	[ "$en" == "0" -a "$STATE" == "3" ] && return
+
+	config_get iface "$cfg" interface
+	[ "$iface" == "$IFNAME" ] && INTERFACE="$cfg"
+}
+
+[ -z "$INTERFACE" ] && {
+	config_load 'dhcp6c'
+	config_foreach find_interface dhcp6c
+}
+
+[ -z "$INTERFACE" ] && exit 1
+[ -z "$IFNAME" ] && exit 1
+
+ppp_up="/tmp/pppv6/${IFNAME}"
+pppdir="/tmp/pppv6"
+
+deconfig_interface() {
+	proto_init_update "$IFNAME" 0
+	proto_send_update "$INTERFACE"
+
+        rm /tmp/dhcp6c/prefix.info
+        rm /tmp/dhcp6c/prefix.info.${INTERFACE}
+        rm /tmp/dhcp6c/prefixlen.info.${INTERFACE}
+}
+
+setup_interface () {
+	local remoteip
+
+	i=0
+	config_load /etc/config/network
+	config_get proto $INTERFACE proto
+	config_get ip_config $INTERFACE ip_config
+
+	proto_init_update "$IFNAME" 1 1
+	proto_set_keep 1
+
+	[ $ip_config != "specified" ] && {
+		if [ "$ip_config" == "auto" ]; then
+			mbit=`cat /proc/sys/net/ipv6/conf/$IFNAME/ndisc_mbit`
+			if [ $mbit -eq 1 ]; then
+				ip_config="dhcpv6"
+			else
+				ip_config="slaac"
+			fi
+		fi
+		# using SLAAC or DHCPv6 is decided by user
+
+		[ "$ip_config" == "slaac" ] && {
+			count=10
+			while [ $count -ne 0 -a -z "$new_ip6addr" ]; do
+				#wait for dad finished
+				sleep 1
+
+				while read line
+				do
+					[ $IFNAME != ${line##* } ] && continue
+					[ "fe80" = ${line:0:4} ] && continue
+
+					element=${line:0:32}
+					ip6addr=${element:0:4}:${element:4:4}:${element:8:4}:${element:12:4}
+					ip6addr=$ip6addr:${element:16:4}:${element:20:4}:${element:24:4}:${element:28:4}
+					new_ip6addr=$ip6addr
+
+				done </proc/net/if_inet6
+
+				let "count=count - 1"
+			done
+
+			[ -z "$new_ip6addr" ] && {
+				proto_notify_error "$INTERFACE" "NO ADDRESS"
+				sleep 3
+				proto_setup_failed "$INTERFACE"
+				return
+			}
+		}
+
+		if [ -n "$new_ip6addr" ]; then
+			proto_add_ipv6_address "$new_ip6addr" "64"
+		elif [ -z "$new_ip6prefix" ]; then
+			deconfig_interface
+			return
+		fi
+
+		[ "$proto" == "pppoev6" -a -f "$ppp_up" ] && {
+	#		cat "$ppp_up" | while read line
+			while read line
+			do
+				[ "$i" == "0" -a "$line" != "none" ] && proto_add_ipv4_address "$line" "32"
+				[ "$i" == "1" -a "$line" != "none" ] && proto_add_ipv4_route "0.0.0.0" "0" "$line"
+				[ "$i" == "2" -a "$line" != "none" ] && proto_add_ipv6_address "$line" "64"
+				[ "$i" == "3" -a "$line" != "none" ] && {
+					remoteip="$line"
+					proto_add_ipv6_route "::" "0" "$line"
+				}
+
+				i=`expr $i + 1`
+			done < "$ppp_up"
+			rm -rf "$ppp_up"
+		}
+	}
+
+	[ -n "$new_domain_name_servers" ] && {
+		DNS2=${new_domain_name_servers##*[, ]}
+		DNS1=${new_domain_name_servers%%[, ]*}
+		[ -n "$DNS1" ] && proto_add_dns_server "$DNS1"
+		[ -n "$DNS1" -a -n "$DNS2" -a "$DNS1" != "$DNS2" ] && proto_add_dns_server "$DNS2"
+	}
+
+    	if [ -n "$new_ip6prefix" ]; then
+		local old_ip6prefix="$(cat /tmp/dhcp6c/prefix.info.${INTERFACE})"
+		local old_ip6prefix_len="$(cat /tmp/dhcp6c/prefixlen.info.${INTERFACE})"
+        	echo "$new_ip6prefix" > /tmp/dhcp6c/prefix.info
+		echo "$new_ip6prefix" > /tmp/dhcp6c/prefix.info.${INTERFACE}
+		echo "$new_ip6prefix_len" > /tmp/dhcp6c/prefixlen.info.${INTERFACE}
+
+		#notify to LAN networks update prefix & prefixlen
+		if [ -n "$old_ip6prefix" -a "$old_ip6prefix" != "::" -a "$old_ip6prefix" != "$new_ip6prefix" ]; then
+			proto_lanv6_setup_multilan "$INTERFACE"
+		elif [ -n "$old_ip6prefix_len" -a "$old_ip6prefix_len" != "0" -a "$old_ip6prefix_len" != "$new_ip6prefix_len" ]; then
+			proto_lanv6_setup_multilan "$INTERFACE"
+		fi
+    	fi
+	
+	[ -n "$new_aftr_name" ] && {
+		local aftr_name="$new_aftr_name"
+		local old_aftr
+		local internetv6 = ${INTERFACE/wan/internet}
+		config_get old_aftr $internetv6 AFTR_name
+		uci_set network $internetv6 AFTR_name "$aftr_name"
+		uci_commit network
+	}
+
+	proto_send_update "$INTERFACE"
+
+	local log_wan=`echo "${INTERFACE%_v6}" | tr '[a-z]' '[A-Z]'`
+	local log_gw=`ip -6 route | grep default | grep "$IFNAME" | awk '{print $3}' 2>/dev/null`
+	[ -z "$log_gw" ] && log_gw=" "
+	logger_reg $LOG_MODULE_IPV6 $LOG_IPV6_PPPV6_UP "$log_wan" "$new_ip6addr/64" "$log_gw" "$new_domain_name_servers"
+}
+
+# code=0 is equal to [ -n "$new_ip6addr" -o -n "$new_ip6prefix" ]
+case "$STATE" in
+	"2"|"3"|"4"|"5")
+		# if [ -n "$code" -a "$code" == "0" ]; then
+			setup_interface
+		# else
+		# 	deconfig_interface
+		# fi
+	;;
+
+	"6"|"7")
+		deconfig_interface
+	;;
+esac
+
+exit 0

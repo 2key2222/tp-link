@@ -1,0 +1,28 @@
+
+config rule_ipgroup
+	option flag 'system'
+	option name 'IPGROUP_ANY'
+	option comment 'IPGROUP_ANY'
+	option ref '5'
+
+config view_relation
+	option group 'IPGROUP_ANY'
+
+config rule_ipscope
+	option type 'mask'
+	option name 'IP_LAN'
+	option scope '192.168.1.0/24'
+	option comment 'IP_LAN'
+	option flag 'system'
+
+config rule_ipgroup
+	option rule_scope 'IP_LAN'
+	option name 'IPGROUP_LAN'
+	option flag 'system'
+	option comment 'IPGROUP_LAN'
+	option ref '3'
+
+config view_relation
+	option group 'IPGROUP_LAN'
+	option rule_scope 'IP_LAN'
+

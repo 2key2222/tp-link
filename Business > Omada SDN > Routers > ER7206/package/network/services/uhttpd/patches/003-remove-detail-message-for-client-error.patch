@@ -1,0 +1,24 @@
+--- a/client.c	2019-04-15 15:33:18.885196123 +0800
++++ b/client.c	2019-04-15 15:46:49.261201449 +0800
+@@ -127,18 +127,19 @@
+ void __printf(4, 5)
+ uh_client_error(struct client *cl, int code, const char *summary, const char *fmt, ...)
+ {
+-	va_list arg;
++	/*va_list arg;*/
+ 
+ 	uh_http_header(cl, code, summary);
+ 	ustream_printf(cl->us, "Content-Type: text/html\r\n\r\n");
+ 
+ 	uh_chunk_printf(cl, "<h1>%s</h1>", summary);
+ 
++	/*
+ 	if (fmt) {
+ 		va_start(arg, fmt);
+ 		uh_chunk_vprintf(cl, fmt, arg);
+ 		va_end(arg);
+-	}
++	}*/
+ 
+ 	uh_request_done(cl);
+ }

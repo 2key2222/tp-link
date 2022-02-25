@@ -1,0 +1,101 @@
+--- a/networking/udhcp/dhcpc.c	2020-05-08 09:08:18.287411340 +0800
++++ b/networking/udhcp/dhcpc.c	2020-05-08 10:03:20.290062185 +0800
+@@ -41,6 +41,9 @@
+ #define DHCP_CLIENT_REBIND_FAIL			12156
+ #define DHCP_CLIENT_DISCOVER_TIMEOUT	12157
+ #define DHCP_CLIENT_REQUEST_TIMEOUT	    12158
++#define DHCP_CLIENT_ADDRESS_FAILED_SPECIAL 12159
++#define DHCP_CLIENT_ADDRESS_FAILED_CONFLICT 12160
++#define DHCP_CLIENT_ADDRESS_FAILED_NORESP 12161
+ 
+ #define DHCP_CLIENT_LOGGER_REG(info_id,...)			\
+ 	logger_reg(LOGGER_MODULE_ID_DHCP_CLIENT,info_id,##__VA_ARGS__)
+@@ -293,12 +296,12 @@
+ 
+ 	while (pos < all_ifnum) {
+ 		if (strcmp(all_ifs[pos].name, client_config.interface) && (ntohl(all_ifs[pos].addr.s_addr) == requested_ip)) {
+-			return -1;
++			return -2;
+ 		}
+ 		
+ 		if (all_ifs[pos].lan) {
+ 			if ((ntohl(all_ifs[pos].addr.s_addr) & ntohl(all_ifs[pos].mask.s_addr)) == (requested_ip & ntohl(all_ifs[pos].mask.s_addr))) {
+-				return -1;
++				return -2;
+ 			}
+ 		}
+ 		pos++;
+@@ -1566,6 +1569,7 @@
+ 	int max_fd;
+ 	int retval;
+ 	fd_set rfds;
++	int addr_failed = 0;
+ 
+ 	/* Default options */
+ 	IF_FEATURE_UDHCP_PORT(SERVER_PORT = 67;)
+@@ -1788,6 +1792,7 @@
+ 					continue;
+ 				}
+ 			DHCP_CLIENT_LOGGER_REG(DHCP_CLIENT_DISCOVER_TIMEOUT,LOGGER_PARAM_STRING,zone_namex/*client_config.interface*/);
++			DHCP_CLIENT_LOGGER_REG(DHCP_CLIENT_ADDRESS_FAILED_NORESP,LOGGER_PARAM_STRING,zone_namex/*client_config.interface*/);
+  leasefail:
+ 				udhcp_run_script(NULL, "leasefail");
+ #if BB_MMU /* -b is not supported on NOMMU */
+@@ -1816,6 +1821,7 @@
+ 					continue;
+ 				}
+ 			DHCP_CLIENT_LOGGER_REG(DHCP_CLIENT_REQUEST_TIMEOUT,LOGGER_PARAM_STRING,zone_namex/*client_config.interface*/);
++			DHCP_CLIENT_LOGGER_REG(DHCP_CLIENT_ADDRESS_FAILED_NORESP,LOGGER_PARAM_STRING,zone_namex/*client_config.interface*/);
+ 				/* Timed out, go back to init state.
+ 				 * "discover...select...discover..." loops
+ 				 * were seen in the wild. Treat them similarly
+@@ -2035,7 +2041,9 @@
+ 						requested_gw = requested_tmp.s_addr;
+ 					}
+ 				}
+-				if ((check_ip_available_v2(ntohl(requested_ip), ntohl(requested_mask)) != 0) || (requested_gw && (check_ip_available_v2(ntohl(requested_gw), ntohl(requested_mask)) != 0))) {
++				addr_failed = 0;
++				if (((addr_failed = check_ip_available_v2(ntohl(requested_ip), ntohl(requested_mask))) != 0)
++				     || (requested_gw && ((addr_failed = check_ip_available_v2(ntohl(requested_gw), ntohl(requested_mask))) != 0))) {
+ 					send_decline(/*xid,*/ server_addr, packet.yiaddr);
+ 
+ 					state = INIT_SELECTING;
+@@ -2049,6 +2057,13 @@
+ 							strncpy(subnet_x, tmp, 31);
+ 						}
+ 					}
++
++					if (addr_failed == -1) {
++						DHCP_CLIENT_LOGGER_REG(DHCP_CLIENT_ADDRESS_FAILED_SPECIAL,LOGGER_PARAM_STRING,zone_namex/*client_config.interface*/,LOGGER_PARAM_IPV4,ntohl(requested_ip), LOGGER_PARAM_STRING, subnet_x, LOGGER_PARAM_STRING, router_x);
++					}
++					else if (addr_failed == -2) {
++						DHCP_CLIENT_LOGGER_REG(DHCP_CLIENT_ADDRESS_FAILED_CONFLICT,LOGGER_PARAM_STRING,zone_namex/*client_config.interface*/,LOGGER_PARAM_IPV4,ntohl(requested_ip), LOGGER_PARAM_STRING, subnet_x, LOGGER_PARAM_STRING, router_x);
++					}
+ 					DHCP_CLIENT_LOGGER_REG(DHCP_CLIENT_SET_FAIL,LOGGER_PARAM_STRING,zone_namex/*client_config.interface*/,LOGGER_PARAM_IPV4,ntohl(requested_ip), LOGGER_PARAM_STRING, subnet_x, LOGGER_PARAM_STRING, router_x);
+ 					sleep(5);
+ 				}
+@@ -2095,7 +2110,9 @@
+ 						requested_gw = requested_tmp.s_addr;
+ 					}
+ 				}
+-				if ((check_ip_available_v2(ntohl(requested_ip), ntohl(requested_mask)) != 0) || (requested_gw && (check_ip_available_v2(ntohl(requested_gw), ntohl(requested_mask)) != 0))) {
++				addr_failed = 0;
++				if (((addr_failed = check_ip_available_v2(ntohl(requested_ip), ntohl(requested_mask))) != 0)
++				     || (requested_gw && ((addr_failed = check_ip_available_v2(ntohl(requested_gw), ntohl(requested_mask))) != 0))) {
+ 					send_decline(/*xid,*/ server_addr, packet.yiaddr);
+ 					if (state != REQUESTING)
+ 						udhcp_run_script(NULL, "deconfig");
+@@ -2117,6 +2134,13 @@
+ 							strncpy(subnet_x, tmp, 31);
+ 						}
+ 					}
++
++					if (addr_failed == -1) {
++						DHCP_CLIENT_LOGGER_REG(DHCP_CLIENT_ADDRESS_FAILED_SPECIAL,LOGGER_PARAM_STRING,zone_namex/*client_config.interface*/,LOGGER_PARAM_IPV4,ntohl(requested_ip), LOGGER_PARAM_STRING, subnet_x, LOGGER_PARAM_STRING, router_x);
++					}
++					else if (addr_failed == -2) {
++						DHCP_CLIENT_LOGGER_REG(DHCP_CLIENT_ADDRESS_FAILED_CONFLICT,LOGGER_PARAM_STRING,zone_namex/*client_config.interface*/,LOGGER_PARAM_IPV4,ntohl(requested_ip), LOGGER_PARAM_STRING, subnet_x, LOGGER_PARAM_STRING, router_x);
++					}
+ 					DHCP_CLIENT_LOGGER_REG(DHCP_CLIENT_SET_FAIL,LOGGER_PARAM_STRING,zone_namex/*client_config.interface*/,LOGGER_PARAM_IPV4,ntohl(requested_ip), LOGGER_PARAM_STRING, subnet_x, LOGGER_PARAM_STRING, router_x);
+ 					sleep(5);
+ 					continue;

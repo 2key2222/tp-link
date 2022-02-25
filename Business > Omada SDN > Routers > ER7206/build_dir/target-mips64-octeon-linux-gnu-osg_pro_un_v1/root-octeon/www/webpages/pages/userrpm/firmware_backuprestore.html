@@ -1,0 +1,380 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Backup Restore</title>
+</head>
+
+<body>
+<div class="func-container"> 
+	 <!--<div id="backup_version_cnt">
+	 	<form id="version-setting" enctype="multipart/form-data">
+	    	<input type="text"  id="current_version" name="software_version" value="1.0.0" />
+	    </form>
+	 </div>-->
+	 
+	 <div id="backup_cnt">
+	 	<form id="backup-setting" enctype="multipart/form-data">
+	    	<p id="backupNote" name="backupNote"  class="note first-line"></p>
+	    	<button type="button" id="backup" name="backup"></button>
+	    </form>
+	 </div>
+	 
+	<div id="restore_cnt">
+	 	<div id="restore-setting">
+	    	<p id="restoreNote" name="restoreNote"  class="note first-line"></p>
+			<input id="file" name="archive" type="file" />
+			
+	    	<button type="button" id="restore" name="restore"></button>
+	    	<!-- <span id="error_str" class="error"></span> -->
+	    </div>
+	</div>
+	
+	<div id="restore_alert_cnt">
+		<h4 class="title" id="restore_confirm_cnt">
+	    	<span class="icon"></span>
+	 		<span class="text" id="restore_confirm_content"></span>
+	 	</h4>
+
+	 	<div id="restore_pro_cnt" class="reboot-loading-msg hidden">
+	    	<input id="restore_pro_bar" type="text" />
+	    </div>
+		<div id="reboot_pro_cnt" class="reboot-loading-msg hidden">
+			<input id="reboot_pro_bar" type="text" />
+		</div>
+	</div> 
+
+	<div id="restore_failed_cnt">
+		<h4 class="title">
+			<span class="icon" ></span>
+			<span class="text" id="error_str"></span>
+		</h4>
+	</div> 
+	
+	<div id="help_backup"></div>
+</div>
+
+<script type="text/javascript">
+try{
+    $
+}catch(e){
+    location.href = "/";
+};
+
+$(document).ready(function(e){
+	var restore_total_time = 2*60*1000;
+	// var restore_step1_time = 3*1000;
+	// var restore_mid_val = 0.2;
+	var restore_query_interval = false;
+	// var restore_step2_query_flag = false;
+	// var restore_count = 0;
+	var restore_pro_id = false;
+
+	var BACKUP_URL = "./data/system.backup.json";
+	var BACKUP_URL_NEW = $.su.url("/admin/firmware?form=config"); 
+
+	// var RESTORE_URL = "./data/system.restore.json";
+	// var RESTORE_URL_NEW = $.su.url("/admin/system/firmware?form=restore"); 
+
+	// var FACTORY_URL = "./data/system.factory.json";
+	// var FACTORY_URL_NEW = $.su.url("/admin/system/firmware?form=factory"); 
+
+
+	$("div.func-container").page({
+		title: $.su.CHAR.BACKUP.TITLE,
+		help: ""	//可能是个调用的id 也可能是个url
+	});
+
+	$("#backup_version_cnt").panel({
+		title: $.su.CHAR.BACKUP.BACKUPVERSION,
+		collapsible: false
+	});
+
+	$("#backup_cnt").panel({
+		title: $.su.CHAR.BACKUP.BACKUP,
+		collapsible: false
+	});
+	
+	/*$("input#current_version").textbox({
+		fieldLabel: $.su.CHAR.BACKUP.FIMWAREVERSION,
+		inputCls:'xxl',
+		readOnly:true
+	});*/
+	
+	$("#restore_cnt").panel({
+		title: $.su.CHAR.BACKUP.RESTORE,
+		collapsible: false
+	});
+	
+	$("#restore_note").html($.su.CHAR.BACKUP.RESTORE_WARN);
+
+	$("p#backupNote").html($.su.CHAR.BACKUP.BACKUPTIP);
+	$("p#restoreNote").html($.su.CHAR.BACKUP.RESTORETIP);
+	
+	
+	$("#file").file({
+		fieldLabel: $.su.CHAR.BACKUP.FILE,
+		allowBlank:false,
+		extension: "bin"
+	});
+
+	$("#backup-setting").form({
+		proxy:{url: BACKUP_URL_NEW},
+		formEnctype: "multipart/form-data",
+		traditional: true,
+		hiddenFrame: true,
+		autoLoad: false
+	});
+
+	$("#restore-setting").form({
+		// proxy:{url: "./data/system.restore.json"},
+		proxy:{url: BACKUP_URL_NEW},
+		formEnctype: "multipart/form-data",
+		traditional: true,
+		hiddenFrame: true,
+		fields: [
+			{"name": "archive"}
+		],
+		autoLoad: true
+	}).on("ev_loadData", function(e, data){
+		restore_total_time = Number(data.totaltime*1000 || restore_total_time);
+		factory_total_time = Number(data.totaltime*1000 || factory_total_time);
+	});
+
+	var restore_proxy = new $.su.Proxy({
+		url: BACKUP_URL_NEW
+	});
+	
+
+	$("#backup").button({
+		text: $.su.CHAR.BACKUP.BACKUPBTN,
+		cls: "submit",
+		handler: function(){
+			$("#backup-setting").form('submit', {operation:'backup'});
+		//	ipv4ProxyPppoe.read({operation:'connect'});
+		}
+	});
+
+	$("#restore").button({
+		text: $.su.CHAR.BACKUP.RESTOREBTN,
+		handler: function(){
+			// alert(11);
+			// $("div#restore-setting").form('submit', {operation:'restore'});
+			if($("#restore-setting").form('validate'))
+			{
+				$("#restore_alert_cnt").msg("show");
+			}
+			else
+			{
+				return false;
+			}
+			
+		//	ipv4ProxyPppoe.read({operation:'connect'});
+		},
+		cls: "submit"
+	});
+
+	/*
+	function restore_getResult()
+	{
+		restore_proxy.write({method:'check'}, function(data){
+		}, function(errcode){
+			
+		});
+	}
+	*/
+	var timeout = 0;
+	var rebootInterval = 0;
+	var isRebootFinish = false;
+
+	function restore_write()
+	{
+		var query_interval = false;
+		//console.log("restore write");
+		$("#restore-setting").form('submit',{operation:"restore"}, function(){
+
+		},function(errcode){
+			//console.log("errcode: ",errcode);
+			restore_hideMsg();
+			clearInterval(query_interval);
+			query_interval = false;
+			get_ret = true;
+			//clearTimeout(timeout);
+		},function(){
+			$("#restore_pro_cnt").msg("close");
+			clearInterval(query_interval);
+			query_interval = false;
+			get_ret = true;
+			//clearTimeout(timeout);
+		});
+		var protocol = window.location.protocol;
+		/*获取当前host，去掉端口部分*/
+		var host = window.location.host;
+		/*获取当前端口号*/
+		var port = window.location.port;
+		var is_http = true;
+		var ip = "192.168.0.1";
+		switch(protocol){
+			case "http:":
+				is_http = true;
+				if("" == port){
+					port = "80";
+					ip = host;
+				}else{
+					host = host.split(":");
+					ip = host[0];
+				}
+				break;
+			case "https:":
+				is_http = false;
+				if("" == port){
+					port = "443";
+					ip = host;
+				}else{
+					host = host.split(":");
+					ip = host[0];
+				}
+				break;
+			default:
+				break;
+		}
+		
+		var res_ip = ip;
+		var res_port = port;
+		var href = window.location;
+		var get_ret = false;		
+		if(!query_interval)
+		{
+			query_interval = setInterval(getResult,1000);
+		}
+		var timeout = false;
+		function getRebootResult()
+		{
+			var reboot_count = 0;
+			if(!timeout)
+			{
+		timeout = setTimeout(function() {
+			rebootInterval = setInterval(function(){
+				if(reboot_count >= 30){
+					clearInterval(rebootInterval);
+					location.href= href;
+				}
+				else{
+				$.ajax({
+				    url: "./login.html",
+				    async: true,
+				    dataType: "html",
+
+				    success: function(data){
+				    	isRebootFinish = true;
+				    },
+				    error: function(){
+				        isRebootFinish = false;
+				    }
+				});
+		        		    
+			    if(isRebootFinish){
+			    	clearInterval(rebootInterval);
+			    	location.href= "./login.html";
+			    }
+				reboot_count = reboot_count + 1;
+			 }
+			}, 1000);
+		}, 120*1000);
+			}
+		}
+		var get_result = new $.su.Proxy({
+			url: BACKUP_URL_NEW
+		});
+		function getResult()
+		{
+
+			get_result.write({method:"check_restore_finish",ip:ip}, function(data){
+				if(get_ret == false)
+				{
+					if(data.finish)
+					{
+						clearInterval(query_interval);
+						get_ret = true;
+						restore_hideMsg();
+						reboot_showMsg();
+						
+						res_ip = data.ip;
+						if(is_http)
+						{
+							res_port = data.http_port;
+							href = "http://";
+						}
+						else
+						{
+							res_port = data.https_port;
+							href = "https://";
+						}
+						href = href + res_ip + ":" + res_port;
+						//console.log(href);
+						getRebootResult();
+					}
+				}
+			});
+		}
+	}
+
+	function restore_hideMsg(){		
+		$("#restore_alert_cnt").hide();
+		$("#restore_alert_cnt").msg("close",function(){
+			$("#restore_alert_cnt").msg("showButtons");
+			$("#restore_confirm_cnt").show();
+			$("#restore_pro_cnt").hide();
+			restore_pro_bar.waitingbar("stop");
+		});
+	}
+	function reboot_showMsg(){		
+		$("#restore_alert_cnt").msg('hideButtons');
+		$('#restore_confirm_cnt').hide(); 
+		$("#reboot_pro_cnt").show();
+		reboot_pro_bar.waitingbar("run");
+		$("#restore_alert_cnt").msg("show");
+	}
+	$("#restore_failed_cnt").msg({
+		cls: 'warning reboot-confirm-size',
+		type: "alert"
+	});
+
+	$("#restore_alert_cnt").msg({
+		okHandler:function(){
+			$("#restore_alert_cnt").msg('hideButtons');
+            $('#restore_confirm_cnt').hide();
+            $("#restore_pro_cnt").show();
+            restore_pro_bar.waitingbar("run");
+			restore_write();
+			return false;
+		},
+		cancelHandler:function(){
+			return true;
+		},
+		cls: 'warning reboot-confirm-size',
+   	    closeBtn: false,
+		type: "confirm"
+	});
+
+
+	var restore_pro_bar  = $('input#restore_pro_bar').waitingbar({
+		fieldLabel: $.su.CHAR.BACKUP.RESTORE_TIP,//"正在恢复备份配置，系统将会重启，请不要做任何其他操作",
+		labelCls:"xxl"
+	});	
+
+	var reboot_pro_bar  = $('input#reboot_pro_bar').waitingbar({
+		fieldLabel:  $.su.CHAR.FIMWARE.REBOOT,
+		labelCls:"xxl"
+	});
+	$("#restore_confirm_content").html($.su.CHAR.BACKUP.RESTORE_CONFIRM_CONTENT);
+
+	var helpBackup = new $.su.Help({
+		container: "div#help_backup",
+		content: ["BACKUP_RESTORE"]
+	});
+});
+</script>
+</body>
+
+</html>

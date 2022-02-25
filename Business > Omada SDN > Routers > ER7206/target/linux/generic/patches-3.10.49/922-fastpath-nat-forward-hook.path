@@ -1,0 +1,29 @@
+--- a/net/netfilter/nf_conntrack_core.c	2019-12-23 14:23:44.020426112 +0800
++++ b/net/netfilter/nf_conntrack_core.c	2019-12-23 16:16:27.031425181 +0800
+@@ -64,6 +64,13 @@
+ extern char wan_name[IFNAMSIZ];
+ #endif
+ 
++#ifdef CONFIG_NF_FASTPATH_NAT_HOOK
++int (*fastpath_nat_forward_hook)(struct sk_buff *skb, struct nf_conn *ct, enum ip_conntrack_dir dir) __rcu __read_mostly;
++EXPORT_SYMBOL_GPL(fastpath_nat_forward_hook);
++int (*fastpath_nat_forward_on)(void) __rcu __read_mostly;
++EXPORT_SYMBOL_GPL(fastpath_nat_forward_on);
++#endif
++
+ int (*nfnetlink_parse_nat_setup_hook)(struct nf_conn *ct,
+ 				      enum nf_nat_manip_type manip,
+ 				      const struct nlattr *attr) __read_mostly;
+--- a/net/netfilter/Kconfig	2019-12-23 14:23:44.031426112 +0800
++++ b/net/netfilter/Kconfig	2019-12-23 16:06:50.850426060 +0800
+@@ -26,6 +26,10 @@
+ 	bool "Netfilter Shortcut"
+ 	default n
+ 
++config NF_FASTPATH_NAT_HOOK
++	bool "Netfilter fastpath nat hook"
++	default n
++
+ config NETFILTER_NETLINK
+ 	tristate
+ 

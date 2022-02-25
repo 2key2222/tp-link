@@ -1,0 +1,367 @@
+{
+  "build_config": {
+    "build_folder": ".",
+    "software_version": "1.1.1",
+    "firmware_format": "ER7206v1_un"
+  },
+  "partition-layout": [{
+    "disk-label": "oldnor",
+    "disk-size": "0x00400000",
+    "partition-table": [
+	  {
+        "name": "bootloader-factory",
+        "base": "0x00000000",
+        "size": "0x00200000",
+        "attr": "0x11111111",
+        "write_to_flash": true,
+        "write_to_up": false,
+        "encap_type": "raw",
+        "file_path": "../../tplink/u-boot/bootloader_3in1_OSG_PRO_factory_v1.bin"
+	  },
+      {
+        "name": "tddp",
+        "base": "0x00200000",
+        "size": "0x00020000",
+        "attr": "0x11111111",
+        "write_to_flash": true,
+        "write_to_up": false,
+        "encap_type": "raw",
+        "file_path": ""
+      },
+      {
+        "name": "log",
+        "base": "0x00220000",
+        "size": "0x00020000",
+        "attr": "0x11111111",
+        "write_to_flash": true,
+        "write_to_up": false,
+        "encap_type": "raw",
+        "file_path": ""
+      }
+	]
+  },{
+    "disk-label": "oldnand",
+    "disk-size": "0x02000000",
+    "partition-table": [
+      {
+        "name": "bootloader",
+        "base": "0x00000000",
+        "size": "0x00200000",
+        "attr": "0x11111111",
+        "write_to_flash": true,
+        "write_to_up": true,
+        "encap_type": "raw",
+        "file_path": "../../tplink/u-boot/bootloader_3in1_OSG_PRO_fs_v1.bin"
+      },
+      {
+        "name": "kernel",
+        "base": "0x00200000",
+        "size": "0x00400000",
+        "attr": "0x11111111",
+        "write_to_flash": true,
+        "write_to_up": true,
+        "encap_type": "raw",
+        "file_path": "openwrt-octeon-vmlinux.lzma"
+      },
+      {
+        "name": "rootfs",
+        "base": "0x00600000",
+        "size": "0x01300000",
+        "attr": "0x11111111",
+        "write_to_flash": true,
+        "write_to_up": true,
+        "encap_type": "raw",
+        "file_path": "openwrt-octeon-root.squashfs"
+      },
+      {
+        "name": "partition-table",
+        "base": "0x01900000",
+        "size": "0x00020000",
+        "attr": "0x11111111",
+        "write_to_flash": true,
+        "write_to_up": true,
+        "encap_type": "general-header",
+        "file_path": ""
+      },
+      {
+        "name": "device-info",
+        "base": "0x01920000",
+        "size": "0x00020000",
+        "attr": "0x11111111",
+        "write_to_flash": true,
+        "write_to_up": false,
+        "encap_type": "general-header",
+        "file_path": "device_info.oldnand.json"
+      },
+      {
+        "name": "support-list",
+        "base": "0x01940000",
+        "size": "0x00020000",
+        "attr": "0x11111111",
+        "write_to_flash": true,
+        "write_to_up": true,
+        "encap_type": "general-header",
+        "file_path": "support-list.oldnand.json"
+      },
+      {
+        "name": "firmware-info",
+        "base": "0x01960000",
+        "size": "0x00020000",
+        "attr": "0x11111111",
+        "write_to_flash": true,
+        "write_to_up": true,
+        "encap_type": "general-header",
+        "file_path": ""
+      },
+	  {
+        "name": "extra-para",
+        "base": "0x01980000",
+        "size": "0x00020000",
+        "attr": "0x11111111",
+        "write_to_flash": true,
+        "write_to_up": false,
+        "encap_type": "general-header",
+        "file_path": "extra-para.oldnand.json"
+      },
+      {
+        "name": "rootfs_data",
+        "base": "0x019a0000",
+        "size": "0x00560000",
+        "attr": "0x11111111",
+        "write_to_flash": true,
+        "write_to_up": false,
+        "encap_type": "raw",
+        "file_path": ""
+      },
+      {
+        "name": "panic-oops",
+        "base": "0x01f00000",
+        "size": "0x00100000",
+        "attr": "0x11111111",
+        "write_to_flash": true,
+        "write_to_up": false,
+        "encap_type": "raw",
+        "file_path": ""
+      }
+    ]
+  },{
+    "disk-label": "nor",
+    "disk-size": "0x00400000",
+    "partition-table": [
+	  {
+        "name": "bootloader-factory",
+        "base": "0x00000000",
+        "size": "0x00300000",
+        "attr": "0x22222222",
+        "write_to_flash": true,
+        "write_to_up": false,
+        "encap_type": "raw",
+        "file_path": "../../tplink/u-boot/bootloader_3in1_OSG_PRO_factory.bin"
+	  },
+	  {
+        "name": "device-info",
+        "base": "0x00300000",
+        "size": "0x00010000",
+        "attr": "0x22222222",
+        "write_to_flash": true,
+        "write_to_up": false,
+        "encap_type": "general-header",
+        "file_path": "device_info.json"
+      },
+      {
+        "name": "tddp",
+        "base": "0x00310000",
+        "size": "0x00010000",
+        "attr": "0x22222222",
+        "write_to_flash": true,
+        "write_to_up": false,
+        "encap_type": "raw",
+        "file_path": ""
+      },
+      {
+        "name": "extra-para",
+        "base": "0x00320000",
+        "size": "0x00010000",
+        "attr": "0x22222222",
+        "write_to_flash": true,
+        "write_to_up": false,
+        "encap_type": "general-header",
+        "file_path": "extra-para.json"
+      },
+      {
+        "name": "extra-para.b",
+        "base": "0x00330000",
+        "size": "0x00010000",
+        "attr": "0x22222222",
+        "write_to_flash": true,
+        "write_to_up": false,
+        "encap_type": "general-header",
+        "file_path": "extra-para.b.json"
+      },
+      {
+        "name": "log",
+        "base": "0x00340000",
+        "size": "0x000c0000",
+        "attr": "0x22222222",
+        "write_to_flash": true,
+        "write_to_up": false,
+        "encap_type": "raw",
+        "file_path": ""
+      }
+	]
+  },
+  {
+	"disk-label": "nand",
+    "disk-size": "0x08000000",
+	"disk-align": "0x20000",
+    "partition-table": [
+      {
+        "name": "partition-table",
+        "base": "0x00000000",
+        "size": "0x00020000",
+        "attr": "0x22222222",
+        "write_to_flash": false,
+        "write_to_up": true,
+        "encap_type": "general-header",
+        "file_path": "partition-table.json"
+      },
+      {
+        "name": "support-list",
+        "base": "0x00000000",
+        "size": "0x00020000",
+        "attr": "0x22222222",
+        "write_to_flash": false,
+        "write_to_up": true,
+        "encap_type": "general-header",
+        "file_path": "support-list.json"
+      },
+      {
+        "name": "bootloader",
+        "base": "0x00000000",
+        "size": "0x00200000",
+        "attr": "0x22222222",
+        "write_to_flash": false,
+        "write_to_up": false,
+        "encap_type": "raw",
+        "file_path": "../../tplink/u-boot/bootloader_3in1_OSG_PRO_fs.bin"
+      },
+      {
+        "name": "kernel",
+        "base": "0x00000000",
+        "size": "0x00800000",
+        "attr": "0x22222222",
+        "write_to_flash": false,
+        "write_to_up": false,
+        "encap_type": "raw",
+        "relative": "kernel@oldnand",
+        "file_path": ""
+      },
+      {
+        "name": "rootfs",
+        "base": "0x00000000",
+        "size": "0x02000000",
+        "attr": "0x22222222",
+        "write_to_flash": false,
+        "write_to_up": false,
+        "encap_type": "raw",
+        "relative": "rootfs@oldnand",
+        "file_path": ""
+      },
+      {
+        "name": "firmware-info",
+        "base": "0x00000000",
+        "size": "0x00020000",
+        "attr": "0x22222222",
+        "write_to_flash": false,
+        "write_to_up": false,
+        "encap_type": "general-header",
+        "relative": "firmware-info@oldnand",
+        "file_path": "firmware-info.json"
+      },
+      {
+        "name": "rootfs_data",
+        "base": "0x00000000",
+        "size": "0x00a00000",
+        "attr": "0x22222222",
+        "write_to_flash": false,
+        "write_to_up": false,
+        "encap_type": "raw",
+        "file_path": ""
+      },
+      {
+        "name": "bootloader.b",
+        "base": "0x00000000",
+        "size": "0x00200000",
+        "attr": "0x22222222",
+        "write_to_flash": false,
+        "write_to_up": true,
+        "encap_type": "raw",
+        "file_path": "../../tplink/u-boot/bootloader_3in1_OSG_PRO_fs.bin"
+      },
+      {
+        "name": "kernel.b",
+        "base": "0x00000000",
+        "size": "0x00800000",
+        "attr": "0x22222222",
+        "write_to_flash": false,
+        "write_to_up": true,
+        "encap_type": "raw",
+        "relative": "kernel@oldnand",
+        "file_path": ""
+      },
+      {
+        "name": "rootfs.b",
+        "base": "0x00000000",
+        "size": "0x02000000",
+        "attr": "0x22222222",
+        "write_to_flash": false,
+        "write_to_up": true,
+        "encap_type": "raw",
+        "relative": "rootfs@oldnand",
+        "file_path": ""
+      },
+      {
+        "name": "firmware-info.b",
+        "base": "0x00000000",
+        "size": "0x00020000",
+        "attr": "0x22222222",
+        "write_to_flash": false,
+        "write_to_up": true,
+        "encap_type": "general-header",
+        "relative": "firmware-info@oldnand",
+        "file_path": "firmware-info.json"
+      },
+      {
+        "name": "rootfs_data.b",
+        "base": "0x00000000",
+        "size": "0x00a00000",
+        "attr": "0x22222222",
+        "write_to_flash": false,
+        "write_to_up": false,
+        "encap_type": "raw",
+        "file_path": ""
+      },
+      {
+        "name": "firmware",
+        "base": "0x00000000",
+        "size": "0x07e00000",
+        "attr": "0x22222222",
+        "write_to_flash": true,
+        "write_to_up": false,
+        "encap_type": "ubi",
+        "file_path": "firmware.img",
+        "volume-table": "partition-table support-list #bootloader #kernel #rootfs #firmware-info rootfs_data #bootloader.b #kernel.b #rootfs.b #firmware-info.b rootfs_data.b,-p 128KiB -m 2048"
+      },
+      {
+        "name": "panic-oops",
+        "base": "0x07e00000",
+        "size": "0x00200000",
+        "attr": "0x22222222",
+        "write_to_flash": true,
+        "write_to_up": false,
+        "encap_type": "raw",
+        "file_path": ""
+      }
+    ]
+  }]
+}

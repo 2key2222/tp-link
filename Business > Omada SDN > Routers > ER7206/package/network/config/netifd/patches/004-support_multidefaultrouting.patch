@@ -1,0 +1,125 @@
+diff -Naur netifd_ori/interface-ip.c netifd_md/interface-ip.c
+--- netifd_ori/interface-ip.c	2015-09-08 15:55:17.000000000 +0800
++++ netifd_md/interface-ip.c	2015-09-08 16:02:11.957228579 +0800
+@@ -436,6 +436,7 @@
+ 		route->flags |= DEVROUTE_TYPE;
+ 	}
+ 
++        route->static_route = 1;
+ 	vlist_add(&ip->route, &route->node, route);
+ 	return;
+ 
+diff -Naur netifd_ori/interface-ip.h netifd_md/interface-ip.h
+--- netifd_ori/interface-ip.h	2015-09-08 15:55:17.000000000 +0800
++++ netifd_md/interface-ip.h	2015-09-08 16:01:24.389230699 +0800
+@@ -121,6 +121,7 @@
+ 	unsigned int sourcemask;
+ 	union if_addr addr;
+ 	union if_addr source;
++        int static_route;
+ };
+ 
+ struct device_source_table {
+diff -Naur netifd_ori/system-linux.c netifd_md/system-linux.c
+--- netifd_ori/system-linux.c	2014-09-24 15:02:13.000000000 +0800
++++ netifd_md/system-linux.c	2015-09-08 16:44:05.469116518 +0800
+@@ -1306,7 +1306,7 @@
+ 	return system_addr(dev, addr, RTM_DELADDR);
+ }
+ 
+-static int system_rt(struct device *dev, struct device_route *route, int cmd)
++/*static int system_rt(struct device *dev, struct device_route *route, int cmd)
+ {
+ 	int alen = ((route->flags & DEVADDR_FAMILY) == DEVADDR_INET4) ? 4 : 16;
+ 	bool have_gw;
+@@ -1411,8 +1411,90 @@
+ int system_del_route(struct device *dev, struct device_route *route)
+ {
+ 	return system_rt(dev, route, RTM_DELROUTE);
++}*/
++
++static int system_route_msg(struct device *dev, struct device_route *route, const char *type)
++{
++        char addr[64], gw[64] = " gw ", devstr[64] = "";
++        int af = system_get_addr_family(route->flags);
++        int alen = system_get_addr_len(route->flags);
++        static uint32_t zero_addr[4];
++        char route_cmd[128] = "";
++        char route_del[128] = {0};
++        int ret = 0;
++
++        if ((route->flags & DEVADDR_FAMILY) != DEVADDR_INET4)
++                return -1;
++        printf("mask:%d\n",route->mask);
++        if (!route->mask)
++                sprintf(addr, "default");
++        else
++        {
++                inet_ntop(af, &route->addr.in, addr, sizeof(addr));
++        }
++
++        if (memcmp(&route->nexthop.in, (void *) zero_addr, alen) != 0)
++                inet_ntop(af, &route->nexthop.in, gw + 4, sizeof(gw) - 4);
++        else
++                gw[0] = 0;
++
++        if (dev)
++                sprintf(devstr, " dev %s", dev->ifname);
++
++        if (route->metric > 0)
++                sprintf(devstr, " metric %d", route->metric);
++
++        printf( "route %s %s%s%s\n", type, addr, gw, devstr);
++
++        if (strcmp(addr, "default") && strcmp(type, "add") == 0) {
++            if (route->static_route)
++            {
++                sprintf(route_del, "route del -net %s/%d %s %s;", addr,route->mask, gw, devstr);
++            }
++            else
++                sprintf(route_del, "route del %s %s %s;", addr, gw, devstr);
++        }
++        else
++            route_del[0] = 0;
++
++        if (route->static_route)
++        {
++             sprintf(route_cmd, "%sroute %s -net %s/%d %s%s\n", route_del, type, addr,route->mask, gw, devstr);
++        }
++        else
++            sprintf(route_cmd, "%sroute %s %s%s%s\n", route_del, type, addr, gw, devstr);
++
++        printf("route_cmd:%s\n",route_cmd);
++        ret = system(route_cmd);
++        if(-1 == ret)
++        {
++            return -1;
++        }
++        else
++        {
++            if(WIFEXITED(ret))
++            {
++                if( 0 == WEXITSTATUS(ret))
++                {
++                    return 0;
++                }
++            }
++        }
++
++        return 0;
++}
++
++int system_add_route(struct device *dev, struct device_route *route)
++{
++        return system_route_msg(dev, route, "add");
++}
++
++int system_del_route(struct device *dev, struct device_route *route)
++{
++        return system_route_msg(dev, route, "del");
+ }
+ 
++
+ int system_flush_routes(void)
+ {
+ 	const char *names[] = {

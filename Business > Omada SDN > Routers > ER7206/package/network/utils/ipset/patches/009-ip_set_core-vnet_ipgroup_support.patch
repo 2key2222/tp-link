@@ -1,0 +1,63 @@
+--- a/kernel/net/netfilter/ipset/ip_set_core.c
++++ b/kernel/net/netfilter/ipset/ip_set_core.c
+@@ -550,17 +550,12 @@
+ 	return set;
+ }
+ 
+-int
+-ip_set_test(ip_set_id_t index, const struct sk_buff *skb,
+-	    const struct xt_action_param *par, struct ip_set_adt_opt *opt)
++static int
++ip_set_test_core(struct ip_set *set, const struct sk_buff *skb,
++	    const struct xt_action_param *par, struct net *net, struct ip_set_adt_opt *opt)
+ {
+-	struct ip_set *set = ip_set_rcu_get(
+-			dev_net(par->in ? par->in : par->out), index);
+ 	int ret = 0;
+ 
+-	BUG_ON(!set);
+-	pr_debug("set %s, index %u\n", set->name, index);
+-
+ 	if (opt->dim < set->type->dimension ||
+ 	    !(opt->family == set->family || set->family == NFPROTO_UNSPEC))
+ 		return 0;
+@@ -587,6 +582,39 @@
+ 	/* Convert error codes to nomatch */
+ 	return (ret < 0 ? 0 : ret);
+ }
++
++int
++ip_set_test(ip_set_id_t index, const struct sk_buff *skb,
++	    const struct xt_action_param *par, struct ip_set_adt_opt *opt)
++{
++	int ret = 0;
++	int init_ret = 0;
++
++	/* find ipset in this namespace */
++	struct net *net = dev_net(par->in ? par->in : par->out);
++	struct ip_set *set = ip_set_rcu_get(net, index);
++
++	/* if not init_net, find again in init_set */
++	struct ip_set *init_set = NULL;
++	ip_set_id_t init_index = IPSET_INVALID_ID;
++	if (set && net != &init_net)
++	{
++		init_index = ip_set_get_byname(&init_net, set->name, &init_set);
++	}
++
++	BUG_ON(!set);
++	pr_debug("set %s, index %u, init_index %u\n", set->name, index, init_index);
++
++	/* ipset test */
++	ret = ip_set_test_core(set, skb, par, net, opt);
++	if (IPSET_INVALID_ID != init_index)
++	{
++		init_ret = ip_set_test_core(init_set, skb, par, &init_net, opt);
++		ip_set_put_byindex(&init_net, init_index);
++	}
++
++	return (ret || init_ret);
++}
+ EXPORT_SYMBOL_GPL(ip_set_test);
+ 
+ int

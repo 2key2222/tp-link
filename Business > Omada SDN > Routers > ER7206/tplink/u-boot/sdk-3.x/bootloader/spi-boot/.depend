@@ -1,0 +1,18 @@
+spi-boot.o: spi-boot.c spi-config.h tinylibc.h \
+ ../stage1-common/cvmx-abi.h octeon.h ../stage1-common/cvmx-swap.h \
+ ../stage1-common/cvmx-warn.h ../stage1-common/octeon-model.h \
+ ../stage1-common/cvmx-address.h ../stage1-common/cvmx-abi.h \
+ ../stage1-common/cvmx-platform.h ../stage1-common/cvmx-csr-enums.h \
+ ../stage1-common/cvmx-ciu2-defs.h ../stage1-common/cvmx-ciu3-defs.h \
+ ../stage1-common/cvmx-fpa-defs.h ../stage1-common/cvmx-lmcx-defs.h \
+ ../stage1-common/cvmx-mio-defs.h ../stage1-common/cvmx-rst-defs.h \
+ ../stage1-common/cvmx-rnm-defs.h ../stage1-common/cvmx-access.h \
+ ../stage1-common/cvmx-asm.h ../stage1-common/octeon-feature.h \
+ ../stage1-common/cvmx-ciu-defs.h ../stage1-common/cvmx-ipd-defs.h \
+ ../stage1-common/cvmx-utils.h ../stage1-common/cvmx-tim-defs.h \
+ ../stage1-common/cvmx-clock.h ../stage1-common/cvmx.h \
+ ../stage1-common/octeon-fpa.h ../stage1-common/octeon.h \
+ ../stage1-common/cvmx-access-native.h ../stage1-common/cvmx-asm.h \
+ ../stage1-common/cvmx-bootloader.h spi.h tiny_stdio.c \
+ ../stage1-common/ctype.h tinylibc.h ../stage1-common/div64.h tinylibc.c \
+ octeon.h spi.c ../stage1-common/cvmx.h cvmx-l2c-defs.h

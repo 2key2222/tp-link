@@ -1,0 +1,11 @@
+--- a/Makefile	2015-09-08 10:11:24.617878503 +0800
++++ b/Makefile	2015-09-08 10:13:08.889102000 +0800
+@@ -78,7 +78,7 @@
+ 	@cd $(BUILDDIR) && $(MAKE) \
+  top="$(top)" \
+  build_cflags="$(version) $(dbus_cflags) $(idn_cflags) $(ct_cflags) $(lua_cflags) $(nettle_cflags)" \
+- build_libs="$(dbus_libs) $(idn_libs) $(ct_libs) $(lua_libs) $(sunos_libs) $(nettle_libs) $(gmp_libs)" \
++ build_libs="$(dbus_libs) $(idn_libs) $(ct_libs) $(lua_libs) $(sunos_libs) $(nettle_libs) $(gmp_libs) -ldl" \
+  -f $(top)/Makefile dnsmasq 
+ 
+ mostly_clean :

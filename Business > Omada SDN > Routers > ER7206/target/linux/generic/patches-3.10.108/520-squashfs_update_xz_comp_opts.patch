@@ -1,0 +1,20 @@
+--- a/fs/squashfs/xz_wrapper.c	2018-09-03 10:14:53.000000000 +0800
++++ b/fs/squashfs/xz_wrapper.c	2019-06-30 17:07:18.300852739 +0800
+@@ -39,8 +39,15 @@ struct squashfs_xz {
+ };
+ 
+ struct comp_opts {
+-	__le32 dictionary_size;
+-	__le32 flags;
++#if defined(CONFIG_SUPPORT_OPENWRT)
++			__le32 flags;
++			__le16 bit_opts;
++			__le16 fb;
++			__le32 dictionary_size;
++#else
++			__le32 dictionary_size;
++			__le32 flags;
++#endif
+ };
+ 
+ static void *squashfs_xz_init(struct squashfs_sb_info *msblk, void *buff,

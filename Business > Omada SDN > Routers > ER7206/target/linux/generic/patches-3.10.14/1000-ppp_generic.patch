@@ -1,0 +1,11 @@
+--- a/drivers/net/ppp/ppp_generic.c	2014-07-18 06:58:15.000000000 +0800
++++ b/drivers/net/ppp/ppp_generic.c	2015-10-19 19:27:24.218750000 +0800
+@@ -1078,7 +1078,7 @@
+ 	dev->hard_header_len = PPP_HDRLEN;
+ 	dev->mtu = PPP_MRU;
+ 	dev->addr_len = 0;
+-	dev->tx_queue_len = 3;
++	dev->tx_queue_len = 0;
+ 	dev->type = ARPHRD_PPP;
+ 	dev->flags = IFF_POINTOPOINT | IFF_NOARP | IFF_MULTICAST;
+ 	dev->features |= NETIF_F_NETNS_LOCAL;

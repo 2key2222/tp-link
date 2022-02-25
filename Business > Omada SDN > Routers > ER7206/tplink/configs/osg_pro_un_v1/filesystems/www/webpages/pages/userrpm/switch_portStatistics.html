@@ -1,0 +1,254 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Switch_portStatistics</title>
+</head>
+
+<body>
+<div class="func-container">
+	<div id="sPSR_list">
+		
+	        <div class="container grid-container">
+	            <div class="container grid-header-container">
+	                <table border="0" cellspacing="0" cellpadding="0">
+	                    <tr class="grid-header-tr">
+	                        <th class="grid-header grid-header-1" style="width:181px;">
+	                            <span id="para" class="content"></span>
+	                        </th>
+	                        <th class="grid-header grid-header-2">
+	                            <span class="content">Port1</span>
+	                        </th>
+	                        <th class="grid-header grid-header-3">
+	                            <span class="content">Port2</span>
+	                        </th>
+	                        <th class="grid-header grid-header-4">
+	                            <span class="content">Port3</span>
+	                        </th>
+	                        <th class="grid-header grid-header-5">
+	                            <span class="content">Port4</span>
+	                        </th>
+	                        <th class="grid-header grid-header-6">
+	                            <span class="content">Port5</span>
+	                        </th>
+	                    </tr>
+	                </table>
+	            </div>
+	            <div id="forform"></div>
+	            <div class="grid-content-container-outer">
+	                <div class="grid-content-container" style="overflow:visible;">
+	                    <table border="0" cellspacing="0" cellpadding="0" id="table">
+	                        
+	                    </table>
+	                </div>
+	            </div>
+	        </div>
+	        <div id="button-wrap" style="margin-top:30px;">
+	            <button id="refresh_btn"></button>
+	            <button id="clear_btn"></button>
+	        </div>     
+	
+	 
+	</div>
+
+	 <div id="sPS_help"></div>
+</div>
+
+<script type="text/javascript">
+try{
+    $
+}catch(e){
+    location.href = "/";
+};
+
+$(document).ready(function(e){
+	var URL_SPS_LIST = $.su.url("/admin/switch?form=statistic");
+
+	var spsProxy = new $.su.Proxy({
+        url: URL_SPS_LIST
+    });
+
+    $("#sPSR_list").panel({
+        title: $.su.CHAR.SWITCH.TITLE_LIST,
+        collapsible: false
+    });
+
+    $("span#para").html($.su.CHAR.SWITCH.PARA);
+    $("button#refresh_btn").html($.su.CHAR.OPERATION.REFRESH);
+	$("button#clear_btn").html($.su.CHAR.OPERATION.CLEAR);
+
+    var rowHead = [
+    	$.su.CHAR.SWITCH.UNICAST,
+    	$.su.CHAR.SWITCH.BROAD,
+    	$.su.CHAR.SWITCH.PAUSE,
+    	$.su.CHAR.SWITCH.MULTI,
+    	$.su.CHAR.SWITCH.ALL,
+    	$.su.CHAR.SWITCH.LITTLE,
+    	$.su.CHAR.SWITCH.NORMAL,
+    	$.su.CHAR.SWITCH.BIG,
+    	$.su.CHAR.SWITCH.UNICAST,
+    	$.su.CHAR.SWITCH.BROAD,
+    	$.su.CHAR.SWITCH.PAUSE,
+    	$.su.CHAR.SWITCH.MULTI,
+    	$.su.CHAR.SWITCH.ALL
+    ];
+
+
+    /*构造表格*/
+    var inHTML = "";
+
+    for(var i = 1; i <= 13; i++){
+        inHTML += "<tr class=\"grid-content-tr row-"+i+"\">";
+        if(1 == i){
+        	inHTML +=      "<td rowspan=\"8\" class=\"grid-content-td grid-content-td-0-0\" style=\"width:80px;\">";
+	        inHTML +=      		$.su.CHAR.SWITCH.RECEIVE;
+	        inHTML +=      "</td>";
+        }
+        if(9 == i){
+        	inHTML +=      "<td rowspan=\"5\" class=\"grid-content-td grid-content-td-0-0\" style=\"width:80px;\">";
+	        inHTML +=      		$.su.CHAR.SWITCH.TRANSMIT;
+	        inHTML +=      "</td>";
+        }
+        inHTML +=      "<td class=\"grid-content-td grid-content-td-0-1\" style=\"width:100px;\">";
+        inHTML +=      		rowHead[i-1];
+        inHTML +=      "</td>";
+        for(var j = 1; j <= 5; j++){
+        	inHTML +=      "<td class=\"grid-content-td grid-content-td-"+j+"\">";
+	        inHTML +=      "</td>";
+        }
+        inHTML += "</tr>";
+    }
+    
+    $("#table").html(inHTML);	
+
+    var forform = $("#forform").form({
+        showPrompt:true
+    });
+
+    function transdata(data){
+    	data = parseInt(data); 
+
+    	if(data > 1024*1024*1024*1024){
+    		data = data / (1024*1024*1024*1024);
+    		data = data.toFixed(3);
+    		data = data.toString() + " TB";
+    		return data;
+    	}else if(data > 1024*1024*1024){
+    		data = data / (1024*1024*1024);
+    		data = data.toFixed(3);
+    		data = data.toString() + " GB";
+    		return data;
+    	}else if(data > 1024*1024){
+    		data = data / (1024*1024);
+    		data = data.toFixed(1);
+    		data = data.toString() + " MB";
+    		return data;
+    	}
+
+    	return data.toString() + " B";
+    }
+
+
+    function loadData(){
+    	$.su.loading.show();
+    	spsProxy.read({
+	        'method':'get',
+	        'params': {},
+	        'id':1
+	    },function(data){
+	    	
+	    	$(data).each(function(i, obj){
+	    		var row1 = $("table").find("tr.row-1");
+	    		$(row1).find("td.grid-content-td-"+obj.port).html(obj.rx_Unicast);
+
+	    		var row2 = $("table").find("tr.row-2");
+	    		$(row2).find("td.grid-content-td-"+obj.port).html(obj.rx_Broad);
+
+	    		var row3 = $("table").find("tr.row-3");
+	    		$(row3).find("td.grid-content-td-"+obj.port).html(obj.rx_Pause);
+
+	    		var row4 = $("table").find("tr.row-4");
+	    		$(row4).find("td.grid-content-td-"+obj.port).html(obj.rx_Multi);
+
+	    		var row5 = $("table").find("tr.row-5");
+	    		$(row5).find("td.grid-content-td-"+obj.port).html(transdata(obj.rx_All));
+
+	    		var row6 = $("table").find("tr.row-6");
+	    		$(row6).find("td.grid-content-td-"+obj.port).html(obj.rx_Litte);
+
+	    		var row7 = $("table").find("tr.row-7");
+	    		$(row7).find("td.grid-content-td-"+obj.port).html(obj.rx_Normal);
+
+	    		var row8 = $("table").find("tr.row-8");
+	    		$(row8).find("td.grid-content-td-"+obj.port).html(obj.rx_Big);
+
+	    		var row9 = $("table").find("tr.row-9");
+	    		$(row9).find("td.grid-content-td-"+obj.port).html(obj.tx_Unicast);
+
+	    		var row10 = $("table").find("tr.row-10");
+	    		$(row10).find("td.grid-content-td-"+obj.port).html(obj.tx_Broad);
+
+	    		var row11 = $("table").find("tr.row-11");
+	    		$(row11).find("td.grid-content-td-"+obj.port).html(obj.tx_Pause);
+
+	    		var row12 = $("table").find("tr.row-12");
+	    		$(row12).find("td.grid-content-td-"+obj.port).html(obj.tx_Multi);
+
+	    		var row13 = $("table").find("tr.row-13");	    		
+	    		$(row13).find("td.grid-content-td-"+obj.port).html(transdata(obj.tx_All));
+	    		
+	    	});
+
+			$.su.loading.hide();
+	    },function(error){
+	    	$.su.loading.hide();
+	    	forform.form("prompt", false, $.su.CHAR.SWITCH.LOAD_FAILED);//"加载失败");
+	    },function(fail){
+	    	$.su.loading.hide();
+	    	forform.form("prompt", false, $.su.CHAR.SWITCH.LOAD_FAILED);//"加载失败");
+	    });
+    }
+
+    loadData();
+
+
+    $("button#refresh_btn").button({
+    	cls:"inline",
+    	handler:function(){
+    		loadData();
+    	}
+    });
+
+    $("button#clear_btn").button({
+    	cls:"inline",
+    	handler:function(){
+    		$.su.loading.show();
+    		spsProxy.write({
+		        'method':'set',
+		        'params': {},
+		        'id':1
+		    },function(data){
+		    	loadData();
+		    },function(error){
+		    	$.su.loading.hide();
+		    	forform.form("prompt", false, $.su.CHAR.SWITCH.CLEAR_FAILED);//"清空失败");
+		    	loadData();
+		    },function(fail){
+		    	$.su.loading.hide();
+		    	forform.form("prompt", false, $.su.CHAR.SWITCH.CLEAR_FAILED);//"清空失败");
+		    });
+		    
+    	}
+    });
+
+	var IFSTAT_help = new $.su.Help({
+		container: "div#sPS_help",
+		content: ["SWITCH_PORT_STATISTICS"]
+	});
+});
+</script>
+</body>
+
+</html>
+
+			

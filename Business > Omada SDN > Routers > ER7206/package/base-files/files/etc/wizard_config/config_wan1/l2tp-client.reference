@@ -1,0 +1,26 @@
+config global global                     
+        option  l2tphellointerval  10
+        option  lcpechointerval  10
+
+
+config lac client1                                                         
+        option  username  l2tp
+        option  password  l2tp
+        option  lns 192.168.38.245
+        option  outif  eth0
+        option  ipsecenc  yes                     
+        option  presharekey  123456789
+        option  workmode  route
+        option  remotesubnet  192.168.11.0/24
+        option  enable  yes 
+		
+config lac client2                                                         
+        option  username  l2tp
+        option  password  l2tp
+        option  lns 192.168.38.245
+        option  outif  eth1
+        option  ipsecenc  yes                     
+        option  presharekey  123456789
+        option  workmode  nat
+        option  remotesubnet  192.168.100.0/24
+        option  enable  yes 

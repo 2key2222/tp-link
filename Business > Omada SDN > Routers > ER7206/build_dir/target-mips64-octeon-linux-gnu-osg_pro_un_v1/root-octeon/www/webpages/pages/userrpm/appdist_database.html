@@ -1,0 +1,274 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>APPDIST_DATABASE</title>
+<style type="text/css">
+</style>
+</head>
+
+<body>
+<div class="func-container">
+    <div id="appdist_addr_settings">
+        <form id="appdist_addr_database">
+            <input type="text"  id="appdist_datebase_version" name="appdist_datebase_version" value="" />
+             <input id="file" name="appdist_database" type="file" /> 
+            <button type="button" id="input" name="input"></button>        
+        </form>
+    </div>
+
+    <div id="appdist_alert_cnt">
+        <h4 class="title" id="confirm_cnt">
+            <span class="icon"></span>
+            <span class="text" id="confirm_content"></span>
+        </h4>
+        <div id="appdist_pro_cnt" class="reboot-loading-msg hidden">
+            <input id="appdist_pro_bar" type="text" />
+        </div>
+    </div>
+
+    <div id="appdist_failed_cnt">
+        <h4 class="title">
+            <span class="icon" ></span>
+            <span class="text" id="error_str"></span>
+        </h4>
+    </div>
+	
+    <div id="appdist_database_help">    
+	</div> 
+</div>
+
+<script type="text/javascript">
+try{
+    $
+}catch(e){
+    location.href = "/";
+};
+
+$(document).ready(function(e){    
+    var existInterface=[];   
+  
+    var URL_APPDIST_DATABASE_LIST = $.su.url("/admin/appdist_db?form=input_database");
+
+    var appdist_query_interval = false;
+    var appdist_pro_id = false;
+    var appdist_total_time = 20*1000;
+
+    var appdist_databse_Proxy = new $.su.Proxy({
+        url: URL_APPDIST_DATABASE_LIST
+    });
+	
+    $("#appdist_addr_settings").panel({
+        title: $.su.CHAR.APP_DATABASE.DB_UPDATE,//"应用特征数据库升级",
+        collapsible: false
+    });
+
+    $("input#appdist_datebase_version").textbox({
+        fieldLabel:$.su.CHAR.APP_DATABASE.CURRENT_VERSION,//"当前数据库版本",
+        inputCls:'xxl',
+        readOnly:true
+    });
+
+
+    $("#file").file({
+        fieldLabel: $.su.CHAR.APP_DATABASE.PATH,//"数据库路径",
+        allowBlank:false,
+        extension: "bin"
+    });
+/*	
+	function appdist_getResult()
+    {
+        appdist_databse_Proxy.write({method:'check'}, function(data){
+        }, function(errcode){
+            // console.dir(arguments);
+            function showAlertMag()
+            {
+                $("#appdist_failed_cnt").msg("show", function(){
+                });
+            }
+            if(appdist_pro_id){
+                clearTimeout(appdist_pro_id);
+                appdist_pro_id = false;
+            }
+            function hideProMsg()
+            {
+                clearTimeout(appdist_query_interval);
+                appdist_pro_bar.progressbar("stop");
+                appdist_pro_bar.progressbar("reset");
+                appdist_query_interval = false;
+
+                $("#appdist_alert_cnt").hide();
+                $("#appdist_alert_cnt").msg("close", function(){
+                    $("#appdist_alert_cnt").msg('showButtons');
+                    $('#confirm_cnt').show();
+                    $("#appdist_pro_cnt").hide();
+                });
+            }
+
+            //console.log(errcode);
+            // console.log(errcode);
+            if(errcode == "err_form")
+            {
+                $("#error_str").html($.su.CHAR.ERROR["00000001"]);
+                hideProMsg();
+                showAlertMag();
+            }
+            else if(errcode == "err_check")
+            {
+                
+                $("#error_str").html($.su.CHAR.ERROR["00000002"]);
+                hideProMsg();
+                showAlertMag();
+            }
+            else if(errcode == "err_sizex")
+            {
+                $("#error_str").html($.su.CHAR.ERROR["00000003"]);
+                hideProMsg();
+                showAlertMag();
+            }
+            else if(errcode == "err_flash")
+            {
+                $("#error_str").html($.su.CHAR.ERROR["00000004"]);
+                hideProMsg();
+                showAlertMag();
+            }
+            else if(errcode == "err_reboot")
+            {
+                $("#error_str").html($.su.CHAR.ERROR["00000005"]);
+                hideProMsg();
+                showAlertMag();
+            }
+            else if(errcode == "err_other")
+            {
+                $("#error_str").html($.su.CHAR.ERROR["00000006"]);
+                hideProMsg();
+                showAlertMag();
+            }
+            else if(errcode == "err_failed")
+            {
+                $("#error_str").html($.su.CHAR.ERROR["00000136"]);
+                hideProMsg();
+                showAlertMag();
+            }
+            else
+            {
+                //正常
+                hideProMsg();
+            }       
+        });
+    }
+*/
+    function appdist_write()
+    {
+        var timeout = 0;
+        appdist_pro_bar.waitingbar("run");
+        $("#appdist_addr_database").form('submit',{operation:"update"}, function(){
+        },function(){
+        },function(){
+        });
+        var check = setInterval(function(){
+            appdist_databse_Proxy.write({method:'check'}, function(data){
+                appform.form('prompt', true, $.su.CHAR.APP_DATABASE.UPLOAD_SUCCESS);//"上传成功");
+                appdist_pro_bar.waitingbar("stop");
+                appdist_pro_bar.waitingbar("reset");
+                $("#appdist_alert_cnt").msg("close");
+                clearInterval(check);
+                appform.form("load");
+            },function(errcode){
+                appform.form('prompt', false, $.su.CHAR.APP_DATABASE.OPERATION_FAIL);//"操作失败");
+                appdist_pro_bar.waitingbar("stop");
+                appdist_pro_bar.waitingbar("reset");
+                $("#appdist_alert_cnt").msg("close");
+                clearInterval(check);
+                appform.form("load");
+            },function(){
+                appform.form('prompt', false, $.su.CHAR.APP_DATABASE.UPLOAD_FAIL);//"上传失败");
+                appdist_pro_bar.waitingbar("stop");
+                appdist_pro_bar.waitingbar("reset");
+                $("#appdist_alert_cnt").msg("close");
+                appform.form("load");
+            });
+        },2000);
+    }
+
+    $("#appdist_failed_cnt").msg({
+        cls: 'warning reboot-confirm-size',
+        type: "alert"
+    });
+
+    $("#appdist_alert_cnt").msg({
+        okHandler:function(){
+            $("#appdist_alert_cnt").msg('hideButtons');
+            $('#confirm_cnt').hide();    
+            $("#appdist_pro_cnt").show();
+
+            appdist_write();    
+            return false;
+        },
+        // cls: "m warning",
+        cancelHandler:function(){
+            return true;
+        },
+        cls: 'warning reboot-confirm-size',
+        closeBtn: false,
+        type: "confirm"
+    });
+
+    $("button#input").button({
+        text: $.su.CHAR.APP_DATABASE.INPUT_BUTTON,
+        cls:"m",
+        handler: function(){
+            if($("#appdist_addr_database").form('validate'))
+            {
+                $("#appdist_alert_cnt").msg("show");
+                $("#appdist_alert_cnt").msg('showButtons');
+                $('#confirm_cnt').show();
+                $("#appdist_pro_cnt").hide();
+            }
+            else
+            {
+                return false;
+            }   
+        },
+        cls: "submit"
+    });
+
+    var appdist_pro_bar  = $('input#appdist_pro_bar').waitingbar({
+        fieldLabel:$.su.CHAR.APP_DATABASE.IMPORT_TIP,//"导入数据库期间请不要做其他操作,请稍等",
+        labelCls:"xxxl"
+    }); 
+
+    $("#confirm_content").html($.su.CHAR.APP_DATABASE.CONFIRM);//"确认导入应用特征数据库？");
+
+    var appform = $("#appdist_addr_database").form({
+        proxy: appdist_databse_Proxy,
+        formEnctype: "multipart/form-data",
+        traditional: true,
+        hiddenFrame: true,
+        fields: [
+            {name: "appdist_datebase_version", mapping: "appdist_datebase_version"},
+            {name: "appdist_database", mapping: "appdist_database"}            
+        ],
+        autoLoad: true
+    });
+/*
+    $.su.app.runningModule.addUnloadHandler(function(){
+        if(appdist_query_interval)
+        {
+            clearInterval(appdist_query_interval);
+            appdist_query_interval = false;
+        }
+        appdist_pro_bar.progressbar("stop");
+        appdist_pro_bar.progressbar("reset");
+
+    });
+*/
+	 var helpIspRouting = new $.su.Help({
+        container: "div#appdist_database_help",
+        content: ["APPDIST_DB"]
+    });
+});
+</script>
+</body>
+
+</html>

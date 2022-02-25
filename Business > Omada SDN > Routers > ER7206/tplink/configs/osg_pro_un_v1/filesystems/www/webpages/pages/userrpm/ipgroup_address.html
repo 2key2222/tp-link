@@ -1,0 +1,424 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>IPgroup address</title>
+<style type="text/css">
+</style>
+</head>
+
+<body>
+<div class="func-container">
+    <div id="ipgroup-address-list">
+        <div id="ipgroup-address-grid">
+        </div>
+    </div>
+	
+	<div id="own_editor">	
+		<input class = "hidden" id = "flag" name = "flag" value = "user" >
+		<div id = "group_name" >
+			<input id = "name" name = "name" >
+		</div>
+		<input id = "type" name = "type" >
+		<div id="ip_range" style="display:block"> 
+			<input id = "scope_start" name = "scope_start" >
+			<input id = "scope_end" name = "scope_end" >
+		</div>
+		
+		<input id = "scope" name = "scope" >
+		<div id ="ip_mask" style="display:block" > 
+			<input id = "scope_mask"  name = "scope_mask" >
+		</div>
+		<div id = "group_comment" >
+			<input id = "comment" name = "comment" >
+		</div>
+	</div>
+    <div id="ipgroup_address_help"> </div>
+</div>
+
+<script type="text/javascript">
+try{
+    $
+}catch(e){
+    location.href = "/";
+};
+
+
+function maskIntToMaskAddr(int_mask)
+{
+    var mask_addr = "";
+    if(parseInt(int_mask,10) < 0 || parseInt(int_mask,10) > 32)
+    {
+        return mask_addr;
+    }
+    var mask_num = parseInt(int_mask,10)/8;
+    var i = 0;
+    for(;i<=(mask_num-1);i++)
+    {
+        if(i != 0) mask_addr += ".";
+        mask_addr += "255";
+    }
+    if(mask_num < 4)
+    {
+        var maskTmp = parseInt(int_mask,10)%8;
+        maskTmp = (255 << (8-maskTmp)) & 255;
+        if( mask_num >= 1 )mask_addr += ".";
+        mask_addr += maskTmp.toString();
+        for(i = mask_num+1 ; i<4 ; i++)
+        {
+            if(i!=0)mask_addr += ".";
+            mask_addr += "0";
+        }
+    }
+    return mask_addr;
+}
+
+function logicAnd(int_a,int_b)
+{
+	var binary_a = parseInt(int_a,10).toString(2);
+	var binary_b = parseInt(int_b,10).toString(2);
+	var len = (binary_a.length < binary_b.length) ? binary_a.length : binary_b.length;
+	if (len != 32)
+	{
+		return int_a&int_b;
+	}
+	var cut = Math.abs(binary_a.length - binary_b.length);
+	var temp = '';
+	for (var i = 0 ; i < cut; i++)
+	{
+		temp = temp + '0';
+	}	
+	if (binary_a.length > binary_b.length)
+	{
+		binary_b = temp + binary_b;
+	}
+	else
+	{
+		binary_a = temp + binary_a;
+	}
+	var res = 0;
+	for (var i=len-1; i >= 0; i--)
+	{
+		if (binary_a.charAt(i)&binary_b.charAt(i) == 1)
+		{
+			if((len-1-i) >24)
+			{
+				res = Number(res) + 256*Number((1<<(len-9-i)));
+			}
+			else
+			{
+				res = Number(res) + Number((1<<(len-1-i)));
+			}
+		}
+	}
+	return res;
+}
+
+$(document).ready(function(e){
+		var URL_IPGROUP_ADRRESS = $.su.url("/admin/ipgroup?form=ipscope_reservation");
+			$("#ipgroup-address-list").panel({
+					title: $.su.CHAR.IPGROUP_ADDRESS.PANEL_LIST
+			});
+
+			var ipgroupListProxy = new $.su.Proxy({
+					url: URL_IPGROUP_ADRRESS
+			});
+				
+			$("input#name").textbox({
+				fieldLabel: $.su.CHAR.IPGROUP_ADDRESS.NAME,
+				allowBlank:false,
+				maxLength:32,
+				vtype: "name"
+			});
+		
+		$("input#type").radio({
+			fieldLabel: $.su.CHAR.IPGROUP_ADDRESS.IP_TYPE,
+			columns:2,
+			cls: "inline-block",
+			items:[
+				{inputValue:"range", boxlabel: $.su.CHAR.IPGROUP_ADDRESS.IP_TYPE_ZONE, checked: true},
+				{inputValue:"mask", boxlabel: $.su.CHAR.IPGROUP_ADDRESS.IP_TYPE_MASK}
+			] 
+		}).on('ev_change', function(e, oldValue, newValue){
+			if(newValue === 'range'){
+				$('div#ip_range').form("show");
+				$('div#ip_mask').form("hide");
+				$("input#scope").textbox('enable');
+				$("input#scope_mask").subnet('disable');
+				$('input#scope_start').textbox('enable');
+				$('input#scope_end').textbox('enable');
+			}
+			else if(newValue === "mask"){
+				$('div#ip_range').form("hide");
+				$('div#ip_mask').form("show");
+				$("input#scope").textbox('disable');
+				$("input#scope_mask").subnet('enable');
+				$('input#scope_start').textbox('disable');
+				$('input#scope_end').textbox('disable');
+			}
+		});
+		
+		$("input#scope_start").textbox({
+			fieldLabel: "",
+			allowBlank:false,
+			maxLength:32,
+			cls: "inline",
+			vtype: "ip",
+			tips: "-&nbsp",
+			tipsCls: "xxxxs",
+			separator:""
+		});
+		
+		$("input#scope_end").textbox({
+			labelCls:"xxxxs",
+			fieldLabel: "",
+			allowBlank:false,
+			maxLength:32,
+			cls: "inline",
+			vtype: "ip",
+			separator:""
+		});
+
+		$("input#scope").textbox({
+			labelCls:"xxxxs",
+			fieldLabel: "",
+			maxLength:32,
+			cls: "inline"
+		}).textbox("hide");
+
+		$("input#scope_mask").subnet({
+			fieldLabel: "",
+			editor:
+			{
+				xtype: "subnet",				
+				allowBlank: false 
+			}
+		});
+		$("div#ip_mask").form('hide')
+	
+		$("input#comment").textbox({
+			fieldLabel: $.su.CHAR.IPGROUP_ADDRESS.COMMENT,
+			vtype:"string_visible_allow_blank",
+			//cls: 'inline',
+			tips:$.su.CHAR.IPGROUP_ADDRESS.CHOICE
+		});
+	
+	
+        var ipGroupGrid = $("#ipgroup-address-grid").grid({
+        	maxRulesProperty: "max_user",
+			editor: {
+				validator:function()
+				{
+					var editor  = $(ipGroupGrid.grid("getEditor"));
+					var ruleName = editor.find(".text-text[name=name]").textbox("getValue");
+					var subnet  = editor.find("[name=scope_mask]").subnet("getValue");
+					
+					var ipArray = subnet.split('/');
+					var ipAddr	= ipArray[0];
+					var mask    = ipArray[1];
+					
+					var store 	= ipGroupGrid.grid("getStore");
+					var keyProperty = store.keyProperty;
+					var grid_array  = store.data;
+					
+					var editingId = editor.editor("getEditingId"); 
+					var typeValue = $("input#type").radio("getValue");	
+					if (typeValue != "mask"){
+						if (!$("#scope_start").textbox("validate")){
+							return false;
+						}
+						if (!$("#scope_end").textbox("validate")){
+							return false;
+						}					
+					}
+	
+					if($.isArray(grid_array) && grid_array.length > 0)
+					if($.isArray(grid_array) && grid_array.length > 0)
+					{
+						for(var k = 0; k < grid_array.length;k++)
+						{
+							var data = grid_array[k];
+							
+							if(data[keyProperty] == editingId)
+							{
+								continue;
+							}
+							else if(data["name"] == ruleName)
+							{
+								$($("div#ipgroup-address-grid").grid("getEditor")).form('setError', $.su.CHAR.IPGROUP_ADDRESS.NAME_CONFLICT);//"地址名称不能重复！");
+								return false;
+							}
+						}	
+					}
+
+					var typeValue = $("input#type").radio("getValue");
+					$('input#scope').textbox("enable");
+					if (typeValue == 'range'){
+						var ipStart = $("input#scope_start").textbox("getValue");
+						var ipEnd = $("input#scope_end").textbox("getValue");
+						if ($.su.func.ipToInt(ipStart) > $.su.func.ipToInt(ipEnd)){
+							$('input#scope_end').textbox('setError', $.su.CHAR.IPGROUP_ADDRESS.IP_ERR);//"结束地址应大于起始地址");
+							return false;
+						}
+						else{
+							$("input#scope").textbox("setValue", ipStart + '-' + ipEnd);
+							return true;
+						}
+					}
+					
+					var ip_sample_x = logicAnd($.su.func.ipToInt(ipAddr),$.su.func.ipToInt(maskIntToMaskAddr(mask)));
+					var ip_net_ip   = $.su.func.intToIp(ip_sample_x);
+					var calSubnet   = ip_net_ip + '/' + mask;
+					editor.find("[name=scope_mask]").subnet("setValue",calSubnet);
+					$("input#scope_start").textbox("disable");
+					$("input#scope_end").textbox("disable");
+					return true;
+				},
+				content:"#own_editor",
+				fields: [
+					{name: "flag"},
+					{name: "name"},
+					{name: "type"},
+					{name: "scope"},
+					{name: "scope_mask"},
+					{name: "comment"}
+				]
+			},
+			store:{
+				proxy: ipgroupListProxy,
+				fields: [
+					{name: "flag"},
+					{name: "name"},
+					{name: "type"},
+					{name: "scope"},
+					{name: "scope_mask"},
+					{name: "comment"}
+				],
+				autoLoad: true
+			},
+			paging:[],
+			columns: [
+				{
+					xtype: "checkcolumn",
+					width: $.su.CHAR.SETTING.IPGROUP_ADDRESS.CHECK_COLUMN_WIDTH
+				},
+				{
+					xtype: "rownumberer",
+					width: $.su.CHAR.SETTING.IPGROUP_ADDRESS.ROW_NUMBER_WIDTH
+				},
+				{
+					text: $.su.CHAR.IPGROUP_ADDRESS.NAME,
+					width: $.su.CHAR.SETTING.IPGROUP_ADDRESS.NAME_WIDTH,
+					dataIndex: "flag",
+					hidden: true
+				},
+				{
+					text: $.su.CHAR.IPGROUP_ADDRESS.NAME,
+					width: $.su.CHAR.SETTING.IPGROUP_ADDRESS.NAME_WIDTH,
+					dataIndex: "name"
+				},
+				{
+					text: $.su.CHAR.IPGROUP_ADDRESS.IP_TYPE,
+					width: $.su.CHAR.SETTING.IPGROUP_ADDRESS.IP_TYPE_WIDTH,
+					dataIndex: "type",
+					renderer: function(v){
+						if( v == "range")
+						{
+							return $.su.CHAR.IPGROUP_ADDRESS.IP_TYPE_ZONE;
+						}
+						else if( v == "mask")
+						{
+							return $.su.CHAR.IPGROUP_ADDRESS.IP_TYPE_MASK;
+						}
+						else
+						{
+							return "---";
+						}
+					}
+                },
+				{
+					text: $.su.CHAR.IPGROUP_ADDRESS.IP_TYPE_ZONE,//"IP段",
+					width: $.su.CHAR.SETTING.IPGROUP_ADDRESS.IP_WIDTH,
+					dataIndex: "scope"
+				},
+				{
+					text: $.su.CHAR.IPGROUP_ADDRESS.IP_TYPE_MASK,//"IP/MASK",
+					width: $.su.CHAR.SETTING.IPGROUP_ADDRESS.IP_MASK_WIDTH,
+					dataIndex: "scope_mask"
+				},
+				{
+					text: $.su.CHAR.IPGROUP_ADDRESS.COMMENT,
+					width: $.su.CHAR.SETTING.IPGROUP_ADDRESS.COMMENT_WIDTH,
+					dataIndex: "comment",
+					xtype:"comment"
+				},
+                {
+					xtype: "settings",
+					width: $.su.CHAR.SETTING.IPGROUP_ADDRESS.SETTING_WIDTHs
+			    }
+            ],
+            operation: 'prompt|add|delete'
+        }).on("ev_load", function(e, data, others){
+			if ( others )
+			{
+                maxrules = others.max_user;
+			}
+			for (var i=0; i<data.length; i++){
+				if ( data[i].flag === "system" )
+				{
+					$("div#ipgroup-address-grid").grid('disableRow',i);
+				}				
+			}
+		});
+
+		var editor = $("div#ipgroup-address-grid").grid("getEditor");
+		$(editor).on("ev_startEdit", function(e, index, key){
+		$("input#scope_start").textbox("enable").textbox("setNormal");
+		$("input#scope_end").textbox("enable").textbox("setNormal");
+		$('input#name').textbox('enableStyle');
+		if(index == "add")
+		{
+			$('div#ip_mask').form("hide");
+			$('div#ip_range').form("show");
+			$("input#scope").textbox('disable');
+			$("input#scope_mask").subnet('disable');
+			$("input#scope_start").textbox("enable").textbox("setValue", "");
+			$("input#scope_end").textbox("enable").textbox("setValue", "");
+		}else {
+			//var ifbox = $(editor).find('.text-container');
+			//console.log(ifbox[0]);
+			$('input#name').textbox('disableStyle');
+			var scope= $("input#scope").textbox("getValue");
+			var typeValue = $("input#type").radio("getValue");
+			if(typeValue === 'range'){
+				$('div#ip_mask').form("hide");
+				$('div#ip_range').form("show");	
+				$("input#scope").textbox('enable');
+				$("input#scope_mask").subnet('disable');
+				$("input#scope_start").textbox("enable");
+				$("input#scope_end").textbox("enable");
+				$("input#scope_start").textbox("setValue", scope.split('-')[0]);
+				$("input#scope_end").textbox("setValue", scope.split('-')[1]);
+			}
+			else if(typeValue === "mask")
+			{
+				$('div#ip_mask').form("show");
+				$('div#ip_range').form("hide");
+				$("input#scope").textbox('disable');
+				$("input#scope_mask").subnet('enable');
+				//$("input#scope").textbox("setValue", "");
+				//$("input#scope_mask").subnet("setValue", "");
+				$("input#scope_start").textbox("disable");
+				$("input#scope_end").textbox("disable");
+			}
+		}
+	});
+   var helpIpgroupGrid = new $.su.Help({
+        container: "div#ipgroup_address_help",
+        content: ["IPGROUP_ADDRESS_SETTING"]
+    });/* TODO */
+});
+</script>
+</body>
+
+</html>

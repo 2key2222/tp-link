@@ -1,0 +1,21 @@
+--- a/net/ipv6/ip6_input.c	2014-07-18 06:58:15.000000000 +0800
++++ b/net/ipv6/ip6_input.c	2016-10-26 13:47:37.033441353 +0800
+@@ -46,6 +46,8 @@
+ #include <net/xfrm.h>
+ 
+ 
++int ipv6_pass_through_enable = 0;
++EXPORT_SYMBOL(ipv6_pass_through_enable);
+ 
+ int ip6_rcv_finish(struct sk_buff *skb)
+ {
+@@ -69,7 +71,7 @@
+ 	struct inet6_dev *idev;
+ 	struct net *net = dev_net(skb->dev);
+ 
+-	if (skb->pkt_type == PACKET_OTHERHOST) {
++	if (!ipv6_pass_through_enable && skb->pkt_type == PACKET_OTHERHOST) {
+ 		kfree_skb(skb);
+ 		return NET_RX_DROP;
+ 	}
+

@@ -1,0 +1,233 @@
+#!/bin/sh
+
+TMP_CFG="switch"
+
+# read switch reg
+# $1:reg address
+swconfig_reg_read()
+{
+	val=`swconfig dev switch0 reg get $1`
+	tmp=${val##*\[}
+	echo ${tmp%%\]*}
+}
+
+swconfig_reg_write()
+{
+	val=`swconfig dev switch0 reg set $1 $2 2>/dev/null`
+}
+
+swconfig_phy_reg_read()
+{
+	val=`swconfig dev switch0 phy_reg get $1 $2`
+	tmp=${val##*\[}
+	echo ${tmp%%\]*}
+}
+
+swconfig_phy_reg_write()
+{
+	swconfig dev switch0 phy_reg set $1 $2-$3 	
+}
+
+
+# read switch reg
+# $1:switch id
+# $2:reg address
+swconfig_reg_read_switch()
+{
+	val=`swconfig dev $1 reg get $2`
+	tmp=${val##*\[}
+	echo ${tmp%%\]*}
+}
+
+# $1:switch id
+# $2:reg address
+# $3:reg value
+swconfig_reg_write_switch()
+{
+	val=`swconfig dev $1 reg set $2 $3 2>/dev/null`
+}
+
+# $1:switch id
+# $2:phy_index
+# $3:reg offset
+swconfig_phy_reg_read_switch()
+{
+	val=`swconfig dev $1 phy_reg get $2 $3`
+	tmp=${val##*\[}
+	echo ${tmp%%\]*}
+}
+
+# $1:switch id
+# $2:phy_index
+# $3:reg offset
+# $3:reg value
+swconfig_phy_reg_write_switch()
+{
+	swconfig dev $1 phy_reg set $2 $3-$4 	
+}
+
+# read switch type
+swconfig_switch_type_read()
+{
+	val=`swconfig dev switch0 help`
+	tmp=${val%%)*}
+	echo ${tmp##*(} | cut -d " " -f 2
+}
+
+swconfig_port_info()
+{
+	val=`swconfig dev switch0 port 1 show 2>/dev/null`
+}
+
+# clear all mibs counter
+swconfig_reset_all_mibs()
+{
+	echo "flush all" >>/tmp/test.lua
+	val=`swconfig dev switch0 set reset_mibs 2>/dev/null`
+}
+
+# clear port mib counter
+# $1:portid
+swconfig_reset_port_mib()
+{
+	val=`swconfig dev switch0 port $1 set reset_mib 2>/dev/null`
+}
+
+# get port mib counter
+# $1:portid
+swconfig_get_port_mib()
+{
+	swconfig dev switch0 port $1 get mib
+	#val=`swconfig dev switch0 port $1 get mib`
+	#echo $val
+}
+
+# set bit $2 of $1 to $3
+set_bit_value()
+{
+	local value=$1
+	local bit=$2
+	local val=$3
+	local tmp=1
+
+	echo $(($(($value|$(($tmp << $bit)))) & $(($(($val << $bit)) ^ $((~$(($tmp << $bit))))))))
+
+}
+
+# get bit $2 of $1
+get_bit_value()
+{
+	local value=$1
+	local bit=$2
+	local tmp=1
+
+	echo $(($(($(($tmp << $bit)) & $value)) >> $bit))
+}
+
+#$1:port ID
+#for Realtek 8370MB, like as WVR458/WAR458
+port_map_manual()
+{
+	local phy_id
+
+	case $1 in
+		"1")
+			phy_id=1
+			;;
+		"2")
+			phy_id=0
+			;;
+		"3")
+			phy_id=3
+			;;
+		"4")
+			phy_id=2
+			;;
+		"5")	
+			phy_id=5
+			;;
+		"6")
+			phy_id=4		
+			;;
+		"7")
+			phy_id=7
+			;;
+		"8")
+			phy_id=6
+			;;
+		"9")
+			phy_id=9
+			;;
+		*)		
+			;;
+	esac
+
+	echo "$phy_id"
+}
+
+# get physical port ID
+# $1:port_id
+get_phy_port_id()
+{
+	local phy_id=0
+	local section="port"$1
+
+	phy_id=`uci get switch.port_map.$section 2>/dev/null`
+
+	# unlikely...
+	if [ -z "$phy_id" ];then
+		#wvr450/wvr900/wvr1300...
+		phy_id=$(($1-1))		
+	fi
+
+	echo $phy_id
+}
+
+# get PHY index
+# $1: port_id
+get_PHY_index()
+{
+	local phy_index=0
+	local section="port"$1
+
+	phy_index=`uci get switch.phy_map.$section 2>/dev/null`
+
+	echo $phy_index
+}
+
+# get switch dev
+# $1: port_id
+get_switch_dev()
+{
+	local switch_dev
+	local section="port"$1
+
+	switch_dev=`uci get switch.$section.switch_dev 2>/dev/null`
+
+	echo $switch_dev
+}
+
+# get phy_index
+# $1: port_id
+get_phy_index()
+{
+	local phy_index
+	local section="port"$1
+
+	phy_index=`uci get switch.$section.phy_index 2>/dev/null`
+
+	echo $phy_index
+}
+
+# get physical port ID
+# $1:port_id
+get_port_index()
+{
+	local port_index
+	local section="port"$1
+
+	port_index=`uci get switch.$section.port_id 2>/dev/null`
+
+	echo $port_index
+}
+

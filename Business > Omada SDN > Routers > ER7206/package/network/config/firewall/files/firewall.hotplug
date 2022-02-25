@@ -1,0 +1,45 @@
+#!/bin/sh
+# This script is executed as part of the hotplug event with
+# HOTPLUG_TYPE=iface, triggered by various scripts when an interface
+# is configured (ACTION=ifup) or deconfigured (ACTION=ifdown).  The
+# interface is available as INTERFACE, the real device as DEVICE.
+
+[ "$DEVICE" == "lo" ] && exit 0
+
+. /lib/functions.sh
+. /lib/firewall/core.sh
+. /lib/zone/zone_api.sh
+
+if [[ -z $INTERFACE ]]; then
+	[ -z $DEVICE ] && exit 0
+	INTERFACE=$(zone_get_iface_bydev $DEVICE)
+fi
+
+[ -z $INTERFACE ] && exit 0
+
+iface_v6=$(echo $INTERFACE | grep "v6")
+
+#echo "INTERFACE=$INTERFACE,DEVICE=$DEVICE" >> /tmp/fw.log
+
+fw_init
+#fw_is_loaded || exit 0
+
+case "$ACTION" in
+	ifup)
+		if [[ -n "$iface_v6" ]]; then
+			fw_event_interface_v6 "$INTERFACE" add "$DEVICE"
+		else
+			fw_event_interface "$INTERFACE" add "$DEVICE"
+		fi
+	;;
+	ifdown)
+		if [[ -n "$iface_v6" ]]; then
+			fw_event_interface_v6 "$INTERFACE" del "$DEVICE"
+		else
+			fw_event_interface "$INTERFACE" del "$DEVICE"
+		fi
+	;;
+	ifupdate)
+		# do nothing
+	;;
+esac

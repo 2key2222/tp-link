@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <style type="text/css">
+        .key-wrapper{
+            margin: 0px 5px 5px 0;
+        }
+
+        .margin-24-top{
+            margin-top: 24px;
+        }
+    </style>
+</head>
+<body>
+<div id="func_settings">
+    <form id="func_settings_f">
+        <input id="radio_id" name="radio_id" type="hidden" value="1"/>
+        <input id="mac_filter_enable" name="enable"/>
+        <input id="scope" name="ssid_slt"/>
+        <input id="mac_filter_mode" name="mode"/>
+    </form>
+    <div class="margin-24-top">
+        <button id="func_settings_submit" type="button"></button>
+    </div>
+</div>
+<div id="rule_list">
+    <div id="rule_list_g"></div>
+</div>
+
+
+<div id="add_rule">
+    <input id="radio_id_editor" name="radio_id" type="hidden" value="1"/>
+    <input id="scope_editor" name="ssid_slt" type="hidden" value="0"/>
+    <input id="key_index" name="key_index" type="hidden" value="0"/>
+    <input id="add_rule_mac" name="txt_mac_addr"/>
+    <input id="add_rule_describe" name="txt_macf_info"/>
+</div>
+
+<div id="wireless-mac-filter"></div>
+
+<script type="application/javascript">
+//<![CDATA[
+try {
+    $
+} catch (e) {
+    location.href = "/";
+}
+;
+$(document).ready(function (e) {
+    var radio_id = "1";
+    var macFilterUrl = "/admin/wlan_macfilter?form=config";
+    var macFilterProxy = new $.su.Proxy({url: $.su.url(macFilterUrl)});
+    var ruleUrl = "/admin/wlan_macfilter?form=rules";
+    var ruleProxy = new $.su.Proxy({url: $.su.url(ruleUrl)});
+
+    var inputCls = "xxl";
+
+    $("#radio_id").val(radio_id);
+    $("#radio_id_editor").val(radio_id);
+
+    function refreshGlobal(method){
+        var data = {params: {}};
+        if(method == "get"){
+            $.extend(data.params, {radio_id: radio_id});
+            macFilterProxy.read(data, function(data){
+                funcSetting.refresh(data);
+            });
+        }else if(method == "set"){
+            $.extend(data.params, funcSetting.getData(), {radio_id: radio_id});
+            macFilterProxy.write(data, function(data){
+                funcSetting.refresh(data);
+                funcSetting.$elements.$form.form("prompt", true, $.su.CHAR.OPERATION.FORM_SAVED);
+            });
+        }
+    };
+
+    var funcSetting = (function(){
+        var $scope = $("#scope"),
+                $enable = $("#mac_filter_enable"),
+                $mode = $("#mac_filter_mode"),
+                $submit = $("#func_settings_submit"),
+                $form = $("#func_settings_f"),
+                $panel = $("#func_settings");
+
+        $scope.combobox({
+            fieldLabel: $.su.CHAR.WIRELESS_MACFILTER.FILTER_ZONE,
+            multiSelect:true,
+            allowBlank: false,
+            inputCls: inputCls,
+            alwaysTrigger: true,
+            value: "1"
+        });
+
+        var enable = $("#mac_filter_enable").checkbox({
+            fieldLabel: $.su.CHAR.WIRELESS_MACFILTER.MACFILTER_SETTING,
+            items:[
+                {boxlabel: $.su.CHAR.OPERATION.ENABLE, inputValue:'on', uncheckedValue: "off"}
+            ]
+        });
+
+        $mode.combobox({
+            fieldLabel: $.su.CHAR.WIRELESS_MACFILTER.FILTER_RULE,
+            multiSelect:false,
+            allowBlank: false,
+            inputCls: inputCls,
+            alwaysTrigger: true,
+            items: [
+                {name: $.su.CHAR.WIRELESS_MACFILTER.FILTER_RULE_WHTIE, value: "1", selected: true},
+                {name: $.su.CHAR.WIRELESS_MACFILTER.FILTER_RULE_BLACK, value: "2"},
+            ]
+        })
+
+        $form.form({
+            fields: [
+                {name: "ssid_slt", mapping: "ssid_slt"},
+                {name: "enable", mapping: "enable"},
+                {name: "mode", mapping: "mode"}
+            ]
+        });
+
+        $submit.button({
+            fieldLabel: null,
+            text: $.su.CHAR.OPERATION.SAVE,
+            cls: 'submit',
+            handler: function(data) {
+                $.su.loading.show();
+                var slt = $scope.combobox("validate");
+                if (slt) {
+                    refreshGlobal("set");
+                    $.su.loading.hide();
+                }
+                else {
+                    $.su.loading.hide();
+                    return false;
+                }
+            }
+        });
+
+        $panel.panel({
+            title: $.su.CHAR.WIRELESS_MACFILTER.MACFILTER_SETTING,
+            help: $("#wireless-mac-filter")
+        });
+
+        return {
+            $elements:{
+                $form : $form
+            },
+            refresh: function(jsonData){
+                //$form.form("loadData", jsonData);
+                var items = jsonData.items;
+                $scope.combobox("loadData", items);
+                $scope.combobox("setValue", jsonData.ssid_slt);
+                $enable.checkbox("setValue", jsonData.enable);
+                $mode.combobox("setValue", jsonData.mode);
+            },
+            getData: function(){
+                return $form.form("serialize");
+            }
+        }
+    })();
+
+
+    var ruleAdder = (function(){
+        var $mac = $("#add_rule_mac"),
+                $desc = $("#add_rule_describe");
+
+        $mac.textbox({
+            fieldLabel: $.su.CHAR.WIRELESS_MACFILTER.MAC_ADDRESS,
+            allowBlank:false,
+            vtype: "mac",
+            validator: function(v){
+                var data = ruleList.$elements.$grid.grid("getStore").data;
+
+                for(var i in data){
+                    if(data[i].txt_mac_addr.toUpperCase() == v.toUpperCase() && $mac.data("oldData").toUpperCase() != v.toUpperCase()){
+                        return "mac地址已存在";
+                    }
+                }
+                return true;
+            }
+        });
+
+        $desc.textbox({
+            fieldLabel: $.su.CHAR.WIRELESS_MACFILTER.NOTE,
+            allowBlank:true,
+            tips: $.su.CHAR.WIRELESS_MACFILTER.NOTE_TIPS
+        });
+
+
+    })();
+
+    var ruleList = (function(){
+        var $panel = $("#rule_list"),
+                $grid = $("#rule_list_g");
+
+        $grid.grid({
+            maxRulesProperty: "max_rules",
+            editor: {
+                content:"#add_rule",
+                fields: [
+                    {name: "txt_mac_addr"},
+                    {name: "txt_macf_info"}
+                ]
+            },
+            store:{
+                proxy: ruleProxy,
+                fields: [
+                    {name: "txt_mac_addr", mapping:"txt_mac_addr"},
+                    {name: "txt_macf_info", mapping:"txt_macf_info"}
+                ],
+                autoLoad: true
+            },
+            columns: [
+                {
+                    xtype: "checkcolumn",
+                    width: $.su.CHAR.SETTING.IPGROUP_ADDRESS.CHECK_COLUMN_WIDTH
+                },
+                {
+                    xtype: "rownumberer",
+                    width: $.su.CHAR.SETTING.IPGROUP_ADDRESS.ROW_NUMBER_WIDTH
+                },
+                {
+                    text: $.su.CHAR.WIRELESS_MACFILTER.MAC_ADDRESS,
+                    width: $.su.CHAR.SETTING.IPGROUP_ADDRESS.NAME_WIDTH,
+                    dataIndex: "txt_mac_addr"
+                },
+                {
+                    text: $.su.CHAR.WIRELESS_MACFILTER.NOTE,
+                    width: $.su.CHAR.SETTING.IPGROUP_ADDRESS.NAME_WIDTH,
+                    dataIndex: "txt_macf_info"
+                },
+                {
+                    xtype: "settings",
+                    width: $.su.CHAR.SETTING.IPGROUP_ADDRESS.SETTING_WIDTH
+                }
+            ],
+            operation: 'prompt|add|delete'
+        });
+
+        var $editor = $($grid.grid('getEditor')),
+                $store = $($grid.grid('getStore'));
+        $editor.on('ev_startEdit', function(e, index, key){
+            var gridData = $grid.grid("getStore").data;
+
+            if(index != "add"){
+                $("#key_index").val(gridData[index].key_index);
+            }
+
+            var $mac = $("#add_rule_mac");
+            $mac.data("oldData", $mac.textbox("getValue"));
+        });
+
+        $editor.on('ev_submit', function(){
+            $.su.loading.show();
+        }, function() {
+            $.su.loading.hide();
+        });
+        $store.on('ev_datachanged', function(){
+            setTimeout(function(){
+                $.su.loading.hide();
+            }, 200);
+        });
+
+        $panel.panel({
+            title: $.su.CHAR.WIRELESS_MACFILTER.MACFILTER_LIST
+        })
+
+        return {
+            reloadGrid: function(data, callback){
+                var interfaceStore = $grid.grid('getStore');
+                var $interfaceEditor = $($grid.grid('getEditor'));
+
+                if($interfaceEditor.editor('isEditing')){
+                    $interfaceEditor.editor('cancelEdit');
+                }
+                interfaceStore.keyLength = 0;
+                interfaceStore.load(data, callback);
+            },
+            $elements: {
+                $grid: $grid
+            }
+        }
+    })();
+
+    refreshGlobal("get");
+
+    var helpInfo = new $.su.Help({
+        container: "#wireless-mac-filter",
+        content: ["WIRELESS_MACFILTER", "WIRELESS_MACFILTER_LIST"]
+    });
+});
+</script>
+</body>
+</html>

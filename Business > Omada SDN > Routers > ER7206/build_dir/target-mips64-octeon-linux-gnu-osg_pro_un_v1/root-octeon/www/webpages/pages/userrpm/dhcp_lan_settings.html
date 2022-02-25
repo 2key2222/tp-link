@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+</head>
+<body>
+<div id="lan_settings">
+    <form id="lan_settings_f">
+        <input id="ipaddr" name="ipaddr"/>
+        <input id="netmask" name="netmask"/>
+       <!-- <input id="dhcpEnable" name="dhcpEnable"/> -->
+	    <input id="vlanid" name="vlanid" />
+       <button id="submit_btn"></button>
+    </form>
+</div>
+
+<div id="confirm-msg">
+    <h4 class="title">
+        <span class="icon"></span>
+        <span class="text" id="confirm-msg-text"></span>
+    </h4>
+</div>
+
+
+<div id="frame-msg">
+    <iframe id="login-frame"  name="login-frame" ></iframe>
+    <a href="#" id="login-a" target="login-frame">jump</a>
+</div>
+<div id="interface-lan-help"></div>
+
+<script type="application/javascript">
+    //<![CDATA[
+    try {
+        $
+    } catch (e) {
+        location.href = "/";
+    }
+    ;
+$(document).ready(function (e) {
+    var lanSettingsUrl = "/admin/dhcps?form=lan",
+        lanSettingsProxy = new $.su.Proxy({url: $.su.url(lanSettingsUrl)});
+    var URL_INTERFACE =$.su.url("/admin/interface?form=status2");
+    var INTERFACE_PROXY = new $.su.Proxy({
+            url: URL_INTERFACE
+        });
+    var URL_LOGOUT = $.su.url("/admin/system?form=logout");
+    var oldUrl = "";
+    var oldMask = "";
+	var oldVlan = 0
+    var IP_ARR = [];
+    var jumping = false;
+
+    var logoutProxy = new $.su.Proxy({
+        url: URL_LOGOUT,
+        autoLoad: false
+    });
+
+    
+    var ip = $("#ipaddr").textbox({
+        fieldLabel: $.su.CHAR.LAN.IPADDR,//"IP地址",
+        allowBlank:false,
+        vtype: "ip"
+    });
+
+ 
+
+    var mask = $("#netmask").textbox({
+        fieldLabel: $.su.CHAR.LAN.SUBNET_MASK,//"子网掩码",
+        allowBlank:false,
+        vtype: "netmask"
+    });
+
+    $('#vlanid').combobox({
+        fieldLabel: $.su.CHAR.INTERFACE.MANAGEVLAN,
+        alwaysTrigger: false,
+        items:[]
+    })
+
+    var setting_form = $("#lan_settings_f").form({
+        submitBtn: "#submit_btn",
+        proxy: lanSettingsProxy,
+        fields: [
+            {name: "ipaddr", mapping: "ipaddr"},
+            {name: "netmask", mapping: "netmask"},
+			{name: "vlanid", mapping: "vlanid"}
+           // {name: "dhcpEnable", mapping: "dhcpEnable"}
+        ]/*,
+        callback: function(){
+            var h = function(){
+                if (localStorage){
+                    localStorage.setItem("token", "");
+                }
+                location.href = "http://" + $ip.textbox("getValue");
+            };
+            if(!oldUrl || $ip.textbox("getValue") != oldUrl){
+//                      logoutProxy.write({}, h, h);
+                h();
+            }
+        }
+        */ 
+    }).on("ev_loadData", function(e, data){
+        if(data){
+			vlanitems = []
+            //console.log(data)
+            oldUrl = data.ipaddr;
+            oldMask = data.netmask;
+			if (data.vlantable){
+				for (var i = 0; i < data.vlantable.length; i++) {
+					data.vlantable[i] = data.vlantable[i].replace(/t/, "")
+					vlanitems.push({value:data.vlantable[i], name:data.vlantable[i]})
+				}
+			}
+			if (data.vlanid){
+				oldVlan = data.vlanid
+				vlanitems.push({value:"0", name:"---"})
+				$('#vlanid').combobox('loadData', vlanitems)
+				$('#vlanid').combobox('setValue', data.vlanid);
+			} else {
+				oldVlan = 0
+				$('#vlanid').combobox('loadData', vlanitems)
+			}
+        }
+
+        if (jumping)
+            return;
+
+        INTERFACE_PROXY.read({}, function(data){
+            var interface_data = data.normal;
+            IP_ARR = [];
+            for(var i = 0; i < interface_data.length; i++){
+                var interface_obj = {};
+                interface_obj.ipaddr = interface_data[i].ipaddr;
+                interface_obj.netmask = interface_data[i].netmask;
+                interface_obj.iface = interface_data[i].t_name;
+                if(interface_obj.ipaddr){
+                    IP_ARR.push(interface_obj);
+                }
+                
+            }
+        },function(error){},function(fail){});
+    });
+
+    $("#lan_settings").panel({title: $.su.CHAR.LAN.INTERFACE});//"接口设置"
+
+    var frameMsg = $("#frame-msg").msg({
+        closeBtn: true,
+        cls:"",
+        type: 'window'
+    }).msg("hide");
+
+
+
+    function cal_mask_length(mask){
+        if(!mask){
+            return 0;
+        }
+        var mask_str = mask.split(".");
+        var mask_length = 0;
+        for(var i = 0; i < mask_str.length; i++){
+            mask_str[i] = parseInt(mask_str[i]).toString(2); 
+            mask_length += mask_str[i].replace(/0/g, "").length;
+        }
+        return mask_length;
+    }
+
+    var submit_btn = $("#submit_btn").button({
+        text:$.su.CHAR.OPERATION.SAVE,//"设置",
+        cls:"submit",
+        handler:function(e){
+            if(!ip.textbox("validate") || !mask.textbox("validate")){
+                return false;
+            }
+            if((oldUrl == ip.textbox("getValue") && mask.textbox("getValue") == oldMask)
+				&& (oldVlan == $('#vlanid').combobox("getValue"))){
+                ip.textbox("setError", $.su.CHAR.LAN.LAN_ERR1);//"IP地址没有更改");
+                return false;
+            }
+
+            var my_ip = ip.textbox("getValue");
+            var my_mask =  mask.textbox("getValue");
+            var my_mask_length = cal_mask_length(my_mask);
+
+            var my_ip_int = $.su.func.ipToInt(my_ip);
+            var my_mask_int = $.su.func.ipToInt(my_mask);
+            if ((((my_ip_int & my_mask_int)>>>0) == my_ip_int) || (my_ip_int==((my_ip_int | ~my_mask_int)>>>0))) {
+                ip.textbox("setError", $.su.CHAR.LAN.LAN_ERR3);
+                return false;
+            }
+
+            for(var i = 0; i < IP_ARR.length; i++){
+                if(IP_ARR[i].iface.match("WAN")){
+                    var lan_ip = IP_ARR[i].ipaddr;
+                    var lan_mask = IP_ARR[i].netmask;
+                    var lan_mask_length = cal_mask_length(lan_mask);
+                    var smaller_mask = my_mask_length < lan_mask_length ? my_mask : lan_mask;
+                    smaller_mask = $.su.func.ipToInt(smaller_mask);
+                    if(($.su.func.ipToInt(lan_ip) & smaller_mask) == ($.su.func.ipToInt(my_ip) & smaller_mask)){
+                        ip.textbox("setError", $.su.CHAR.LAN.LAN_ERR2);//"LAN口IP地址不能与WAN口IP地址处于同一子网");
+                        return false;
+                    }
+                }
+
+            }
+			if(oldUrl != ip.textbox("getValue") || mask.textbox("getValue") != oldMask)
+				confirmMsg.msg("show");
+			else {
+				setting_form.form("submit",{}, function(data){
+				});
+				return false;
+			}
+        }
+    });
+    
+    var loginGetatt = 0;
+    function loginGet(url){
+        loginGetatt++;
+        setTimeout(function() {
+            document.getElementById("login-a").click();
+            if(loginReady || loginGetatt > 4){
+                window.location.href = url;
+            }else{
+                loginGet(url);
+            }
+        }, 3000);
+    }
+
+    var loginReady = false;
+    var confirmMsg = $("div#confirm-msg").msg({
+        type: "prompt",
+        cls: 'reboot-confirm-size',
+        closeBtn: false,
+        okHandler: function(e){    
+            $.su.loading.show();
+            setting_form.form("submit",{},function(data){
+                $.su.loading.hide();
+                var protocol = window.location.protocol;
+                /*获取当前host，去掉端口部分*/
+                var host = window.location.host;
+                /*获取当前端口号*/
+                var port = window.location.port;
+                var is_http = true;
+                var localIP = "192.168.0.1";
+                switch(protocol){
+                    case "http:":
+                        is_http = true;
+                        if("" == port){
+                            port = "80";
+                            localIP = host;
+                        }else{
+                            host = host.split(":");
+                            localIP = host[0];
+                        }
+                        break;
+                    case "https:":
+                        is_http = false;
+                        if("" == port){
+                            port = "443";
+                            localIP = host;
+                        }else{
+                            host = host.split(":");
+                            localIP = host[0];
+                        }
+                        break;
+                    default:
+                        break;
+                }
+            //console.log("data.ipaddr",data.old_ipaddr);
+            //modify for bug208607
+            if(data.old_ipaddr && localIP == data.old_ipaddr){
+                //console.log("need jump");
+                /*var protocol = window.location.protocol; // 协议类型
+                var port = window.location.port;//当前端口号
+                if(port == "" && protocol == "http:"){
+                    port = "80";
+                }else if(port == "" && protocol == "https:"){
+                    port = "443";
+                }*/
+                
+                var url = protocol + "//" + ip.textbox("getValue") + ":" + port + "/webpages/login.html"; 
+                var userAgent = navigator.userAgent;
+                var isOpera = userAgent.indexOf("Opera") > -1;
+                var isIE = userAgent.indexOf("compatible") > -1 && userAgent.indexOf("MSIE") > -1 && !isOpera;
+
+                jumping = true; 
+                setting_form.form("prompt",true,$.su.CHAR.LAN.JUMPING);//"正在跳转，请稍候");
+                setTimeout(function() {
+                    $.su.loading.show();
+                }, 2000);
+                setTimeout(function() {
+                    if (isIE) {
+                        var reIE = new RegExp("MSIE (\\d+\\.\\d+);");
+                        reIE.test(userAgent);
+                        var fIEVersion = parseFloat(RegExp["$1"]);
+                        if(fIEVersion < 10.0){
+                            setTimeout(function() {
+                               window.location.href = url; 
+                            }, 15000);
+                            jumping = false;
+                            return;      
+                        }
+                    }else{
+                        document.getElementById("login-a").href = url; 
+                        document.getElementById("login-frame").onload = function(){
+                            loginReady = true;
+                        }
+                        loginGet(url);
+                    }
+                    
+                    jumping = false;
+                }, 5000);
+            }else{
+                //console.log("no jump");
+            }
+                
+            },function(error){
+                $.su.loading.hide();
+                return false;
+            },function(fail){
+                $.su.loading.hide();
+                return false;
+            });
+
+            
+            
+            
+            
+
+        },
+        cancelHandler:function(e){
+
+        }
+    });
+
+    $('#confirm-msg-text').html($.su.CHAR.LAN.CONFIRM);//'设置LAN的IP地址后浏览器将会自动跳转到新的管理页面。</br>如果跳转失败，请尝试重新连接路由器以自动获取新的IP地址,</br>或者手动设置正确的IP地址。');
+    $('#confirm-msg-text').css("lineHeight", "20px");
+
+
+        var helper = new $.su.Help({
+            container: "div#interface-lan-help",
+            content: "INTERFACE_LAN"
+        });
+    });
+
+</script>

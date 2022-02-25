@@ -1,0 +1,307 @@
+#!/bin/sh
+
+# set port state
+# $1: port id
+# $2: on or off
+set_port_state()
+{
+	local state=$2
+	local val=0
+	local phy_index
+
+	phy_index=`get_phy_index $1`
+	[ -n $phy_index ] || return
+
+	val=`swconfig_phy_reg_read $phy_index $PHY_CONTROL_REG`
+
+	if [ $state = "on" ]; then
+		val=0x200		
+	else		
+		val=`set_bit_value $val 11 1`		
+	fi
+
+	val=`echo $val | awk '{printf("%x"), $0}'`
+	swconfig_phy_reg_write $phy_index $PHY_CONTROL_REG $val
+}
+
+# set port flowcontrol
+# $1:port id
+# $2:state (on | off)
+set_port_flowcontrol()
+{
+	local state=$2
+	local phyMsk4=0
+	local val=0
+
+	local phy_id=`get_phy_port_id $1`
+	[ -n "$phy_id" ] || return
+
+	val=`swconfig_phy_reg_read $phy_id $PHY_AN_ADVERTISEMENT_REG`
+
+	if [ $state = "on" ]; then
+		phyMsk4=`set_bit_value $phyMsk4 10 1`
+	else	
+		phyMsk4=`set_bit_value $phyMsk4 10 0`
+	fi
+
+	val=$(($(($val & $((~0x0de0)))) | $phyMsk4))
+	val=`echo $val | awk '{printf("%x"), $0}'`
+	swconfig_phy_reg_write $phy_id $PHY_AN_ADVERTISEMENT_REG $val
+}
+
+check_rsa()
+{
+	local rsa
+	local trytimes=60
+	local time=0
+	while [ $time -lt $trytimes ];do
+		if [ -f /tmp/rsa_check/rsa_result ]; then {
+			rsa=`cat /tmp/rsa_check/rsa_result`
+			if [ $rsa == "PASS" ]; then
+			    break
+			elif [ $rsa == "FAIL" ]; then
+			    break
+			else 
+				time=$(($time+1))
+			    sleep 1
+			fi
+		}
+		else
+			time=$(($time+1))
+			sleep 1
+		fi
+		
+	done
+	
+	if [ $time -eq $trytimes ]; then
+		echo "check signature failed " > /dev/console
+		rsa="FAIL"
+	fi
+
+	echo "$rsa"
+}
+
+# set port negotiation mode
+# $1:port id
+# $2:ng mode(auto |10MH |10MF |100MH |100MF |1000MF)
+# $3:flowcontrol
+set_ng_mode()
+{
+	local port=$1
+	local ng_mode=$2
+	local flowcontrol=$3
+	local phyval=0
+	local phy4=0
+	local phy_index=0
+
+	phy_index=`get_phy_index $port`
+	[ -n $phy_index ] || return
+	
+	phyval=`swconfig_phy_reg_read $phy_index $PHY_CONTROL_REG`
+
+	phy4=`swconfig_phy_reg_read $phy_index $PHY_AN_ADVERTISEMENT_REG`
+	
+	case $ng_mode in
+		"10MH")
+			phyval=`set_bit_value $phyval 6 0`
+			phyval=`set_bit_value $phyval 13 0`
+			phyval=`set_bit_value $phyval 8 0`
+			
+			phyval=`set_bit_value $phyval 12 0`
+			;;
+		"10MF")
+			phyval=`set_bit_value $phyval 6 0`
+			phyval=`set_bit_value $phyval 13 0`
+			phyval=`set_bit_value $phyval 8 1`
+			
+			phyval=`set_bit_value $phyval 12 0`
+			;;
+		"100MH")
+			phyval=`set_bit_value $phyval 6 0`
+			phyval=`set_bit_value $phyval 13 1`
+			phyval=`set_bit_value $phyval 8 0`
+			
+			phyval=`set_bit_value $phyval 12 0`
+			;;
+		"100MF")
+			phyval=`set_bit_value $phyval 6 0`
+			phyval=`set_bit_value $phyval 13 1`
+			phyval=`set_bit_value $phyval 8 1`
+			
+			phyval=`set_bit_value $phyval 12 0`
+			;;	
+		"auto")
+			
+			phyval=`set_bit_value $phyval 12 1`
+			phyval=`set_bit_value $phyval 9 1`
+			phyval=`set_bit_value $phyval 6 1`
+			
+			phy4=$((phy4 | $((0x1e0))))
+			;;
+			*)
+			phyval=`set_bit_value $phyval 12 1`
+			phyval=`set_bit_value $phyval 9 1`
+			;;
+	esac
+	
+	if [ $flowcontrol == "on" ];then
+		phy4=`set_bit_value $phy4 10 1`
+	else
+		phy4=`set_bit_value $phy4 10 0`
+	fi
+
+	phyval=`echo $phyval | awk '{printf("%x"), $0}'`
+	swconfig_phy_reg_write $phy_index $PHY_CONTROL_REG $phyval
+
+	phy4=`echo $phy4 | awk '{printf("%x"), $0}'`
+	swconfig_phy_reg_write $phy_index $PHY_AN_ADVERTISEMENT_REG $phy4	
+
+	local rsa=$(check_rsa)
+	local LAN_PORT=5
+
+	echo "check_res=$rsa" >> /tmp/switch_debug.log
+	if [ $rsa == "FAIL" ]; then {
+		echo "Check RSA failed,disable WAN Port." >> /tmp/switch_debug.log
+		[ $port -ne $LAN_PORT ] && {
+			set_port_state $port "off"
+			echo "Check RSA failed,disable WAN Port." >> /tmp/switch_debug.log
+		}		
+	}
+	fi
+}
+
+para_usage()
+{
+	echo ""
+	echo "Usage: switch -t para -o <get|set> -p <portsid> [-s state] [-f flowcontrol] [-n ng_mode]"
+	echo ""
+	echo "Example:"
+	echo "       switch -t para -o get"
+	echo "       switch -t para -o get -p 3"
+	echo "       switch -t para -o set -p 2 -s on -f on -n 100MH "
+	echo ""
+}
+
+# check ng_mode and portsid
+# $1: portsid
+# $2: ng_mode
+para_arg_check()
+{
+	local portsid=$1
+	local ng_mode=$2
+
+	if [ -z "$portsid" ]; then
+		echo "[para] the port is null."
+		para_usage
+		exit 0
+	fi
+
+	for i in $portsid; do
+		if [ `expr match $i "[0-9]"` = 0 ] || [ $i -lt 1 ] || [ $i -gt $MAX_PORT_NUM ] ;then
+		echo "[para] the ports is invalid. "
+		para_usage
+		exit 0
+		fi
+	done
+
+	if [ -z "$2" ];then
+		echo "[para] the ng_mode is null. (auto |10MH | 10MF | 100MH |100MF |1000MF)"
+		para_usage
+		exit 0
+	fi
+
+	if [ "$2" != "auto" ]&&[ "$2" != "10MH" ]&&[ "$2" != "10MF" ]&&[ "$2" != "100MH" ]&&[ "$2" != "100MF" ]&&[ "$2" != "1000MF" ]; then
+		echo "[para] the ng_mode is invalid. (auto |10MH | 10MF | 100MH |100MF |1000MF)"
+		para_usage
+		exit 0
+	fi
+}
+
+# print para info
+# $1: portsid
+print_para_info()
+{
+	if [ -z "$1" ]; then
+		for i in `seq 1 $MAX_PORT_NUM`; do
+			config_get state "port"$i "port_state"
+			config_get flowcontrol "port"$i "flowcontrol"
+			config_get ng_mode "port"$i "negotiation_mode"
+			echo "Port $i:"
+			echo "   state            : $state"
+			echo "   flowcontrol      : $flowcontrol"
+			echo "   negotiation_mode : $ng_mode"
+		done
+	else	
+		for i in $1; do
+			if [ `expr match $i "[0-9]"` = 0 ] || [ $i -lt 1 ] || [ $i -gt $MAX_PORT_NUM ] ;then
+				echo "[para] the ports is invalid. "
+				echo ""
+			else
+				config_get state "port"$i "port_state"
+				config_get flowcontrol "port"$i "flowcontrol"
+				config_get ng_mode "port"$i "negotiation_mode"
+				echo "Port $i:"
+				echo "   state            : $state"
+				echo "   flowcontrol      : $flowcontrol"
+				echo "   negotiation_mode : $ng_mode"
+				echo ""
+			fi
+		done 
+		
+	fi
+}
+
+
+# init mt7621 switch port para
+# $1: portid
+# $2: port_state
+# $3: flowcontrol
+# $4: negotiation_mode
+mt7621_switch_port_para_init()
+{
+	local port_state=$2
+	local flowcontrol=$3
+	local ng_mode=$4
+
+	# set port para state			
+	set_port_state $1 $port_state 		
+
+	if [ $port_state == "on" ];then
+
+		# set port negotiation mode			
+		set_ng_mode $1 $ng_mode $flowcontrol
+	fi
+}
+
+# mt7621 switch port parameters
+# $1: op (get|set)
+# $2: portsid (1.2.3.4.5...)
+# $3: port_state (on | off)
+# $4: flowcontrol (on | off)
+# $5: ng_mode (auto |10MH | 10MF | 100MH |100MF |1000MF)
+mt7621_switch_port_para()
+{
+	local op=$1
+	local portsid=$2
+	local state=$3
+	local flowcontrol=$4
+	local ng_mode=$5
+
+	if [ $op = "get" ]; then
+		print_para_info "$portsid"
+	elif [ $op = "set" ]; then
+		para_arg_check "$portsid" $ng_mode
+		for i in $portsid; do	
+			# set port para state
+			set_port_state $i $state
+
+			if [ $state == "on" ];then		
+
+				# set port negotiation mode			
+				set_ng_mode $i $ng_mode $flowcontrol
+			fi 
+		done
+	else
+		echo "[para] error op. (set | get)"
+	fi
+}

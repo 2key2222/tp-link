@@ -1,0 +1,465 @@
+#!/bin/sh /etc/rc.common
+
+IPT="iptables -t mangle -w"
+
+#0x600-0x6ff
+local iface_id_min=1536
+local iface_id_max=1791
+
+PR_DIR="/tmp/policy_route/"
+PR_CUR_ID="/tmp/policy_route/.cur_id"
+PR_INFACE_ID="/tmp/policy_route/.iface_id"
+
+
+#$1:inface
+pr_iface_id_alloc(){
+    local iface=$1
+	local cur_id
+
+	if [ ! -d "$PR_DIR" ]; then
+		mkdir -p $PR_DIR 
+	fi
+	
+	if [ ! -f $PR_CUR_ID ]; then
+		touch $PR_CUR_ID
+		echo $iface_id_min > $PR_CUR_ID
+	fi
+
+	if [ ! -f $PR_INFACE_ID ]; then
+		touch $PR_INFACE_ID
+	fi
+
+	ret=`grep "^${iface}=.*" "$PR_INFACE_ID"`
+	if [ -n "$ret" ];then
+		echo "`cat $PR_INFACE_ID |grep "\<${iface}\>" |cut -d '=' -f 2`"
+	else
+	    cur_id=`cat $PR_CUR_ID`
+
+		if [ $cur_id -gt 1 ];then
+			cur_id=$((cur_id+1)) 
+			if [ $cur_id -gt $iface_id_max ]; then
+				cur_id=$iface_id_min
+		    fi
+		fi
+
+		while [ 1 -eq 1 ]
+		do		
+			local id=`cat $PR_INFACE_ID |grep "${cur_id}$"`
+			if [ -z $id  ]; then
+			   break;
+			else 
+			   cur_id=$((cur_id+1))
+			   if [ $cur_id -gt $iface_id_max ]; then
+			       cur_id=$iface_id_min
+			   fi
+			fi
+		done
+		echo $cur_id > $PR_CUR_ID 		
+
+		echo "${iface}=${cur_id}" >> "$PR_INFACE_ID"
+		echo "$cur_id"
+	fi
+}
+
+pr_set_general_iptables()
+{
+	if ! $IPT -S TP_pr_rules  &> /dev/null; then
+		$IPT -N TP_pr_rules 
+	fi
+
+	if ! $IPT -S TP_pr_connected &> /dev/null; then
+		$IPT -N TP_pr_connected 
+	fi
+
+	if ! $IPT -S TP_pr_hook &> /dev/null; then
+		$IPT -N TP_pr_hook 
+		#$IPT -A TP_pr_hook -m state ! --state NEW -j RETURN
+		$IPT -A TP_pr_hook -j CONNMARK --restore-mark --nfmask 0x7ff --ctmask 0x7ff
+		$IPT -A TP_pr_hook -m mark --mark 0x0/0x7ff -j TP_pr_rules
+		$IPT -A TP_pr_hook -j CONNMARK --save-mark --nfmask 0x7ff --ctmask 0x7ff
+		$IPT -A TP_pr_hook -j TP_pr_connected 
+	fi
+
+	##policy_route---->TP_sr_hook------>isp_route---->load_balance---->default_balance--->wifidog
+	if ! $IPT -S PREROUTING | grep TP_pr_hook &> /dev/null; then
+		TP_special_route=`$IPT -n --line-number -L PREROUTING |grep TP_sr_hook`
+		if [ -n "$TP_special_route" ];then
+			num=`echo $TP_special_route |cut -d " " -f 1`			
+			$IPT -I PREROUTING $num -j TP_pr_hook
+		else
+			isp_route=`$IPT -n --line-number -L PREROUTING |grep isp_route`
+			if [ -n "$isp_route" ]; then
+				num=`echo $isp_route |cut -d " " -f 1`			
+				$IPT -I PREROUTING $num -j TP_pr_hook
+			else
+				load_balance=`$IPT -n --line-number -L PREROUTING |grep load_balance`
+				default_balance=`$IPT -n --line-number -L PREROUTING |grep default_balance`
+				if [ -n "$load_balance" ]; then
+					num=`echo $load_balance |cut -d " " -f 1`			
+					$IPT -I PREROUTING $num -j TP_pr_hook
+				elif [ -n "$default_balance" ]; then
+					num=`echo $default_balance |cut -d " " -f 1`			
+					$IPT -I PREROUTING $num -j TP_pr_hook
+				else
+					#check the wifidog
+					local wechat_num=0 trust_num=0 outgo_num=0 min_num=65535
+					wifidog_trust=`$IPT -n --line-number -L PREROUTING |grep WiFiDog_Trusted`
+					wifidog_outgo=`$IPT -n --line-number -L PREROUTING |grep WiFiDog_Outgoing`
+					wifidog_wechat=`$IPT -n --line-number -L PREROUTING |grep WiFiDog_Wechat`
+
+					if [ -n "$wifidog_wechat" ];then
+						wechat_num=`echo $wifidog_wechat |cut -d " " -f 1`   
+						[ $wechat_num -lt $min_num ] && min_num=$wechat_num
+					fi
+
+					if [ -n "$wifidog_trust" ]; then
+						trust_num=`echo $wifidog_trust |cut -d " " -f 1`
+						[ $trust_num -lt $min_num ] && min_num=$trust_num
+					fi
+
+					if [ -n "$wifidog_outgo" ]; then
+						outgo_num=`echo $wifidog_outgo |cut -d " " -f 1` 
+						[ $outgo_num -lt $min_num ] && min_num=$outgo_num
+					fi
+
+					if [ $min_num -eq 65535 ];then
+						$IPT -A PREROUTING -j TP_pr_hook
+					else
+						$IPT -I PREROUTING $num -j TP_pr_hook
+					fi
+				fi
+			fi
+		fi
+	fi
+
+	$IPT -F TP_pr_rules
+
+	if ! iptables -w -S ppp_forward_rule_policy &> /dev/null; then
+		iptables -w -N ppp_forward_rule_policy
+	fi
+	
+	iptables -w -F ppp_forward_rule_policy
+	
+	if ! iptables -S forwarding_rule | grep ppp_forward_rule_policy &> /dev/null; then
+		iptables -w -A forwarding_rule -j ppp_forward_rule_policy &> /dev/null
+	fi
+}
+
+#$1:iface
+pr_set_iface_rules()
+{	
+	local iface_id=`pr_iface_id_alloc $1`
+	local counter=0
+
+	while [ -n "$(ip -4 rule list | awk '$1 == "'$(($iface_id+1000)):'"')" ]; do
+		ip -4 rule del pref $(($iface_id+1000)) &> /dev/null
+	done
+
+	ip -4 rule del pref $(($iface_id_min+1000)) &> /dev/null
+	ip -4 rule add pref $(($iface_id_min+1000)) fwmark $iface_id_max/0x7ff unreachable
+
+	iface=`zone_get_effect_ifaces $1`
+
+	state=`zone_get_iface_state $iface`
+
+	[ "$state" == "UP" ] && ip -4 rule add pref $(($iface_id+1000)) fwmark $iface_id/0x7ff lookup $iface   
+
+	device=`zone_get_effect_devices $1`
+	while [ -z "$device" -a "$counter" -lt 5 ]; do
+		sleep 1
+		device=`zone_get_effect_devices $1`
+		let counter++
+		if [ "$counter" -ge 5 ]; then
+			logger -t policy_route -p warn "Could not find device for interface:[$1]."
+			return
+		fi
+	done        
+
+	ip -4 rule del pref $(($iface_id+500)) &> /dev/null
+	[ "$state" == "UP" ] && ip -4 rule add pref $(($iface_id+500)) iif $device lookup main                      
+}
+
+#$1:used_infaces
+pr_set_others()
+{
+	for iface in $1;do
+		pr_set_iface_rules $iface
+	done
+}
+
+#$1:policy_name
+#$2:infaces
+pr_set_policy()
+{
+	local iface_id probability flag=0 total_weight=0
+	local mode=$3 conflag=0 zone
+
+	for iface in $2;do
+		effect_iface=`zone_get_effect_ifaces $iface`
+
+		state=`zone_get_iface_state $effect_iface`
+
+		zone=`zone_get_zone_byif $effect_iface`
+		online=`balance_get_state $iface`
+
+		conflag=0  # not add iptables rules
+		if [ "$zone" == "VPN" ];then
+			if [ "$state" == "UP" ];then
+				conflag=1
+			else
+				conflag=0
+			fi
+		else
+			if [ "$mode" == "Only" ];then
+				if [ "$state" == "UP" ]; then
+					conflag=1  # add iptables rules for accept
+				else
+					conflag=0
+				fi
+			elif [ "$mode" == "Priority" -a "$online" == "on" ];then
+				if [ "$state" == "UP" ]; then
+					conflag=1
+				else
+					conflag=2  # add iptables rules for drop
+				fi
+			else
+				conflag=0
+			fi
+		fi
+
+		if [ "$conflag" -gt 0 ];then
+			iface_id=`pr_iface_id_alloc $iface`
+
+			[ -n "$iface_id" ] || return 0
+
+			if [ "$flag" -eq 0 ]; then
+					
+				$IPT -F TP_pr_policy_$1 
+				if [ "$conflag" -eq 2 ];then
+					$IPT -A TP_pr_policy_$1 -m mark --mark 0x0/0x7ff -m comment --comment "inface=[$iface]" -j MARK --set-mark $iface_id_max/0x7ff
+				else
+					$IPT -A TP_pr_policy_$1 -m mark --mark 0x0/0x7ff -m comment --comment "inface=[$iface]" -j MARK --set-mark $iface_id/0x7ff
+				fi
+				total_weight=1
+				let flag++
+
+			else 
+				total_weight=$(($total_weight+1))
+				percent=`awk 'BEGIN{printf "%f\n", (1/'$total_weight')}'`
+
+				probability="-m statistic --mode random --probability $percent"
+
+				if [ "$conflag" -eq 2 ];then
+					$IPT -I TP_pr_policy_$1 -m mark --mark 0x0/0x7ff $probability -m comment --comment "inface=[$iface]" -j MARK --set-mark $iface_id_max/0x7ff
+				else
+					$IPT -I TP_pr_policy_$1 -m mark --mark 0x0/0x7ff $probability -m comment --comment "inface=[$iface]" -j MARK --set-mark $iface_id/0x7ff
+				fi
+			fi
+		fi
+	done
+
+	if [ "$2" != "" -a "$mode" == "Only" -a "$flag" -eq 0 ];then
+		$IPT -A TP_pr_policy_$1 -m mark --mark 0x0/0x7ff -j MARK --set-mark $iface_id_max/0x7ff
+	fi
+}
+
+#$1:policy_name
+#$2:used_infaces
+pr_set_policies_iptables()
+{
+	if ! $IPT -S TP_pr_policy_$1 &> /dev/null; then
+		$IPT -N TP_pr_policy_$1 
+	fi
+
+	$IPT -F TP_pr_policy_$1 
+
+	pr_set_policy $1 "$2" $3
+}
+
+pr_set_policy_rules_iptables()
+{
+	local use_policy state timeobj time_file time_state src_ipgroup dst_ipgroup service_type mode
+	local used_infaces
+
+	config_get state $1 state on
+	config_get timeobj $1 timeobj Any	
+
+	#check the rule state
+	[ "$state" == "on" ] || return 0
+
+	if [ "$timeobj" != "Any" ]; then
+
+		dir_time=/tmp/policy_route/
+		if [ ! -d "$dir_time" ]; then
+			return 0 
+		fi
+		
+		time_file=$dir_time$timeobj"/state"
+
+		#check the time object state
+		if [ -f $time_file ]; then
+			time_state=`cat $time_file`
+			[ "$time_state" == "active" ] || return 0
+		else
+			return 0
+		fi
+	fi
+
+	config_get name	$1 name
+	config_get use_policy $1 use_policy
+	config_get src_ipgroup $1 src_ipgroup IPGROUP_ANY
+	config_get dst_ipgroup $1 dst_ipgroup IPGROUP_ANY
+	config_get service_type $1 service_type ALL
+	config_get mode $1 mode Priority
+	
+
+	if [ -n "$use_policy" ]; then
+
+		used_infaces=`uci get policy_route.$use_policy.use_iface`	
+		[ -n "$used_infaces" ] || return 0
+		
+		local check_vpn_interface=$(zone_check_vpn_interface $used_infaces)
+		if [ "$check_vpn_interface" == "true" ]; then
+			local dev_intf=$(zone_get_device_byif $used_infaces)
+			iptables -w -A ppp_forward_rule_policy -i br-lan -o $dev_intf -m set --match-set $src_ipgroup src,src  -m set --match-set $dst_ipgroup dst,dst -m comment --comment "vpn=$dev_intf " -j ACCEPT
+		fi
+
+		pr_set_others "$used_infaces"
+		pr_set_policies_iptables $use_policy "$used_infaces" "$mode"
+
+		use_policy="TP_pr_policy_$use_policy"		
+
+		service_config_append service
+		
+		for stype in ${service_type}; do
+			
+			get_service_config $stype
+			
+			local src_ipgroup_rule=""
+			local dst_ipgroup_rule=""
+			
+			if [ "$src_ipgroup" != "IPGROUP_ANY" ]; then
+				src_ipgroup_rule="-m set --match-set $src_ipgroup src,src"
+			fi
+
+			if [ "$dst_ipgroup" != "IPGROUP_ANY" ]; then
+				dst_ipgroup_rule="-m set --match-set $dst_ipgroup dst,dst"
+			fi
+
+			if [ "$service_name" == "ALL" ]; then
+				proto="all"
+				$IPT -A TP_pr_rules -p $proto $src_ipgroup_rule  $dst_ipgroup_rule -m mark --mark 0/0x7ff -m comment --comment "$name" -j $use_policy &> /dev/null
+			else
+				if [ "$service_proto" != "icmp" ]; then
+					service_sport=$(echo $service_sport|tr '-' ':')
+					service_dport=$(echo $service_dport|tr '-' ':')
+					if [ "$service_proto" == "tcp-udp" ]; then	
+						$IPT -A TP_pr_rules -p tcp $src_ipgroup_rule $dst_ipgroup_rule --sport $service_sport --dport $service_dport -m mark --mark 0/0x7ff -m comment --comment "$name" -j $use_policy &> /dev/null
+						$IPT -A TP_pr_rules -p udp $src_ipgroup_rule $dst_ipgroup_rule --sport $service_sport --dport $service_dport -m mark --mark 0/0x7ff -m comment --comment "$name" -j $use_policy &> /dev/null
+					elif [ "$service_proto" == "tcp" -o "$service_proto" == "udp" ]; then
+						$IPT -A TP_pr_rules -p $service_proto $src_ipgroup_rule $dst_ipgroup_rule --sport $service_sport --dport $service_dport -m mark --mark 0/0x7ff -m comment --comment "$name" -j $use_policy &> /dev/null
+					else 
+						$IPT -A TP_pr_rules -p $service_proto $src_ipgroup_rule $dst_ipgroup_rule -m mark --mark 0/0x7ff -m comment --comment "$name" -j $use_policy &> /dev/null
+					fi
+
+				else				
+					if [ "$service_name" == "ICMP_ALL" ]; then
+						$IPT -A TP_pr_rules -p $service_proto --icmp-type any $src_ipgroup_rule  $dst_ipgroup_rule -m mark --mark 0/0x7ff -m comment --comment "$name" -j $use_policy &> /dev/null
+					else
+						$IPT -A TP_pr_rules -p $service_proto -m $service_proto --icmp-type $service_type/$service_code $src_ipgroup_rule  $dst_ipgroup_rule -m mark --mark 0/0x7ff -m comment --comment "$name" -j $use_policy &> /dev/null
+					fi	
+
+				fi
+			fi
+
+			let enabled_rule++
+		done
+	fi	
+}
+
+pr_set_connected_iptables()
+{
+	local connected_networks
+
+	if $IPT -S TP_pr_connected  &> /dev/null; then
+		$IPT -F TP_pr_connected 
+
+		ipset create TP_pr_connected hash:net
+
+		for connected_network in $(ip -4 route | awk '{print $1}' | egrep '[0-9]{1,3}(\.[0-9]{1,3}){3}'); do			
+			ipset -! add TP_pr_connected $connected_network
+		done
+
+		for connected_network in $(ip -4 route list table 0 | awk '{print $2}' | egrep '[0-9]{1,3}(\.[0-9]{1,3}){3}'); do
+			ipset -! add TP_pr_connected $connected_network
+		done
+		
+		$IPT -A TP_pr_connected -m set --match-set TP_pr_connected dst -j MARK --set-mark 0x7ff/0x7ff
+	fi
+}
+
+pr_get_on_rule()
+{
+	config_get state $1 state on
+
+	[ "$state" == "on" ] && g_enable=1
+}
+
+pr_count_enabled_rule()
+{
+	config_foreach pr_get_on_rule policy_rule
+}
+
+start()
+{
+	local g_enable=0 enabled_rule=0
+
+	. /lib/functions.sh
+
+	config_load policy_route
+
+	pr_count_enabled_rule
+
+	[ "$g_enable" -eq 0 ] && return
+
+	. /lib/policy_route/config.sh
+	. /lib/zone/zone_api.sh
+	. /lib/balance/api.sh
+	. /lib/functions/network.sh
+
+	pr_set_general_iptables	
+
+	config_foreach pr_set_policy_rules_iptables policy_rule
+
+	[ $enabled_rule -gt 0 ] && pr_set_connected_iptables
+	
+	[ -x /usr/sbin/conntrack ] && conntrack -D -m 0x10000
+}
+
+stop()
+{
+	local route rule table
+
+	for rule in $(ip -4 rule list | egrep '^[1-2][0-9]{3}\:' | cut -d ':' -f 1); do
+		ip -4 rule del pref $rule &> /dev/null
+	done
+
+	$IPT -D PREROUTING -j TP_pr_hook &> /dev/null
+	
+	iptables -w -D forwarding_rule -j ppp_forward_rule_policy &> /dev/null
+	iptables -w -F ppp_forward_rule_policy &> /dev/null
+
+	for table in $($IPT -S | awk '{print $2}' | grep TP_pr | sort -u); do
+		$IPT -F $table &> /dev/null
+	done
+
+	for table in $($IPT -S | awk '{print $2}' | grep TP_pr | sort -u); do
+		$IPT -X $table &> /dev/null
+	done
+
+	ipset destroy TP_pr_connected &> /dev/null
+
+	rm -f $PR_CUR_ID
+	rm -f $PR_INFACE_ID
+}
+

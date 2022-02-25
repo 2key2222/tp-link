@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <style type="text/css">
+        #func_settings_f,#wiress_param_f{
+            padding-left:15px;
+        }
+
+        .key-wrapper{
+            margin: 0px 5px 5px 0;
+        }
+    </style>
+</head>
+<body>
+<div id="func_settings">
+    <form id="func_settings_f">
+        <input id="radio_id" name="radio_id" type="hidden" value="1"/>
+        <input id="mssid_enable" name="mssid_enable"/>
+        <input id="mssid_isolation" name="mssid_isolation"/>
+    </form>
+    <input id="func_settings_submit"/>
+</div>
+<div id="wiress_param">
+    <form id="wiress_param_f">
+        <input id="radio_id_2" name="radio_id" type="hidden" value="1"/>
+        <input id="key_idx" name="key_idx" type="hidden"/>
+        <input id="ssid" name="ssid"/>
+        <input id="describe" name="describe"/>
+        <input id="broadcast" name="broadcast"/>
+        <input id="sta_isolation" name="sta_isolation"/>
+        <input id="guest_network" name="guest_network"/>
+        <input id="enable" name="enable"/>
+        <input id="sec_type" name="sec_type"/>
+        <div id="psk">
+            <input id="psk_auth_type" name="psk_auth_type" class="psk"/>
+            <input id="psk_sec_alg" name="psk_sec_alg" class="psk"/>
+            <input id="psk_pwd" name="psk_pwd" class="psk"/>
+            <input id="psk_update_period" name="psk_update_period" class="psk"/>
+        </div>
+        <div id="wpa">
+            <input id="wpa_auth_type" name="wpa_auth_type" class="wpa"/>
+            <input id="wpa_sec_alg" name="wpa_sec_alg" class="wpa"/>
+            <input id="wpa_radius_ip" name="wpa_radius_ip" class="wpa"/>
+            <input id="wpa_radius_port" name="wpa_radius_port" class="wpa"/>
+            <input id="wpa_radius_pwd" name="wpa_radius_pwd" class="wpa"/>
+            <input id="wpa_update_period" name="wpa_update_period" class="wpa"/>
+        </div>
+        <div id="wep">
+            <input id="wep_auth_type" name="wep_auth_type" class="wep"/>
+            <input id="wep_sec_format" name="wep_sec_format" class="wep"/>
+            <input id="wep_key_slt" name="wep_key_slt" class="wep"/>
+
+            <div class="key-wrapper">
+                <input id="wep_key1" name="wep_key1" class="wep key"/>
+                <input id="wep_key_len1" name="wep_key_len1" class="wep keyLength"/>
+            </div>
+
+            <div class="key-wrapper">
+                <input id="wep_key2" name="wep_key2" class="wep key"/>
+                <input id="wep_key_len2" name="wep_key_len2" class="wep keyLength"/>
+            </div>
+
+            <div class="key-wrapper">
+                <input id="wep_key3" name="wep_key3" class="wep key"/>
+                <input id="wep_key_len3" name="wep_key_len3" class="wep keyLength"/>
+            </div>
+
+            <div class="key-wrapper">
+                <input id="wep_key4" name="wep_key4" class="wep key"/>
+                <input id="wep_key_len4" name="wep_key_len4" class="wep keyLength"/>
+            </div>
+
+        </div>
+    </form>
+</div>
+<div id="mssid_list">
+    <div id="mssid_list_g"></div>
+</div>
+
+<hr/>
+<div class="notice">
+    <h6 >注意：</h6>
+    <ul>
+        <li>开启Multi-SSID后，WDS功能将失效。</li>
+    </ul>
+</div>
+
+<div id="confirm-msg">
+    <h4 class="title">
+        <span class="icon"></span>
+        <span class="text" id="confirm-msg-text"></span>
+    </h4>
+</div>
+<div id="wireless-mssid-help"></div>
+<script type="application/javascript">
+    //<![CDATA[
+    try {
+        $
+    } catch (e) {
+        location.href = "/";
+    }
+    ;
+    $(document).ready(function (e) {
+        var globalUrl = "/admin/wlan_mssid?form=global";
+        var radio_id = 1;
+        var globalProxy = new $.su.Proxy({url: $.su.url(globalUrl)});
+
+        var is_11n_only = null;
+        var is_wep_tkip = null;
+        var wep_key_idx = null;
+
+        globalProxy.read({
+            params: {
+                radio_id: radio_id
+            }
+        }, function(jsonData){
+
+            Basic.refresh(jsonData);
+        });
+
+        var mssidUrl = "/admin/wlan_mssid?form=mssid";
+        var mssidProxy = new $.su.Proxy({url: $.su.url(mssidUrl)});
+
+        $("#radio_id").val(radio_id);
+        $("#radio_id_2").val(radio_id);
+
+
+        //功能设置
+        var Basic = (function initBasic(){
+            var $form = $("#func_settings_f"),
+                    $panel = $("#func_settings"),
+                    $submit = $("#func_settings_submit"),
+                    $enable = $("#mssid_enable"),
+                    $isolation = $("#mssid_isolation");
+
+            $enable.radio({
+                fieldLabel: "Multi-SSID",
+                columns: 2,
+                items:[
+                    {boxlabel: "启用", name:'mssid_enable', inputValue:'on', checked: true},
+                    {boxlabel: "禁用", name:'mssid_enable', inputValue: 'off'}
+                ]
+            });
+
+            $isolation.radio({
+                fieldLabel: "SSID间隔离",
+                columns: 2,
+                items:[
+                    {boxlabel: "启用", name:'mssid_isolation', inputValue:'on', checked: true},
+                    {boxlabel: "禁用", name:'mssid_isolation', inputValue: 'off'}
+                ]
+            });
+
+            $form.form({
+                fields: [
+                    {name: "mssid_enable", mapping: "mssid_enable"},
+                    {name: "mssid_isolation", mapping: "mssid_isolation"}
+                ]
+            });
+
+            $panel.panel({
+                title: "功能设置"
+            });
+
+            var $confirmMsg = $("div#confirm-msg").msg({
+                type: "confirm",
+                cls: 'reboot-confirm-size',
+                closeBtn: false,
+                okHandler: function(e){
+                    submitBasic();
+                },
+                cancelHandler: function(){
+                    $confirmMsg.msg('hide');
+                }
+            });
+            function submitBasic(){
+                globalProxy.write({
+                    params: $form.form("serialize")
+                }, function(data){
+                    $.su.loading.hide();
+                    $form.form("load", data);
+                    $form.form("prompt", true, $.su.CHAR.OPERATION.FORM_SAVED);
+                },function(){
+                    $.su.loading.hide();
+                },function(){
+                    $.su.loading.hide();
+                });
+
+                $.su.loading.show();
+            }
+            $('#confirm-msg-text').text('开启Multi-SSID后，WDS功能将失效');
+
+            $submit.button({
+                fieldLabel: null,
+                text: '设置',
+                cls: 'inline',
+                handler: function(){
+                    var value = $enable.radio('getValue');
+                    if(Basic.wds_enable && value == 'on'){
+                        $confirmMsg.msg('show');
+                    }else{
+                        submitBasic();
+                    }
+                }
+            });
+
+            return {
+                refresh : function(jsonData){
+                    $form.form("loadData", jsonData);
+                    Basic.wds_enable = jsonData.wds_enable == "on" ? true : false;
+                }
+            }
+        })();
+
+        //Multi-SSID设置
+        var Mssid = (function initMssid(){
+            var $form = $("#wiress_param_f"),
+                    $ssid = $("#ssid"),
+                    $describe = $("#describe"),
+                    $broadcast = $("#broadcast"),
+                    $staIsolation = $("#sta_isolation"),
+                    $guestNetwork = $("#guest_network"),
+                    $enable = $("#enable"),
+                    $secType = $("#sec_type");
+
+            $ssid.textbox({
+                fieldLabel: "SSID",
+                allowBlank: false,
+                maxLength: 32
+            });
+
+            $describe.textbox({
+                fieldLabel: "描述",
+                allowBlank: true,
+                maxLength: 28
+            });
+
+            $broadcast.radio({
+                fieldLabel:"SSID广播",
+                columns: 2,
+                items:[
+                    {boxlabel: "启用", name:'broadcast', inputValue:'on', checked: true},
+                    {boxlabel: "禁用", name:'broadcast', inputValue: 'off'}
+                ]
+            });
+
+            $staIsolation.radio({
+                fieldLabel:"AP内部隔离",
+                columns: 2,
+                items:[
+                    {boxlabel: "启用", name:'sta_isolation', inputValue:'on', checked: true},
+                    {boxlabel: "禁用", name:'sta_isolation', inputValue: 'off'}
+                ]
+            });
+
+            $guestNetwork.radio({
+                fieldLabel:"访客网络",
+                columns: 2,
+                items:[
+                    {boxlabel: "启用", name:'guest_network', inputValue:'on', checked: true},
+                    {boxlabel: "禁用", name:'guest_network', inputValue: 'off'}
+                ]
+            });
+
+            $enable.radio({
+                fieldLabel:"启用/禁用此SSID",
+                columns: 2,
+                items:[
+                    {boxlabel: "启用", name:'enable', inputValue:'on', checked: true},
+                    {boxlabel: "禁用", name:'enable', inputValue: 'off'}
+                ]
+            });
+
+            $secType.combobox({
+                fieldLabel:"安全选项",
+                multiSelect:false,
+                allowBlank: false,
+                items:[
+                    {name:"关闭无线安全选项",value:"0" , selected: true},
+                    {name:"WPA-PSK/WPA2-PSK",value:"1"},
+                    {name:"WPA/WPA2",value:"2"}
+                    //{name:"WEP",value:"3"}
+                ]
+            }).on('ev_change', function(e, oldValue, newValue){
+                        onSecTypeChange(newValue);
+                    });
+
+            //PSK
+            var PSK = (function(){
+                var $authType = $("#psk_auth_type"),
+                        $secAlg = $("#psk_sec_alg"),
+                        $pwd = $("#psk_pwd"),
+                        $updatePeriod = $("#psk_update_period"),
+                        $psk = $("#psk");
+
+                $authType.combobox({
+                    fieldLabel:"认证类型",
+                    multiSelect:false,
+                    allowBlank: false,
+                    items:[
+                        {name:"自动",value:"0" , selected: true},
+                        {name:"WPA-PSK",value:"1"},
+                        {name:"WPA2-PSK",value:"2"}
+                    ]
+                });
+
+                $secAlg.combobox({
+                    fieldLabel:"加密算法",
+                    multiSelect:false,
+                    allowBlank: false,
+                    items:[
+                        {name:"自动",value:"0" , selected: true},
+                        {name:"TKIP",value:"1"},
+                        {name:"AES",value:"2"}
+                    ]
+                });
+
+                $pwd.textbox({
+                    fieldLabel: "PSK密码",
+                    allowBlank: false,
+                    maxLength: 64,
+                    vtype: "strange_pwd",
+                    tips: "(8-63个ASCII码字符或8-64个十六进制字符)"
+                });
+
+                $updatePeriod.textbox({
+                    fieldLabel: "组密钥更新周期",
+                    allowBlank:false,
+                    maxLength: 9,
+                    tips: "秒(最小值为30，不更新则为0)",
+                    vtype: "update_period",
+                    value: 86400
+                });
+
+                return {
+                    show: function(){
+                        $.su.func.showWidgets($psk.find("input.psk"));
+                    },
+                    hide: function(){
+                        $.su.func.hideWidgets($psk.find("input.psk"));
+                    },
+                    disbleTKIP: function(){
+                        $secAlg.combobox("disableItem", [1]);
+                    },
+                    enableTKIP: function(){
+                        $secAlg.combobox("enableItem", [1]);
+                    }
+                };
+            })();
+
+            //WPA
+            var WPA = (function(){
+                var $authType = $("#wpa_auth_type"),
+                        $secAlg = $("#wpa_sec_alg"),
+                        $radiusIp = $("#wpa_radius_ip"),
+                        $radiusPort = $("#wpa_radius_port"),
+                        $radiusPwd = $("#wpa_radius_pwd"),
+                        $updatePeriod = $("#wpa_update_period"),
+                        $wpa = $("#wpa");
+
+                $authType.combobox({
+                    fieldLabel:"认证类型",
+                    multiSelect:false,
+                    allowBlank: false,
+                    items:[
+                        {name:"自动",value:"0" , selected: true},
+                        {name:"WPA",value:"1"},
+                        {name:"WPA2",value:"2"}
+                    ]
+                });
+
+                $secAlg.combobox({
+                    fieldLabel:"加密算法",
+                    multiSelect:false,
+                    allowBlank: false,
+                    items:[
+                        {name:"自动",value:"0" , selected: true},
+                        {name:"TKIP",value:"1"},
+                        {name:"AES",value:"2"}
+                    ]
+                });
+
+                $radiusIp.textbox({
+                    fieldLabel: "Radius服务器",
+                    allowBlank:false,
+                    vtype: "ip"
+                });
+
+                $radiusPort.textbox({
+                    fieldLabel: "Radius端口",
+                    allowBlank:false,
+                    vtype: {
+                        vtype: "number",
+                        max: 65535,
+                        min: 0
+                    },
+                    tips: "(1－65535，0表示默认端口：1812)"
+                });
+
+                $radiusPwd.textbox({
+                    allowBlank:false,
+                    fieldLabel: "Radius密码"
+                });
+
+                $updatePeriod.textbox({
+                    fieldLabel: "组密钥更新周期",
+                    allowBlank:false,
+                    maxLength: 9,
+                    tips: "秒(最小值为30，不更新则为0)",
+                    vtype: "update_period",
+                    value: 86400
+                });
+
+                return {
+                    disbleTKIP: function(){
+                        $secAlg.combobox("disableItem", [1]);
+                    },
+                    enableTKIP: function(){
+                        $secAlg.combobox("enableItem", [1]);
+                    },
+                    show: function(){
+                        $.su.func.showWidgets($wpa.find("input.wpa"));
+                    },
+                    hide: function(){
+                        $.su.func.hideWidgets($wpa.find("input.wpa"));
+                    }
+                }
+            })();
+
+            //WEP
+            var WEP = (function(){
+                var $authType = $("#wep_auth_type"),
+                        $secFormat = $("#wep_sec_format"),
+                        $keySlt = $("#wep_key_slt"),
+                        $keys = $("#wep").find(".key"),
+                        $keyLens = $("#wep").find(".keyLength"),
+                        $wep = $("#wep");
+
+                $authType.combobox({
+                    fieldLabel:"认证类型",
+                    multiSelect:false,
+                    allowBlank: false,
+                    items:[
+                        {name:"自动",value:"0" , selected: true},
+                        {name:"开放系统",value:"1"},
+                        {name:"共享密钥",value:"2"}
+                    ]
+                });
+
+                $secFormat.combobox({
+                    fieldLabel:"密钥格式",
+                    multiSelect:false,
+                    allowBlank: false,
+                    items:[
+                        {name:"十六进制",value:"0" , selected: true},
+                        {name:"ASCII码",value:"1"}
+                    ]
+                });
+
+                $keySlt.radio({
+                    fieldLabel: "密钥选择",
+                    columns: 4,
+                    items: [
+                        {boxlabel: '密钥1', inputValue: "0"},
+                        {boxlabel: '密钥2', inputValue: "1"},
+                        {boxlabel: '密钥3', inputValue: "2"},
+                        {boxlabel: '密钥4', inputValue: "3"}
+                    ]
+                });
+
+                $keys.each(function(index, e){
+                    var $e = $(e);
+                    $e.textbox({
+                        fieldLabel: "WEP密钥",
+                        labelCls: "xxs",
+                        cls: "inline",
+                        allowBlank: false
+                    });
+                });
+
+                $keyLens.each(function(index, e){
+                    var $e = $(e);
+                    $e.combobox({
+                        fieldLabel: "密钥类型",
+                        labelCls: "xxs",
+                        multiSelect:false,
+                        allowBlank: false,
+                        cls: "inline",
+                        items:[
+                            {name:"禁用",value:"0", selected: true},
+                            {name:"64位",value:"1"},
+                            {name:"128位",value:"2"},
+                            {name:"152位",value:"3"}
+                        ]
+                    }).on('ev_change', function(ev, oldValue, newValue){
+                                onKeyLengthChange(newValue, index);
+                            });
+
+                    onKeyLengthChange($e.combobox("getValue"), index);
+                });
+
+                function onKeyLengthChange(newValue, index){
+                    if(newValue == 0){
+                        $keys.eq(index).textbox("disable");
+                        $keySlt.radio("disableItem", [index]);
+                    }else{
+                        $keys.eq(index).textbox("enable");
+                        $keySlt.radio("enableItem",[index]);
+                    }
+                };
+
+                return {
+                    show: function(){
+                        $.su.func.showWidgets($wep.find("input.wep"));
+                        $keyLens.each(function(index, e){
+                            onKeyLengthChange($(e).combobox("getValue"), index);
+                        });
+                    },
+                    hide: function(){
+                        $.su.func.hideWidgets($wep.find("input.wep"));
+                        $keyLens.each(function(index, e){
+                            onKeyLengthChange($(e).combobox("getValue"), index);
+                        });
+                    }
+                };
+            })();
+
+            var onSecTypeChange = (function(newValue){
+                PSK.hide();
+                WPA.hide();
+                WEP.hide();
+                switch(newValue[0]){
+                    case "0"://关闭无线安全选项
+                        break;
+                    case "1"://PSK
+                        PSK.show();
+                        break;
+                    case "2"://WPA
+                        WPA.show();
+                        break;
+                    case "3"://WEP
+                        WEP.show();
+                        break;
+                    default :
+                        break;
+                }
+                return arguments.callee;
+            })($secType.combobox("getValue"));
+            return {
+                $elements:{
+                    $enable: $enable
+                },
+                disableWep: function(){
+                    $secType.combobox("disableItem", [3]);
+                },
+                enableWep:function(){
+                    $secType.combobox("enableItem", [3]);
+                },
+                disableTKIP: function(){
+                    PSK.disbleTKIP();
+                    WPA.disbleTKIP();
+                },
+                enableTKIP: function(){
+                    PSK.enableTKIP();
+                    WPA.enableTKIP();
+                }
+            };
+
+        })();
+
+        //Multi-SSID列表
+        var MssidList = (function initMssidList(){
+            var $list = $("#mssid_list_g"),
+                    $panel = $("#mssid_list");
+
+            $list.grid({
+                editor: {
+                    content:"#wiress_param",
+                    fields: [
+                        {name: "ssid", mapping: "ssid"},
+                        {name: "key_idx", mapping: "key_idx"},
+
+                        {name: "describe", mapping: "describe"},
+                        {name: "broadcast", mapping: "broadcast"},
+                        {name: "sta_isolation", mapping: "sta_isolation"},
+                        {name: "guest_network", mapping: "guest_network"},
+                        {name: "enable", mapping: "enable"},
+                        {name: "sec_type", mapping: "sec_type"},
+
+                        {name: "psk_auth_type", mapping: "psk_auth_type"},
+                        {name: "psk_sec_alg", mapping: "psk_sec_alg"},
+                        {name: "psk_pwd", mapping: "psk_pwd"},
+                        {name: "psk_update_period", mapping: "psk_update_period"},
+
+                        {name: "wpa_auth_type", mapping: "wpa_auth_type"},
+                        {name: "wpa_sec_alg", mapping: "wpa_sec_alg"},
+                        {name: "wpa_radius_ip", mapping: "wpa_radius_ip"},
+                        {name: "wpa_radius_port", mapping: "wpa_radius_port"},
+                        {name: "wpa_radius_pwd", mapping: "wpa_radius_pwd"},
+                        {name: "wpa_update_period", mapping: "wpa_update_period"},
+
+                        {name: "wep_auth_type", mapping: "wep_auth_type"},
+                        {name: "wep_sec_format", mapping: "wep_sec_format"},
+                        {name: "wep_key_slt", mapping: "wep_key_slt"},
+                        {name: "wep_key1", mapping: "wep_key1"},
+                        {name: "wep_key_len1", mapping: "wep_key_len1"},
+                        {name: "wep_key2", mapping: "wep_key2"},
+                        {name: "wep_key_len2", mapping: "wep_key_len2"},
+                        {name: "wep_key3", mapping: "wep_key3"},
+                        {name: "wep_key_len3", mapping: "wep_key_len3"},
+                        {name: "wep_key4", mapping: "wep_key4"},
+                        {name: "wep_key_len4", mapping: "wep_key_len4"}
+                    ]
+                },
+                store:{
+                    proxy: mssidProxy,
+                    extraProperty: ["radio_id"],
+                    fields: [
+                        {name: "radio_id", mapping: "radio_id"},
+                        {name: "key_idx", mapping: "key_idx"},
+
+                        {name: "ssid", mapping: "ssid"},
+                        {name: "describe", mapping: "describe"},
+                        {name: "broadcast", mapping: "broadcast"},
+                        {name: "sta_isolation", mapping: "sta_isolation"},
+                        {name: "guest_network", mapping: "guest_network"},
+                        {name: "enable", mapping: "enable"},
+                        {name: "sec_type", mapping: "sec_type"},
+
+                        {name: "psk_auth_type", mapping: "psk_auth_type"},
+                        {name: "psk_sec_alg", mapping: "psk_sec_alg"},
+                        {name: "psk_pwd", mapping: "psk_pwd"},
+                        {name: "psk_update_period", mapping: "psk_update_period"},
+
+                        {name: "wpa_auth_type", mapping: "wpa_auth_type"},
+                        {name: "wpa_sec_alg", mapping: "wpa_sec_alg"},
+                        {name: "wpa_radius_ip", mapping: "wpa_radius_ip"},
+                        {name: "wpa_radius_port", mapping: "wpa_radius_port"},
+                        {name: "wpa_radius_pwd", mapping: "wpa_radius_pwd"},
+                        {name: "wpa_update_period", mapping: "wpa_update_period"},
+
+                        {name: "wep_auth_type", mapping: "wep_auth_type"},
+                        {name: "wep_sec_format", mapping: "wep_sec_format"},
+                        {name: "wep_key_slt", mapping: "wep_key_slt"},
+                        {name: "wep_key1", mapping: "wep_key1"},
+                        {name: "wep_key_len1", mapping: "wep_key_len1"},
+                        {name: "wep_key2", mapping: "wep_key2"},
+                        {name: "wep_key_len2", mapping: "wep_key_len2"},
+                        {name: "wep_key3", mapping: "wep_key3"},
+                        {name: "wep_key_len3", mapping: "wep_key_len3"},
+                        {name: "wep_key4", mapping: "wep_key4"},
+                        {name: "wep_key_len4", mapping: "wep_key_len4"}
+                    ],
+                    autoLoad: false
+                },
+                paging:[],
+                columns: [
+                    {
+                        xtype: "checkcolumn",
+                        width: $.su.CHAR.SETTING.IPGROUP_ADDRESS.CHECK_COLUMN_WIDTH
+                    },
+                    {
+                        xtype: "rownumberer",
+                        width: $.su.CHAR.SETTING.IPGROUP_ADDRESS.ROW_NUMBER_WIDTH
+                    },
+                    {
+                        text: "SSID",
+                        width: $.su.CHAR.SETTING.IPGROUP_ADDRESS.NAME_WIDTH,
+                        dataIndex: "ssid"
+                    },
+                    {
+                        text: "描述",
+                        width: $.su.CHAR.SETTING.IPGROUP_ADDRESS.NAME_WIDTH,
+                        dataIndex: "describe"
+                    },
+                    {
+                        text: "安全选项",
+                        width: $.su.CHAR.SETTING.IPGROUP_ADDRESS.NAME_WIDTH,
+                        dataIndex: "sec_type",
+                        renderer: function(v){
+                            v = v.toString();
+                            switch(v){
+                                case "0":
+                                    return "NONE";
+                                case "1":
+                                    return "WPA-PSK/WPA2-PSK";
+                                case "2":
+                                    return "WPA/WPA2";
+                                case "3":
+                                    return "WEP";
+                            }
+                        }
+                    },
+                    {
+                        text: "状态",
+                        width: $.su.CHAR.SETTING.IPGROUP_ADDRESS.NAME_WIDTH,
+                        dataIndex: "enable",
+                        xtype:	"statuscolumn"
+/*                        renderer: function(v){
+                            if(v == "on"){
+                                return "已启用";
+                            }else{
+                                return "已禁用";
+                            }
+                        }*/
+                    },
+                    {
+                        width: $.su.CHAR.SETTING.IPGROUP_ADDRESS.SETTING_WIDTH,
+                        text: $.su.CHAR.GRID.OPERATION,
+                        dataIndex: "none",
+                        renderer: function(dd, index, data){
+                            var inHTML="<div class=\"button-container interface-operation\">";
+                            inHTML +=	"<a href=\"javascript:void(0);\" data-index=\""+index+"\" data-key=\""+data.key+"\" title=\""+ $.su.CHAR.OPERATION.EDIT +"\" class=\"grid-content-btn grid-content-btn-edit btn-edit\">";
+                            inHTML +=		"<span class=\"icon\"></span>";
+                            inHTML +=		"<span class=\"text\">"+$.su.CHAR.OPERATION.EDIT+"</span>";
+                            inHTML +=	"</a>";
+                            if(data.key_idx != 1){
+                                inHTML += 	"<a href=\"javascript:void(0);\" data-index=\""+index+"\" data-key=\""+data.key+"\" title=\""+ $.su.CHAR.OPERATION.DELETE +"\" class=\"grid-content-btn grid-content-btn-delete btn-delete\">";
+                                inHTML +=		"<span class=\"icon\"></span>";
+                                inHTML += 		"<span class=\"text\">"+$.su.CHAR.OPERATION.DELETE+"</span>";
+                                inHTML += 	"</a>";
+                            }
+                            inHTML +="</div>";
+                            return inHTML;
+                        }
+                    }
+                ],
+                operation: 'prompt|add|delete'
+            }).on('ev_load', function(){
+                        MssidList.hideFirstCheckbox();
+                    });
+
+            var $store = $($list.grid("getStore")),
+                    $editor = $($list.grid("getEditor"));
+            $store.on("ev_loaddata", function(e, data, others){
+                is_11n_only = others.is_11n_only == "true" || others.is_11n_only == true ? true : false;
+                is_wep_tkip = others.is_wep_tkip == "true" || others.is_wep_tkip == true ? true : false;
+                //wep_key_idx = (jsonData.wep_key_idx != "0" && jsonData.wep_key_idx != "1") ? true : false;
+            });
+
+            $store.on("ev_update", function(){
+                MssidList.hideFirstCheckbox();
+            });
+
+            $editor.on('ev_startEdit', function(e, index, key){
+                if(index == 0){
+                    Mssid.$elements.$enable.radio("disable");
+                }else{
+                    Mssid.$elements.$enable.radio("enable");
+                }
+
+                var gridData = $list.grid("getStore").data;
+                if(index != "add"){
+                    $("#key_idx").val(gridData[index].key_idx);
+                }
+
+                setFormState(index);
+            });
+
+
+            $panel.panel({
+                title: "Multi-SSID设置"
+            });
+
+            return {
+                $elements:{
+                    $grid: $list
+                },
+                reloadGrid: function(data, callback){
+                    var interfaceStore = $list.grid('getStore');
+                    var $interfaceEditor = $($list.grid('getEditor'));
+
+                    if($interfaceEditor.editor('isEditing')){
+                        $interfaceEditor.editor('cancelEdit');
+                    }
+                    interfaceStore.keyLength = 0;
+                    interfaceStore.load(data, callback);
+                },
+                hideFirstCheckbox: function(){
+                    /*用于指定某一行不能被selected*/
+                    var tr = $list.find("tr.grid-content-tr:eq(0)");
+                    tr.addClass("unavailable");
+                    /*用于隐藏指定行的checkbox*/
+                    var td = $(tr).find("td.grid-content-td:eq(0)");
+                    $(td).find("span.icon").replaceWith("<span></span>");
+                    /*隐藏禁用按钮*/
+                    var td = $(tr).find("td.grid-content-td:eq(5)");
+                    $(td).find("span.icon").css({
+                        "visibility":"hidden"
+                    });
+
+                    $(td).find("a:first").css("cursor","default").click(function(e){
+                        e.preventDefault();
+                        e.stopPropagation();
+                    });
+                }
+
+            }
+        })();
+
+        MssidList.reloadGrid({
+            radio_id: radio_id
+        }, function(){
+        });
+
+        function setFormState(index){
+            //1. 如果已经有ssid使用wep或者wpa-tkip或者psk-tkip，前端根据isweptkip=true在用户配置11n模式时提示错误。
+            // 11n和wep，wpa-tkip,psk-tkip冲突
+            /*            if(is_wep_tkip){
+             Basic.$elements.$mode.combobox("disableItem", [2]);
+             }else{
+             Basic.$elements.$mode.combobox("enableItem", [2]);
+             }*/
+
+            //2. 如果用户已经配置11n模式，则修改或添加ssid为wep或者wpa-tkip或者psk-tkip时前端根据is11nonly=true提示错误。
+            //11n和wep，wpa-tkip,psk-tkip冲突
+            //3. 如果已经有ssid使用wep加密，则需要隐藏其他ssid的wep项，wpa-tkip或者psk-tkip依然可以显示。
+
+            var data = MssidList.$elements.$grid.grid("getStore").data;
+            var hasTKIP = false;
+
+            for(var i in data){
+                if(i == index) continue;
+                if((data[i].psk_sec_alg == 1 && data[i].sec_type == 1) || (data[i].wpa_sec_alg == 1 && data[i].sec_type == 2)){
+                    //console.log(data[i].sec_type, data[i].psk_sec_alg, data[i].wpa_sec_alg)
+                    hasTKIP = true;
+                    break;
+                }
+            }
+            if(is_11n_only || hasTKIP){
+                Mssid.disableTKIP();
+            }else{
+                Mssid.enableTKIP();
+            }
+        }
+        var helpInfo = new $.su.Help({
+            container: "#wireless-mssid-help",
+            content: ["WIRELESS_MSSID", "WIRELESS_MSSID_LIST"]
+        });
+    });
+</script>
+</body>
+</html>

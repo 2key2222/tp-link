@@ -1,0 +1,29 @@
+--- a/arch/mips/cavium-octeon/setup.c
++++ b/arch/mips/cavium-octeon/setup.c
+@@ -321,6 +321,26 @@ static void octeon_restart(char *command
+ 	cvmx_write_csr(CVMX_CIU_WDOGX(cvmx_get_core_num()), 0);
+ #endif
+ 
++
++
++	/* Enable the external watchdog to reboot */
++	pr_info("Enable the external watchdog to reboot!\n");
++	cvmx_write_csr(CVMX_GPIO_BIT_CFGX(8), 1); /* DIS_WATCHDOG */
++	cvmx_write_csr(CVMX_GPIO_TX_SET, 0x0);
++
++	/**
++	 *
++	 * Set GPIO[2]=0 to reset flash0
++	 *
++	 * fix the reboot failed issue.
++	 *
++	 * Gan Guoheng, 2015-08-13
++	 *
++	 **/
++	pr_info("Set GPIO[2]=0 to reset flash0\n");
++	cvmx_write_csr(CVMX_GPIO_BIT_CFGX(2), 1);
++	cvmx_write_csr(CVMX_GPIO_TX_SET, 0x0);
++
+ 	mb();
+ 	while (1)
+ 		if (OCTEON_IS_OCTEON3())

@@ -1,0 +1,60 @@
+Index: linux-3.10.14/drivers/net/Makefile
+===================================================================
+--- linux-3.10.14.orig/drivers/net/Makefile	2014-09-02 16:41:52.000000000 +0800
++++ linux-3.10.14/drivers/net/Makefile	2014-10-11 13:40:35.154341893 +0800
+@@ -47,7 +47,7 @@
+ obj-$(CONFIG_PPP_SYNC_TTY) += ppp/
+ obj-$(CONFIG_PPPOE) += ppp/
+ obj-$(CONFIG_PPPOL2TP) += ppp/
+-obj-$(CONFIG_PPPOPPTP) += ppp/
++# obj-$(CONFIG_PPPOPPTP) += ppp/
+ obj-$(CONFIG_PPTP) += ppp/
+ obj-$(CONFIG_SLIP) += slip/
+ obj-$(CONFIG_SLHC) += slip/
+@@ -83,4 +83,4 @@
+ endif
+ 
+ #obj-m += eip93_drivers/cryptoEngine/V-Driver_93/build/
+-#obj-m += eip93_drivers/slad_test_k/
+\ No newline at end of file
++#obj-m += eip93_drivers/slad_test_k/
+Index: linux-3.10.14/drivers/net/ppp/Kconfig
+===================================================================
+--- linux-3.10.14.orig/drivers/net/ppp/Kconfig	2014-09-02 16:42:01.000000000 +0800
++++ linux-3.10.14/drivers/net/ppp/Kconfig	2014-10-11 13:39:22.678337387 +0800
+@@ -129,8 +129,9 @@
+ 	  which contains instruction on how to use this driver (under
+ 	  the heading "Kernel mode PPPoE").
+ 
+-#config PPTP
+-config PPPOPPTP
++#unify with standard kernel and buildroot netsupport.mk, by wuyin
++#config PPPOPPTP
++config PPTP
+ 	tristate "PPP over IPv4 (PPTP)"
+ 	depends on PPP && NET_IPGRE_DEMUX
+ 	---help---
+Index: linux-3.10.14/drivers/net/ppp/Makefile
+===================================================================
+--- linux-3.10.14.orig/drivers/net/ppp/Makefile	2014-09-02 16:42:01.000000000 +0800
++++ linux-3.10.14/drivers/net/ppp/Makefile	2014-10-11 13:39:59.162341998 +0800
+@@ -10,5 +10,5 @@
+ obj-$(CONFIG_PPP_SYNC_TTY) += ppp_synctty.o
+ obj-$(CONFIG_PPPOE) += pppox.o pppoe.o
+ obj-$(CONFIG_PPPOL2TP) += pppox.o
+-obj-$(CONFIG_PPPOPPTP) += pppox.o pptp.o
++# obj-$(CONFIG_PPPOPPTP) += pppox.o pptp.o
+ obj-$(CONFIG_PPTP) += pppox.o pptp.o
+Index: linux-3.10.14/include/linux/skbuff.h
+===================================================================
+--- linux-3.10.14.orig/include/linux/skbuff.h	2014-09-02 16:42:51.000000000 +0800
++++ linux-3.10.14/include/linux/skbuff.h	2014-10-11 13:39:41.962340202 +0800
+@@ -1865,7 +1865,7 @@
+  * NET_IP_ALIGN(2) + ethernet_header(14) + IP_header(20/40) + ports(8)
+  */
+ #ifndef NET_SKB_PAD
+-#if defined (CONFIG_PPPOPPTP) || defined (CONFIG_PPPOL2TP)
++#if defined (CONFIG_PPTP) || defined (CONFIG_PPPOL2TP)
+ #define NET_SKB_PAD             96
+ #define NET_SKB_PAD_ORIG        max(32, L1_CACHE_BYTES)
+ #else

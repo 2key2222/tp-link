@@ -1,0 +1,17 @@
+--- a/proto-shell.c	2015-08-26 20:39:17.106271731 +0800
++++ b/proto-shell.c	2015-08-26 20:43:18.893328728 +0800
+@@ -303,9 +303,11 @@
+ 	struct proto_shell_state *state;
+ 
+ 	state = container_of(timeout, struct proto_shell_state, teardown_timeout);
+-
+-	netifd_kill_process(&state->script_task);
+-	netifd_kill_process(&state->proto_task);
++	if (state->sm == S_TEARDOWN)
++	{
++		netifd_kill_process(&state->script_task);
++		netifd_kill_process(&state->proto_task);
++	}
+ 	proto_shell_task_finish(state, NULL);
+ }
+ 

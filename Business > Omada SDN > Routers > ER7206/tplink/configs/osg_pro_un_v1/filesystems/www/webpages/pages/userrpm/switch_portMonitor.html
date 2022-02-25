@@ -1,0 +1,245 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Switch_portMonitor</title>
+</head>
+
+<body>
+<div class="func-container">
+
+	<div id="function_setting">
+	 	
+	 		<input name="state" id="monitor_enable"/>
+	 		<input name="mode" id="monitor_mode"/>
+	 	
+	</div>
+
+    <div id="forform"></div>
+    <div id="monitor_list">
+        <div class="container grid-container">
+            <div class="container grid-header-container">
+                <table border="0" cellspacing="0" cellpadding="0">
+                    <tr class="grid-header-tr">
+                        <th class="grid-header grid-header-1" >
+                            <span id="monitor-port" class="content"></span>
+                        </th>
+                        <th class="grid-header grid-header-2">
+                            <span id="monitored-port" class="content"></span>
+                        </th>
+                    </tr>
+                </table>
+            </div>
+            <div class="grid-content-container-outer">
+                <div class="grid-content-container" style="overflow:visible;">
+                    <table border="0" cellspacing="0" cellpadding="0" id="table">
+                        
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div id="button-wrap" style="margin-top:30px;">
+            <button id="submit_btn"></button>
+        </div>     
+    </div>
+  
+
+	 <div id="monitor_help"></div>
+</div>
+
+<script type="text/javascript">
+try{
+    $
+}catch(e){
+    location.href = "/";
+};
+
+$(document).ready(function(e){
+	var URL_MONITOR_LIST = $.su.url("/admin/switch?form=mirror");
+    
+    var monitorProxy = new $.su.Proxy({
+        url: URL_MONITOR_LIST
+    });
+
+    $("#function_setting").panel({
+        title: $.su.CHAR.SWITCH.FUNCTION,
+        collapsible: false
+    }); 
+
+    $("#monitor_list").panel({
+        title: $.su.CHAR.SWITCH.MONITOR_LIST,
+        collapsible: false
+    }); 
+
+    $("span#monitor-port").html($.su.CHAR.SWITCH.MONITOR_PORT);
+    $("span#monitored-port").html($.su.CHAR.SWITCH.MONITOR_DEPORT);   
+    $("button#submit_btn").html($.su.CHAR.OPERATION.SAVE);
+
+    var inHTML = "";
+
+    for(var i = 1; i <= 5; i++){
+        inHTML += "<tr class=\"grid-content-tr grid-content-tr-key-"+i+"\">";
+        inHTML +=      "<td class=\"grid-content-td grid-content-td-1 grid-content-td-istate\" >";
+        inHTML +=           "<input id=\"port"+i+"_monit\" name=\"port"+i+"_monit\"/>";
+        inHTML +=      "</td>";
+        inHTML +=      "<td class=\"grid-content-td grid-content-td-2 grid-content-td-imode\" >";
+        inHTML +=           "<input id=\"port"+i+"_monited\" name=\"port"+i+"_monited\"/>";    
+        inHTML +=      "</td>";
+        inHTML += "</tr>";
+    }
+    
+    $("#table").html(inHTML);
+
+    $("#monitor_enable").checkbox({
+    	items:[
+    		{boxlabel: $.su.CHAR.SWITCH.ENABLE_MONITOR, inputValue: "on", uncheckedValue: "off"}
+    	]
+    }).on("ev_change", function(e, oldValue, newValue){
+    	if("on" === newValue[0] || "state" == newValue[0]){
+    		$("#monitor_mode").combobox("enableStyle");
+
+    	}else{
+    		$("#monitor_mode").combobox("disableStyle");    
+    	}
+    });
+
+    $("#monitor_mode").combobox({
+    	fieldLabel: /*"&nbsp&nbsp" +*/ $.su.CHAR.SWITCH.MONITOR_MODE,
+    	items:[
+    		{name:$.su.CHAR.SWITCH.MONITOR_INPUT, value: "ingress"},
+    		{name:$.su.CHAR.SWITCH.MONITOR_OUTPUT, value: "egress"},
+    		{name:$.su.CHAR.SWITCH.MONITOR_INPUT_OUTPUT, value: "both", selected: true}
+    	]
+    }); 
+
+    /*tr1-5*/
+    for(var i = 1; i <= 5; i++){
+        $("#port"+i+"_monit").radio({
+        	labelCls:"xxxxs",
+            items:[
+                {boxlabel: "Port"+i, inputValue: 'on'},
+            ]
+        }).on("ev_change", function(e, oldValue, newValue){
+        	/*跟其他行互斥*/
+        	var k = parseInt(this.id.match(/\d/));
+        	if("on" == newValue ){
+        		for(var j = 1; j <= 5; j++){
+	        		if(k != j){
+	        			$("#port"+j+"_monit").radio("reset");
+                        $("#port"+j+"_monited").checkbox("reset");
+	        			$("#port"+j+"_monited").checkbox("enable");
+	        		}	        		
+	        	} 
+	        	$("#port"+k+"_monited").checkbox("reset"); 
+	        	$("#port"+k+"_monited").checkbox("disable");  
+        	}
+        	   	
+        });
+
+        $("#port"+i+"_monited").checkbox({
+            items:[
+                {boxlabel:"&nbsp&nbspPort"+i, inputValue: "on", uncheckedValue: "off"}
+            ]
+        });
+    }
+
+    var forform = $("#forform").form({
+        showPrompt:true
+    });
+
+    /*初始化加载*/
+    monitorProxy.read({
+        'method':'get',
+        'params': {},
+        'id':1
+    },function(data){
+        var port = data.mirrorport;
+        for(var i = 1; i <= 5; i++){
+            if(port != i){
+                $("#port"+i+"_monit").radio("reset");
+                $("#port"+i+"_monited").checkbox("reset");
+                $("#port"+i+"_monited").checkbox("enable");
+            }
+            $("#port"+port+"_monited").checkbox("reset"); 
+            $("#port"+port+"_monited").checkbox("disable");     
+            $("#port"+port+"_monit").radio("setValue", "on");           
+        } 
+        $(data.mirroredports).each(function(k, obj){
+            var deport = parseInt(obj);
+            $("#port"+deport+"_monited").checkbox("setValue", "on");
+        });
+
+        $("#monitor_enable").checkbox("setValue", data.state);
+        $("#monitor_mode").combobox("setValue", data.mode);
+
+    },function(errcode){});
+
+
+    $("button#submit_btn").button({
+        handler:function(e){
+            var state = $("#monitor_enable").checkbox("getValue1");
+            if("on" == state[0] || "port"+i+"_status" == state[0]){
+                state = "on";
+            }else{
+                state = "off";
+            }
+            var mode = $("#monitor_mode").combobox("getValue");
+
+            var port = "";
+            var deport = [];
+
+            for(var i = 1; i <= 5; i++){
+                if("on" == $("#port"+i+"_monit").radio("getValue")){
+                    port = i.toString();
+                }
+                if("on" == $("#port"+i+"_monited").checkbox("getValue1")){
+                    deport.push(i.toString());
+                }
+            }
+
+            if(deport.length < 1){
+                if ($.su.app && $.su.app.errorOperation && $.su.app.errorOperation.denied){
+                    $.su.app.errorOperation.denied(15112);
+                }
+                return false;
+            }
+
+            var para = {
+                "mirrorport": port,
+                "mirroredports": deport,
+                "state": state,
+                "mode": mode[0]
+            };
+
+            $.su.loading.show();
+
+            monitorProxy.write(
+            {
+                'method':'set',
+                'params': para
+            }, 
+            function(data){
+                forform.form("prompt", true);
+                $.su.loading.hide();
+            },function(errcode){
+                forform.form("prompt", false);
+                $.su.loading.hide();
+            },function(fail){
+                forform.form("prompt", false);
+                $.su.loading.hide();
+            });
+        }
+    });
+
+
+	var monitor_help = new $.su.Help({
+		container: "div#monitor_help",
+		content: ["SWITCH_MONITOR_ENABLE", "SWITCH_MONITOR_SETTING"]
+	});
+});
+</script>
+</body>
+
+</html>
+
+			

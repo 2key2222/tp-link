@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+</head>
+<body>
+<div id="func_settings">
+    <form id="func_settings_f">
+        <input id="ssid_list" name="key_idx"/>
+        <input id="radio_id" name="radio_id" type="hidden" value="0"/>
+    </form>
+    <div id="sta_list">
+        <div id="sta_list_g">
+        </div>
+        <div id="btn_set">
+            <button id="refresh_sta" type="button"></button>
+            <input id="clear_sta" type="hidden"/>
+        </div>
+    </div>
+</div>
+
+
+
+<div id="wireless-host-help"></div>
+
+<script type="application/javascript">
+    //<![CDATA[
+    try {
+        $
+    } catch (e) {
+        location.href = "/";
+    }
+    ;
+    $(document).ready(function (e) {
+        var ssidUrl = "/admin/wlan_station?form=ssidlist",
+                ssidProxy = new $.su.Proxy({url: $.su.url(ssidUrl)}),
+                staUrl = "/admin/wlan_station?form=stainfo",
+                staProxy  = new $.su.Proxy({url : $.su.url(staUrl)}),
+                radio_id = 0;
+
+        $("#radio_id").val(radio_id);
+        function refresh_sta(){
+            ssidProxy.read({
+                params: {
+                }
+            }, function(jsonData){
+                var items = [{"name": $.su.CHAR.WIRELESS_HOST_STATE.HOST_DISPLAY_ALL, "value":-1}];
+                var ssid_items = [];
+                for ( var item in jsonData ) {
+                    ssid_items = ssid_items.concat(jsonData[item]);
+                }
+                global.refresh(items.concat(ssid_items));
+            });
+        };
+
+        function clear_sta(){
+            staProxy.write({
+                params: {
+                    key_idx: global.getData()[0]
+                }
+            }, function(jsonData){
+                staList.refresh(jsonData);
+            });
+        }
+
+        refresh_sta();
+        
+        $("#refresh_sta").button({
+            fieldLabel: null,
+            text: $.su.CHAR.OPERATION.REFRESH,
+            cls: 'inline',
+            handler: function(){
+                //refresh_sta();
+                $.su.loading.show();
+                staProxy.read({
+                    params: {
+                        key_idx: global.getData() ? global.getData()[0] : -1
+                    }
+                }, function(jsonData){
+                    $.su.loading.hide();
+                    staList.refresh(jsonData);
+                }, function(error){
+                    $.su.loading.show();
+                }, function(fail){
+                    $.su.loading.show();
+                });
+            }
+        }).button("hide");
+
+        
+
+        $("#clear_sta").button({
+            fieldLabel: null,
+            text: $.su.CHAR.OPERATION.CLEAR,
+            cls: 'inline',
+            handler: function(){
+                clear_sta();
+            }
+        }).button("hide");
+
+        var global = (function(){
+            var list = $("#ssid_list").combobox({
+                fieldLabel: $.su.CHAR.WIRELESS_HOST_STATE.HOST_DISPLAY_RANGE,
+                multiSelect:false,
+                allowBlank: false,
+                alwaysTrigger: false,
+                value: 1,
+                inputCls: "xl"
+            }).on('ev_change', function(e, oldValue, newValue){
+                staProxy.read({
+                    params: {
+                        key_idx: newValue[0]
+                    }
+                }, function(jsonData){
+                    staList.refresh(jsonData);
+                });
+            });
+
+            var form = $("#func_settings_f").form({
+                fields: [
+                    {name: "key_idx", mapping: "key_idx"}
+                ]
+            });
+
+            var panel = $("#func_settings").panel({
+                title: $.su.CHAR.WIRELESS_HOST_STATE.HOST_STATE,
+                help: $("#wireless-host-help")
+            });
+
+            return {
+                refresh: function(jsonData){
+                    list.combobox("loadData", jsonData);
+                    list.combobox("setValue", -1);
+                },
+                getData: function(){
+                    return list.combobox("getValue");
+                }
+            };
+        })();
+
+        var staList = (function(){
+            var grid = $("#sta_list_g").grid({
+                store:{
+                    fields: [
+                        {name: "host_name", mapping:"host_name"},
+                        {name: "sta_mac", mapping:"sta_mac"},
+                        {name: "ssid", mapping:"ssid"},
+                        {name: "state", mapping:"state"},
+                        {name: "tx_rate", mapping:"tx_rate"},
+                        {name: "rx_rate", mapping:"rx_rate"}
+                    ],
+                    autoLoad: false
+                },
+                columns: [
+                    {
+                        xtype: "rownumberer"
+                    },
+                    {
+                        text: $.su.CHAR.WIRELESS_HOST_STATE.HOST_NAME,
+                        dataIndex: "host_name"
+                    },
+                    {
+                        text: $.su.CHAR.WIRELESS_HOST_STATE.HOST_MAC,
+                        dataIndex: "sta_mac"
+                    },
+                    {
+                        text: $.su.CHAR.WIRELESS_HOST_STATE.HOST_SSID,
+                        dataIndex: "ssid"
+                    },
+                    {
+                        text: $.su.CHAR.WIRELESS_HOST_STATE.UPLOAD_RATE,
+                        dataIndex: "tx_rate"
+                    },
+                    {
+                        text: $.su.CHAR.WIRELESS_HOST_STATE.DOWNLOAD_RATE,
+                        dataIndex: "rx_rate"
+                    },
+                    {
+                        text: $.su.CHAR.GRID.STATUS,
+                        dataIndex: "state",
+                        renderer: function(v){
+                            if(v == 0){
+                                return $.su.CHAR.OPERATION.CONNECTED;
+                            }else{
+                                return $.su.CHAR.OPERATION.DISCONNECTED;
+                            }
+                        }
+                    }
+                ],
+                operation: [{
+                    xtype: "totalCount",
+                    fieldLabel: $.su.CHAR.WIRELESS_HOST_STATE.HOST_CONN_CNT,
+                    cls: "left xs",
+                    inputCls:"xs",
+                    labelCls:"xs"
+                }, "refresh"]
+            });
+
+            return {
+                refresh: function(jsonData){
+                    var store = grid.grid("getStore");
+                    store.loadData(jsonData.sta_info);
+                    //grid.grid("load", jsonData.sta_info);
+                }
+            };
+
+        })();
+
+        $("a.operation-btn.btn-refresh").click(function(e){
+            e.stopPropagation();
+            e.preventDefault();
+            $("#refresh_sta").click();
+        });
+
+
+        var helpInfo = new $.su.Help({
+            container: "#wireless-host-help",
+            content: ["WIRELESS_HOST_STATUS"]
+        });
+    });
+</script>
+</body>
+</html>

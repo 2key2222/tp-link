@@ -1,0 +1,36 @@
+
+1.image
+make tl-er7206_un_v1_config
+make
+
+2.uboot
+###### prepare toolchain ######
+cd tplink/u-boot/sdk-3.x
+source env-setup OCTEON_CN70XX
+
+###### stage1: spi-boot.bin ######
+cd tplink/u-boot/sdk-3.x/bootloader/spi-boot
+make clean
+make
+
+###### stage2: u-boot-octeon_generic_spi_stage2.bin ######
+export PATH=$PATH:xxx/sdk-3.x/tools/bin
+cd u-boot_rtl8367x
+make octeon_generic_spi_stage2_osg_pro_factory_config
+make clean
+make
+
+###### stage3: u-boot-octeon_evb7000_sff.bin ######
+cd u-boot_rtl8367x
+make octeon_evb7000_sff_osg_pro_factory_config
+make clean
+make
+
+###### make uboot ######
+cd tplink/u-boot/sdk-3.x/bootloader/
+./make_bootloader_3in1_osg_pro_factory.sh
+
+
+
+
+

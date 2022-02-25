@@ -1,0 +1,11 @@
+--- a/arch/mips/cavium-octeon/setup.c
++++ b/arch/mips/cavium-octeon/setup.c
+@@ -49,7 +49,7 @@
+ 
+ #define SDK_VERSION "3.1"
+ 
+-static unsigned long long MAX_MEMORY = 512ull << 20;
++static unsigned long long MAX_MEMORY = 1024ull << 20;
+ 
+ DEFINE_SEMAPHORE(octeon_bootbus_sem);
+ EXPORT_SYMBOL(octeon_bootbus_sem);

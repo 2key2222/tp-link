@@ -1,0 +1,17 @@
+Index: linux-3.10.14/arch/mips/include/asm/dma-mapping.h
+===================================================================
+--- linux-3.10.14.orig/arch/mips/include/asm/dma-mapping.h
++++ linux-3.10.14/arch/mips/include/asm/dma-mapping.h
+@@ -14,9 +14,12 @@ extern struct dma_map_ops *mips_dma_map_
+ 
+ static inline struct dma_map_ops *get_dma_ops(struct device *dev)
+ {
++	/* modify by dragon, for dma free error when wifi driver rmmod, 140719 */
++#if 0
+ 	if (dev && dev->archdata.dma_ops)
+ 		return dev->archdata.dma_ops;
+ 	else
++#endif
+ 		return mips_dma_map_ops;
+ }
+ 

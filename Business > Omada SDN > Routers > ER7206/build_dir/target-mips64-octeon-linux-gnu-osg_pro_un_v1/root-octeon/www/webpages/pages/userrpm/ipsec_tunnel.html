@@ -1,0 +1,1300 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>IPSEC</title>
+<style type="text/css">
+	.ike_stage{
+		height: 30px;
+        width: 95%;
+        line-height: 30px;
+        color: #555;
+        font-size: 14px;
+        font-weight: bold;
+        margin: 25px 0;
+        border-bottom: 1px solid #ccc;
+	}
+</style>
+</head>
+
+<body>
+<div class="func-container">
+   
+   <div id="own-editor">
+        
+		<div id="ipsec_tunnel_basic" >
+			<input type="text" id="name" name="name" value="" />	
+			<input id="pmode" name="pmode" type="text" />		
+			<input type="text" id="remote_peer" name="remote_peer" value="" />
+			<input type="text" id="remote_host" name="remote_host" value="" />
+			<input type="text" id="local_binding" name="local_binding" value="" />
+			<input type="text" id="local_network" name="local_network" value="" />
+			<input type="text" id="remote_network" name="remote_network" value="" />		
+			<input id="negotiation_strategy" name="negotiation_strategy"  class="hidden"/>			
+			<input type="text" id="psk" name="psk" value="" />
+			<input id="status" name="status" value="" />
+		</div>
+		
+		<div id="ipsec_tunnel_adv_btn" class="advanced-block part-seperate" type="button" >
+			<span class="advanced-icon"></span>
+			<span class="advanced-text"></span>
+		</div>	
+		<div id="ipsec_tunnel_basic_btn" class="basic-block part-seperate hidden" type="button" >
+			<span class="basic-icon"></span>
+			<span class="basic-text"></span>
+		</div>			
+
+		<div id="ipsec_tunnel_adv" class="hidden" >
+			<div class="ike_stage" id="ike_stage1"></div>
+            <input id="ike_proposal_1" name="ike_proposal_1" class=""/>
+			<input id="ike_proposal_2" name="ike_proposal_2" class=""/>
+			<input id="ike_proposal_3" name="ike_proposal_3" class=""/>
+			<input id="ike_proposal_4" name="ike_proposal_4" class=""/>
+			<input id="exchange_mode" name="exchange_mode" class="" />
+			<input id="connection_type" name="connection_type" class="" />
+			<input id="config_mode" name="config_mode" class="" />
+			<input id="ip_pool" name="ip_pool" class="" />
+			<input id="local_id_type" name="local_id_type" class="" />				
+			<input id="local_id_value" name="local_id_value" class="" />
+			<input id="remote_id_type" name="remote_id_type" class="" />
+			<input id="remote_id_value" name="remote_id_value" class="" />				
+			<input id="ikelifetime" name="ikelifetime" class="" />				
+			<input id="dpd_enable" name="dpd_enable" class="" />
+			<input id="dpd_interval" name="dpd_interval" class="" />
+
+            <div class="ike_stage" id="ike_stage2"></div>
+			<input id="mode" name="mode" class="" />
+			<input id="ph2_proposal_1" name="ph2_proposal_1" class=""/>											
+			<input id="ph2_proposal_2" name="ph2_proposal_2" class=""/>
+			<input id="ph2_proposal_3" name="ph2_proposal_3" class=""/>
+			<input id="ph2_proposal_4" name="ph2_proposal_4" class=""/>							
+			<input id="pfs" name="pfs" class="" />
+			<input id="lifetime" name="lifetime" class="" />		
+		</div>		
+		
+    </div>
+
+   <div id="delete_alert_cnt">
+	 	<div id="delete_pro_cnt" class="reboot-loading-msg">
+	    	<input id="delete_pro_bar" type="text" />
+	    </div>
+	</div> 
+
+    
+
+    <div id="ipsec_tunnel_lists">
+		<div id="ipsec_tunnel_lists_grid"> 
+		</div>
+	</div>
+
+	<div id="ipsec_tunnel_hlep">	</div>
+</div>
+
+<script type="text/javascript">
+try{
+    $
+}catch(e){
+    location.href = "/";
+};
+
+$(document).ready(function(e){
+	/*
+	var URL_IPSEC_TUNNEL_CHECK = $.su.url("/admin/ipsec?form=conn");
+
+	var checkProxy = new $.su.Proxy({
+        url:URL_IPSEC_TUNNEL_CHECK
+    });
+*/
+ 	var interfaceProxy = new $.su.Proxy({
+		url: $.su.url('/admin/interface?form=status2'),
+		async: false
+	});	
+   	var IP_ARR = [];
+
+    $("#delete_alert_cnt").msg({
+		cls: 'warning reboot-confirm-size',
+		type: "confirm",
+		closeBtn: false,
+		okHandler:function(){},
+		cancelHandler:function(){}
+	});
+
+	$("#delete_alert_cnt").msg("hideButtons");
+	
+	$("#delete_pro_bar").waitingbar({
+		fieldLabel:$.su.CHAR.IPSEC_SETTING.WAIT_TIP,
+		labelCls:"xxxl"
+	});
+
+	/*
+	function del_check(){
+		checkProxy.write({'method':'del_check'}, function(data){
+			if(data.finish == "true"){
+				$("#delete_alert_cnt").msg("hide");
+				$("#delete_pro_bar").waitingbar("stop");
+				$("#delete_pro_bar").waitingbar("reset");
+			}else{
+				$("#delete_alert_cnt").msg("show");
+				$("#delete_pro_bar").waitingbar("run");
+			}
+			
+		});
+	}
+	*/
+	
+	 
+	$("#ipsec_tunnel_setting").panel({
+		title: $.su.CHAR.IPSEC_SETTING.TITLE,
+		collapsible: false
+	}); 
+	
+	$("span.advanced-text").html($.su.CHAR.IPSEC_SETTING.ADVANCED);
+	$("span.basic-text").html($.su.CHAR.IPSEC_SETTING.BASIC);
+
+	
+	$("#name").textbox({
+		fieldLabel: $.su.CHAR.IPSEC_SETTING.TUNNEL_LISTS_NAME,
+		tips: $.su.CHAR.IPSEC_SETTING.NAME_TIPS,
+		//labelCls: 'l',
+		//cls: 'part-seperate',
+		inputCls:'xl',
+		allowBlank:false,
+        vtype: "name",		
+        maxLength: 32,
+        minLength: 1,
+        autoTrim:false,
+		validator: function(v) {
+			//console.log(v)
+			return true;
+        }
+	});
+
+	$("#pmode").combobox({
+		fieldLabel: $.su.CHAR.IPSEC_SETTING.STRATEGY_MODE,
+		inputCls:'xl',
+		items: [
+			{"value": "LAN-to-LAN",    "name": "LAN-to-LAN"},
+			{"value": "Client-to-LAN", "name": "Client-to-LAN"}
+		]
+	}).on("ev_change", function(e, oldValue, newValue){
+			
+		switch(newValue[0])
+		{
+			case "LAN-to-LAN":
+				$("#remote_host").textbox("hide");
+				$("#remote_peer").textbox("show");
+				$("#remote_network").subnet("show");
+				
+				break;
+			case "Client-to-LAN":
+				$("#remote_peer").textbox("hide");
+				$("#remote_host").textbox("show");
+				$("#remote_network").subnet("hide");
+				break;
+		}
+
+	});
+
+	$("#remote_host").textbox({
+		fieldLabel: $.su.CHAR.IPSEC_SETTING.REMOTE_HOST,
+		//labelCls: 'l',
+		inputCls:'xl',
+		allowBlank:false,
+		tips: $.su.CHAR.IPSEC_SETTING.REMOTE_PEER_TIPS,
+		vtype:"ip_domain",
+		maxLength:253
+	}).on("ev_change", function(e, v){
+		$("#remote_peer").textbox("setValue", v);
+	});
+
+	$("#remote_peer").textbox({
+		fieldLabel: $.su.CHAR.IPSEC_SETTING.REMOTE_PEER,
+		//labelCls: 'l',
+		inputCls:'xl', 
+		allowBlank:false,
+		tips: $.su.CHAR.IPSEC_SETTING.REMOTE_PEER_TIPS,
+		vtype:"ip_domain",
+		maxLength:253
+		//textFormat: $.su.format.ip
+	}).on("ev_change", function(e, v){
+		$("#remote_host").textbox("setValue", v);
+	});
+	
+		
+	$("#local_binding").combobox({
+		fieldLabel: $.su.CHAR.IPSEC_SETTING.LOCAL_BINDING,
+		inputCls:'xl',
+		allowBlank:false,
+		vtype:"string_visible_allow_blank",
+		items:[
+			{name:"---",value:'---'}
+		]
+	});
+
+    function ipLenToIpMask(len){
+    	len = parseInt(len);
+        if(!len || len < 0 || len > 32){
+            return "0.0.0.0";
+        }
+        var shift = 32 - parseInt(len);
+        var maskInt = 0xFFFFFFFF << shift;
+        return $.su.func.intToIp(maskInt);
+    }
+
+	function checkNetworkConflict(net1, net2) {
+		var ip_mask_1 = net1.split(/\//);
+		var ip_mask_2 = net2.split(/\//);
+		var mask = parseInt(ip_mask_1[1]);
+		if (mask > parseInt(ip_mask_2[1])) {
+			mask = parseInt(ip_mask_2[1])
+		}
+
+		var ip_1 = $.su.func.ipToInt(ip_mask_1[0]);
+		var ip_2 = $.su.func.ipToInt(ip_mask_2[0]);
+		var net_num_1 = ip_1 >>> (32 - mask);
+		var net_num_2 = ip_2 >>> (32 - mask);
+		return net_num_1 == net_num_2 ? true : false;
+	}
+
+	$("#local_network").subnet({
+		inputCls:"xl",
+		fieldLabel: $.su.CHAR.IPSEC_SETTING.TUNNEL_LISTS_LOCAL_NETWORK,
+		//labelCls: 'l',
+		allowBlank:false,
+		validator:function(v){
+			var vals = v.split(/\//);
+			var ip = vals[0];
+			var mask = vals[1];
+			var result = new $.su.vtype({vtype:'ip'}).validate(ip);
+			if(result !== true){
+				return result;
+			}
+			result = new $.su.vtype({vtype:'number', min:1, max: 32}).validate(mask);
+			if(result !== true){
+				return $.su.CHAR.IPSEC_SETTING.MASK_TIP; //"请输入正确的掩码";
+			}
+
+			var p_mode = $("#pmode").combobox("getValue");
+			if(p_mode[0] && p_mode[0] != "Client-to-LAN")
+			{
+				var remote_subnet = $("#remote_network").val();
+				if (checkNetworkConflict(v, remote_subnet)) {
+					return $.su.CHAR.IPSEC_SETTING.ERR1; // "The local subnet and remote subnet should not be in the same network segment."
+				}
+			}
+			return true;
+		}
+	});
+	
+	$("#remote_network").subnet({
+		fieldLabel:$.su.CHAR.IPSEC_SETTING.TUNNEL_LISTS_REMOTE_NETWORK,
+		inputCls:"xl",
+		allowBlank:false,
+		validator:function(v){
+			var p_mode = $("#pmode").combobox("getValue");
+			if(p_mode[0] && p_mode[0] == "Client-to-LAN")
+			{
+				return true;
+			}
+
+			var vals = v.split(/\//);
+			var ip = vals[0];
+			var mask = vals[1];
+			var result = new $.su.vtype({vtype:'ip'}).validate(ip);
+			if(result !== true){
+				return result;
+			}
+			result = new $.su.vtype({vtype:'number', min:1, max: 32}).validate(mask);
+			if(result !== true){
+				return $.su.CHAR.IPSEC_SETTING.MASK_TIP;//"请输入正确的掩码";
+			}
+
+			var local_subnet = $("#local_network").val();
+			if (checkNetworkConflict(v, local_subnet)) {
+				return $.su.CHAR.IPSEC_SETTING.ERR1; // "The local subnet and remote subnet should not be in the same network segment."
+			}
+
+            for(var i = 0; i < IP_ARR.length; i++) {
+                if($.su.func.isLan(IP_ARR[i].iface)){
+                    var lan_mask = IP_ARR[i].netmask;
+                    var lan_ip   = IP_ARR[i].ipaddr;
+                    var my_mask  = ipLenToIpMask(mask);
+                    var my_ip = $.su.func.ipToInt(ip);
+                    lan_ip   = $.su.func.ipToInt(lan_ip);
+                    lan_mask = $.su.func.ipToInt(lan_mask);
+                    my_mask  = $.su.func.ipToInt(my_mask);
+
+                    var smaller_mask = my_mask < lan_mask ? my_mask : lan_mask;
+                    if((lan_ip & smaller_mask) == (my_ip & smaller_mask)){
+                        return $.su.CHAR.IPSEC_SETTING.ERR2;  // "The remote subnet and the IP address of the LAN port should not be in the same network segment."
+                    }
+                    break;
+                }
+            }
+			return true;
+		}
+		//,
+		//vtype: "subnet"       
+	});
+	
+/*由于目前仅仅支持ikev1版本，因此不需要开放该配置项给用户，保留代码，以便以后开放。
+	$("#ipsec_negotiate_strategy").radio({
+		fieldLabel: $.su.CHAR.IPSEC_SETTING.NEGOTIATIE_STRATEGY,
+		//labelCls: 'l',
+		columns: 3,		
+		vtype:"string_visible_allow_blank",
+		cls: 'inline',
+		allowBlank:false,
+		items:[
+					{boxlabel: $.su.CHAR.IPSEC_SETTING.IKEv1_STRATEGY, name:'negotiation_strategy', inputValue:'ikev1',checked:true},
+					{boxlabel: $.su.CHAR.IPSEC_SETTING.IKEv2_STRATEGY, name:'negotiation_strategy', inputValue:'ikev2'},
+					{boxlabel: $.su.CHAR.IPSEC_SETTING.MANUALLY_STRATEGY, name:'negotiation_strategy', inputValue:'manually'}						
+			],
+		validator : function(val){        	
+				if(val=='ikev2'){					
+					return false;
+				}
+				if(val=='manually'){					
+					return false;
+				}				
+        	return true;
+        }
+	}).on('ev_change', function(e, oldValue, newValue){
+		if(newValue!='ikev1'){
+			//$("#ipsec_negotiate_strategy").fieldset('hide');			
+		//	$("#ipsec_negotiate_strategy").textbox("setError");
+		}
+	});
+	*/
+	$("#psk").textbox({
+		fieldLabel:  $.su.CHAR.IPSEC_SETTING.PSK,
+		//labelCls: 'l',
+		inputCls:"xl",
+		allowBlank:false,
+		tips:  $.su.CHAR.IPSEC_SETTING.PSK_TIPS,
+		vtype: "string_visible_allow_blank",	
+		maxLength: 128,
+        minLength: 1,
+		autoTrim:true
+	});
+	
+	$("#status").checkbox({
+		fieldLabel: $.su.CHAR.IPSEC_SETTING.STATUS,
+		//labelCls: 'l',
+		inputCls:"xl",
+		columns: 2,
+		cls: 'inline',
+		allowBlank:false,
+		items:[
+			{boxlabel: $.su.CHAR.IPSEC_SETTING.ENABLE_THIS_ENTRY, name:'status', inputValue:'on' ,uncheckedValue:'off',checked:true}				
+		],
+		validator : function(val){        	
+			return true;
+        }
+	}).on('ev_change', function(e, oldValue, newValue){
+		if(newValue!='enable'){
+			//$("#ipsec_negotiate_strategy").fieldset('hide');			
+		//	$("#ipsec_negotiate_strategy").textbox("setError");
+		}
+	});	
+	
+	$("#ipsec_tunnel_adv").fieldset({
+		fields: [			
+			{name: "specific_ip"}
+		]
+	});	
+	
+	$("div#ipsec_tunnel_adv_btn").on('click',function(){
+		$('#ipsec_tunnel_adv').fieldset('show');
+		$(this).hide();
+		$('#ipsec_tunnel_basic_btn').css('display', 'inline-block');
+	});
+	
+	$("div#ipsec_tunnel_basic_btn").on('click',function(){
+		$('#ipsec_tunnel_adv').fieldset('hide');
+		$(this).hide();
+		$('#ipsec_tunnel_adv_btn').css('display', 'inline-block');
+	});	
+	
+	$("#ike_stage1").html($.su.CHAR.IPSEC_SETTING.IKE_STAGE1);
+
+	
+	$("#ike_proposal_1").combobox({
+		fieldLabel:$.su.CHAR.IPSEC_SETTING.PROPOSAL_NOTE,
+		//labelCls:'l',		
+		inputCls:"xl",
+		allowBlank:false,
+		vtype:"string_visible_allow_blank",
+		items:[
+			{value:"md5-des-modp768",name:"md5-des-dh1" },
+			{value:"md5-des-modp1024", name:"md5-des-dh2" },
+			{value:"md5-des-modp1536", name:"md5-des-dh5" },
+			{value:"md5-3des-modp768", name:"md5-3des-dh1" },
+			{value:"md5-3des-modp1024", name:"md5-3des-dh2"},
+			{value:"md5-3des-modp1536", name:"md5-3des-dh5" },
+			{value:"md5-aes128-modp768", name: "md5-aes128-dh1"},
+			{value:"md5-aes128-modp1024", name:"md5-aes128-dh2" },
+			{value:"md5-aes128-modp1536", name:"md5-aes128-dh5" }, 
+			{value:"md5-aes192-modp768", name:"md5-aes192-dh1" },
+			{value:"md5-aes192-modp1024", name: "md5-aes192-dh2"},
+			{value:"md5-aes192-modp1536", name: "md5-aes192-dh5"},
+			{value:"md5-aes256-modp768", name:"md5-aes256-dh1" },
+			{value:"md5-aes256-modp1024", name: "md5-aes256-dh2"},
+			{value:"md5-aes256-modp1536", name:"md5-aes256-dh5" }, 
+			{value:"sha1-des-modp768", name:"sha1-des-dh1" },
+			{value:"sha1-des-modp1024", name: "sha1-des-dh2"},
+			{value:"sha1-des-modp1536", name:"sha1-des-dh5" }, 
+			{value:"sha1-3des-modp768", name:"sha1-3des-dh1" }, 
+			{value:"sha1-3des-modp1024", name:"sha1-3des-dh2" },
+			{value:"sha1-3des-modp1536", name:"sha1-3des-dh5" }, 
+			{value:"sha1-aes128-modp768", name:"sha1-aes128-dh1" },
+			{value:"sha1-aes128-modp1024", name:"sha1-aes128-dh2" },
+			{value:"sha1-aes128-modp1536", name:"sha1-aes128-dh5" },
+			{value:"sha1-aes192-modp768", name:"sha1-aes192-dh1" },
+			{value:"sha1-aes192-modp1024", name:"sha1-aes192-dh2"},
+			{value:"sha1-aes192-modp1536", name: "sha1-aes192-dh5"},
+			{value:"sha1-aes256-modp768", name:"sha1-aes256-dh1" },
+			{value:"sha1-aes256-modp1024", name: "sha1-aes256-dh2", selected:true},
+			{value:"sha1-aes256-modp1536", name: "sha1-aes256-dh5"}
+		]
+	});
+	$("#ike_proposal_2").combobox({
+		fieldLabel: $.su.CHAR.IPSEC_SETTING.PROPOSAL_NOTE,
+		//labelCls:'l',
+		inputCls:"xl",
+		allowBlank:true,
+		vtype:"string_visible_allow_blank",
+		items:[
+			{value:"---",name:"---",selected:true},
+			{value:"md5-des-modp768",name:"md5-des-dh1" },
+			{value:"md5-des-modp1024", name:"md5-des-dh2" },
+			{value:"md5-des-modp1536", name:"md5-des-dh5" },
+			{value:"md5-3des-modp768", name:"md5-3des-dh1" },
+			{value:"md5-3des-modp1024", name:"md5-3des-dh2"},
+			{value:"md5-3des-modp1536", name:"md5-3des-dh5" },
+			{value:"md5-aes128-modp768", name: "md5-aes128-dh1"},
+			{value:"md5-aes128-modp1024", name:"md5-aes128-dh2" },
+			{value:"md5-aes128-modp1536", name:"md5-aes128-dh5" }, 
+			{value:"md5-aes192-modp768", name:"md5-aes192-dh1" },
+			{value:"md5-aes192-modp1024", name: "md5-aes192-dh2"},
+			{value:"md5-aes192-modp1536", name: "md5-aes192-dh5"},
+			{value:"md5-aes256-modp768", name:"md5-aes256-dh1" },
+			{value:"md5-aes256-modp1024", name: "md5-aes256-dh2"},
+			{value:"md5-aes256-modp1536", name:"md5-aes256-dh5" }, 
+			{value:"sha1-des-modp768", name:"sha1-des-dh1" },
+			{value:"sha1-des-modp1024", name: "sha1-des-dh2"},
+			{value:"sha1-des-modp1536", name:"sha1-des-dh5" }, 
+			{value:"sha1-3des-modp768", name:"sha1-3des-dh1" }, 
+			{value:"sha1-3des-modp1024", name:"sha1-3des-dh2" },
+			{value:"sha1-3des-modp1536", name:"sha1-3des-dh5" }, 
+			{value:"sha1-aes128-modp768", name:"sha1-aes128-dh1" },
+			{value:"sha1-aes128-modp1024", name:"sha1-aes128-dh2" },
+			{value:"sha1-aes128-modp1536", name:"sha1-aes128-dh5" },
+			{value:"sha1-aes192-modp768", name:"sha1-aes192-dh1" },
+			{value:"sha1-aes192-modp1024", name:"sha1-aes192-dh2"},
+			{value:"sha1-aes192-modp1536", name: "sha1-aes192-dh5"},
+			{value:"sha1-aes256-modp768", name:"sha1-aes256-dh1" },
+			{value:"sha1-aes256-modp1024", name: "sha1-aes256-dh2"},
+			{value:"sha1-aes256-modp1536", name: "sha1-aes256-dh5"}
+		]
+	});
+	$("#ike_proposal_3").combobox({
+		fieldLabel: $.su.CHAR.IPSEC_SETTING.PROPOSAL_NOTE,
+		//labelCls:'l',		
+		inputCls:"xl",
+		allowBlank:true,
+		vtype:"string_visible_allow_blank",
+		items:[
+			{value:"---",name:"---",selected:true},
+			{value:"md5-des-modp768",name:"md5-des-dh1" },
+			{value:"md5-des-modp1024", name:"md5-des-dh2" },
+			{value:"md5-des-modp1536", name:"md5-des-dh5" },
+			{value:"md5-3des-modp768", name:"md5-3des-dh1" },
+			{value:"md5-3des-modp1024", name:"md5-3des-dh2"},
+			{value:"md5-3des-modp1536", name:"md5-3des-dh5" },
+			{value:"md5-aes128-modp768", name: "md5-aes128-dh1"},
+			{value:"md5-aes128-modp1024", name:"md5-aes128-dh2" },
+			{value:"md5-aes128-modp1536", name:"md5-aes128-dh5" }, 
+			{value:"md5-aes192-modp768", name:"md5-aes192-dh1" },
+			{value:"md5-aes192-modp1024", name: "md5-aes192-dh2"},
+			{value:"md5-aes192-modp1536", name: "md5-aes192-dh5"},
+			{value:"md5-aes256-modp768", name:"md5-aes256-dh1" },
+			{value:"md5-aes256-modp1024", name: "md5-aes256-dh2"},
+			{value:"md5-aes256-modp1536", name:"md5-aes256-dh5" }, 
+			{value:"sha1-des-modp768", name:"sha1-des-dh1" },
+			{value:"sha1-des-modp1024", name: "sha1-des-dh2"},
+			{value:"sha1-des-modp1536", name:"sha1-des-dh5" }, 
+			{value:"sha1-3des-modp768", name:"sha1-3des-dh1" }, 
+			{value:"sha1-3des-modp1024", name:"sha1-3des-dh2" },
+			{value:"sha1-3des-modp1536", name:"sha1-3des-dh5" }, 
+			{value:"sha1-aes128-modp768", name:"sha1-aes128-dh1" },
+			{value:"sha1-aes128-modp1024", name:"sha1-aes128-dh2" },
+			{value:"sha1-aes128-modp1536", name:"sha1-aes128-dh5" },
+			{value:"sha1-aes192-modp768", name:"sha1-aes192-dh1" },
+			{value:"sha1-aes192-modp1024", name:"sha1-aes192-dh2"},
+			{value:"sha1-aes192-modp1536", name: "sha1-aes192-dh5"},
+			{value:"sha1-aes256-modp768", name:"sha1-aes256-dh1" },
+			{value:"sha1-aes256-modp1024", name: "sha1-aes256-dh2"},
+			{value:"sha1-aes256-modp1536", name: "sha1-aes256-dh5"}
+			]
+	});
+	
+	$("#ike_proposal_4").combobox({
+		fieldLabel: $.su.CHAR.IPSEC_SETTING.PROPOSAL_NOTE,
+		//labelCls:'l',		
+		inputCls:"xl",
+		vtype:"string_visible_allow_blank",
+		allowBlank: true,					
+		items:[
+		{value:"---",name:"---",selected:true},
+			{value:"md5-des-modp768",name:"md5-des-dh1" },
+			{value:"md5-des-modp1024", name:"md5-des-dh2" },
+			{value:"md5-des-modp1536", name:"md5-des-dh5" },
+			{value:"md5-3des-modp768", name:"md5-3des-dh1" },
+			{value:"md5-3des-modp1024", name:"md5-3des-dh2"},
+			{value:"md5-3des-modp1536", name:"md5-3des-dh5" },
+			{value:"md5-aes128-modp768", name: "md5-aes128-dh1"},
+			{value:"md5-aes128-modp1024", name:"md5-aes128-dh2" },
+			{value:"md5-aes128-modp1536", name:"md5-aes128-dh5" }, 
+			{value:"md5-aes192-modp768", name:"md5-aes192-dh1" },
+			{value:"md5-aes192-modp1024", name: "md5-aes192-dh2"},
+			{value:"md5-aes192-modp1536", name: "md5-aes192-dh5"},
+			{value:"md5-aes256-modp768", name:"md5-aes256-dh1" },
+			{value:"md5-aes256-modp1024", name: "md5-aes256-dh2"},
+			{value:"md5-aes256-modp1536", name:"md5-aes256-dh5" }, 
+			{value:"sha1-des-modp768", name:"sha1-des-dh1" },
+			{value:"sha1-des-modp1024", name: "sha1-des-dh2"},
+			{value:"sha1-des-modp1536", name:"sha1-des-dh5" }, 
+			{value:"sha1-3des-modp768", name:"sha1-3des-dh1" }, 
+			{value:"sha1-3des-modp1024", name:"sha1-3des-dh2" },
+			{value:"sha1-3des-modp1536", name:"sha1-3des-dh5" }, 
+			{value:"sha1-aes128-modp768", name:"sha1-aes128-dh1" },
+			{value:"sha1-aes128-modp1024", name:"sha1-aes128-dh2" },
+			{value:"sha1-aes128-modp1536", name:"sha1-aes128-dh5" },
+			{value:"sha1-aes192-modp768", name:"sha1-aes192-dh1" },
+			{value:"sha1-aes192-modp1024", name:"sha1-aes192-dh2"},
+			{value:"sha1-aes192-modp1536", name: "sha1-aes192-dh5"},
+			{value:"sha1-aes256-modp768", name:"sha1-aes256-dh1" },
+			{value:"sha1-aes256-modp1024", name: "sha1-aes256-dh2"},
+			{value:"sha1-aes256-modp1536", name: "sha1-aes256-dh5"}
+		]
+	});	
+	
+	$("#exchange_mode").radio({
+		fieldLabel:$.su.CHAR.IPSEC_SETTING.EXCHANGE_MODE,
+		cls:"xl",
+		columns: 2,
+		allowBlank: false,
+		vtype:"string_visible_allow_blank",
+		items:[
+			{boxlabel: $.su.CHAR.IPSEC_SETTING.MAIN_MODE, name:'exchange_mode', inputValue:'main',checked:true},
+			{boxlabel: $.su.CHAR.IPSEC_SETTING.AGGRESSIVE_MODE, name:'exchange_mode', inputValue:'aggressive'}								
+		],
+		validator : function(val){        	
+			return true;
+        }
+	}).on('ev_change', function(e, oldValue, newValue){
+		if(newValue!='enable'){
+			return true;
+		}
+	});	
+
+	$("#connection_type").radio({
+		fieldLabel:$.su.CHAR.IPSEC_SETTING.CONNECTION_TYPE,
+		//labelCls: 'l',
+		columns: 2,
+		allowBlank: false,
+		vtype:"string_visible_allow_blank",
+		items:[
+		{boxlabel: $.su.CHAR.IPSEC_SETTING.INITIATOR, name:'connection_type', inputValue:'initiator',checked:true},
+		{boxlabel: $.su.CHAR.IPSEC_SETTING.RESPONDER, name:'connection_type', inputValue:'responder'}	],
+		validator : function(val){        	
+			return true;
+        }
+	}).on('ev_change', function(e, oldValue, newValue){
+		if(newValue!='enable'){
+			return true;
+		}
+	});	
+	//$("#connection_type").radio("hide");//7520隐藏
+	
+	$("#config_mode").checkbox({
+	    fieldLabel: $.su.CHAR.IPSEC_SETTING.CONFIG_MODE,
+	    allowBlank: false,
+		//labelCls: 'l',
+		columns: 1,
+		items:[
+			{boxlabel: $.su.CHAR.IPSEC_SETTING.CONFIG_MODE, name:'config_mode', inputValue:'enable' ,uncheckedValue:'disable'}						
+		] 
+	}).on("ev_change", function(e, oldValue, newValue){
+			//console.log("#####config_mode newValue######");
+			//console.log(newValue);
+			editor = tunnelGrid.grid("getEditor");
+			if(newValue == "config_mode" || newValue == "enable" ){
+				//console.log("config_mode is 'enable'.")								
+				$(editor).find("#ip_pool").combobox("enable");		
+				
+			}else{									
+				//console.log("config_mode is 'disable'.")
+				$(editor).find("#ip_pool").combobox("disable");		
+			}		
+    });
+	$("#config_mode").checkbox("hide")
+	
+	$("#ip_pool").combobox({
+		fieldLabel: $.su.CHAR.IPSEC_SETTING.IPPOOL,
+		inputCls:"xl",	
+		cls:'block',
+		allowBlank: true,
+		vtype:"string_visible_allow_blank",
+		items:[	
+			{value:"---",name:"---",selected:true}
+		]
+	});	
+	$("#ip_pool").combobox("hide")
+	
+	$("#local_id_type").radio({
+		fieldLabel:$.su.CHAR.IPSEC_SETTING.LOCAL_ID_TYPE,
+		//labelCls: 'l',
+		columns: 2,
+		allowBlank: false,
+		columns: 2,
+		items:[
+			{boxlabel: $.su.CHAR.IPSEC_SETTING.IP_ADDR, name:'local_id_type', inputValue:'IP_ADDRESS',checked:true},
+			{boxlabel: $.su.CHAR.IPSEC_SETTING.FQDN, name:'local_id_type', inputValue:'FQDN'}								
+		]   ,
+		validator : function(val){        	
+			return true;
+        }
+	}).on('ev_change', function(e, oldValue, newValue){
+		//console.log("#####local_id_type newValue######");
+		
+		editor = tunnelGrid.grid("getEditor");
+		if(newValue == "IP_ADDRESS" ){
+			//console.log("local_id_type is 'IP_ADDRESS'.")								
+			$(editor).find("#local_id_value").textbox("disable");		
+			
+		}else {									
+			//console.log("local_id_type is 'FQDN'.")
+			$(editor).find("#local_id_value").textbox("enable");		
+		}		
+	});	
+	
+	
+	$("#local_id_value").textbox({
+		fieldLabel: $.su.CHAR.IPSEC_SETTING.LOCAL_ID,
+		inputCls:"xl",			
+		allowBlank: true,
+		tips: $.su.CHAR.IPSEC_SETTING.LOCAL_ID_TIPS,	
+		vtype:"string_visible_allow_blank",
+		maxLength: 28,
+		minLength: 1,
+		autoTrim:true
+	});
+	
+	$("#remote_id_type").radio({
+		fieldLabel:$.su.CHAR.IPSEC_SETTING.REMOTE_ID_TYPE,
+		//labelCls: 'l',
+		columns: 2,
+	    allowBlank: false,		
+		items:[
+			{boxlabel: $.su.CHAR.IPSEC_SETTING.IP_ADDR, name:'remote_id_type', inputValue:'IP_ADDRESS',checked:true},
+			{boxlabel: $.su.CHAR.IPSEC_SETTING.FQDN, name:'remote_id_type', inputValue:'FQDN'}								
+		] ,
+		validator : function(val){        	
+			return true;
+        }
+	}).on('ev_change', function(e, oldValue, newValue){
+		editor = tunnelGrid.grid("getEditor");
+		
+		if(newValue == "IP_ADDRESS" ){
+			//console.log("remote_id_type is 'IP_ADDRESS'.")								
+			$(editor).find("#remote_id_value").textbox("disable");		
+			
+		}else {									
+			//console.log("remote_id_type is 'FQDN'.")
+			$(editor).find("#remote_id_value").textbox("enable");		
+		}
+	});	
+	
+	
+	$("#remote_id_value").textbox({
+		fieldLabel:$.su.CHAR.IPSEC_SETTING.REMOTE_ID,
+		inputCls:"xl",				
+	    allowBlank: true,				
+		tips: $.su.CHAR.IPSEC_SETTING.REMOTE_ID_TIPS,					
+		vtype:"string_visible_allow_blank",
+		maxLength: 28,
+		minLength: 1,
+		autoTrim:true
+	});
+	
+	
+	$("#ikelifetime").textbox({
+		fieldLabel: $.su.CHAR.IPSEC_SETTING.IKE_LIFE_TIME,
+		inputCls:"xl",		
+		value:"28800",
+		allowBlank: false,
+		tips: $.su.CHAR.IPSEC_SETTING.IKE_LIFT_TIME_NOTE,
+		vtype: {
+			vtype: "number",
+			max: 604800,
+			min: 60
+		}
+	});
+	
+	/*$("#dpd_enable").radio({
+		fieldLabel:  $.su.CHAR.IPSEC_SETTING.DPD_STATUS,
+		//labelCls: 'l',
+		allowBlank: false,
+		columns: 2,
+		items:[
+			{boxlabel: $.su.CHAR.IPSEC_SETTING.ENABLE_THIS_ENTRY, name:'dpd_enable', inputValue:'enable',checked:true},
+			{boxlabel: $.su.CHAR.IPSEC_SETTING.DISABLE_THIS_ENTRY, name:'dpd_enable', inputValue:'disable'}								
+		],
+		validator : function(val){        	
+			return true;
+        }
+	}).on('ev_change', function(e, oldValue, newValue){
+		editor = tunnelGrid.grid("getEditor");
+		
+		if(newValue == "disable" ){
+			//console.log("dpd_enable is 'disable'.")								
+			$(editor).find("#dpd_interval").textbox("disable");		
+			
+		}else {									
+			//console.log("dpd_enable is 'enable'.")
+			$(editor).find("#dpd_interval").textbox("enable");		
+		}
+	});*/
+	$("#dpd_enable").checkbox({
+		fieldLabel: $.su.CHAR.IPSEC_SETTING.DPD_STATUS,
+		//labelCls: 'l',
+		allowBlank: false,
+		columns: 2,
+		items:[
+			{boxlabel: $.su.CHAR.IPSEC_SETTING.ENABLE_THIS_ENTRY, inputValue:'enable' ,uncheckedValue:'disable',checked:true}				
+		],
+		validator : function(val){        	
+			return true;
+        }
+	}).on('ev_change', function(e, oldValue, newValue){
+		editor = tunnelGrid.grid("getEditor");
+		
+		if(newValue != "enable" && newValue != "dpd_enable"){
+			//console.log("dpd_enable is 'disable'.")								
+			$(editor).find("#dpd_interval").textbox("disable");		
+			
+		}else {									
+			//console.log("dpd_enable is 'enable'.")
+			$(editor).find("#dpd_interval").textbox("enable");		
+		}
+	});
+	
+	$("#dpd_interval").textbox({
+		fieldLabel:  $.su.CHAR.IPSEC_SETTING.DPP_INTERVAL,
+		inputCls:"xl",		
+		value:"10",
+		allowBlank: false,
+		tips: $.su.CHAR.IPSEC_SETTING.DPP_INTERVAL_NOTE,
+		vtype: {
+			vtype: "number",
+			max: 300,
+			min: 1
+		}
+	});
+	
+	$("#mode").radio({
+		fieldLabel:$.su.CHAR.IPSEC_SETTING.ENC_MODE,
+		//labelCls: 'l',
+		columns: 2,
+		allowBlank:false,
+		items:[
+			{boxlabel: $.su.CHAR.IPSEC_SETTING.TUNNEL, name:'mode', inputValue:'tunnel',checked:true},
+			{boxlabel: $.su.CHAR.IPSEC_SETTING.TRANSPORT, name:'mode', inputValue:'transport'}								
+		],
+		validator : function(val){        	
+			return true;
+        }
+	}).on('ev_change', function(e, oldValue, newValue){
+		if(newValue!='enable'){
+			return true;
+		}
+	});	
+
+	$("#ike_stage2").html($.su.CHAR.IPSEC_SETTING.IKE_STAGE2);
+
+	
+	$("#ph2_proposal_1").combobox({
+		fieldLabel: $.su.CHAR.IPSEC_SETTING.PROPOSAL_NOTE,
+		inputCls:"xl",	
+		vtype:"string_visible_allow_blank",
+		allowBlank: false,
+		items:[					
+				{value:"ah-md5",name:"ah-md5" },
+				{value:"ah-sha1", name:"ah-sha1" },
+				//{value:"esp-md5-null", name:"esp-md5-null" }, 
+				{value:"esp-md5-des", name:"esp-md5-des" },
+				{value:"esp-md5-3des", name:"esp-md5-3des"}, 
+				{value:"esp-md5-aes128", name:"esp-md5-aes128"},
+				{value:"esp-md5-aes192", name: "esp-md5-aes192"},
+				{value:"esp-md5-aes256", name:"esp-md5-aes256" },	
+			//	{value:"esp-sha1-null", name:"esp-sha1-null" }, 
+				{value:"esp-sha1-des", name:"esp-sha1-des" },
+				{value:"esp-sha1-3des", name: "esp-sha1-3des"}, 
+				{value:"esp-sha1-aes128", name: "esp-sha1-aes128"},
+				{value:"esp-sha1-aes192", name:"esp-sha1-aes192" },
+				{value:"esp-sha1-aes256", name: "esp-sha1-aes256", selected:true}
+		]
+	});
+	
+	$("#ph2_proposal_2").combobox({
+		fieldLabel: $.su.CHAR.IPSEC_SETTING.PROPOSAL_NOTE,
+		inputCls:"xl",	
+		cls:'block',
+		vtype:"string_visible_allow_blank",
+		allowBlank: true,
+		items:[
+				{value:"---",name:"---",selected:true},
+				{value:"ah-md5",name:"ah-md5" },
+				{value:"ah-sha1", name:"ah-sha1" },
+				//{value:"esp-md5-null", name:"esp-md5-null"}, 
+				{value:"esp-md5-des", name:"esp-md5-des" },
+				{value:"esp-md5-3des", name:"esp-md5-3des" }, 
+				{value:"esp-md5-aes128", name:"esp-md5-aes128" },
+				{value:"esp-md5-aes192", name: "esp-md5-aes192"},
+				{value:"esp-md5-aes256", name:"esp-md5-aes256" },	
+				//{value:"esp-sha1-null", name:"esp-sha1-null" }, 
+				{value:"esp-sha1-des", name:"esp-sha1-des" },
+				{value:"esp-sha1-3des", name: "esp-sha1-3des"}, 
+				{value:"esp-sha1-aes128", name: "esp-sha1-aes128"},
+				{value:"esp-sha1-aes192", name:"esp-sha1-aes192" },
+				{value:"esp-sha1-aes256", name: "esp-sha1-aes256"}
+		]
+	});
+	
+	$("#ph2_proposal_3").combobox({
+		fieldLabel: $.su.CHAR.IPSEC_SETTING.PROPOSAL_NOTE,
+		inputCls:"xl",	
+		cls:'block',
+		vtype:"string_visible_allow_blank",
+		allowBlank: true,
+		items:[
+				{value:"---",name:"---",selected:true},
+				{value:"ah-md5",name:"ah-md5" },
+				{value:"ah-sha1", name:"ah-sha1" },
+				//{value:"esp-md5-null", name:"esp-md5-null" }, 
+				{value:"esp-md5-des", name:"esp-md5-des" },
+				{value:"esp-md5-3des", name:"esp-md5-3des" }, 
+				{value:"esp-md5-aes128", name:"esp-md5-aes128" },
+				{value:"esp-md5-aes192", name: "esp-md5-aes192"},
+				{value:"esp-md5-aes256", name:"esp-md5-aes256" },	
+				//{value:"esp-sha1-null", name:"esp-sha1-null"}, 
+				{value:"esp-sha1-des", name:"esp-sha1-des" },
+				{value:"esp-sha1-3des", name: "esp-sha1-3des"}, 
+				{value:"esp-sha1-aes128", name: "esp-sha1-aes128"},
+				{value:"esp-sha1-aes192", name:"esp-sha1-aes192" },
+				{value:"esp-sha1-aes256", name: "esp-sha1-aes256"}
+		]
+	});
+	
+	$("#ph2_proposal_4").combobox({
+		fieldLabel:  $.su.CHAR.IPSEC_SETTING.PROPOSAL_NOTE,
+		inputCls:"xl",	
+		cls:'block',
+		vtype:"string_visible_allow_blank",
+		allowBlank: true,
+		items:[
+				{value:"---",name:"---",selected:true},
+				{value:"ah-md5",name:"ah-md5" },
+				{value:"ah-sha1", name:"ah-sha1" },
+			//	{value:"esp-md5-null", name:"esp-md5-null" }, 
+				{value:"esp-md5-des", name:"esp-md5-des" },
+				{value:"esp-md5-3des", name:"esp-md5-3des"}, 
+				{value:"esp-md5-aes128", name:"esp-md5-aes128"},
+				{value:"esp-md5-aes192", name: "esp-md5-aes192"},
+				{value:"esp-md5-aes256", name:"esp-md5-aes256" },	
+				//{value:"esp-sha1-null", name:"esp-sha1-null" }, 
+				{value:"esp-sha1-des", name:"esp-sha1-des" },
+				{value:"esp-sha1-3des", name: "esp-sha1-3des"}, 
+				{value:"esp-sha1-aes128", name: "esp-sha1-aes128"},
+				{value:"esp-sha1-aes192", name:"esp-sha1-aes192" },
+				{value:"esp-sha1-aes256", name: "esp-sha1-aes256"}
+		]
+	});	
+	/*
+	var ph2ProposalItem=[];
+		ph2ProposalItem=	[	
+				{value:"ah-md5",name:"ah-md5" },
+				{value:"ah-sha1", name:"ah-sha1" },
+				{value:"esp-md5-none", name:"esp-md5-none" }, 
+				{value:"esp-md5-des", name:"esp-md5-des" },
+				{value:"esp-md5-3des", name:"esp-md5-3des" }, 
+				{value:"esp-md5-aes128", name:"esp-md5-aes128" },
+				{value:"esp-md5-aes192", name: "esp-md5-aes192"},
+				{value:"esp-md5-aes256", name:"esp-md5-aes256" },	
+				{value:"esp-sha1-none", name:"esp-sha1-none" }, 
+				{value:"esp-sha1-des", name:"esp-sha1-des" },
+				{value:"esp-sha1-3des", name: "esp-sha1-3des"}, 
+				{value:"esp-sha1-aes128", name: "esp-sha1-aes128"},
+				{value:"esp-sha1-aes192", name:"esp-sha1-aes192" },
+				{value:"esp-sha1-aes256", name: "esp-sha1-aes256"}
+			];		
+	$("#ph2_proposal_1").combobox("loadData",ph2ProposalItem);
+	$("#ph2_proposal_2").combobox("loadData",ph2ProposalItem);
+	$("#ph2_proposal_3").combobox("loadData",ph2ProposalItem);
+	$("#ph2_proposal_4").combobox("loadData",ph2ProposalItem);
+	*/
+	
+	$("#pfs").combobox({
+		fieldLabel: $.su.CHAR.IPSEC_SETTING.PFS,
+		inputCls:"xl",		
+		cls:'block',
+		allowBlank:false,
+		items:[
+			{value:"none",name:"none",selected:true},{value:"modp768",name:"dh1"},
+			{value:"modp1024",name:"dh2"},{value:"modp1536",name:"dh5"}
+		]
+	});
+	
+	$("#lifetime").textbox({
+		fieldLabel:  $.su.CHAR.IPSEC_SETTING.LIFE_TIME,
+		inputCls:"xl",		
+		value:"28800",
+		allowBlank: false,
+		tips: $.su.CHAR.IPSEC_SETTING.LIFE_TIME_NOTE,
+		vtype: {
+			vtype: "number",
+			max: 604800,
+			min: 120
+		}
+	});	
+	
+	
+	var URL_IPSEC_TUNNEL_LISTS = $.su.url("/admin/ipsec?form=conn");
+	$("#ipsec_tunnel_lists").panel({
+		title: $.su.CHAR.IPSEC_SETTING.TUNNEL_LISTS_TITLE,
+		collapsible: false
+	});
+	
+	var tunnelListsProxy = new $.su.Proxy({
+		url: URL_IPSEC_TUNNEL_LISTS
+	});
+
+	var tunnelGrid = $("#ipsec_tunnel_lists_grid").grid({
+        editor: {
+			content:"#own-editor",//"#default" ,确定和那个form相关联.
+            fields: [
+					{name:"name"},
+					{name:"pmode"},
+					{name:"remote_peer"},
+					{name:"local_binding"},
+					{name:"local_network"},					
+					{name:"remote_network"},				
+					//{name:"negotiation_strategy"},
+					{name:"psk"},
+					{name:"status"},
+					{name:"ike_proposal_1"},
+					{name:"ike_proposal_2"},
+					{name:"ike_proposal_3"},
+					{name:"ike_proposal_4"},
+					{name:"exchange_mode"},
+					{name:"connection_type"},
+					{name:"config_mode"},
+					{name:"ip_pool"},
+					{name:"local_id_type"},
+					{name:"local_id_value"},
+					{name:"remote_id_type"},
+					{name:"remote_id_value"},
+					{name:"ikelifetime"},
+					{name:"dpd_enable"},
+					{name:"dpd_interval"},
+					{name:"mode"},
+					{name:"ph2_proposal_1"},
+					{name:"ph2_proposal_2"},
+					{name:"ph2_proposal_3"},
+					{name:"ph2_proposal_4"},
+					{name:"pfs"},
+					{name:"lifetime"}				
+				
+            ],
+            validator:function(){
+            	var peer = $("#remote_peer").textbox("getValue");
+            	peer = $.su.func.ipToInt(peer);
+				var type = $("#connection_type").radio("getValue");
+				if(peer == 0 && type == "initiator"){
+					$("#remote_peer").textbox("setError", $.su.CHAR.ERROR_CODE["45022"]);
+					$("#remote_host").textbox("setError", $.su.CHAR.ERROR_CODE["45023"]);
+					return false;
+
+				}
+				return true;
+            },
+
+            beforeSubmit:function(){
+
+		var p_mode = $("#pmode").combobox("getValue");
+		if(p_mode[0] == "Client-to-LAN")
+		{
+			var host = $("#remote_host").textbox("getValue");
+			var result = new $.su.vtype({vtype:'ip_domain'}).validate(host);
+			if (result == false)
+			{
+				return false 
+			}
+			$("#remote_peer").textbox("setValue",host);
+			$("#remote_network").subnet("setValue","0.0.0.0/0");
+		}
+		else if(p_mode[0] == "LAN-to-LAN")
+		{
+			var peer = $("#remote_peer").textbox("getValue");
+			var result = new $.su.vtype({vtype:'ip_domain'}).validate(peer);
+			if (result == false)
+			{
+				return false 
+			}			
+			$("#remote_host").textbox("setValue",peer);
+		}
+		
+		return true;
+            }
+
+        },
+		
+		store:{
+			proxy: tunnelListsProxy,
+			fields: [
+					{name:"name"},
+					{name:"pmode"},
+					{name:"remote_peer"},
+					{name:"local_binding"},					
+					{name:"local_network"},					
+					{name:"remote_network"},
+					//{name:"negotiation_strategy"},
+					{name:"psk"},
+					{name:"status"},
+					{name:"ike_proposal_1"},
+					{name:"ike_proposal_2"},
+					{name:"ike_proposal_3"},
+					{name:"ike_proposal_4"},
+					{name:"exchange_mode"},
+					{name:"connection_type"},
+					{name:"config_mode"},
+					{name:"ip_pool"},
+					{name:"local_id_type"},
+					{name:"local_id_value"},
+					{name:"remote_id_type"},
+					{name:"remote_id_value"},
+					{name:"ikelifetime"},
+					{name:"dpd_enable"},
+					{name:"dpd_interval"},
+					{name:"mode"},
+					{name:"ph2_proposal_1"},
+					{name:"ph2_proposal_2"},
+					{name:"ph2_proposal_3"},
+					{name:"ph2_proposal_4"},
+					{name:"pfs"},
+					{name:"lifetime"}				
+			],
+			autoLoad: true
+		},
+		paging:[],
+		columns: [
+			{
+				xtype: "checkcolumn"
+			},
+			{
+				xtype: "rownumberer"
+			},
+			{	
+				text: $.su.CHAR.IPSEC_SETTING.TUNNEL_LISTS_NAME,				
+				width: 100,
+				dataIndex: "name"
+			},
+			{	
+				text: $.su.CHAR.IPSEC_SETTING.STRATEGY_MODE,				
+				width: 100,
+				dataIndex: "pmode"
+			},
+	        {
+                text: $.su.CHAR.IPSEC_SETTING.REMOTE_PEER,                
+				width: 100,				
+                dataIndex: "remote_peer"
+            },	
+            {
+                text: $.su.CHAR.IPSEC_SETTING.TUNNEL_LISTS_LOCAL_NETWORK,                
+				width: 100,
+                dataIndex: "local_network",
+            },
+            {
+                text: $.su.CHAR.IPSEC_SETTING.TUNNEL_LISTS_REMOTE_NETWORK,               
+				width: 100,
+                dataIndex: "remote_network"
+            },		
+            {
+                text: $.su.CHAR.IPSEC_SETTING.TUNNEL_LISTS_STATUS,
+                dataIndex: "status"	,
+				xtype:	"statuscolumn"				
+            },				
+			{
+                xtype: "settings"
+            }
+			
+		],
+		operation:'prompt|add|delete'
+	}).on("ev_load", function(e,data, others){
+        if(others)/* 通过json里的others参数传递动态阀值 */
+        {
+			/*保留不用*/
+		}
+		/*发送form请求,获取interface列表.用于显示于local_binding下拉框*/
+		interfaceProxy.read({}, function(data){
+			var interfaceItem = [];
+			IP_ARR = [];
+
+			for(var i = 0; i < data.normal.length; i++){
+				var interface_obj = {};
+				interface_obj.ipaddr = data.normal[i].ipaddr;
+				interface_obj.netmask = data.normal[i].netmask;
+				interface_obj.iface = data.normal[i].t_name;
+				if(interface_obj.ipaddr){
+					IP_ARR.push(interface_obj);
+				}
+				if (!$.su.func.isLan(data.normal[i].t_name)) {
+					interfaceItem.push({name:data.normal[i].t_label,value:data.normal[i].t_name});
+				}			
+			}
+			/*for (i=0; i<data.vpn.length; i++){						
+				interfaceItem.push({name:data.vpn[i].t_label,value:data.vpn[i].t_name});	
+			}*/
+
+			var editor = tunnelGrid.grid('getEditor');
+			var combobox = $(editor).find('.combobox-value[name=local_binding]');
+				combobox.combobox('loadData', interfaceItem);				
+		});	
+	
+	
+		/*发送form请求,获取ippool列表.用于显示于ippool下拉框*/	
+		
+		var ippoolProxy = new $.su.Proxy({
+				url: $.su.url('/admin/ippool?form=pool_list'),
+				async: false
+		});				
+		ippoolProxy.read({}, function(data){
+					var i
+					var ippoolItem = [];
+					
+					for (i = 0; i < data.length; i++){
+						ippoolItem.push({name:data[i].name,value:"%"+data[i].name});						
+											
+					}	
+					//console.log(ippoolItem);
+					
+					var editor = tunnelGrid.grid('getEditor');
+					var ippoolCombobox = $(editor).find('.combobox-value[name=ip_pool]');
+						ippoolCombobox.combobox('loadData',ippoolItem);							
+		});	
+		//console.log(data)
+		for (var i=0; i<data.length; i++){
+			var l2tpStrIndex = data[i].name.indexOf('X_l2tp_');
+			if ( -1 != l2tpStrIndex )
+			{
+					$("#ipsec_tunnel_lists_grid").grid('disableRow',i);
+			}		
+		}
+	
+    }).on("ev_startEdit", function(e, index, data){
+        var editor = tunnelGrid.grid('getEditor');     
+
+		var current_conf_mod=$(editor).find("#config_mode").checkbox("getValue");				
+		//console.log("#######conf_mod#######:");
+		//console.log(current_conf_mod);		
+		if(current_conf_mod == "config_mode" || current_conf_mod == "enable" ){
+			//console.log("config_mode is 'enable'.")								
+			$(editor).find("#ip_pool").combobox("enable");					
+		}else{									
+			//console.log("config_mode is 'disable'.")
+			$(editor).find("#ip_pool").combobox("disable");		
+		}
+
+		current_local_id_type=$(editor).find('#local_id_type').radio('getValue');
+		//console.log("#######local_id_type#######:");
+		//console.log(current_local_id_type);		
+		if(current_local_id_type == "FQDN" ){	
+			//console.log("local_id_type is 'FQDN'.")
+			$(editor).find("#local_id_value").textbox("enable");				
+		}else {									
+			//console.log("local_id_type is 'IP_ADDRESS'.")								
+			$(editor).find("#local_id_value").textbox("disable");		
+		}	
+	
+		var current_remote_id_tpye=$(editor).find("#remote_id_type").radio('getValue');			
+		//console.log("#######remote_id_tpye#######:");
+		//console.log(current_remote_id_tpye);		
+		if(current_remote_id_tpye == "FQDN" ){
+			//console.log("remote_id_type is 'FQDN'.")
+			$(editor).find("#remote_id_value").textbox("enable");
+			
+		}else {									
+			//console.log("remote_id_type is 'IP_ADDRESS'.")								
+			$(editor).find("#remote_id_value").textbox("disable");		
+		}	
+	
+		var current_dpd_enable=$(editor).find("#dpd_enable").checkbox('getValue');			
+		//console.log("#######dpd_enable#######:");
+		//console.log(current_dpd_enable);		
+		if(current_dpd_enable == "enable" || current_dpd_enable == "dpd_enable"){
+			//console.log("dpd_enable is 'enable'.")								
+			$(editor).find("#dpd_interval").textbox("enable");		
+			
+		}else {									
+			//console.log("dpd_enable is 'disable'.")
+			$(editor).find("#dpd_interval").textbox("disable");		
+		}
+		var p_mode = $("#pmode").combobox("getValue");
+		if(!p_mode[0])
+		{
+			$("#pmode").combobox("setValue","LAN-to-LAN");
+		}
+		else
+		{
+			if (p_mode[0] == "Client-to-LAN")
+			{
+				$("#remote_host").textbox("setValue",$("#remote_peer").textbox("getValue"));
+				$("#remote_network").subnet("setValue","0.0.0.0/0");
+			}
+			$("#pmode").combobox("setValue","LAN-to-LAN");
+			$("#pmode").combobox("setValue","Client-to-LAN");
+			$("#pmode").combobox("setValue",p_mode[0]);
+		}
+    }).on("ev_update", function(e, index, data){
+		tunnelGrid.grid("getStore").load();
+
+    }).on("ev_remove", function(){
+    	$("#delete_alert_cnt").msg("close");
+		$("#delete_pro_bar").waitingbar("stop");
+		$("#delete_pro_bar").waitingbar("reset");
+    }).on("ev_startDelete",function(){
+    	var trList = tunnelGrid.find("tr.selected");
+    	if(trList.length > 5){
+    		$("#delete_alert_cnt").msg("show");
+			$("#delete_pro_bar").waitingbar("run"); 		
+    		//del_check();
+    	}
+    }).on("ev_deleteError",function(){
+    	$("#delete_alert_cnt").msg("close");
+		$("#delete_pro_bar").waitingbar("stop");
+		$("#delete_pro_bar").waitingbar("reset");
+    });
+	
+    var helpIpsecTunnel = new $.su.Help({
+        container: "div#ipsec_tunnel_hlep",
+        content: ["IPSEC_TUNNEL_SETTING", "IPSEC_TUNNEL_LISTS"]
+    });	
+});	
+       
+
+</script>
+</body>
+
+</html>

@@ -1,0 +1,74 @@
+--- a/net/ipv4/netfilter/ip_tables.c	2021-06-13 21:21:18.726782590 -0400
++++ b/net/ipv4/netfilter/ip_tables.c	2021-06-28 06:04:00.310131529 -0400
+@@ -972,7 +972,7 @@
+ 	   (other than comefrom, which userspace doesn't care
+ 	   about). */
+ 	countersize = sizeof(struct xt_counters) * private->number;
+-	counters = vzalloc(countersize);
++	counters = kzalloc(countersize, GFP_KERNEL);
+ 
+ 	if (counters == NULL)
+ 		return ERR_PTR(-ENOMEM);
+@@ -1061,7 +1061,7 @@
+ 	}
+ 
+  free_counters:
+-	vfree(counters);
++	kfree(counters);
+ 	return ret;
+ }
+ 
+@@ -1253,7 +1253,7 @@
+ 	struct ipt_entry *iter;
+ 
+ 	ret = 0;
+-	counters = vzalloc(num_counters * sizeof(struct xt_counters));
++	counters = kzalloc(num_counters * sizeof(struct xt_counters), GFP_KERNEL);
+ 	if (!counters) {
+ 		ret = -ENOMEM;
+ 		goto out;
+@@ -1302,7 +1302,7 @@
+ 		/* Silent error, can't fail, new table is already in place */
+ 		net_warn_ratelimited("iptables: counters copy to user failed while replacing table\n");
+ 	}
+-	vfree(counters);
++	kfree(counters);
+ 	xt_table_unlock(t);
+ 	return ret;
+ 
+@@ -1310,7 +1310,7 @@
+ 	module_put(t->me);
+ 	xt_table_unlock(t);
+  free_newinfo_counters_untrans:
+-	vfree(counters);
++	kfree(counters);
+  out:
+ 	return ret;
+ }
+@@ -1411,7 +1411,7 @@
+ 	if (len != size + num_counters * sizeof(struct xt_counters))
+ 		return -EINVAL;
+ 
+-	paddc = vmalloc(len - size);
++	paddc = kmalloc(len - size, GFP_KERNEL);
+ 	if (!paddc)
+ 		return -ENOMEM;
+ 
+@@ -1448,7 +1448,7 @@
+ 	xt_table_unlock(t);
+ 	module_put(t->me);
+  free:
+-	vfree(paddc);
++	kfree(paddc);
+ 
+ 	return ret;
+ }
+@@ -1977,7 +1977,7 @@
+ 			break;
+ 	}
+ 
+-	vfree(counters);
++	kfree(counters);
+ 	return ret;
+ }
+ 

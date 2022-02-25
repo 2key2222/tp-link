@@ -1,0 +1,645 @@
+#!/bin/sh
+
+export MTD_USAGE=0
+export CONIFG_BACKUP=0
+export CONFIG_RECOVER=0
+export MTD_SHOW=0
+export SOFT_VER=0
+export ALL_FLASH=0
+export UPGRADE_UBOOT=0
+export UPGRADE_FORCE=0
+export FLASH_MODIFIED=0
+
+tmp_path="/tmp"
+image_name="firmware.bin"
+backup_file="/tmp/backup.tar"
+recover_file="/tmp/backup.tar"
+
+rootfs_file="/tmp/openwrt-ar71xx-generic-root.squashfs"
+kernel_file="/tmp/openwrt-ar71xx-generic-uImage-lzma.bin"
+partition_file="/tmp/partition.json"
+all_flash_image="/tmp/openwrt-octeon-firmware.bin"
+image_path=""
+
+check_upgrade_file="/tmp/log/firmware_upgrade_success"
+offset=0
+
+uboot_backup_file="/tmp/uboot.bakup"
+uboot_file="/tmp/bootloader.bin"
+
+partition_mtd="default_config"
+mtd_name=`grep -i $partition_mtd /proc/mtd |cut -d : -f 1 |sed s/mtd/mtdblock/`
+mtd_path="/dev/${mtd_name}"
+tmp_of_file="/tmp/of_file.txt"
+
+upgrade_lock="/tmp/firmware_upgrade_lock"
+
+default_dir="/tmp/config"
+default_partition_path="/etc/config/partition_table"
+
+#mtd_arr=`ls /dev/mtdblock* |cut -d '/' -f 3`
+mtd_arr=""
+
+usage(){
+	echo "usage: $0 [options] -i **img"
+	echo "options:"
+	echo "-h/--help		show the usage"
+	echo "-v/--version	show the version"
+	echo "-a/all		upgrade all the firmware"
+	echo "-b/--backup	backup the mtd before upgrade"
+	echo "-r/--recover	recover when firmware upgrade fail(need backup first)"
+	echo "-s/--show		show the mtd partition table"
+	echo "-u/--upgrade	image file"
+	echo "-U/--uboot	upgrade uboot"
+	echo "-f/--force	upgrade the total firmware without check"
+	echo "-o/--offset	write the offset of the uboot,only valid when uboot is set"
+	exit 0
+}
+
+set_upgrade_lock()
+{
+	[ -f $upgrade_lock ] || {
+		echo "touch the lock file,start to upgrade..." > /dev/console
+		touch $upgrade_lock
+		return 0
+	}
+	echo "upgrade has been locked, there is a process using upgrade now." >/dev/console
+	return 1
+}
+remove_upgrade_lock(){
+	echo "upgrade finished, remove upgrade lock..." > /dev/console
+	rm -rf $upgrade_lock
+}
+
+config_backup(){
+	if [ -z $backup_file ];then
+		echo "fail to back the config"
+		usage
+	fi
+
+	echo "backup config files..."
+
+#	cd /etc/config
+#	tar cf ${backup_file} ./*
+	part=`cat /proc/mtd |grep -i "rootfs_data" | cut -d ":" -f 1`
+	if [ ! -z $part ];then
+		echo "will back up the $part."
+	fi
+
+	`dd if=/dev/${part} of=${backup_file}`
+
+	if [ $? -ne 0 ];then
+		echo -e "fail to get all config files."
+		return -1
+	else
+		echo -e "tar the config file $backup_file successful"
+	fi
+
+	return 0
+}
+
+config_recover(){
+	echo "recover config files..."
+	cd /tmp
+
+	if [ -z $recover_file ];then
+		echo -e "recover config file: $recover_file is NULL"
+		usage
+	fi
+
+	if [ ! -f ${recover_file} ];then
+		echo -e "fail to find the ${recover_file}"
+		return -1
+	fi
+
+	#copy the config file to the etc/config
+#	mkdir -p /etc/config 
+#	tar xf $recover_file -C /etc/config
+	`mtd write $recover_file rootfs_data`
+
+	if [ $? -ne 0 ];then
+		echo -e "fail to init recover the config file"
+	fi
+}
+
+################################################################
+#get the partition table value from the partition table.
+################################################################
+
+get_upgrade_img_value(){
+	cd /tmp
+	if [ -z $1 ];then
+		echo -e "input argument is NULL"
+		return -1
+	fi
+	
+	cmd_out=`grep "$1" ${partition_file} | cut -d : -f 2 |sed s/,$//`
+	echo -e "$cmd_out" | tr -d " \t\""
+
+	return 0
+}
+
+################################################################
+# get value from the nvram -s
+################################################################
+get_flash_value(){
+	if [ -z $1 ];then
+		echo -e "input argument is NULL"
+		return -1
+	fi
+	cmd_out=`nvram -s | grep -i "$1"| cut -d : -f 2 `
+	#echo -e "running command: $cmd"
+	echo -e "$cmd_out" | tr -d " \t"
+	return 0
+}
+
+check_key(){
+	key=$1
+	img_value=`get_flash_value $key`
+	if [ $? -ne 0 -o -z $img_value ];then
+		echo -e "fail to get the flash $key"
+		return -1
+	fi
+
+	up_img_value=`get_upgrade_img_value $key`
+	if [ $? -ne 0 -o -z $up_img_value ];then
+		echo -e "fail to get the up image $key"
+	fi
+
+	echo -e "$key img_value: $img_value"
+	echo -e "$key up_img_value: $up_img_value"
+	if [ "$img_value" != "$up_img_value" ];then
+		echo -e "$key is not the same"
+		return -1
+	fi
+}
+################################################################
+# check the support list
+################################################################
+upgrade_check(){
+	found=-1
+
+	#check the kernel file
+	if [ -f $kernel_file_md5sum ];then
+		echo -e "\nchecking the kernel md5sum...\n"
+		up_img_kernel_md5sum=`get_upgrade_img_value kernel_file_md5sum | sed s/\\n// | tr -d '\'`
+		kernel_file_md5sum=`md5sum ${kernel_file} | cut -d ' ' -f 1`
+		echo -e "##up_img_kernel_md5sum##: $up_img_kernel_md5sum"
+		echo -e "##kernel_file_md5sum##: $kernel_file_md5sum"
+		if [ ${up_img_kernel_md5sum} != ${kernel_file_md5sum} ];then
+			echo -e "fail to check the md5sum for the ${kernel_file}"
+			return -1
+		fi
+    
+		echo -e "\nexit checking the kernel md5sum...\n"
+	fi
+
+	#check the rootfs file
+	if [ -f $rootfs_file ];then
+		echo -e "\nchecking the rootfs md5sum...\n"
+		up_img_rootfs_md5sum=`get_upgrade_img_value rootfs_file_md5sum |sed s/\\n// |tr -d '\'`
+		rootfs_file_md5sum=`md5sum ${rootfs_file} |cut -d ' ' -f 1`
+		echo -e "##up_img_rootfs_md5sum##: $up_img_rootfs_md5sum"
+		echo -e "##rootfs_file_md5sum##: $rootfs_file_md5sum"
+		if [ ${up_img_rootfs_md5sum} != ${rootfs_file_md5sum} ];then
+			echo -e "fail to check the md5sum for the ${rootfs_file}"
+			return -1
+		fi
+    
+		echo -e "\n exit checking the rootfs md5sum...\n"
+	fi
+
+	#check the model
+	echo -e "\nchecking the model...\n"
+	img_model=`get_flash_value model`
+	if [ $? -ne 0 -o -z $img_model ];then
+		echo -e "fail to get the flash model"
+		echo -e "partition table is not exist"
+		return 0
+	fi
+
+	up_img_model_d=`get_upgrade_img_value model`
+	if [ $? -ne 0 -o -z $up_img_model_d ];then
+		echo -e "fail to get the up image model"
+	fi
+
+	echo -e "up_img_model_d:$up_img_model_d"
+	up_img_model_x=`printf %x $up_img_model_d`
+
+	echo -e "img_model:$img_model"
+	echo -e "up_img_model_d:$up_img_model_d"
+	echo -e "up_img_model_x:$up_img_model_x"
+
+	if [ "$img_model" != "$up_img_model_x" ];then
+		echo -e "model is not the same"
+		return -1
+	fi
+
+	echo -e "\nexit checking the model...\n"
+
+	#check vendor
+	echo -e "\nchecking the vendor...\n"
+	check_key "vendor"
+	if [ $? -ne 0 ];then
+		echo -e "fail to check the vendor"
+		return -1
+	fi
+
+	echo -e "\nexit checking the vendor...\n"
+
+	#check the support list
+	echo -e "\nchecking the support list...\n"
+
+	img_version=`get_flash_value "current version"`
+	if [ $? -ne 0 -o -z $img_version ];then
+		echo -e "fail to get current version"
+		return -1
+	fi
+
+	up_img_support=`get_upgrade_img_value "support_list"`
+	if [ $? -ne 0 -o -z $up_img_support ];then
+		echo -e "fail to get the support list"
+		return -1
+	fi
+
+	echo "---------------------------------------"
+	echo -e "support version: $up_img_support"
+	echo -e "current version: $img_version"
+	echo "---------------------------------------"
+	support_img_arr=`echo $up_img_support |sed "s/,/\t/"`
+	echo -e "support_img_arr: $support_img_arr"
+
+	for item in $support_img_arr; do
+		echo -e "item: $item"
+		if [ $img_version == $item ];then
+			echo -e "$img_version is found"
+			found=0
+		fi
+	done
+
+	if [ $found -ne 0 ];then
+		echo -e "fail to check the image from the support list."
+		return -1
+	fi
+
+	#upgrade the length of the partition from the exist
+
+	echo -e "\nfinish checking the support list...\n"
+	return 0
+}
+
+#this function is add to move the partition table
+#please make sure the env of the uboot is the same as the partition table
+modify_partition(){
+	move_list=""
+	old_part_arr=`grep '"name"' $default_partition_path |cut -d ":" -f 2|tr -d '\t",'`
+	new_part_arr=`grep '"name"' $partition_file |cut -d ":" -f 2|tr -d '\t",'`
+
+	compare_file='/tmp/compare.txt'
+	compare_arr=$compare_part_arr
+
+	echo $new_part_arr > $compare_file
+	echo $old_part_arr >> $compare_file
+
+	echo "context of the compile file"
+	cat $compare_file
+
+	# this is use the awk hash table to check if the value exist
+	#add_part_arr=`awk 'NR==1{for(i=1;i<=NF;i++) B[$i]=1}NR==2{for(j=1;j<=NF;j++){if(B[$j]!=1) print $j}}' < $compare_file`
+	
+	del_part_arr=`awk 'NR==1{for(i=1;i<=NF;i++) B[$i]=1}NR==2{for(j=1;j<=NF;j++){if(B[$j]!=1) print $j}}' < $compare_file`
+	echo "del_part_arr: ${del_part_arr}"
+
+	if [ -z $del_part_arr ];then
+		echo -e "no partition will be delete"
+	else
+		for item in $del_part_arr;do
+			if [ $item == "firmware" ];then
+				echo "firmware part will not changed !!"
+				continue;
+			fi
+			echo -e "partition: $item will be delete"
+			mtd erase $item
+		done
+	fi
+
+	echo $old_part_arr > $compare_file
+	echo $new_part_arr >> $compare_file
+	compare_part_arr=`awk 'NR==1{for(i=1;i<=NF;i++) B[$i]=1}NR==2{for(j=1;j<=NF;j++){if(B[$j]==1) print $j}}' < $compare_file |sed "s/\n/\t/"`
+	if [ -z $compare_part_arr ];then
+		echo "the same partition are: ${compare_part_arr}"
+		return 0
+	else
+		echo "partition:$compare_part_arr will be changed!!"
+	fi
+
+	## compare the each block
+	for item in $compare_part_arr ;do
+		if [ $item == "firmware" ];then
+			echo "firmware part will not changed !!"
+			continue;
+		fi
+
+		old_part_item=`grep -A 3 -i "\"${item}\"" $default_partition_path |cut -d ":" -f 2|tr -d '\t",'|sed "s/\n/\t/"`
+		new_part_item=`grep -A 3 -i "\"${item}\"" $partition_file |cut -d ":" -f 2|tr -d '\t",'|sed "s/\n/\t/"`
+		echo -e "old_part_item: $old_part_item"
+		echo -e "new_part_item: $new_part_item"
+		echo $old_part_item > $compare_file
+		echo $new_part_item >> $compare_file
+		echo -e "---show the compare_file---"
+		cat $compare_file
+		echo -e "---show the compare_file---"
+	
+		diff=`awk 'NR==1{for(i=1;i<=NF;i++) B[$i]=1}NR==2{for(j=1;j<=NF;j++){if(B[$j]!=1) print $j}}' < $compare_file`
+		if [ -z $diff ];then
+			echo -e "$item is the same"
+		else
+			export FLASH_MODIFIED=1
+			echo -e "####################################"
+			echo -e "#part: $item need to move"
+			echo -e "####################################"
+			move_list="$move_list $item"
+		fi
+	done
+	echo "move_list: ${move_list}"
+
+	## move each block
+	for item in $move_list ;do
+		#back up all the move_list
+		mtd_part=`grep -i "\"$item\"" /proc/mtd |cut -d ':' -f 1 |sed "s/mtd/mtdblock/"`
+		echo -e "backup item: ${item}, mtd_part: $mtd_part"
+		if [ -n "$mtd_part" ];then
+			echo "try to back up the $mtd_part"
+			item_size=0
+    
+			item_size_1=`grep -A5 "\"$item\"" $default_partition_path |grep -i offset|cut -d ":" -f 2 | tr -d '\t",'`
+			item_size_2=`grep -A5 "\"$item\"" $partition_file |grep -i offset|cut -d ":" -f 2 | tr -d '\t",'`
+
+			echo "item size 1: $item_size_1"
+			echo "item size 2: $item_size_2"
+
+			if [ ${item_size_1} -gt $item_size_2 ];then
+				item_size=${item_size_2}
+			else
+				item_size=${item_size_1}
+			fi
+    
+			echo "item size: $item_size"
+			if [ ! -z $item_size ];then
+				block=`printf %d 0x10000` #one block 64k
+				count=`expr $item_size / $block`
+				echo "count : $count, block: $block, size: $item_size"
+			else
+				echo -e "fail to get the item"
+			fi
+			
+			if [ $count -ne 0 ];then
+				cmd="dd bs=64k count=${count} if=/dev/${mtd_part} of=/tmp/${item}.move.bak"
+			else
+				cmd="dd bs=64k if=/dev/${mtd_part} of=/tmp/${item}.move.bak"
+			fi
+			echo "executing command: ${cmd}"
+			`$cmd`
+			mtd erase $item
+		fi
+	done
+
+	## move the partition
+	for item in $move_list;do
+		#write to the new place
+		item_addr=`grep -A 5 "\"$item\"" $partition_file |grep -i addr|cut -d ":" -f 2 | tr -d '\t",'`
+		item_size=`grep -A 5 "\"$item\"" $partition_file |grep -i offset|cut -d ":" -f 2 | tr -d '\t",'`
+		if [ -f ${item}.move.bak ];then
+			cmd="mtd -n -p ${item_addr} write ${item}.move.bak firmware"
+			echo "executing command: ${cmd}"
+			`$cmd`
+		fi
+	done
+}
+
+
+set_partition(){
+	if [ $FLASH_MODIFIED -eq 0 ];then
+		`dd bs=64k count=1 skip=0 if=$1 of=${mtd_path}`
+	else
+		part_addr=`grep -A 5 "\"${partition_mtd}\"" $partition_file |grep -i addr|cut -d ":" -f 2 | tr -d '\t",'`
+		echo -e "part_addr: $part_addr"
+		if [ -z ${part_addr} ];then
+			echo "fail to upgrade the part table to ${partition_mtd}"
+		else
+			upgrade_part_cmd="mtd -n -p ${part_addr} write $1 firmware"
+			echo "executing command: ${upgrade_part_cmd}"
+			`$upgrade_part_cmd`
+		fi
+	fi
+
+	if [ $? != 0 ];then
+		echo -e "fail to set the partition table"
+		echo -e "please make sure the mtd device ${mtd_path} is exist"
+	fi
+}
+
+simple_upgrade_check(){
+	echo -e "this is a simple upgrading file check.."
+	echo -e "please make sure the image have at least kernel or file system"
+	[ -f "$kernel_file" ] || [ -f "$rootfs_file" ] || {
+		echo -e "fail to check upgrade file, upgrade fail." > /dev/console
+		return -1
+	}
+
+	echo -e "check upgrade image success." >/dev/console
+	return 0
+}
+
+run_upgrade(){
+	echo -e "enter into the run_upgrade..."  > /dev/console
+	cp $1 ${tmp_path}/${image_name}
+	cd ${tmp_path}
+	tar xf ${image_name}
+
+	if [ -f $default_partition_path ];then
+		echo -e "partition table exsit, check the parttion table"
+		if [ $? -ne 0 ];then 
+			echo -e "fail to check the image file"
+			return -1
+		fi
+	fi
+
+#	upgrade_check
+	simple_upgrade_check
+	[ $? -eq 1 ] && {return 1}
+
+	set_upgrade_lock
+	[ $? -eq 1 ] && {return 1}
+
+	touch /tmp/xx
+	nvmanager -u "/tmp/xx" &
+
+
+	echo -e "try to upgrade the kernel and rootfs " > /dev/console
+	if [ $FLASH_MODIFIED -eq 0 ];then
+		upgrade_kernel="mtd write ${kernel_file} kernel"
+		upgrade_rootfs="mtd write ${rootfs_file} rootfs"
+#	else
+#		kernel_addr=`grep -A 3 -i '"kernel"' $partition_file|grep -i addr |cut -d ":" -f 2|tr -d '\t",'`
+#		echo "kernel_addr=${kernel_addr}"
+#		upgrade_kernel="mtd -n -p ${kernel_addr} write ${kernel_file} firmware"
+#
+#		rootfs_addr=`grep -A 3 -i '"rootfs"' $partition_file|grep -i addr |cut -d ":" -f 2|tr -d '\t",'`
+#		echo "rootfs_addr=${rootfs_addr}"
+#		upgrade_rootfs="mtd -n -p ${rootfs_addr} write ${rootfs_file} firmware"
+	fi
+
+	if [ -f ${image_name} ];then
+		if [ -f $kernel_file ];then
+			echo -e "executing command ${upgrade_kernel} " > /dev/console
+			cmd_out=`${upgrade_kernel} 2>&1`
+			if [ $? != 0 ];then
+				echo -e "### kernel upgrade failed ! " > /dev/console
+			#	exit -1
+			else
+				echo -e "kernel upgrade success"  > /dev/console
+				echo -e "$cmd_out " > /dev/console
+			fi
+		fi
+
+		if [ -f $rootfs_file ];then
+			echo -e "executing command ${upgrade_rootfs} " > /dev/console
+			cmd_out=`${upgrade_rootfs} 2>&1`
+			if [ $? != 0 ];then
+				echo -e "### rootfs upgrade failed !" > /dev/console
+			#	exit -1
+			else
+				echo -e "rootfs upgrade success " > /dev/console
+				echo -e "$cmd_out " > /dev/console
+			fi
+		fi
+
+	fi	
+	remove_upgrade_lock
+
+}
+
+clean_up(){
+	cd /tmp
+	rm -rf ${rootfs_file}
+	rm -rf ${kernel_file}
+	rm -rf /tmp/${partition_file}
+}
+
+
+get_soft_version()
+{
+	day=`uname -v | awk '{print $4}'`
+	month=`uname -v | awk '{print $3}'`
+	year=`uname -v | awk '{print $7}'`
+	time=`uname -v | awk '{print $5}'`
+	month_number=''
+	product_ver=`cat /tmp/device-info.json | grep "model_version" | sed 's/model_version//' | sed 's/[,:" \t]//g'`
+	
+	case "${month}" in
+		Jan)	month_number="01";;	
+		Feb)	month_number="02";;	
+		Mar)	month_number="03";;	
+		Apr)	month_number="04";;	
+		May)	month_number="05";;	
+		Jun)	month_number="06";;	
+		Jul)	month_number="07";;	
+		Aug)	month_number="08";;	
+		Sep)	month_number="09";;	
+		Oct)	month_number="10";;	
+		Nov)	month_number="11";;	
+		Dec)	month_number="12";;	
+		*)	month_number="01";;	
+	esac
+	
+	case "${day}" in
+		1)	day="01";;	
+		2)	day="02";;	
+		3)	day="03";;	
+		4)	day="04";;	
+		5)	day="05";;	
+		6)	day="06";;	
+		7)	day="07";;	
+		8)	day="08";;	
+		9)	day="09";;	
+	esac
+	
+	date="${year}${month_number}${day}"
+
+	time=${time//:/ } 
+	seconds=0
+	for element in $time   
+	do  
+		seconds=`expr ${seconds} \* 60`
+		seconds=`expr ${seconds} + ${element}`
+	done
+	
+	echo "${product_ver} Build${date} Rel${seconds}"
+	
+}
+
+#########################################################
+# parse the input arguments
+#########################################################
+while [ -n "$1" ];do
+	case "$1" in
+		-h|--help)	export MTD_USAGE=1;;
+		-b|--backup) export CONFIG_BACKUP=1;shift;backup_file=$1;;
+		-v|--version)	export SOFT_VER=1;;
+		-r|--recover)	export	CONFIG_RECOVER=1;shift;recover_file=$1;;
+		-u|--upgrade)		shift;	image_path=$1;;
+		-a|--all)		ALL_FLASH=1;	shift;	all_flash_image=$1;;
+		-U|--uboot)		UPGRADE_UBOOT=1;shift;uboot_file=$1;;
+		-o|--offset)	echo "set the offset";shift;offset=$1;;
+		-f|--force)		echo "set the force";UPGRADE_FORCE=1;;
+		*)	usage;;	
+	esac
+	shift;
+done
+
+main(){
+	mkdir -p "$default_dir"
+	if [ $MTD_USAGE -eq 1 ];then
+		usage
+	fi
+
+	if [ $SOFT_VER -eq 1 ];then
+		get_soft_version
+		return $?
+	fi
+	
+	if [ $CONFIG_BACKUP -eq 1 ];then
+		config_backup
+		return $?
+	fi
+	
+	if [ $CONFIG_RECOVER -eq 1 ];then
+		config_recover
+		return $?
+	fi
+
+	if [ -z $image_path ];then
+		usage
+	elif [ ! -f $image_path ];then
+		usage
+	else
+#		[ ! -f "$upgrade_lock" ] && {
+#			touch "$upgrade_lock"
+			echo -e "\nstart to upgrade the flash to $image_path ...\n" > /dev/console
+			run_upgrade $image_path
+			if [ $? -eq 0 ];then
+				echo -e "\n######upgrade: success\n" > /dev/console
+				touch ${check_upgrade_file}
+				return 0
+			else
+				echo -e "\n######upgrade: failed\n" > /dev/console
+				return 1
+			fi
+#		}
+#		echo -e "upgrade has been locked!!" > /dev/console
+#		return 1
+	fi
+}
+
+main

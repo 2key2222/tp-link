@@ -1,0 +1,50 @@
+#!/bin/sh
+. /lib/functions.sh
+. /lib/functions/system.sh
+
+include /lib/upgrade
+
+
+FIRMWARE_BIN=$1
+#rewrite by scripts/ptn_offset_set.sh when compiling dkmgt module.
+PTN_TABLE_OFFSET=0x01900000
+
+real_ptn_off=${PTN_TABLE_OFFSET}
+$(cat /proc/cmdline | grep -q "DKMGT_IMAGE_TYPE=ubi") && {
+	real_ptn_off=0x0 #ubi id
+	ubi_opts="-w ubi"
+}
+
+# initialize defaults
+RAMFS_COPY_BIN="/usr/sbin/dkmgt_firmware_upgrade /usr/sbin/do_fwup /usr/sbin/fwup"	# extra programs for temporary ramfs root
+RAMFS_COPY_DATA=""	# extra data files
+
+# check cmd format.
+if [ -z "${FIRMWARE_BIN}" ]; then
+	echo "[C] Invalid args ! format should be : fwup <firmware.bin> ." 2>&1 1>/dev/console
+	exit 1
+fi
+
+if [ ! -e "${FIRMWARE_BIN}" ]; then
+	echo "[C] Firmware [${FIRMWARE_BIN}] not exist!" 2>&1 1>/dev/console
+	exit 1
+fi
+
+# check if firmware.bin exists.
+FIRMWARE_MTD=$(find_mtd_part "firmware")
+if [ -z "${FIRMWARE_MTD}" ]; then
+	echo "[C] MTD[firmware] not found, failed to upgrade firmware!" 2>&1 1>/dev/console
+	exit 1
+fi
+
+echo "[C] FIRMWARE_MTD is ${FIRMWARE_MTD}, FIRMWARE_BIN is ${FIRMWARE_BIN}" 2>&1 1>/dev/console
+
+# check firmware format.
+echo "[C] run@ramfs : do_fwup ${FIRMWARE_MTD} ${real_ptn_off} ${FIRMWARE_BIN} ${ubi_opts}" 2>&1 1>/dev/console
+
+# close network, free memory
+[ -x /usr/sbin/pre_upgrade ] && /usr/sbin/pre_upgrade
+
+run_ramfs "do_fwup ${FIRMWARE_MTD} ${real_ptn_off} ${FIRMWARE_BIN} \"${ubi_opts}\""
+
+exit 0

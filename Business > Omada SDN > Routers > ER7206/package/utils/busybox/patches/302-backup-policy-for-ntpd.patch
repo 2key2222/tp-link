@@ -1,0 +1,70 @@
+--- a/networking/ntpd.c	2018-10-09 18:35:00.587192849 +0800
++++ b/networking/ntpd.c	2018-10-09 18:36:33.869193060 +0800
+@@ -294,6 +294,7 @@
+ 	double   last_script_run;
+ 	char     *script_name;
+ 	llist_t  *ntp_peers;
++	llist_t  *backup_peers;
+ #if ENABLE_FEATURE_NTPD_SERVER
+ 	int      listen_fd;
+ # define G_listen_fd (G.listen_fd)
+@@ -302,6 +303,7 @@
+ #endif
+ 	unsigned verbose;
+ 	unsigned peer_cnt;
++	unsigned backup_cnt;
+ 	/* refid: 32-bit code identifying the particular server or reference clock
+ 	 * in stratum 0 packets this is a four-character ASCII string,
+ 	 * called the kiss code, used for debugging and monitoring
+@@ -1845,6 +1847,7 @@
+ 		);
+ 	}
+ 
++
+ 	/* Muck with statictics and update the clock */
+ 	filter_datapoints(p);
+ 	q = select_and_cluster();
+@@ -2204,6 +2207,7 @@
+ 
+ 	while (!bb_got_signal) {
+ 		llist_t *item;
++		llist_t *next;
+ 		unsigned i, j;
+ 		int nfds, timeout;
+ 		double nextaction;
+@@ -2234,7 +2238,8 @@
+ 		}
+ #endif
+ 		/* Pass over peer list, send requests, time out on receives */
+-		for (item = G.ntp_peers; item != NULL; item = item->link) {
++		for (item = G.ntp_peers; item != NULL; item = next) {
++			next = item->link;
+ 			peer_t *p = (peer_t *) item->data;
+ 
+ 			if (p->next_action_time <= G.cur_time) {
+@@ -2253,6 +2258,13 @@
+ 							p->p_dotted, p->reachable_bits, timeout);
+ 					set_next(p, timeout);
+ 				}
++				if (p->p_fd == -1) {
++					/* move p to backup list */
++					llist_unlink(&G.ntp_peers, item);
++					free(item);
++					llist_add_to(&G.backup_peers, p);
++					G.backup_cnt++;
++				}
+ 			}
+ 
+ 			if (p->next_action_time < nextaction)
+@@ -2266,6 +2278,11 @@
+ 				i++;
+ 			}
+ 		}
++		if (G.backup_cnt == G.peer_cnt) {
++			G.ntp_peers = G.backup_peers;
++			G.backup_peers = NULL;
++			G.backup_cnt = 0;
++		}
+ 
+ 		timeout = nextaction - G.cur_time;
+ 		if (timeout < 0)

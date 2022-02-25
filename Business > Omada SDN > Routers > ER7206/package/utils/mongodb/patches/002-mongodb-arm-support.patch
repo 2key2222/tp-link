@@ -1,0 +1,29 @@
+--- a/SConstruct	2016-03-22 00:09:46.000000000 +0800
++++ b/SConstruct	2017-04-13 19:42:07.555776000 +0800
+@@ -657,7 +657,11 @@
+ if force64:
+     processor = "x86_64"
+ 
++if os.getenv("ARCH") != "":
++	processor = os.getenv("ARCH")
++
+ env['PROCESSOR_ARCHITECTURE'] = processor
++print("PROCESSOR_ARCHITECTURE = " + processor)
+ 
+ installDir = DEFAULT_INSTALL_DIR
+ nixLibPrefix = "lib"
+@@ -1703,6 +1707,14 @@
+ 
+ module_sconscripts = moduleconfig.get_module_sconscripts(mongo_modules)
+ 
++env.Append( CCFLAGS= os.getenv("CCFLAGS") )
++env.Append( CXXFLAGS= os.getenv("CXXFLAGS") )
++env.Append( CCFLAGS= ['-DUSE_EABI_HARDFLOAT'] )
++env.Append( CXXFLAGS= ['-DUSE_EABI_HARDFLOAT'] )
++
++print( "CCFLAGS=" + env['CCFLAGS'] )
++print( "CXXFLAGS=" + env['CXXFLAGS'] )
++
+ # The following symbols are exported for use in subordinate SConscript files.
+ # Ideally, the SConscript files would be purely declarative.  They would only
+ # import build environment objects, and would contain few or no conditional

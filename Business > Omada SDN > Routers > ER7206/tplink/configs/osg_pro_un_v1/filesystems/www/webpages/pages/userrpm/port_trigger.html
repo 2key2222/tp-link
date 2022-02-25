@@ -1,0 +1,463 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Port Triggering</title>
+<style type="text/css">
+</style>
+</head>
+
+<body>
+	<div class="func-container">
+		<div id="port-trigger">
+			<div id="PORTTRIGGERINGGrid" class="natSeries">
+			</div>
+		</div>
+
+		<div id="own_editor">
+		<input id="interface" name="interface">
+		<input id="name" name="name">
+		<input id="trigger_port" name="trigger_port">
+		<input id="trigger_protocol" name="trigger_protocol">
+		<input id="external_port" name="external_port">
+		<input id="external_protocol" name="external_protocol">
+		<input id="enable" name="enable">
+		</div>
+		<span id="nat_notice" class="hidden"></span>
+	 	<div id="port_trigger_help"></div>
+	</div>
+<script type="text/javascript">
+//<![CDATA[
+try{
+    $
+}catch(e){
+    location.href = "/";
+};
+
+$(document).ready(function(e){
+	var URL_PORT = $.su.url("/admin/nat?form=pt"); //data/portTriggering.json
+
+	$("span#nat_notice").html($.su.CHAR.PORT_TRIGGERING.NAT_ENABLE_NOTICE);
+
+	function is_portcharacter(port_string,ch)
+	{
+		var c;
+		for (var i = 0; i < port_string.length; i++)
+		{
+			c = port_string.charAt(i);
+			if (ch.indexOf(c) == -1)
+				return false;
+		}
+		return true;
+	}
+	
+	function portverify(port_string)
+	{
+
+		if(!is_portcharacter(port_string,"0123456789"))
+		{
+			return false;
+		}
+		if (parseInt(port_string,10) <= 0 || parseInt(port_string,10) > 65535)
+		{
+			return false;
+		}
+		return true;
+	}
+
+
+	function is_port(port_string)
+	{
+		if (!portverify(port_string))
+		{
+			return false;
+		}
+		return true;
+	}
+
+	function sub_is_port(port_string)
+	{
+		if (!is_portcharacter(port_string,ch=",-0123456789"))
+		{
+			return false;
+		}
+		var sub_port_array;
+		var single_port_array;
+		var re;
+		var sub_re;
+
+		re = new RegExp(",");
+		sub_re = new RegExp("-");
+		sub_port_array = port_string.split(re);
+
+		if (sub_port_array.length > 5 || sub_port_array.length < 1 )
+		{
+			return false;
+		}
+
+		for (var i = 0; i < sub_port_array.length; i++)
+		{
+			if (sub_port_array[i] == "" )
+			{
+				return false;
+			}
+			for (var k = i+1; k < sub_port_array.length; k++) {
+				if (sub_port_array[i] == sub_port_array[k]){
+					return false;
+				}
+			}
+
+			single_port_array = sub_port_array[i].split(sub_re);
+
+			if (single_port_array.length != 1 && single_port_array.length != 2)
+			{
+
+				return false;
+			}
+
+
+			for (var j = 0;j < single_port_array.length; ++j )
+			{
+				if (single_port_array[j] == "" )
+				{
+
+					return false;
+				}
+
+				if (!is_port(single_port_array[j]))
+				{
+					return false;
+				}
+			}			
+		}
+		return true;
+	}
+
+
+
+	$("div.func-container").page({
+		title: $.su.CHAR.PORT_TRIGGERING.TITLE,
+		help: ""	// 可能是个调用的id 也可能是个url
+	});
+
+	$('div#port-trigger').panel({
+		title: $.su.CHAR.PORT_TRIGGERING.TITLE,
+		collapsible: false
+	});
+
+	$("input#interface").combobox({
+		fieldLabel: $.su.CHAR.PORT_TRIGGERING.INTERFACE,
+		allowBlank: false,					
+		multiSelect: true,
+		vtype:"string_visible_allow_blank",
+		items:[
+			{name:"---",value:'---'}
+		]
+	});
+	
+	$("input#name").textbox({
+		fieldLabel: $.su.CHAR.PORT_TRIGGERING.APPLICATION,
+		vtype:"name",
+		maxLength:32,
+		cls: 'inline'
+	});
+	$("input#trigger_port").textbox({
+		fieldLabel: $.su.CHAR.PORT_TRIGGERING.TRIGGER_PORT,
+		// textFormat:function(value){
+		// 	var formatVal = "";
+		// 	var groupArr = value.split(",");
+		// 	var groupLen =  groupArr.length;
+		// 	var resultArr = [];
+		// 	if(groupLen > 5)
+		// 	{
+		// 		return value;
+		// 	}
+		// 	for (var i = 0; i < groupLen; i++) {
+		// 		var arr = groupArr[i].split("-");
+		// 		if(arr.length == 1)
+		// 		{
+					
+		// 			if(!isNaN(parseInt(arr[0],10)))
+		// 			{
+		// 				resultArr.push(parseInt(arr[0], 10));
+		// 			}
+		// 		}
+		// 		else if(arr.length == 2)
+		// 		{
+		// 			if( (!isNaN(parseInt(arr[0],10))) && (!isNaN(parseInt(arr[1],10))))
+		// 			{
+		// 				resultArr.push(parseInt(arr[0], 10) + "-" + parseInt(arr[1], 10));
+		// 			}
+		// 		}
+		// 	};
+
+		// 	return resultArr.join(",");
+		// },
+		validator: function(value)
+		{
+			if (sub_is_port(value) == false)
+			{
+				return $.su.CHAR.PORT_TRIGGERING.ERR1;//"错误的数值，请输入1到65535之间的数值";
+			}else
+			{
+				return true;
+			}
+		},
+		tipsCls:"s",
+		maxLength:59,
+		allowBlank:false,
+		tips: $.su.CHAR.PORT_TRIGGERING.TRIGGER_TIPS, 
+		validateIcon: true
+	});
+	$("input#trigger_protocol").combobox({
+		fieldLabel: $.su.CHAR.PORT_TRIGGERING.TRIGGER_PROTOCOL,
+		inputCls: "l",
+		allowBlank: false,
+		items: [
+			{"value": "ALL", "name": $.su.CHAR.PORT_TRIGGERING.PROTOCAL_ALL, selected:"selected"},
+			{"value": "TCP", "name": $.su.CHAR.PORT_TRIGGERING.PROTOCAL_TCP},
+			{"value": "UDP", "name": $.su.CHAR.PORT_TRIGGERING.PROTOCAL_UDP}
+		]
+	});
+
+	$("input#external_port").textbox({
+		fieldLabel: $.su.CHAR.PORT_TRIGGERING.EXTERNAL_PORTS,
+		// textFormat:function(value){
+		// 	var formatVal = "";
+		// 	var groupArr = value.split(",");
+		// 	var groupLen =  groupArr.length;
+		// 	var resultArr = [];
+		// 	if(groupLen > 5)
+		// 	{
+		// 		return value;
+		// 	}
+		// 	for (var i = 0; i < groupLen; i++) {
+		// 		var arr = groupArr[i].split("-");
+		// 		if(arr.length == 1)
+		// 		{
+					
+		// 			if(!isNaN(parseInt(arr[0],10)))
+		// 			{
+		// 				resultArr.push(parseInt(arr[0], 10));
+		// 			}
+		// 		}
+		// 		else if(arr.length == 2)
+		// 		{
+		// 			if( (!isNaN(parseInt(arr[0],10))) && (!isNaN(parseInt(arr[1],10))))
+		// 			{
+		// 				resultArr.push(parseInt(arr[0], 10) + "-" + parseInt(arr[1], 10));
+		// 			}
+		// 		}
+		// 	};
+
+		// 	return resultArr.join(",");
+		// },
+		validator: function(value)
+		{
+			if (sub_is_port(value) == false)
+			{
+				return $.su.CHAR.PORT_TRIGGERING.ERR1;//"错误的数值，请输入1到65535之间的数值";
+			}else
+			{
+				return true;
+			}
+		},
+		tipsCls:"s",
+		maxLength:59,
+		allowBlank:false,
+		tips: $.su.CHAR.PORT_TRIGGERING.EXTERNAL_TIPS, 
+		validateIcon: true
+	});
+
+	$("input#external_protocol").combobox({
+		fieldLabel: $.su.CHAR.PORT_TRIGGERING.EXTERNAL_PROTOCOL,
+		inputCls: "l",
+		allowBlank: false,
+		items: [
+			{"value": "ALL", "name": $.su.CHAR.PORT_TRIGGERING.PROTOCAL_ALL, selected:"selected"},
+			{"value": "TCP", "name": $.su.CHAR.PORT_TRIGGERING.PROTOCAL_TCP},
+			{"value": "UDP", "name": $.su.CHAR.PORT_TRIGGERING.PROTOCAL_UDP}
+		]
+	});
+
+	$("input#enable").checkbox({
+		fieldLabel:$.su.CHAR.PORT_TRIGGERING.STATUS,
+		defaultValue:["on"],
+		items: [
+			{boxlabel: $.su.CHAR.PORT_TRIGGERING.ENABLE_THIS_ENTRY, uncheckedValue:"off", inputValue: "on", id: "chk_enable", checked:true}
+		]
+	});
+
+	var portProxy = new $.su.Proxy({
+		url: URL_PORT
+	});
+
+	var o = $("div#PORTTRIGGERINGGrid").grid({
+		store:{
+			proxy: portProxy,
+			fields: [
+			{name: "interface"},
+			{name: "name"},
+			{name: "trigger_port"},
+	 		{name: "trigger_protocol"},
+	 		{name: "external_port"},
+	 		{name: "external_protocol"},
+	 		{name: "enable"},
+	 		{name: "t_label"}
+			],
+			autoLoad: true
+		},
+		editor: {
+			validator:function(){
+				var port = $("input#trigger_port").textbox("getValue");
+				var proto = $("input#trigger_protocol").combobox("getValue")[0];
+				var name = $("input#name").textbox("getValue");
+				var store = o.grid("getStore");
+					keyProperty = store.keyProperty;
+					grid_array = store.data;
+				var editor = $(o.grid("getEditor"));
+					editingId = editor.editor("getEditingId");
+
+				if ($.isArray(grid_array) && grid_array.length > 0) {
+					for(var k = 0; k < grid_array.length; k++){
+						var data = grid_array[k];
+						if (data[keyProperty] == editingId) {
+							continue;
+						}
+						else{
+							if (data["trigger_port"] == port && data["trigger_protocol"] == proto){
+									$($("#PORTTRIGGERINGGrid").grid("getEditor")).form('setError',  $.su.CHAR.ERROR['00000076']);
+									return false;
+							}
+							if(name == data["name"])
+							{
+								//console.log('conflict name');
+								return false;
+							}
+						}
+
+					}
+				}
+				return true;
+			},
+			content: "#own_editor",
+			fields: [
+			{name: "interface"},
+			{name: "name"},
+			{name: "trigger_port"},
+	 		{name: "trigger_protocol"},
+	 		{name: "external_port"},
+	 		{name: "external_protocol"},
+	 		{name: "enable"}
+			]
+			
+		},
+
+		paging: {},
+		columns: [
+			{
+				xtype: "checkcolumn",
+				width: $.su.CHAR.SETTING.PORT_TRIGGERING.CHECK_COLUMN_WIDTH
+			},
+			{
+				text: $.su.CHAR.PORT_TRIGGERING.ID, 
+				xtype: "rownumberer",
+				width: $.su.CHAR.SETTING.PORT_TRIGGERING.ROW_NUMBER_WIDTH
+			},
+			{
+				text: $.su.CHAR.PORT_TRIGGERING.INTERFACE, 
+				width: $.su.CHAR.SETTING.PORT_TRIGGERING.INTERFACE_WIDTH,
+				dataIndex: "interface",
+				renderer: function(dd, jindex, data) {
+					return data.t_label ? data.t_label : dd;             
+				} 
+			},
+			{
+				text: $.su.CHAR.PORT_TRIGGERING.APPLICATION, 
+				width: $.su.CHAR.SETTING.PORT_TRIGGERING.NAME_WIDTH,
+				dataIndex: "name"				
+			},
+			{
+				text: $.su.CHAR.PORT_TRIGGERING.TRIGGER_PORT, 
+				width: $.su.CHAR.SETTING.PORT_TRIGGERING.PORT_WIDTH,
+				dataIndex: "trigger_port"
+			},
+			{
+				text: $.su.CHAR.PORT_TRIGGERING.TRIGGER_PROTOCOL, 
+				width: $.su.CHAR.SETTING.PORT_TRIGGERING.PROTOCOL_WIDTH,
+				dataIndex: "trigger_protocol"
+			},
+			{
+				text: $.su.CHAR.PORT_TRIGGERING.EXTERNAL_PORTS, 
+				width: $.su.CHAR.SETTING.PORT_TRIGGERING.PORT_WIDTH,
+				dataIndex: "external_port"
+			},
+			{
+				text: $.su.CHAR.PORT_TRIGGERING.EXTERNAL_PROTOCOL, 
+				width: $.su.CHAR.SETTING.PORT_TRIGGERING.PROTOCOL_WIDTH,
+				dataIndex: "external_protocol"
+			},
+			{
+				text: $.su.CHAR.PORT_TRIGGERING.STATUS, 
+				width: $.su.CHAR.SETTING.PORT_TRIGGERING.STATUS_WIDTH,
+				dataIndex: "enable",
+				xtype: "statuscolumn"
+			},
+			{
+				xtype: "settings"
+			}
+		],
+		operation: "prompt|add|delete"
+	}).on("ev_load", function(e,data, others){
+			if(others)/* 通过json里的others参数传递动态阀值 */
+			{
+				/*保留不用*/
+				maxrules = others.max_rules;
+			}
+			/*发送form请求,获取interface列表.用于显示于local_binding下拉框*/
+			var interfaceItem=[];
+			var interfaceProxy = new $.su.Proxy({
+					url: $.su.url('/admin/interface?form=status'),
+					async: false
+			});		
+			interfaceProxy.read({}, function(data){
+					//	console.log("length: "+data.vpn.length);						
+						var i
+						for (i=0; i<data.normal.length; i++){
+							if ($.su.func.isLan(data.normal[i].t_name)){
+								continue;
+							}
+							interfaceItem.push({name:data.normal[i].t_label,value:data.normal[i].t_name});						
+						}
+						for (i=0; i<data.vpn.length; i++){
+							if ($.su.func.isLan(data.vpn[i].t_name)){
+								continue;
+							}				
+							interfaceItem.push({name:data.vpn[i].t_label,value:data.vpn[i].t_name});	
+						}	
+			});	
+			var editor = $("div#PORTTRIGGERINGGrid").grid("getEditor");
+			var combobox = $(editor).find('.combobox-value[name=interface]');
+				combobox.combobox('loadData',interfaceItem);
+		});
+
+
+	var editor = $("div#PORTTRIGGERINGGrid").grid("getEditor");
+	$(editor).on("ev_startEdit", function(e, index, key){
+		if(index == "add")
+		{
+			$("#trigger_protocol").combobox("setValue", "ALL");
+			$("#external_protocol").combobox("setValue", "ALL");
+		}
+	});
+
+	var helpPortTrigger = new $.su.Help({
+		container: "div#port_trigger_help",
+		content: "PORT_TRIGGERING"
+	});
+
+});
+
+</script>
+</body>
+</html>

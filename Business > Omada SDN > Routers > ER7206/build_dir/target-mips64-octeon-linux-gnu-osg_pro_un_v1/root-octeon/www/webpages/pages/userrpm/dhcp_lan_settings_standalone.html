@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<style type="text/css">
+		.dhcp_server{
+			height: 30px;
+			width: 95%;
+			line-height: 30px;
+			color: #555;
+			font-size: 14px;
+			font-weight: bold;
+			margin: 25px 0;
+			border-bottom: 1px solid #ccc;
+		}
+	</style>
+</head>
+<body>
+
+<div id="iptv_settings" class="func-container">
+	<form id="iptv_settings_form">
+		<input id="igmp_enable" name="igmp_enable" type="text" />
+		<input id="igmp_version" name="igmp_version" type="text" />
+	</form>
+</div>
+
+<div id="lan_settings" class="func-container">
+
+    <div id="lan-list">
+        <div id="lan-grid">
+        </div>
+    </div>
+
+    <div id="own_editor">
+		<input id="default" name="default" type="hidden"/>
+		<input id="name" name="name"/>
+		<input id="ipaddr" name="ipaddr"/>
+		<input id="netmask" name="netmask"/>
+		<input id="vlanid" name="vlanid" />
+		
+		<div class="dhcp_server" id="dhcp_server"></div>
+		<input type="text"  id="dhcpServer" name="enable" value=""/>
+		<input type="text"  id="start_ip_address" name="ipaddr_start" value="" />
+		<input type="text"  id="end_ip_address" name="ipaddr_end" value="" />
+		<input   id="lease_time" name="leasetime" value="" />
+		<input   id="gateway" name="gateway" value="" />
+		<input   id="domain" name="domain" value="" /> 
+		<input   id="dns1" name="pri_dns" value="" />
+		<input   id="dns2" name="snd_dns" value="" />
+		<div id="dhcp_adv_btn" class="advanced-block part-seperate" type="button" >
+			<span class="advanced-icon"></span>
+			<span class="advanced-text"></span>
+		</div>	
+		<div id="dhcp_basic_btn" class="basic-block part-seperate hidden" type="button" >
+			<span class="basic-icon"></span>
+			<span class="basic-text"></span>
+		</div>			
+
+		<div id="dhcp_adv" class="hidden" >
+			<input   id="option60" name="option60" value="" />
+			<input   id="option66" name="option66" value="" />
+			<input   id="option138" name="option138" value="" />	
+			<input   id="option150" name="option150" value="" />
+			<input   id="option159" name="option159" value="" />
+			<input   id="option160" name="option160" value="" />
+			<input   id="option176" name="option176" value="" />
+			<input   id="option242" name="option242" value="" />
+		</div>
+    </div>
+</div>
+
+<div id="confirm-msg">
+    <h4 class="title">
+        <span class="icon"></span>
+        <span class="text" id="confirm-msg-text"></span>
+    </h4>
+</div>
+
+<div id="frame-msg">
+    <iframe id="login-frame"  name="login-frame" ></iframe>
+    <a href="#" id="login-a" target="login-frame">jump</a>
+</div>
+<div id="interface-lan-help"></div>
+
+<script type="application/javascript">
+    //<![CDATA[
+    try {
+        $
+    } catch (e) {
+        location.href = "/";
+    }
+    ;
+$(document).ready(function (e) {
+	$("#iptv_settings").panel({title: $.su.CHAR.LAN.GLOBAL});//"接口设置"
+	$("#lan_settings").panel({title: $.su.CHAR.LAN.NETWORK});//"接口设置"
+	var lanSettingsUrl = "/admin/dhcps?form=lan",
+		lanSettingsProxy = new $.su.Proxy({url: $.su.url(lanSettingsUrl)});
+	var URL_INTERFACE = $.su.url("/admin/interface?form=status2");
+	var INTERFACE_PROXY = new $.su.Proxy({
+			url: URL_INTERFACE
+		});
+	var iptv_proxy = new $.su.Proxy({
+			url: $.su.url("/admin/dhcps?form=iptv")
+	});
+
+	var oldUrl = "";
+	var oldMask = "";
+	var oldVlan = 0;
+	var vlantable = [];
+	var IP_ARR = [];
+	var jumping = false;
+
+	var igmp_enable = $("#igmp_enable").checkbox({
+		fieldLabel: $.su.CHAR.IPTV.IGMP_PROXY,
+		labelCls: 'm',
+		tips:"",
+		items: [
+			{boxlabel: $.su.CHAR.IPTV.ENABLE, inputValue: "on", uncheckedValue: "off"}
+		]
+	});
+
+	var igmp_version = $("#igmp_version").combobox({
+		fieldLabel: $.su.CHAR.IPTV.IGMP_VERSION,
+		inputCls: "l",
+		items: [
+			{"value": 2, "name": $.su.CHAR.IPTV.V2},
+			{"value": 3, "name": $.su.CHAR.IPTV.V3}
+		]
+	});
+
+    $("#iptv_settings_form").form({
+        proxy: iptv_proxy,
+        fields: [
+            {name: "igmp_enable", mapping: "igmp_enable"},
+			{name: "igmp_version", mapping: "igmp_version"}  
+        ],
+        submitBtn: "default"
+    });
+
+	var def = $("#default").textbox({
+		allowBlank:false,
+		vtype: "number"
+	}).textbox('hide').val(0);
+
+	$("#name").textbox({
+		fieldLabel: $.su.CHAR.VLAN.NAME,//"IP地址",
+		allowBlank:false,
+		maxLength:32,
+		vtype:"name"
+	});
+
+	var ip = $("#ipaddr").textbox({
+		fieldLabel: $.su.CHAR.LAN.IPADDR,//"IP地址",
+		allowBlank:false,
+		vtype: "ip"
+	});
+
+	var mask = $("#netmask").textbox({
+		fieldLabel: $.su.CHAR.LAN.SUBNET_MASK,//"子网掩码",
+		allowBlank:false,
+		vtype: "netmask"
+	});
+
+	var vlanid = $('#vlanid').textbox({
+		fieldLabel: $.su.CHAR.INTERFACE.BINDVLAN,
+		inputCls: 'l',
+		maxLength: 4,
+		allowBlank: false,
+		vtype: {
+			vtype: "number",
+			max: 4086,
+			min: 1
+		},
+		tips: "(1-4086)",
+		validator: function (value) {
+			for (var i = 0; i < vlantable.length; i++) {
+				if (oldVlan == vlantable[i]) {
+					continue;
+				}
+				if (vlantable[i] == value) {
+					return "The current VLAN has been used. Please enter again.";
+				}
+			}
+			return true
+		}
+	})
+
+	$("#dhcp_server").html($.su.CHAR.DHCP_SERVER.DHCP_SERVER);
+	$("span.advanced-text").html($.su.CHAR.IPSEC_SETTING.ADVANCED);
+	$("span.basic-text").html($.su.CHAR.IPSEC_SETTING.BASIC);
+
+	$('#dhcp_adv').fieldset({
+		fields: [
+		]
+	})
+
+	$("div#dhcp_adv_btn").on('click',function(){
+		$('#dhcp_adv').fieldset('show');
+		$(this).hide();
+		$('#dhcp_basic_btn').css('display', 'inline-block');
+	});
+	
+	$("div#dhcp_basic_btn").on('click',function(){
+		$('#dhcp_adv').fieldset('hide');
+		$(this).hide();
+		$('#dhcp_adv_btn').css('display', 'inline-block');
+	});	
+
+	$("input#start_ip_address").textbox({
+		fieldLabel: $.su.CHAR.DHCP_SERVER.IP_ADDR_START,
+		allowBlank: false,
+		textFormat: $.su.format.ip,
+		vtype: 'ip'
+	});
+
+	$("input#end_ip_address").textbox({
+		fieldLabel: $.su.CHAR.DHCP_SERVER.IP_ADDR_END,
+		allowBlank: false,
+		textFormat: $.su.format.ip,
+		vtype: 'ip'
+	});
+
+	$("input#lease_time").textbox({
+		fieldLabel:$.su.CHAR.DHCP_SERVER.LEASETIME,
+			tips: $.su.CHAR.DHCP_SERVER.LEASENOTE,
+			tipsCls: 'l',
+			textFormat: $.su.format.number,
+			allowBlank: false,
+			value:"120",
+			vtype: {
+				vtype: "number",
+				max: 2880,
+				min: 1
+			}
+	});
+
+	$("input#gateway").textbox({
+		fieldLabel: $.su.CHAR.DHCP_SERVER.GATEWAY,
+		tips: $.su.CHAR.DHCP_SERVER.OPTIONAL,
+		textFormat: $.su.format.ip,
+		vtype: 'ip',
+	});
+
+	$("input#domain").textbox({
+		fieldLabel: $.su.CHAR.DHCP_SERVER.DOMAIN,
+		tips: $.su.CHAR.DHCP_SERVER.OPTIONAL,
+		vtype: 'domain',
+		maxLength:253
+	});
+
+	$("input#dns1").textbox({
+		fieldLabel: $.su.CHAR.DHCP_SERVER.PRIMARYDNS,
+		tips: $.su.CHAR.DHCP_SERVER.OPTIONAL,
+		textFormat: $.su.format.ip,
+		vtype: 'ip'
+	});
+
+	$("input#dns2").textbox({
+		fieldLabel: $.su.CHAR.DHCP_SERVER.SECONDARYDNS,
+		tips: $.su.CHAR.DHCP_SERVER.OPTIONAL,
+		textFormat: $.su.format.ip,
+		vtype: 'ip'
+	});
+
+	$("#option60").textbox({
+		fieldLabel: $.su.CHAR.DHCP_SERVER.OPT60,
+		tips: $.su.CHAR.DHCP_SERVER.OPTIONAL,
+		vtype: 'string_visible_username'
+	});
+
+	$("#option66").textbox({
+		fieldLabel: $.su.CHAR.DHCP_SERVER.OPT66,
+		tips: $.su.CHAR.DHCP_SERVER.OPTIONAL,
+		maxLength:253
+	});
+
+	$("#option138").textbox({
+		fieldLabel: $.su.CHAR.DHCP_SERVER.OPT138,
+		tips: $.su.CHAR.DHCP_SERVER.OPTIONAL,
+		textFormat: $.su.format.ip,
+		vtype: 'ip'
+	});
+
+	$("#option150").textbox({
+		fieldLabel: $.su.CHAR.DHCP_SERVER.OPT150,
+		tips: $.su.CHAR.DHCP_SERVER.OPTIONAL,
+		maxLength:253
+	});
+	$("#option159").textbox({
+		fieldLabel: $.su.CHAR.DHCP_SERVER.OPT159,
+		tips: $.su.CHAR.DHCP_SERVER.OPTIONAL,
+		maxLength:253
+	});
+	$("#option160").textbox({
+		fieldLabel: $.su.CHAR.DHCP_SERVER.OPT160,
+		tips: $.su.CHAR.DHCP_SERVER.OPTIONAL,
+		maxLength:253
+	});
+	$("#option176").textbox({
+		fieldLabel: $.su.CHAR.DHCP_SERVER.OPT176,
+		tips: $.su.CHAR.DHCP_SERVER.OPTIONAL,
+		maxLength:253
+	});
+	$("#option242").textbox({
+		fieldLabel: $.su.CHAR.DHCP_SERVER.OPT242,
+		tips: $.su.CHAR.DHCP_SERVER.OPTIONAL,
+		maxLength:253
+	});
+
+	$("input#dhcpServer").checkbox({
+		fieldLabel:$.su.CHAR.DHCP_SERVER.STATUS,
+		items: [
+			{boxlabel: $.su.CHAR.DHCP_SERVER.ENABLE, inputValue:'on', uncheckedValue:'off',checked:true}
+		]
+	});
+	
+	var doing_commit = false;
+	
+    var lanv4Grid = $("#lan-grid").grid({
+        maxRulesProperty: "max_rules",
+        editor: {
+            content:"#own_editor",
+            fields: [
+				{name: "default"},
+				{name: "name"},
+				{name: "ipaddr"},
+				{name: "netmask"},
+                {name: "vlanid"},
+                {name: "enable"},
+				{name: "ipaddr_start"},
+                {name: "ipaddr_end"},
+				{name: "leasetime"},
+				{name: "gateway"},
+				{name: "domain"},
+				{name: "pri_dns"},
+				{name: "snd_dns"},
+				{name: "option60"},
+				{name: "option66"},
+				{name: "option138"},
+				{name: "option150"},
+				{name: "option159"},
+				{name: "option160"},
+				{name: "option176"},
+				{name: "option242"},
+            ],
+			beforeSubmit: function (obj) {
+				if(!ip.textbox("validate") || !mask.textbox("validate") || !vlanid.textbox("validate")){
+					return false;
+				}
+
+				var my_ip = ip.textbox("getValue");
+				var my_mask =  mask.textbox("getValue");
+				var my_mask_length = cal_mask_length(my_mask);
+
+				var my_ip_int = $.su.func.ipToInt(my_ip);
+				var my_mask_int = $.su.func.ipToInt(my_mask);
+				if ((((my_ip_int & my_mask_int)>>>0) == my_ip_int) || (my_ip_int==((my_ip_int | ~my_mask_int)>>>0))) {
+					ip.textbox("setError", $.su.CHAR.LAN.LAN_ERR3);
+					return false;
+				}
+				
+				var editor = lanv4Grid.grid('getEditor');
+				var nname = $("#name").textbox('getValue');
+				var nameList = lanv4Grid.grid('getStore').data;
+				for(var i = 0;i < nameList.length; i++){
+					if(editor.editingId == nameList[i].vlanid){
+						continue;
+					}
+					if(nname == nameList[i].name){
+						$(editor).form('setError',$.su.CHAR.LAN.LAN_ERR5);//"您输入的名称已经存在，请重新输入");
+						return false;
+					}
+				}
+
+				var ip_addr_int = $.su.func.ipToInt(my_ip);
+				var ipstart = $("#start_ip_address").textbox('getValue');
+				var my_ip_int = $.su.func.ipToInt(ipstart);
+				if ((((my_ip_int & my_mask_int)>>>0) == my_ip_int) || (my_ip_int==((my_ip_int | ~my_mask_int)>>>0))) {
+					$("#start_ip_address").textbox("setError", $.su.CHAR.DHCP_STATIC.ERR4);
+					return false;
+				}
+				if (((my_ip_int & my_mask_int)>>>0) < ((ip_addr_int & my_mask_int)>>>0) || (((my_ip_int & my_mask_int)>>>0)) > ((ip_addr_int | ~my_mask_int)>>>0)) {
+					$("#start_ip_address").textbox("setError", $.su.CHAR.DHCP_STATIC.ERR5);
+					return false
+				}
+
+				var ipend = $("#end_ip_address").textbox('getValue');
+				my_ip_int = $.su.func.ipToInt(ipend);
+				if ((((my_ip_int & my_mask_int)>>>0) == my_ip_int) || (my_ip_int==((my_ip_int | ~my_mask_int)>>>0))) {
+					$("#end_ip_address").textbox("setError", $.su.CHAR.DHCP_STATIC.ERR4);
+					return false;
+				}
+				if (((my_ip_int & my_mask_int)>>>0) < ((ip_addr_int & my_mask_int)>>>0) || ((my_ip_int & my_mask_int)>>>0) > ((ip_addr_int | ~my_mask_int)>>>0)) {
+					$("#end_ip_address").textbox("setError", $.su.CHAR.DHCP_STATIC.ERR5);
+					return false
+				}
+
+				var ipgateway = $("#gateway").textbox('getValue');
+				if (ipgateway && (ipgateway != "")) {
+					my_ip_int = $.su.func.ipToInt(ipgateway);
+					if ((((my_ip_int & my_mask_int)>>>0) == my_ip_int) || (my_ip_int==((my_ip_int | ~my_mask_int)>>>0))) {
+						$("#gateway").textbox("setError", $.su.CHAR.DHCP_STATIC.ERR4);
+						return false;
+					}
+				}
+				var ipdns1 = $("#dns1").textbox('getValue');
+				if (ipdns1 && (ipdns1 != "")) {
+					my_ip_int = $.su.func.ipToInt(ipdns1);
+					if ((((my_ip_int & my_mask_int)>>>0) == my_ip_int) || (my_ip_int==((my_ip_int | ~my_mask_int)>>>0))) {
+						$("#dns1").textbox("setError", $.su.CHAR.DHCP_STATIC.ERR4);
+						return false;
+					}
+				}
+				var ipdns2 = $("#dns2").textbox('getValue');
+				if (ipdns2 && (ipdns2 != "")) {
+					my_ip_int = $.su.func.ipToInt(ipdns2);
+					if ((((my_ip_int & my_mask_int)>>>0) == my_ip_int) || (my_ip_int==((my_ip_int | ~my_mask_int)>>>0))) {
+						$("#dns2").textbox("setError", $.su.CHAR.DHCP_STATIC.ERR4);
+						return false;
+					}
+				}
+
+				/* check with WAN */
+				for(var i = 0; i < IP_ARR.length; i++){
+					if(IP_ARR[i].iface.match("WAN")){
+						var wan_ip = IP_ARR[i].ipaddr;
+						var wan_mask = IP_ARR[i].netmask;
+						var wan_mask_length = cal_mask_length(wan_mask);
+						var smaller_mask = my_mask_length < wan_mask_length ? my_mask : wan_mask;
+						smaller_mask = $.su.func.ipToInt(smaller_mask);
+						if(($.su.func.ipToInt(wan_ip) & smaller_mask) == ($.su.func.ipToInt(my_ip) & smaller_mask)){
+							ip.textbox("setError", $.su.CHAR.LAN.LAN_ERR4);//"LAN口IP地址不能与WAN口IP地址处于同一子网");
+							return false;
+						}
+					}
+				}
+
+				/* check with LAN */
+				var lan_data = lanv4Grid.get(0).store.data; 
+				for (var i = 0; i < lan_data.length; i++) {
+					if (i != editor.editingIndex) {
+						var lan_ip = lan_data[i].ipaddr;
+						var lan_mask = lan_data[i].netmask;
+						var lan_mask_length = cal_mask_length(lan_mask);
+						var smaller_mask = my_mask_length < lan_mask_length ? my_mask : lan_mask;
+						smaller_mask = $.su.func.ipToInt(smaller_mask);
+						if(($.su.func.ipToInt(lan_ip) & smaller_mask) == ($.su.func.ipToInt(my_ip) & smaller_mask)){
+							ip.textbox("setError", $.su.CHAR.LAN.LAN_ERR4);//"LAN口IP地址不能与WAN口IP地址处于同一子网");
+							return false;
+						}
+					}
+				}
+
+				if(!doing_commit) {
+					//oldData = obj.grid.get(0).store.getData(obj.editingId);
+					//oldUrl  = oldData.ipaddr;
+					//oldMask = oldData.netmask;
+					host = window.location.host.split(":")[0];
+					if((host == oldUrl) && (oldUrl != ip.textbox("getValue") || mask.textbox("getValue") != oldMask)) {
+						confirmMsg.msg("show");
+						return false;
+					}
+				}
+				return true;
+			}
+        },
+		store:{
+			proxy: lanSettingsProxy,
+			keyProperty: "vlanid",
+			fields: [
+				{name: "default"},
+				{name: "name"},
+				{name: "ipaddr"},
+				{name: "netmask"},
+                {name: "vlanid"},
+                {name: "enable"},
+				{name: "ipaddr_start"},
+                {name: "ipaddr_end"},
+				{name: "leasetime"},
+				{name: "gateway"},
+				{name: "domain"},
+				{name: "pri_dns"},
+				{name: "snd_dns"},
+				{name: "option60"},
+				{name: "option66"},
+				{name: "option138"},
+				{name: "option150"},
+				{name: "option159"},
+				{name: "option160"},
+				{name: "option176"},
+				{name: "option242"},
+				{name: "old_ipaddr"},
+			],
+			autoLoad: true
+		},
+        paging:[],
+		columns: [
+			{
+				xtype: "checkcolumn"
+			},
+			{
+				xtype: "rownumberer"
+			},
+			{
+                text: $.su.CHAR.LAN.NAME,
+                width: 60,
+                dataIndex: "name",
+			},
+            {
+                text: $.su.CHAR.INTERFACE.BINDVLAN,
+                width: 60,
+                dataIndex: "vlanid",
+            },
+			{
+                text: $.su.CHAR.LAN.IPADDR,
+                width: 100,
+                dataIndex: "ipaddr",
+			},
+            {
+                text: $.su.CHAR.LAN.SUBNET_MASK,
+                width: 100,
+                dataIndex: "netmask",
+            },
+            {
+                text: $.su.CHAR.DHCP_SERVER.DHCP_SERVER,
+                width: 100,
+                dataIndex: "enable",
+                renderer: function(v){
+                    if (v=="on"){
+                        return $.su.CHAR.GRID.IS_ENABLED;
+                    }else {
+						return $.su.CHAR.GRID.IS_DISABLED;
+					}
+                }
+            },
+            {
+                xtype: "settings",
+				renderer: function (op, dd, index, data) {
+					if ((data.default == 1) && (op == "delete")) {
+						return false;
+					}
+					return true;
+				}
+            }
+		],
+		operation: 'prompt|add'
+	}).on("ev_load", function(e, data, others){
+		vlantable = others ? others.vlantable ? others.vlantable : [] : [];
+	}).on("ev_update", function(e, key, index, data){
+		var nofound = true;
+		for (var i = 0; i < vlantable.length; i++) {
+			if (vlantable[i] == oldVlan) {
+				vlantable.splice(i, 1);
+				break;
+			}
+			if (vlantable[i] == data.vlanid) {
+				nofound = false;
+			}
+		}
+		if (nofound) {
+			vlantable.push(data.vlanid);
+		}
+		$.su.loading.hide();
+		if (data.old_ipaddr != data.ipaddr) {
+			var protocol = window.location.protocol;
+			/*获取当前host，去掉端口部分*/
+			var host = window.location.host;
+			/*获取当前端口号*/
+			var port = window.location.port;
+			var is_http = true;
+			var localIP = "192.168.0.1";
+			switch(protocol){
+				case "http:":
+					is_http = true;
+					if("" == port){
+						port = "80";
+						localIP = host;
+					}else{
+						host = host.split(":");
+						localIP = host[0];
+					}
+					break;
+				case "https:":
+					is_http = false;
+					if("" == port){
+						port = "443";
+						localIP = host;
+					}else{
+						host = host.split(":");
+						localIP = host[0];
+					}
+					break;
+				default:
+					break;
+			}
+			if(data.old_ipaddr && localIP == data.old_ipaddr){
+				var url = protocol + "//" + ip.textbox("getValue") + ":" + port + "/webpages/login.html"; 
+				var userAgent = navigator.userAgent;
+				var isOpera = userAgent.indexOf("Opera") > -1;
+				var isIE = userAgent.indexOf("compatible") > -1 && userAgent.indexOf("MSIE") > -1 && !isOpera;
+
+				jumping = true; 
+				$("#iptv_settings_form").form("prompt",true,$.su.CHAR.LAN.JUMPING);//"正在跳转，请稍候");
+				setTimeout(function() {
+					$.su.loading.show();
+				}, 3000);
+				setTimeout(function() {
+					if (isIE) {
+						var reIE = new RegExp("MSIE (\\d+\\.\\d+);");
+						reIE.test(userAgent);
+						var fIEVersion = parseFloat(RegExp["$1"]);
+						if(fIEVersion < 10.0){
+							setTimeout(function() {
+							   window.location.href = url; 
+							}, 15000);
+							jumping = false;
+							return;      
+						}
+					}else{
+						document.getElementById("login-a").href = url; 
+						document.getElementById("login-frame").onload = function(){
+							loginReady = true;
+						}
+						loginGet(url);
+					}
+					
+					jumping = false;
+				}, 5000);
+			}else{
+				//console.log("no jump");
+			}
+		}
+    }).on("ev_startEdit",function(e, index, key){
+		var editor = lanv4Grid.grid('getEditor');
+		if (key != "add") {
+			var data = lanv4Grid.get(0).store.getDataByIndex(index)
+			oldUrl = data.ipaddr;
+			oldMask = data.netmask;
+
+			if (data.vlanid){
+				oldVlan = data.vlanid;
+			}
+			else {
+				oldVlan = 0;
+			}
+		} else {
+			oldVlan = 0;
+			oldUrl = "";
+			oldMask = "";
+			def.val(0);
+		}
+	}).on("ev_startDelete",function(){
+		
+    
+    }).on("ev_startDelete",function(){
+		
+    }).on("ev_deleteError",function(){
+
+    }).on("ev_insert", function(e, index, data){
+		for (var i = 0; i < vlantable.length; i++) {
+			if (vlantable[i] == data[0].vlanid) {
+				return;
+			}
+		}
+		vlantable.push(data[0].vlanid);
+    }).on("ev_remove", function(e, keys){
+		for (var i = 0; i < keys.length; i++) {
+			for (var j = 0; j < vlantable.length; j++) {
+				if (keys[i] == vlantable[j]) {
+					vlantable.splice(j, 1);
+					break;
+				}
+			}
+		}
+    }).on("ev_loadData", function (e, data) {
+
+	}).on("ev_failed", function(){
+		$.su.loading.hide();
+	}).on("ev_error", function(){
+		$.su.loading.hide();
+	});
+
+	INTERFACE_PROXY.read({}, function(data){
+		var interface_data = data.normal;
+		IP_ARR = [];
+		for(var i = 0; i < interface_data.length; i++){
+			var interface_obj = {};
+			interface_obj.ipaddr = interface_data[i].ipaddr;
+			interface_obj.netmask = interface_data[i].netmask;
+			interface_obj.iface = interface_data[i].t_name;
+			if(interface_obj.ipaddr){
+				IP_ARR.push(interface_obj);
+			}
+		}
+	},function(error){},function(fail){});
+
+    var frameMsg = $("#frame-msg").msg({
+        closeBtn: true,
+        cls:"",
+        type: 'window'
+    }).msg("hide");
+
+    function cal_mask_length(mask){
+        if(!mask){
+            return 0;
+        }
+        var mask_str = mask.split(".");
+        var mask_length = 0;
+        for(var i = 0; i < mask_str.length; i++){
+            mask_str[i] = parseInt(mask_str[i]).toString(2); 
+            mask_length += mask_str[i].replace(/0/g, "").length;
+        }
+        return mask_length;
+    }
+    
+    var loginGetatt = 0;
+    function loginGet(url){
+        loginGetatt++;
+        setTimeout(function() {
+            document.getElementById("login-a").click();
+            if(loginReady || loginGetatt > 4){
+                window.location.href = url;
+            }else{
+                loginGet(url);
+            }
+        }, 3000);
+    }
+
+    var loginReady = false;
+    var confirmMsg = $("div#confirm-msg").msg({
+        type: "prompt",
+        cls: 'reboot-confirm-size',
+        closeBtn: false,
+        okHandler: function(e){
+			var editor = lanv4Grid.grid('getEditor');
+            $.su.loading.show();
+			doing_commit = true;
+			$(editor).find("button.btn-submit").click();
+        },
+        cancelHandler:function(e){
+        }
+    });
+
+    $('#confirm-msg-text').html($.su.CHAR.LAN.CONFIRM);//'设置LAN的IP地址后浏览器将会自动跳转到新的管理页面。</br>如果跳转失败，请尝试重新连接路由器以自动获取新的IP地址,</br>或者手动设置正确的IP地址。');
+    $('#confirm-msg-text').css("lineHeight", "20px");
+
+	var helper = new $.su.Help({
+		container: "div#interface-lan-help",
+		content: "INTERFACE_LAN_STANDALONE"
+	});
+});
+
+</script>

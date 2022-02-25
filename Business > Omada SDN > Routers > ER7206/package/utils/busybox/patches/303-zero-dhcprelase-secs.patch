@@ -1,0 +1,11 @@
+--- a/networking/udhcp/dhcpc.c	2019-07-22 08:00:59.111200038 +0800
++++ b/networking/udhcp/dhcpc.c	2019-08-13 09:43:48.868202309 +0800
+@@ -802,6 +802,8 @@
+ 	if (client_config.first_secs == 0)
+ 		client_config.first_secs = client_config.last_secs;
+ 	secs = client_config.last_secs - client_config.first_secs;
++	if (type == DHCPRELEASE)
++		secs = 0;
+ 	packet->secs = htons(secs);
+ 
+ 	memcpy(packet->chaddr, client_config.client_mac, 6);

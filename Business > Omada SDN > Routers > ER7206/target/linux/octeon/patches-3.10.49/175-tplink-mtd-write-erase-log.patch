@@ -1,0 +1,26 @@
+--- a/drivers/mtd/mtdcore.c	2021-06-17 03:31:07.266940028 -0400
++++ b/drivers/mtd/mtdcore.c	2021-06-17 03:32:46.401526905 -0400
+@@ -761,6 +761,7 @@
+         mtd_erase_callback(instr);
+         return 0;
+     }
++    if(mtd->type == MTD_NORFLASH || mtd->type == MTD_NANDFLASH) printk(KERN_ALERT"[[MTD(%s)]] doing erase at addr(0x%08lx), len(0x%08lx)\n", mtd->name, instr->addr, instr->len);
+     return mtd->_erase(mtd, instr);
+ }
+ EXPORT_SYMBOL_GPL(mtd_erase);
+@@ -848,6 +849,7 @@
+         return -EROFS;
+     if (!len)
+         return 0;
++    if(mtd->type == MTD_NORFLASH || mtd->type == MTD_NANDFLASH) printk(KERN_ALERT"[[MTD(%s)]] doing write at addr(0x%08lx), len(0x%08lx)\n", mtd->name, to, len);
+     return mtd->_write(mtd, to, len, retlen, buf);
+ }
+ EXPORT_SYMBOL_GPL(mtd_write);
+@@ -871,6 +873,7 @@
+         return -EROFS;
+     if (!len)
+         return 0;
++    if(mtd->type == MTD_NORFLASH || mtd->type == MTD_NANDFLASH) printk(KERN_ALERT"[[MTD(%s)]] doing panic write at addr(0x%08lx), len(0x%08lx)\n", mtd->name, to, len);
+     return mtd->_panic_write(mtd, to, len, retlen, buf);
+ }
+ EXPORT_SYMBOL_GPL(mtd_panic_write);

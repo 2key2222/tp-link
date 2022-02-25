@@ -1,0 +1,296 @@
+#!/bin/sh
+
+
+# choose port BS
+# $1: rate
+choose_port_bs()
+{
+	local rate=$1
+	local index=0
+	local partition="192 1024 50000 500000 600000 700000 1000000"
+
+	if [ $rate -lt 1 ] ||[ $rate -gt 1000000 ]; then
+		echo "Rate is error!"
+		exit 0
+	fi
+
+	for i in $partition; do
+		if [ $rate -lt $i ]; then
+			break
+		fi
+		index=$(($index+1))
+	done
+
+	echo $index	
+}
+
+# set port ingress limit
+# $1: portid
+# $2: ingress_state (on | off)
+# $3: ingress_mode (broadcast | multicast | all)
+# $4: ingress_rate (Mbps)
+set_port_ingress()
+{
+	local portid=$1
+	local ingress_state=$2
+	local ingress_mode=$3
+	local ingress_rate=$4
+	local reg=0
+	local rateNum=0
+	local portCBS=0
+	local value=0
+
+	if [ "$ingress_state" = "on" ]; then
+		#enable port ingress rate
+		reg=`echo $(($(($(($portid-1))*0x10))+$S17_P1ING_RATE_CTRL1_REG)) | awk '{printf("0x%x"),$0}'`	
+		swconfig_reg_write $reg 0x840000
+
+		#set port ingress rate		
+		portCBS=`choose_port_bs $(($ingress_rate*1000))`
+		# rateNum = rate * 1M/32K
+		rateNum=$((ingress_rate<<5))
+		# if rateNum is great than 0x7fff(32767) set
+		if [ $rateNum -gt 32767 ]; then
+			rateNum=0x7fff
+		fi
+
+		reg=`echo $(($(($(($portid-1))*0x10))+$S17_P1ING_RATE_CTRL0_REG)) | awk '{printf("0x%x"),$0}'`
+		value=$(($(($rateNum|0x18400000))|$(($portCBS<<15))))
+		swconfig_reg_write $reg $value
+
+		#set ingress rate control mode
+		reg=`echo $(($(($(($portid-1))*0x10))+$S17_P1ING_RATE_CTRL2_REG)) | awk '{printf("0x%x"),$0}'`	
+		if [ "$ingress_mode" = "all" ]; then
+			swconfig_reg_write $reg 0xff00
+		elif [ "$ingress_mode" = "broadcast" ]; then
+			swconfig_reg_write $reg 0x0800
+		elif [ "$ingress_mode" = "multicast" ]; then
+			swconfig_reg_write $reg 0xa800
+		fi
+	else
+		# disable port ingress rate limit
+		reg=`echo $(($(($(($portid-1))*0x10))+$S17_P1ING_RATE_CTRL1_REG))| awk '{printf("0x%x"),$0}'`
+		swconfig_reg_write $reg 0x47fff
+
+		reg=`echo $(($(($(($portid-1))*0x10))+$S17_P1ING_RATE_CTRL0_REG))| awk '{printf("0x%x"),$0}'`
+		swconfig_reg_write $reg 0x18407fff
+
+		reg=`echo $(($(($(($portid-1))*0x10))+$S17_P1ING_RATE_CTRL2_REG))| awk '{printf("0x%x"),$0}'`
+		swconfig_reg_write $reg 0
+
+	fi
+}
+
+# set port egress limit
+# $1: portid
+# $2: egress_state (on | off)
+# $3: egress_rate (Mbps)
+set_port_egress()
+{
+	local portid=$1
+	local egress_state=$2
+	local egress_rate=$3
+	local value=0
+	local rateNum=0
+
+	reg=`echo $(($(($(($portid-1))*0x20))+$S17_P1EG_RATE_CTRL7_REG))| awk '{printf("0x%x"),$0}'`
+	value=`swconfig_reg_read $reg`
+
+	if [ $egress_state = "on" ]; then
+		# enable
+		eg_rate_enable=$((1<<3))
+		value=$(($(($value&0xfffffff0))|$eg_rate_enable))
+		swconfig_reg_write $reg $value
+
+		#set engressCBS
+		portCBS=`choose_port_bs $(($egress_rate*1000))`
+		reg=`echo $(($(($(($portid-1))*0x20))+$S17_P1EG_RATE_CTRL6_REG))| awk '{printf("0x%x"),$0}'`
+		portCBS=$(($portCBS << 4))
+		swconfig_reg_write $reg $portCBS
+
+		# set egress rate
+		# rateNum = rate * 1M/32K
+		rateNum=$((egress_rate<<5))
+		reg=`echo $(($(($(($portid-1))*0x20))+$S17_P1EG_RATE_CTRL0_REG))| awk '{printf("0x%x"),$0}'`
+		value=`swconfig_reg_read $reg`
+		value=$(($(($value&0x7fff8000)) | $rateNum))
+		swconfig_reg_write $reg $value
+
+		reg=`echo $(($(($(($portid-1))*0x20))+$S17_P1EG_RATE_CTRL3_REG))| awk '{printf("0x%x"),$0}'`
+		value=`swconfig_reg_read $reg`
+		value=$(($value&0x7fff8000))
+		swconfig_reg_write $reg $value
+
+	else
+		# disable egress
+		value=`set_bit_value $value 3 0`
+		swconfig_reg_write $reg $value
+
+		# disable egress rate limit
+		reg=`echo $(($(($(($portid-1))*0x20))+$S17_P1EG_RATE_CTRL1_REG))| awk '{printf("0x%x"),$0}'`
+		swconfig_reg_write $reg 0x7fff7fff
+	fi
+}
+
+# print rateControl info
+print_rateControl_info()
+{
+	for i in `seq 1 $MAX_PORT_NUM`; do		
+		config_get ingress_state "port"$i "ingress_state"
+		config_get ingress_mode "port"$i "ingress_mode"
+		config_get ingress_rate "port"$i "ingress_rate"
+		config_get egress_state "port"$i "egress_state"
+		config_get egress_rate "port"$i "egress_rate"
+
+		echo "Port $i:"
+		echo "   ingress_state : $ingress_state"
+		echo "   ingress_mode  : $ingress_mode"
+		echo "   ingress_rate  : $ingress_rate"				
+		echo "   egress_state  : $egress_state"
+		echo "   egress_rate   : $egress_rate"
+	done
+
+}
+
+rateControl_usage()
+{
+	echo ""
+	echo "Usage: switch -t control -o <get|set> [p portsid] [-i i_state] [-M i_mode] [-r i_rate] [-O e_state] [-R e_rate]"
+	echo ""
+	echo "Example:"
+	echo "       switch -t control -o get"
+	echo "       switch -t control -o set -p 2 -i on -M broadcast -r 100 -O on -R 30 "
+	echo ""
+}
+
+#check rate 
+# $1: rate
+rateControl_rate_check()
+{
+	if [ -z "$1" ];then
+		echo "[control] rate is null. (1~1000)"
+        rateControl_usage
+        exit 0
+    fi
+    if [ `expr match $1 "[0-9]"` = 0 ] || [ $1 -lt 1 ] || [ $1 -gt 1000 ];then
+        echo "[control] rate is error. (1~1000)"
+        rateControl_usage
+        exit
+    fi 
+}
+
+#ingress mode check
+# $1:ingress_mode
+rateControl_ingress_mode_check()
+{
+    if [ -z "$1" ];then
+    	echo "[control] ingress mode is null.(broadcast | multicast | all)"
+        rateControl_usage
+        exit 0
+    fi
+
+    if [ "$1" != "broadcast" ] && [ "$1" != "multicast" ] && [ "$1" != "all" ]; then
+        echo "[control] ingress mode is invalid. (broadcast | multicast | all)"
+        rateControl_usage
+        exit 0
+    fi
+}
+
+#state check
+# $1:state
+rateControl_state_check()
+{
+    if [ -z "$1" ];then
+    	echo "[control] state is null.(on | off)"
+        rateControl_usage
+        exit 0
+    fi
+
+    if [ "$1" != "on" ] && [ "$1" != "off" ]; then
+        echo "[control] state is invalid. (on | off)"
+        rateControl_usage
+        exit 0
+    fi
+}
+
+
+#check arg of rateControl
+# $1: portsid
+# $2: ingress_state
+# $3: ingress_mode
+# $4: ingress_rate
+# $5: egress_state
+# $6: egress_rate
+rateControl_arg_check()
+{
+	local portsid=$1
+	local ingress_state=$2
+	local ingress_mode=$3
+	local ingress_rate=$4
+	local egress_state=$5
+	local egress_rate=$6
+
+
+	if [ -z "$portsid" ]; then
+		echo "[control] the ports is null.(1~5)"
+		rateControl_usage
+		exit 0
+	fi
+
+	for i in $portsid; do
+		if [ `expr match $i "[0-9]"` = 0 ] || [ $i -lt 1 ] || [ $i -gt 5 ] ;then
+		echo "[control] port is invalid.(1~5)"
+		rateControl_usage
+		exit 0
+		fi
+	done
+
+	rateControl_state_check $ingress_state
+	rateControl_ingress_mode_check $ingress_mode
+	rateControl_rate_check $ingress_rate
+	rateControl_state_check $egress_state
+	rateControl_rate_check $egress_rate
+}
+# init ar8327 switch port rateControl
+# $1: portid
+# $2: ingress_state
+# $3: ingress_mode
+# $4: ingress_rate
+# $5: egress_state
+# $6: egress_rate
+ar8327_switch_port_rateControl_init()
+{
+	set_port_ingress $1 $2 $3 $4
+	set_port_egress $1 $5 $6
+}
+
+# ar8327 switch port rateControl
+# $1: op (get|set)
+# $2: portsid (1.2.3.4.5)
+# $3: ingress_state (on | off)
+# $4: ingress_mode (broadcast | multicast | all)
+# $5: ingress_rate (Mbps)
+# $6: egress_state (on | off)
+# $7: egress_rate (Mbps)
+ar8327_switch_port_rateControl()
+{
+	local op=$1
+	local portsid=$2
+	local ingress_state=$3
+	local ingress_mode=$4
+	local ingress_rate=$5
+	local egress_state=$6
+	local egress_rate=$7
+
+	if [ $op = "get" ]; then
+		print_rateControl_info
+	elif [ $op = "set" ]; then
+		rateControl_arg_check "$portsid" $ingress_state $ingress_mode $ingress_rate $egress_state $egress_rate
+		for i in $portsid; do			
+			set_port_ingress $i $ingress_state $ingress_mode $ingress_rate
+			set_port_egress $i $egress_state $egress_rate
+		done
+	else
+		echo "[control] error op.(set | get)"
+	fi
+}

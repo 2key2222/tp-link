@@ -1,0 +1,929 @@
+--- a/src/dhcp.c	2015-10-09 16:43:37.187632892 +0800
++++ b/src/dhcp.c	2015-10-09 16:43:34.296875000 +0800
+@@ -15,7 +15,9 @@
+ */
+ 
+ #include "dnsmasq.h"
+-
++#include<dlfcn.h>
++extern char poolname[];
++extern struct address_hook ip_hook;
+ #ifdef HAVE_DHCP
+ 
+ struct iface_param {
+@@ -170,10 +172,14 @@
+   msg.msg_namelen = sizeof(dest);
+   msg.msg_iov = &daemon->dhcp_packet;
+   msg.msg_iovlen = 1;
+-  
++
++  print("recv packet");
+   if ((sz = recv_dhcp_packet(fd, &msg)) == -1 || 
+       (sz < (ssize_t)(sizeof(*mess) - sizeof(mess->options)))) 
++  {
++  	print("recv failed");
+     return;
++  }
+     
+   #if defined (HAVE_LINUX_NETWORK)
+   if (msg.msg_controllen >= sizeof(struct cmsghdr))
+@@ -236,18 +242,18 @@
+ 	  {
+ 	    if (!(iface_index = if_nametoindex(bridge->iface)))
+ 	      {
+-		my_syslog(LOG_WARNING, _("unknown interface %s in bridge-interface"), ifr.ifr_name);
+-		return;
++			my_syslog(LOG_WARNING, _("unknown interface %s in bridge-interface"), ifr.ifr_name);
++			return;
+ 	      }
+ 	    else 
+ 	      {
+-		strncpy(ifr.ifr_name,  bridge->iface, IF_NAMESIZE);
+-		break;
++			strncpy(ifr.ifr_name,  bridge->iface, IF_NAMESIZE);
++			break;
+ 	      }
+ 	  }
+       
+       if (alias)
+-	break;
++		break;
+     }
+ 
+ #ifdef MSG_BCAST
+@@ -261,7 +267,7 @@
+       /* Reply from server, using us as relay. */
+       iface_index = relay->iface_index;
+       if (!indextoname(daemon->dhcpfd, iface_index, ifr.ifr_name))
+-	return;
++			return;
+       is_relay_reply = 1; 
+       iov.iov_len = sz;
+ #ifdef HAVE_LINUX_NETWORK
+@@ -278,15 +284,15 @@
+ 	}
+       
+       for (tmp = daemon->dhcp_except; tmp; tmp = tmp->next)
+-	if (tmp->name && wildcard_match(tmp->name, ifr.ifr_name))
+-	  return;
++		if (tmp->name && wildcard_match(tmp->name, ifr.ifr_name))
++		  return;
+       
+       /* unlinked contexts/relays are marked by context->current == context */
+       for (context = daemon->dhcp; context; context = context->next)
+-	context->current = context;
++		context->current = context;
+       
+       for (relay = daemon->relay4; relay; relay = relay->next)
+-	relay->current = relay;
++		relay->current = relay;
+       
+       parm.current = NULL;
+       parm.relay = NULL;
+@@ -320,7 +326,7 @@
+         }
+ 
+       if (!iface_enumerate(AF_INET, &parm, complete_context))
+-	return;
++		return;
+ 
+       /* We're relaying this request */
+       if  (parm.relay_local.s_addr != 0 &&
+@@ -637,36 +643,61 @@
+   struct dhcp_context *c, *d;
+   int i, pass;
+   unsigned int j; 
+-
++  char tmpx[100]={0};
++  
++  int trytime = 0;
+   /* hash hwaddr: use the SDBM hashing algorithm.  Seems to give good
+      dispersal even with similarly-valued "strings". */ 
+   for (j = 0, i = 0; i < hw_len; i++)
+     j += hwaddr[i] + (j << 6) + (j << 16) - j;
+-  
++
++
+   for (pass = 0; pass <= 1; pass++)
+     for (c = context; c; c = c->current)
+       if (c->flags & (CONTEXT_STATIC | CONTEXT_PROXY))
+-	continue;
++		continue;
+       else if (!match_netid(c->filter, netids, pass))
+-	continue;
++		continue;
+       else
+ 	{
+-	  if (option_bool(OPT_CONSEC_ADDR))
+-	    /* seed is largest extant lease addr in this context */
+-	    start = lease_find_max_addr(c);
+-	  else
+-	    /* pick a seed based on hwaddr */
+-	    start.s_addr = htonl(ntohl(c->start.s_addr) + 
+-				 ((j + c->addr_epoch) % (1 + ntohl(c->end.s_addr) - ntohl(c->start.s_addr))));
+-
++		if(!c->ippool_name[0])
++		{
++		  print("enter into ippool_name=null branch");
++		  if (option_bool(OPT_CONSEC_ADDR))
++		    /* seed is largest extant lease addr in this context */
++		    start = lease_find_max_addr(c);
++		  else
++		    /* pick a seed based on hwaddr */
++		    start.s_addr = htonl(ntohl(c->start.s_addr) + 
++					 ((j + c->addr_epoch) % (1 + ntohl(c->end.s_addr) - ntohl(c->start.s_addr))));
++		}
++		else{
++			print(c->ippool_name);
++			strncpy(poolname,c->ippool_name,MAX_NAME_LEN);
++			/*get ip from ippool,timeout is 2 seconds*/
++			
++			for(trytime=0;trytime<2;trytime++)
++			{
++				start.s_addr = ip_hook.get_hook(c->ippool_name,0,"dhcp",2);
++				if(start.s_addr)
++					break;
++			}
++			if(!start.s_addr)
++			{
++				my_syslog(MS_DHCP | LOG_ERR,"could not get startup address\n");
++				return 0;
++			}
++		}   
++		
+ 	  /* iterate until we find a free address. */
+ 	  addr = start;
+-	  
++	  sprintf(tmpx,"start=%x",start.s_addr);
++	  print(tmpx);
+ 	  do {
+ 	    /* eliminate addresses in use by the server. */
+ 	    for (d = context; d; d = d->current)
+ 	      if (addr.s_addr == d->router.s_addr)
+-		break;
++				break;
+ 
+ 	    /* Addresses which end in .255 and .0 are broken in Windows even when using 
+ 	       supernetting. ie dhcp-range=192.168.0.1,192.168.1.254,255,255,254.0
+@@ -698,58 +729,75 @@
+ 		    {
+ 		      count++;
+ 		      if (r->addr.s_addr == addr.s_addr)
+-			{
+-			  /* consec-ip mode: we offered this address for another client
+-			     (different hash) recently, don't offer it to this one. */
+-			  if (option_bool(OPT_CONSEC_ADDR) && r->hash != j)
+-			    break;
+-			  
+-			  return 1;
+-			}
++				{
++				  /* consec-ip mode: we offered this address for another client
++				     (different hash) recently, don't offer it to this one. */
++				  if (option_bool(OPT_CONSEC_ADDR) && r->hash != j)
++				    break;
++				   ip_hook.free_hook(poolname,addr.s_addr,"dhcp");
++				  return 1;
++				}
+ 		    }
+ 
+ 		if (!r) 
+ 		  {
+ 		    if ((count < max) && !option_bool(OPT_NO_PING) && icmp_ping(addr))
+ 		      {
+-			/* address in use: perturb address selection so that we are
+-			   less likely to try this address again. */
+-			if (!option_bool(OPT_CONSEC_ADDR))
+-			  c->addr_epoch++;
++				/* address in use: perturb address selection so that we are
++				   less likely to try this address again. */
++				if (!option_bool(OPT_CONSEC_ADDR))
++				  c->addr_epoch++;
+ 		      }
+ 		    else
+ 		      {
+-			/* at this point victim may hold an expired record */
+-			if (!victim)
+-			  {
+-			    if ((victim = whine_malloc(sizeof(struct ping_result))))
+-			      {
+-				victim->next = daemon->ping_results;
+-				daemon->ping_results = victim;
+-			      }
+-			  }
+-			
+-			/* record that this address is OK for 30s 
+-			   without more ping checks */
+-			if (victim)
+-			  {
+-			    victim->addr = addr;
+-			    victim->time = now;
+-			    victim->hash = j;
+-			  }
+-			return 1;
++				/* at this point victim may hold an expired record */
++				if (!victim)
++				  {
++				    if ((victim = whine_malloc(sizeof(struct ping_result))))
++				      {
++						victim->next = daemon->ping_results;
++						daemon->ping_results = victim;
++				      }
++				  }
++				
++				/* record that this address is OK for 30s 
++				   without more ping checks */
++				if (victim)
++				  {
++				    victim->addr = addr;
++				    victim->time = now;
++				    victim->hash = j;
++				  }
++				  ip_hook.free_hook(poolname,addr.s_addr,"dhcp");
++				  return 1;
+ 		      }
+ 		  }
+ 	      }
+ 
+-	    addr.s_addr = htonl(ntohl(addr.s_addr) + 1);
+-	    
+-	    if (addr.s_addr == htonl(ntohl(c->end.s_addr) + 1))
+-	      addr = c->start;
+-	    
++		if(!c->ippool_name[0])
++		{
++		    addr.s_addr = htonl(ntohl(addr.s_addr) + 1);
++		    
++		    if (addr.s_addr == htonl(ntohl(c->end.s_addr) + 1))
++		      addr = c->start;
++		}
++		else
++		{
++			ip_hook.free_hook(poolname,addr.s_addr,"dhcp");
++			for(trytime=0;trytime<2;trytime++)
++			{
++				addr.s_addr = ip_hook.get_hook(poolname,0,"dhcp",2);
++				if(addr.s_addr)
++					break;
++			}
++			if(!addr.s_addr)
++			{
++				my_syslog(MS_DHCP | LOG_ERR,"could not get addr address in another\n");
++				return 0;
++			}
++		}
+ 	  } while (addr.s_addr != start.s_addr);
+ 	}
+-
+   return 0;
+ }
+ 
+@@ -1015,10 +1063,10 @@
+   for (relay = daemon->relay4; relay; relay = relay->next)
+     {
+       if (mess->giaddr.s_addr == relay->local.addr.addr4.s_addr)
+-	{
+-	  if (!relay->interface || wildcard_match(relay->interface, arrival_interface))
+-	    return relay->iface_index != 0 ? relay : NULL;
+-	}
++		{
++		  if (!relay->interface || wildcard_match(relay->interface, arrival_interface))
++		    return relay->iface_index != 0 ? relay : NULL;
++		}
+     }
+   
+   return NULL;	 
+--- a/src/dnsmasq.c	2015-10-09 16:43:37.192631759 +0800
++++ b/src/dnsmasq.c	2015-10-09 15:24:57.312500000 +0800
+@@ -19,6 +19,12 @@
+ 
+ #include "dnsmasq.h"
+ 
++#define SONAME "libippoolx.so"
++
++struct address_hook ip_hook;
++
++static void *dp=NULL;
++
+ struct daemon *daemon;
+ 
+ static volatile pid_t pid = 0;
+@@ -31,6 +37,40 @@
+ static void fatal_event(struct event_desc *ev, char *msg);
+ static int read_event(int fd, struct event_desc *evp, char **msg);
+ 
++static void loadfunc()
++{
++		dp = dlopen(SONAME,RTLD_LAZY);
++		if(!dp)
++		{
++			my_syslog(MS_DHCP | LOG_ERR,"dlopen error");
++			exit(0);
++		}
++				
++		ip_hook.get_hook = dlsym(dp,"getipHook");
++		if(!ip_hook.get_hook)
++		{
++			my_syslog(MS_DHCP | LOG_ERR,"could not load function 'getipHook'\n");
++			dlclose(dp);
++			exit(0);
++		}
++		ip_hook.free_hook = dlsym(dp,"freeipHook");
++		if(!ip_hook.free_hook)
++		{
++			my_syslog(MS_DHCP | LOG_ERR,"could not load function 'freeipHook'\n");
++			dlclose(dp);
++			exit(0);
++		}
++}
++
++static void closefunc()
++{
++	if(dp)
++	{
++		dlclose(dp);
++		dp = NULL;
++	}
++}
++
+ int main (int argc, char **argv)
+ {
+   int bind_fallback = 0;
+@@ -95,7 +135,7 @@
+   daemon->packet = safe_malloc(daemon->packet_buff_sz);
+   
+   daemon->addrbuff = safe_malloc(ADDRSTRLEN);
+-  
++  loadfunc();
+ #ifdef HAVE_DNSSEC
+   if (option_bool(OPT_DNSSEC_VALID))
+     {
+@@ -968,9 +1008,15 @@
+       if (daemon->dhcp || daemon->relay4)
+ 	{
+ 	  if (FD_ISSET(daemon->dhcpfd, &rset))
++	  {
++	    my_syslog(MS_DHCP | LOG_INFO,_("handle with dhcpfd"));
+ 	    dhcp_packet(now, 0);
++	  }
+ 	  if (daemon->pxefd != -1 && FD_ISSET(daemon->pxefd, &rset))
++	  {
++	  	 my_syslog(MS_DHCP | LOG_INFO,_("handle with pxefd"));
+ 	    dhcp_packet(now, 1);
++	  }
+ 	}
+ 
+ #ifdef HAVE_DHCP6
+@@ -988,6 +1034,7 @@
+ #endif
+ 
+     }
++  closefunc();
+ }
+ 
+ static void sig_handler(int sig)
+--- a/src/dnsmasq.h	2015-10-09 16:43:37.182631466 +0800
++++ b/src/dnsmasq.h	2015-10-09 15:25:12.281250000 +0800
+@@ -39,6 +39,7 @@
+ /* get these before config.h  for IPv6 stuff... */
+ #include <sys/types.h> 
+ #include <sys/socket.h>
++#include <dlfcn.h>
+ 
+ #ifdef __APPLE__
+ /* Define before netinet/in.h to select API. OSX Lion onwards. */
+@@ -121,6 +122,29 @@
+ #  include <net/if_dl.h>
+ #endif
+ 
++typedef void (*free_ip_Hook)(char*,unsigned int,char*);
++typedef unsigned int (*ip_get_hook)(char *, unsigned int, char *, int);
++
++struct address_hook{
++	free_ip_Hook free_hook; 
++	ip_get_hook	get_hook;
++};
++
++static void printinfo(char* s)
++{
++	FILE *p = fopen("/tmp/dnsmasq.txt","a+");
++	if(!p)
++		return;
++	fprintf(p,"%s\n",s);
++	fclose(p);
++}
++#define DEBUG_1 0
++#if DEBUG_1
++#define print printinfo
++#else
++#define print(fmt,arg...) 
++#endif
++
+ #if defined(HAVE_LINUX_NETWORK)
+ #include <linux/capability.h>
+ /* There doesn't seem to be a universally-available 
+@@ -445,7 +469,7 @@
+ #define SRC_HOSTS     2
+ #define SRC_AH        3
+ 
+-
++#define MAX_NAME_LEN 32
+ /* struct sockaddr is not large enough to hold any address,
+    and specifically not big enough to hold an IPv6 address.
+    Blech. Roll our own. */
+@@ -651,6 +675,7 @@
+   } *slaac_address;
+   int vendorclass_count;
+ #endif
++  char poolname[MAX_NAME_LEN];
+   struct dhcp_lease *next;
+ };
+ 
+@@ -816,6 +841,7 @@
+   char *template_interface;
+ #endif
+   int flags;
++  char ippool_name[MAX_NAME_LEN];
+   struct dhcp_netid netid, *filter;
+   struct dhcp_context *next, *current;
+ };
+@@ -1243,7 +1269,7 @@
+ void lease_update_file(time_t now);
+ void lease_update_dns(int force);
+ void lease_init(time_t now);
+-struct dhcp_lease *lease4_allocate(struct in_addr addr);
++struct dhcp_lease *lease4_allocate(struct in_addr addr,char* s);
+ #ifdef HAVE_DHCP6
+ struct dhcp_lease *lease6_allocate(struct in6_addr *addrp, int lease_type);
+ struct dhcp_lease *lease6_find(unsigned char *clid, int clid_len, 
+--- a/src/lease.c	2014-05-17 03:21:55.000000000 +0800
++++ b/src/lease.c	2015-09-29 17:50:55.109375000 +0800
+@@ -15,12 +15,13 @@
+ */
+ 
+ #include "dnsmasq.h"
+-
++#include<dlfcn.h>
+ #ifdef HAVE_DHCP
+ 
+ static struct dhcp_lease *leases = NULL, *old_leases = NULL;
+ static int dns_dirty, file_dirty, leases_left;
+ 
++extern struct address_hook ip_hook;
+ void lease_init(time_t now)
+ {
+   unsigned long ei;
+@@ -58,7 +59,7 @@
+       leasestream = daemon->lease_stream = fopen(daemon->lease_file, "a+");
+       
+       if (!leasestream)
+-	die(_("cannot open or create lease file %s: %s"), daemon->lease_file, EC_FILE);
++		die(_("cannot open or create lease file %s: %s"), daemon->lease_file, EC_FILE);
+       
+       /* a+ mode leaves pointer at end. */
+       rewind(leasestream);
+@@ -90,7 +91,7 @@
+ 	  clid_len = parse_hex(daemon->packet, (unsigned char *)daemon->packet, 255, NULL, NULL);
+ 	
+ 	if (inet_pton(AF_INET, daemon->namebuff, &addr.addr.addr4) &&
+-	    (lease = lease4_allocate(addr.addr.addr4)))
++	    (lease = lease4_allocate(addr.addr.addr4,NULL)))
+ 	  {
+ 	    hw_len = parse_hex(daemon->dhcp_buff2, (unsigned char *)daemon->dhcp_buff2, DHCP_CHADDR_MAX, NULL, &hw_type);
+ 	    /* For backwards compatibility, no explict MAC address type means ether. */
+@@ -495,27 +496,29 @@
+ void lease_prune(struct dhcp_lease *target, time_t now)
+ {
+   struct dhcp_lease *lease, *tmp, **up;
+-
+   for (lease = leases, up = &leases; lease; lease = tmp)
+     {
+       tmp = lease->next;
+       if ((lease->expires != 0 && difftime(now, lease->expires) > 0) || lease == target)
+-	{
+-	  file_dirty = 1;
+-	  if (lease->hostname)
+-	    dns_dirty = 1;
+-	  
+- 	  *up = lease->next; /* unlink */
+-	  
+-	  /* Put on old_leases list 'till we
+-	     can run the script */
+-	  lease->next = old_leases;
+-	  old_leases = lease;
+-	  
+-	  leases_left++;
+-	}
++		{
++		  file_dirty = 1;
++		  if (lease->hostname)
++		    dns_dirty = 1;
++		  
++	 	  *up = lease->next; /* unlink */
++		  
++		  /* Put on old_leases list 'till we
++		     can run the script */
++		  lease->next = old_leases;
++		  old_leases = lease;
++		  if(lease->poolname[0])
++		  {
++			   ip_hook.free_hook(lease->poolname,lease->addr.s_addr,"dhcp");
++		  }
++		  leases_left++;
++		}
+       else
+-	up = &lease->next;
++		up = &lease->next;
+     }
+ } 
+ 	
+@@ -548,7 +551,7 @@
+ 	  lease->hwaddr_len == hw_len &&
+ 	  lease->hwaddr_type == hw_type &&
+ 	  memcmp(hwaddr, lease->hwaddr, hw_len) == 0)
+-	return lease;
++		return lease;
+     }
+ 
+   return NULL;
+@@ -718,12 +721,26 @@
+   return lease;
+ }
+ 
+-struct dhcp_lease *lease4_allocate(struct in_addr addr)
++struct dhcp_lease *lease4_allocate(struct in_addr addr,char* s)
+ {
+   struct dhcp_lease *lease = lease_allocate();
+-  if (lease)
+-    lease->addr = addr;
+-  
++  unsigned int ret = 0;
++  if (!lease)
++  	return NULL;
++  lease->addr = addr;
++  if(s && s[0]!=0)
++  {
++  	strncpy(lease->poolname,s,MAX_NAME_LEN);
++	lease->poolname[MAX_NAME_LEN-1] = 0;
++	ret = ip_hook.get_hook(s,addr.s_addr,"dhcp",2);
++	if(!ret)
++	{
++		my_syslog(LOG_ERR | MS_DHCP,"could not get the wanted ip in lease_alloc\n");
++		free(lease);
++		return NULL;
++	}
++	my_syslog(LOG_DEBUG | MS_DHCP,"get wantip=%x\n",ret);
++  }
+   return lease;
+ }
+ 
+--- a/src/option.c	2014-05-17 03:21:55.000000000 +0800
++++ b/src/option.c	2015-09-29 15:14:13.234375000 +0800
+@@ -146,6 +146,7 @@
+ #define LOPT_DNSSEC_CHECK  334
+ #define LOPT_LOCAL_SERVICE 335
+ #define LOPT_DNSSEC_TIME   336
++#define LOPT_IPPOOL_NAME   337
+ 
+ #ifdef HAVE_GETOPT_LONG
+ static const struct option opts[] =  
+@@ -297,6 +298,7 @@
+     { "quiet-dhcp", 0, 0, LOPT_QUIET_DHCP },
+     { "quiet-dhcp6", 0, 0, LOPT_QUIET_DHCP6 },
+     { "quiet-ra", 0, 0, LOPT_QUIET_RA },
++	{"dhcp-ippoolname",1,0,LOPT_IPPOOL_NAME},
+     { NULL, 0, 0, 0 }
+   };
+ 
+@@ -454,6 +456,7 @@
+   { LOPT_QUIET_DHCP6, OPT_QUIET_DHCP6, NULL, gettext_noop("Do not log routine DHCPv6."), NULL },
+   { LOPT_QUIET_RA, OPT_QUIET_RA, NULL, gettext_noop("Do not log RA."), NULL },
+   { LOPT_LOCAL_SERVICE, OPT_LOCAL_SERVICE, NULL, gettext_noop("Accept queries only from directly-connected networks"), NULL },
++  { LOPT_IPPOOL_NAME,ARG_DUP,"<ipaddr_poolname>", gettext_noop("DHCP associate with ippool, with lease duration given."), NULL },
+   { 0, 0, NULL, NULL, NULL }
+ }; 
+ 
+@@ -2496,34 +2499,34 @@
+ 	      if (!(*cp == ' ' || *cp == '.' || *cp == ':' || 
+ 		    (*cp >= 'a' && *cp <= 'f') || (*cp >= 'A' && *cp <= 'F') ||
+ 		    (*cp >='0' && *cp <= '9')))
+-		break;
++			break;
+ 	    
+ 	    if (*cp != ',' && (comma = split(arg)))
+ 	      {
+-		if (is_tag_prefix(arg))
+-		  {
+-		    struct dhcp_netid *tt = opt_malloc(sizeof (struct dhcp_netid));
+-		    tt->net = opt_string_alloc(arg+4);
+-		    tt->next = new->filter;
+-		    /* ignore empty tag */
+-		    if (tt->net)
+-		      new->filter = tt;
+-		  }
+-		else
+-		  {
+-		    if (new->netid.net)
+-		      ret_err(_("only one tag allowed"));
+-		    else if (strstr(arg, "set:") == arg)
+-		      new->netid.net = opt_string_alloc(arg+4);
+-		    else
+-		      new->netid.net = opt_string_alloc(arg);
+-		  }
+-		arg = comma;
++			if (is_tag_prefix(arg))
++			  {
++			    struct dhcp_netid *tt = opt_malloc(sizeof (struct dhcp_netid));
++			    tt->net = opt_string_alloc(arg+4);
++			    tt->next = new->filter;
++			    /* ignore empty tag */
++			    if (tt->net)
++			      new->filter = tt;
++			  }
++			else
++			  {
++			    if (new->netid.net)
++			      ret_err(_("only one tag allowed"));
++			    else if (strstr(arg, "set:") == arg)
++			      new->netid.net = opt_string_alloc(arg+4);
++			    else
++			      new->netid.net = opt_string_alloc(arg);
++			  }
++				arg = comma;
+ 	      }
+ 	    else
+ 	      {
+-		a[0] = arg;
+-		break;
++			a[0] = arg;
++			break;
+ 	      }
+ 	  }
+ 	
+@@ -2548,25 +2551,25 @@
+ 	    
+ 	    if (ntohl(new->start.s_addr) > ntohl(new->end.s_addr))
+ 	      {
+-		struct in_addr tmp = new->start;
+-		new->start = new->end;
+-		new->end = tmp;
++			struct in_addr tmp = new->start;
++			new->start = new->end;
++			new->end = tmp;
+ 	      }
+ 	    
+ 	    if (k >= 3 && strchr(a[2], '.') &&  
+ 		(inet_pton(AF_INET, a[2], &new->netmask) > 0))
+ 	      {
+-		new->flags |= CONTEXT_NETMASK;
+-		leasepos = 3;
+-		if (!is_same_net(new->start, new->end, new->netmask))
+-		  ret_err(_("inconsistent DHCP range"));
++			new->flags |= CONTEXT_NETMASK;
++			leasepos = 3;
++			if (!is_same_net(new->start, new->end, new->netmask))
++			  ret_err(_("inconsistent DHCP range"));
+ 	      }
+ 	    
+ 	    if (k >= 4 && strchr(a[3], '.') &&  
+ 		(inet_pton(AF_INET, a[3], &new->broadcast) > 0))
+ 	      {
+-		new->flags |= CONTEXT_BRDCAST;
+-		leasepos = 4;
++			new->flags |= CONTEXT_BRDCAST;
++			leasepos = 4;
+ 	      }
+ 	  }
+ #ifdef HAVE_DHCP6
+@@ -2701,7 +2704,193 @@
+ 	  }
+ 	break;
+       }
++	case LOPT_IPPOOL_NAME:
++		{
++		int k, leasepos = 2;
++		char *cp, *a[9] = { NULL, NULL, NULL, NULL, NULL, NULL, NULL,NULL,NULL };
++		struct dhcp_context *new = opt_malloc(sizeof(struct dhcp_context));
++		
++		memset (new, 0, sizeof(*new));
++		new->lease_time = DEFLEASE;
++		char tmp[100]={0};
++		print("enter into ippoolname parse");
++		print(arg);
++		if (!arg)
++		  {
++		    option = '?';
++		    break;
++		  }
++		print("before enter in while 1");
++		while(1)
++		  {
++		    for (cp = arg; *cp; cp++)
++		      if (!(*cp == ' ' || *cp == '.' || *cp == ':' || 
++			    (*cp >= 'a' && *cp <= 'f') || (*cp >= 'A' && *cp <= 'F') ||
++			    (*cp >='0' && *cp <= '9')))
++				break;
++		    
++		    if (*cp != ',' && (comma = split(arg)))
++		      {
++				if (is_tag_prefix(arg))
++				  {
++				    struct dhcp_netid *tt = opt_malloc(sizeof (struct dhcp_netid));
++				    tt->net = opt_string_alloc(arg+4);
++				    tt->next = new->filter;
++				    /* ignore empty tag */
++				    if (tt->net)
++				      new->filter = tt;
++				  }
++				else
++				  {
++				    if (new->netid.net)
++				      ret_err(_("only one tag allowed"));
++				    else if (strstr(arg, "set:") == arg)
++				      new->netid.net = opt_string_alloc(arg+4);
++				    else
++				      new->netid.net = opt_string_alloc(arg);
++				  }
++					arg = comma;
++					a[0] = arg;
++					break;
++		      }
++		    else
++		      {
++				a[0] = arg;
++				break;
++		      }
++		  }
++		print("after while");
++		print(arg);
++		for (k = 1; k < 9; k++)
++		  if (!(a[k] = split(a[k-1])))
++		    break;
++
++		int tx=0;
++		for(tx=0;tx<k;tx++)
++		{
++			sprintf(tmp,"tx=%d",tx);
++			print(tmp);
++			print(a[tx]);
++		}
++		if (k < 2)
++		{
++		  print("cannt reach here");
++		  ret_err(_("bad dhcp-range"));
++		}
++		strncpy(new->ippool_name,a[0],MAX_NAME_LEN);
++		sprintf(tmp,"poolname=%s",a[0]);
++		print(tmp);
++		/*new->next = daemon->dhcp;
++		daemon->dhcp = new;*/
++		if (inet_pton(AF_INET, a[1], &new->start))
++	  {
++		    new->next = daemon->dhcp;
++		    daemon->dhcp = new;
++		    new->end = new->start;
++		    if (strcmp(a[2], "static") == 0)
++		      new->flags |= CONTEXT_STATIC;
++		    else if (strcmp(a[2], "proxy") == 0)
++		      new->flags |= CONTEXT_PROXY;
++		    else if (!inet_pton(AF_INET, a[2], &new->end))
++		      ret_err(_("bad dhcp-range"));
++		    
++		    if (ntohl(new->start.s_addr) > ntohl(new->end.s_addr))
++		      {
++				struct in_addr tmp = new->start;
++				new->start = new->end;
++				new->end = tmp;
++		      }
++		    
++		    if (k >= 4 && strchr(a[3], '.') &&  
++			(inet_pton(AF_INET, a[3], &new->netmask) > 0))
++		      {
++				new->flags |= CONTEXT_NETMASK;
++				leasepos = 4;
++				if (!is_same_net(new->start, new->end, new->netmask))
++				  ret_err(_("inconsistent DHCP range"));
++		      }
++		    
++		    if (k >= 5 && strchr(a[4], '.') &&  
++			(inet_pton(AF_INET, a[4], &new->broadcast) > 0))
++		      {
++				new->flags |= CONTEXT_BRDCAST;
++				leasepos = 5;
++		      }
++	  }
++		
++	/*	if (k >= 2 && strchr(a[1], '.') &&  
++			(inet_pton(AF_INET, a[1], &new->netmask) > 0))
++		      {
++				new->flags |= CONTEXT_NETMASK;
++				leasepos = 2;
++				  if (k >= 3 && strchr(a[2], '.') &&  
++			    (inet_pton(AF_INET, a[2], &new->broadcast) > 0))
++			      {
++					new->flags |= CONTEXT_BRDCAST;
++					leasepos = 3;
++			      }
++		      }*/
++		    
++		else{
++		  print("in k>=2,bad range");
++		  ret_err(_("bad dhcp-range"));
++		}
++		
++		if (leasepos < k)
++		  {
++		    if (strcmp(a[leasepos], "infinite") == 0)
++		      new->lease_time = 0xffffffff;
++		    else if (strcmp(a[leasepos], "deprecated") == 0)
++		      new->flags |= CONTEXT_DEPRECATE;
++		    else
++		      {
++			int fac = 1;
++			if (strlen(a[leasepos]) > 0)
++			  {
++			    switch (a[leasepos][strlen(a[leasepos]) - 1])
++			      {
++			      case 'w':
++			      case 'W':
++				fac *= 7;
++				/* fall through */
++			      case 'd':
++			      case 'D':
++				fac *= 24;
++				/* fall though */
++			      case 'h':
++			      case 'H':
++				fac *= 60;
++				/* fall through */
++			      case 'm':
++			      case 'M':
++				fac *= 60;
++				/* fall through */
++			      case 's':
++			      case 'S':
++				a[leasepos][strlen(a[leasepos]) - 1] = 0;
++			      }
++			    
++			    for (cp = a[leasepos]; *cp; cp++)
++			      if (!(*cp >= '0' && *cp <= '9'))
++				break;
+ 
++			    if (*cp || (leasepos+1 < k))
++			    {
++			      print("bad dhcp-range");
++			      ret_err(_("bad dhcp-range"));
++			    }
++			    new->lease_time = atoi(a[leasepos]) * fac;
++			    /* Leases of a minute or less confuse
++			       some clients, notably Apple's */
++			    if (new->lease_time < 120)
++			      new->lease_time = 120;
++				sprintf(tmp,"lease_time=%d",new->lease_time);
++				print(tmp);
++			  }
++		      }
++		  }
++		break;
++	}
+     case LOPT_BANK:
+     case 'G':  /* --dhcp-host */
+       {
+--- a/src/rfc2131.c	2015-10-09 16:43:37.193631690 +0800
++++ b/src/rfc2131.c	2015-10-09 16:28:32.359375000 +0800
+@@ -15,7 +15,7 @@
+ */
+ 
+ #include "dnsmasq.h"
+-
++char poolname[MAX_NAME_LEN];
+ #ifdef HAVE_DHCP
+ 
+ #define option_len(opt) ((int)(((unsigned char *)(opt))[1]))
+@@ -537,7 +537,7 @@
+       for (id_list = daemon->dhcp_ignore; id_list; id_list = id_list->next)
+ 	if (match_netid(id_list->list, tagif_netid, 0))
+ 	  message = _("ignored");
+-      
++      memset(poolname,0,sizeof(poolname));
+       if (!message)
+ 	{
+ 	  int nailed = 0;
+@@ -592,7 +592,7 @@
+ 
+ 	  if (!message && 
+ 	      !lease && 
+-	      (!(lease = lease4_allocate(mess->yiaddr))))
++	      (!(lease = lease4_allocate(mess->yiaddr,poolname))))
+ 	    message = _("no leases left");
+ 	  
+ 	  if (!message)
+@@ -1212,7 +1212,7 @@
+ 	      
+ 	      else if (!lease)
+ 		{	     
+-		  if ((lease = lease4_allocate(mess->yiaddr)))
++		  if ((lease = lease4_allocate(mess->yiaddr,context==NULL?NULL:context->ippool_name)))
+ 		    do_classes = 1;
+ 		  else
+ 		    message = _("no leases left");

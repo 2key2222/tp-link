@@ -1,0 +1,703 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Arp Scan</title>
+<style type="text/css">
+</style>
+</head>
+
+<body>
+	<div class="func-container">
+		<div id="function_setting">
+			<form id="scan_setting">
+				<input type="text" id="start_ip_address" name="ipstart" value="" />
+				<span>-</span>
+				<input type="text" id="end_ip_address" name="ipend" value="" />
+
+			</form>
+		</div>
+
+		<div id="import_bind" style="display:none">
+			<form id="bind_set">
+				<button id="bind_button" type="submit"></button>
+			</form>
+		</div>
+		
+	    <div id="isp_alert_cnt">
+	        <h4 class="title" id="confirm_cnt">
+	            <span class="icon"></span>
+	      
+	        </h4>
+
+	        <div id="isp_pro_cnt" class="reboot-loading-msg hidden">
+	            <input id="isp_pro_bar" type="text" />
+	        </div>
+
+	    </div>
+
+	    <div id="isp_failed_cnt">
+	        <h4 class="title">
+	            <span class="icon" ></span>
+	            <span class="text" id="error_str"></span>
+	        </h4>
+	    </div>
+
+		<div id="result_list">
+			<div id="result_list_grid">
+			</div>
+		</div>
+
+		<div id="import_alert_cnt">
+	        <div id="import_pro_cnt" class="reboot-loading-msg">
+	            <input id="import_pro_bar" type="text" />
+	        </div>
+	    </div> 
+
+	    <div class="notice" style="top:-120px;position:relative;">
+        <hr/>
+        <h6 id="caution"></h6>
+    </div>
+		
+		<div id="scan_arp_help"></div>
+	</div>
+</body>
+
+<script type="text/javascript">
+	try{
+		$
+	}catch(e){
+		location.href="/";
+	};
+
+	//var query_interval=false;
+	//var reboot_time = 60*1000; //60s
+	//var increase = 0
+
+$(document).ready(function(e){
+	var arp_scan_url = $.su.url("/admin/arp_defense?form=arp_scan");
+	var arp_scan_result = $.su.url("/admin/arp_defense?form=arp_scan_result");
+	var URL_IMB_RULE_LIST = $.su.url("/admin/ipmac_import?form=bind_list");
+	var URL_IMB_MULTI_BIND = $.su.url("/admin/ipmac_import?form=multi_bind_list");
+
+	var isScanning = false;
+	var setTimeOut1 = "";
+	var setTimeOut2 = "";
+
+
+	var arp_scan_proxy = new $.su.Proxy({
+		url:arp_scan_url
+	});
+	
+	var result_proxy =new $.su.Proxy({
+		url:arp_scan_result
+	});
+
+	var ruleListProxy = new $.su.Proxy({
+		url: URL_IMB_RULE_LIST
+	});
+
+	var multiBindProxy = new $.su.Proxy({
+		url: URL_IMB_MULTI_BIND
+	});
+	
+	$("h6#caution").html($.su.CHAR.ARPSCAN.CAUTION);
+	$("#function_setting").panel({
+		title:$.su.CHAR.ARPSCAN.SETTINGS,
+		collapsible:false
+	});
+	
+	// need to get lan ip
+
+
+	$("#import_alert_cnt").msg({
+        cls: 'warning reboot-confirm-size',
+        type: "confirm",
+        closeBtn: false,
+        okHandler:function(){},
+        cancelHandler:function(){}
+    });
+
+    $("#import_alert_cnt").msg("hideButtons");
+    
+    $("#import_pro_bar").waitingbar({
+        fieldLabel:$.su.CHAR.ARPSCAN.IMPORT_TIP,//"导入规则可能需要一些时间，请您耐心等待",
+        labelCls:"xxxl"
+    });
+	
+	$("input#start_ip_address").textbox({
+		fieldLabel: $.su.CHAR.ARPSCAN.SCAN_RANGE,
+		cls: 'inline part-seperate',
+		allowBlank: false,
+		textFormat: $.su.format.ip,
+		vtype: 'ip'
+	});
+	
+	$("input#end_ip_address").textbox({
+		fieldLabel: null,
+		cls: 'inline part-seperate',
+		allowBlank: false,
+		textFormat: $.su.format.ip,
+		vtype: 'ip'
+	});
+
+	$("#import_bind").panel({
+		title:$.su.CHAR.ARPSCAN.IMPORT_BIND,
+		collapsible:false
+	});
+
+	
+
+	$("#isp_alert_cnt").msg({
+		cls: 'warning reboot-confirm-size',
+		closeBtn: false,
+		cancelHandler:function(){
+			isScanning = false;
+			isp_pro_bar.waitingbar("stop");
+			isp_pro_bar.waitingbar("reset");
+			resultGrid.grid("getStore").load();
+			disabledConflict();
+			clearTimeout(setTimeOut2);
+			clearTimeout(setTimeOut1);
+		}
+	});
+	
+
+
+	var scanForm = $("form#scan_setting").form({
+		proxy:arp_scan_proxy,
+		showPrompt:false,
+		//traditional:true,
+		//hiddenFrame:true,
+		fields:[
+			{name:"ipstart",mapping:"ipstart"},
+			{name:"ipend",mapping:"ipend"}
+		],
+		autoLoad:true,
+		submitBtn:$.su.CHAR.ARPSCAN.START_SCAN ,
+		cls:"submit",
+		
+		validator:function(){
+			var ipStart = $("input#start_ip_address").textbox('getValue');
+			var ipEnd = $("input#end_ip_address").textbox('getValue');
+			if( $.su.func.ipToInt(ipStart) > $.su.func.ipToInt( ipEnd )){
+				$('input#end_ip_address').textbox('setError',$.su.CHAR.ARPSCAN.END_LT_BEGIN);
+				return false;
+			}else if(255 < ($.su.func.ipToInt(ipEnd) - $.su.func.ipToInt(ipStart))){
+				$('input#end_ip_address').textbox('setError',$.su.CHAR.ARPSCAN.SCAN_OUT_OF_RANGE);
+				return false;
+			}
+			/*另一种提示方式
+			if( $.su.func.ipToInt(ipStart) > $.su.func.ipToInt( ipEnd )){
+				if ($.su.app && $.su.app.errorOperation && $.su.app.errorOperation.denied){
+                    $.su.app.errorOperation.denied(15108);
+                };
+				return false;
+			}else if(254 < ($.su.func.ipToInt(ipEnd) - $.su.func.ipToInt(ipStart))){
+				if ($.su.app && $.su.app.errorOperation && $.su.app.errorOperation.denied){
+                    $.su.app.errorOperation.denied(15109);
+                };
+				return false;
+			}
+			*/
+			return true;
+		}
+		
+	});
+
+	
+	var tarForm = $.find("div.form-submit-wrap");
+	var tarButton = $(tarForm).find("button.button-button");
+	$(tarButton).button({
+        handler: function(){
+            
+            if($("#scan_setting").form('validate'))
+            {    
+	           	$("#scan_setting").form('submit',{operation:"set"}, function(){
+	           		var ipStart = $("input#start_ip_address").textbox('getValue');
+					var ipEnd = $("input#end_ip_address").textbox('getValue');
+	           		isScanning = true;
+	           		var timeOut = ($.su.func.ipToInt(ipEnd) - $.su.func.ipToInt(ipStart)) / 6;
+	           		timeOut = (timeOut + 10) * 1000;
+	           		//240个地址大约55秒
+
+	           		$("#isp_alert_cnt").msg("show");
+	                $("#isp_alert_cnt").msg('hideButtons');
+	                $("#isp_pro_cnt").show();
+					isp_pro_bar.waitingbar("run");
+					setTimeOut1 = setTimeout(function(e){
+						if(isScanning){
+							$("#isp_alert_cnt").msg('showButtons');
+							var buttonList = $(".button-container.msg-btn-container").find(".button-container");
+							$(buttonList).each(function(i, obj){
+								if($(obj).text() == $.su.CHAR.ARPSCAN.OK){//"确定"
+									$(obj).addClass("hidden");
+								}else{
+									$(obj).css({
+										"marginTop":"-25px",
+										"marginRight":"-12px"
+									});
+								}
+							});
+						}
+						
+					}, 30*1000);
+					setTimeOut2 = setTimeout(function(e){
+						if(isScanning){
+							hideProMsg();
+							isp_pro_bar.waitingbar("stop");
+							isp_pro_bar.waitingbar("reset");
+							resultGrid.grid("getStore").load();
+							disabledConflict();
+							isScanning = false;
+						}
+						
+					}, timeOut);
+				},function(errcode){
+					isp_pro_bar.waitingbar("stop");
+					isp_pro_bar.waitingbar("reset");
+
+					$("#isp_alert_cnt").hide();
+
+				},function(){
+
+				});   
+	            return false;
+		 
+            }
+            else
+            {
+                return false;
+            }   
+        }
+    });
+
+
+    $("button#bind_button").button({
+    	text:$.su.CHAR.ARPSCAN.INPUT_BUTTON
+    });
+	
+	var isp_pro_bar  = $('input#isp_pro_bar').waitingbar({
+		fieldLabel:$.su.CHAR.ARPSCAN.SCAN_TIPS
+    });
+	/*
+    $("#isp_failed_cnt").msg({
+		cls: 'warning reboot-confirm-size',
+		type: "alert"
+	});
+*/
+	//$("#confirm_content").html($.su.CHAR.ARPSCAN.START_SCAN_CONFIRM);
+
+	function disabledConflict(){
+		/*setTimeout(function(){
+			var griddata = resultGrid.grid('getStore').data;
+			var trList = resultGrid.find("tr.grid-content-tr");
+			if(trList.length>0){
+				for(var index = 0; index<trList.length; ++index){
+					if(griddata[index].state!="0"){
+						$(trList[index]).addClass("disabled");
+					}
+				}
+			}
+		},300);*/
+	}
+
+	/*
+	function getResult()
+	{
+			arp_scan_proxy.write({method:'scan_check'}, function(data){
+			var percent =  increase*1.0/100;
+			increase = increase + 3 + Math.round(Math.random()*3)
+			if(increase > 100)
+			{
+				increase = 100
+			}
+			isp_pro_bar.progressbar("setValue", percent);
+			if(percent == 1)
+			{
+				hideProMsg();
+				resultGrid.grid("getStore").load();
+				increase = 0;
+				disabledConflict();
+			}
+		}, function(errcode){
+			
+			hideProMsg();
+			
+		}, function(){
+
+		});
+	}
+	*/
+
+	function hideProMsg(){
+
+		isp_pro_bar.waitingbar("stop");
+		isp_pro_bar.waitingbar("reset");
+
+		$("#isp_alert_cnt").hide();
+		$("#isp_alert_cnt").msg("close",function(){
+			$('#confirm_cnt').show();
+			$("#isp_pro_cnt").hide();
+		});
+	};
+	/*
+	function showAlertMag(){
+		$("#isp_failed_cnt").msg("show", function(){
+
+		});
+	};
+	*/
+
+	$("#result_list").panel({
+		title:$.su.CHAR.ARPSCAN.RESULT_LIST,
+		collapsible:false
+	});
+
+	
+
+	
+	var resultGrid=$("#result_list_grid").grid({
+		store:{
+			proxy:result_proxy,
+			fields:[
+				{name:"ip"},
+				{name:"mac"},
+				{name:"state"},
+				{name:"interface"}
+			],
+			autoLoad:false
+		},
+		columns:[
+			{
+				xtype: "checkcolumn"
+			},
+			{
+				xtype: "rownumberer"
+			},
+			{
+				text:$.su.CHAR.ARPSCAN.IPADDR,
+				width:100,
+				dataIndex:"ip"
+			},
+			{
+				text:$.su.CHAR.ARPSCAN.MAC,
+				width:100,
+				dataIndex:"mac"
+			},
+			{
+				text:$.su.CHAR.ARPSCAN.INTERFACE,
+				width:100,
+				dataIndex:"interface",
+				hidden:true
+			},
+			{
+                width: 70,
+                text: $.su.CHAR.GRID.OPERATION,
+                dataIndex: "state",
+                renderer: function(dd, index, data){
+                    var inHTML="<div class=\"button-container interface-operation\" style=\"text-align:center\">";
+					if (dd == "0" && $.su.func.isLan(data["interface"])) {
+						inHTML +=   "<a href=\"javascript:void(0);\" data-index=\""+index+"\" data-key=\""+index+"\" title=\""+ $.su.CHAR.OPERATION.APPLY +"\" class=\"grid-content-btn btn-link\">";
+						inHTML +=       "<span class=\"icon\"></span>";
+						inHTML +=       "<span class=\"text\">"+$.su.CHAR.OPERATION.APPLY+"</span>";
+						inHTML +=   "</a>";
+					} else {
+                        inHTML += "<span class=\"text\">---</span>"
+					}
+                    inHTML +="</div>";
+                    return inHTML;
+                }
+			}
+		],
+		operation: [{
+			xtype: "button",
+			iconCls: "bind",
+			// btnCls: "bind",
+			text: $.su.CHAR.OPERATION.APPLY,
+			handler: function(e){
+				e.preventDefault();
+				e.stopPropagation();
+
+				var data = resultGrid.grid('getStore').data;
+				var selected = resultGrid.grid("getSelected");
+				var items = [];
+
+				for (var i = 0; i < selected.length; i++) {
+					for (var j = 0; j < data.length; j++) {
+						if (data[j].key == selected[i] && data[j].state == "0") {
+							items[items.length] = {
+								"ipaddr": data[j].ip,
+								"mac": data[j].mac,
+								"zone": data[j].interface,
+								"note": "",
+								"status": data[j].state
+							};
+						}
+					}
+				}
+
+				if (items.length == 0)
+					return;
+
+				resultGrid.grid("runProgress");
+				multiBindProxy.write({
+						method: "add",
+						params:$.extend({"index": 0}, {
+							"old": "add",
+							"new": items,
+						}, {"place": "add"})
+				}, function(){
+					resultGrid.grid("prompt", true);
+					$("label.checkbox-label.checked").removeClass("checked");
+					$("tr.selected").removeClass("selected");
+					$("div.checkbox-group-container.grid-header-checkbox.checkcolumn.inline.selected").removeClass("selected");
+					resultGrid.grid("getStore").load();
+				}, function(){
+					resultGrid.grid("prompt", false);
+				}, function(){
+					resultGrid.grid("prompt", false);
+				});
+			}
+		}]
+	}).delegate("a.grid-content-btn.btn-link", "click", function(e){
+		e.preventDefault();
+		e.stopPropagation();
+
+		var btn = $(this),
+			tr = btn.closest("tr.grid-content-tr");
+		if (tr.hasClass("disabled")){
+			return;
+		};
+
+		var index = $(this).attr("data-index");
+		var dNew = $("#result_list_grid").get(0).store.getDataByIndex(index);
+		$("label.checkbox-label.checked").removeClass("checked");
+		$("tr.selected").removeClass("selected");
+		$("div.checkbox-group-container.grid-header-checkbox.checkcolumn.inline.selected").removeClass("selected");
+		$("#result_list_grid").grid("runProgress");
+		ruleListProxy.write({
+				method: "add",
+				params:$.extend({"index": 0}, {
+					"old": "add",
+					"new": {
+						"ipaddr": dNew.ip,
+						"mac": dNew.mac,
+						"zone": dNew.interface,
+						"note": "",
+						"status": dNew.state
+					}
+				}, {"place": "add"})
+		}, function(){
+			$("#result_list_grid").grid("prompt", true);
+			$("#result_list_grid").grid("getStore").load();
+		}, function(){
+			$("#result_list_grid").grid("prompt", false);
+		}, function(){
+			$("#result_list_grid").grid("prompt", false);
+		});
+	});
+	//$('#result_list').hide();
+	/*导入到IP-MAC绑定列表*/
+	$(document).ready(function(e){
+		$("#refresh").click(function(){
+			disabledConflict();
+		});
+		$("button#bind_button").click(function(){
+			var isSelectAny = false;
+			var noImportable = true;
+			var data = resultGrid.grid('getStore').data;
+			var trList = resultGrid.find("tr.grid-content-tr");
+			if(trList.length>0){
+				for(var index=0; index<trList.length; ++index){
+                    if (index == 0 && $(trList[0]).hasClass("empty")) {
+                        if ($.su.app && $.su.app.errorOperation && $.su.app.errorOperation.denied){
+                        	var ERR_EMPTY_LIST = 15112;
+                            $.su.app.errorOperation.denied(ERR_EMPTY_LIST);
+                        }
+                        return;
+                    }
+					if($(trList[index]).hasClass("selected")){
+						/*旧方法
+						var ip = $(trList[index]).find("td.grid-content-td-ip").text();
+						var mac = $(trList[index]).find("td.grid-content-td-mac").text();
+						var status = $(trList[index]).find("td.grid-content-td-state").text();
+						var iface = $(trList[index]).find("td.grid-content-td-interface").text();
+						*/
+
+/*必要的参数检查，请在完善功能后去掉注释
+						if("undefined" == typeof(data[index].interface)){
+							if ($.su.app && $.su.app.errorOperation && $.su.app.errorOperation.denied){
+		            			$.su.app.errorOperation.denied(15110);
+		            			return;
+							}
+						}
+*/
+						
+						isSelectAny = true;
+						if (data[index].state == "0"){
+							noImportable = false;
+						}						
+						if("undefined" == typeof(ip)){
+							var ip = [data[index].ip];
+							var mac = [data[index].mac];
+							var iface = [data[index].interface];
+							var status =  [data[index].state];
+							var des = ["Auto Bind"];
+							var enable = ["on"];
+						}else{
+							ip.push(data[index].ip);
+							mac.push(data[index].mac);
+							iface.push(data[index].interface);
+							status.push(data[index].state);
+							des.push("Auto Bind");
+							enable.push("on");
+						}
+
+						if("undefined" == typeof(tarList)){
+							var tarList = [trList[index]];
+							var dataList = [data[index]];
+						}else{
+							tarList.push(trList[index]);
+							dataList.push(data[index]);
+						}
+
+/*	
+						if("undefined" == typeof(bindList)){
+							var bindList = [params];
+						}else{
+							bindList.push(params);	
+						}
+						
+					}
+				}
+				if("undefined" == typeof(bindList)){
+					if ($.su.app && $.su.app.errorOperation && $.su.app.errorOperation.denied){
+            			$.su.app.errorOperation.denied(15109);
+            			return;
+					}
+				*/
+
+				}else{
+
+				}
+			}
+
+			var params = {"index":"",
+						  "old":"add",
+						  "new":{
+						  	   "ipaddr":ip,
+						  	   "mac":mac,
+						  	   "zone":iface,
+						  	   "status":status,
+						  	   "note":des
+						  },
+						  "key":"add"
+						};
+
+			if(false == isSelectAny){
+				if ($.su.app && $.su.app.errorOperation && $.su.app.errorOperation.denied){
+					var NO_ITEM_SELECT = 15109;
+        			$.su.app.errorOperation.denied(NO_ITEM_SELECT);
+				}
+				return;
+			}
+
+
+			if(true == noImportable){
+				if ($.su.app && $.su.app.errorOperation && $.su.app.errorOperation.denied){
+					var NO_IMPORTABLE = 15113;
+        			$.su.app.errorOperation.denied(NO_IMPORTABLE);
+				}
+				return;
+			}
+
+			var trList = resultGrid.find("tr.selected");
+            if(trList.length > 0){
+                $("#import_alert_cnt").msg("show");
+                $("#import_pro_bar").waitingbar("run");         
+                //del_check();
+            }
+
+			//具体交互请操作这里
+			ruleListProxy.write({'method':'add','params':params}, function(data){
+				$("#import_alert_cnt").msg("close");
+                $("#import_pro_bar").waitingbar("stop");
+                $("#import_pro_bar").waitingbar("reset");
+				if ($.su.app && $.su.app.errorOperation && $.su.app.errorOperation.denied){
+        			$.su.app.errorOperation.denied(0);
+				}
+				//console.log(status)
+
+				for(var idx=0;idx<tarList.length;idx++){
+					$(tarList[idx]).find("td.grid-content-td-state").html($.su.CHAR.ARPSCAN.IMPORT);//"已导入");
+					dataList[idx].state = "2";
+				}
+				disabledConflict();
+			},function(errcode){
+				$("#import_alert_cnt").msg("close");
+                $("#import_pro_bar").waitingbar("stop");
+                $("#import_pro_bar").waitingbar("reset");
+			});
+
+
+		}else{
+			if ($.su.app && $.su.app.errorOperation && $.su.app.errorOperation.denied){
+				var NO_INTERFACE_PARAM = 15110;
+    			$.su.app.errorOperation.denied(NO_INTERFACE_PARAM);
+			}
+		}	
+
+		});
+	});
+
+
+	//IP地址排序
+
+	var order = "down";
+    function dataSort(x, y) {
+        xip = $.su.func.ipToInt(x.ip);
+        yip = $.su.func.ipToInt(y.ip);  
+        if(order == "down"){
+            if (xip > yip) {
+                return -1;
+            }else if (xip < yip) {
+                return 1;
+            }
+        }else{
+            if (xip < yip) {
+                return -1;
+            }else if (xip > yip) {
+                return 1;
+            }
+        }
+    }
+
+    $("th.ip").css({
+        "color": "#005564",
+        "cursor": "pointer"
+    });
+    
+    resultGrid.delegate("th.ip", "click", function(e){
+    	$("label.checkbox-label.checked").removeClass("checked");
+    	$("tr.selected").removeClass("selected");
+    	$("div.checkbox-group-container.grid-header-checkbox.checkcolumn.inline.selected").removeClass("selected");
+        var store = resultGrid.grid("getStore");
+        var data = store.data;
+        store.loadData(data.sort(dataSort));
+        if(order == "down"){
+            order = "up";
+        }else{
+            order = "down";
+        }
+        disabledConflict();
+    });
+
+	var helpARPscan = new $.su.Help({
+		container:"div#scan_arp_help",
+		content:["ARPSCAN_SCAN"]
+	});
+});
+
+</script>
+</html>

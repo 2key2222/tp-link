@@ -1,0 +1,153 @@
+--- a/networking/udhcp/dhcpc.c	2019-11-15 16:31:56.768189411 +0800
++++ b/networking/udhcp/dhcpc.c	2019-11-15 16:42:15.244189278 +0800
+@@ -60,11 +60,67 @@
+ 	char name[IFNAMSIZ];
+ 	struct in_addr addr;
+ 	struct in_addr mask;
++	char zone[IFNAMSIZ];
++	int lan;
+ };
+ 
+ struct interface_ip_mask *all_ifs = NULL;
+ static int all_ifnum = 0;
+ 
++static int get_interface_ip_v2()
++{
++	char all_ifs_cmd[64] = {0};
++	char all_ifs_file[64] = {0};
++	char line[256] = {0};
++	size_t len = 0;
++	size_t read;
++	int pos = 0;
++	int if_num = 92;
++	char zone[IFNAMSIZ] = {0};
++	char name[IFNAMSIZ] = {0};
++	char ip[128] = {0};
++	int prefix = 0;
++	int lan = 0;
++
++	snprintf(all_ifs_file, sizeof(all_ifs_file), "/tmp/.all_ifs_output_%s", client_config.interface);
++	snprintf(all_ifs_cmd, sizeof(all_ifs_cmd), "all_ifs > /tmp/.all_ifs_output_%s", client_config.interface);
++	system(all_ifs_cmd);
++	FILE *fp = fopen(all_ifs_file, "r");
++	if (!fp)
++		return -1;
++	all_ifnum = 0;
++	if (all_ifs) {
++		free(all_ifs);
++		all_ifs = NULL;
++	}
++	all_ifs = (struct interface_ip_mask *)calloc(if_num, sizeof(struct interface_ip_mask));
++	if (!all_ifs) {
++		fclose(fp);
++		return -1;
++	}
++	while ((read = fgets(line, sizeof(line), fp)) != 0) {
++		if (line[strlen(line)] == '\n')
++			line[strlen(line)] = '\0';
++		if (sscanf(line, "%s %s %s %d %d", zone, name, ip, &prefix, &lan) < 5) {
++			free(all_ifs);
++			all_ifs = NULL;
++			fclose(fp);
++			return -1;
++		}
++		snprintf(all_ifs[pos].zone, sizeof(all_ifs[pos].zone), "%s", zone);
++		snprintf(all_ifs[pos].name, sizeof(all_ifs[pos].name), "%s", name);
++		inet_pton(AF_INET, ip, &all_ifs[pos].addr);
++		all_ifs[pos].mask.s_addr = htonl(~((1 << (32-prefix)) - 1));
++		all_ifs[pos].lan = lan;
++		pos++;if (pos >= if_num) break;
++		memset(line, 0, sizeof(line));
++	}
++	all_ifnum = pos;
++	fclose(fp);	
++
++	return 0;
++}
++
+ static int get_interface_ip()
+ {
+ 	int fd = -1;
+@@ -216,6 +272,42 @@
+ 	return 0;
+ }
+ 
++static int check_ip_available_v2(uint32_t requested_ip, uint32_t requested_mask)
++{
++	get_interface_ip_v2();
++	if (all_ifnum <= 0 || all_ifs == NULL) {
++		return 0;
++	}
++		
++	int pos = 0;
++
++	if ((requested_ip == 0) || (requested_ip == 0xFFFFFFFF)
++	   || ((requested_ip >= 0xE0000000) && (requested_ip < 0xF0000000))) {
++		return -1;
++	}
++
++	if (((requested_ip & requested_mask) == requested_ip)
++	   || ((requested_ip & ~requested_mask) == ~requested_mask)) {
++		return -1;
++	}
++
++	while (pos < all_ifnum) {
++		if (strcmp(all_ifs[pos].name, client_config.interface) && (ntohl(all_ifs[pos].addr.s_addr) == requested_ip)) {
++			return -1;
++		}
++		
++		if (all_ifs[pos].lan) {
++			if ((ntohl(all_ifs[pos].addr.s_addr) & ntohl(all_ifs[pos].mask.s_addr)) == (requested_ip & ntohl(all_ifs[pos].mask.s_addr))) {
++				return -1;
++			}
++		}
++		pos++;
++	}
++	
++	return 0;
++}
++
++
+ static char router_x[32] = {0};
+ static char subnet_x[32] = "255.255.255.0";
+ 
+@@ -1477,6 +1569,8 @@
+ 	int discover_retries = 3;
+ 	uint32_t server_addr = server_addr; /* for compiler */
+ 	uint32_t requested_ip = 0;
++	uint32_t requested_mask = 0xFFFFFF00;
++	uint32_t requested_gw = 0;
+ 	uint32_t xid = xid; /* for compiler */
+ 	int packet_num;
+ 	int timeout; /* must be signed */
+@@ -1932,12 +2026,28 @@
+ 				already_waited_sec = 0;
+ 				
+ 				/* ip conflict, get ip again */
+-				if (check_ip_available(ntohl(requested_ip)) != 0) {
++				fill_envp(&packet);
++				requested_mask = 0xFFFFFF00; requested_gw=0;
++				{
++					struct in_addr requested_tmp;
++					char *tmp = getenv("subnet");
++
++					if (tmp) {
++						inet_pton(AF_INET, tmp, &requested_tmp);
++						requested_mask = requested_tmp.s_addr;
++					}
++					tmp = getenv("router");
++
++					if (tmp) {
++						inet_pton(AF_INET, tmp, &requested_tmp);
++						requested_gw = requested_tmp.s_addr;
++					}
++				}
++				if ((check_ip_available_v2(ntohl(requested_ip), ntohl(requested_mask)) != 0) || (requested_gw && (check_ip_available_v2(ntohl(requested_gw), ntohl(requested_mask)) != 0))) {
+ 					send_decline(/*xid,*/ server_addr, packet.yiaddr);
+ 
+ 					state = INIT_SELECTING;
+ 					{
+-						fill_envp(&packet);
+ 						char *tmp = getenv("router");
+ 						if (tmp) {
+ 							strncpy(router_x, tmp, 31);

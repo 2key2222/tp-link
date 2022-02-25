@@ -1,0 +1,31 @@
+#!/bin/sh
+
+local vid
+local prio
+shift
+[ -n "$1" ] && {
+	vid=${1##*.}
+
+	[ -n "$2" ] && {
+		prio="$2"
+	}
+
+	[ ! -n "$prio" ] && {
+		prio="$(uci -q get network.global.prio_${vid})"
+	}
+
+	[ ! -n "$prio" ] && {
+		prio="$(vlanctrl prio_get $vid)"
+	}
+
+	[ -n "$prio" ] && {
+		vconfig set_egress_map "$1" 0 "$prio"
+		vconfig set_egress_map "$1" 1 "$prio"
+		vconfig set_egress_map "$1" 2 "$prio"
+		vconfig set_egress_map "$1" 3 "$prio"
+		vconfig set_egress_map "$1" 4 "$prio"
+		vconfig set_egress_map "$1" 5 "$prio"
+		vconfig set_egress_map "$1" 6 "$prio"
+		vconfig set_egress_map "$1" 7 "$prio"
+	}
+}

@@ -1,0 +1,7 @@
+#!/bin/sh
+/usr/sbin/iptables $@
+ERR=$?
+DATE=`date "+%H:%M:%S"`
+CMD="iptables $@"
+printf "%10s : %-100s | %4s\n" "$DATE" "$CMD" "$ERR" >> /var/log/ipx.log
+exit $ERR

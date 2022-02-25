@@ -1,0 +1,1137 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title></title>
+<style type="text/css">
+</style>
+</head>
+
+<body>
+<div class="func-container">
+
+
+    <div id="ipv6-lan-server-list">
+        <div id="ipv6-lan-server-grid">
+        </div>
+    </div>
+
+    <div id="own_editor">
+		<input id="vlanid" name="vlanid" />
+		<input id="proto" name="proto" />
+		<!-- dhcpv6 -->
+		<div id = "dhcpv6" >
+			<div id = "dhcpv6_gateway" name = "dhcpv6_gateway">
+				<input id="dhcpv6_addr" name="dhcpv6_addr" />
+				<input id="dhcpv6_prefixlen" name="dhcpv6_prefixlen" />
+			</div>
+			<div id = "dhcpv6_range" name = "dhcpv6_range">
+				<input id="dhcpv6_start" name="dhcpv6_start" />
+				<input id="dhcpv6_end" name="dhcpv6_end" />
+			</div>
+			<input id="dhcpv6_release" name="dhcpv6_release" />
+			<!-- dns -->
+			<input id="dhcpv6_dns" name="dhcpv6_dns" />
+			<div id="dhcpv6_dns_manual" name = "dhcpv6_dns_manual">
+				<input id="dhcpv6_dns1" name="dhcpv6_dns1" />
+				<input id="dhcpv6_dns2" name="dhcpv6_dns2" />
+			</div>
+			<input id = "dhcpv6_address" name="dhcpv6_address" />
+		</div>
+		<!-- slaac -->
+		<div id = "slaac" >
+			<input id = "slaac_type" name = "slaac_type" />
+			<!-- manual -->
+			<div id = "slaac_type_manual" name ="slaac_type_manual">
+				<input id = "slaac_prefix" name = "slaac_prefix" />
+				<!--<input id = "slaac_prefixlen" name = "slaac_prefixlen" />-->
+			</div>
+			<!-- prefix delegation -->
+			<div id = "slaac_type_delegation" name = "slaac_type_delegation">
+				<input id = "slaac_zone" name = "slaac_zone" />
+				<input id = "slaac_prefixid" name = "slaac_prefixid" />
+				<input id = "slaac_addr_prefix" name = "slaac_addr_prefix" />
+			</div>
+			<!-- dns -->
+			<input id = "slaac_dns" name = "slaac_dns" />
+			<div id = "slaac_dns_manual" name = "slaac_dns_manual">
+				<input id = "slaac_dns1" name = "slaac_dns1" />
+				<input id = "slaac_dns2" name = "slaac_dns2" />
+			</div>
+			<input id = "slaac_address" name="slaac_address" />
+		</div>
+		<!-- rdnss -->
+		<div id = "rdnss" >
+			<input id = "rdnss_type" name = "rdnss_type" />
+			<!-- manual -->
+			<div id = "rdnss_type_manual" name = "rdnss_type_manual">
+				<input id = "rdnss_prefix" name = "rdnss_prefix" />
+				<!--<input id = "rdnss_prefixlen" name = "rdnss_prefixlen" />-->
+			</div>
+			<!-- prefix delegation -->
+			<div id = "rdnss_type_delegation" name = "rdnss_type_delegation">
+				<input id = "rdnss_zone" name = "rdnss_zone" />
+				<input id = "rdnss_prefixid" name = "rdnss_prefixid" />
+				<input id = "rdnss_addr_prefix" name = "rdnss_addr_prefix" />
+			</div>
+			<!-- dns -->
+			<input id = "rdnss_dns" name = "rdnss_dns" />
+			<div id = "rdnss_dns_manual" name = "rdnss_dns_manual">
+				<input id = "rdnss_dns1" name = "rdnss_dns1" />
+				<input id = "rdnss_dns2" name = "rdnss_dns2" />
+			</div>
+			<input id = "rdnss_address" name="rdnss_address" />
+		</div>
+
+		<!-- passthrough -->
+		<div id = "passthrough" >
+			<input id = "passthrough_zone" name = "passthrough_zone" />
+		</div>
+    </div>
+
+	<div id="ipv6_lan_help"></div>
+</div>
+
+<script type="text/javascript">
+//<![CDATA[
+try{
+    $
+}catch(e){
+    location.href = "/";
+};
+
+$(document).ready(function(e){
+	$("div.func-container").page({
+		title: $.su.CHAR.IPV6.TITLE,
+		help: ""
+	});
+
+	$("#ipv6-lan-server-list").panel({
+		title: $.su.CHAR.IPV6.GENERAL,
+		collapsible: false
+	});	
+
+	$("#vlanid").textbox({
+		fieldLabel: $.su.CHAR.IPV6.LANVLAN,
+        inputCls: 'l',
+        maxLength: 4,
+		readOnly:true,
+		vtype: 'number'
+	});
+	
+	$("#proto").combobox({
+		fieldLabel: $.su.CHAR.IPV6.ASSIGNED_TYPE,
+		columns: 1,
+		items: [
+			{name: $.su.CHAR.IPV6.NONE, value: "none", selected:true},
+			{name: $.su.CHAR.IPV6.DHCP_SERVER, value: "dhcpv6"},
+			{name: $.su.CHAR.IPV6.SLAAC, value: "slaac"},
+			{name: $.su.CHAR.IPV6.RDNSS, value: "rdnss"},
+			{name: $.su.CHAR.IPV6.PASSTHROUGH, value: "passthrough"},
+		]
+	}).on('ev_change', function(e, oldValue, newValue){
+		var editor = lanv6ServerGrid.grid('getEditor');
+		$(editor).find('#dhcpv6').fieldset('hide');
+		$(editor).find("#dhcpv6_gateway").fieldset('hide');
+		$(editor).find("#dhcpv6_range").fieldset('hide');
+		$(editor).find("#dhcpv6_dns_manual").fieldset('hide');
+		$(editor).find('#slaac').fieldset('hide');
+		$(editor).find('#slaac_type_manual').fieldset('hide');
+		$(editor).find('#slaac_type_delegation').fieldset('hide');
+		$(editor).find('#slaac_dns_manual').fieldset('hide');
+		$(editor).find('#rdnss').fieldset('hide');
+		$(editor).find('#rdnss_type_manual').fieldset('hide');
+		$(editor).find('#rdnss_type_delegation').fieldset('hide');
+		$(editor).find('#rdnss_dns_manual').fieldset('hide');
+		$(editor).find('#passthrough').fieldset('hide');
+		if(newValue=='dhcpv6'){
+			$(editor).find('#dhcpv6').fieldset('show');
+			$(editor).find("#dhcpv6_gateway").fieldset('show');
+			$(editor).find("#dhcpv6_range").fieldset('show');
+			if ($(editor).find("#dhcpv6_dns").val() == "manual") {
+				$(editor).find("#dhcpv6_dns_manual").fieldset('show');
+			}
+		}
+		else if(newValue=='slaac'){
+			$(editor).find('#slaac').fieldset('show');
+			if ($(editor).find("#slaac_type").val() == "manual") {
+				$(editor).find('#slaac_type_manual').fieldset('show');
+			}
+			else {
+				$(editor).find('#slaac_type_delegation').fieldset('show');
+			}
+			if ($(editor).find("#slaac_dns").val() == "manual") {
+				$(editor).find('#slaac_dns_manual').fieldset('show');
+			}
+		}
+		else if(newValue=='rdnss'){
+			$(editor).find('#rdnss').fieldset('show');
+			if ($(editor).find("#rdnss_type").val() == "manual") {
+				$(editor).find('#rdnss_type_manual').fieldset('show');
+			}
+			else {
+				$(editor).find('#rdnss_type_delegation').fieldset('show');
+			}
+			if ($(editor).find("#rdnss_dns").val() == "manual") {
+				$(editor).find('#rdnss_dns_manual').fieldset('show');
+			}
+		}
+		else if (newValue=='passthrough') {
+			$(editor).find('#passthrough').fieldset('show');
+		}
+	});
+	
+	function full_IPv6 (ip_string, prefixlen, prefixid) {
+		if (!ip_string) {
+			return false;
+		}
+		// replace ipv4 address if any
+		var ipv4 = ip_string.match(/(.*:)([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$)/);
+		if (ipv4) {
+			var ip_string = ipv4[1];
+			ipv4 = ipv4[2].match(/[0-9]+/g);
+			for (var i = 0;i < 4;i ++) {
+				var byte = parseInt(ipv4[i],10);
+				ipv4[i] = ("0" + byte.toString(16)).substr(-2);
+			}
+			ip_string += ipv4[0] + ipv4[1] + ':' + ipv4[2] + ipv4[3];
+		}
+
+		// take care of leading and trailing ::
+		ip_string = ip_string.replace(/^:|:$/g, '');
+
+		var ipv6 = ip_string.split(':');
+
+		for (var i = 0; i < ipv6.length; i ++) {
+			var hex = ipv6[i];
+			if (hex != "") {
+				// normalize leading zeros
+				ipv6[i] = ("0000" + hex).substr(-4);
+			}
+			else {
+				// normalize grouped zeros ::
+				hex = [];
+				for (var j = ipv6.length; j <= 8; j ++) {
+					hex.push('0000');
+				}
+				ipv6[i] = hex.join(':');
+			}
+		}
+		
+		if (prefixlen && (prefixlen >=1 && prefixlen <=128)) {
+			var i = 8;
+			ipv6 = ipv6.join(':').split(':')
+			while (i--){
+				if (prefixlen <= (i * 16)) {
+					ipv6[i] = "0000"
+				} else {
+					var hex = ipv6[i]
+					var len = prefixlen - (i * 16);
+					hex = (parseInt(hex, 16) & (0xFFFF << (16 - len))).toString(16);
+					ipv6[i] = ("0000" + hex).substr(-4);
+					break;
+				}
+			}
+			if ((prefixlen <= 64) && prefixid && (prefixid >=0 && prefixid < 65536)) {
+				hex = ipv6[3]
+				i = parseInt((prefixlen-1) / 16);
+				if (i <= 2) {
+					hex = parseInt(prefixid).toString(16);
+				}else {
+					hex = (parseInt(hex,16) + parseInt(prefixid)).toString(16);
+				}
+				ipv6[3] = ("0000" + hex).substr(-4);
+			}
+		}
+
+		/* replace 0000 with :: */
+		var s;
+		var e;
+		for (var i = 7; i >= 0; i--) {
+			if (ipv6[i] == "0000"){
+				if (!s) {
+					s = i;
+				}
+				e = i;
+			} else if (s) {
+				break
+			}
+		}
+		if ((e == 0) && (s == 7)) {
+			ipv6.splice(e, s - e + 1, "::")
+		} else if ((e == 0) || (s == 7)) {
+			ipv6.splice(e, s - e + 1, ":")
+		} else {
+			ipv6.splice(e, s - e + 1, "")
+		}
+		
+		return ipv6.join(':');
+	}
+	
+	function prefixid_conflict(wan, id, skip) {
+		var prefixid_table = {}
+		for (var i=0; i < lanv6_gdata.length; i++) {
+			if (i == skip)
+				continue;
+			if (lanv6_gdata[i]["slaac_zone"]) {
+				prefixid_table[lanv6_gdata[i]["slaac_zone"] + lanv6_gdata[i]["slaac_prefixid"]] = lanv6_gdata[i].name + "(" + lanv6_gdata[i].vlanid + ")";
+			}
+			if (lanv6_gdata[i]["rdnss_zone"]) {
+				prefixid_table[lanv6_gdata[i]["rdnss_zone"] + lanv6_gdata[i]["rdnss_prefixid"]] = lanv6_gdata[i].name + "(" + lanv6_gdata[i].vlanid + ")";
+			}
+		}
+
+		return prefixid_table[wan+id];
+	}
+
+	function prefix_conflict(prefix, len, skip) {
+		var prefix1;
+		var prefix2;
+		var plen;
+
+		for (var i=0; i < lanv6_gdata.length; i++) {
+			if (skip == i) {
+				continue;
+			}
+			prefix1 = undefined;
+			
+			if (lanv6_gdata[i]["dhcpv6_addr"] && (lanv6_gdata[i]["dhcpv6_addr"] != "")) {
+				plen = (len < lanv6_gdata[i]["dhcpv6_prefixlen"]) ? len : lanv6_gdata[i]["dhcpv6_prefixlen"];
+				prefix1 = full_IPv6(lanv6_gdata[i]["dhcpv6_addr"], plen);
+				prefix2 = full_IPv6(prefix, plen);
+			} else if (lanv6_gdata[i]["slaac_prefix"] && (lanv6_gdata[i]["slaac_prefix"] != "")) {
+				plen = (len < lanv6_gdata[i]["slaac_prefixlen"]) ? len : lanv6_gdata[i]["slaac_prefixlen"];
+				prefix1 = full_IPv6(lanv6_gdata[i]["slaac_prefix"], plen);
+				prefix2 = full_IPv6(prefix, plen);
+			} else if (lanv6_gdata[i]["rdnss_prefix"] && (lanv6_gdata[i]["rdnss_prefix"] != "")) {
+				plen = (len < lanv6_gdata[i]["rdnss_prefixlen"]) ? len : lanv6_gdata[i]["rdnss_prefixlen"];
+				prefix1 = full_IPv6(lanv6_gdata[i]["rdnss_prefix"], plen);
+				prefix2 = full_IPv6(prefix, plen);
+			}
+			if (prefix1 && (prefix1 == prefix2)){
+				return (lanv6_gdata[i]["name"] + "(" + lanv6_gdata[i]["vlanid"] + ")");
+			}
+		}
+		
+		for (var i=0; i < wan_infos.length; i++) {
+			prefix1 = undefined;
+			if (wan_infos[i]["ip6addr"] && (wan_infos[i]["ip6addr"] != "")) {
+				var addr = wan_infos[i]["ip6addr"].split('/')[0];
+				var alen = wan_infos[i]["ip6addr"].split('/')[1];
+				alen = alen ? alen : 64;
+				plen = (len < alen) ? len : alen;
+				prefix1 = full_IPv6(addr, plen);
+				prefix2 = full_IPv6(prefix, plen);
+			}
+			if (prefix1 && (prefix1 == prefix2)){
+				return wan_infos[i].t_label;
+			}
+		}
+		
+		return undefined;
+	}
+
+	/* dhcpv6 */
+	$("#dhcpv6_addr").textbox({
+		fieldLabel: $.su.CHAR.IPV6.IPV6_ADDR,
+		allowBlank:false,
+		maxLength:64,
+		cls: "inline",
+		vtype: "ipv6",
+		tips: "/&nbsp",
+		tipsCls: "xxxxs",
+		inputCls: 'xxl',
+		validator: function (gw) {
+			var editor = lanv6ServerGrid.grid('getEditor');
+			var len = $(editor).find("#dhcpv6_prefixlen").val();
+			if (len && (len != "")) {
+				lan_id = prefix_conflict(gw, len, editor.editingIndex);
+				return lan_id ? ($.su.CHAR.VTYPETEXT.PREFIX_CONFLICT + lan_id) : true;
+			} else {
+				return true;
+			}
+		}
+	});	
+
+	$("#dhcpv6_prefixlen").textbox({
+		labelCls:"xxxxs",
+		fieldLabel: "",
+		allowBlank:false,
+		maxLength:4,
+		cls: "inline",
+		vtype: {
+			vtype: "number",
+			max: 128,
+			min: 1
+		},
+		inputCls: 'xs',
+		validator: function (len) {
+			var editor = lanv6ServerGrid.grid('getEditor');
+			var gw  = $(editor).find("#dhcpv6_addr").val();
+			if (gw && (gw != "")) {
+				lan_id = prefix_conflict(gw, len, editor.editingIndex);
+				return lan_id ? ($.su.CHAR.VTYPETEXT.PREFIX_CONFLICT + lan_id) : true;
+			} else {
+				return true;
+			}
+		}
+	});
+	
+	$("#dhcpv6_start").textbox({
+		fieldLabel: $.su.CHAR.IPV6.DHCPV6_RANGE,
+		allowBlank:false,
+		maxLength:64,
+		cls: "inline",
+		vtype: "ipv6",
+		tips: "-&nbsp",
+		tipsCls: "xxxxs",
+		separator:"",
+		inputCls: 'xxl',
+		invalidText: $.su.CHAR.VTYPETEXT.DHCPV6_RANGE,
+		validator: function (v6addr) {
+			var editor = lanv6ServerGrid.grid('getEditor');
+			var gw  = $(editor).find("#dhcpv6_addr").val();
+			var len = $(editor).find("#dhcpv6_prefixlen").val();
+			
+			var prefix1 = full_IPv6(gw, len)
+			var prefix2 = full_IPv6(v6addr, len)
+			
+			if (prefix1 != prefix2) {
+				return false;
+			}
+			return true;
+		}
+	});	
+
+	$("#dhcpv6_end").textbox({
+		labelCls:"xxxxs",
+		fieldLabel: "",
+		allowBlank:false,
+		maxLength:64,
+		cls: "inline",
+		vtype: "ipv6",
+		separator:"",
+		inputCls: 'xxl',
+		invalidText: $.su.CHAR.VTYPETEXT.DHCPV6_RANGE,
+		validator: function (v6addr) {
+			var editor = lanv6ServerGrid.grid('getEditor');
+			var gw  = $(editor).find("#dhcpv6_addr").val();
+			var len = $(editor).find("#dhcpv6_prefixlen").val();
+			
+			var prefix1 = full_IPv6(gw, len)
+			var prefix2 = full_IPv6(v6addr, len)
+			
+			if (prefix1 != prefix2) {
+				return false;
+			}
+			return true;
+		}
+	});	
+
+	$("#dhcpv6_release").textbox({
+		fieldLabel: $.su.CHAR.IPV6.RELEASE_TIME,
+		inputCls: 's',
+		tips: $.su.CHAR.IPV6.RELEASE_TIME_TIP,
+		tipsCls: "xxl",
+		allowBlank: false,
+		textFormat: $.su.format.number,
+        vtype: {
+            vtype: "number",
+            max: 11520,
+            min: 1
+        }
+	});
+
+	$("#dhcpv6_dns").radio({
+		fieldLabel: $.su.CHAR.IPV6.DNS_ADDR_MODE,
+		columns: 2,
+		cls: '',
+		items:[
+			{boxlabel: $.su.CHAR.IPV6.AUTO, inputValue:'auto',checked:true},
+			{boxlabel: $.su.CHAR.IPV6.MANUAL_DNS, inputValue: 'manual'},
+		]
+	}).on('ev_change', function(e, oldValue, newValue){
+		var editor = lanv6ServerGrid.grid('getEditor');
+		if(newValue=='auto'){
+			 $(editor).find('#dhcpv6_dns_manual').fieldset('hide');
+		}
+		else {
+			 $(editor).find('#dhcpv6_dns_manual').fieldset('show');
+		}
+	});
+	
+	$("#dhcpv6_dns1").textbox({
+		fieldLabel: $.su.CHAR.IPV6.PRIMARY_DNS,
+		inputCls: 'xxl',
+		cls: '',
+		maxLength:64,
+		allowBlank: false,
+		vtype: 'ipv6'
+	});
+
+	$("#dhcpv6_dns2").textbox({
+		fieldLabel: $.su.CHAR.IPV6.SECOND_DNS,
+		inputCls: 'xxl',
+		cls: '',
+		maxLength:64,
+		vtype: 'ipv6',
+		tips:'(Optional)',
+		tipsCls: "s",
+	});
+
+	$("#dhcpv6_dns_manual").fieldset({
+		fields: [
+			{name: "dhcpv6_dns1"},
+			{name: "dhcpv6_dns2"},
+		]
+	}).fieldset('hide');
+
+	$("#dhcpv6_address").textbox({
+		fieldLabel: $.su.CHAR.IPV6.ADDRESS,
+        inputCls: 'xxxl',
+		maxLength:64,
+		readOnly:true
+	});
+
+	$("#dhcpv6_gateway").fieldset({
+		fields: [
+			{name: "dhcpv6_addr"},
+			{name: "dhcpv6_prefixlen"},
+		]
+	}).fieldset('hide');
+
+	$("#dhcpv6_range").fieldset({
+		fields: [
+			{name: "dhcpv6_start"},
+			{name: "dhcpv6_end"},
+		]
+	}).fieldset('hide');
+	
+	$("#dhcpv6").fieldset({
+		fields: [
+			{name: "dhcpv6_release"},
+			{name: "dhcpv6_dns"},
+			{name: "dhcpv6_address"}
+		]
+	}).fieldset('hide');
+	
+	/* slaac */
+	$("#slaac_type").radio({
+		fieldLabel: $.su.CHAR.IPV6.PREFIX_TYPE,
+		columns: 2,
+		items: [
+			{boxlabel: $.su.CHAR.IPV6.PREFIX_TYPE_MANUAL, inputValue: "manual", checked:true},
+			{boxlabel: $.su.CHAR.IPV6.PREFIX_TYPE_DELEGATION, inputValue: "delegation"}
+		]
+	}).on('ev_change', function(e, oldValue, newValue){
+		var editor = lanv6ServerGrid.grid('getEditor');
+		if(newValue=='manual'){
+			 $(editor).find('#slaac_type_manual').fieldset('show');
+			 $(editor).find('#slaac_type_delegation').fieldset('hide');
+		}
+		else if(newValue=='delegation'){
+			 $(editor).find('#slaac_type_manual').fieldset('hide');
+			 $(editor).find('#slaac_type_delegation').fieldset('show');
+		}
+	});
+	$("#slaac_prefix").textbox({
+		fieldLabel: $.su.CHAR.IPV6.PREFIX,
+		inputCls: 'xxl',
+		tips: "/64",
+		tipsCls: "s",
+		allowBlank: false,
+		maxLength: 64,
+		cls: "inline",
+		vtype: {
+			vtype:"ipv6",
+			isPrefixFlag: true
+		},
+		validator:function(val){
+			var reg_6to4 = new RegExp("^2002:");
+			if (reg_6to4.test(val)){
+				return $.su.CHAR.VTYPETEXT.IPV6_RESERVED_FOR_6TO4;
+			}
+			
+			lan_id = prefix_conflict(val, 64, lanv6ServerGrid.grid('getEditor').editingIndex);
+			return lan_id ? ($.su.CHAR.VTYPETEXT.PREFIX_CONFLICT + lan_id) : true;
+		}
+	});
+
+    $('#slaac_zone').combobox({
+        fieldLabel:$.su.CHAR.IPV6.PREFIX_WAN,
+        allowBlank: false,
+        vtype:"string_visible_allow_blank",
+        items:[
+			{name:"---",value:"---"}
+        ]
+    }).on('ev_change', function(e, oldValue, newValue){
+		var editor = lanv6ServerGrid.grid('getEditor');
+		var wanid  = newValue;
+		if (wanid && (wanid != "")) {
+			var prefixlen = wanv6_protos[wanid].prefixlen;
+			var proto     = wanv6_protos[wanid].proto;
+			if (prefixlen && (prefixlen != "") && (prefixlen <=64)) {
+				var prefixsz = 64 - prefixlen;
+				var pid_min  = ((proto == "6to4") ? 1 : 0);
+				var pid_max  = ((1<<prefixsz)-1);
+				$(editor).find("#slaac_prefixid").textbox('enable');
+				$(editor).find("#slaac_prefixid").textbox('setTips', '('+pid_min+'-'+pid_max+')');
+				$(editor).find('#slaac_prefixid')[0].vtype.min = pid_min;
+				$(editor).find('#slaac_prefixid')[0].vtype.max = pid_max;
+				return true;
+			}
+		}
+		$(editor).find('#slaac_prefixid')[0].vtype.min = 0;
+		$(editor).find('#slaac_prefixid')[0].vtype.max = 65535;
+		$(editor).find("#slaac_prefixid").textbox('setValue', '').textbox('disable');
+		$(editor).find("#slaac_prefixid").textbox('setTips', '');
+		return true
+	});
+
+	function prefixid_validator(val, zone_selector, addr_selector) {
+		var editor = lanv6ServerGrid.grid('getEditor');
+		var wanid  = $(editor).find(zone_selector).val();
+		if (wanid && (wanid != "")) {
+			var prefix = wanv6_protos[wanid].prefix;
+			var prefixlen = wanv6_protos[wanid].prefixlen;
+			if (!prefix || (prefix == "") || !prefixlen || (prefixlen == "")) {
+				return true;
+			}
+			if ((prefixlen > 64) || (val > ((1 << (64 - prefixlen))-1))) {
+				return $.su.CHAR.VTYPETEXT.PREFIXID + prefixlen;
+			}
+			/* prefixid conflict */
+			var prefixid_lan = prefixid_conflict(wanid, val, editor.editingIndex);
+			if (prefixid_lan) {
+				return $.su.CHAR.VTYPETEXT.PREFIXID_CONFLICT + prefixid_lan;
+			}
+			prefix = full_IPv6(prefix, prefixlen, val);
+			var lan_id = prefix_conflict(prefix, 64, editor.editingIndex);
+			if (lan_id) {
+				return $.su.CHAR.VTYPETEXT.PREFIX_CONFLICT + lan_id;
+			}
+			$(editor).find(addr_selector).val(prefix + "/64");
+		}
+		return true
+	}
+
+	$("#slaac_prefixid").textbox({
+		fieldLabel: $.su.CHAR.IPV6.PREFIX_DELEGATION_ID,
+        inputCls: 's',
+        maxLength: 5,
+		tips: "",
+		tipsCls: "s",
+        allowBlank: false,
+        vtype: {
+            vtype: "number",
+            max: 65535,
+            min: 0
+        },
+		validator:function(val){
+			return prefixid_validator(val, "#slaac_zone", "#slaac_addr_prefix")
+		}
+	}).on("ev_change", function(e, oldValue, newValue) {
+		prefixid_validator(newValue, "#slaac_zone", "#slaac_addr_prefix")
+	});
+
+	$("#slaac_addr_prefix").textbox({
+		fieldLabel: $.su.CHAR.IPV6.PREFIX,
+        inputCls: 'xxl',
+        maxLength: 64,
+		readOnly:true
+	});
+	
+	$("#slaac_dns").radio({
+		fieldLabel: $.su.CHAR.IPV6.DNS_ADDR_MODE,
+		columns: 2,
+		cls: '',
+		items:[
+			{boxlabel: $.su.CHAR.IPV6.AUTO, inputValue:'auto', checked:true},
+			{boxlabel: $.su.CHAR.IPV6.MANUAL_DNS, inputValue: 'manual'}
+		]
+	}).on('ev_change', function(e, oldValue, newValue){
+		var editor = lanv6ServerGrid.grid('getEditor');
+		if(newValue=='manual'){
+			 $(editor).find('#slaac_dns_manual').fieldset('show');
+		}
+		else {
+			 $(editor).find('#slaac_dns_manual').fieldset('hide');
+		}
+	});
+
+	$("#slaac_dns1").textbox({
+		fieldLabel: $.su.CHAR.IPV6.PRIMARY_DNS,
+		inputCls: 'xxl',
+		maxLength: 64,
+		cls: '',
+		allowBlank: false,
+		vtype: 'ipv6'
+	});
+
+	$("#slaac_dns2").textbox({
+		fieldLabel: $.su.CHAR.IPV6.SECOND_DNS,
+		inputCls: 'xxl',
+		maxLength: 64,
+		cls: '',
+		vtype: 'ipv6',
+		tips:'(Optional)',
+		tipsCls: "s",
+	});
+
+	$("#slaac_address").textbox({
+		fieldLabel: $.su.CHAR.IPV6.ADDRESS,
+        inputCls: 'xxxl',
+        maxLength: 64,
+		readOnly:true
+	});	
+	
+	$("#slaac_type_manual").fieldset({
+		fields: [
+			{name: "slaac_prefix"},
+		],
+		nofade: true
+	}).fieldset('hide');
+
+	$("#slaac_type_delegation").fieldset({
+		fields: [
+			{name: "slaac_zone"},
+			{name: "slaac_prefixid"},
+			{name: "slaac_addr_prefix"}
+		]
+	}).fieldset('hide');
+
+	$("#slaac_dns_manual").fieldset({
+		fields: [
+			{name: "slaac_dns1"},
+			{name: "slaac_dns2"},
+		],
+	}).fieldset('hide');
+	
+	$("#slaac").fieldset({
+		fields: [
+			{name: "slaac_type"},
+			{name: "slaac_dns"},
+			{name: "slaac_address"}
+		]
+	}).fieldset('hide');
+
+	/* rdnss */
+	$("#rdnss_type").radio({
+		fieldLabel: $.su.CHAR.IPV6.PREFIX_TYPE,
+		columns: 2,
+		items: [
+			{boxlabel: $.su.CHAR.IPV6.PREFIX_TYPE_MANUAL, inputValue: "manual", checked:true},
+			{boxlabel: $.su.CHAR.IPV6.PREFIX_TYPE_DELEGATION, inputValue: "delegation"}
+		]
+	}).on('ev_change', function(e, oldValue, newValue){
+		var editor = lanv6ServerGrid.grid('getEditor');
+		if(newValue=='manual'){
+			 $(editor).find('#rdnss_type_manual').fieldset('show');
+			 $(editor).find('#rdnss_type_delegation').fieldset('hide');
+		}
+		else if(newValue=='delegation'){
+			 $(editor).find('#rdnss_type_manual').fieldset('hide');
+			 $(editor).find('#rdnss_type_delegation').fieldset('show');
+		}
+	});
+	$("#rdnss_prefix").textbox({
+		fieldLabel: $.su.CHAR.IPV6.PREFIX,
+		inputCls: 'xxl',
+		tips: "/64",
+		tipsCls: "s",
+		allowBlank: false,
+		maxLength: 64,
+		vtype: {
+			vtype:"ipv6",
+			isPrefixFlag: true
+		},
+		cls: '',
+		validator:function(val){
+			var reg_6to4 = new RegExp("^2002:");
+			if (reg_6to4.test(val)){
+				return $.su.CHAR.VTYPETEXT.IPV6_RESERVED_FOR_6TO4;
+			}
+			lan_id = prefix_conflict(val, 64, lanv6ServerGrid.grid('getEditor').editingIndex);
+			return lan_id ? ($.su.CHAR.VTYPETEXT.PREFIX_CONFLICT + lan_id) : true;
+		}
+	});
+
+    $('#rdnss_zone').combobox({
+        fieldLabel:$.su.CHAR.IPV6.PREFIX_WAN,
+        allowBlank: false,
+        vtype:"string_visible_allow_blank",
+        items:[
+			{name:"---",value:"---"}
+        ]
+    }).on('ev_change', function(e, oldValue, newValue){
+		var editor = lanv6ServerGrid.grid('getEditor');
+		var wanid  = newValue;
+		if (wanid && (wanid != "")) {
+			var prefixlen = wanv6_protos[wanid].prefixlen;
+			var proto     = wanv6_protos[wanid].proto;
+			if (prefixlen && (prefixlen != "") && (prefixlen <=64)) {
+				var prefixsz = 64 - prefixlen;
+				var pid_min  = ((proto == "6to4") ? 1 : 0);
+				var pid_max  = ((1<<prefixsz)-1);
+				$(editor).find("#rdnss_prefixid").textbox('enable');
+				$(editor).find("#rdnss_prefixid").textbox('setTips', '('+pid_min+'-'+pid_max+')');
+				$(editor).find('#rdnss_prefixid')[0].vtype.min = pid_min;
+				$(editor).find('#rdnss_prefixid')[0].vtype.max = pid_max;
+				return true;
+			}
+		}
+		$(editor).find('#rdnss_prefixid')[0].vtype.min = 0;
+		$(editor).find('#rdnss_prefixid')[0].vtype.max = 65535;
+		$(editor).find("#rdnss_prefixid").textbox('setValue', '').textbox('disable');
+		$(editor).find("#rdnss_prefixid").textbox('setTips', '');
+		return true
+	});
+
+	$("#rdnss_prefixid").textbox({
+		fieldLabel: $.su.CHAR.IPV6.PREFIX_DELEGATION_ID,
+        inputCls: 's',
+        maxLength: 5,
+		tips: "",
+		tipsCls: "s",
+        allowBlank: false,
+        vtype: {
+            vtype: "number",
+            max: 65535,
+            min: 0
+        },
+		validator:function(val){
+			return prefixid_validator(val, "#rdnss_zone", "#rdnss_addr_prefix")
+		}
+	}).on("ev_change", function(e, oldValue, newValue) {
+		prefixid_validator(newValue, "#rdnss_zone", "#rdnss_addr_prefix")
+	});
+
+	$("#rdnss_addr_prefix").textbox({
+		fieldLabel: $.su.CHAR.IPV6.PREFIX,
+        inputCls: 'xxl',
+        maxLength: 64,
+		readOnly:true
+	});
+	
+	$("#rdnss_dns").radio({
+		fieldLabel: $.su.CHAR.IPV6.DNS_ADDR_MODE,
+		columns: 2,
+		cls: '',
+		items:[
+			{boxlabel: $.su.CHAR.IPV6.AUTO, inputValue:'auto',checked:true},
+			{boxlabel: $.su.CHAR.IPV6.MANUAL_DNS, inputValue: 'manual'}
+		]
+	}).on('ev_change', function(e, oldValue, newValue){
+		var editor = lanv6ServerGrid.grid('getEditor');
+		if(newValue=='manual'){
+			 $(editor).find('#rdnss_dns_manual').fieldset('show');
+		}
+		else {
+			 $(editor).find('#rdnss_dns_manual').fieldset('hide');
+		}
+	});
+	
+	$("#rdnss_dns1").textbox({
+		fieldLabel: $.su.CHAR.IPV6.PRIMARY_DNS,
+		inputCls: 'xxl',
+		maxLength: 64,
+		cls: '',
+		allowBlank: false,
+		vtype: 'ipv6'
+	});
+
+	$("#rdnss_dns2").textbox({
+		fieldLabel: $.su.CHAR.IPV6.SECOND_DNS,
+		inputCls: 'xxl',
+		maxLength: 64,
+		cls: '',
+		vtype: 'ipv6',
+		tips:'(Optional)',
+		tipsCls: "s",
+	});
+
+	$("#rdnss_address").textbox({
+		fieldLabel: $.su.CHAR.IPV6.ADDRESS,
+        inputCls: 'xxxl',
+        maxLength: 64,
+		readOnly:true
+	});
+	
+	$("#rdnss_type_manual").fieldset({
+		fields: [
+			{name: "rdnss_prefix"},
+		],
+		nofade: true
+	}).fieldset('hide');
+
+	$("#rdnss_type_delegation").fieldset({
+		fields: [
+			{name: "rdnss_zone"},
+			{name: "rdnss_prefixid"},
+			{name: "rdnss_addr_prefix"},
+		]
+	}).fieldset('hide');
+
+	$("#rdnss_dns_manual").fieldset({
+		fields: [
+			{name: "rdnss_dns1"},
+			{name: "rdnss_dns2"},
+		]
+	}).fieldset('hide');
+	
+	$("#rdnss").fieldset({
+		fields: [
+			{name: "rdnss_type"},
+			{name: "rdnss_dns"},
+			{name: "rdnss_address"}
+		]
+	}).fieldset('hide');
+	
+	/* passthrough */
+    $('#passthrough_zone').combobox({
+        fieldLabel:$.su.CHAR.IPV6.PREFIX_PASSTHROUGH_WAN,
+        allowBlank: false,
+        vtype:"string_visible_allow_blank",
+        items:[
+			{name:"---",value:"---"}
+        ]
+    });
+
+	$("#passthrough").fieldset({
+		fields: [
+			{name: "passthrough_zone"},
+		]
+	}).fieldset('hide');;
+	
+	var ipv6LanProxy = new $.su.Proxy({
+	//	url: "./data/lan.ipv6.json"
+		url: $.su.url('/admin/ipv6?form=lan_ipv6')
+	});
+	
+ 
+   var lanv6ServerGrid = $("#ipv6-lan-server-grid").grid({
+        maxRulesProperty: "lanv6_list_max",
+        editor: {
+            content:"#own_editor",
+            fields: [
+				{name: "name"},
+				{name: "vlanid"},
+				{name: "proto"},
+
+                {name: "dhcpv6_addr"},
+                {name: "dhcpv6_prefixlen"},
+                {name: "dhcpv6_start"},
+                {name: "dhcpv6_end"},
+				{name: "dhcpv6_release"},
+                {name: "dhcpv6_dns"},
+				{name: "dhcpv6_dns1"},
+				{name: "dhcpv6_dns2"},
+				{name: "dhcpv6_address"},
+
+				{name: "slaac_type"},
+				{name: "slaac_prefix"},
+				<!--{name: "slaac_prefixlen"},-->
+				{name: "slaac_zone"},
+				{name: "slaac_prefixid"},
+				{name: "slaac_dns"},
+				{name: "slaac_dns1"},
+				{name: "slaac_dns2"},
+				{name: "slaac_address"},
+
+				{name: "rdnss_type"},
+				{name: "rdnss_prefix"},
+				<!--{name: "rdnss_prefixlen"},-->
+				{name: "rdnss_zone"},
+				{name: "rdnss_prefixid"},
+				{name: "rdnss_dns"},
+				{name: "rdnss_dns1"},
+				{name: "rdnss_dns2"},
+				{name: "rdnss_address"},
+				
+				{name: "passthrough_zone"},
+				
+				{name: "address"},
+            ],
+			beforeSubmit: function () {
+				return true;
+			}
+        },
+		store:{
+			proxy: ipv6LanProxy,
+			fields: [
+				{name: "name"},
+				{name: "vlanid"},
+				{name: "proto"},
+
+                {name: "dhcpv6_addr"},
+                {name: "dhcpv6_prefixlen"},
+                {name: "dhcpv6_start"},
+                {name: "dhcpv6_end"},
+				{name: "dhcpv6_release"},
+                {name: "dhcpv6_dns"},
+				{name: "dhcpv6_dns1"},
+				{name: "dhcpv6_dns2"},
+				{name: "dhcpv6_address"},
+
+				{name: "slaac_type"},
+				{name: "slaac_prefix"},
+				<!--{name: "slaac_prefixlen"},-->
+				{name: "slaac_zone"},
+				{name: "slaac_prefixid"},
+				{name: "slaac_dns"},
+				{name: "slaac_dns1"},
+				{name: "slaac_dns2"},
+				{name: "slaac_address"},
+
+				{name: "rdnss_type"},
+				{name: "rdnss_prefix"},
+				<!--{name: "rdnss_prefixlen"},-->
+				{name: "rdnss_zone"},
+				{name: "rdnss_prefixid"},
+				{name: "rdnss_dns"},
+				{name: "rdnss_dns1"},
+				{name: "rdnss_dns2"},
+				{name: "rdnss_address"},
+				
+				{name: "passthrough_zone"},
+				
+				{name: "address"},
+			],
+			autoLoad: true
+		},
+        paging:[],
+		columns: [
+			{
+				xtype: "checkcolumn"
+			},
+			{
+				xtype: "rownumberer"
+			},
+			{
+                text: $.su.CHAR.LAN.NAME + "(" + $.su.CHAR.INTERFACE.BINDVLAN + ")",
+                width: 60,
+                dataIndex: "vlanid",
+				renderer: function(v, index, data){
+					return data.name ? (data.name + "(" + v + ")") : v;
+				}
+			},
+            {
+                text: $.su.CHAR.IPV6.ASSIGNED_TYPE,
+                width: 100,
+                dataIndex: "proto",
+                renderer: function(v){
+					if (v=="none"){
+						return $.su.CHAR.IPV6.NONE;
+                    }else if (v=="dhcpv6"){
+                        return $.su.CHAR.IPV6.DHCP_SERVER;
+                    }else if(v == "slaac"){
+                        return $.su.CHAR.IPV6.SLAAC;
+                    }else if(v == "rdnss"){
+                        return $.su.CHAR.IPV6.RDNSS;
+					}else if(v == "passthrough") {
+						 return $.su.CHAR.IPV6.PASSTHROUGH;
+					}else{
+                        return "--";
+                    }
+                }
+            },
+            {
+                text: $.su.CHAR.IPV6.ADDRESS,
+                width: 200,
+                dataIndex: "address",
+            },
+            {
+                xtype: "settings",
+				renderer: function (op) {
+					if (op == "edit") {
+						return true;
+					} else {
+						return false;
+					}
+				}
+            }
+		],
+		operation: 'prompt'
+	}).on("ev_load", function(e, data, others){
+		lanv6_gdata  = data;
+		wanv6_protos = others.wan_protos;
+		wan_infos    = others.wan_infos;
+
+		/*发送form请求,获取interface列表.用于显示于bindif下拉框*/
+		var interfaceItem = {
+			"":[],
+			"prefix": [],
+			"passthrough" : [],
+		};
+		var interfaceProxy = new $.su.Proxy({
+			url: $.su.url('/admin/interface?form=status'),
+			async: false
+		});
+		interfaceProxy.read({}, function(data){
+			for (var i=0; i<data.normal.length; i++){
+				if (!$.su.func.isLan(data.normal[i].t_name) && wanv6_protos[data.normal[i].t_name]) {
+					var pt = wanv6_protos[data.normal[i].t_name]["type"]
+					interfaceItem[pt].push({name:data.normal[i].t_label,value:data.normal[i].t_name});
+				}
+			}
+			/*for (var i=0; i<data.vpn.length; i++){
+				interfaceItem.push({name:data.vpn[i].t_label,value:data.vpn[i].t_name});
+			}*/
+			var editor = lanv6ServerGrid.grid('getEditor');
+			var comboInterface = $(editor).find('.combobox-value[name=slaac_zone]');
+			if(comboInterface.length !== 0){
+				//debugger;
+				comboInterface.combobox('loadData',interfaceItem["prefix"]);
+			}
+			var comboInterface = $(editor).find('.combobox-value[name=rdnss_zone]');
+			if(comboInterface.length !== 0){
+				//debugger;
+				comboInterface.combobox('loadData',interfaceItem["prefix"]);
+			}
+			var comboInterface = $(editor).find('.combobox-value[name=passthrough_zone]');
+			if(comboInterface.length !== 0){
+				//debugger;
+				comboInterface.combobox('loadData',interfaceItem["passthrough"]);
+			}
+		});
+    }).on("ev_startEdit",function(e, index, key){
+		var editor = lanv6ServerGrid.grid('getEditor');
+		//var rowdata = lanv6ServerGrid.get(0).store.getDataByIndex(index)
+		/* set */
+		//$(editor).find('#proto').combobox('setValue', rowdata.proto);
+		var disable_pass_wans = [];
+		for (var i = 0; i < lanv6_gdata.length; i++) {
+			if (lanv6_gdata[i].proto == "passthrough") {
+				disable_pass_wans.push(lanv6_gdata[i].passthrough_zone)
+			}
+		}
+		var comboInterface = $(editor).find('.combobox-value[name=passthrough_zone]');
+		comboInterface.combobox('disableItem', disable_pass_wans);
+
+		var rowdata = lanv6ServerGrid.get(0).store.getDataByIndex(index)
+		if (rowdata.slaac_type == "delegation") {
+			prefixid_validator(rowdata.slaac_prefixid, "#slaac_zone", "#slaac_addr_prefix")
+		}
+		if (rowdata.rdnss_type == "delegation") {
+			prefixid_validator(rowdata.rdnss_prefixid, "#rdnss_zone", "#rdnss_addr_prefix")
+		}
+    }).on("ev_startDelete",function(){
+		
+    }).on("ev_deleteError",function(){
+
+    }).on("ev_update", function(){
+		lanv6ServerGrid.grid("getStore").load();
+    });
+
+	var helpInternet = new $.su.Help({
+		container: "div#ipv6_lan_help",
+		content: ['IPV6_LAN']
+	});
+
+
+});
+//]]>
+</script>
+
+</body>
+</html>

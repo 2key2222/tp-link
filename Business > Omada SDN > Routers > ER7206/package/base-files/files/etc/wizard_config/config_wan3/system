@@ -1,0 +1,46 @@
+
+config system
+	option log_size '128'
+	option hostname 'TP-LINK'
+	option timezone 'GMT+08:00'
+
+config timeserver 'ntp'
+	option enable_server '0'
+	list user_server '0.0.0.0'
+	list user_server '0.0.0.0'
+	list server 'time.nist.gov'
+	list server '210.72.145.44'
+	list server 'pool.ntp.org'
+	list server 'clock.redhat.com'
+	list server 'clock.isc.org'
+	list server 'time.windows.com'
+	list server 'ntp.sjtu.edu.cn'
+	list server 's1a.time.edu.cn'
+	list server 'clock.cuhk.edu.hk'
+	list server '128.138.140.44'
+	list server '192.36.144.22'
+	list server '129.7.1.66'
+	list server '199.165.76.11'
+	option type 'manual'
+
+config dst 'dst'
+	option start_week '2nd'
+	option start_day 'Sun'
+	option start_hour '2am'
+	option end_month 'Nov'
+	option end_week '1st'
+	option end_day 'Sun'
+	option end_hour '2am'
+	option dst_status 'dst is disabled.'
+	option start_year '2015'
+	option end_year '2015'
+	option start_month 'May'
+	option dst_enable 'off'
+
+config led led_sys
+	option name 'led_sys'
+	option sysfs 'SYS_LED'
+	option trigger 'timer'
+	option delayoff 1000
+	option delayon  1000
+

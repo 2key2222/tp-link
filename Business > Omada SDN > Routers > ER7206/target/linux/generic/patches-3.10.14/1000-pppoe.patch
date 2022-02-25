@@ -1,0 +1,27 @@
+--- a/drivers/net/ppp/pppoe.c	2016-02-18 09:44:43.642870361 +0800
++++ b/drivers/net/ppp/pppoe.c	2016-09-07 19:45:42.321758000 +0800
+@@ -420,6 +420,8 @@
+ 	struct pppox_sock *po;
+ 	struct pppoe_net *pn;
+ 	int len;
++	int ret;
++	sk_buff_data_t tmp;
+ 
+ 	skb = skb_share_check(skb, GFP_ATOMIC);
+ 	if (!skb)
+@@ -443,11 +445,14 @@
+ 	/* Note that get_item does a sock_hold(), so sk_pppox(po)
+ 	 * is known to be safe.
+ 	 */
++	 tmp = skb->mac_header;
+ 	po = get_item(pn, ph->sid, eth_hdr(skb)->h_source, dev->ifindex);
+ 	if (!po)
+ 		goto drop;
+ 
+-	return sk_receive_skb(sk_pppox(po), skb, 0);
++	ret = sk_receive_skb(sk_pppox(po), skb, 0);
++	skb->mac_header = tmp;
++	return ret;
+ 
+ drop:
+ 	kfree_skb(skb);

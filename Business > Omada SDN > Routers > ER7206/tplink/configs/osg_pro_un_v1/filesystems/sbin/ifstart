@@ -1,0 +1,4 @@
+#!/bin/sh
+
+ubus call network.interface up "{ \"interface\" : \"$1\" }"
+

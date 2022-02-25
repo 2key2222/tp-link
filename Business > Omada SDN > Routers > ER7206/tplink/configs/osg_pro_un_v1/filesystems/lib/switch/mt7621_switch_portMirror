@@ -1,0 +1,160 @@
+#!/bin/sh
+
+g_MirrorReg="$PORT1_CONTROL $PORT2_CONTROL $PORT3_CONTROL $PORT4_CONTROL $PORT5_CONTROL"
+
+# clear port mirror
+# clear cpu and control register
+clear_port_mirror()
+{
+	local val=`ralink-switch reg r 0x10`
+	val=`echo "$val" | awk -F '=' '{printf $3}'`
+	val=$((0x$val & 0xfffffff0))
+	val=`printf "0x%x" $val`
+	ralink-switch reg w 0x10 $val
+	
+	for i in `seq 1 $MAX_PORT_NUM`; do
+		local port=`get_port_index $i`
+		ralink-switch mirror target $port 0
+	done
+}
+
+# enable port mirror
+# $1:mirror mode
+# $2:mirror port id
+# $3:mirrored port list
+enable_port_mirror()
+{
+	local mode=$1	
+	local mirroredPortlist=$3
+	local val=0
+	local reg=0
+	local mport_id=0
+
+	#clear old config
+	clear_port_mirror
+
+	mport_id=`get_port_index $2`
+	ralink-switch mirror monitor $mport_id
+
+	#set port control register - mirror port
+	for i in $mirroredPortlist; do
+		mport_id=`get_port_index $i`
+		#set ingress/egress mode
+		#3-->tx rx
+		#2-->tx
+		#1-->rx
+		#0-->off
+		if [ $mode == "both" ]; then
+			ralink-switch mirror target $mport_id 3
+		elif [ $mode == "ingress" ]; then
+			ralink-switch mirror target $mport_id 1
+		elif [ $mode == "egress" ]; then
+			ralink-switch mirror target $mport_id 2
+		else
+			ralink-switch mirror target $mport_id 0
+		fi
+	done
+}
+
+# init mt7621 switch port mirror
+# $1: state
+# $2: mirror mode
+# $3: mirror port
+# $4: mirrored ports
+mt7621_switch_port_mirror_init()
+{
+	if [ "$1" = "on" ]; then
+		enable_port_mirror $2 $3 "$4"
+	elif [ "$1" = "off" ]; then
+		clear_port_mirror
+	else
+		echo "[mirror] state is invalid.(on | off)"
+		exit 0
+	fi
+}
+
+print_mirror_info()
+{
+	config_get state "mirror" state     
+	config_get mode "mirror" mode  
+	config_get mirrorport "mirror" mirrorport
+	config_get mirroredports "mirror" mirroredports
+
+	echo "Mirror state   :  $state" 
+	echo "Mirror mode    :  $mode"
+	echo "Mirror port    :  $mirrorport"
+	echo "Mirrored ports :  $mirroredports"
+	echo ""
+}
+
+# check mode mirror port and mirrored portlist
+# exit when arg is invalid
+# $1: mode
+# $2: mirror port
+# $3: mirrored ports
+mirror_arg_check()
+{
+	local mode=$1
+	local portid=$2
+	local ports=$3
+
+    if [ "$mode" != "" ] && [ "$mode" != "ingress" ] && [ "$mode" != "egress" ] && [ "$mode" != "both" ]; then
+    	echo "[mirror] mode is error. (ingress | egress | both)"
+        mirror_usage
+        exit 0 
+    fi 
+
+    # check input portid
+	if [ -z $portid ] || [ `expr match $portid "[0-9]"` = 0 ] || [ $portid -lt 1 ] || [ $portid -gt 5 ];then
+		echo "[mirror] port is error.(1~5)"
+		mirror_usage
+		exit 0
+	fi
+
+	if [ -z "$ports" ]; then
+		echo "[mirror] mirrored port is null.(1~5)"
+		mirror_usage
+		exit 0
+	fi
+
+	for i in $ports; do		
+		if [ `expr match $i "[0-9]"` = 0 ] || [ $i -lt 1 ] || [ $i -gt 5 ] || [ $i -eq $portid ];then
+			echo "[mirror] mirrored port is error.(1~5)"
+			mirror_usage
+			exit 0
+		fi
+	done
+}
+
+# mt7621 switch port mirror
+# $1:op (get|set)
+# $2:state (on | off)
+# $3:mirror mode (ingress | egress | both)
+# $4:mirror port id (1 | 2 | 3 | 4 | 5)
+# $5:mirrored port list (1.2.3...)
+mt7621_switch_port_mirror()
+{
+	local op=$1
+	local state=$2
+	local mode=$3
+	local portid=$4
+	local mirroredPorts=$5	
+
+	#get port mirror info
+	if [ "$op" = "get" ]; then
+		print_mirror_info
+	elif [ "$op" = "set" ]; then
+		if [ "$state" = "off" ]; then
+			clear_port_mirror
+		elif [ "$state" = "on" ]; then
+			mirror_arg_check $mode $portid "$mirroredPorts"
+			enable_port_mirror $mode $portid "$mirroredPorts"
+		else
+			echo "[mirror] state is invalid.(on | off)"
+			exit 0
+		fi
+
+	else
+		echo "[mirror] error op. (set | get)"
+	fi
+}

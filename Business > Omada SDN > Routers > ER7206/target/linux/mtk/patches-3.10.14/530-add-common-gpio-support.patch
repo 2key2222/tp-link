@@ -1,0 +1,27 @@
+Index: linux-3.10.14/arch/mips/Kconfig
+===================================================================
+--- linux-3.10.14.orig/arch/mips/Kconfig	2014-09-02 16:41:01.000000000 +0800
++++ linux-3.10.14/arch/mips/Kconfig	2016-05-31 09:59:29.687717595 +0800
+@@ -96,6 +96,7 @@
+ 
+ config RALINK_MT7628
+         bool "Ralink MT7628 board"
++	select ARCH_REQUIRE_GPIOLIB
+ 	select DMA_NONCOHERENT
+ 	select IRQ_CPU
+ 	select HW_HAS_PCI
+Index: linux-3.10.14/arch/mips/ralink/Makefile
+===================================================================
+--- linux-3.10.14.orig/arch/mips/ralink/Makefile	2014-09-02 16:41:06.000000000 +0800
++++ linux-3.10.14/arch/mips/ralink/Makefile	2016-06-01 09:45:47.436942274 +0800
+@@ -16,6 +16,10 @@
+ obj-y    := reset.o init.o irq.o \
+             memory.o printf.o cmdline.o setup.o time.o
+ 
++ifndef CONFIG_RALINK_GPIO
++	obj-y += gpio.o
++endif
++
+ ifeq ($(CONFIG_MIPS_MT_SMP),y)
+ 	obj-y += malta-amon.o
+ endif

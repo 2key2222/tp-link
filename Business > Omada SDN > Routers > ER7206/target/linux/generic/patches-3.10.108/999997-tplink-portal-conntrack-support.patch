@@ -1,0 +1,50 @@
+diff -urN a/include/net/netfilter/nf_conntrack.h b/include/net/netfilter/nf_conntrack.h
+--- a/include/net/netfilter/nf_conntrack.h	2019-12-20 17:36:15.852044300 +0800
++++ b/include/net/netfilter/nf_conntrack.h	2019-12-20 17:48:35.890440631 +0800
+@@ -91,6 +91,11 @@
+ 	/* Timer function; drops refcnt when it goes off. */
+ 	struct timer_list timeout;
+ 
++	/*
++	Timer function; drops refcnt when it goes off. by portal.
++	*/
++	unsigned long portaltime;
++
+ #if defined(CONFIG_NF_CONNTRACK_MARK)
+ 	u_int32_t mark;
+ #endif
+ 
+diff -urN a/net/netfilter/nf_conntrack_core.c b/net/netfilter/nf_conntrack_core.c 
+--- a/net/netfilter/nf_conntrack_core.c	2019-12-20 17:36:16.068794700 +0800
++++ b/net/netfilter/nf_conntrack_core.c	2019-12-20 17:48:21.222342255 +0800
+@@ -1309,8 +1309,28 @@
+ 		/* Only update the timeout if the new timeout is at least
+ 		   HZ jiffies from the old timeout. Need del_timer for race
+ 		   avoidance (may already be dying). */
+-		if (newtime - ct->timeout.expires >= HZ)
+-			mod_timer_pending(&ct->timeout, newtime);
++		/*
++		check portaltime 
++		*/
++		if(ct->portaltime != 0)
++		{
++			if(ct->portaltime > newtime)
++			{
++				if (newtime - ct->timeout.expires >= HZ)
++					mod_timer_pending(&ct->timeout, newtime);
++			}
++			else if (ct->portaltime > jiffies)
++			{
++				newtime = ct->portaltime;
++				if (newtime - ct->timeout.expires >= HZ)
++					mod_timer_pending(&ct->timeout, newtime);
++			}
++		}
++		else
++		{
++			if (newtime - ct->timeout.expires >= HZ)
++					mod_timer_pending(&ct->timeout, newtime);
++		}
+ 	}
+ 
+ acct:

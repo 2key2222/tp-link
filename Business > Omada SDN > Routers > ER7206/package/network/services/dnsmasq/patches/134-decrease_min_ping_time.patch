@@ -1,0 +1,80 @@
+diff -uNr a/src/config.h b/src/config.h
+--- a/src/config.h	2016-01-03 19:42:20.035679740 +0800
++++ b/src/config.h	2016-01-03 19:41:05.203675923 +0800
+@@ -27,7 +27,7 @@
+ #define LEASE_RETRY 60 /* on error, retry writing leasefile after LEASE_RETRY seconds */
+ #define CACHESIZ 150 /* default cache size */
+ #define MAXLEASES 1024 /* maximum number of DHCP leases */
+-#define PING_WAIT 3 /* wait for ping address-in-use test */
++#define PING_WAIT 0.05 /* wait for ping address-in-use test */
+ #define PING_CACHE_TIME 30 /* Ping test assumed to be valid this long. */
+ #define DECLINE_BACKOFF 600 /* disable DECLINEd static addresses for this long */
+ #define DHCP_PACKET_MAX 16384 /* hard limit on DHCP packet size */
+diff -uNr a/src/dhcp.c b/src/dhcp.c
+--- a/src/dhcp.c	2016-01-03 19:42:07.139676975 +0800
++++ b/src/dhcp.c	2016-01-03 19:06:28.299687558 +0800
+@@ -711,7 +711,7 @@
+ 		 ((ntohl(addr.s_addr) & 0xff) != 0xff && ((ntohl(addr.s_addr) & 0xff) != 0x0))))
+ 	      {
+ 		struct ping_result *r, *victim = NULL;
+-		int count, max = (int)(0.6 * (((float)PING_CACHE_TIME)/
++		int count, max = (int)(1 * (((float)PING_CACHE_TIME)/
+ 					      ((float)PING_WAIT)));
+ 		
+ 		*addrp = addr;
+@@ -741,7 +741,7 @@
+ 
+ 		if (!r) 
+ 		  {
+-		    if ((count < max) && !option_bool(OPT_NO_PING) && icmp_ping(addr))
++		    if (/*(count < max) &&*/ !option_bool(OPT_NO_PING) && icmp_ping(addr))
+ 		      {
+ 				/* address in use: perturb address selection so that we are
+ 				   less likely to try this address again. */
+diff -uNr a/src/dnsmasq.c b/src/dnsmasq.c
+--- a/src/dnsmasq.c	2016-01-03 19:42:15.343683796 +0800
++++ b/src/dnsmasq.c	2016-01-03 19:41:34.959675444 +0800
+@@ -864,6 +864,7 @@
+       else if (is_dad_listeners())
+ 	{
+ 	  t.tv_sec = 1;
++	  //t.tv_sec = 0;
+ 	  t.tv_usec = 0;
+ 	  tp = &t;
+ 	}
+@@ -1717,6 +1718,9 @@
+   unsigned int i, j;
+   int gotreply = 0;
+   time_t start, now;
++  //add this to caculate the time
++  struct timeval ltime,rtime;
++	
+ 
+ #if defined(HAVE_LINUX_NETWORK) || defined (HAVE_SOLARIS_NETWORK)
+   if ((fd = make_icmp_sock()) == -1)
+@@ -1746,9 +1750,15 @@
+   while (sendto(fd, (char *)&packet.icmp, sizeof(struct icmp), 0, 
+ 		(struct sockaddr *)&saddr, sizeof(saddr)) == -1 &&
+ 	 retry_send());
+-  
++/*  
+   for (now = start = dnsmasq_time(); 
+        difftime(now, start) < (float)PING_WAIT;)
++*/
++  gettimeofday(&ltime,NULL);
++  gettimeofday(&rtime,NULL);
++  for (;(rtime.tv_sec-ltime.tv_sec)*1000000+
++		(rtime.tv_usec-ltime.tv_usec)<PING_WAIT*1000000;
++		gettimeofday(&rtime,NULL))
+     {
+       struct timeval tv;
+       fd_set rset, wset;
+@@ -1756,7 +1766,7 @@
+       int maxfd = fd; 
+       socklen_t len = sizeof(faddr);
+       
+-      tv.tv_usec = 250000;
++      tv.tv_usec = 50000;
+       tv.tv_sec = 0; 
+       
+       FD_ZERO(&rset);

@@ -1,0 +1,833 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<style type="text/css">
+    #auth-url{
+        width: 304px;
+        padding: 0;
+    }
+    .auth-tips-container{
+        margin: 10px 0;
+    }
+    .auth-tips-container p{
+        height: 22px;
+    }
+    #preview-frame{
+        border: none;
+        width: 400px;
+        height: 600px;
+    }
+    #example-pic{
+        width: 352px;
+        height: 250px;
+        float: right;
+        position: relative;
+        top:-250px;
+        /*background: url(".../themes/old/img/wechat.png") no-repeat;*/
+        background-size: 100% 100%;
+    }
+</style>
+<title>Wechat-WiFi portal</title>
+</head>
+
+<body>
+<div class="func-container">
+    <div id="global-form">
+        <div id="global-setting">
+            <input id="wifi-name" name="name" value="dft_wifi"/>
+            <input id="bind-interface" name="interface" value="br-lan"/>
+            <input id="wifi-enable" name="enable" value=""/>
+            <input id="wired_auth" name="wired_auth" value=""/>
+            <input id="auto_disconnect" name="auto_disconnect" />
+        </div>
+        <div id='mpweixin-setting'>
+            <input id="ssid" name="ssid" value=""/>
+            <input id="shopid" name="shopid" value=""/>
+            <input id="appid" name="appid" value=""/>
+            <input id="secretkey" name="secretkey" value=""/>
+            <div style="margin-top:20px;">
+                <a target="_blank" href="http://service.tp-link.com.cn/detail_article_2864.html">微信连Wi-Fi设置说明</a>
+            </div>
+        </div>
+        <div id="portal-setting">
+                <div id="div-bgd">
+                    <input id="bgdname" name="bgdname"/>
+                    <input id="image-select"class=""/>
+                    <input id="image-delete"class=""/>
+                    <input id="bgd-image" name="image" value="" class=""/>
+                </div>
+                <div id="div-logo">
+                    <input id="logoname" name="logoname"/>
+                    <input id="logo-select"class=""/>
+                    <input id="logo-delete"class=""/>
+                    <input id="logo-image" name="logoimage" value="" class=""/>
+                </div>
+                
+                <input id="logoinfo" name="logoinfo" value="">
+                <input id="welinfo" name="welinfo" value=""/>
+                <input id="btninfo" name="btninfo" value=""/>
+                <input id="auth-url" />
+                <input id="auth-token" name="authToken" value=""/>
+                <div class="auth-tips-container" style="display:none">
+                    <p id="auth-tips1"></p>
+                    <p id="auth-tips2"></p>
+                </div>
+                <input id="copyright" name="copyright" value=""/>
+                <!--<button id="page-preview"></button>-->
+                <input id="mobile-preview" style="display:none"/>
+                <!--<input id="pc-preview" class="internal-page"/>-->
+                <div id="example-pic">
+                    <img src="../webpages/themes/old/img/wechat.png"/>
+                </div>
+            </div>
+        <div id="time-setting">
+            <input id="free-interval" name="freeInterval" value=""/>
+        </div>
+        <button id="formSubmit" type="button"></button>
+    </div>
+    <div id="image-msg">
+        <form id="image-uploader">
+            <input id="image-file" name="wifi" type="file"/>
+            <input id="image-button"/>
+        </form>
+    </div>
+    <div id="frame-msg">
+        <iframe id="preview-frame"></iframe>
+    </div>
+
+    <div id="wifi-help"></div>
+</div>
+
+<script type="text/javascript">
+
+//<![CDATA[
+try{
+    $
+}catch(e){
+    location.href = "/";
+};
+
+$(document).ready(function(e){
+    var URL_GLOBAL = $.su.url("/admin/wportal?form=wifi");
+    var WECHAT_AUTH_URL = ' http://weixin.tplogin.cn:8080/weixin/?tplogin_token=';
+    var WECHAT_JUMP_HINT = '启用微信认证后，请在微信后台增加消息跳转链接：';
+    var IMG_TYPE_LOGO = 1;
+    var IMG_TYPE_BGD = 2;
+    var imageType = IMG_TYPE_LOGO;
+    var $internalPage = $('.internal-page');
+    var $externalPage = $('.external-page');
+    var uploadLogo = 0;
+    var uploadBgd = 0;
+    var editingId = "add";   //For preview page background
+    var logoname = "";
+    var bgdname = "";
+
+    function stringToBytes ( str )
+    {
+        var ch, st, re = [];
+        for (var i = 0; i < str.length; i++ )
+        {
+            ch = str.charCodeAt(i);  // get char
+            st = [];    			// set up "stack"
+            if ( ch < 0x007F )
+            {
+                st.push( ch & 0xFF );
+            }
+            else if ( (0x0080 <= ch) && (ch <= 0x07ff) )
+            {
+
+                st.push((ch & 0x003F) + 128 );
+                st.push(((ch>>6)&0x001F) + 192)
+            }
+            else if ((0x0800 <= ch ) && (ch <= 0xffff))
+            {
+                st.push((ch & 0x003F)+128);
+                st.push(((ch>>6)&0x003F)+128);
+                st.push(((ch>>12)&0x000F)+224);
+            }
+            re = re.concat( st.reverse() );
+        }
+        return re;  // return an array of bytes
+    }
+
+    function  strASCencode(sourceId)
+    {
+        var  temp = [];
+        var  index = 0;
+        var  ptr = 0;
+        var  high, low,inthis;
+        var  tempEncode = '';
+        temp = stringToBytes(sourceId);
+
+        for ( index = 0; index < temp.length; index++ )
+        {
+
+            high = (temp[index]>>4)&(0x0F);
+            low  = (temp[index])&(0x0F);
+
+            if ( high >= 0 && high <= 9 )
+            {
+                high += 48;
+            }
+            if ( high >= 10 && high <= 15 )
+            {
+                high += 55;
+            }
+
+            if ( low >= 0 && low <= 9 )
+            {
+                low += 48;
+            }
+            if ( low >= 10 && low<= 15 )
+            {
+                low += 55;
+            }
+            ptr = index<<1;
+            tempEncode += String.fromCharCode(high);
+            tempEncode +=String.fromCharCode(low);
+        }
+        return tempEncode;
+    }
+
+    function asctochar(high, low)
+    {
+        var connect = 0;
+        if ( high >= '0' && high <= '9' )
+        {
+            high = high.charCodeAt() - 48;
+        }
+        if ( high >= 'A' && high <= 'F' )
+        {
+            high = high.charCodeAt() - 55;
+        }
+        if ( low >= '0' && low <= '9' )
+        {
+            low = low.charCodeAt() - 48;
+        }
+        if ( low >= 'A' && low <= 'F' )
+        {
+            low = low.charCodeAt() - 55;
+        }
+        connect = high*16+low;
+        return connect;
+    }
+
+    function strASCdecode(sourceId)
+    {
+        var tempstr = sourceId;/*document.getElementById(sourceId).value*/
+        var index = 0;
+        var ptr = 0;
+        var tempDecode = '';
+        var high, low, high1,low1,high2,low2,inter1, inter2, inter;
+        var charcode = 0;
+        for ( index = 0; index <  tempstr.length; )
+        {
+            high = tempstr.slice(index,index+1);
+            low  = tempstr.slice(index+1,index+2);
+            inter = asctochar(high,low);
+            if ( 0 <= inter && inter <= 0x007f )
+            {
+                tempDecode += String.fromCharCode(inter);
+                index += 2;
+                continue;
+            }
+            if ( 192 <= inter && inter <= 223 )
+            {
+                high1 = tempstr.slice(index+2,index+3);
+                low1 = tempstr.slice(index+3,index+4);
+                inter1 = asctochar(high1,low1);
+                charcode = ((inter-192)<<6) + (inter1-128);
+                tempDecode += String.fromCharCode(charcode);
+                index += 4;
+                continue;
+            }
+            if ( 224<= inter && inter <= 239 )
+            {
+                high1 = tempstr.slice(index+2,index+3);
+                low1 = tempstr.slice(index+3,index+4);
+                high2 = tempstr.slice(index+4,index+5);
+                low2 = tempstr.slice(index+5,index+6);
+                inter1 = asctochar(high1,low1);
+                inter2 = asctochar(high2,low2);
+                charcode = ((inter-224)<<12)+((inter1-128)<<6)+(inter2-128);
+                tempDecode += String.fromCharCode(charcode);
+                index += 6;
+                continue;
+            }
+            else
+            {
+                tempDecode = sourceId;
+                break;
+            }
+        }
+        return tempDecode;
+    }
+
+    $("#global-setting").panel({
+        title: "功能设置"
+    });
+
+    $("#auto_disconnect").textbox({
+        fieldLabel: $.su.CHAR.PORTAL.AUTO_DISCONN,
+        tips: $.su.CHAR.PORTAL.AUTO_DISCONN_TIPS,
+        allowBlank: false,
+        vtype:"number",
+        value: "30",
+        validator: function(v){
+            if(v == 0 || (v >= 5 && v <= 1440)){
+                return true;
+            }else{
+                return $.su.CHAR.PORTAL.AUTO_DISCONN_ERR;
+            }
+        }
+    });
+
+    $("#portal-setting").panel({
+        title: "认证页面设置"
+    });
+
+    $("#time-setting").panel({
+        title: "免费上网时长设置"
+    });
+
+    $('#wifi-name').textbox({
+        fieldLabel: '规则名称',
+        inputCls: 'xl',
+        //labelCls: 'xs',
+        vtype: "name",
+        tips: '（1-50个字符）',
+        maxLength:50,
+        allowBlank: false
+    });
+    
+    /*
+    $("#wifi-enable").checkbox({
+        //fieldLabel: "功能设置", //$.su.CHAR.MAC_FILTERING.TITLE,
+        items: [
+            {boxlabel: '启用微信连Wi-Fi', inputValue: "on", uncheckedValue: "off"}
+        ]
+    });
+    */
+    
+    $("#wifi-enable").checkbox({
+        fieldLabel:$.su.CHAR.USERMNGR.ENABLE,
+        items: [
+            {boxlabel: $.su.CHAR.VIRTUAL_SERVERS.ENABLE_THIS_ENTRY, uncheckedValue:"off", inputValue: "on", id: "chk_enable"}
+        ]
+    });
+    
+    $("#wired_auth").checkbox({
+        fieldLabel:"有线端口免认证",
+        items: [
+            {boxlabel:$.su.CHAR.VIRTUAL_SERVERS.ENABLE_THIS_ENTRY , uncheckedValue:"on", inputValue: "off", id: "chk_enable",checked:true}
+        ]
+    });
+
+
+
+    if($.su.radioCount == 0 || typeof $.su.radioCount == "undefined"){
+        $("#wired_auth").checkbox("hide");
+    }
+    
+    $('#bind-interface').textbox({
+        fieldLabel: '生效接口',
+        inputCls: 'xl',
+        //labelCls: 'xs',
+        //multiSelect:true,
+        allowBlank: false,
+        items:[
+            {value:"br-lan", name: "br-lan", selected: true}
+        ]
+    });
+    $('#free-interval').textbox({
+        fieldLabel: '免费上网时长',
+        //labelCls: 'xs',
+        inputCls: 's',
+        maxLength: 4,
+        vtype: {
+        vtype: "number",
+        max: 1440,
+        min: 1
+        },
+        allowBlank:false,
+        tips: '分钟（1-1440）',
+        value:"30"
+    });
+    
+    $("#mpweixin-setting").panel({
+        title: "微信公众平台参数设置"
+    });
+
+    $('#ssid').textbox({
+        fieldLabel: 'SSID',
+        //labelCls: 'xs',
+        //vtype: "name",
+        maxLength:32,
+        inputCls: 'xl',
+        allowBlank:false,
+        tips: '（1-32个字符）',
+        tipsCls: 's'
+    });
+    /*
+    $("#ssid").combobox({
+        fieldLabel: 'SSID',
+        inputCls:'xl',
+        allowBlank:false,
+        items:[
+            {name:"---",value:"---",selected:true}
+        ]
+    });
+    ssidProxy = new $.su.Proxy({
+        url: $.su.url("/admin/wportal?form=ssid")
+    });
+    ssidProxy.read({}, function(data){
+        items = [];
+        for (var i = 0; i < data.length; i++){
+            items.push({name:""+data[i], value:""+data[i]});
+        }
+        $("#ssid").combobox("loadData", items);
+    })
+    */
+    $('#secretkey').textbox({
+        fieldLabel: 'Secretkey',
+        //labelCls: 'xs',
+        vtype: "name",
+        maxLength:32,
+        inputCls: 'xl',
+        allowBlank:false,
+        tips: '（1-32个字符）',
+        tipsCls: 's'
+    });
+    $('#appid').textbox({
+        fieldLabel: 'AppID',
+        //labelCls: 'xs',
+        vtype: "name",
+        maxLength:32,
+        inputCls: 'xl',
+        allowBlank:false,
+        tips: '（1-32个字符）',
+        tipsCls: 's'
+    });
+    $('#shopid').textbox({
+        fieldLabel: 'ShopID',
+        //labelCls: 'xs',
+        vtype: "name",
+        maxLength:32,
+        inputCls: 'xl',
+        allowBlank:false,
+        tips: '（1-32个字符）',
+        tipsCls: 's'
+    });
+    $('#auth-url').textbox({
+        fieldLabel: '认证链接',
+        //labelCls: 'xs',
+        readOnly: true,
+        cls: 'inline',
+        allowBlank:false,
+        value: WECHAT_AUTH_URL
+    });
+    $('#auth-token').textbox({
+        fieldLabel: null,
+        cls: 'inline',
+        inputCls: 's',
+        maxLength:20,
+        allowBlank:false,
+        vtype:"ascii_visible",
+        value:Date.parse(new Date()).toString().substring(0,12),
+        tips: '（1-20个数字或字母）' 
+    }).on('ev_change', function(e, v){
+        $('#auth-tips2').html(WECHAT_AUTH_URL + v);
+    });
+    $('#auth-tips1').html(WECHAT_JUMP_HINT);
+    $('#auth-tips2').html(WECHAT_AUTH_URL);
+
+    $('#copyright').textbox({
+        fieldLabel: '版权声明',
+        //labelCls: 'xs',
+        maxLength:25,
+        inputCls: 'xl',
+        //allowBlank:false,
+        //value:"Copyright © 2016 TP-LINK. All rights reserved.",
+        tips: '（1-25个字符）',
+        tipsCls: 's',
+        hint:"由TP-LINK为您提供Wi-Fi服务"
+    });
+    $(".text-container").find("input.text-hint").css("width","190px");
+    
+    $('#welinfo').textbox({
+        fieldLabel: '欢迎信息',
+        //labelCls: 'xs',
+        maxLength:50,
+        inputCls: 'xl',
+        //allowBlank:false,     
+        tips: '（1-50个字符）',
+        tipsCls: 's',
+        hint:"欢迎使用微信连Wi-Fi"
+    });
+    
+    $('#logoinfo').textbox({
+        fieldLabel: 'Logo信息',
+        //labelCls: 'xs',
+        maxLength:25,
+        inputCls: 'xl',
+        //allowBlank:false,     
+        tips: '（1-25个字符）',
+        tipsCls: 's',
+        hint:"欢迎您"
+    });
+
+    $("#logoname").textbox({
+        fieldLabel:"Logo图片",
+        inputCls:"s",
+        tipsCls:"hidden inline",
+        cls:"inline-block",
+        readOnly:true,
+        hint:"&nbsp&nbsp&nbsp&nbsp---"
+    });
+
+    $("#bgdname").textbox({
+        fieldLabel:"背景图片",
+        inputCls:"s",
+        tipsCls:"hidden inline",
+        cls:"inline-block",
+        readOnly:true,
+        hint:"&nbsp&nbsp&nbsp&nbsp---"
+    });
+    
+    $('#btninfo').textbox({
+        fieldLabel: '登录按钮提示文字',
+        //labelCls: 'xs',
+        maxLength:15,
+        inputCls: 'xl',
+        //allowBlank:false,     
+        tips: '（1-15个字符）',
+        tipsCls: 's',
+        hint:"一键打开微信连Wi-Fi"
+    });
+
+    $('#mobile-preview').button({
+        fieldLabel: '页面预览',
+        text: '预览Portal页面',
+        handler: function(){
+            var result1 = $('#welinfo').textbox('validate');
+            var result2 = $('#logoinfo').textarea('validate');
+            var result3 = $('#btninfo').textbox('validate');
+
+            if(!result1 || !result2 || !result3){
+                return false;
+            }
+            
+            if("---" == $('#bgd-image').textbox('getValue')){
+                uploadBgd = 0;
+            };
+            if("---" == $('#logo-image').textbox('getValue')){
+                uploadLogo = 0;
+            };
+            
+            var logoname = strASCencode($('#logoname').textbox('getValue'));
+            if( editingId == "add")
+            {
+                logoname = "---";
+            }
+            
+            var welinfo = strASCencode($('#welinfo').textbox('getValue'));
+            if(welinfo == ""){
+                welinfo = strASCencode("欢迎使用微信连Wi-Fi");
+            }
+            var logoinfo = strASCencode($('#logoinfo').textbox('getValue'));
+            if(logoinfo == ""){
+                logoinfo = strASCencode("欢迎您");
+            }
+            var btninfo = strASCencode($('#btninfo').textbox('getValue'));
+            if(btninfo == ""){
+                btninfo = strASCencode("一键打开微信连Wi-Fi");
+            }
+            var copyright = strASCencode($('#copyright').textbox('getValue'));
+            if(copyright == ""){
+                copyright = strASCencode("由TP-LINK为您提供Wi-Fi服务");
+            }
+
+            var url = './pages/userrpm/preview_mobile_wifi.html?welinfo=';
+            url += welinfo;
+            url += '&logoinfo=';
+            url += logoinfo;
+            url += '&btninfo=';
+            url += btninfo;
+            url += '&copyright=';
+            url += copyright;
+            url += '&logoname=';
+            url += logoname;
+            url += '&bgdname=';
+            url += strASCencode($('#bgdname').textbox('getValue'));
+            url += '&uploadBgd=';
+            url += uploadBgd;
+            url += '&uploadLogo=';
+            url += uploadLogo;
+            url += '&edittype=';
+            url += editingId;
+            url += '&rulename=';
+            url += $('#wifi-name').textbox('getValue');
+
+            document.getElementById('preview-frame').contentDocument.location.href = url;
+            $frameMsg.msg("show");
+        }
+    });
+/*
+    $('#pc-preview').button({
+        fieldLabel: '页面预览',
+        text: '预览PC Portal页面',
+        handler: function(){
+            var result1 = $('#welinfo').textbox('validate');
+
+            if(!result1){
+                return false;
+            }
+
+            var url = './pages/userrpm/preview_pc_wifi.html?welinfo=';
+            url += strASCencode($('#welinfo').textbox('getValue'));
+            url += '&logoinfo=';
+            url += strASCencode($('#logoinfo').textbox('getValue'));
+            url += '&btninfo=';
+            url += strASCencode($('#btninfo').textbox('getValue'));
+            
+            document.getElementById('preview-frame').contentDocument.location.href = url;
+            $frameMsg.msg("show");
+        }
+    });
+*/
+    var $imageMsg = $("#image-msg").msg({
+        closeBtn: true,
+        cls:"",
+        type: 'window'
+    }).msg("hide");
+    $('#image-file').file({
+        fieldLabel: '图片',
+        labelCls: 'xs',
+        extension: 'jpg, png, bmp, tiff,gif,jpeg,JPG,PNG,BMP,TIFF,GIF,JPEG'
+    });
+    var img_button = $('#image-button').button({
+        text: '上传',
+        cls: 'submit',
+
+        handler: function(){
+            if(!$imageForm.length){
+                return;
+            }else{
+                var op = "";
+                if(IMG_TYPE_LOGO == imageType){
+                    op = 'wifilogo';
+                }else{
+                    op = 'wifibgd';
+                }
+                if($("label.file-text").text().length > 64){
+                    img_button.button("setError", "文件名超过长度限制，最多为64个字符");
+                    $("#image-uploader").find(".textbox-error-tips").css({
+                        "top":"-30px",
+                        "left":"115px"
+                    });
+                    return false;
+                }
+                $imageForm.form('submit', {operation:op}, function(){
+                    if(IMG_TYPE_LOGO == imageType){
+                        uploadLogo = 1;
+                        $('#logo-image').textbox('setValue', "上传成功");
+                        logoname = $("label.file-text").text();
+                        $("#logoname").textbox("setValue", logoname);
+                    }else{
+                        uploadBgd = 1;
+                        $('#bgd-image').textbox('setValue', "上传成功");
+                        bgdname = $("label.file-text").text();
+                        $("#bgdname").textbox("setValue", bgdname);
+                    }
+                    $imageMsg.msg('close');
+                },function(error_code){
+                    if(IMG_TYPE_LOGO == imageType){
+                        $('#logo-image').textbox('setValue', "上传失败");
+                        logoname = "";
+                        //$("#logoname").textbox("setValue", logoname);
+                    }else{
+                        $('#bgd-image').textbox('setValue', "上传失败");
+                        bgdname = "";
+                        //$("#bgdname").textbox("setValue", bgdname);
+                    }
+                    $imageMsg.msg('close');
+
+                },function(fail){
+                    if(IMG_TYPE_LOGO == imageType){
+                        $('#logo-image').textbox('setValue', "上传失败");
+                        logoname = "";
+                        //$("#logoname").textbox("setValue", logoname);
+                    }else{
+                        $('#bgd-image').textbox('setValue', "上传失败");
+                        bgdname = "";
+                        //$("#bgdname").textbox("setValue", bgdname);
+                    }
+                    $imageMsg.msg('close');
+                });
+            }
+        }
+    });
+
+    var $frameMsg = $("#frame-msg").msg({
+        closeBtn: true,
+        cls:"",
+        type: 'window'
+    }).msg("hide");
+    var $imageForm = $('#image-uploader').form({
+        proxy: new $.su.Proxy({url: $.su.url("/admin/wportal?form=wifi")}),
+        formEnctype: "multipart/form-data",
+        traditional: true,
+        hiddenFrame: true,
+        fields: [
+            {name: "wechat"}
+        ],
+        submitBtn: null
+    });
+    $('#image-delete').button({
+        text:"删除",
+        cls: 'inline-block',
+        handler:function(e){
+            $('#image-file').file('reset');
+            $("#bgdname").textbox("setValue","");
+            $("#bgd-image").textbox("setValue","---");
+        }
+    });
+    $('#image-delete').button("hide");
+    $('#logo-delete').button({
+        text:"删除",
+        cls: 'inline-block',
+        handler:function(e){
+            $('#image-file').file('reset');
+            $("#logoname").textbox("setValue","");
+            $("#logo-image").textbox("setValue","---");
+        }
+    });
+
+    $('#image-select').button({
+        //fieldLabel: '背景图片'
+        text: '上传',
+        //labelCls: 'xs',
+        //maxLength:48,
+        cls: 'inline-block',
+        tips:"&nbsp",
+        tipsCls:"xxxxs",        
+        handler: function(){
+            imageType = IMG_TYPE_BGD;
+            $('#image-file').file('reset');
+            $imageMsg.msg("show");
+        }
+    });
+    $('#logo-select').button({
+        //fieldLabel: 'Logo图片',
+        text: '上传',
+        tips:"&nbsp",
+        tipsCls:"xxxxs",
+        //labelCls: 'xs',
+        //maxLength:48,
+        cls: 'inline-block',
+        handler: function(){
+            imageType = IMG_TYPE_LOGO;
+            $('#image-file').file('reset');
+            $imageMsg.msg("show");
+        }
+    });
+    var bgd_img = $('#bgd-image').textbox({
+        fieldLabel: "",
+        labelCls:"xxs",
+        readOnly: true,
+        value: '---',
+        //tips: '（可选，建议图片大小为1920x1080）',
+        cls: 'inline-block'
+    });
+
+    bgd_img.textbox("getContainer").find(".widget-fieldlabel-wrap").css("width","71px");
+
+
+    $('#logo-image').textbox({
+        fieldLabel: null,
+        readOnly: true,
+        value: '---',
+        //tips: '（可选，建议图片大小为120x120）',
+        cls: 'inline-block'
+    });
+    var globalProxy = new $.su.Proxy({
+        url: URL_GLOBAL
+    });
+    
+    var global_form = $("#global-form").form({
+        proxy: globalProxy,
+        fields: [
+            {name: "enable", mapping: "enable"},
+            {name: "wired_auth", mapping: "wired_auth"},
+            {name: "auto_disconnect", mapping: "auto_disconnect"},
+            {name: "interface", mapping: "interface"},
+            {name: "freeInterval", mapping: "free_interval"},
+            {name: "authToken", mapping: "authToken"},
+            {name: "ssid", mapping: "ssid"},
+            {name: "appid", mapping: "appid"},
+            {name: "shopid", mapping: "shopid"},
+            {name: "secretkey", mapping: "secretkey"},
+            {name: "welinfo", mapping: "welinfo"},
+            {name: "logoinfo", mapping: "logoinfo"},
+            {name: "btninfo", mapping: "btninfo"},
+            {name: "copyright", mapping: "copyright"},
+            {name: "logoname", mapping: "logoname"},
+            {name: "bgdname", mapping: "bgdname"}
+        ],
+        submitBtn: "#formSubmit"
+    }).on('ev_loadData', function(e, data){
+        $('#logo-image').textbox('setValue',"---");
+        $('#bgd-image').textbox('setValue',"---");
+        if(typeof(data) != "undefined" && typeof(data.name) == "undefined"){
+            editingId = "add";
+        }else{
+            editingId = "editing";
+        }
+    });
+
+    $("#formSubmit").button({
+        text:"设置",
+        handler:function(e){
+            if( global_form.form("validate")){
+                
+                var wportalProxy = new $.su.Proxy({
+                    url: $.su.url('/admin/wportal?form=wportal'),
+                    async: false
+                });
+                
+                if( editingId == "add"){
+                    $("#logoname").textbox("setValue" , "---");
+                    $("#bgdname").textbox("setValue", "---");
+                }
+                $.su.loading.show();
+                global_form.form("submit",{},function(data){
+                    $.su.loading.hide();
+                },function(error_code){
+                    $.su.loading.hide();
+                },function(){
+                    $.su.loading.hide();
+                });
+            }
+            
+        }
+    });
+
+    $('#auth-token').textbox("setValue",Date.parse(new Date()).toString().substring(0,12))
+    $('#wifi-name').textbox("getContainer").hide();
+    $('#bind-interface').textbox("getContainer").hide();
+    $('#auth-url').textbox("getContainer").hide();
+    $('#auth-token').textbox("getContainer").hide();
+    $('#auth-tips-container').textbox("getContainer").hide();
+    //$('#copyright').textbox("getContainer").hide();
+    var helpWechatWifi = new $.su.Help({
+        container: "div#wifi-help",
+        content: ["WECHAT_WIFI_FUNCTION", "WECHAT_WIFI_PARAMETER", "WECHAT_WIFI_PAGE", "WECHAT_WIFI_TIME"]
+    })
+});
+
+//]]>
+</script>
+</body>
+
+</html>

@@ -1,0 +1,696 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Attack Defense</title>
+<style type="text/css">
+</style>
+</head>
+
+<body>
+	<div class="func-container">
+    	<div id="function_setting">
+	    <form id="defense_settings">
+            <input id="defense_enable" name="enable" value=""/>
+		</form>
+		</div>
+		
+			<div id="flood_setting">
+			<form id="flood_enable">
+				<div class="widget-container">
+				<input id="syn_flood_enable" name="tcp_conn_en" />
+				<span></span>
+				<input id="syn_flood_lim" name="tcp_conn_lim" />
+				</div>
+				
+				<div class="widget-container">
+				<input id="udp_flood_enable" name="udp_conn_en" />
+				<input id="udp_flood_lim" name="udp_conn_lim" />
+				</div>
+				
+				<div class="widget-container">
+				<input id="icmp_flood_enable" name="icmp_conn_en" />
+				<input id="icmp_flood_lim" name="icmp_conn_lim" />
+				</div>
+				
+				<div class="widget-container">
+				<input id="syn_src_enable" name="tcp_src_en" />
+				<input id="syn_src_lim" name="tcp_src_lim" />
+				</div>
+				
+				<div class="widget-container">
+				<input id="udp_src_enable" name="udp_src_en" />
+				<input id="udp_src_limit" name="udp_src_lim" />
+				</div>
+				
+				<div class="widget-container">
+				<input id="icmp_src_enable" name="icmp_src_en" />
+				<input id="icmp_src_limit" name="icmp_src_lim" />
+				</div>
+
+			</form>
+			</div>
+			
+			<div id="packet_defense">
+			<form id="packet_enable">
+				<input id="frag" name="ip_frag" />
+				<input id="scan" name="tcp_noflag" />
+				<input id="deathping" name="ping_death" />
+				<input id="largeping" name="ping_large" />
+                <input id="wanping" name="ping_wan" />
+				<input id="winnuke" name="tcp_winnuke" />
+				<input id="fin_syn" name="tcp_fin_syn" />
+				<input id="fin_noack" name="tcp_fin_noack" />
+				<input id="option" name="ip_option" />
+				<div class="widget-container">
+				<span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+				<input id="ip_secure" name="ipopt_secure" />
+				<input id="ip_loose_route" name="ipopt_loose_route" />
+				</div>
+				<div class="widget-container">
+				<span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+				<input id="ip_strict_route" name="ipopt_strict_route" />
+				<input id="ip_record_route" name="ipopt_record_route" />
+				</div>
+				<div class="widget-container">
+				<span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+				<input id="ip_stream" name="ipopt_stream" />
+				<span>&nbsp;&nbsp;</span>
+				<input id="ip_timestamp" name="ipopt_timestamp" />
+				</div>
+				<div class="widget-container">
+				<span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+				<input id="ip_noop" name="ipopt_noop" />
+				</div>
+				
+				
+				
+			</form>
+			</div>
+		
+    
+    <button id="defense_set" type="button"></button>
+	
+    <div id="defense_help"></div>
+</div>
+
+<script type="text/javascript">
+try{
+    $
+}catch(e){
+    location.href = "/";
+};
+
+$(document).ready(function(e){
+	var url_flood = $.su.url('/admin/flood_defense?form=settings'),
+		url_packet =$.su.url('/admin/dos_defense?form=settings'),
+		url_log =$.su.url('/admin/dos_defense?form=logenable');
+		
+	var floodProxy = new $.su.Proxy({
+		url:url_flood
+	});
+	
+	var packetProxy = new $.su.Proxy({
+		url:url_packet
+	});
+	
+	var logProxy = new $.su.Proxy({
+		url:url_log
+	});
+	
+	$("#function_setting").panel({
+        title: $.su.CHAR.DEFENSE.SETTINGS,
+        collapsible: false
+    });
+
+    $("#function_setting").panel("hide")
+	
+	$('#defense_settings').form({
+		proxy:logProxy,
+		showPrompt:false,
+		fields:[
+			{name:"enable",mapping:"enable"}
+		],
+		submitBtn:"default"
+	});
+	
+	$('#flood_enable').form({
+		proxy:floodProxy,
+		showPrompt:false,
+		fields:[
+			{name:"tcp_conn_en",mapping:"tcp_conn_en"},
+			{name:"tcp_conn_lim",mapping:"tcp_conn_lim"},
+			{name:"udp_conn_en",mapping:"udp_conn_en"},
+			{name:"udp_conn_lim",mapping:"udp_conn_lim"},
+			{name:"icmp_conn_en",mapping:"icmp_conn_en"},
+			{name:"icmp_conn_lim",mapping:"icmp_conn_lim"},
+			{name:"tcp_src_en",mapping:"tcp_src_en"},
+			{name:"tcp_src_lim",mapping:"tcp_src_lim"},
+			{name:"udp_src_en",mapping:"udp_src_en"},
+			{name:"udp_src_lim",mapping:"udp_src_lim"},
+			{name:"icmp_src_en",mapping:"icmp_src_en"},
+			{name:"icmp_src_lim",mapping:"icmp_src_lim"}
+		],
+		submitBtn:"default",
+		validator:function(){
+			if("on" == $('input#syn_flood_enable').checkbox("getValue1")){
+				if("" == $("#syn_flood_lim").textbox("getValue")){
+					$($("input#syn_flood_lim").textbox("getContainer")).find("div.widget-error-tips").fadeIn(150);
+					$("input#syn_flood_lim").textbox("setError", $.su.CHAR.DEFENSE.NO_BLANK);//"该项不能为空");
+					return false;
+				}
+			}
+			if("on" == $('input#udp_flood_enable').checkbox("getValue1")){
+				if("" == $("#udp_flood_lim").textbox("getValue")){
+					$($("input#udp_flood_lim").textbox("getContainer")).find("div.widget-error-tips").fadeIn(150);
+					$("input#udp_flood_lim").textbox("setError", $.su.CHAR.DEFENSE.NO_BLANK);//"该项不能为空");
+					return false;
+				}
+			}
+			if("on" == $('input#icmp_flood_enable').checkbox("getValue1")){
+				if("" == $("#icmp_flood_lim").textbox("getValue")){
+					$($("input#icmp_flood_lim").textbox("getContainer")).find("div.widget-error-tips").fadeIn(150);
+					$("input#icmp_flood_lim").textbox("setError", $.su.CHAR.DEFENSE.NO_BLANK);//"该项不能为空");
+					return false;
+				}
+			}
+			if("on" == $('input#syn_src_enable').checkbox("getValue1")){
+				if("" == $("#syn_src_lim").textbox("getValue")){
+					$($("input#syn_src_lim").textbox("getContainer")).find("div.widget-error-tips").fadeIn(150);
+					$("input#syn_src_lim").textbox("setError", $.su.CHAR.DEFENSE.NO_BLANK);//"该项不能为空");
+					return false;
+				}
+			}
+			if("on" == $('input#udp_src_enable').checkbox("getValue1")){
+				if("" == $("#udp_src_lim").textbox("getValue")){
+					$($("input#udp_src_lim").textbox("getContainer")).find("div.widget-error-tips").fadeIn(150);
+					$("#udp_src_lim").textbox("setError", $.su.CHAR.DEFENSE.NO_BLANK);//"该项不能为空");
+					return false;
+				}
+			}
+			if("on" == $('input#icmp_src_enable').checkbox("getValue1")){
+				if("" == $("#icmp_src_lim").textbox("getValue")){
+					$($("input#icmp_src_lim").textbox("getContainer")).find("div.widget-error-tips").fadeIn(150);
+					$("#icmp_src_lim").textbox("setError", $.su.CHAR.DEFENSE.NO_BLANK);//"该项不能为空");
+					return false;
+				}
+			}
+			return true;
+		}
+	});
+	
+	$('#packet_enable').form({
+		proxy:packetProxy,
+		showPrompt:false,
+		fields:[
+			{name:"ip_frag",mapping:"ip_frag"},
+			{name:"tcp_noflag",mapping:"tcp_noflag"},
+			{name:"ping_death",mapping:"ping_death"},
+			{name:"ping_large",mapping:"ping_large"},
+            {name:"ping_wan",mapping:"ping_wan"},
+			{name:"tcp_winnuke",mapping:"tcp_winnuke"},
+			{name:"tcp_fin_syn",mapping:"tcp_fin_syn"},
+			{name:"tcp_fin_noack",mapping:"tcp_fin_noack"},
+			{name:"ip_option",mapping:"ip_option"},
+			{name:"ipopt_secure",mapping:"ipopt_secure"},
+			{name:"ipopt_loose_route",mapping:"ipopt_loose_route"},
+			{name:"ipopt_strict_route",mapping:"ipopt_strict_route"},
+			{name:"ipopt_record_route",mapping:"ipopt_record_route"},
+			{name:"ipopt_stream",mapping:"ipopt_stream"},
+			{name:"ipopt_timestamp",mapping:"ipopt_timestamp"},
+			{name:"ipopt_noop",mapping:"ipopt_noop"}
+		],
+		submitBtn:"default"
+	});
+	
+	$('input#defense_enable').checkbox({
+		items:[{boxlabel:$.su.CHAR.DEFENSE.ENABLE_LOG,inputValue:"on",uncheckedValue: "off"}]
+	});
+
+	$('input#defense_enable').checkbox("hide");
+	
+	$('div#flood_setting').panel({
+		title: $.su.CHAR.DEFENSE.FLOOD_DEFENSE,
+        collapsible: false
+	});
+	
+	$('input#syn_flood_enable').checkbox({
+		cls:"inline-block",
+		inputCls:'m',
+		items:[{boxlabel:$.su.CHAR.DEFENSE.SYN_FLOOD_ENABLE,inputValue:"on",uncheckedValue: "off"}]
+	}).on("ev_change", function(e, oldValue, newValue){
+		//console.log("newValue:"+newValue);
+        var val = (newValue[0]=="tcp_conn_en"||newValue[0]=="on") ? "on" : "off";
+        /*enable和disable之后需要重设值*/
+        switch(val)
+        {
+            case "on":
+                $("#syn_flood_lim").textbox("enable");
+                break;
+            case "off":
+            	$("#syn_flood_lim").textbox("disable");
+                break;
+        }
+    }); 
+	
+	$('input#syn_flood_lim').textbox({
+		//fieldLabel:$.su.CHAR.DEFENSE.THRESHOLD,
+		fieldLabel:null,
+		allowBlank:false,
+		tips:$.su.CHAR.DEFENSE.TIP,
+		cls:"inline-block",
+		inputCls:'s',
+		vtype:{
+			vtype: "number",
+            max: 99999,
+            min: 100
+		},
+		maxLength:5
+	});
+	
+	$('input#udp_flood_enable').checkbox({
+		cls:"inline-block",
+		inputCls:'m',
+		items:[{boxlabel:$.su.CHAR.DEFENSE.UDP_FLOOD_ENABLE,inputValue:"on",uncheckedValue: "off"}]
+	}).on("ev_change", function(e, oldValue, newValue){
+		//console.log("newValue:"+newValue);
+        var val = (newValue[0]=="udp_conn_en"||newValue[0]=="on") ? "on" : "off";
+        /*enable和disable之后需要重设值*/
+        switch(val)
+        {
+            case "on":
+                $("#udp_flood_lim").textbox("enable");
+                break;
+            case "off":
+            	$("#udp_flood_lim").textbox("disable");
+                break;
+        }
+    });
+	
+	$('input#udp_flood_lim').textbox({
+		//fieldLabel:$.su.CHAR.DEFENSE.THRESHOLD,
+		fieldLabel:null,
+		allowBlank:false,
+		tips:$.su.CHAR.DEFENSE.TIP,
+		cls:"inline-block",
+		inputCls:'s',
+		vtype:{
+			vtype: "number",
+            max: 99999,
+            min: 100
+		},
+		maxLength:5
+	});
+	
+	$('input#icmp_flood_enable').checkbox({
+		cls:"inline-block",
+		inputCls:'m',
+		items:[{boxlabel:$.su.CHAR.DEFENSE.ICMP_FLOOD_ENABLE,inputValue:"on",uncheckedValue: "off"}]
+	}).on("ev_change", function(e, oldValue, newValue){
+		//console.log("newValue:"+newValue);
+        var val = (newValue[0]=="icmp_conn_en"||newValue[0]=="on") ? "on" : "off";
+        /*enable和disable之后需要重设值*/
+        switch(val)
+        {
+            case "on":
+                $("#icmp_flood_lim").textbox("enable");
+                break;
+            case "off":
+            	$("#icmp_flood_lim").textbox("disable");
+                break;
+        }
+    });
+	
+	$('input#icmp_flood_lim').textbox({
+		//fieldLabel:$.su.CHAR.DEFENSE.THRESHOLD,
+		fieldLabel:null,
+		allowBlank:false,
+		tips:$.su.CHAR.DEFENSE.TIP,
+		cls:"inline-block",
+		inputCls:'s',
+		vtype:{
+			vtype: "number",
+            max: 99999,
+            min: 100
+		},
+		maxLength:5
+	});
+	
+	$('input#syn_src_enable').checkbox({
+		cls:"inline-block",
+		inputCls:'m',
+		items:[{boxlabel:$.su.CHAR.DEFENSE.SYN_SRC_ENABLE,inputValue:"on",uncheckedValue: "off"}]
+	}).on("ev_change", function(e, oldValue, newValue){
+		//console.log("newValue:"+newValue);
+        var val = (newValue[0]=="tcp_src_en"||newValue[0]=="on") ? "on" : "off";
+        /*enable和disable之后需要重设值*/
+        switch(val)
+        {
+            case "on":
+                $("#syn_src_lim").textbox("enable");
+                break;
+            case "off":
+            	$("#syn_src_lim").textbox("disable");
+                break;
+        }
+    });
+	
+	$('input#syn_src_lim').textbox({
+		//fieldLabel:$.su.CHAR.DEFENSE.THRESHOLD,
+		fieldLabel:null,
+		allowBlank:false,
+		tips:$.su.CHAR.DEFENSE.TIP,
+		cls:"inline-block",
+		inputCls:'s',
+		vtype:{
+			vtype: "number",
+            max: 99999,
+            min: 100
+		},
+		maxLength:5
+	});
+	
+	$('input#udp_src_enable').checkbox({
+		cls:"inline-block",
+		inputCls:'m',
+		items:[{boxlabel:$.su.CHAR.DEFENSE.UDP_SRC_ENABLE,inputValue:"on",uncheckedValue: "off"}]
+	}).on("ev_change", function(e, oldValue, newValue){
+		//console.log("newValue:"+newValue);
+        var val = (newValue[0]=="udp_src_en"||newValue[0]=="on") ? "on" : "off";
+        /*enable和disable之后需要重设值*/
+        switch(val)
+        {
+            case "on":
+                $("#udp_src_limit").textbox("enable");
+                break;
+            case "off":
+            	$("#udp_src_limit").textbox("disable");
+                break;
+        }
+    });
+	
+	$('input#udp_src_limit').textbox({
+		//fieldLabel:$.su.CHAR.DEFENSE.THRESHOLD,
+		fieldLabel:null,
+		allowBlank:false,
+		tips:$.su.CHAR.DEFENSE.TIP,
+		cls:"inline-block",
+		inputCls:'s',
+		vtype:{
+			vtype: "number",
+            max: 99999,
+            min: 100
+		},
+		maxLength:5
+	});
+	
+	$('input#icmp_src_enable').checkbox({
+		cls:"inline-block",
+		inputCls:'m',
+		items:[{boxlabel:$.su.CHAR.DEFENSE.ICMP_SRC_ENABLE,inputValue:"on",uncheckedValue: "off"}]
+	}).on("ev_change", function(e, oldValue, newValue){
+		//console.log("newValue:"+newValue);
+        var val = (newValue[0]=="icmp_src_en"||newValue[0]=="on") ? "on" : "off";
+        /*enable和disable之后需要重设值*/
+        switch(val)
+        {
+            case "on":
+                $("#icmp_src_limit").textbox("enable");
+                break;
+            case "off":
+            	$("#icmp_src_limit").textbox("disable");
+                break;
+        }
+    });
+	
+	$('input#icmp_src_limit').textbox({
+		//fieldLabel:$.su.CHAR.DEFENSE.THRESHOLD,
+		fieldLabel:null,
+		tips:$.su.CHAR.DEFENSE.TIP,
+		allowBlank:false,
+		cls:"inline-block",
+		inputCls:'s',
+		vtype:{
+			vtype: "number",
+            max: 99999,
+            min: 100
+		},
+		maxLength:5
+	});
+	
+	$("#packet_defense").panel({
+        title: $.su.CHAR.DEFENSE.PACKET_DEFENSE,
+        collapsible: false
+    });
+	
+	$("#frag").checkbox({
+		items:[
+			{boxlabel:$.su.CHAR.DEFENSE.ENABLE_FRAG,inputValue:"on",uncheckedValue:"off"}
+		]
+	}).checkbox('hide');
+	
+	$("#scan").checkbox({
+		items:[
+			{boxlabel:$.su.CHAR.DEFENSE.ENABLE_SCAN,inputValue:"on",uncheckedValue:"off"}
+		]
+	});
+	
+	$("#deathping").checkbox({
+		items:[
+			{boxlabel:$.su.CHAR.DEFENSE.ENABLE_DEATHPING,inputValue:"on",uncheckedValue:"off"}
+		]
+	});
+	
+	$("#largeping").checkbox({
+		items:[
+			{boxlabel:$.su.CHAR.DEFENSE.ENABLE_LARGEPING,inputValue:"on",uncheckedValue:"off"}
+		]
+	});
+	
+    $("#wanping").checkbox({
+        items:[
+            {boxlabel:$.su.CHAR.DEFENSE.ENABLE_WANPING,inputValue:"on",uncheckedValue:"off"}
+        ]
+    });
+
+	$("#winnuke").checkbox({
+		items:[
+			{boxlabel:$.su.CHAR.DEFENSE.ENABLE_NUKE,inputValue:"on",uncheckedValue:"off"}
+		]
+	});
+	
+	$("#fin_syn").checkbox({
+		items:[
+			{boxlabel:$.su.CHAR.DEFENSE.ENABLE_SYNFIN,inputValue:"on",uncheckedValue:"off"}
+		]
+	});
+	
+	$("#fin_noack").checkbox({
+		items:[
+			{boxlabel:$.su.CHAR.DEFENSE.ENABLE_FIN_NOACK,inputValue:"on",uncheckedValue:"off"}
+		]
+	});
+	
+	$("#option").checkbox({
+		items:[
+			{boxlabel:$.su.CHAR.DEFENSE.ENABLE_OPTION,inputValue:"on",uncheckedValue:"off"}
+		]
+	}).on("ev_change", function(e, oldValue, newValue){
+        var val = (newValue[0]=="ip_option"||newValue[0]=="on") ? "on" : "off";
+        /*enable和disable之后需要重设值*/
+        switch(val)
+        {
+            case "on":
+                $("#ip_secure").checkbox("enable");
+                $("#ip_secure").checkbox("reset");
+                $("#ip_loose_route").checkbox("enable");
+                $("#ip_loose_route").checkbox("reset");
+                $("#ip_strict_route").checkbox("enable");
+                $("#ip_strict_route").checkbox("reset");
+                $("#ip_record_route").checkbox("enable");
+                $("#ip_record_route").checkbox("reset");
+                $("#ip_stream").checkbox("enable");
+                $("#ip_stream").checkbox("reset");
+                $("#ip_timestamp").checkbox("enable");
+                $("#ip_timestamp").checkbox("reset");
+                $("#ip_noop").checkbox("enable");
+                $("#ip_noop").checkbox("reset");
+                break;
+            case "off":
+            	$("#ip_secure").checkbox("disable");
+            	$("#ip_secure").checkbox("setValue","off");
+                $("#ip_loose_route").checkbox("disable");
+                $("#ip_loose_route").checkbox("setValue","off");
+                $("#ip_strict_route").checkbox("disable");
+                $("#ip_strict_route").checkbox("setValue","off");
+                $("#ip_record_route").checkbox("disable");
+                $("#ip_record_route").checkbox("setValue","off");
+                $("#ip_stream").checkbox("disable");
+                $("#ip_stream").checkbox("setValue","off");
+                $("#ip_timestamp").checkbox("disable");
+                $("#ip_timestamp").checkbox("setValue","off");
+                $("#ip_noop").checkbox("disable");
+                $("#ip_noop").checkbox("setValue","off");
+                break;
+        }
+    }); 
+	
+	$("#ip_secure").checkbox({
+		cls:"inline-block",
+		inputCls:'m',
+		items:[
+			{boxlabel:$.su.CHAR.DEFENSE.IPSECURE,inputValue:"on",uncheckedValue:"off"}
+		]
+	});
+	
+	$("#ip_loose_route").checkbox({
+		cls:"inline-block",
+		inputCls:'s',
+		items:[
+			{boxlabel:$.su.CHAR.DEFENSE.LOOSE_ROUTE,inputValue:"on",uncheckedValue:"off"}
+		]
+	});
+	
+	$("#ip_strict_route").checkbox({
+		cls:"inline-block",
+		inputCls:'m',
+		items:[
+			{boxlabel:$.su.CHAR.DEFENSE.STRICT_ROUTE,inputValue:"on",uncheckedValue:"off"}
+		]
+	});
+	
+	$("#ip_record_route").checkbox({
+		cls:"inline-block",
+		inputCls:'s',
+		items:[
+			{boxlabel:$.su.CHAR.DEFENSE.RECORD_ROUTE,inputValue:"on",uncheckedValue:"off"}
+		]
+	});
+	
+	$("#ip_stream").checkbox({
+		cls:"inline-block",
+		inputCls:'m',
+		items:[
+			{boxlabel:$.su.CHAR.DEFENSE.STREAM,inputValue:"on",uncheckedValue:"off"}
+		]
+	});
+	
+	$("#ip_timestamp").checkbox({
+		cls:"inline-block",
+		inputCls:'s',
+		items:[
+			{boxlabel:$.su.CHAR.DEFENSE.TIMESTAMP,inputValue:"on",uncheckedValue:"off"}
+		]
+	});
+	
+	$("#ip_noop").checkbox({
+		cls:"inline-block",
+		inputCls:'m',
+		items:[
+			{boxlabel:$.su.CHAR.DEFENSE.NOOP,inputValue:"on",uncheckedValue:"off"}
+		]
+	});
+
+	/*隐藏三个设置按钮*/
+	var buttonWrapList = $.find("div.form-submit.button-container.submit");
+	for(var i=0; i<3; i++){
+		$(buttonWrapList[i]).hide();
+	}
+	/*统一触发提交三个表单*/
+	$("#defense_set").button({
+		text:$.su.CHAR.OPERATION.SAVE,//"设置",
+		cls:"submit",
+		handler: function(){
+			var success = true;
+			var response = [false, false, false];
+			/*
+			$('#defense_settings').form("submit", {}, function(){
+				response[0] = true;
+				//console.log("1.success");
+			}, function(error){
+				success = false;
+				response[0] = true;
+			});
+			*/
+			if($('#flood_enable').form("validate") != true){
+				return false;
+			}
+			if($('#packet_enable').form("validate") != true){
+				return false;
+			}
+			$('#flood_enable').form("submit", {}, function(){
+				response[1] = true;
+				//console.log("2.success");
+			}, function(error){
+				success = false;
+				response[1] = true;
+			});
+
+			$('#packet_enable').form("submit", {}, function(){
+				response[2] = true;
+				//console.log("3.success");
+			}, function(error){
+				success = false;
+				response[2] = true;
+			});
+			$.su.loading.show();
+
+ 			
+		    var timeInter = setInterval(function(){	   
+		        if (response[1]&&response[2]){
+		        	$.su.loading.hide();
+					if(success){
+						var formPrompt = $('#packet_enable').find("div.form-prompt");
+
+
+						var l = 425;
+						var t = -100;
+
+						formPrompt.css({
+							left: l,
+							top: t       
+						});
+						formPrompt.removeClass("failed").addClass("successed");
+						formPrompt.fadeIn("150", function(){
+							setTimeout(function(){
+								formPrompt.fadeOut("150");
+							}, 900);
+						});
+					}else{
+						var formPrompt = $('#packet_enable').find("div.form-prompt");
+
+
+						var l = 425;
+						var t = -100;
+
+						formPrompt.css({
+							left: l,
+							top: t       
+						});
+						formPrompt.addClass("failed").removeClass("successed");
+						formPrompt.fadeIn("150", function(){
+							setTimeout(function(){
+								formPrompt.fadeOut("150");
+							}, 900);
+						});
+						
+					}
+
+					clearInterval(timeInter);
+		        }
+		    }, 100);
+			
+			
+		}
+	});
+	
+	var helpDefense = new $.su.Help({
+        container: "div#defense_help",
+        /*content: ["DEFENSE_ENABLE", "DEFENSE_FLOOD","DEFENSE_DOS"]*/
+        content: ["DEFENSE_FLOOD","DEFENSE_DOS"]
+    });
+	
+});
+</script>
+</body>
+</html>

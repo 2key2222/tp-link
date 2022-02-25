@@ -1,0 +1,284 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Port Setting</title>
+</head>
+
+<body>
+<div class="func-container">
+
+<form id="vlan_portsetting">
+	<div id="vlan_portsetting_panel">
+		<div class="container grid-container">
+			
+			<div class="container grid-header-container">
+				<table border="0" cellspacing="0" cellpadding="0">
+					<tr class="grid-header-tr">
+						<th class="grid-header grid-header-0 port">
+							<span class="content">Port</span>
+						</th>
+						<th class="grid-header grid-header-1 type" style="display:none">
+							<span id="link-type" class="content"></span>
+						</th>
+						<th class="grid-header grid-header-2 pvid">
+							<span class="content">PVID</span>
+						</th>						
+                        <th class="grid-header grid-header-3 vlans">
+                            <span id="port-vlans" class="content"></span>
+                        </th>  
+					</tr>
+				</table>
+			</div>
+			<div id="forform"></div>
+			<div class="grid-content-container-outer">
+
+				<div class="grid-content-container" style="overflow:visible;">
+					<table border="0" cellspacing="0" cellpadding="0" id="table">
+						
+					</table>
+					
+				</div>
+
+			</div>
+		</div>
+		
+		<div id="button-wrap" style="margin-top:30px;">
+			<button id="submit_btn"></button>
+		</div>
+		
+	</div>
+
+</form>
+     		
+	<p id="caution"/>
+	<div id="portsetting_help"></div>
+</div>
+
+<script type="text/javascript">
+try{
+    $
+}catch(e){
+    location.href = "/";
+};
+
+$(document).ready(function(e){
+	$("span#link-type").html($.su.CHAR.VLAN.LINKTYPE);
+	$("button#submit_btn").html($.su.CHAR.OPERATION.SAVE);
+	$("span#port-vlans").html($.su.CHAR.VLAN.PORT_VLANS);
+
+    $("#vlan_portsetting_panel").panel({
+        title: $.su.CHAR.VLAN.PORTSET,//"端口设置",
+        collapsible: false
+    }); 
+
+    var GeneralFlag = 0;
+    var portsetting_help;
+    var oldLtype = [];
+    var oldPvid = [];
+	var portList = [];
+
+	var portProxy = new $.su.Proxy({
+		url: $.su.url('/admin/vlansetting?form=portsettinglist'),
+		async: true
+	});
+    function loadPortVlan(){
+    	portProxy.read({}, function(data){
+			portList = data;
+			$("#table").empty()
+			for (var i = 0; i < portList.length; i++) {
+				var port = portList[i].port
+				var vlans = portList[i].vlans;
+				var groups = portList[i].group;
+				var pvlan = []
+				var inHTML = "";
+				inHTML += "<tr class=\"grid-content-tr grid-content-tr-key-"+port+"\">";
+				inHTML +=      "<td class=\"grid-content-td grid-content-td-0 grid-content-td-port fst\">";
+				inHTML +=      	    "<span>Port"+port+"</span>";
+				inHTML +=	   "</td>";
+				inHTML +=      "<td class=\"grid-content-td grid-content-td-1 grid-content-td-type\" style=\"display:none\">";
+				inHTML +=           "<input id=\"port"+port+"_type\" name=\"port"+port+"_type\"/>";
+				inHTML +=	   "</td>";
+				inHTML +=	   "<td class=\"grid-content-td grid-content-td-2 grid-content-td-port-pvid\">";
+				inHTML +=			"<input id=\"port"+port+"_pvid\" name=\"port"+port+"_pvid\"/>";    
+				inHTML +=	   "</td>";
+				inHTML +=      "<td class=\"grid-content-td grid-content-td-3 grid-content-td-port-vlans\">";
+				inHTML +=           "<span input id=\"port"+port+"_vlans\" name=\"port"+port+"_vlans\"></span>";    
+				inHTML +=      "</td>";
+				inHTML += "</tr>";
+				$("#table").append($(inHTML));
+
+				oldLtype[port] = portList[i].type
+				oldPvid[port]  = portList[i].pvid
+
+				$("#port"+port+"_type").combobox({
+					items:[
+						{name:$.su.CHAR.VLAN.ACCESS, value:"access"},
+						{name:$.su.CHAR.VLAN.GENERAL, value:"general"},
+						{name:$.su.CHAR.VLAN.TRUNK, value:"trunk"}
+					]
+				}).on("ev_change", function(e, oldValue, newValue){
+					 var k = parseInt(this.id.match(/\d/));
+					/*if(oldLtype[k] != $("#port"+k+"_type").combobox("getValue") ||
+						"access" == $("#port"+k+"_type").combobox("getValue")){
+						$("#port"+k+"_pvid").combobox('disable');  
+					}else{
+						$("#port"+k+"_pvid").combobox('enable');
+					} */
+					$("#port"+k+"_type").combobox('disable');
+				});
+				$("#port"+port+"_type").combobox("setValue", portList[i].type);
+				$("#port"+port+"_type").combobox("disable");
+
+				$("#port"+port+"_pvid").combobox({
+					items:[
+						{name:'1', value:'1'}
+					]
+				}).on("ev_change", function(e, oldValue, newValue){
+					var k = parseInt(this.id.match(/\d/));
+					/*if(oldPvid[k] != $("#port"+k+"_pvid").combobox("getValue")){
+						$("#port"+k+"_type").combobox('disable');
+					}else{
+						$("#port"+k+"_type").combobox('enable');
+					}*/
+					$("#port"+k+"_type").combobox('disable');
+				});
+
+				for(var j = 0; j < vlans.length; j++){
+					var vlanid = vlans[j].replace(/t/g, "");
+					if(vlanid && "" != vlanid){
+						pvlan.push({name:vlanid, value:vlanid});
+					}
+				}
+				$("#port"+port+"_pvid").combobox('loadData', pvlan);
+				$("#port"+port+"_pvid").combobox("setValue", portList[i].pvid);
+				if ("access" == portList[i].type || groups.join(" ").indexOf("giptv") >= 0) {
+					$("#port"+port+"_pvid").combobox('disable');
+				}else{
+					$("#port"+port+"_pvid").combobox('enable');
+				}
+
+				var result = "";
+				var vlans = portList[i].vlans;
+				if (vlans){
+					var vlanhtml = []
+					for (var j = 0; j < vlans.length; j++){
+						var vlantag = vlans[j].match(/([0-9]+|t)/g)
+						var vlan = parseInt(vlantag[0])
+						var tag = vlantag[1]
+						if (!isNaN(vlan) && vlan >= 0) {
+							switch (tag) {
+								case "t":
+									vlanhtml[vlan] = vlan + "(" + $.su.CHAR.VLAN.TAG + ") "
+									break;
+								default:
+									vlanhtml[vlan] = vlan + "(" + $.su.CHAR.VLAN.UNTAG + ") "
+									break;
+							}
+						}
+					}
+					for (var k = 0; k < vlanhtml.length; k++) {
+						if (vlanhtml[k])
+							result += vlanhtml[k]
+					}
+				}
+                
+                //$("#port"+j+"_vlans").textbox("setValue", tag);
+                $("span#port"+port+"_vlans").html(result); 
+			}
+
+			var portTypeProxy = new $.su.Proxy({
+				url: $.su.url("/admin/vlansetting?form=porttype"),
+				async: true
+			});
+			portTypeProxy.read({
+				'method':'get',
+				'params': {},
+				'id':1
+			},function(data){
+				var ltypes = [];
+				for (var i=0; i<data.length; i++){
+					if("access"==data[i].ltype){
+						ltypes.push({name:$.su.CHAR.VLAN.ACCESS, value:"access"});
+					}else if("trunk"==data[i].ltype){
+						ltypes.push({name:$.su.CHAR.VLAN.TRUNK, value:"trunk"});
+					}else if("general"==data[i].ltype){
+						ltypes.push({name:$.su.CHAR.VLAN.GENERAL, value:"general"});
+						GeneralFlag = 1;
+					}
+				}
+				for (var j=0; j < portList.length; j++){
+					var port = portList[j].port
+					var groups = portList[j].group;
+					$("#port"+port+"_type").combobox('loadData', ltypes);
+					$("#port"+port+"_type").combobox("setValue", portList[j].type);
+					if ("access" == portList[j].type || groups.join(" ").indexOf("giptv") >= 0) {
+						$("#port"+port+"_pvid").combobox('disable');
+					}else{
+						$("#port"+port+"_pvid").combobox('enable');
+					}
+				}
+				if(1 != GeneralFlag){
+					portsetting_help = new $.su.Help({
+						container: "div#portsetting_help",
+						content: ["VLAN_PORT_SETTING_NO_GENERAL"]
+					});
+				}
+			},function(errcode){});
+    	},function(errcode){});
+	}
+	loadPortVlan();
+
+    var forform = $("#forform").form({
+        showPrompt:true
+    });
+    
+    $("button#submit_btn").button({
+    	handler:function(e){
+			var params = [];
+    		for(var i = 0; i < portList.length; i++){
+				var port = portList[i].port
+    			var linktype = $("#port"+port+"_type").combobox("getValue");
+		    	var pvid = $("#port"+port+"_pvid").combobox("getValue");
+		    	var eachPara = {
+			    	"port": port,
+			    	"type": linktype[0],
+			    	"pvid": pvid[0]
+			    };
+			    params.push(eachPara);
+		    }
+		    $.su.loading.show();
+			portProxy.write(
+			{
+				'method':'set',
+				'params': params
+			}, 
+			function(data){
+				$.su.loading.hide();
+				forform.form("prompt", true);
+				loadPortVlan();
+			},function(errcode){
+				$.su.loading.hide();
+				forform.form("prompt", false);
+				loadPortVlan();
+			},function(fail){
+				$.su.loading.hide();
+				forform.form("prompt", false);
+			});
+    	}
+    });
+
+    /*for link type is hidden*/
+    /*$("#caution").html($.su.CHAR.VLAN.CAUTION);*/
+
+	portsetting_help = new $.su.Help({
+		container: "div#portsetting_help",
+		content: ["VLAN_PORT_SETTING"]
+	});
+});
+</script>
+</body>
+
+</html>
+
+			

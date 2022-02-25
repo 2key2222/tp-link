@@ -1,0 +1,62 @@
+Basic Installation
+==================
+
+   These are not generic installation instructions.
+
+	If you didn't guessed it,  doesn't uses configure...
+
+	Compiling and installation of veth is very easy.
+
+COMPILING
+=========
+
+	After untargz it, go to the vethd-1.0 directory and write
+
+	make
+
+	This will make the vethd binary in veth.
+
+	That's all...
+
+INSTALLING
+==========
+
+	To install it, choose a directory, (/usr/local/bin, for example),
+and send it to make via a INSTALL_DIR environment variable:
+
+	# INSTALL_DIR=/usr/local/bin/ make install
+
+	That's all... is very easy
+
+PREPARING THE KERNEL
+====================
+	Before running VETH, you must have the tun module loaded in
+the kernel, and the device file in /dev.
+
+-	Loading the TUN/TAP module:
+
+	The quick way is:
+
+# modprobe tun
+
+	The RIGHT way:
+
+If you use Debian:
+
+echo "tun" >> /etc/modules
+
+If you use Gentoo
+
+echo "tun" >> /etc/modules.autoload
+
+If you use another:
+
+Edit the /etc/rc.local file and add in the last line:
+
+modprobe tun
+
+-	Creating 
+
+Néstor Peña
+<nestor@linux.org.ve>
+

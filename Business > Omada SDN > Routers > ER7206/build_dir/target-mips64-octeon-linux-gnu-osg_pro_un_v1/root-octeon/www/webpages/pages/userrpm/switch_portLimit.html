@@ -1,0 +1,286 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Switch_portLimit</title>
+</head>
+
+<body>
+<div class="func-container">
+
+ <form id="switch_portLimit">
+    <div id="switch_portLimit_panel">
+        <div class="container grid-container">
+            <div class="container grid-header-container">
+                <table border="0" cellspacing="0" cellpadding="0">
+                    <tr class="grid-header-tr">
+                        <th class="grid-header grid-header-0" style="width:70px;">
+                            <span class="content">Port</span>
+                        </th>
+                        <th class="grid-header grid-header-1" style="width:100px;">
+                            <span id="in_limit" class="content"></span>
+                        </th>
+                        <th class="grid-header grid-header-2" style="width:150px;">
+                            <span id="in_pkttpye" class="content"></span>
+                        </th> 						
+                        <th class="grid-header grid-header-3" style="width:100px;">
+                            <span id="in_limit_rate" class="content"></span>
+                        </th>
+                        <th class="grid-header grid-header-4" style="width:100px;">
+                            <span id="out_limit"class="content"></span>
+                        </th>
+                        <th class="grid-header grid-header-5" style="width:100px;">
+                            <span id="out_limit_rate" class="content"></span>
+                        </th>
+                    </tr>
+                </table>
+            </div>
+            <div id="forform"></div>
+            <div class="grid-content-container-outer">
+                <div class="grid-content-container" style="overflow:visible;">
+                    <table border="0" cellspacing="0" cellpadding="0" id="table">
+                        
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div id="button-wrap" style="margin-top:30px;">
+            <button id="submit_btn"></button>
+            <!--<button id="refresh_btn"></button>-->
+        </div>
+        
+    </div>
+
+</form>    
+	     		
+
+	 <div id="portLimit_help"></div>
+</div>
+
+<script type="text/javascript">
+try{
+    $
+}catch(e){
+    location.href = "/";
+};
+
+$(document).ready(function(e){
+	var URL_LIMIT_LIST = $.su.url("/admin/switch?form=rateControl");
+    var limitProxy = new $.su.Proxy({
+        url: URL_LIMIT_LIST
+    });
+
+    $("#switch_portLimit_panel").panel({
+        title: $.su.CHAR.SWITCH.FUNCTION,
+        collapsible: false
+    }); 
+
+    $("span#in_limit").html($.su.CHAR.SWITCH.INGRESS_STATE);
+    $("span#in_pkttpye").html($.su.CHAR.SWITCH.INGRESS_FRAME_TYPE);
+    $("span#in_limit_rate").html($.su.CHAR.SWITCH.INGRESS_RATE+"(Mbps)");
+    $("span#out_limit").html($.su.CHAR.SWITCH.EGRESS_STATE);
+    $("span#out_limit_rate").html($.su.CHAR.SWITCH.EGRESS_RATE+"(Mbps)");
+    $("button#submit_btn").html($.su.CHAR.OPERATION.SAVE);
+    //$("button#refresh_btn").html($.su.CHAR.OPERATION.REFRESH);
+
+    var inHTML = "";
+
+    for(var i = 1; i <= 5; i++){
+        inHTML += "<tr class=\"grid-content-tr grid-content-tr-key-"+i+"\">";
+        inHTML +=      "<td class=\"grid-content-td grid-content-td-0 grid-content-td-port fst\" style=\"width:70px;\">";
+        inHTML +=           "<span>Port"+i+"</span>";
+        inHTML +=      "</td>";
+        inHTML +=      "<td class=\"grid-content-td grid-content-td-1 grid-content-td-istate\" style=\"width:100px;\">";
+        inHTML +=           "<input id=\"port"+i+"_istate\" name=\"port"+i+"_istate\"/>";
+        inHTML +=      "</td>";
+        inHTML +=      "<td class=\"grid-content-td grid-content-td-2 grid-content-td-itype\" style=\"width:150px;\">";
+        inHTML +=           "<input id=\"port"+i+"_itype\" name=\"port"+i+"_itype\"/>";
+        inHTML +=      "</td>";
+        inHTML +=      "<td class=\"grid-content-td grid-content-td-3 grid-content-td-irate\" style=\"width:100px;\">";
+        inHTML +=           "<input id=\"port"+i+"_irate\" name=\"port"+i+"_irate\"/>";
+        inHTML +=      "</td>";
+        inHTML +=      "<td class=\"grid-content-td grid-content-td-4 grid-content-td-estate\" style=\"width:100px;\">";
+        inHTML +=           "<input id=\"port"+i+"_estate\" name=\"port"+i+"_estate\"/>";
+        inHTML +=      "</td>";
+        inHTML +=      "<td class=\"grid-content-td grid-content-td-5 grid-content-td-erate\" style=\"width:100px;\">";
+        inHTML +=           "<input id=\"port"+i+"_erate\" name=\"port"+i+"_erate\"/>";
+        inHTML +=      "</td>";
+        inHTML += "</tr>";
+    }
+    
+    $("#table").html(inHTML);
+
+    /*tr1-5*/
+    for(var i = 1; i <= 5; i++){
+        $("#port"+i+"_istate").checkbox({
+            cls:"s",
+            items:[
+                {boxlabel: "&nbsp&nbsp"+$.su.CHAR.GRID.ENABLE, inputValue: "on", uncheckedValue: "off"}
+            ]
+        });
+
+        $("#port"+i+"_estate").checkbox({
+            cls:"s",
+            items:[
+                {boxlabel:"&nbsp&nbsp"+$.su.CHAR.GRID.ENABLE, inputValue: "on", uncheckedValue: "off"}
+            ]
+        });
+
+        $("#port"+i+"_itype").combobox({
+            items:[
+                {name: $.su.CHAR.SWITCH.UNIVERSAL, value: "all"},
+                {name: $.su.CHAR.SWITCH.BROAD, value: "broadcast"},
+                //{name: $.su.CHAR.SWITCH.MULTI_ALL, value: "multicast"},
+            ]
+        });
+
+        $("#port"+i+"_irate").textbox({
+            value:"1000",
+            inputCls:"s",
+            vtype:{
+                vtype:"number",
+                min:1,
+                max:1000,
+            },
+            maxLength:4
+        });
+
+        $("#port"+i+"_erate").textbox({
+            value:"1000",
+            inputCls:"s",
+            vtype:{
+                vtype:"number",
+                min:1,
+                max:1000,
+            },
+            maxLength:4
+        });
+    }
+    var forform = $("#forform").form({
+        showPrompt:true
+    });
+
+    var params = [];
+
+    function loadData(){
+        $.su.loading.show();
+        limitProxy.read({
+            'method':'get',
+            'params': {},
+            'id':1
+        },function(data){
+
+            for(var i = 0; i <= 4; i++){
+                var j = i + 1;
+                var irate = document.getElementById("port"+j+"_irate");
+                var erate = document.getElementById("port"+j+"_erate");
+                $("#port"+j+"_istate").checkbox("setValue", data[i].ingress_state);
+                $("#port"+j+"_estate").checkbox("setValue", data[i].egress_state);
+                $("#port"+j+"_itype").combobox("setValue", data[i].ingress_mode);
+                $("#port"+j+"_irate").textbox("setValue", data[i].ingress_rate);
+                $("#port"+j+"_erate").textbox("setValue", data[i].egress_rate);
+                if(data[i].max_speed == "100M")
+                {
+                    irate.vtype.max = 100;
+                    erate.vtype.max = 100;
+                }
+            }
+            $.su.loading.hide();
+
+        },function(errcode){
+            $.su.loading.hide();
+            forform.form("prompt", false, $.su.CHAR.SWITCH.REFRESH_FAILED);//"刷新失败");
+        },function(fail){
+            $.su.loading.hide();
+            forform.form("prompt", false, $.su.CHAR.SWITCH.REFRESH_FAILED);//"刷新失败");
+        });
+    }
+    
+    loadData();
+    
+    $("button#submit_btn").button({
+        cls:"inline",
+        handler:function(e){
+            for(var i = 1; i <= 5; i++){
+                if(!$("#port"+i+"_irate").textbox("validate")){
+                    return false;
+                }
+                if(!$("#port"+i+"_erate").textbox("validate")){
+                    return false;
+                }
+            }
+			params=[];
+            for(var i = 1; i <= 5; i++){
+                var i_state = $("#port"+i+"_istate").checkbox("getValue1");
+                if("on" == i_state[0] || "port"+i+"_istate" == i_state[0]){
+                    i_state = "on";
+                }else{
+                    i_state = "off";
+                }
+
+                var e_state = $("#port"+i+"_estate").checkbox("getValue1");
+                if("on" == e_state[0] || "port"+i+"_estate" == e_state[0]){
+                    e_state = "on";
+                }else{
+                    e_state = "off";
+                }
+
+                var i_mode = $("#port"+i+"_itype").combobox("getValue");
+
+                var i_rate = $("#port"+i+"_irate").textbox("getValue");
+                var e_rate = $("#port"+i+"_erate").textbox("getValue");
+    
+                var eachPara = {
+                    "port": i,
+                    "i_state": i_state, 
+                    "i_rate": i_rate,
+                    "i_mode": i_mode,
+                    "e_state": e_state,
+                    "e_rate": e_rate
+                };
+               
+
+                params.push(eachPara);
+            }
+
+            $.su.loading.show();
+            limitProxy.write(
+            {
+                'method':'set',
+                'params': params
+            }, 
+            function(data){
+                $.su.loading.hide();
+                forform.form("prompt", true);
+            },function(errcode){
+                $.su.loading.hide();
+                forform.form("prompt", false);
+                loadData();
+            },function(fail){
+                $.su.loading.hide();
+                forform.form("prompt", false);
+            });
+        }
+    });
+
+
+    /* $("button#refresh_btn").button({
+        cls:"inline",
+        handler:function(e){
+            
+            loadData();
+        }
+    }); */
+
+
+	var portLimit_help = new $.su.Help({
+		container: "div#portLimit_help",
+		content: ["SWITCH_PORTLIMIT"]
+	});
+});
+</script>
+</body>
+
+</html>
+
+			

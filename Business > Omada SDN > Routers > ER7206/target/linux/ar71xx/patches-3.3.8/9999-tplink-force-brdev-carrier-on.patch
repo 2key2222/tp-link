@@ -1,0 +1,11 @@
+--- a/net/bridge/br_stp.c	2018-06-21 15:25:34.892205256 +0800
++++ b/net/bridge/br_stp.c	2018-06-21 15:26:24.447208466 +0800
+@@ -397,7 +397,7 @@
+ void br_port_state_selection(struct net_bridge *br)
+ {
+ 	struct net_bridge_port *p;
+-	unsigned int liveports = 0;
++	unsigned int liveports = 1; /* force brdev to carrier on */
+ 
+ 	list_for_each_entry(p, &br->port_list, list) {
+ 		if (p->state == BR_STATE_DISABLED)

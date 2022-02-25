@@ -1,0 +1,5 @@
+config RTL8367S_PHY
+	tristate "Driver for the Realtek RTL8367S switch"
+	select SWCONFIG
+	select ETHERNET_PACKET_MANGLE
+

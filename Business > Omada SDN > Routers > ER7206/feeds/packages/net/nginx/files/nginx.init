@@ -1,0 +1,45 @@
+#!/bin/sh /etc/rc.common
+# Copyright (C) 2009-2012 OpenWrt.org
+
+# START=50
+NGINX_BIN=/usr/sbin/nginx
+
+start() {
+	mkdir -p /var/log/nginx
+	mkdir -p /var/lib/nginx
+	auth_port=`uci get wportal.global_set.auth_port`
+	if [ "$auth_port" == "" ];then
+		auth_port=8080		
+	fi
+	/bin/sh /lib/wportal/auth_port_modify.sh $auth_port
+	
+	cnt=`ps | grep "nginx" | grep -v grep | wc -l`
+	if [ $cnt -gt 0 ] ; then
+		vnete $NGINX_BIN -s stop
+	fi
+
+	meminfo=$(cat /proc/meminfo | grep "MemTotal" | awk '{print $2}')
+	if [ ${meminfo} -lt 131072 ]; then
+		worker=1
+	elif [ ${meminfo} -lt 262144 ]; then
+		worker=2
+	else
+		worker=4
+	fi
+	sed -i "s/worker_processes  [1-9];/worker_processes  ${worker};/g" /etc/nginx/nginx.conf
+
+	vnete $NGINX_BIN
+}
+
+stop() {
+	vnete $NGINX_BIN -s stop
+}
+
+reload() {
+	vnete $NGINX_BIN -s reload
+}
+
+shutdown() {
+	vnete $NGINX_BIN -s quit
+}
+

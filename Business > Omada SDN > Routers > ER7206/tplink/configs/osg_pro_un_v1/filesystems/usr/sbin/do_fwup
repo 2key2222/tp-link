@@ -1,0 +1,33 @@
+#!/bin/sh
+
+FIRMWARE_MTD=$1
+PTN_TABLE_OFFSET=$2
+FIRMWARE_BIN=$3
+UBI_OPTIONS=$4
+
+echo "[R] dkmgt_firmware_upgrade -U -p ${PTN_TABLE_OFFSET} -f ${FIRMWARE_MTD} -u ${FIRMWARE_BIN} ${UBI_OPTIONS}" 2>&1 1>/dev/console
+
+dkmgt_firmware_upgrade -U -p ${PTN_TABLE_OFFSET} -f ${FIRMWARE_MTD} -u ${FIRMWARE_BIN} ${UBI_OPTIONS} 2>&1 1>/dev/console
+EXEC_RC=$?
+
+if [ ${RC} -ne 0 ]; then
+	echo "[R] ##### FATAL ERROR ##### : Firmware upgrade failed, code=${EXEC_RC}." 2>&1 1>/dev/console
+	exit 1
+fi
+
+echo "[R] Sync files" 2>&1 1>/dev/console
+
+# must *sync* before reboot.
+sync
+
+echo "[R] UUUUUU: Firmware upgrade *SUCCESS*, will reboot after 5 seconds!" 2>&1 1>/dev/console
+
+sleep 5
+
+echo "[R] rebooting system now !" 2>&1 1>/dev/console
+
+
+reboot -f
+
+
+

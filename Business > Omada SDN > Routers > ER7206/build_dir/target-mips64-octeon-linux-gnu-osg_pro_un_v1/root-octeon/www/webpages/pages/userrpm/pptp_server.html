@@ -1,0 +1,227 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>PPTP_SERVER</title>
+<style type="text/css">
+</style>
+</head>
+
+<body>
+<div class="func-container">
+    <div id="pptp_server_lists">
+		<div id="pptp_server_lists_grid"> 
+		</div>
+	</div>
+
+    <div id = "own_editor">
+        <input id = "bindif" name = "bindif" >
+        <input class = "hidden" id = "authtype" name = "authtype" >
+        <input id = "mppeencryption" name = "mppeencryption" >
+        <input id = "enable" name = "enable" >
+    </div>
+
+	<div id="pptp_server_help">	</div>
+</div>
+
+<script type="text/javascript">
+try{
+    $
+}catch(e){
+    location.href = "/";
+};
+$(document).ready(function(e){
+	var URL_PPTP_SERVER_LISTS = $.su.url("/admin/pptp_server?form=server_enable");
+	//var URL_PPTP_SERVER_GLOBAL = $.su.url("/admin/pptp_server?form=server_global");
+	$("#pptp_server_lists").panel({
+		title: $.su.CHAR.PPTP_SERVER_SETTING.SERVER_LISTS_TITLE,
+		collapsible: false
+	});
+	
+    /* --the fields of the own_editor begin-- */
+    $('#bindif').combobox({
+        fieldLabel:$.su.CHAR.PPTP_SERVER_SETTING.BIND_IF,
+        allowBlank:false,
+        items:[
+            {value:"WAN1", name: "WAN1"},
+            {value:"LAN2", name: "LAN2"}
+        ]
+    });
+
+    $('#authtype').combobox({
+        fieldLabel:$.su.CHAR.PPTP_SERVER_SETTING.AUTH_TYPE,
+        allowBlank: false,
+        items:[
+            {value:"local", name: $.su.CHAR.PPTP_SERVER_SETTING.AUTH_TYPE_LOCAL, selected:true},
+            {value:"radius", name: $.su.CHAR.PPTP_SERVER_SETTING.AUTH_TYPE_REMOTE}
+        ]
+    });
+
+    $('#mppeencryption').combobox({
+        fieldLabel:$.su.CHAR.PPTP_SERVER_SETTING.MMPE_ENC,
+        allowBlank: false,
+        items:[
+            {value:"1", name: $.su.CHAR.PPTP_SERVER_SETTING.MMPE_ENC_YES},
+            {value:"0", name: $.su.CHAR.PPTP_SERVER_SETTING.MMPE_ENC_NO }
+        ]
+    });
+
+    $('#enable').checkbox({
+        fieldLabel:$.su.CHAR.PPTP_SERVER_SETTING.STATUS,
+        columns: 1,
+        items:[
+            {boxlabel: $.su.CHAR.PPTP_SERVER_SETTING.ENABLE, name:'enable', inputValue:'on', uncheckedValue: "off", checked:true}
+        ]
+    });
+	
+	var tunnelListsProxy = new $.su.Proxy({
+		url: URL_PPTP_SERVER_LISTS
+	});
+
+	var clientGrid = $("#pptp_server_lists_grid").grid({
+        maxRulesProperty: "server_list_max",
+		editor:
+		{
+			validator:function()
+			{
+				var editor  = $(clientGrid.grid("getEditor"));
+				var ruleName = editor.find(".combobox-value[name=bindif]").combobox("getValue")[0];
+				var store 	= clientGrid.grid("getStore");
+				var keyProperty = store.keyProperty;
+				var grid_array  = store.data;
+				var editingId = editor.editor("getEditingId"); 
+				
+				if($.isArray(grid_array) && grid_array.length > 0)
+				{
+					for(var k = 0; k < grid_array.length;k++)
+					{
+						var data = grid_array[k];
+						
+						if(data[keyProperty] == editingId)
+						{
+							continue;
+						}
+						else if(data["bindif"] == ruleName)
+						{
+							$($("div#pptp_server_lists_grid").grid("getEditor")).form('setError', $.su.CHAR.PPTP_SERVER_SETTING.NAME_TIP);//"服务接口不能重复！");
+							return false;
+						}
+					}
+				}
+				return true;
+			},
+            content:"#own_editor",
+			fields:
+			[
+				{name:"bindif"},
+				{name:"authtype"},
+				{name:"mppeencryption"},
+				{name:"enable"}
+			]
+		},
+		store:
+		{
+			proxy:tunnelListsProxy,
+			fields:
+			[
+				{name:"bindif"},
+				{name:"authtype"},
+				{name:"mppeencryption"},
+				{name:"enable"},
+				{name: "t_label"}
+			],
+			autoLoad:true
+		},
+        paging:[],
+		columns:
+		[
+			{
+				xtype: "checkcolumn"
+			},
+			{
+				xtype: "rownumberer"
+			},
+			{
+				text: $.su.CHAR.PPTP_SERVER_SETTING.BIND_IF,				
+				width: 100,
+				dataIndex: "bindif",
+				renderer: function(dd, jindex, data) {
+					return data.t_label ? data.t_label : dd;
+				}
+			},
+			{
+                text: $.su.CHAR.PPTP_SERVER_SETTING.AUTH_TYPE,
+                width: $.su.CHAR.SETTING.PPTP_SERVER_SETTING.AUTH_TYPE_WIDTH,
+                dataIndex: "authtype",
+                hidden: true,
+                renderer: function(v){
+                    if (v=="local"){
+                        return $.su.CHAR.PPTP_SERVER_SETTING.AUTH_TYPE_LOCAL;
+                    }else if(v == "radius"){
+                        return $.su.CHAR.PPTP_SERVER_SETTING.AUTH_TYPE_REMOTE;
+                    }else{
+                        return "--";
+                    }
+                }
+            },
+			{
+                text: $.su.CHAR.PPTP_SERVER_SETTING.MMPE_ENC,
+                width: 80,
+                dataIndex: "mppeencryption",
+                renderer: function(v){
+                    if (v=="1"){
+                        return $.su.CHAR.PPTP_SERVER_SETTING.MMPE_ENC_YES;
+                    }else if(v == "0"){
+                        return $.su.CHAR.PPTP_SERVER_SETTING.MMPE_ENC_NO;
+                    }else{
+                        return "--";
+                    }
+                }
+            },
+			{
+				text: $.su.CHAR.PPTP_SERVER_SETTING.STATUS,				
+				dataIndex: "enable",
+				xtype:"statuscolumn"
+			},
+			{
+                xtype: "settings"
+            }
+		],
+		operation:'prompt|add|delete'
+	}).on("ev_load", function(e, data, others){
+        //console.log(others);
+		if(others && others.server_list_max)
+        {
+            maxrules = others.server_list_max;
+            //console.log(maxrules);
+        }
+		var interfaceItem=[];
+		var interfaceProxy = new $.su.Proxy({
+				url: $.su.url('/admin/interface?form=status'),
+				async: false
+		});		
+		interfaceProxy.read({}, function(data){					
+			var i
+			for (i=0; i<data.normal.length; i++){
+				if (!$.su.func.isLan(data.normal[i].t_name))
+					interfaceItem.push({name:data.normal[i].t_label,value:data.normal[i].t_name});	
+			}
+            /*for (i=0; i<data.vpn.length; i++){
+                interfaceItem.push({name:data.vpn[i].t_label,value:data.vpn[i].t_name});                     
+            }*/
+			var editor = clientGrid.grid('getEditor');
+			var combobox = $(editor).find('.combobox-value[name=bindif]');
+			combobox.combobox('loadData',interfaceItem);
+		});						
+	});
+    var helpIpsecTunnel = new $.su.Help({
+        container: "div#pptp_server_help",
+        content: ["PPTP_SERVER_SET"]
+    });
+});	
+       
+
+</script>
+</body>
+
+</html>

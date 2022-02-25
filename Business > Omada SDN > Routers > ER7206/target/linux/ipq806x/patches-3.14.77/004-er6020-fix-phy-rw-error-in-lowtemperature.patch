@@ -1,0 +1,11 @@
+--- a/arch/arm/boot/dts/qcom-ipq8064-ap145.dtsi	2017-11-02 10:43:30.263556101 +0800
++++ b/arch/arm/boot/dts/qcom-ipq8064-ap145.dtsi	2017-11-02 10:43:48.712210105 +0800
+@@ -233,7 +233,7 @@
+ 				mux {
+ 					pins = "gpio0", "gpio1";
+ 					function = "gpio";
+-					drive-strength = <8>;
++					drive-strength = <2>;
+ 					bias-disable;
+ 				};
+ 			};

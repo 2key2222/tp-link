@@ -1,0 +1,30 @@
+
+config core 'main'
+    option lang 'auto'
+    option resourcebase '/luci-static/resources'
+    option mediaurlbase '/luci-static/killersteel'
+
+config extern 'flash_keep'
+    option openvpn '/etc/openvpn/'
+    option uci '/etc/config/'
+    option dropbear '/etc/dropbear/'
+    option firewall '/etc/firewall.user'
+    option passwd '/etc/passwd'
+    option opkg '/etc/opkg.conf'
+    option uploads '/lib/uci/upload/'
+
+config internal 'languages'
+    option en 'English'
+    option ch 'chinese'
+
+config internal 'sauth'
+    option sessionpath '/tmp/luci-sessions'
+    option maxclients '1'
+    option sessiontime '360'
+
+config internal 'ccache'
+    option enable '1'
+
+config internal 'themes'
+    option OpenWrt '/luci-static/openwrt.org'
+    option Killer '/luci-static/killersteel'

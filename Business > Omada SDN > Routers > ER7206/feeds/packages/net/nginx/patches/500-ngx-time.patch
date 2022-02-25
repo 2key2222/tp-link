@@ -1,0 +1,108 @@
+diff -Naur a/src/core/ngx_times.c b/src/core/ngx_times.c
+--- a/src/core/ngx_times.c	2015-12-06 02:59:31.301583418 -0500
++++ b/src/core/ngx_times.c	2015-12-06 03:08:44.982834333 -0500
+@@ -76,18 +76,22 @@
+     u_char          *p0, *p1, *p2, *p3;
+     ngx_tm_t         tm, gmt;
+     time_t           sec;
++    time_t           g_sec;
+     ngx_uint_t       msec;
+     ngx_time_t      *tp;
+     struct timeval   tv;
++    struct timespec tspt;
+ 
+     if (!ngx_trylock(&ngx_time_lock)) {
+         return;
+     }
+ 
+     ngx_gettimeofday(&tv);
++    ngx_clock_getime(&tspt);
+ 
+-    sec = tv.tv_sec;
+-    msec = tv.tv_usec / 1000;
++    g_sec = tv.tv_sec;
++    sec = tspt.tv_sec;
++    msec = tspt.tv_nsec / 1000000;
+ 
+     ngx_current_msec = (ngx_msec_t) sec * 1000 + msec;
+ 
+@@ -110,7 +114,7 @@
+     tp->sec = sec;
+     tp->msec = msec;
+ 
+-    ngx_gmtime(sec, &gmt);
++    ngx_gmtime(g_sec, &gmt);
+ 
+ 
+     p0 = &cached_http_time[slot][0];
+@@ -123,17 +127,17 @@
+ #if (NGX_HAVE_GETTIMEZONE)
+ 
+     tp->gmtoff = ngx_gettimezone();
+-    ngx_gmtime(sec + tp->gmtoff * 60, &tm);
++    ngx_gmtime(g_sec + tp->gmtoff * 60, &tm);
+ 
+ #elif (NGX_HAVE_GMTOFF)
+ 
+-    ngx_localtime(sec, &tm);
++    ngx_localtime(g_sec, &tm);
+     cached_gmtoff = (ngx_int_t) (tm.ngx_tm_gmtoff / 60);
+     tp->gmtoff = cached_gmtoff;
+ 
+ #else
+ 
+-    ngx_localtime(sec, &tm);
++    ngx_localtime(g_sec, &tm);
+     cached_gmtoff = ngx_timezone(tm.ngx_tm_isdst);
+     tp->gmtoff = cached_gmtoff;
+ 
+@@ -187,16 +191,20 @@
+     u_char          *p;
+     ngx_tm_t         tm;
+     time_t           sec;
++    time_t           g_sec;
+     ngx_time_t      *tp;
+     struct timeval   tv;
++    struct timespec tspt;
+ 
+     if (!ngx_trylock(&ngx_time_lock)) {
+         return;
+     }
+ 
+     ngx_gettimeofday(&tv);
++    ngx_clock_getime(&tspt);
+ 
+-    sec = tv.tv_sec;
++    sec = tspt.tv_sec;
++    g_sec = tv.tv_sec;
+ 
+     tp = &cached_time[slot];
+ 
+@@ -215,7 +223,7 @@
+ 
+     tp->sec = 0;
+ 
+-    ngx_gmtime(sec + cached_gmtoff * 60, &tm);
++    ngx_gmtime(g_sec + cached_gmtoff * 60, &tm);
+ 
+     p = &cached_err_log_time[slot][0];
+ 
+diff -Naur a/src/os/unix/ngx_time.h b/src/os/unix/ngx_time.h
+--- a/src/os/unix/ngx_time.h	2015-12-05 08:06:04.745583007 -0500
++++ b/src/os/unix/ngx_time.h	2015-12-06 03:02:31.838645033 -0500
+@@ -12,7 +12,6 @@
+ #include <ngx_config.h>
+ #include <ngx_core.h>
+ 
+-
+ typedef ngx_rbtree_key_t      ngx_msec_t;
+ typedef ngx_rbtree_key_int_t  ngx_msec_int_t;
+ 
+@@ -58,6 +57,7 @@
+ void ngx_libc_localtime(time_t s, struct tm *tm);
+ void ngx_libc_gmtime(time_t s, struct tm *tm);
+ 
++#define ngx_clock_getime(tp)  (void) clock_gettime(CLOCK_MONOTONIC, tp);
+ #define ngx_gettimeofday(tp)  (void) gettimeofday(tp, NULL);
+ #define ngx_msleep(ms)        (void) usleep(ms * 1000)
+ #define ngx_sleep(s)          (void) sleep(s)

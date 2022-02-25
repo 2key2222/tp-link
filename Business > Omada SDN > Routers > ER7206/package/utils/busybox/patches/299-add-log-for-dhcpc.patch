@@ -1,0 +1,27 @@
+--- a/networking/udhcp/dhcpc.c	2018-04-18 16:57:01.727205571 +0800
++++ b/networking/udhcp/dhcpc.c	2018-04-18 17:00:11.608204410 +0800
+@@ -42,6 +42,8 @@
+ #define DHCP_CLIENT_DISCOVER_TIMEOUT	12157
+ #define DHCP_CLIENT_REQUEST_TIMEOUT	12158
+ #define DHCP_CLIENT_IP_CONFLICT	12159
++#define DHCP_CLIENT_SUCC_INIT 12160
++#define DHCP_CLIENT_FAIL_INIT 12161
+ 
+ #define DHCP_CLIENT_LOGGER_REG(info_id,...)			\
+ 	logger_reg(LOGGER_MODULE_ID_DHCP_CLIENT,info_id,##__VA_ARGS__)
+@@ -1552,6 +1554,7 @@
+ 			NULL,
+ 			client_config.client_mac)
+ 	) {
++		DHCP_CLIENT_LOGGER_REG(DHCP_CLIENT_FAIL_INIT);
+ 		return 1;
+ 	}
+ 
+@@ -1608,6 +1611,7 @@
+ 	if (get_zone_by_dev(client_config.interface, zone_namex) != 0)
+ 		strcpy(zone_namex, "unknown");
+ 
++    DHCP_CLIENT_LOGGER_REG(DHCP_CLIENT_SUCC_INIT);
+ 	/* Main event loop. select() waits on signal pipe and possibly
+ 	 * on sockfd.
+ 	 * "continue" statements in code below jump to the top of the loop.

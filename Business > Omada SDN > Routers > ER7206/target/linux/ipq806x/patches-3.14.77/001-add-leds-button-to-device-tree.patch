@@ -1,0 +1,84 @@
+--- a/arch/arm/boot/dts/qcom-ipq8064-ap145.dtsi	2017-03-08 20:15:29.000000000 +0800
++++ b/arch/arm/boot/dts/qcom-ipq8064-ap145.dtsi	2017-05-23 15:08:31.052409135 +0800
+@@ -275,7 +275,7 @@
+ 
+ 			leds_pins: leds_pins {
+ 				mux {
+-					pins = "gpio23", "gpio26", "gpio33";
++					pins = "gpio24", "gpio55", "gpio56", "gpio57", "gpio58";
+ 					function = "gpio";
+ 					drive-strength = <2>;
+ 					bias-pull-down;
+@@ -405,19 +405,53 @@
+ 			button@1 {
+ 				label = "reset";
+ 				linux,code = <KEY_RESTART>;
+-				gpios = <&qcom_pinmux 24 GPIO_ACTIVE_LOW>;
+-				linux,input-type = <1>;
+-				debounce-interval = <60>;
+-			};
+-			button@2 {
+-				label = "wps";
+-				linux,code = <KEY_WPS_BUTTON>;
+-				gpios = <&qcom_pinmux 22 GPIO_ACTIVE_LOW>;
++				gpios = <&qcom_pinmux 46 GPIO_ACTIVE_LOW>;
+ 				linux,input-type = <1>;
+ 				debounce-interval = <60>;
+ 			};
+ 		};
+ 
++		gpio-leds {
++                        compatible = "gpio-leds";
++                        pinctrl-0 = <&leds_pins>;
++
++                        led1 {
++                                gpios = <&qcom_pinmux 40 GPIO_ACTIVE_LOW>;
++                                label = "SYS_LED";
++                                default-state = "off";
++                        };
++
++                        led2 {
++                                gpios = <&qcom_pinmux 57 GPIO_ACTIVE_HIGH>;
++                                label = "LAN_LED_0";
++                                default-state = "off";
++                        };
++
++			led3 {
++                                gpios = <&qcom_pinmux 24 GPIO_ACTIVE_HIGH>;
++                                label = "LAN_LED_1";
++                                default-state = "off";
++                        };
++
++			led4 {
++                                gpios = <&qcom_pinmux 55 GPIO_ACTIVE_HIGH>;
++                                label = "LAN_LED_2";
++                                default-state = "off";
++                        };
++
++			led5 {
++                                gpios = <&qcom_pinmux 56 GPIO_ACTIVE_HIGH>;
++                                label = "LAN_LED_3";
++                                default-state = "off";
++                        };
++
++			led6 {
++                                gpios = <&qcom_pinmux 58 GPIO_ACTIVE_HIGH>;
++                                label = "LAN_LED_4";
++                                default-state = "off";
++                        };
++                };
++
+ 		mdio0: mdio {
+                         compatible = "virtual,mdio-gpio";
+                         #address-cells = <1>;
+@@ -455,8 +489,8 @@
+ 
+ 		nss0: nss@40000000 {
+ 			compatible = "qcom,nss";
+-			pinctrl-0 = <&nss_spi_pins>;
+-			pinctrl-names = "default";
++			/*pinctrl-0 = <&nss_spi_pins>;
++			pinctrl-names = "default";*/
+ 			interrupts = <GIC_SPI 213 IRQ_TYPE_LEVEL_HIGH>,
+ 				     <GIC_SPI 232 IRQ_TYPE_LEVEL_HIGH>;
+ 			reg = <0x36000000 0x1000 0x39000000 0x10000>;

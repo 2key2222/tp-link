@@ -1,0 +1,22 @@
+--- a/arch/mips/ralink/pci.c	2018-09-03 10:13:13.000000000 +0800
++++ b/arch/mips/ralink/pci.c	2020-06-18 23:36:50.599718465 +0800
+@@ -88,8 +88,17 @@
+ #define GPIO_PCIE_PORT2		GPIO_PCIE_PORT0
+ #else
+ #define	UARTL3_SHARE_PIN_SW	 3
+-#define GPIO_PCIE_PORT1		 8
+-#define GPIO_PCIE_PORT2		 7
++	#ifdef CONFIG_MTK_MACH_TL_R605_V1
++	/* 
++	R605机型使用GPIO8作为reset按钮GPIO，使用GPIO7作为SYS灯LED，
++	这里由于PCIE在R605上未被使用，因此这两个宏定义为GPIO_PCIE_PORT0(19)
++	*/
++	#define GPIO_PCIE_PORT1		 GPIO_PCIE_PORT0
++	#define GPIO_PCIE_PORT2		 GPIO_PCIE_PORT0
++	#else
++	#define GPIO_PCIE_PORT1		 8
++	#define GPIO_PCIE_PORT2		 7
++	#endif
+ #endif
+ #define RALINK_GPIO_CTRL0			*(unsigned int *)(RALINK_PIO_BASE + 0x00)
+ #define RALINK_GPIO_DATA0			*(unsigned int *)(RALINK_PIO_BASE + 0x20)

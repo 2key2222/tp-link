@@ -1,0 +1,36 @@
+Source-Makefile: package/qca/shortcut_fe/Makefile
+Package: sfe
+Submenu: Apps
+Version: 1.0-1
+Depends: +libc +USE_EGLIBC:librt +USE_EGLIBC:libpthread 
+Menu-Depends: 
+Provides: 
+Section: TP-LINK
+Category: @@@@@ TPLINK Proprietary
+Title: sfe
+Maintainer: TP-LINK
+Source: 
+Type: ipkg
+Description: sfe
+TP-LINK
+@@
+
+Package: kmod-shortcut_fe
+Menu: 1
+Submenu: kernel modules
+Version: <LINUX_VERSION>
+Depends: +kmod-ppp +kmod-ipv6
+Menu-Depends: 
+Provides: 
+Section: kernel
+Category: @@@@@ TPLINK Proprietary
+Title: Kernel driver for SFE
+Maintainer: Lin Zhifeng
+Source: 
+Type: ipkg
+Kernel-Config: CONFIG_NF_CONNTRACK_EVENTS=y CONFIG_SHORTCUT_FE_SUPPORT=y CONFIG_NF_FASTPATH_NAT_HOOK=y
+Description: 	Shortcut-FE is an in-Linux-Kernel IP packet forwarding engine.
+Lin Zhifeng
+@@
+
+

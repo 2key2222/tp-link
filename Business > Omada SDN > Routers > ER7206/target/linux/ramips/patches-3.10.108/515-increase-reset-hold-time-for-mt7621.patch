@@ -1,0 +1,30 @@
+diff -uprN a/drivers/char/ralink_gpio.c b/drivers/char/ralink_gpio.c
+--- a/drivers/char/ralink_gpio.c	2018-09-03 10:13:40.000000000 +0800
++++ b/drivers/char/ralink_gpio.c	2019-08-04 13:06:08.184761499 +0800
+@@ -2756,7 +2756,7 @@ irqreturn_t ralink_gpio_irq_handler(int 
+ 			}
+ 			else {
+ 				record[i].rising = now;
+-				if (time_before(now, record[i].falling + 200L)) {
++				if (time_before(now, record[i].falling + HZ * 5)) {
+ 					//one click
+ 					printk("one click\n");
+ 					schedule_work(&gpio_event_click);
+@@ -2794,7 +2794,7 @@ irqreturn_t ralink_gpio_irq_handler(int 
+ 			}
+ 			else {
+ 				record[i].rising = now;
+-				if (time_before(now, record[i].falling + 200L)) {
++				if (time_before(now, record[i].falling + HZ * 5)) {
+ 					schedule_work(&gpio_event_click);
+ 				}
+ 				else {
+@@ -2817,7 +2817,7 @@ irqreturn_t ralink_gpio_irq_handler(int 
+ 			}
+ 			else {
+ 				record[i].rising = now;
+-				if (time_before(now, record[i].falling + 200L)) {
++				if (time_before(now, record[i].falling + HZ * 5)) {
+ 					schedule_work(&gpio_event_click);
+ 				}
+ 				else {

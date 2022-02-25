@@ -1,0 +1,18 @@
+--- a/fs/file.c	2020-05-19 19:19:17.529923500 +0800
++++ b/fs/file.c	2020-05-20 07:54:14.818409805 +0800
+@@ -601,15 +601,6 @@
+ 	rcu_assign_pointer(fdt->fd[fd], NULL);
+ 	__clear_close_on_exec(fd, fdt);
+ 	__put_unused_fd(files, fd);
+-
+-	/* USB stroage device may be unpluged after write complete.
+-         * So, we have to flush cache to disk after sys_close()
+-         * by Steven
+-         */
+-        if (file->f_mode == (FMODE_WRITE | FMODE_LSEEK | FMODE_PREAD)) {
+-            sys_sync();
+-        }
+-
+ 	spin_unlock(&files->file_lock);
+ 	return filp_close(file, files);
+ 

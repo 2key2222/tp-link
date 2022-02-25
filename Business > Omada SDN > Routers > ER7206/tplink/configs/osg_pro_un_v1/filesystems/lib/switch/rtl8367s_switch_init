@@ -1,0 +1,172 @@
+#!/bin/sh
+MAX_PORT_NUM=5
+
+# rtl8367s switch init
+rtl8367s_switch_init()
+{
+	# init mirror config
+	config_get state "mirror" "state"
+	config_get mode "mirror" "mode"
+	config_get mirrorport "mirror" "mirrorport"
+	config_get mirroredports "mirror" "mirroredports"	
+
+	rtl8367s_switch_reload "vlan"
+	rtl8367s_switch_port_mirror_init $state $mode $mirrorport "$mirroredports"
+
+	for i in `seq 1 $MAX_PORT_NUM`; do
+		# port para init
+		config_get port_state "port"$i "port_state"
+		config_get flowcontrol "port"$i "flowcontrol"
+		config_get ng_mode "port"$i "negotiation_mode"	
+
+		rtl8367s_switch_port_para_init $i $port_state $flowcontrol $ng_mode
+
+		# port rateControl init
+		config_get ingress_state "port"$i "ingress_state"
+		config_get ingress_mode "port"$i "ingress_mode"
+		config_get ingress_rate "port"$i "ingress_rate"
+		config_get egress_state "port"$i "egress_state"
+		config_get egress_rate "port"$i "egress_rate"
+
+		rtl8367s_switch_port_rateControl_init $i $ingress_state $ingress_mode $ingress_rate $egress_state $egress_rate
+	done
+}
+
+# restart switch
+# restart port 
+rtl8367s_switch_restart()
+{
+	for i in `seq 1 $MAX_PORT_NUM`; do
+		# port para init
+		config_get port_state "port"$i "port_state"
+		config_get flowcontrol "port"$i "flowcontrol"
+		config_get ng_mode "port"$i "negotiation_mode"	
+
+		rtl8367s_switch_port_para_init $i $port_state $flowcontrol $ng_mode
+	done
+}
+
+rtl8367s_switch_reload_mirror()
+{
+	config_get state "mirror" "state"
+	config_get mode "mirror" "mode"
+	config_get mirrorport "mirror" "mirrorport"
+	config_get mirroredports "mirror" "mirroredports"	
+
+	rtl8367s_switch_port_mirror_init $state $mode $mirrorport "$mirroredports"
+}
+
+# reload para config
+# $1: ports id
+rtl8367s_switch_reload_para()
+{
+	for i in $1;do
+		config_get port_state "port"$i "port_state"
+		config_get flowcontrol "port"$i "flowcontrol"
+		config_get ng_mode "port"$i "negotiation_mode"	
+
+		rtl8367s_switch_port_para_init $i $port_state $flowcontrol $ng_mode
+	done
+
+}
+
+# reload rateControl config
+# $1: ports id
+rtl8367s_switch_reload_rateControl()
+{
+	for i in $1; do		
+		config_get ingress_state "port"$i "ingress_state"
+		config_get ingress_mode "port"$i "ingress_mode"
+		config_get ingress_rate "port"$i "ingress_rate"
+		config_get egress_state "port"$i "egress_state"
+		config_get egress_rate "port"$i "egress_rate"
+
+		rtl8367s_switch_port_rateControl_init $i $ingress_state $ingress_mode $ingress_rate $egress_state $egress_rate
+	done
+}
+
+rtl8367s_switch_reload_pvlan()
+{
+	set_port_vlan
+}
+
+rtl8367s_switch_reload_vlan()
+{
+	local vconfig="/etc/config/vlan"
+	local backdir="/tmp/.switch"
+	local backcfg="backup"
+	local backtmp="vlan"
+
+	every_vlan(){
+		config_get vid "$1" vlan
+		eval "$2=\"\$$2 $vid\""
+	}
+
+	item_in_list()
+	{
+		echo "$2" | grep -q -e "^$1 \| $1\$\|^$1$\| $1 "
+	}
+
+	UCI_CONFIG_DIR=${backdir}
+	[ ! -d ${backdir} ] && mkdir -p ${backdir}
+	cd ${UCI_CONFIG_DIR}
+
+	cp ${vconfig} ${backtmp}
+
+	local backvlans="1"
+	local thisvlans=""
+
+	config_load ${backtmp}
+	config_foreach every_vlan switch_vlan thisvlans
+
+	[ -e ${backcfg} ] && {
+		config_load ${backcfg}
+		config_foreach every_vlan switch_vlan backvlans
+	}
+
+	for vid in $backvlans ;
+	do
+		if ! item_in_list "$vid" "${thisvlans}" ; then
+			local sec
+			sec=$(uci -c ${UCI_CONFIG_DIR} add vlan switch_vlan)
+			uci -c ${UCI_CONFIG_DIR} set ${backtmp}.${sec}.vlan="$vid"
+			uci -c ${UCI_CONFIG_DIR} set ${backtmp}.${sec}.device="switch0"
+			# reclaim this vlan (cpu port 6)
+			uci -c ${UCI_CONFIG_DIR} set ${backtmp}.${sec}.ports="6"
+		fi
+	done
+
+	uci -c ${UCI_CONFIG_DIR} commit ${backtmp}
+	swconfig dev switch0 load "${backdir}/${backtmp}"
+	cp ${vconfig} ${backcfg}
+	unset UCI_CONFIG_DIR
+	cd -
+
+	# restore the config file.
+	config_load switch
+}
+#rtl8367s switch reload
+# $1: module type
+# $2: ports id
+rtl8367s_switch_reload()
+{
+	case $1 in
+		"mirror" )
+			rtl8367s_switch_reload_mirror
+			;;
+		"pvlan" )
+			rtl8367s_switch_reload_pvlan
+			;;
+		"para" )
+			rtl8367s_switch_reload_para "$2"
+			;;
+		"rateControl")
+			rtl8367s_switch_reload_rateControl "$2"
+			;;
+		"vlan")
+			rtl8367s_switch_reload_vlan
+			;;
+		*)
+			;;
+	esac
+}

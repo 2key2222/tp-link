@@ -1,0 +1,216 @@
+#!/bin/sh
+
+
+g_portVlanReg="$S17_P1LOOKUP_CTRL_REG $S17_P2LOOKUP_CTRL_REG $S17_P3LOOKUP_CTRL_REG $S17_P4LOOKUP_CTRL_REG $S17_P5LOOKUP_CTRL_REG"
+
+
+
+
+# get vid's ports
+# $1: portid
+get_vid_ports()
+{
+	local portid=$1
+	local ports=""
+	
+	config_get vid "port"$portid "pvlan_id"
+
+	for i in `seq 1 $MAX_PORT_NUM`; do		
+		config_get cfg_vid "port"$i "pvlan_id"
+		# notice: if port doesn't belong to any port vlan, it's vid is 0
+		if [ $cfg_vid -lt 0 ] || [ $cfg_vid -gt $PORT_VLAN_MAX ]; then
+			echo "[pvlan] the vid in port$i's config is invalid"
+		else
+			if [ $vid = $cfg_vid ]; then
+			ports=$ports" "$i
+		fi	
+			
+		fi	
+	done
+	echo $ports
+}
+
+
+
+# set port vlan
+# $1: vid
+# $2: portsid
+set_port_vlan()
+{
+	local reg=0
+	local val=0
+	local vid=$1
+	local portsid=$2
+	local ports=""
+
+	# clear other port's vlan members
+	for i in $portsid; do			
+		ports=`get_vid_ports $i`
+		if [ "$ports" != "" ]; then
+			for k in $ports; do
+				if [ $k != $i ]; then
+					reg=`echo $g_portVlanReg | cut -d " " -f $k`
+					val=`swconfig_reg_read $reg`
+					val=`set_bit_value $val $i 0`
+					swconfig_reg_write $reg $val
+				fi
+			done
+		fi
+	done
+
+	# set vid's members
+	for i in $portsid; do
+		reg=`echo $g_portVlanReg | cut -d " " -f $i`
+
+		val=`swconfig_reg_read $reg`
+		# set FORCE_PORT_VLAN_EN
+		val=`set_bit_value $val 10 1`
+		# clear PORT_VID_MEM
+		val=$(($val&0xffffff80))
+
+		# CPU PORT is member of all(port0 & port6)
+		val=`set_bit_value $val 0 1`
+		val=`set_bit_value $val 6 1`
+
+		for j in $portsid; do			
+			# set vlan members	
+			val=`set_bit_value $val $j 1`			
+		done
+	
+		swconfig_reg_write $reg $val
+	done
+}
+
+pvlan_usage()
+{
+	echo ""
+	echo "Usage: switch -t pvlan -o <get|set> [-v vid] [-p portsid]"
+	echo ""
+	echo "Example:"
+	echo "       switch -t pvlan -o get"
+	echo "       switch -t pvlan -o get -v 2"
+	echo "       switch -t pvlan -o set -v 2 -p \"3 4 5\" "
+	echo ""
+}
+
+# print portvlan info
+# $1: vid
+print_portVlan_info()
+{
+	local ports=""
+	local vid=$1
+
+	if [ "$vid" != "" ]; then
+		if [ `expr match $vid "[0-9]"` = 0 ] || [ $vid -lt 1 ] || [ $vid -gt $PORT_VLAN_MAX ]; then
+			echo "[pvlan] vid is invalid. (1~13)"
+			pvlan_usage
+			exit 0
+		fi
+
+		for i in `seq 1 $MAX_PORT_NUM`; do			
+			config_get cfg_vid "port"$i "pvlan_id"
+			if [ $vid = $cfg_vid ] ; then
+				ports=$ports" "$i
+			fi	
+		done
+		if [ "$ports" != "" ]; then
+			echo "Port VLAN: $vid"
+			echo "    ports:$ports"	
+		fi
+	else
+		for i in `seq 1 $PORT_VLAN_MAX`; do
+			for j in `seq 1 $MAX_PORT_NUM`; do				
+				config_get cfg_vid "port"$j "pvlan_id"
+				if [ $cfg_vid = $i ] ; then
+					ports=$ports" "$j
+				fi	
+			done
+			if [ "$ports" != "" ]; then
+				echo "Port VLAN: $i"
+				echo "    ports:$ports"
+				ports=""
+			fi
+		done
+	fi
+}
+
+# check vid and ports
+# $1: vid
+# $2: ports
+pvlan_arg_check()
+{
+	local vid=$1
+	local portsid=$2
+
+	if [ -z $vid ] || [ `expr match $vid "[0-9]"` = 0 ] || [ $vid -lt 1 ] || [ $vid -gt $PORT_VLAN_MAX ]; then
+		echo "[pvlan] vid is invalid. (1~13)"
+		pvlan_usage
+		exit 0
+	fi
+
+	if [ -z "$portsid" ]; then
+		echo "[pvlan] the ports is null. (1~5)"
+		pvlan_usage
+		exit 0
+	fi
+
+	for i in $portsid; do
+		if [ `expr match $i "[0-9]"` = 0 ] || [ $i -lt 1 ] || [ $i -gt 5 ] ;then
+		echo "[pvlan] the port is invalid. (1~5)"
+		pvlan_usage
+		exit 0
+		fi
+	done
+}
+
+# init ar8327 switch port vlan
+# $1: ports
+ar8327_switch_port_pvlan_init()
+{	
+	local reg=0
+	local val=0
+	local ports=$1
+	
+	# set vid's members
+	for i in $ports; do
+		reg=`echo $g_portVlanReg | cut -d " " -f $i`
+
+		val=`swconfig_reg_read $reg`
+		# set FORCE_PORT_VLAN_EN
+		val=`set_bit_value $val 10 1`
+		# clear PORT_VID_MEM
+		val=$(($val & 0xffffff80))
+
+		# CPU PORT is member of all(port0 & port6)
+		val=`set_bit_value $val 0 1`
+		val=`set_bit_value $val 6 1`
+
+		for j in $ports; do			
+			# set vlan members	
+			val=`set_bit_value $val $j 1`			
+		done
+	
+		swconfig_reg_write $reg $val
+	done
+}
+
+# ar8327 switch port vlan
+# $1: op (get|set)
+# $2: vid (1.2.3...)
+# $3: portid (1.2.3.4.5)
+ar8327_switch_port_pvlan()
+{
+	local op=$1
+	local vid=$2
+	local portsid=$3
+
+	if [ "$op" = "get" ]; then	
+		print_portVlan_info $2
+	elif [ "$op" = "set" ]; then	
+		pvlan_arg_check $vid "$portsid"
+		set_port_vlan $vid "$portsid"	
+	else
+		echo "[pvlan] error op. (set | get)"
+		pvlan_usage
+	fi
+}

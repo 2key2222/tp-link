@@ -1,0 +1,19 @@
+{
+	"id" : 1,
+	"result" : [{
+			"state" : "on",
+			"slave_iface" : "wan1_eth",
+			"master_iface" : ["wan2_eth"],
+			"timeobj" : "Any",
+			"mode" : "fault_one"
+		},
+		{
+			"state" : "on",
+			"slave_iface" : "wan2_eth",
+			"master_iface" : ["wan1_eth"],
+			"timeobj" : "time_test",
+			"mode" : "timer"
+		}
+	],
+	"error_code" : "0"
+}

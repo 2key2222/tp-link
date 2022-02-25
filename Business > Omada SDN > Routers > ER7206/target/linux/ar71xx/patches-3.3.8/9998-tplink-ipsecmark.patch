@@ -1,0 +1,43 @@
+diff -Nuar a/include/linux/skbuff.h b/include/linux/skbuff.h
+--- a/include/linux/skbuff.h	2017-04-26 20:44:08.000000000 +0800
++++ b/include/linux/skbuff.h	2017-04-28 10:02:28.032239839 +0800
+@@ -468,6 +468,9 @@
+ 	__u8			wifi_acked:1;
+ 	__u8			fast_forwarded:1;
+ 	/* 9/11 bit hole (depending on ndisc_nodetype presence) */
++#ifdef	CONFIG_NETWORK_IPSECMARK
++	__u8			ipsecmark:1;
++#endif 
+ 	kmemcheck_bitfield_end(flags2);
+ 
+ #if defined(CONFIG_IMQ) || defined(CONFIG_IMQ_MODULE)
+diff -Nuar a/net/core/skbuff.c b/net/core/skbuff.c
+--- a/net/core/skbuff.c	2017-04-26 20:44:08.000000000 +0800
++++ b/net/core/skbuff.c	2017-04-28 10:00:49.624239485 +0800
+@@ -921,6 +921,11 @@
+ 	new->rxhash		= old->rxhash;
+ 	new->ooo_okay		= old->ooo_okay;
+ 	new->l4_rxhash		= old->l4_rxhash;
++
++#ifdef CONFIG_NETWORK_IPSECMARK
++	new->ipsecmark		= old->ipsecmark;
++#endif
++
+ #ifdef CONFIG_XFRM
+ 	new->sp			= secpath_get(old->sp);
+ #endif
+diff -Nuar a/net/Kconfig b/net/Kconfig
+--- a/net/Kconfig	2017-04-26 20:44:03.000000000 +0800
++++ b/net/Kconfig	2017-04-28 09:52:25.844237571 +0800
+@@ -92,6 +92,11 @@
+ 	  to nfmark, but designated for security purposes.
+ 	  If you are unsure how to answer this question, answer N.
+ 
++config NETWORK_IPSECMARK
++	bool "Ipsec Marking"
++	help
++	  If you are unsure how to answer this question, answer N.
++
+ config NETWORK_IPSTACK_VLAN
+ 	bool "Record & Filter packets based on VLAN tag"
+ 	help

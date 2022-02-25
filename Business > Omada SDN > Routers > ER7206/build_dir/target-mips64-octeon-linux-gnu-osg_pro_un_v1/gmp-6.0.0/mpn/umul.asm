@@ -1,0 +1,1 @@
+../mpn/mips64/umul.asm

@@ -1,0 +1,356 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+		<title>Usermngr Backup</title>
+		<style type="text/css">
+		</style>
+	</head>
+	<body>
+		
+		<div class="func-container"> 
+		     <div id="backup_cnt">
+		        <form id="backup-setting" enctype="multipart/form-data">
+		            <button type="button" id="backup" name="backup"></button>
+		        </form>
+		     </div>
+		     
+
+		    <div id="loadcfg_cnt">
+		        <div id="loadcfg-setting">
+		            <input id="file" name="archive" type="file" />
+		            <button type="button" id="loadcfg" name="loadcfg"></button>
+		        </div>
+		    </div>
+		    
+		    <div id="loadcfg_alert_cnt">
+		        <h4 class="title" id="loadcfg_confirm_cnt">
+		            <span class="icon"></span>
+		            <span class="text" id="loadcfg_confirm_content"></span>
+		        </h4>
+
+		        <div id="loadcfg_pro_cnt" class="reboot-loading-msg hidden">
+		            <p id="loadcfg_note"  class="reboot-progressbar-text"></p>
+		            <input id="loadcfg_pro_bar" type="text" />
+		        </div>
+		    </div> 
+
+		    <div id="loadcfg_failed_cnt">
+		        <h4 class="title">
+		            <span class="icon" ></span>
+		            <span class="text" id="error_str"></span>
+		        </h4>
+		    </div> 
+		    
+            <div id="loadcfg_suc_cnt">
+                <h4 class="title">
+                    <span class="icon" ></span>
+                    <span id="import-su" class="text" ></span>
+                </h4>
+            </div>
+
+		    <div id="help_backup"></div>
+		</div>
+
+		<script type="text/javascript">
+		//<![CDATA[
+try{
+$
+}catch(e){
+location.href = "/";
+};
+
+
+
+$(document).ready(function(e){
+    var loadcfg_total_time = 4*60*1000;
+    // var loadcfg_step1_time = 3*1000;
+    // var loadcfg_mid_val = 0.2;
+    var loadcfg_query_interval = false;
+    // var loadcfg_step2_query_flag = false;
+    // var loadcfg_count = 0;
+    var loadcfg_pro_id = false;
+
+    var BACKUP_URL = "./data/system.backup.json";
+
+    var BACKUP_URL_NEW = $.su.url("/admin/usermngr?form=config"); 
+    $("div.func-container").page({
+        title: $.su.CHAR.BACKUP.TITLE,
+        help: ""    //可能是个调用的id 也可能是个url
+    });
+
+    $("#backup_cnt").panel({
+        title: $.su.CHAR.BACKUP.BACKUP,
+        collapsible: false
+    });
+
+    $("#loadcfg_cnt").panel({
+        title: $.su.CHAR.BACKUP.RESTORE,
+        collapsible: false
+    });
+    
+    $("#file").file({
+        fieldLabel: $.su.CHAR.BACKUP.FILE,
+        allowBlank:false,
+        extension: "csv"
+    });
+
+    $("#backup-setting").form({
+        proxy:{url: BACKUP_URL_NEW},
+        formEnctype: "multipart/form-data",
+        traditional: true,
+        hiddenFrame: true,
+        autoLoad: false
+    });
+
+    $("#loadcfg-setting").form({
+        proxy:{url: BACKUP_URL_NEW},
+        formEnctype: "multipart/form-data",
+        traditional: true,
+        hiddenFrame: true,
+        fields: [
+            {"name": "archive"}
+        ],
+        autoLoad: true
+    });
+
+    var loadcfg_proxy = new $.su.Proxy({
+        url: BACKUP_URL_NEW
+    });
+    
+    $("span#import-su").html($.su.CHAR.BACKUP.USERMNGR_RESTORE_SUCCESS);
+
+    $("#backup").button({
+        text: $.su.CHAR.BACKUP.BACKUPBTN,
+        cls: "submit",
+        handler: function(){
+            $("#backup-setting").form('submit', {operation:'backup'});
+        }
+    });
+
+    $("#loadcfg").button({
+        text: $.su.CHAR.BACKUP.RESTOREBTN,
+        handler: function(){
+            if($("#loadcfg-setting").form('validate'))
+            {
+                $("#loadcfg_alert_cnt").msg('showButtons');
+                $('#loadcfg_confirm_cnt').show();
+                $("#loadcfg_pro_cnt").hide();
+                $("#loadcfg_alert_cnt").msg("show");
+            }
+            else
+            {
+                return false;
+            }
+
+        },
+        cls: "submit"
+    });
+/*
+    function showAlertMag()
+    {
+        $("#loadcfg_failed_cnt").msg("show", function(){
+        });
+    }
+    if(loadcfg_pro_id){
+        clearTimeout(loadcfg_pro_id);
+        loadcfg_pro_id = false;
+    }
+    function hideProMsg()
+    {
+        clearTimeout(loadcfg_query_interval);
+        loadcfg_pro_bar.progressbar("stop");
+        loadcfg_pro_bar.progressbar("reset");
+        loadcfg_query_interval = false;
+
+        $("#loadcfg_alert_cnt").hide();
+        $("#loadcfg_alert_cnt").msg("close", function(){
+            $("#loadcfg_alert_cnt").msg('showButtons');
+            $('#loadcfg_confirm_cnt').show();
+            $("#loadcfg_pro_cnt").hide();
+        });
+    }
+
+    
+
+    function loadcfg_getResult()
+    {
+        loadcfg_proxy.read({'method':'loadcfg'}, function(data){
+        }, function(errcode){
+            // console.dir(arguments);
+            
+            // console.log(errcode);
+            if(errcode == "err_form")
+            {
+                $("#error_str").html($.su.CHAR.ERROR["00000001"]);
+                hideProMsg();
+                showAlertMag();
+            }
+            else if(errcode == "err_check")
+            {
+                
+                $("#error_str").html($.su.CHAR.ERROR["00000002"]);
+                hideProMsg();
+                showAlertMag();
+            }
+            else if(errcode == "err_sizex")
+            {
+                $("#error_str").html($.su.CHAR.ERROR["00000003"]);
+                hideProMsg();
+                showAlertMag();
+            }
+            else if(errcode == "err_flash")
+            {
+                $("#error_str").html($.su.CHAR.ERROR["00000004"]);
+                hideProMsg();
+                showAlertMag();
+            }
+            else if(errcode == "err_reboot")
+            {
+                $("#error_str").html($.su.CHAR.ERROR["00000005"]);
+                hideProMsg();
+                showAlertMag();
+            }
+            else if(errcode == "err_other")
+            {
+                $("#error_str").html($.su.CHAR.ERROR["00000006"]);
+                hideProMsg();
+                showAlertMag();
+            }
+            else if(errcode == "err_failed")
+            {
+                $("#error_str").html($.su.CHAR.ERROR["00000136"]);
+                hideProMsg();
+                showAlertMag();
+            }
+            else
+            {
+                hideProMsg();
+            }       
+        });
+    }
+
+    function loadcfg_write()
+    {
+
+        loadcfg_pro_bar.progressbar("animate", 0, 1, loadcfg_total_time, function(){
+            setTimeout(function() {
+                hideProMsg();
+               // location.href = "/";
+                loadcfg_pro_bar.progressbar("reset");
+                $("#loadcfg_alert_cnt").msg("close");
+                loadcfg_getResult();
+            }, 2000);
+            
+
+        });
+
+        $("#loadcfg-setting").form('submit',{operation:"loadcfg"}, function(){
+            loadcfg_pro_bar.progressbar("stop");
+            loadcfg_pro_bar.progressbar("setValue", 1, "", true);
+            setTimeout(function() {
+                loadcfg_pro_bar.progressbar("reset");
+                $("#loadcfg_alert_cnt").msg("close");
+                hideProMsg();
+               // location.href = "/";
+                loadcfg_getResult();
+                
+            }, 2000);
+            
+
+        },function(){
+            hideProMsg();
+            loadcfg_pro_bar.progressbar("reset");
+            $("#loadcfg_alert_cnt").msg("close");
+            loadcfg_getResult();
+        },function(){
+            hideProMsg();
+            showAlertMag();
+            loadcfg_pro_bar.progressbar("reset");
+            $("#loadcfg_alert_cnt").msg("close");
+            loadcfg_getResult();
+        });
+    }
+*/
+
+    function loadcfg_write()
+    {
+        function hideAlertMsg()
+        {
+            loadcfg_pro_bar.waitingbar("stop");
+            loadcfg_pro_bar.waitingbar("reset");
+            $("#loadcfg_alert_cnt").msg("close");
+        }
+        loadcfg_pro_bar.waitingbar("show");
+        loadcfg_pro_bar.waitingbar("run");
+        $("#loadcfg-setting").form('submit',{operation:"loadcfg"}, function(){
+            hideAlertMsg();
+            $("#loadcfg_suc_cnt").msg("show");
+            $("#file").file("reset");
+        },function(error_code){ 
+            hideAlertMsg();
+            $("#file").file("reset");
+        },function(fail){
+            hideAlertMsg();
+            $("#file").file("reset");
+        });
+        
+    }
+
+    $("#loadcfg_failed_cnt").msg({
+        cls: 'warning reboot-confirm-size',
+        type: "alert"
+    });
+
+    $("#loadcfg_suc_cnt").msg({
+        cls: 'warning reboot-confirm-size',
+        type: "alert"
+    });
+
+    $("#loadcfg_alert_cnt").msg({
+        okHandler:function(){
+            $("#loadcfg_alert_cnt").msg('hideButtons');
+            $('#loadcfg_confirm_cnt').hide();
+            $("#loadcfg_pro_cnt").show();
+            loadcfg_write();
+            return false;
+        },
+        cancelHandler:function(){
+            return true;
+        },
+        cls: 'warning reboot-confirm-size',
+        closeBtn: false,
+        type: "confirm"
+    });
+
+
+    var loadcfg_pro_bar  = $('input#loadcfg_pro_bar').waitingbar({
+		fieldLabel:  null,
+		labelCls:"xxl"
+	});
+
+    $("#loadcfg_note").html($.su.CHAR.BACKUP.USERMNGR_RESTORE_WARN);// "正在恢复备份");
+
+    $.su.app.runningModule.addUnloadHandler(function(){
+        if(loadcfg_query_interval)
+        {
+            clearTimeout(loadcfg_query_interval);
+            loadcfg_query_interval = false;
+        }
+
+        loadcfg_pro_bar.waitingbar("stop");
+        loadcfg_pro_bar.waitingbar("reset");
+    });
+
+
+    $("#loadcfg_confirm_content").html($.su.CHAR.BACKUP.RESTORE_CONFIRM_CONTENT);
+
+    var helpBackup = new $.su.Help({
+        container: "div#help_backup",
+        content: ["USERMNGR_USER_BK", "USERMNGR_USER_RT"]
+    });
+});
+
+		</script>
+	</body>
+</html>

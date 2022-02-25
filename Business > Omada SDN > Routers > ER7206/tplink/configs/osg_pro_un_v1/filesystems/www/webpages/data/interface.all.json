@@ -1,0 +1,33 @@
+{
+	"comments": "----实际使用中，请删除所有comments字段----",	
+	"comments": "说明：Security Access Control页面中block获取数据",
+	
+	"timeout": false,
+	"error_code":"0",
+	"result": [
+			{"success": "true","key": "key-0","auto" : "1",
+				"mtu" : "1500",
+                "t_type": "physical",
+                "t_isbridged": "0",
+				"netmask" : "255.255.255.0",
+				"t_name" : "wan1_eth",
+				"proto" : "dhcp",
+				"macaddr" : "14-cc-20-ec-07-d7",
+				"connectable" : "1",
+				"wan_type" : "pppoe",
+				"ipaddr" : "192.168.37.169",
+				"keepup" : "1",
+				"ifname" : "eth0.10"
+                },
+			{"t_type": "ethernet", "t_name": "lan1", "t_bindif": "wan1_eth", "ipaddr": "192.168.2.3", "linkStatus": "linked", "proto": "dhcp"},
+			{"t_type": "pppoe", "t_name": "lan2", "t_bindif": "lan4", "ipaddr": "192.168.2.3", "linkStatus": "linked", "proto": "dhcp", "t_linktype":"manual"},
+			{"t_type": "ethernet", "t_name": "lan3", "t_bindif": "wan1_eth", "ipaddr": "192.168.2.3", "linkStatus": "linked", "proto": "static"},
+			{"t_type": "pppoe", "t_name": "lan6", "t_bindif": "wan1_eth", "ipaddr": "192.168.2.3", "linkStatus": "linked", "proto": "dhcp", "t_linktype":"manual"},
+			{"t_type": "ethernet", "t_name": "lan4", "t_bindif": "wan1_eth", "ipaddr": "192.168.2.3", "linkStatus": "linked", "proto": "dhcp"},
+			{"t_type": "pppoe", "t_name": "lan5", "t_bindif": "wan1_eth", "ipaddr": "192.168.2.3", "linkStatus": "linked", "proto": "dhcp"}
+	],
+    "others": {
+        "max_rules": "55"
+    }
+			
+}

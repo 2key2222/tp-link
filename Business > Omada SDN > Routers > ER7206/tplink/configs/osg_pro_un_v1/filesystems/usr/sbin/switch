@@ -1,0 +1,213 @@
+#!/bin/sh 
+
+ARG_ERR=1
+ARG_OK=0
+
+# global function interface
+g_switch_port_mirror=0
+g_switch_port_pvlan=0
+g_switch_port_para=0
+g_switch_port_rateControl=0
+g_switch_port_state=0
+g_switch_port_statistic=0
+g_switch_init=0
+g_switch_reload=0
+g_switch_global_led=0
+
+usage()
+{
+    echo "Usage: switch <command> [<arguments>]"
+    echo ""
+    echo "Format:"
+    echo "       switch -t mirror -o <get|set> [-s state] [-m mode] [-P mirrorport] [-p mirroredports]"
+    echo "       switch -t pvlan -o <get|set> [-v vid] [-p portsid]"
+    echo "       switch -t para -o <get|set> -p <portsid> [-s state] [-f flowcontrol] [-n ng_mode]"
+    echo "       switch -t control -o <get|set> -p <portsid> [-i i_state] [-M i_mode] [-r i_rate] [-O e_state] [-R e_rate]"
+    echo "       switch -t state -o get -p <portsid>"
+    echo "       switch -t statistic -o <get|flush> [-p portsid]"
+	echo "		 switch -t led -s <on|off>"
+    echo " "
+    echo "Arguments:"
+    echo "        -t module type. [mirror | pvlan | para | control | state |statistic |led]"
+    echo "        -s state. [on | off]"
+    echo "        -m mirror mode. [ingress | egress | both]"
+    echo "        -P mirror port."
+    echo "        -p ports id. [1.2.3.4...]"
+    echo "        -v port vlan id."
+    echo "        -f flow control state. [on | off]"
+    echo "        -n negotiation mode. [auto | 10MH | 10MF | 100MH |100MF |1000MF] (H:half,F:full)"
+    echo "        -i ingress limit state. [on | off]"
+    echo "        -M ingress limit mode. [broadcast | multicast | all]"
+    echo "        -r ingress limit rate."
+    echo "        -O egress limit state. [on | off]"
+    echo "        -R egress limit rate."
+    echo ""
+}
+
+module_type_check()
+{
+    if [ "$1" = "" ];then
+        usage
+        exit 0
+    fi
+
+    if [ "$1" != "mirror" ]&&[ "$1" != "pvlan" ]&&[ "$1" != "para" ]&&[ "$1" != "control" ]&&[ "$1" != "state" ]&&[ "$1" != "statistic" ]&&[ "$1" != "init" ]&&[ "$1" != "reload" ]&&[ "$1" != "led" ]; then  
+        usage
+        exit 0
+    fi
+}
+
+module_op_check()
+{
+    if [ "$1" = "" ];then
+        usage
+        exit 0
+    fi
+
+    if [ "$1" != "get" ] && [ "$1" != "set" ] && [ "$1" != "flush" ]; then
+        usage
+        exit 0
+    fi
+}
+
+module_state_check()
+{
+    if [ -z "$1" ];then
+        usage
+        exit 0
+    fi
+
+    if [ "$1" != "on" ] && [ "$1" != "off" ]; then
+        echo "The state is error.(state:on | off)"
+        usage
+        exit 0 
+    fi
+}
+
+. /lib/functions.sh
+. /lib/switch/switch_functions 
+
+type=`swconfig_switch_type_read`
+if [ $type = "AR8327" ]; then
+	type="ar8327"
+elif [ $type = "AR8337" ]; then
+    type="ar8327"
+elif [ $type = "BCM53115" ]; then
+        echo "BCM53115"
+elif [ $type = "RTL8367S" ]; then
+	type="rtl8367s"
+elif [ $type = "MT7628" ]; then
+	type="mt7628"
+elif [ $type = "MT7621" ]; then
+	type="mt7621"
+fi
+
+# select function interface
+. /lib/switch/${type}_register
+. /lib/switch/${type}_switch_portMirror
+. /lib/switch/${type}_switch_portVlan
+. /lib/switch/${type}_switch_portPara
+. /lib/switch/${type}_switch_portState
+. /lib/switch/${type}_switch_portRateControl
+. /lib/switch/${type}_switch_portStatistic
+. /lib/switch/${type}_switch_globalLed
+. /lib/switch/${type}_switch_init
+g_switch_port_mirror=${type}_switch_port_mirror
+g_switch_port_para=${type}_switch_port_para
+g_switch_port_pvlan=${type}_switch_port_pvlan
+g_switch_port_rateControl=${type}_switch_port_rateControl
+g_switch_port_state=${type}_switch_port_state
+g_switch_port_statistic=${type}_switch_port_statistic
+g_switch_init=${type}_switch_init
+g_switch_reload=${type}_switch_reload
+g_switch_global_led=${type}_switch_global_led
+
+SHORT_OPTIONS='t:o:s:m:P:p:v:f:M:R:r:i:O:n:N:h'
+
+while getopts $SHORT_OPTIONS OPT; do
+    case $OPT in
+        t)
+            module_type="$OPTARG"
+            module_type_check $module_type           
+            ;;
+        o)
+            op="$OPTARG"
+            module_op_check $op
+            ;;
+        s)
+            state="$OPTARG"
+            module_state_check $state
+            ;;
+        m)
+            mode="$OPTARG"
+            ;;
+        P)
+            mirrorport="$OPTARG";;
+        p)
+            portlist="$OPTARG"
+            ;;
+        v)
+            vid="$OPTARG";;
+        f)
+            flowcontrol="$OPTARG"
+            module_state_check $flowcontrol
+            ;;
+        n)
+            ng_mode="$OPTARG"
+            ;;
+        i)
+            in_state="$OPTARG"
+            ;;
+        M)
+            in_mode="$OPTARG"
+            ;;
+        O)
+            out_state="$OPTARG"
+            ;;
+        r)
+            in_rate="$OPTARG"
+            ;;
+        R)
+            out_rate="$OPTARG"
+            ;;
+        N)
+	    reload_name="$OPTARG"
+            ;;
+        h)
+            usage
+            exit 0;;
+        *)
+            usage
+            exit 0;;
+
+    esac
+done
+
+# select the switch's funtion interfaces
+# switch_func_select
+
+config_load switch
+
+# exec different modules
+if [ "$module_type" = "mirror" ];then
+    $g_switch_port_mirror $op $state $mode $mirrorport "$portlist"
+elif [ "$module_type" = "pvlan" ];then
+    $g_switch_port_pvlan $op $vid "$portlist"
+elif [ "$module_type" = "para" ];then
+    $g_switch_port_para $op "$portlist" $state $flowcontrol $ng_mode
+elif [ "$module_type" = "control" ];then
+    $g_switch_port_rateControl $op "$portlist" $in_state $in_mode $in_rate $out_state $out_rate
+elif [ "$module_type" = "state" ]; then
+    $g_switch_port_state $op "$portlist"
+elif [ "$module_type" = "statistic" ]; then 
+    $g_switch_port_statistic $op "$portlist"
+elif [ "$module_type" = "init" ]; then
+    $g_switch_init
+elif [ "$module_type" = "reload" ]; then
+    $g_switch_reload "$reload_name" "$portlist"
+elif [ "$module_type" = "led" ]; then
+    $g_switch_global_led $state
+fi
+
+shift $(($OPTIND - 1))
+

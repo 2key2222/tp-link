@@ -1,0 +1,29 @@
+--- a/drivers/mtd/devices/m25p80.c	2018-05-31 10:36:33.698242076 +0800
++++ b/drivers/mtd/devices/m25p80.c	2018-05-31 10:54:10.974463990 +0800
+@@ -1375,6 +1375,26 @@
+ 
+ 	/* Ensure no pending flash operation in progress */
+ 	wait_till_ready(flash);
++
++	if (flash->addr_width == 4)
++	{
++		const struct spi_device_id *jid;
++		struct device_node *np = spi->dev.of_node;
++		struct flash_info *info;
++
++		jid = jedec_probe(spi, np);
++		if (!IS_ERR(jid))
++		{
++			info = (void *)jid->driver_data;
++			/* Fix reboot-fail error. We must change flash from 32bit mode to 24bit mode. by liwei */
++			set_4byte(flash, info->jedec_id, 0);
++		}
++		else
++		{
++			/* If read jedec fail, we think it's winbond. Because I only find this problem in winwond(w25q256). */
++			set_4byte(flash, 0xef6019, 0);
++		}
++	}
+ }
+ 
+ static struct spi_driver m25p80_driver = {

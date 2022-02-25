@@ -1,0 +1,16 @@
+diff -urN procd-2014-09-15.original/upgraded/CMakeLists.txt procd-2014-09-15/upgraded/CMakeLists.txt
+--- procd-2014-09-15.original/upgraded/CMakeLists.txt	2015-08-04 15:18:35.154177562 +0800
++++ procd-2014-09-15/upgraded/CMakeLists.txt	2015-08-04 15:19:01.506178809 +0800
+@@ -11,7 +11,11 @@
+ set(CMAKE_SHARED_LIBRARY_LINK_C_FLAGS)
+ set(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS)
+ ADD_EXECUTABLE(upgraded upgraded.c ../watchdog.c)
+-TARGET_LINK_LIBRARIES(upgraded ubox rt -lc -lgcc_pic)
++IF(${CMAKE_SYSTEM_PROCESSOR} MATCHES "mips64")
++    TARGET_LINK_LIBRARIES(upgraded ubox rt -lc)
++ELSE(${CMAKE_SYSTEM_PROCESSOR} MATCHES "mips64")
++	TARGET_LINK_LIBRARIES(upgraded ubox rt -lc -lgcc_pic)
++ENDIF(${CMAKE_SYSTEM_PROCESSOR} MATCHES "mips64")
+ INSTALL(TARGETS upgraded
+ 	RUNTIME DESTINATION sbin
+ )

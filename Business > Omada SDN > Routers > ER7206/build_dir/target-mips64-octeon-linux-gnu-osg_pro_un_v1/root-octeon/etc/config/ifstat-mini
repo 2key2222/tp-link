@@ -1,0 +1,14 @@
+config global 'setting'
+    option status 'on'
+	option interval '10'
+	list ignore_interface "loop.*"
+	list ignore_interface "npi.*"
+	list ignore_interface "gre.*"
+	list ignore_interface "bond.*"
+	list ignore_interface "lo"
+	list ignore_interface "agl0"
+	list trust_interface "agl0.10"
+	list trust_interface "agl0.20"
+	list trust_interface "agl0.30"
+	list trust_interface "agl0.40"
+

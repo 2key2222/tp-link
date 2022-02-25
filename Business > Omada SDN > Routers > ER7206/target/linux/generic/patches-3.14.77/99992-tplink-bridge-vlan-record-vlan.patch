@@ -1,0 +1,31 @@
+--- a/net/core/dev.c	2017-07-18 18:54:23.780201425 +0800
++++ b/net/core/dev.c	2017-07-18 18:55:18.950337751 +0800
+@@ -3659,8 +3659,13 @@
+ 	}
+ 
+ 	if (unlikely(vlan_tx_tag_present(skb))) {
++#ifdef CONFIG_NETWORK_IPSTACK_VLAN
++		/* reuse this item */
++		skb->vlan_proto = skb->vlan_tci;
++#else
+ 		if (vlan_tx_tag_get_id(skb))
+ 			skb->pkt_type = PACKET_OTHERHOST;
++#endif
+ 		/* Note: we might in the future use prio bits
+ 		 * and set skb->priority like in vlan_do_receive()
+ 		 * For the time being, just ignore Priority Code Point
+--- a/net/Kconfig	2017-07-18 18:56:21.890200960 +0800
++++ b/net/Kconfig	2017-07-18 18:56:52.404426428 +0800
+@@ -98,6 +98,12 @@
+ 	  to nfmark, but designated for security purposes.
+ 	  If you are unsure how to answer this question, answer N.
+ 
++config NETWORK_IPSTACK_VLAN
++	bool "IP Stack Vlan"
++	help
++	  Using this feature, we can know which vlan this skb is from in IP STACK.
++	  If you are unsure how to answer this question, answer N. 
++
+ config NETWORK_PHY_TIMESTAMPING
+ 	bool "Timestamping in PHY devices"
+ 	help

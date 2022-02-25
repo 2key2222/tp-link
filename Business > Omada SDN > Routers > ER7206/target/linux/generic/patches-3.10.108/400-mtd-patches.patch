@@ -1,0 +1,634 @@
+--- a/drivers/mtd/chips/cfi_cmdset_0002.c
++++ b/drivers/mtd/chips/cfi_cmdset_0002.c
+@@ -780,7 +780,7 @@ static int get_chip(struct map_info *map
+ 		return 0;
+ 
+ 	case FL_ERASING:
+-		if (!cfip || !(cfip->EraseSuspend & (0x1|0x2)) ||
++		if (1 /* no suspend */ || !cfip || !(cfip->EraseSuspend & (0x1|0x2)) ||
+ 		    !(mode == FL_READY || mode == FL_POINT ||
+ 		    (mode == FL_WRITING && (cfip->EraseSuspend & 0x2))))
+ 			goto sleep;
+@@ -1498,6 +1498,7 @@ static int __xipram do_write_buffer(stru
+ 
+ 	/* Write Buffer Load */
+ 	map_write(map, CMD(0x25), cmd_adr);
++	(void) map_read(map, cmd_adr);
+ 
+ 	chip->state = FL_WRITING_TO_BUFFER;
+ 
+--- a/drivers/mtd/Kconfig	2019-06-30 13:29:12.386117100 +0800
++++ b/drivers/mtd/Kconfig	2019-06-30 13:42:10.434752412 +0800
+@@ -27,6 +27,15 @@ config MTD_ROOTFS_SPLIT
+ config MTD_SPLIT_FIRMWARE
+         bool "Automatically split firmware partition for kernel+rootfs"
+         default y
++		
++config MTD_SPLIT_LZMA_FW
++        bool "LZMA compressed kernel based firmware partition parser"
++        select MTD_SPLIT
++
++config MTD_SPLIT
++        def_bool n
++        help
++          Generic MTD split support.
+ 
+ config MTD_SPLIT_FIRMWARE_NAME
+         string "Firmware partition name"
+@@ -58,16 +67,6 @@ config MTD_SPLIT_UIMAGE_FW
+         bool "uImage based firmware partition parser"
+         select MTD_SPLIT
+ 
+-config MTD_SPLIT_LZMA_FW
+-        bool "LZMA compressed kernel based firmware partition parser"
+-        select MTD_SPLIT
+-
+-config MTD_SPLIT
+-        def_bool n
+-        depends on SUPPORT_OPENWRT
+-        help
+-          Generic MTD split support.
+-
+ endmenu
+ endif # SUPPORT_OPENWRT
+ config MTD_TESTS
+@@ -213,6 +212,23 @@ config MTD_BCM47XX_PARTS
+ 	  This provides partitions parser for devices based on BCM47xx
+ 	  boards.
+ 
+++config MTD_MYLOADER_PARTS
++	tristate "MyLoader partition parsing"
++	depends on ADM5120 || ATHEROS_AR231X || ATHEROS_AR71XX || ATH79
++	---help---
++	  MyLoader is a bootloader which allows the user to define partitions
++	  in flash devices, by putting a table in the second erase block
++	  on the device, similar to a partition table. This table gives the 
++	  offsets and lengths of the user defined partitions.
++
++	  If you need code which can detect and parse these tables, and
++	  register MTD 'partitions' corresponding to each image detected,
++	  enable this option.
++
++	  You will still need the parsing functions to be called by the driver
++	  for your particular device. It won't happen automatically.
++
++
+ comment "User Modules And Translation Layers"
+ 
+ config MTD_BLKDEVS
+--- a/drivers/mtd/Makefile
++++ b/drivers/mtd/Makefile
+@@ -21,6 +21,7 @@ obj-$(CONFIG_MTD_AFS_PARTS)	+= afs.o
+ obj-$(CONFIG_MTD_AR7_PARTS)	+= ar7part.o
+ obj-$(CONFIG_MTD_BCM63XX_PARTS)	+= bcm63xxpart.o
+ obj-$(CONFIG_MTD_BCM47XX_PARTS)	+= bcm47xxpart.o
++obj-$(CONFIG_MTD_MYLOADER_PARTS) += myloader.o
+ 
+ # 'Users' - code which presents functionality to userspace.
+ obj-$(CONFIG_MTD_BLKDEVS)	+= mtd_blkdevs.o
+--- a/drivers/mtd/mtdpart.c	2018-09-03 10:14:03.000000000 +0800
++++ b/drivers/mtd/mtdpart.c	2019-06-30 14:19:52.201115621 +0800
+@@ -29,16 +29,12 @@
+ #include <linux/kmod.h>
+ #include <linux/mtd/mtd.h>
+ #include <linux/mtd/partitions.h>
+-#if defined(CONFIG_SUPPORT_OPENWRT)
+ #include <linux/magic.h>
+-#endif
+ #include <linux/err.h>
+ 
+ #include "mtdcore.h"
+-#if defined(CONFIG_SUPPORT_OPENWRT)
+ #include "mtdsplit.h"
+ #define MTD_ERASE_PARTIAL	0x8000 /* partition only covers parts of an erase block */
+-#endif
+ 
+ 
+ 
+@@ -55,10 +51,8 @@ struct mtd_part {
+ 	struct list_head list;
+ };
+ 
+-#if defined(CONFIG_SUPPORT_OPENWRT)
+ static int bad_detected;
+ static void mtd_partition_split(struct mtd_info *master, struct mtd_part *part);
+-#endif
+ 
+ /*
+  * Given a pointer to the MTD object in the mtd_part structure, we can retrieve
+@@ -243,7 +237,6 @@ static int part_erase(struct mtd_info *m
+ 	struct mtd_part *part = PART(mtd);
+ 	int ret;
+ 
+-#if defined(CONFIG_SUPPORT_OPENWRT)
+ 	instr->partial_start = false;
+ 	if (mtd->flags & MTD_ERASE_PARTIAL) {
+ 		size_t readlen = 0;
+@@ -263,6 +256,7 @@ static int part_erase(struct mtd_info *m
+ 				part->master->erasesize,
+ 				&readlen, instr->erase_buf);
+ 
++			instr->len += instr->erase_buf_ofs;
+ 			instr->partial_start = true;
+ 		} else {
+ 			mtd_ofs = part->offset + part->mtd.size;
+@@ -286,7 +280,6 @@ static int part_erase(struct mtd_info *m
+ 		}
+ 
+ 	}
+-#endif
+ 
+ 	instr->addr += part->offset;
+ 	ret = part->master->_erase(part->master, instr);
+@@ -294,10 +287,8 @@ static int part_erase(struct mtd_info *m
+ 		if (instr->fail_addr != MTD_FAIL_ADDR_UNKNOWN)
+ 			instr->fail_addr -= part->offset;
+ 		instr->addr -= part->offset;
+-#if defined(CONFIG_SUPPORT_OPENWRT)
+ 		if (mtd->flags & MTD_ERASE_PARTIAL)
+ 			kfree(instr->erase_buf);
+-#endif
+ 	}
+ 
+ 	return ret;
+@@ -307,7 +298,6 @@ void mtd_erase_callback(struct erase_inf
+ {
+ 	if (instr->mtd->_erase == part_erase) {
+ 		struct mtd_part *part = PART(instr->mtd);
+-#if defined(CONFIG_SUPPORT_OPENWRT)
+ 		size_t wrlen = 0;
+ 
+ 		if (instr->mtd->flags & MTD_ERASE_PARTIAL) {
+@@ -327,7 +317,6 @@ void mtd_erase_callback(struct erase_inf
+ 			}
+ 			kfree(instr->erase_buf);
+ 		}
+-#endif
+ 		if (instr->fail_addr != MTD_FAIL_ADDR_UNKNOWN)
+ 			instr->fail_addr -= part->offset;
+ 		instr->addr -= part->offset;
+@@ -346,7 +335,7 @@ static int part_lock(struct mtd_info *mt
+ static int part_unlock(struct mtd_info *mtd, loff_t ofs, uint64_t len)
+ {
+ 	struct mtd_part *part = PART(mtd);
+-#if defined(CONFIG_SUPPORT_OPENWRT)
++
+ 	ofs += part->offset;
+ 	if (mtd->flags & MTD_ERASE_PARTIAL) {
+ 		/* round up len to next erasesize and round down offset to prev block */
+@@ -354,9 +343,6 @@ static int part_unlock(struct mtd_info *
+ 		ofs &= ~(part->master->erasesize - 1);
+ 	}
+ 	return part->master->_unlock(part->master, ofs, len);
+-#else
+-	return part->master->_unlock(part->master, ofs + part->offset, len);
+-#endif
+ }
+ 
+ static int part_is_locked(struct mtd_info *mtd, loff_t ofs, uint64_t len)
+@@ -526,23 +512,12 @@ static struct mtd_part *allocate_partiti
+ 	if (slave->offset == MTDPART_OFS_APPEND)
+ 		slave->offset = cur_offset;
+ 	if (slave->offset == MTDPART_OFS_NXTBLK) {
+-#if defined(CONFIG_SUPPORT_OPENWRT)
+ 		/* Round up to next erasesize */
+ 		slave->offset = mtd_roundup_to_eb(cur_offset, master);
+ 		if (slave->offset != cur_offset)
+ 			printk(KERN_NOTICE "Moving partition %d: "
+ 			       "0x%012llx -> 0x%012llx\n", partno,
+ 			       (unsigned long long)cur_offset, (unsigned long long)slave->offset);
+-#else
+-		slave->offset = cur_offset;
+-		if (mtd_mod_by_eb(cur_offset, master) != 0) {
+-			/* Round up to next erasesize */
+-			slave->offset = (mtd_div_by_eb(cur_offset, master) + 1) * master->erasesize;
+-			printk(KERN_NOTICE "Moving partition %d: "
+-			       "0x%012llx -> 0x%012llx\n", partno,
+-			       (unsigned long long)cur_offset, (unsigned long long)slave->offset);
+-		}
+-#endif
+ 	}
+ 	if (slave->offset == MTDPART_OFS_RETAIN) {
+ 		slave->offset = cur_offset;
+@@ -603,7 +578,6 @@ static struct mtd_part *allocate_partiti
+ 		slave->mtd.erasesize = master->erasesize;
+ 	}
+ 
+-#if defined(CONFIG_SUPPORT_OPENWRT)
+ 	if ((slave->mtd.flags & MTD_WRITEABLE) &&
+ 	    mtd_mod_by_eb(slave->offset, &slave->mtd)) {
+ 		/* Doesn't start on a boundary of major erase size */
+@@ -625,23 +599,6 @@ static struct mtd_part *allocate_partiti
+ 	if ((slave->mtd.flags & (MTD_ERASE_PARTIAL|MTD_WRITEABLE)) == MTD_ERASE_PARTIAL)
+ 		printk(KERN_WARNING"mtd: partition \"%s\" must either start or end on erase block boundary or be smaller than an erase block -- forcing read-only\n",
+ 				part->name);
+-#else
+-	if ((slave->mtd.flags & MTD_WRITEABLE) &&
+-	    mtd_mod_by_eb(slave->offset, &slave->mtd)) {
+-		/* Doesn't start on a boundary of major erase size */
+-		/* FIXME: Let it be writable if it is on a boundary of
+-		 * _minor_ erase size though */
+-		slave->mtd.flags &= ~MTD_WRITEABLE;
+-		printk(KERN_WARNING"mtd: partition \"%s\" doesn't start on an erase block boundary -- force read-only\n",
+-			part->name);
+-	}
+-	if ((slave->mtd.flags & MTD_WRITEABLE) &&
+-	    mtd_mod_by_eb(slave->mtd.size, &slave->mtd)) {
+-		slave->mtd.flags &= ~MTD_WRITEABLE;
+-		printk(KERN_WARNING"mtd: partition \"%s\" doesn't end on an erase block -- force read-only\n",
+-			part->name);
+-	}
+-#endif
+ 
+ 	slave->mtd.ecclayout = master->ecclayout;
+ 	slave->mtd.ecc_strength = master->ecc_strength;
+@@ -661,7 +618,6 @@ out_register:
+ 	return slave;
+ }
+ 
+-#if defined(CONFIG_SUPPORT_OPENWRT)
+ static int
+ __mtd_add_partition(struct mtd_info *master, char *name,
+ 		    long long offset, long long length, bool dup_check)
+@@ -728,64 +684,6 @@ int mtd_add_partition(struct mtd_info *m
+ {
+ 	return __mtd_add_partition(master, name, offset, length, true);
+ }
+-#else /* CONFIG_SUPPORT_OPENWRT */
+-int mtd_add_partition(struct mtd_info *master, char *name,
+-		      long long offset, long long length)
+-{
+-	struct mtd_partition part;
+-	struct mtd_part *p, *new;
+-	uint64_t start, end;
+-	int ret = 0;
+-
+-	/* the direct offset is expected */
+-	if (offset == MTDPART_OFS_APPEND ||
+-	    offset == MTDPART_OFS_NXTBLK)
+-		return -EINVAL;
+-
+-	if (length == MTDPART_SIZ_FULL)
+-		length = master->size - offset;
+-
+-	if (length <= 0)
+-		return -EINVAL;
+-
+-	part.name = name;
+-	part.size = length;
+-	part.offset = offset;
+-	part.mask_flags = 0;
+-	part.ecclayout = NULL;
+-
+-	new = allocate_partition(master, &part, -1, offset);
+-	if (IS_ERR(new))
+-		return PTR_ERR(new);
+-
+-	start = offset;
+-	end = offset + length;
+-
+-	mutex_lock(&mtd_partitions_mutex);
+-	list_for_each_entry(p, &mtd_partitions, list)
+-		if (p->master == master) {
+-			if ((start >= p->offset) &&
+-			    (start < (p->offset + p->mtd.size)))
+-				goto err_inv;
+-
+-			if ((end >= p->offset) &&
+-			    (end < (p->offset + p->mtd.size)))
+-				goto err_inv;
+-		}
+-
+-	list_add(&new->list, &mtd_partitions);
+-	mutex_unlock(&mtd_partitions_mutex);
+-
+-	add_mtd_device(&new->mtd);
+-
+-	return ret;
+-err_inv:
+-	mutex_unlock(&mtd_partitions_mutex);
+-	free_partition(new);
+-	return -EINVAL;
+-}
+-EXPORT_SYMBOL_GPL(mtd_add_partition);
+-#endif /* CONFIG_SUPPORT_OPENWRT */
+ 
+ int mtd_del_partition(struct mtd_info *master, int partno)
+ {
+@@ -810,7 +708,6 @@ int mtd_del_partition(struct mtd_info *m
+ }
+ EXPORT_SYMBOL_GPL(mtd_del_partition);
+ 
+-#if defined(CONFIG_SUPPORT_OPENWRT)
+ static int
+ run_parsers_by_type(struct mtd_part *slave, enum mtd_parser_type type)
+ {
+@@ -883,6 +780,14 @@ mtd_pad_erasesize(struct mtd_info *mtd, 
+ 	return len;
+ }
+ 
++#define ROOTFS_SPLIT_NAME "rootfs_data"
++
++struct squashfs_super_block {
++	__le32 s_magic;
++	__le32 pad0[9];
++	__le64 bytes_used;
++};
++
+ static int split_squashfs(struct mtd_info *master, int offset, int *split_offset)
+ {
+ 	size_t squashfs_len;
+@@ -898,12 +803,10 @@ static int split_squashfs(struct mtd_inf
+ 	return 0;
+ }
+ 
+-#ifdef CONFIG_SUPPORT_OPENWRT
+ #if defined(CONFIG_MTD_ANY_RALINK) || defined(CONFIG_MTK_MTD_NAND)
+ extern unsigned int rootfs_data_offset;
+ extern unsigned int rootfs_offset;
+ #endif
+-#endif
+ 
+ static void split_rootfs_data(struct mtd_info *master, struct mtd_part *part)
+ {
+@@ -926,11 +829,9 @@ static void split_rootfs_data(struct mtd
+ 	printk(KERN_INFO "mtd: partition \"%s\" created automatically, ofs=0x%x, len=0x%x\n",
+ 		ROOTFS_SPLIT_NAME, split_offset, split_size);
+ 
+-#ifdef CONFIG_SUPPORT_OPENWRT
+ #if defined(CONFIG_MTD_ANY_RALINK) || defined(CONFIG_MTK_MTD_NAND)
+ 	rootfs_data_offset = split_offset;
+ #endif
+-#endif
+ 
+ 	__mtd_add_partition(master, ROOTFS_SPLIT_NAME, split_offset,
+ 			    split_size, false);
+@@ -942,11 +843,8 @@ static void split_uimage(struct mtd_info
+ {
+ 	struct {
+ 		__be32 magic;
+-		__be32 pad0[2];
++		__be32 pad[2];
+ 		__be32 size;
+-		__be32 pad1[4];
+-		__be32 name[7];
+-		__be32 kern_size;
+ 	} hdr;
+ 	size_t len;
+ 
+@@ -961,12 +859,11 @@ static void split_uimage(struct mtd_info
+ 	if (len != sizeof(hdr) || hdr.magic != cpu_to_be32(UBOOT_MAGIC))
+ 		return;
+ 
+-	if (hdr.kern_size != 0 && hdr.name[0] == 0)
+-		len = be32_to_cpu(hdr.kern_size);
+-	else
+-		len = be32_to_cpu(hdr.size) + 0x40;
++	len = be32_to_cpu(hdr.size) + 0x40;
++	len = mtd_pad_erasesize(master, part->offset, len);
++	if (len + master->erasesize > part->mtd.size)
++		return;
+ 
+-#ifdef CONFIG_SUPPORT_OPENWRT
+ #if defined(CONFIG_MTD_ANY_RALINK) || defined(CONFIG_MTK_MTD_NAND)
+ 	if (master->type & MTD_NANDFLASH)
+ 	{
+@@ -994,7 +891,6 @@ static void split_uimage(struct mtd_info
+ 	}
+ 	else
+ #endif
+-#endif
+ 	__mtd_add_partition(master, "rootfs", part->offset + len,
+ 			    part->mtd.size - len, false);
+ }
+@@ -1043,7 +939,6 @@ static void mtd_partition_split(struct m
+ 	arch_split_mtd_part(master, part->mtd.name, part->offset,
+ 			    part->mtd.size);
+ }
+-#endif /* CONFIG_SUPPORT_OPENWRT */
+ 
+ /*
+  * This function, given a master MTD object and a partition table, creates
+@@ -1076,9 +971,7 @@ int add_mtd_partitions(struct mtd_info *
+ 		mutex_unlock(&mtd_partitions_mutex);
+ 
+ 		add_mtd_device(&slave->mtd);
+-#if defined(CONFIG_SUPPORT_OPENWRT)
+ 		mtd_partition_split(master, slave);
+-#endif
+ 		cur_offset = slave->offset + slave->mtd.size;
+ 	}
+ 
+@@ -1107,7 +1000,6 @@ static struct mtd_part_parser *get_parti
+ 
+ #define put_partition_parser(p) do { module_put((p)->owner); } while (0)
+ 
+-#if defined(CONFIG_SUPPORT_OPENWRT)
+ static struct mtd_part_parser *
+ get_partition_parser_by_type(enum mtd_parser_type type,
+ 			     struct mtd_part_parser *start)
+@@ -1131,7 +1023,6 @@ get_partition_parser_by_type(enum mtd_pa
+ 
+ 	return ret;
+ }
+-#endif
+ 
+ int register_mtd_parser(struct mtd_part_parser *p)
+ {
+@@ -1209,7 +1100,6 @@ int parse_mtd_partitions(struct mtd_info
+ 	return ret;
+ }
+ 
+-#if defined(CONFIG_SUPPORT_OPENWRT)
+ int parse_mtd_partitions_by_type(struct mtd_info *master,
+ 				 enum mtd_parser_type type,
+ 				 struct mtd_partition **pparts,
+@@ -1241,7 +1131,6 @@ int parse_mtd_partitions_by_type(struct 
+ 	return ret;
+ }
+ EXPORT_SYMBOL_GPL(parse_mtd_partitions_by_type);
+-#endif /* CONFIG_SUPPORT_OPENWRT */
+ 
+ int mtd_is_partition(const struct mtd_info *mtd)
+ {
+@@ -1260,7 +1149,6 @@ int mtd_is_partition(const struct mtd_in
+ }
+ EXPORT_SYMBOL_GPL(mtd_is_partition);
+ 
+-#if defined(CONFIG_SUPPORT_OPENWRT)
+ struct mtd_info *mtdpart_get_master(const struct mtd_info *mtd)
+ {
+ 	if (!mtd_is_partition(mtd))
+@@ -1278,7 +1166,6 @@ uint64_t mtdpart_get_offset(const struct
+ 	return PART(mtd)->offset;
+ }
+ EXPORT_SYMBOL_GPL(mtdpart_get_offset);
+-#endif /* CONFIG_SUPPORT_OPENWRT */
+ 
+ /* Returns the size of the entire flash chip */
+ uint64_t mtd_get_device_size(const struct mtd_info *mtd)
+--- a/drivers/mtd/nand/nand_ecc.c
++++ b/drivers/mtd/nand/nand_ecc.c
+@@ -507,7 +507,7 @@ int __nand_correct_data(unsigned char *b
+ 		return 1;	/* error in ECC data; no action needed */
+ 
+ 	pr_err("%s: uncorrectable ECC error", __func__);
+-	return -1;
++	return -EBADMSG;
+ }
+ EXPORT_SYMBOL(__nand_correct_data);
+ 
+--- a/drivers/mtd/nand/plat_nand.c
++++ b/drivers/mtd/nand/plat_nand.c
+@@ -103,7 +103,18 @@ static int plat_nand_probe(struct platfo
+ 	}
+ 
+ 	/* Scan to find existence of the device */
+-	if (nand_scan(&data->mtd, pdata->chip.nr_chips)) {
++	if (nand_scan_ident(&data->mtd, pdata->chip.nr_chips, NULL)) {
++		err = -ENXIO;
++		goto out;
++	}
++
++	if (pdata->chip.chip_fixup) {
++		err = pdata->chip.chip_fixup(&data->mtd);
++		if (err)
++			goto out;
++	}
++
++	if (nand_scan_tail(&data->mtd)) {
+ 		err = -ENXIO;
+ 		goto out;
+ 	}
+--- a/drivers/mtd/redboot.c
++++ b/drivers/mtd/redboot.c
+@@ -265,14 +265,21 @@ static int parse_redboot_partitions(stru
+ #endif
+ 		names += strlen(names)+1;
+ 
+-#ifdef CONFIG_MTD_REDBOOT_PARTS_UNALLOCATED
+ 		if(fl->next && fl->img->flash_base + fl->img->size + master->erasesize <= fl->next->img->flash_base) {
+-			i++;
+-			parts[i].offset = parts[i-1].size + parts[i-1].offset;
+-			parts[i].size = fl->next->img->flash_base - parts[i].offset;
+-			parts[i].name = nullname;
+-		}
++			if (!strcmp(parts[i].name, "rootfs")) {
++				parts[i].size = fl->next->img->flash_base;
++				parts[i].size &= ~(master->erasesize - 1);
++				parts[i].size -= parts[i].offset;
++#ifdef CONFIG_MTD_REDBOOT_PARTS_UNALLOCATED
++				nrparts--;
++			} else {
++				i++;
++				parts[i].offset = parts[i-1].size + parts[i-1].offset;
++				parts[i].size = fl->next->img->flash_base - parts[i].offset;
++				parts[i].name = nullname;
+ #endif
++			}
++		}
+ 		tmp_fl = fl;
+ 		fl = fl->next;
+ 		kfree(tmp_fl);
+--- a/include/linux/mtd/mtd.h
++++ b/include/linux/mtd/mtd.h
+@@ -59,11 +59,9 @@ struct erase_info {
+ 	u_char state;
+ 	struct erase_info *next;
+ 
+-#if defined(CONFIG_SUPPORT_OPENWRT)
+ 	u8 *erase_buf;
+ 	u32 erase_buf_ofs;
+ 	bool partial_start;
+-#endif
+ };
+ 
+ struct mtd_erase_region_info {
+@@ -337,7 +335,6 @@ static inline uint32_t mtd_mod_by_eb(uin
+ 	return do_div(sz, mtd->erasesize);
+ }
+ 
+-#if defined(CONFIG_SUPPORT_OPENWRT)
+ static inline uint64_t mtd_roundup_to_eb(uint64_t sz, struct mtd_info *mtd)
+ {
+ 	if (mtd_mod_by_eb(sz, mtd) == 0)
+@@ -355,7 +352,6 @@ static inline uint64_t mtd_rounddown_to_
+ 	/* Round down to the start of the current erase block */
+ 	return (mtd_div_by_eb(sz, mtd)) * mtd->erasesize;
+ }
+-#endif
+ 
+ static inline uint32_t mtd_div_by_ws(uint64_t sz, struct mtd_info *mtd)
+ {
+--- a/include/linux/mtd/nand.h
++++ b/include/linux/mtd/nand.h
+@@ -659,9 +659,7 @@ struct platform_nand_chip {
+ 	unsigned int options;
+ 	unsigned int bbt_options;
+ 	const char **part_probe_types;
+-#if defined(CONFIG_SUPPORT_OPENWRT)
+ 	int (*chip_fixup)(struct mtd_info *mtd);
+-#endif
+ };
+ 
+ /* Keep gcc happy */
+--- a/include/linux/mtd/partitions.h
++++ b/include/linux/mtd/partitions.h
+@@ -35,6 +35,7 @@
+  * Note: writeable partitions require their size and offset be
+  * erasesize aligned (e.g. use MTDPART_OFS_NEXTBLK).
+  */
++struct mtd_info;
+ 
+ struct mtd_partition {
+ 	char *name;			/* identifier string */
+@@ -50,7 +51,6 @@ struct mtd_partition {
+ #define MTDPART_SIZ_FULL	(0)
+ 
+ 
+-struct mtd_info;
+ struct device_node;
+ 
+ /**
+@@ -68,13 +68,11 @@ struct mtd_part_parser_data {
+  * Functions dealing with the various ways of partitioning the space
+  */
+ 
+-#if defined(CONFIG_SUPPORT_OPENWRT)
+ enum mtd_parser_type {
+ 	MTD_PARSER_TYPE_DEVICE = 0,
+ 	MTD_PARSER_TYPE_ROOTFS,
+ 	MTD_PARSER_TYPE_FIRMWARE,
+ };
+-#endif
+ 
+ struct mtd_part_parser {
+ 	struct list_head list;
+@@ -82,9 +80,7 @@ struct mtd_part_parser {
+ 	const char *name;
+ 	int (*parse_fn)(struct mtd_info *, struct mtd_partition **,
+ 			struct mtd_part_parser_data *);
+-#if defined(CONFIG_SUPPORT_OPENWRT)
+ 	enum mtd_parser_type type;
+-#endif
+ };
+ 
+ extern int register_mtd_parser(struct mtd_part_parser *parser);
+@@ -94,12 +90,9 @@ int mtd_is_partition(const struct mtd_in
+ int mtd_add_partition(struct mtd_info *master, char *name,
+ 		      long long offset, long long length);
+ int mtd_del_partition(struct mtd_info *master, int partno);
+-#if defined(CONFIG_SUPPORT_OPENWRT)
+ struct mtd_info *mtdpart_get_master(const struct mtd_info *mtd);
+ uint64_t mtdpart_get_offset(const struct mtd_info *mtd);
+-#endif
+ uint64_t mtd_get_device_size(const struct mtd_info *mtd);
+-#if defined(CONFIG_SUPPORT_OPENWRT)
+ extern void __weak arch_split_mtd_part(struct mtd_info *master,
+ 				       const char *name, int offset, int size);
+ 
+@@ -108,4 +101,3 @@ int parse_mtd_partitions_by_type(struct 
+ 				 struct mtd_partition **pparts,
+ 				 struct mtd_part_parser_data *data);
+ #endif
+-#endif

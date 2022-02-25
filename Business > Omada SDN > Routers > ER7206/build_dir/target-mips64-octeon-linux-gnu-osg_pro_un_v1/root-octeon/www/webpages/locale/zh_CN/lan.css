@@ -1,0 +1,58 @@
+@charset "utf-8";
+/* CSS Document */
+
+/*顶层导航栏*/
+div.top-header div.top-header-wrap h1{
+	width: 160px;
+}
+/*顶层图标文案一行*/
+div.top-header div.top-control a.top-control-btn {
+	width: 48px;
+}
+
+/*radio 过长*/
+div.widget-container div.widget-fieldlabel-wrap.l + div.widget-wrap-outer{
+    max-width: 452px;
+}
+div.widget-container div.widget-fieldlabel-wrap.m + div.widget-wrap-outer{
+    max-width: 520px;
+}
+div.widget-container div.widget-fieldlabel-wrap.s + div.widget-wrap-outer{
+    max-width: 520px;
+}
+div.widget-container div.widget-fieldlabel-wrap + div.widget-wrap-outer{
+    max-width: 520px;
+}
+
+/*advanced status wired/wireless*/
+label.label_status_s {
+	display: inline-block;
+	width: 97px;
+	margin-left: 2px;
+}
+
+/*timesetting 下拉框*/
+input#start_month + div.combobox-wrap-outer div.combobox-wrap input.combobox-text.xs{
+	width: 52px;
+}
+input#end_month + div.combobox-wrap-outer div.combobox-wrap input.combobox-text.xs{
+	width: 52px;
+}
+input#start_day + div.combobox-wrap-outer div.combobox-wrap input.combobox-text.xs{
+	width: 50px;
+}
+input#end_day + div.combobox-wrap-outer div.combobox-wrap input.combobox-text.xs{
+	width: 50px;
+}
+
+/*systemlog logat logevery对齐*/
+div#mail_cnt div.radio-group-wrap ul li > div.widget-wrap{
+	width: 155px;
+}
+div#mail_cnt div.radio-group-wrap ul li div.tips-content {
+	width: 140px;
+}
+div#mail_cnt div.radio-group-wrap ul li div.radio-content-wrap {
+	padding-left: 0px;
+	margin-left: 0px;
+}

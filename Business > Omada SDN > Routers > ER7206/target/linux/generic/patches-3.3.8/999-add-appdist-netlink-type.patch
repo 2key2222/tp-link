@@ -1,0 +1,13 @@
+Index: linux-3.3.8/include/linux/netlink.h
+===================================================================
+--- linux-3.3.8.orig/include/linux/netlink.h	2012-06-01 15:16:13.000000000 +0800
++++ linux-3.3.8/include/linux/netlink.h	2015-12-13 15:31:21.601898911 +0800
+@@ -27,6 +27,8 @@
+ #define NETLINK_RDMA		20
+ #define NETLINK_CRYPTO		21	/* Crypto layer */
+ 
++#define NETLINK_APPDIST         25
++
+ #define NETLINK_INET_DIAG	NETLINK_SOCK_DIAG
+ 
+ #define MAX_LINKS 32		

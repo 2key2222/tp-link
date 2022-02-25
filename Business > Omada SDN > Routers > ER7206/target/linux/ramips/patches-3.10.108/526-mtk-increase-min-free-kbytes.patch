@@ -1,0 +1,14 @@
+Index: a/mm/page_alloc.c
+===================================================================
+--- a/mm/page_alloc.c	2014-09-02 16:42:59.000000000 +0800
++++ b/mm/page_alloc.c	2015-02-04 10:23:32.135801123 +0800
+@@ -5457,7 +5457,8 @@
+ 
+ 	lowmem_kbytes = nr_free_buffer_pages() * (PAGE_SIZE >> 10);
+ 
+-	min_free_kbytes = int_sqrt(lowmem_kbytes * 16);
++	// min_free_kbytes = int_sqrt(lowmem_kbytes * 16);
++	min_free_kbytes = 8192;
+ 	if (min_free_kbytes < 128)
+ 		min_free_kbytes = 128;
+ 	if (min_free_kbytes > 65536)

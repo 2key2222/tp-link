@@ -1,0 +1,55 @@
+config support
+	list service HTTP
+	list service HTTPS
+	list service TELNET
+	list service SSH
+
+config reject
+	option enabled 'off'
+	list service SSH
+
+config service port
+	option HTTP "80"
+	option TELNET "23"
+	option SSH "22"
+	option HTTPS "443"
+
+config mngt_iface 
+	option iface 'wan1_eth'				
+	option enabled 'off'				
+
+config mngt_iface
+	option iface 'wan1_poe'				
+	option enabled 'off'				
+
+config mngt_iface
+	option iface 'wan2_eth'				
+	option enabled 'off'				
+
+config mngt_iface
+	option iface 'wan2_poe'				
+	option enabled 'off'				
+
+config mngt_iface
+	option iface 'wan3_eth'				
+	option enabled 'off'				
+
+config mngt_iface
+	option iface 'wan3_poe'				
+	option enabled 'off'				
+
+config mngt_iface
+	option iface 'wan4_eth'				
+	option enabled 'off'				
+
+config mngt_iface
+	option iface 'wan4_poe'				
+	option enabled 'off'				
+
+config mngt_iface
+	option iface 'lan'				
+	option enabled 'on'
+
+config lan_rsa_rule 'NETWORK1'
+	option enabled 'on'
+	option ipaddr '192.168.0.0/24'

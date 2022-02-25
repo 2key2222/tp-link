@@ -1,0 +1,14 @@
+--- a/ustream-openssl.c	2016-09-02 15:05:42.000000000 +0800
++++ b/ustream-openssl.c	2019-01-23 10:57:02.719203769 +0800
+@@ -42,9 +42,9 @@
+ 		m = SSLv23_client_method();
+ #else
+ 	if (server)
+-		m = TLSv1_server_method();
++		m = TLSv1_2_server_method();
+ 	else
+-		m = TLSv1_client_method();
++		m = TLSv1_2_client_method();
+ #endif
+ 
+ 	c = SSL_CTX_new((void *) m);

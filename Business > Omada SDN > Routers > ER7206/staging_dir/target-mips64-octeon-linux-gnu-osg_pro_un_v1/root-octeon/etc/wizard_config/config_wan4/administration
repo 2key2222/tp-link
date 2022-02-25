@@ -1,0 +1,17 @@
+config global 'account'
+    option recovery 'off'
+    option authentication 'off'
+
+config global 'local'
+    option mode 'all'
+
+config global 'remote'
+    option enable 'off'
+
+config service 'port'
+	option TELNET '23'
+	option HTTP '80'
+	option HTTPS '443'
+	option SSH '22'
+	option SSH_PORT_SWITCH 'off'
+	option WEB_TIMEOUT '6' 

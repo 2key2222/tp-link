@@ -1,0 +1,538 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>DHCP_STATIC</title>
+<style type="text/css">
+</style>
+</head>
+
+<body>
+<div class="func-container">
+    <div id="dhcp_static_list">
+        <div id="dhcp_static_grid">
+        </div>
+    </div>
+
+    <div id="imb_alert_cnt3">
+        <h4 class="title">
+            <span class="icon"></span>
+            <span class="text" id="imb_confirm_content3"></span>
+        </h4>
+    </div>
+
+    <div id="imb_alert_cnt4">
+        <h4 class="title">
+            <span class="icon"></span>
+            <span class="text" id="imb_confirm_content4"></span>
+        </h4>
+    </div>
+    <div id="dhcp_static_list_help"></div>
+</div>
+
+<script type="text/javascript">
+try{
+    $
+}catch(e){
+    location.href = "/";
+};
+
+$(document).ready(function(e){
+    var maxrules;
+	var oprIndex;
+    var URL_DHCP_STATIC_LIST = $.su.url("/admin/dhcps?form=reservation");
+
+    var IMB_RULE_LIST_URL = $.su.url("/admin/imb?form=bind_list");
+
+    var IMB_RULE_LIST_PROXY = new $.su.Proxy({
+        url: IMB_RULE_LIST_URL
+    });
+
+	$("#dhcp_static_list").panel({
+		title: $.su.CHAR.DHCP_SERVER.RESERVATION,
+		collapsible: false
+	});
+
+	var staticListProxy = new $.su.Proxy({
+		url: URL_DHCP_STATIC_LIST
+	});
+
+	 var ipmac_item = [];
+    IMB_RULE_LIST_PROXY.read({},function(data){
+    	for(var i=0;i<data.length;++i)
+    	{
+    		ipmac_item.push({ipaddr:data[i].ipaddr,mac:data[i].mac});
+    	}
+    });
+	
+	var interface_status;
+	var interface_lan = [];
+	var interfaceIpProxy = new $.su.Proxy({
+		url: $.su.url('/admin/interface?form=status2'),
+		async: false
+	});
+
+    $("#imb_confirm_content3").html($.su.CHAR.DHCP_STATIC.CONFIRM);// "输入的ip-mac与绑定的静态ip-mac对冲突，可能导致分配该IP的主机无法上网，确定是否继续提交?");
+	$("#imb_confirm_content4").html($.su.CHAR.DHCP_STATIC.CONFLICT);
+    var need_confirm = true;
+
+	function imb_export_valid(data, showalert) {
+		for(var i=0;i<ipmac_item.length;++i)
+		{
+			if(data.ip == ipmac_item[i].ipaddr && data.mac != ipmac_item[i].mac)
+			{
+				if (showalert)
+					$("#imb_alert_cnt4").msg("show");
+				return false;
+			}
+
+			if(data.ip == ipmac_item[i].ipaddr && data.mac == ipmac_item[i].mac)
+			{
+				return false;
+			}
+		}
+		return true;
+	}
+	
+	var static_grid = $("#dhcp_static_grid").grid({
+        editor: {
+            content:"default",
+            fields: [
+				{name: "interface"},
+				{name: "mac"},
+				{name: "ip"},
+				{name: "note"},
+				{name: "enable"},
+				{name: "bind"}
+            ],
+            validator: function()
+            {
+				var editor = static_grid.grid('getEditor');
+				var store = static_grid.grid('getStore');
+				var grid_array = store.data;
+                var editingId = $(editor).editor("getEditingId"); 
+                var keyProperty = store.keyProperty;
+                var ifname = $(editor).find('.combobox-value[name=interface]').combobox('getValue');
+                var macaddr = $(editor).find('.text-text[name=mac]').textbox('getValue');
+                var ipaddr = $(editor).find('.text-text[name=ip]').textbox('getValue');
+				var ifipmsg = [];
+				var ifmaskmsg = [];
+
+				var diffNet = true;
+				var specailIp = false;
+
+				if (interface_status){
+					ifstatus = interface_status["normal"];
+					if (ifstatus.length > 0)
+					{
+						for (var i = 0; i < ifstatus.length; i++)
+						{
+							if (ifstatus[i]['t_type'] != 'ethernet' && ifstatus[i]['t_type'] != 'bridge' &&
+								ifstatus[i]['t_type'] != 'physical')
+								continue;
+							
+							if ($.su.func.isLan(ifstatus[i]['t_name']) && 
+									ifstatus[i]['ipaddr'] && ifstatus[i]['netmask'])
+							{
+								ipArray = ipaddr.split(".");
+								ipArraySvr = ifstatus[i]['ipaddr'].split(".");
+								maskArray = ifstatus[i]['netmask'].split(".");
+								ipInt = (Number(ipArray[0])*(1<<24)+(Number(ipArray[1])<<16 |Number(ipArray[2])<<8 |Number(ipArray[3])));
+								ipIntSvr = (Number(ipArraySvr[0])*(1<<24)+(Number(ipArraySvr[1])<<16 |Number(ipArraySvr[2])<<8 |Number(ipArraySvr[3])));
+								netMaskInt = (Number(maskArray[0])*(1<<24)+(Number(maskArray[1])<<16 |Number(maskArray[2])<<8 |Number(maskArray[3])));
+								if ((ipInt&netMaskInt) != (ipIntSvr&netMaskInt))
+								{
+									continue;	
+								}
+								else
+								{
+									diffNet = false;
+								}
+								
+								if ((ipInt == ipIntSvr) || (ipInt & (~netMaskInt)) == 0 || (ipInt & (~netMaskInt)) == (~netMaskInt)) {
+									specailIp = true;
+									break;
+								}
+							}
+						}
+					}
+				};
+
+				if (diffNet)
+				{
+					$($("div#dhcp_static_grid").grid("getEditor")).form('setError', $.su.CHAR.DHCP_STATIC.ERR1);//"IP地址与LAN口IP地址不在同一网段");
+					return false;
+				}
+				if (specailIp) {
+					//"特殊IP地址"
+					$($("div#dhcp_static_grid").grid("getEditor")).form('setError', $.su.CHAR.DHCP_STATIC.ERR4);
+					return false;
+				}
+
+				if ($.isArray(grid_array) && grid_array.length > 0)
+				{
+					for (var k = 0; k < grid_array.length; k++)
+					{
+						var data = grid_array[k];
+						if (data[keyProperty] == editingId)
+						{
+							continue;
+						}
+						else
+						{
+							if (ipaddr == data['ip'] && macaddr != data['mac'])
+							{
+								$($("div#dhcp_static_grid").grid("getEditor")).form('setError', $.su.CHAR.DHCP_STATIC.ERR2);//"一个 IP 不可有映射多个 Mac地址");
+								return false;
+							}
+							if (macaddr.toUpperCase() == data['mac'].toUpperCase())
+							{
+								$($("div#dhcp_static_grid").grid("getEditor")).form('setError', $.su.CHAR.DHCP_STATIC.ERR3);//"输入的Mac地址已存在于其他条目中");
+								return false;
+							}
+
+						}
+					}	
+				}
+
+				if(need_confirm){
+					for(var i=0;i<ipmac_item.length;++i)
+					{
+						if(ipaddr == ipmac_item[i].ipaddr && macaddr != ipmac_item[i].mac)
+						{
+							
+							$("#imb_alert_cnt3").msg("show");
+							return false;	
+							
+						}
+					}
+				}
+				return true;
+            },
+            beforeSubmit:function(){
+                var editor = $(static_grid.grid("getEditor"));
+                var mac = editor.find("[name=mac]").textbox("getValue");
+                editor.find("[name=mac]").textbox("setValue", mac.replace(new RegExp(":", "g"), "-"));
+                return true;
+            }
+        },
+		store:{
+			proxy: staticListProxy,
+			extraProperty: "interface",
+			fields: [
+				{name: "interface"},
+				{name: "mac"},
+				{name: "ip"},
+				{name: "note"},
+				{name: "enable"},
+				{name: "bind"}
+			],
+			autoLoad: true
+		},
+		paging:[],
+		columns: [
+			{
+				xtype: "checkcolumn"
+			},
+			{
+				xtype: "rownumberer"
+			},
+			{
+				text: $.su.CHAR.DHCP_SERVER.MAC_ADDR,
+				width: 120,
+				dataIndex: "mac",
+                editor: {
+                    xtype: "textbox",
+                    allowBlank: false,
+                    maxLength:17,
+                    validator: function(value){
+                        var patternMac = /^[a-fA-F\d]{2}\-[a-fA-F\d]{2}\-[a-fA-F\d]{2}\-[a-fA-F\d]{2}\-[a-fA-F\d]{2}\-[a-fA-F\d]{2}$/;
+                        var patternMac2 = /^[a-fA-F\d]{2}\:[a-fA-F\d]{2}\:[a-fA-F\d]{2}\:[a-fA-F\d]{2}\:[a-fA-F\d]{2}\:[a-fA-F\d]{2}$/;
+                        var flag = patternMac.test(value);
+                        var flag2 = patternMac2.test(value);
+
+                        if (flag || flag2) {
+                            var patternMulti = /^\s*[0-9A-Fa-f]{1}[13579bdfBDF]{1}([\-\:]{1}[A-Fa-f0-9]{2}){5}\s*$/;
+                            var patternZero = /^(0{1,2}[\-\:]{1}){5}0{1,2}$/;
+                            var flag = patternMulti.test(value);
+                            var flag2 = patternZero.test(value);
+
+                            if (!flag && !flag2) {   
+                                return true;
+                            }
+                        }
+                        return $.su.CHAR.VTYPETEXT.MAC;
+                    }
+                }
+			},
+			{
+				text: $.su.CHAR.DHCP_SERVER.IP_ADDRESS,
+				width: 120,
+				dataIndex: "ip",
+				textFormat: $.su.format.ip,
+                editor: {
+                    xtype: "textbox",
+                    allowBlank: false,
+					vtype:"ip"
+                }
+			},
+			{
+                text: $.su.CHAR.DHCP_SERVER.DESCRIPTION,
+                dataIndex: "note",
+                xtype:"comment",
+                editor: {
+                    xtype: "textbox",
+                    allowBlank: true,
+                    tips: $.su.CHAR.GRID.OPTIONAL,
+                    vtype:"string_visible_allow_blank",
+                    maxLength:50
+                }
+            },
+            {
+                text: $.su.CHAR.DHCP_SERVER.EXPORT,
+                xtype: "statuscolumn",
+                dataIndex: "bind",
+                editor: {
+                    xtype: "checkbox",
+                    fieldLabel: '',
+                    items: [
+                        {boxlabel: $.su.CHAR.DHCP_SERVER.ENABLE, inputValue:'1', uncheckedValue:'0',checked:true}
+                    ]
+                },
+				hidden:true
+            },
+			{
+				text: $.su.CHAR.DHCP_SERVER.EXPORT_INTERFACE,
+				width: 100,
+				dataIndex: "interface",
+                editor: {
+                    xtype: "combobox",
+                    allowBlank: false,
+                    vtype:"string_visible_allow_blank",
+					items:[]
+                },
+				renderer: function(dd, index, data) {
+					return data.t_label;
+				},
+				hidden:true
+			},
+            {
+                text: $.su.CHAR.GRID.STATUS,
+                xtype: "statuscolumn",
+                dataIndex: "enable",
+                editor: {
+                    xtype: "checkbox",
+                    fieldLabel: '',
+                    items: [
+                        {boxlabel: $.su.CHAR.DHCP_SERVER.ENABLE, inputValue:'on', uncheckedValue:'off',checked:true}
+                    ]
+                }
+            },
+            {
+				width: 80,
+				name: "settings",
+				dataIndex: "bind",
+                text: $.su.CHAR.GRID.OPERATION,
+				renderer: function(dd, index, data) {
+					var key = this.get(0).store.keyProperty
+					var inHTML="<div class=\"button-container interface-operation\" style=\"text-align:center\">";
+					inHTML +=	"<a href=\"javascript:void(0);\" data-index=\""+index+"\" data-key=\""+data[key]+"\" title=\""+ $.su.CHAR.OPERATION.EDIT +"\" class=\"grid-content-btn grid-content-btn-edit btn-edit\">";
+					inHTML +=		"<span class=\"icon\"></span>";
+					inHTML +=		"<span class=\"text\">"+$.su.CHAR.OPERATION.EDIT+"</span>";
+					inHTML +=	"</a>";
+					//if (dd!= "1") {
+					//	inHTML +=   "<a href=\"javascript:void(0);\" data-index=\""+index+"\" data-key=\""+data[key]+"\" title=\""+ $.su.CHAR.DHCP_SERVER.EXPORT +"\" class=\"grid-content-btn btn-export\">";
+					//	inHTML +=       "<span class=\"icon\"></span>";
+					//	inHTML +=       "<span class=\"text\">"+$.su.CHAR.DHCP_SERVER.EXPORT+"</span>";
+					//	inHTML +=   "</a>";
+					//}
+					inHTML +=	"<a href=\"javascript:void(0);\" data-index=\""+index+"\" data-key=\""+data[key]+"\" title=\""+ $.su.CHAR.OPERATION.DELETE +"\" class=\"grid-content-btn grid-content-btn-delete btn-delete\">";
+					inHTML +=		"<span class=\"icon\"></span>";
+					inHTML +=		"<span class=\"text\">"+$.su.CHAR.OPERATION.DELETE+"</span>";
+					inHTML +=	"</a>";
+					return inHTML;
+				}
+            }
+		],
+		operation: 'prompt|add|delete'
+	}).on("ev_load", function(e,data, others){
+        if(others)/* 通过json里的others参数传递动态阀值 */
+        {
+            maxrules = others.max_rules;
+            //console.log(maxIpMask);
+        }
+		
+		/*var interfaceProxy = new $.su.Proxy({
+				url: $.su.url('/admin/interface?form=status1'),
+				async: false
+		});		
+		interfaceProxy.read({}, function(data){				
+			var grid_data = static_grid.grid('getStore').data;
+			var i
+			var interfaceItem=[];
+			for (i=0; i<data.normal.length; i++){
+				interfaceItem.push({name:data.normal[i].t_label,value:""+data.normal[i].t_name});						
+			}
+			for (i=0; i<data.vpn.length; i++){						
+				interfaceItem.push({name:data.vpn[i].t_label,value:""+data.vpn[i].t_name});	
+			}				
+			var editor = static_grid.grid('getEditor');
+			var combobox = $(editor).find('.combobox-value[name=interface]');
+				combobox.combobox('loadData',interfaceItem);					
+		});	*/
+    }).on("ev_submit", function(e){
+		form = $(this).find("td.editor-container")
+		if (form.form("validate")){
+			var dNew = form.form("serialize")
+			if (dNew.bind != "1")
+				return;
+			
+			var edi = $(this).grid("getEditor");
+			var ediID = $(edi).editor('getEditingId');
+			if(ediID != "add")
+			{
+				var sto = $(this).grid("getStore");
+				var dOld = sto.getData(ediID);
+				if(dOld.bind == dNew.bind)
+					return
+			}
+
+			if (imb_export_valid(dNew, false) == false)
+				return;
+
+			$(this).grid("runProgress");
+
+			IMB_RULE_LIST_PROXY.write({
+				method: "add",
+				params:$.extend({"index": 0}, {
+					"old": "add",
+					"new": {
+						"ipaddr": dNew.ip,
+						"mac": dNew.mac,
+						"zone": dNew.interface,
+						"note": dNew.note,
+						"enable": dNew.enable
+					}
+				}, {"place": "add"})
+			});
+
+		}
+	}).delegate("a.grid-content-btn.btn-export", "click", function(e){
+		e.preventDefault();
+		e.stopPropagation();
+
+		var btn = $(this),
+			tr = btn.closest("tr.grid-content-tr");
+		if (tr.hasClass("disabled")){
+			return;
+		};
+
+		var index = $(this).attr("data-index")
+		var dNew = $("#dhcp_static_grid").get(0).store.getDataByIndex(index)
+
+		if (imb_export_valid(dNew, true) == false)
+			return;
+
+		$("#dhcp_static_grid").grid("runProgress")
+		IMB_RULE_LIST_PROXY.write({
+				method: "add",
+				params:$.extend({"index": 0}, {
+					"old": "add",
+					"new": {
+						"ipaddr": dNew.ip,
+						"mac": dNew.mac,
+						"zone": dNew.interface,
+						"note": dNew.note,
+						"enable": dNew.enable
+					}
+				}, {"place": "add"})
+		}, function(){
+			$("#dhcp_static_grid").grid("prompt", true);
+			$("#dhcp_static_grid").grid("getStore").load();
+		}, function(){
+			$("#dhcp_static_grid").grid("prompt", false);
+		}, function(){
+			$("#dhcp_static_grid").grid("prompt", false);
+		});
+	});
+
+	interfaceIpProxy.read({}, function(data){
+		interface_status = data;
+		for (var i = 0; i < data["normal"].length; i++) {
+			if ($.su.func.isLan(data["normal"][i].t_name)) {
+				if (interface_lan.length == 0)
+					interface_lan.push({value:data["normal"][i].t_name, name:data["normal"][i].t_label, selected:true});
+				else
+					interface_lan.push({value:data["normal"][i].t_name, name:data["normal"][i].t_label});
+			}
+		}
+		var editor = static_grid.grid('getEditor');
+		$(editor).find('.combobox-value[name=interface]').combobox('loadData', interface_lan);
+	});
+
+	$(static_grid.grid('getEditor')).on("ev_startEdit", function(e, index, key){
+		oprIndex = index;
+		$.su.func.showWidgets($('input.checkbox[name=bind]'))
+		$.su.func.showWidgets($(static_grid.grid('getEditor')).find('.combobox-value[name=interface]'));
+		if (index != "add") {
+			var rowdata = this.grid.get(0).store.getDataByIndex(index)
+			if (rowdata.bind == "1") {
+				//$.su.func.hideWidgets($('input.checkbox[name=bind]'))
+				//$.su.func.hideWidgets($(static_grid.grid('getEditor')).find('.combobox-value[name=interface]'));
+				//使用hideWidgets()会使控件disabled，下发的json中会缺少相关字段
+				$('input.checkbox[name=bind]').checkbox('hide');
+				$('input.combobox-value[name=interface]').combobox('hide');
+				$('input.checkbox[name=bind]').off("ev_change");
+				return;
+			}
+			else {
+				$(static_grid.grid('getEditor')).find('.combobox-value[name=interface]').combobox('disableStyle');
+			}
+		}
+		$('input.checkbox[name=bind]').on("ev_change", function(e, vOld, vNew){
+				if (vNew == 0) {
+					$(static_grid.grid('getEditor')).find('.combobox-value[name=interface]').combobox('disableStyle');
+				} else {
+					$(static_grid.grid('getEditor')).find('.combobox-value[name=interface]').combobox('enableStyle');
+				}
+			})
+	});
+
+	 $("#imb_alert_cnt3").msg({
+        okHandler:function(){
+            var ruleEditor = static_grid.grid("getEditor");
+            need_confirm = false;
+            $(ruleEditor).find("button.btn-submit").click();
+        },
+        cls:"m warning",
+        cancelHandler:function(){
+
+        }
+    });
+
+	 $("#imb_alert_cnt4").msg({
+        cls:"m warning",
+    });
+
+    var editor = $(static_grid.grid('getEditor'));
+    editor.find("div.container.widget-container.combobox-container.single").addClass("hidden");
+    /*
+    editor.on("ev_startEdit", function(e){
+    	editor.find("div.container.widget-container.combobox-container.single").addClass("hidden");
+    });
+*/
+	editor.on("ev_startEdit", function(e){
+    	//editor.find("div.container.widget-container.combobox-container.single").addClass("hidden");
+    	need_confirm = true;
+    });
+
+    var helpNaptGrid = new $.su.Help({
+        container: "div#dhcp_static_list_help",
+        content: "DHCP_STATIC"
+    });
+
+});
+</script>
+</body>
+
+</html>

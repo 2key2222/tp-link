@@ -1,0 +1,37 @@
+
+config default 'default'
+	option zones 'LAN WAN1'
+	option prerouting 'http ftp dns one_dmz vs pt dmz'
+	option postrouting 'one_nat vs multi_nat'
+	list network 'LAN-LAN'
+	list network 'WAN1-WAN1'
+
+config nat_global 'global'
+	option enable 'on'
+	option whole_napt 'on'
+
+config nat_alg
+	option pptp 'on'
+	option l2tp 'off'
+	option tftp 'off'
+	option ftp 'on'
+	option h323 'on'
+	option ipsec 'on'
+	option sip 'on'
+
+config rule_napt
+	option name 'NAT_LAN_WAN1'
+	option enable 'on'
+	option mask '0'
+	option ipaddr '0.0.0.0'
+	option interface 'WAN1'
+	option sysrule	'1'
+
+config rule_napt
+	option name 'NAT_LAN_WAN2'
+	option enable 'on'
+	option mask '0'
+	option ipaddr '0.0.0.0'
+	option interface 'WAN2'
+	option sysrule '1'
+	

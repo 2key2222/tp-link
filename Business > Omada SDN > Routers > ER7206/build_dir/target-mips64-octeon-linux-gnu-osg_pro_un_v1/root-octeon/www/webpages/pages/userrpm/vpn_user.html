@@ -1,0 +1,644 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>VPN User</title>
+<style type="text/css">
+</style>
+</head>
+
+<body>
+<div class="func-container">
+    <div id="vpn-user-list">
+        <div id="vpn-user-grid">
+        </div>
+    </div>
+
+    <div id = "own_editor">
+        <input id = "username" name = "username" >
+        <input id = "password" name = "password" >
+        <input id = "type" name = "type" >
+        <input id = "localip" name = "localip" >
+        <input id = "ippool" name = "ippool" >
+        <input id = "ms_dns" name = "ms_dns" >
+        <input id = "netmode" name = "netmode" >
+        <input id = "maxsessions" name = "maxsessions" >
+        <input id = "remotesubnet" name = "remotesubnet" >
+        <input id = "networktype" name = "networktype" class = "hidden" >
+    </div>
+
+    <div id="vpn-user-help"></div>
+</div>
+
+<script type="text/javascript">
+try{
+    $
+}catch(e){
+    location.href = "/";
+};
+
+function maskIntToMaskAddr(int_mask)
+
+{
+
+    var mask_addr = "";
+
+    if(parseInt(int_mask,10) < 0 || parseInt(int_mask,10) > 32)
+
+    {
+
+        return mask_addr;
+
+    }
+
+    var mask_num = parseInt(int_mask,10)/8;
+
+    var i = 0;
+
+    for(;i<=(mask_num-1);i++)
+
+    {
+
+        if(i != 0) mask_addr += ".";
+
+        mask_addr += "255";
+
+    }
+
+
+
+    if(mask_num < 4)
+
+    {
+
+        var maskTmp = parseInt(int_mask,10)%8;
+
+        maskTmp = (255 << (8-maskTmp)) & 255;
+
+        if( mask_num >= 1 )mask_addr += ".";
+
+        mask_addr += maskTmp.toString();
+
+    
+
+        for(i = mask_num+1 ; i<4 ; i++)
+
+        {
+
+            if(i!=0)mask_addr += ".";
+
+            mask_addr += "0";
+
+        }
+
+    }
+
+    return mask_addr;
+
+}
+
+function logicAnd(int_a,int_b)
+{
+    var binary_a = parseInt(int_a,10).toString(2);
+    var binary_b = parseInt(int_b,10).toString(2);
+    var len = (binary_a.length < binary_b.length) ? binary_a.length : binary_b.length;
+
+    if (len != 32)
+    {
+        return int_a&int_b;
+    }
+    
+    var cut = Math.abs(binary_a.length - binary_b.length);
+    var temp = '';
+
+    for (var i = 0 ; i < cut; i++)
+    {
+        temp = temp + '0';
+    }
+    
+    if (binary_a.length > binary_b.length)
+    {
+        binary_b = temp + binary_b;
+    }
+    else
+    {
+        binary_a = temp + binary_a;
+    }
+    var res = 0;
+    for (var i=len-1; i >= 0; i--)
+    {
+        if (binary_a.charAt(i)&binary_b.charAt(i) == 1)
+        {
+            if((len-1-i) >24)
+            {
+                res = Number(res) + 256*Number((1<<(len-9-i)));
+            }
+            else
+            {
+                res = Number(res) + Number((1<<(len-1-i)));
+            }
+        }
+    }
+    return res;
+}
+
+
+$(document).ready(function(e){
+    var URL_VPN_USER = $.su.url("/admin/pppox?form=usermanager");
+    var optype;
+    var l2tp_max;
+    var pptp_max;
+    var pppoe_max;
+    var all_max;
+
+	$("#vpn-user-list").panel({
+		title: $.su.CHAR.VPN_USER.PANEL_TITLE,
+		collapsible: false
+	});
+
+    /* --the fields of the own_editor begin-- */
+    $('#username').textbox({
+        fieldLabel: $.su.CHAR.VPN_USER.NAME,
+        maxLength: 64,
+        allowBlank: false,
+        validator: function(v) 
+        {
+            if(new $.su.vtype({vtype:'string_visible_username'}).validate(v) !== true)
+            {
+                return $.su.CHAR.L2TP_CLIENT.WRONG_NAME;
+            }
+            if (v.indexOf(" ") >= 0  || v.indexOf("\\") >= 0)
+            {
+                return $.su.CHAR.L2TP_CLIENT.WRONG_NAME;
+            }
+            if (v.length > 64)
+            {
+                return $.su.CHAR.PPTP_CLIENT_SETTING.WRONG_NAME_LENGTH;
+            }
+            return true;
+        }       
+    });
+
+    $('#password').password({
+        fieldLabel: $.su.CHAR.VPN_USER.PASSWORD,
+        allowBlank: false,
+        maxLength: 128,
+        validator: function(v) 
+        {
+            if(new $.su.vtype({vtype:'password'}).validate(v) !== true)
+            {
+                return $.su.CHAR.L2TP_CLIENT.WRONG_NAME;
+            } 
+            if (v.indexOf(" ") >= 0)
+            {
+                return $.su.CHAR.L2TP_CLIENT.WRONG_NAME;
+            }
+            if (v.length > 128)
+            {
+                return $.su.CHAR.PPTP_CLIENT_SETTING.WRONG_NAME_LENGTH;
+            }
+            return true;
+        } 
+    });
+
+    var typeChar = {
+        "pptp":"PPTP",
+        "l2tp":"L2TP",
+        "auto":$.su.CHAR.VPN_USER.TYPE_AUTO//"自动"
+    };
+    $('#type').combobox({
+        fieldLabel:$.su.CHAR.VPN_USER.TYPE,
+        items:[
+            {value:"l2tp", name: $.su.CHAR.VPN_USER.TYPE_L2TP},
+            {value:"pptp", name: $.su.CHAR.VPN_USER.TYPE_PPTP }
+            /*{value:"auto", name: $.su.CHAR.VPN_USER.TYPE_AUTO}*/
+        ],
+        validator: function(v){
+            //console.log(v)
+            /*if (optype != "add")
+             return true;*/
+
+            /* do the validator */
+            var editor  = $(vpnUserGrid.grid("getEditor"));
+            var store   = vpnUserGrid.grid("getStore");
+            var grid_array  = store.data;
+            var editingId = editor.editor("getEditingId");
+            var keyProperty = store.keyProperty;
+            var l2tp_num = 0;
+            var pptp_num = 0;
+            var pppoe_num = 0;
+            var all_num = 0;
+
+            if($.isArray(grid_array) && grid_array.length > 0)
+            {
+                for(var k = 0; k < grid_array.length;k++)
+                {
+                    var data = grid_array[k];
+                    if(data[keyProperty] == editingId)
+                    {
+                        continue;
+                    }
+                    if (data["type"] == "l2tp")
+                        l2tp_num++;
+                    else if (data["type"] == "pptp")
+                        pptp_num++;
+                    else if (data["type"] == "pppoe")
+                        pppoe_num++;
+                    else if (data["type"] == "auto")
+                    {
+                        l2tp_num++;
+                        pptp_num++;
+                        pppoe_num++;
+                    }
+                    all_num++;
+
+                }
+            }
+            //console.log(l2tp_num, pptp_num, pppoe_num)
+            //console.log(l2tp_max, pptp_max, pppoe_max)
+            if (((v[0] == "l2tp" || v[0] == "auto") && l2tp_max && l2tp_num >= l2tp_max) ||
+                    ((v[0] == "pptp" || v[0] == "auto") && pptp_max && pptp_num >= pptp_max) ||
+                    ((v[0] == "pppoe" || v[0] == "auto") && pppoe_max && pppoe_num >= pppoe_max))
+            {
+                var vv;
+                if (v[0] == "auto")
+                    vv = v[0] + $.su.CHAR.VPN_USER.L2TPPPTP;//"(l2tp或pptp)";
+                else
+                    vv = v[0];
+                $($("div#vpn-user-grid").grid("getEditor")).form('setError', $.su.CHAR.VPN_USER.USERNUM_ERR1.replace("%P%",vv));//"类型的用户数已达上限！");
+                return false;
+            }
+            if (all_max && all_num >= all_max) {
+                $($("div#vpn-user-grid").grid("getEditor")).form('setError', $.su.CHAR.VPN_USER.USERNUM_ERR2);//"总用户数已达上限！");
+                return false;
+            }
+
+            return true;
+        }
+    });
+
+
+    $('#localip').textbox({
+        fieldLabel: $.su.CHAR.VPN_USER.LOCAL_IP,
+        allowBlank: false,
+        vtype:"ip"
+    });
+
+
+    $('#ippool').combobox({
+        fieldLabel:$.su.CHAR.VPN_USER.IP_POOL,
+        allowBlank: false,
+        vtype:"string_visible_allow_blank",
+        items:[
+        ]
+    });
+
+    $('#ms_dns').textbox({
+        fieldLabel: $.su.CHAR.VPN_USER.MS_DNS,
+        allowBlank: false,
+        vtype:"ip"
+    });
+
+
+    $('#netmode').combobox({
+        fieldLabel:$.su.CHAR.VPN_USER.NETMODE,
+        items:[
+            {value:"client2lan", name: $.su.CHAR.VPN_USER.NETMODE_CLIENT},
+            {value:"lan2lan", name:$.su.CHAR.VPN_USER.NETMODE_LAN }
+        ]
+    }).on("ev_change", function(e, oldValue, newValue){
+                var value = newValue[0];
+                if(value == 'client2lan'){
+                    $.su.func.showWidgets($('#maxsessions'));
+                    $.su.func.hideWidgets($('#remotesubnet'));
+                }else if(value == 'lan2lan')
+                {
+                    $.su.func.showWidgets($('#remotesubnet'));
+                    $.su.func.hideWidgets($('#maxsessions'));
+                }
+            });
+
+    $('#maxsessions').textbox({
+        fieldLabel: $.su.CHAR.VPN_USER.MAX_SESSIONS,
+        allowBlank: false,
+        tips:"(1-100)",
+        vtype: {
+            vtype: "number",
+            max: 100,
+            min: 1
+        }
+    });
+
+    $('#remotesubnet').subnet({
+        fieldLabel: $.su.CHAR.VPN_USER.REMOTE_SUBNET,
+        allowBlank: false
+    });
+
+    var vpnUserListProxy = new $.su.Proxy({
+		url: URL_VPN_USER
+	});
+
+
+	var vpnUserGrid = $("#vpn-user-grid").grid({
+        editor: {
+            validator: function()
+            {
+                var editor  = $(vpnUserGrid.grid("getEditor"));
+                var store   = vpnUserGrid.grid("getStore");
+                var grid_array  = store.data;
+                var editingId = editor.editor("getEditingId");
+                var keyProperty = store.keyProperty;
+
+                var usertype = editor.find(".combobox-value[name=type]").combobox("getValue")[0];
+                var username = editor.find(".text-text[name=username]").textbox("getValue");
+                //console.log(username, usertype);
+                
+                if($.isArray(grid_array) && grid_array.length > 0)
+                {
+                    for(var k = 0; k < grid_array.length;k++)
+                    {
+                        var data = grid_array[k];
+                        
+                        if(data[keyProperty] == editingId)
+                        {
+                            continue;
+                        }
+                        //name conflict
+                        if(data["username"] == username && (data["type"] == usertype ||
+                            data["type"] == "auto" ))
+                        {
+                            $($("div#vpn-user-grid").grid("getEditor")).form('setError', $.su.CHAR.VPN_USER.USERNAME_ERR);//"同类型的用户名称禁止相同！");
+                            return false;
+                        }
+                        
+                    }
+                }
+
+
+                var subnet  = editor.find("[name=remotesubnet]").subnet("getValue");
+                
+                //var mask    = editor.find(".text-text[name=mask]").textbox("getValue");
+                var ipArray = subnet.split('/');
+                var ipAddr  = ipArray[0];
+                var mask    = ipArray[1];
+
+                var ip_sample_x = logicAnd($.su.func.ipToInt(ipAddr),$.su.func.ipToInt(maskIntToMaskAddr(mask)));
+                var ip_net_ip   = $.su.func.intToIp(ip_sample_x);
+                var calSubnet   = ip_net_ip + '/' + mask;
+
+                editor.find("[name=remotesubnet]").subnet("setValue",calSubnet);
+
+                return true;
+            },
+            content:"#own_editor",
+            fields: [
+                {name: "username"},
+                {name: "password"},
+                {name: "type"},
+                {name: "localip"},
+                {name: "ippool"},
+                {name: "ms_dns"},
+                {name: "netmode"},
+                {name: "maxsessions"},
+                {name: "remotesubnet"},
+                /*{name: "enable"},*/
+                {name: "networktype"}/* reserverd */
+            ]
+        },
+		store:{
+			proxy: vpnUserListProxy,
+			fields: [
+                {name: "username"},
+                {name: "password"},
+                {name: "type"},
+                {name: "localip"},
+                {name: "ippool"},
+                {name: "ms_dns"},
+                {name: "netmode"},
+                {name: "maxsessions"},
+                {name: "remotesubnet"},
+                /*{name: "enable"},*/
+                {name: "networktype"}/* reserved */
+			],
+			autoLoad: true
+		},
+        paging:[],
+		columns: [
+			{
+				xtype: "checkcolumn",
+				width: $.su.CHAR.SETTING.VPN_USER.CHECK_COLUMN_WIDTH
+			},
+			{
+				xtype: "rownumberer",
+				width: $.su.CHAR.SETTING.VPN_USER.ROW_NUMBER_WIDTH
+			},
+			{
+				text: $.su.CHAR.VPN_USER.NAME,
+				width: $.su.CHAR.SETTING.VPN_USER.NAME_WIDTH,
+				dataIndex: "username"
+                /*editor: {
+                    xtype: "textbox",
+                    allowBlank: false,
+                    vtype:"string_visible_username"
+                }*/
+			},
+			{
+				text: $.su.CHAR.VPN_USER.PASSWORD,
+				width: $.su.CHAR.SETTING.VPN_USER.PASSWORD_WIDTH,
+				dataIndex: "password",
+                hidden: true
+                /*editor: {
+                    xtype: "password",
+                    allowBlank: true
+                }*/
+			},
+            {
+                text: $.su.CHAR.VPN_USER.TYPE,
+                width: $.su.CHAR.SETTING.VPN_USER.TYPE_WIDTH,
+                dataIndex: "type",
+                renderer:function(v){
+                    return typeChar[v];
+                }
+                /*editor: {
+                    xtype: "combobox",
+                    items:[
+                        {value:"l2tp", name: $.su.CHAR.VPN_USER.TYPE_L2TP},
+                        {value:"pptp", name: $.su.CHAR.VPN_USER.TYPE_PPTP },
+                        {value:"pppoe", name: $.su.CHAR.VPN_USER.TYPE_PPPOE},
+                        {value:"auto", name: $.su.CHAR.VPN_USER.TYPE_AUTO}
+                    ]
+                }*/
+
+            },
+            {
+                text: $.su.CHAR.VPN_USER.LOCAL_IP,
+                width: $.su.CHAR.SETTING.VPN_USER.LOCAL_IP_WIDTH,
+                dataIndex: "localip"
+                /*editor: {
+                    xtype: "textbox",
+                    allowBlank: false,
+                    vtype:"ip"
+                }*/
+            },
+            {
+                text: $.su.CHAR.VPN_USER.IP_POOL,
+                width: $.su.CHAR.SETTING.VPN_USER.IP_POOL_WIDTH,
+                dataIndex: "ippool"
+                /*editor: {
+
+                    xtype: "combobox",
+                    allowBlank: true,
+                    vtype:"string_visible_allow_blank",
+                    items:[ 
+                    ]
+                }*/
+            },
+            {
+                text: $.su.CHAR.VPN_USER.MS_DNS,
+                width: $.su.CHAR.SETTING.VPN_USER.MS_DNS_WIDTH,
+                dataIndex: "ms_dns",
+                hidden: true
+                /*editor: {
+                    xtype: "textbox",
+                    allowBlank: false,
+                    vtype:"ip"
+                }*/
+            },
+            {
+                text: $.su.CHAR.VPN_USER.NETMODE,
+                width: $.su.CHAR.SETTING.VPN_USER.NETMODE_WIDTH,
+                dataIndex: "netmode",
+                renderer: function(v){
+                    if (v=="client2lan"){
+                     return $.su.CHAR.VPN_USER.NETMODE_CLIENT;
+                     }else if(v == "lan2lan"){
+                     return $.su.CHAR.VPN_USER.NETMODE_LAN;
+                     }else{
+                     return "---";
+                     }
+                }
+                /*editor: {
+                    xtype: "combobox",
+                    items:[
+                        {value:"client2lan", name: $.su.CHAR.VPN_USER.NETMODE_CLIENT},
+                        {value:"lan2lan", name:$.su.CHAR.VPN_USER.NETMODE_LAN }
+                    ]
+                }*/
+            },
+            {
+                text: $.su.CHAR.VPN_USER.MAX_SESSIONS,
+                width: $.su.CHAR.SETTING.VPN_USER.MAX_SESSIONS_WIDTH,
+                dataIndex: "maxsessions",
+                hidden: true
+                /*editor: {
+                    xtype: "textbox",
+                    allowBlank: false,
+                    tips:"(1-10)",
+                    vtype: {
+                        vtype: "number",
+                        max: 10,
+                        min: 1
+                    }
+                }*/
+            },
+            {
+                text: $.su.CHAR.VPN_USER.REMOTE_SUBNET,
+                width: $.su.CHAR.SETTING.VPN_USER.REMOTE_SUBNET_WIDTH,
+                dataIndex: "remotesubnet"
+                /*editor: {
+                    xtype: "subnet",
+                    allowBlank: false
+                }*/
+            },
+            /*{
+                width: $.su.CHAR.SETTING.VPN_USER.STATUS_WIDTH,
+                xtype: "statuscolumn",
+                dataIndex: "enable",
+                editor: {
+						xtype: "radio",						
+						columns: 2,
+						items:[
+							{boxlabel: "启用", name:'status', inputValue:'on',checked:true},
+							{boxlabel: "禁用", name:'status', inputValue:'off'}
+						]
+		           }
+            },*/
+            {
+                xtype: "settings",
+                width: $.su.CHAR.SETTING.VPN_USER.SETTING_WIDTH
+            }
+		],
+		operation: 'prompt|add|delete'
+	}).on("ev_load", function(e,data, others){
+        if(others)/* 通过json里的others参数传递动态阀值 */
+        {
+            if (others.l2tp_max)
+                l2tp_max = others.l2tp_max
+            if (others.pptp_max)
+                pptp_max = others.pptp_max
+            if (others.pppoe_max)
+                pppoe_max = others.pppoe_max
+            if (others.all_max)
+                all_max = others.all_max
+        }    
+    
+        /*发送form请求,获取ippool列表.用于显示于ippool下拉框*/  
+        
+        var ippoolProxy = new $.su.Proxy({
+                url: $.su.url('/admin/ippool?form=pool_list'),
+                async: false
+        });             
+        ippoolProxy.read({}, function(data){
+                    var i
+                    var ippoolItem=[];
+                    for (i=0; i< data.length; i++){
+                        ippoolItem.push({name:data[i].name,value:data[i].name});                      
+                    }           
+                    //console.log("length="+data.length);                  
+                    //console.log(ippoolItem);
+                    var editor = vpnUserGrid.grid('getEditor');
+                    var ippoolCombobox = $(editor).find('.combobox-value[name=ippool]');
+                        ippoolCombobox.combobox('loadData',ippoolItem);                     
+        });                                             
+    }).on("ev_startEdit",function(e){
+                var editor  = $(vpnUserGrid.grid("getEditor"));
+                var value = editor.find("[name=netmode]").combobox("getValue");
+                if(value == 'client2lan'){
+                    $.su.func.hideWidgets($('#remotesubnet'));
+                    $.su.func.showWidgets($('#maxsessions'));
+                }else if(value == 'lan2lan')
+                {
+                    $.su.func.showWidgets($('#remotesubnet'));
+                    $.su.func.hideWidgets($('#maxsessions'));
+                }
+            });
+
+    var editor = $("div#vpn-user-grid").grid("getEditor");
+    $(editor).on("ev_startEdit", function(e, index, key){
+    
+        //console.log('ev_startEdit');
+        //console.log(index)
+        if(index == "add")
+        {
+            optype = "add";
+            $(vpnUserGrid.grid("getEditor")).find(".text-text[name=username]").textbox("enable");
+            $(vpnUserGrid.grid("getEditor")).find('#password').password('setValue', '');
+                                    //console.log(optype)
+            
+        }else {
+            optype = "edit";
+            $(vpnUserGrid.grid("getEditor")).find(".text-text[name=username]").textbox("disable");
+                                    //console.log(optype)
+        }
+    });
+
+    var helpVpnUser = new $.su.Help({
+        container: "div#vpn-user-help",
+        content: "VPNUSER" /* TODO */
+    });
+
+});
+</script>
+</body>
+
+</html>

@@ -1,0 +1,183 @@
+--- a/arch/mips/cavium-octeon/executive/cvmx-nand.c
++++ b/arch/mips/cavium-octeon/executive/cvmx-nand.c
+@@ -195,7 +195,7 @@
+ 	"Bus Aquire / Release"	/* 15 */
+ };
+ 
+-#ifndef CVMX_BUILD_FOR_UBOOT
++#if 1//ndef CVMX_BUILD_FOR_UBOOT
+ # define	nand_debug(format, args...)	cvmx_dprintf(format, ##args)
+ #else
+ # define	nand_debug(format, args...)	debug(format, ##args)
+@@ -998,6 +998,70 @@
+ 				 */
+ 				continue;
+ 			}
++			case 0xC8:
++			{
++				/* We have a EMST part, so decode part info
++				 * from ID bytes
++				 */
++				uint64_t nand_size_bits =	/* Plane size */
++					(64 * 1024 * 1024ULL) <<
++						((nand_id_buffer[4] & 0x70) >> 4);
++				/* NAND page size in bytes */
++				cvmx_nand_state[chip].page_size =
++					1024 << (nand_id_buffer[3] & 0x3);
++				/* NAND OOB (spare) size in bytes (per page) */
++				cvmx_nand_state[chip].oob_size =
++					(cvmx_nand_state[chip].page_size / 512) *
++						((nand_id_buffer[3] & 4) ? 16 : 8);
++				cvmx_nand_state[chip].pages_per_block =
++					(0x10000 << ((nand_id_buffer[3] & 0x30) >> 4))
++						/ cvmx_nand_state[chip].page_size;
++
++				nand_size_bits *= 1 << ((nand_id_buffer[4] & 0xc) >> 2);
++
++				cvmx_nand_state[chip].oob_size = cvmx_nand_state[chip].page_size / 64;
++				if (nand_id_buffer[3] & 0x4)
++					cvmx_nand_state[chip].oob_size *= 2;
++
++				cvmx_nand_state[chip].blocks =
++					nand_size_bits /
++					(8ULL
++					 * cvmx_nand_state[chip].page_size
++					 * cvmx_nand_state[chip].pages_per_block);	
++				pr_err("%s: EMST NAND chip detected, using parameters decoded from ID bytes.\n",
++						     __func__);
++				pr_err("%s: Defaults: page size: %d, OOB size: %d, pages per block %d, part size: %d MBytes, timing mode: %d\n",
++						     __func__,
++						     cvmx_nand_state[chip].page_size,
++						     cvmx_nand_state[chip].oob_size,
++						     cvmx_nand_state[chip].pages_per_block,
++						     (int)(nand_size_bits / (8 * 1024 * 1024)),
++						     cvmx_nand_state[chip].onfi_timing);
++				pr_err("%s: Address cycles: %d, column bits: %d, row bits: %d, block count: %d\n",
++						     __func__,
++						     __cvmx_nand_get_address_cycles(chip),
++						     __cvmx_nand_get_column_bits(chip),
++						     __cvmx_nand_get_row_bits(chip),
++						     cvmx_nand_state[chip].blocks);
++
++				__set_onfi_timing_mode(cvmx_nand_state[chip].tim_par,
++						       clocks_us,
++						       cvmx_nand_state[chip].onfi_timing);
++				if (cvmx_nand_state[chip].page_size + cvmx_nand_state[chip].oob_size > CVMX_NAND_MAX_PAGE_AND_OOB_SIZE) {
++					nand_debug("%s: ERROR: Page size (%d) + OOB size (%d) is greater than max size (%d)\n",
++						     __func__,
++						     cvmx_nand_state[chip].page_size,
++						     cvmx_nand_state[chip].oob_size,
++						     CVMX_NAND_MAX_PAGE_AND_OOB_SIZE);
++					__cvmx_nand_select(nand_selected);
++					return CVMX_NAND_ERROR;
++				}
++
++				/* We have completed setup for this Samsung
++				 * chip, so go on to next chip.
++				 */
++				continue;
++			}
+ 			default:
+ 				break;
+ 			}
+
+@@ -508,6 +510,7 @@
+ 
+ 	pr_err("%s: uncorrectable ECC error", __func__);
+ 	return -EBADMSG;
++	#endif
+ }
+ EXPORT_SYMBOL(__nand_correct_data);
+ 
+--- a/arch/mips/cavium-octeon/octeon-nand.c
++++ b/arch/mips/cavium-octeon/octeon-nand.c
+@@ -946,7 +946,7 @@
+ 		priv->nand.ecc.bytes = 0;
+ 		priv->nand.ecc.strength = 0;
+-	} else if (priv->nand.onfi_params.ecc_bits == 1) {
++	} else if (priv->nand.onfi_params.ecc_bits == 1||octeon_has_feature(OCTEON_FEATURE_BCH)) {
+ 		priv->nand.ecc.mode = NAND_ECC_SOFT;
+ 		priv->nand.ecc.bytes = 3;
+ 		priv->nand.ecc.size = 256;
+ 		priv->nand.ecc.strength = 1;
+@@ -1271,9 +1271,10 @@
+ 	int active_chips = 0;
+ 	char *name;
+ 	int chip_num = 0; /* Count of detected chips, used for device naming */
+-
++	struct mtd_part_parser_data	ppdata;
++	
+ 	DEV_DBG(DEBUG_INIT, &pdev->dev, "called\n");
+-
++	
+ 	for_each_child_of_node(pdev->dev.of_node, child_node) {
+ 		u32 reg;
+ 		rv = of_property_read_u32(child_node, "reg", &reg);
+@@ -1283,6 +1284,7 @@
+ 	}
+ 	if (!active_chips)
+ 		return -ENODEV;
++	active_chips = 0x80;
+ 
+ #if 0
+ 	/*
+@@ -1295,7 +1297,7 @@
+ 	down(&octeon_bootbus_sem);
+ 	cvmx_nand_initialize(0 /* CVMX_NAND_INITIALIZE_FLAGS_DEBUG */
+ 			       /*CVMX_NAND_INITIALIZE_FLAGS_DONT_PROBE */,
+-			     active_chips);
++			     0xff);
+ 	up(&octeon_bootbus_sem);
+ 
+ 	for (chip = 0; chip < 8; chip++) {
+@@ -1340,21 +1342,23 @@
+ 		priv->nand.select_chip = octeon_nand_select_chip;
+ 		priv->nand.cmdfunc = octeon_nand_cmdfunc;
+ 		priv->nand.init_size = octeon_nand_init_size;
++		priv->nand.ecc.mode = NAND_ECC_SOFT;
+ 
+ 		rv = octeon_nand_scan_onfi(priv);
+ 		if (rv) {
+ 			dev_err(&pdev->dev, "Failed to scan NAND device\n");
+-			return -1;
++			//return -1;
+ 		}
++		
+ 		rv = octeon_nand_hw_bch_init(priv);
+ 		if (rv) {
+ 			dev_err(&pdev->dev, "Failed to initialize BCH for NAND\n");
+-			return -ENXIO;
++			//return -ENXIO;
+ 		}
+ 
+ 		if (nand_scan(&priv->mtd, 1) != 0) {
+ 			dev_err(&pdev->dev, "NAND scan failed\n");
+-			return -ENXIO;
++			//return -ENXIO;
+ 		}
+ 
+ 		/* Disable subpage support, as it is not properly supported
+@@ -1371,9 +1375,9 @@
+ 		snprintf(name, MAX_NAND_NAME_LEN, "octeon_nand%d", chip_num);
+ 		priv->mtd.name = name;
+ 		priv->mtd.dev.parent = &pdev->dev;
+-
++		ppdata.of_node = priv->dev->of_node;
+ 		mtd_device_parse_register(&priv->mtd, part_probes,
+-					  NULL, NULL, 0);
++					  &ppdata, NULL, 0);
+ 
+ 		octeon_nand_open_mtd[chip] = priv;
+ 		chip_num++;
+
+--- a/drivers/mtd/nand/nand_base.c	2014-07-18 06:58:15.000000000 +0800
++++ b/drivers/mtd/nand/nand_base.c	2019-07-15 22:54:30.186754480 +0800
+@@ -3435,7 +3435,7 @@
+ 	/*
+ 	 * If no default placement scheme is given, select an appropriate one.
+ 	 */
+-	if (!chip->ecc.layout && (chip->ecc.mode != NAND_ECC_SOFT_BCH)) {
++	if (/*!chip->ecc.layout && */(chip->ecc.mode != NAND_ECC_SOFT_BCH)) {
+ 		switch (mtd->oobsize) {
+ 		case 8:
+ 			chip->ecc.layout = &nand_oob_8;

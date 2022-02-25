@@ -1,0 +1,25 @@
+--- a/net/netfilter/xt_esp.c	2019-11-28 14:39:04.432187962 +0800
++++ b/net/netfilter/xt_esp.c	2019-11-28 15:28:10.020187877 +0800
+@@ -11,7 +11,7 @@
+ #include <linux/skbuff.h>
+ #include <linux/in.h>
+ #include <linux/ip.h>
+-
++#include <net/xfrm.h>
+ #include <linux/netfilter/xt_esp.h>
+ #include <linux/netfilter/x_tables.h>
+ 
+@@ -56,8 +56,12 @@
+ 		return false;
+ 	}
+ 
+-	return spi_match(espinfo->spis[0], espinfo->spis[1], ntohl(eh->spi),
++	if ((espinfo->spis[0] > 0) || (espinfo->spis[1]> 0))
++		return spi_match(espinfo->spis[0], espinfo->spis[1], ntohl(eh->spi),
+ 			 !!(espinfo->invflags & XT_ESP_INV_SPI));
++	else
++		return !!xfrm_state_lookup(dev_net(skb->dev), skb->mark, &ip_hdr(skb)->daddr,
++			eh->spi, ip_hdr(skb)->protocol, par->family);
+ }
+ 
+ static int esp_mt_check(const struct xt_mtchk_param *par)

@@ -1,0 +1,84 @@
+Source-Makefile: target/linux/ipq806x/Makefile
+Target: ipq806x
+Target-Board: ipq806x
+Target-Name: Qualcomm Atheros IPQ806X
+Target-Path: /home/ubuntu/tp-link/ER7206_trunk
+Target-Arch: arm
+Target-Arch-Packages: ipq806x
+Target-Features: gpio squashfs
+Target-Depends: 
+Target-Optimization: -Os -pipe -march=armv7-a -mtune=cortex-a7
+CPU-Type: cortex-a7
+Linux-Version: 3.14.77
+Linux-Release: 1
+Linux-Kernel-Arch: arm
+Target-Description:
+	Build firmware images for IPQ806x based boards.
+@@
+Default-Packages: base-files libc libgcc busybox dropbear mtd uci opkg netifd fstools dnsmasq iptables ip6tables ppp ppp-mod-pppoe kmod-ipt-nathelper firewall odhcpd odhcp6c  
+Target-Profile: Default
+Target-Profile-Name: Default Profile (minimum package set)
+Target-Profile-Packages:  
+Target-Profile-Config: 
+
+@@
+Target-Profile-Description:
+	Default package set compatible with most boards.
+@@
+
+Target-Profile: QSDK_Open
+Target-Profile-Name: Qualcomm-Atheros SDK Open Profile
+Target-Profile-Packages: luci openssl-util kmod-qca-ssdk-nohnat qca-ssdk-shell swconfig kmod-qca-edma kmod-ath9k kmod-ath10k wpad-mesh hostapd-utils kmod-art2-netlink sigma-dut-open wpa-cli qcmbr-10.4-netlink athtestcmd kmod-scsi-core kmod-usb-storage kmod-nls-cp437 kmod-nls-iso8859-1 kmod-fs-msdos kmod-fs-vfat kmod-fs-ntfs ntfs-3g e2fsprogs kmod-usb-net-rtl8152 kmod-usb-net file luci-app-samba iperf rng-tools profilerd mcproxy -dnsmasq dnsmasq-dhcpv6 bridge ip-full trace-cmd rp-pppoe-relay iptables-mod-extra iputils-tracepath iputils-tracepath6 kmod-nf-nathelper-extra kmod-ipt-nathelper-rtsp luci-app-upnp luci-app-radvd luci-app-ddns luci-proto-ipv6 luci-app-multiwan pm-utils qca-thermald-10.4 iperf sysstat kmod-shortcut-fe kmod-shortcut-fe-cm kmod-shortcut-fe-drv kmod-qca-nss-dp kmod-qca-nss-drv kmod-qca-nss-gmac kmod-qca-edma qca-nss-fw2-retail qca-nss-fw-hk32-retail  kmod-ipt-ipopt kmod-bonding kmod-nat-sctp lacpd arptables ds-lite 6rd wide-dhcpv6-client ddns-scripts xl2tpd quagga quagga-ripd quagga-zebra quagga-watchquagga quagga-vtysh kmod-ipv6 ip6tables iptables-mod-ipsec iptables-mod-filter isc-dhcp-relay-ipv4 isc-dhcp-relay-ipv6 rp-pppoe-server ppp-mod-pptp -lacpd kmod-crypto-qcrypto kmod-qca-rfs kmod-sound-soc-ipq40xx alsa kmod-qpic_panel_ertft -rstp rstp qca-mcs-apps openswan kmod-ipsec kmod-ipsec4 kmod-ipsec6 tc kmod-sched kmod-sched-core kmod-sched-connmark kmod-ifb iptables iptables-mod-filter iptables-mod-ipopt iptables-mod-conntrack-extra kmod-qca-nss-ecm-premium kmod-qca-nss-macsec qca-wpa-supplicant-10.4-macsec kmod-qca-nss-crypto kmod-qca-nss-cfi kmod-qca-nss-drv-ipsecmgr kmod-qca-nss-drv-qdisc kmod-qca-nss-drv-profile kmod-qca-nss-drv-tun6rd kmod-qca-nss-drv-tunipip6 kmod-qca-nss-drv-l2tpv2 kmod-qca-nss-drv-pptp kmod-qca-nss-drv-map-t map-t kmod-aq_phy kmod-qca_85xx_sw aq-fw-download kmod-bootconfig 
+Target-Profile-Config: 
+
+@@
+Target-Profile-Description:
+	QSDK Open package set configuration.
+	Enables wifi open source packages
+@@
+
+Target-Profile: QSDK_Premium
+Target-Profile-Name: Qualcomm-Atheros SDK Premium Profile
+Target-Profile-Packages: luci openssl-util kmod-qca-nss-dp kmod-qca-nss-drv kmod-qca-nss-gmac kmod-qca-edma qca-nss-fw2-retail qca-nss-fw-hk32-retail  kmod-qca-ssdk-hnat qca-ssdk-shell swconfig kmod-qca-wifi-10.4-unified-profile qca-hostap-10.4 qca-hostapd-cli-10.4 qca-wpa-supplicant-10.4 qca-wpa-cli-10.4 qca-spectral-10.4 qca-wpc-10.4 sigma-dut-10.4 qcmbr-10.4 qca-wrapd-10.4 qca-wapid qca-acfg-10.4 whc whc-ui qca-lowi qca-iface-mgr-10.4 qca-wifi-fw-hw2-10.4-asic qca-wifi-fw-hw4-10.4-asic qca-wifi-fw-hw3-10.4-asic qca-wifi-fw-hw6-10.4-asic qca-wifi-fw-hw5-10.4-asic qca-wifi-fw-hw11-10.4-asic kmod-scsi-core kmod-usb-storage kmod-nls-cp437 kmod-nls-iso8859-1 kmod-fs-msdos kmod-fs-vfat kmod-fs-ntfs ntfs-3g e2fsprogs kmod-ipt-ipopt kmod-bonding kmod-nat-sctp lacpd arptables ds-lite 6rd wide-dhcpv6-client ddns-scripts xl2tpd quagga quagga-ripd quagga-zebra quagga-watchquagga quagga-vtysh kmod-ipv6 ip6tables iptables-mod-ipsec iptables-mod-filter isc-dhcp-relay-ipv4 isc-dhcp-relay-ipv6 rp-pppoe-server ppp-mod-pptp mcproxy -dnsmasq dnsmasq-dhcpv6 bridge ip-full trace-cmd rp-pppoe-relay iptables-mod-extra iputils-tracepath iputils-tracepath6 kmod-nf-nathelper-extra kmod-ipt-nathelper-rtsp luci-app-upnp luci-app-radvd luci-app-ddns luci-proto-ipv6 luci-app-multiwan file luci-app-samba iperf rng-tools profilerd kmod-shortcut-fe kmod-shortcut-fe-cm kmod-shortcut-fe-drv kmod-crypto-qcrypto kmod-qca-rfs kmod-sound-soc-ipq40xx alsa kmod-qpic_panel_ertft rstp qca-mcs-apps openswan kmod-ipsec kmod-ipsec4 kmod-ipsec6 tc kmod-sched kmod-sched-core kmod-sched-connmark kmod-ifb iptables iptables-mod-filter iptables-mod-ipopt iptables-mod-conntrack-extra kmod-qca-nss-ecm-premium kmod-qca-nss-macsec qca-wpa-supplicant-10.4-macsec sysstat ethtool i2c-tools kmod-qca-nss-crypto kmod-qca-nss-cfi kmod-qca-nss-drv-ipsecmgr kmod-qca-nss-drv-qdisc kmod-qca-nss-drv-profile kmod-qca-nss-drv-tun6rd kmod-qca-nss-drv-tunipip6 kmod-qca-nss-drv-l2tpv2 kmod-qca-nss-drv-pptp kmod-qca-nss-drv-map-t pm-utils qca-thermald-10.4 map-t hyfi hyfi-ui kmod-aq_phy kmod-qca_85xx_sw aq-fw-download kmod-bootconfig qca-fst-manager kmod-art2 
+Target-Profile-Config: 
+
+@@
+Target-Profile-Description:
+	QSDK Premium package set configuration.
+	Enables qca-wifi 10.4 packages
+@@
+
+Target-Profile: QSDK_Standard
+Target-Profile-Name: Qualcomm-Atheros SDK Standard Profile
+Target-Profile-Packages: luci openssl-util kmod-qca-nss-dp kmod-qca-nss-drv kmod-qca-nss-gmac kmod-qca-edma qca-nss-fw2-retail qca-nss-fw-hk32-retail  kmod-qca-ssdk-hnat qca-ssdk-shell swconfig kmod-qca-wifi-10.4-unified-profile qca-hostap-10.4 qca-hostapd-cli-10.4 qca-wpa-supplicant-10.4 qca-wpa-cli-10.4 qca-spectral-10.4 qca-wpc-10.4 sigma-dut-10.4 qcmbr-10.4 qca-wrapd-10.4 qca-wapid qca-acfg-10.4 whc whc-ui qca-lowi qca-iface-mgr-10.4 kmod-scsi-core kmod-usb-storage kmod-nls-cp437 kmod-nls-iso8859-1 kmod-fs-msdos kmod-fs-vfat kmod-fs-ntfs ntfs-3g e2fsprogs kmod-shortcut-fe kmod-shortcut-fe-cm kmod-shortcut-fe-drv kmod-crypto-qcrypto kmod-qca-rfs rstp qca-mcs-apps mcproxy -dnsmasq dnsmasq-dhcpv6 bridge ip-full trace-cmd rp-pppoe-relay iptables-mod-extra iputils-tracepath iputils-tracepath6 kmod-nf-nathelper-extra kmod-ipt-nathelper-rtsp luci-app-upnp luci-app-radvd luci-app-ddns luci-proto-ipv6 luci-app-multiwan tc kmod-sched kmod-sched-core kmod-sched-connmark kmod-ifb iptables iptables-mod-filter iptables-mod-ipopt iptables-mod-conntrack-extra file luci-app-samba iperf rng-tools profilerd sysstat ethtool i2c-tools pm-utils qca-thermald-10.4 qca-wifi-fw-hw3-10.4-asic qca-wifi-fw-hw5-10.4-asic qca-wifi-fw-hw6-10.4-asic  
+Target-Profile-Config: 
+
+@@
+Target-Profile-Description:
+	QSDK Standard package set configuration.
+	Enables qca-wifi 10.4 packages
+@@
+
+Target-Profile: QSDK_Enterprise
+Target-Profile-Name: Qualcomm-Atheros SDK Enterprise Profile
+Target-Profile-Packages: luci openssl-util kmod-qca-nss-dp kmod-qca-nss-drv kmod-qca-nss-gmac kmod-qca-edma qca-nss-fw2-enterprise qca-nss-fw2-enterprise_custA qca-nss-fw2-enterprise_custC qca-nss-fw2-enterprise_custR qca-nss-fw-hk32-enterprise  kmod-qca-ssdk-hnat qca-ssdk-shell swconfig kmod-qca-wifi-10.4-unified-profile qca-hostap-10.4 qca-hostapd-cli-10.4 qca-wpa-supplicant-10.4 qca-wpa-cli-10.4 qca-spectral-10.4 qca-wpc-10.4 sigma-dut-10.4 qcmbr-10.4 qca-wrapd-10.4 qca-wapid qca-acfg-10.4 whc whc-ui qca-lowi qca-iface-mgr-10.4 qca-wifi-fw-hw2-10.4-asic qca-wifi-fw-hw4-10.4-asic qca-wifi-fw-hw3-10.4-asic qca-wifi-fw-hw6-10.4-asic qca-wifi-fw-hw5-10.4-asic qca-wifi-fw-hw11-10.4-asic kmod-scsi-core kmod-usb-storage kmod-nls-cp437 kmod-nls-iso8859-1 kmod-fs-msdos kmod-fs-vfat kmod-fs-ntfs ntfs-3g e2fsprogs kmod-crypto-qcrypto kmod-qca-rfs rstp qca-mcs-apps mcproxy -dnsmasq dnsmasq-dhcpv6 bridge ip-full trace-cmd rp-pppoe-relay iptables-mod-extra iputils-tracepath iputils-tracepath6 kmod-nf-nathelper-extra kmod-ipt-nathelper-rtsp luci-app-upnp luci-app-radvd luci-app-ddns luci-proto-ipv6 luci-app-multiwan tc kmod-sched kmod-sched-core kmod-sched-connmark kmod-ifb iptables iptables-mod-filter iptables-mod-ipopt iptables-mod-conntrack-extra file luci-app-samba iperf rng-tools profilerd sysstat ethtool i2c-tools pm-utils qca-thermald-10.4 kmod-qca-nss-ecm-noload kmod-qca-nss-drv-qdisc kmod-qca-nss-drv-profile kmod-qca-nss-macsec qca-wpa-supplicant-10.4-macsec kmod-qca-nss-crypto kmod-qca-nss-cfi kmod-qca-nss-drv-ipsecmgr openswan kmod-ipsec kmod-ipsec4 kmod-ipsec6 kmod-ipt-ipopt kmod-bonding kmod-nat-sctp lacpd arptables ds-lite 6rd wide-dhcpv6-client ddns-scripts xl2tpd quagga quagga-ripd quagga-zebra quagga-watchquagga quagga-vtysh kmod-ipv6 ip6tables iptables-mod-ipsec iptables-mod-filter isc-dhcp-relay-ipv4 isc-dhcp-relay-ipv6 rp-pppoe-server ppp-mod-pptp kmod-aq_phy kmod-qca_85xx_sw aq-fw-download 
+Target-Profile-Config: 
+
+@@
+Target-Profile-Description:
+	QSDK Enterprise package set configuration.
+	Enables qca-wifi 10.4 packages
+@@
+
+Target-Profile: QSDK_Deluxe
+Target-Profile-Name: Qualcomm-Atheros SDK Deluxe Profile
+Target-Profile-Packages: luci openssl-util kmod-qca-nss-dp kmod-qca-nss-drv kmod-qca-nss-gmac kmod-qca-edma qca-nss-fw2-retail qca-nss-fw-hk32-retail  kmod-qca-ssdk-nohnat qca-ssdk-shell swconfig kmod-qca-wifi-10.4-unified-profile qca-hostap-10.4 qca-hostapd-cli-10.4 qca-wpa-supplicant-10.4 qca-wpa-cli-10.4 qca-spectral-10.4 qca-wpc-10.4 sigma-dut-10.4 qcmbr-10.4 qca-wrapd-10.4 qca-wapid qca-acfg-10.4 whc whc-ui qca-lowi qca-iface-mgr-10.4 -qca-spectral-10.4 qca-wifi-fw-hw2-10.4-asic qca-wifi-fw-hw4-10.4-asic qca-wifi-fw-hw3-10.4-asic qca-wifi-fw-hw6-10.4-asic qca-wifi-fw-hw5-10.4-asic qca-wifi-fw-hw11-10.4-asic kmod-ipt-ipopt kmod-bonding kmod-nat-sctp lacpd arptables ds-lite 6rd wide-dhcpv6-client ddns-scripts xl2tpd quagga quagga-ripd quagga-zebra quagga-watchquagga quagga-vtysh kmod-ipv6 ip6tables iptables-mod-ipsec iptables-mod-filter isc-dhcp-relay-ipv4 isc-dhcp-relay-ipv6 rp-pppoe-server ppp-mod-pptp -lacpd mcproxy -dnsmasq dnsmasq-dhcpv6 bridge ip-full trace-cmd rp-pppoe-relay iptables-mod-extra iputils-tracepath iputils-tracepath6 kmod-nf-nathelper-extra kmod-ipt-nathelper-rtsp luci-app-upnp luci-app-radvd luci-app-ddns luci-proto-ipv6 luci-app-multiwan kmod-shortcut-fe kmod-shortcut-fe-cm kmod-shortcut-fe-drv map-t kmod-qca-rfs rstp qca-mcs-apps -rstp tc kmod-sched kmod-sched-core kmod-sched-connmark kmod-ifb iptables iptables-mod-filter iptables-mod-ipopt iptables-mod-conntrack-extra kmod-qca-nss-ecm kmod-aq_phy kmod-qca_85xx_sw aq-fw-download kmod-scsi-core kmod-usb-storage kmod-nls-cp437 kmod-nls-iso8859-1 kmod-fs-msdos kmod-fs-vfat kmod-fs-ntfs ntfs-3g e2fsprogs kmod-sound-soc-ipq40xx alsa kmod-qpic_panel_ertft pm-utils qca-thermald-10.4 kmod-bootconfig file luci-app-samba iperf rng-tools profilerd sysstat ethtool i2c-tools iperf sysstat kmod-qvit-lithium kmod-qca-nss-drv-qdisc kmod-qca-nss-drv-bridge-mgr kmod-qca-nss-drv-tun6rd kmod-qca-nss-drv-tunipip6 kmod-qca-nss-drv-l2tpv2 kmod-qca-nss-drv-pptp kmod-art2 qca-wifi-hk-fw-hw1-10.4-asic kmod-e1000e kmod-qca-nss-crypto kmod-qca-nss-cfi kmod-qca-nss-drv-ipsecmgr 
+Target-Profile-Config: 
+
+@@
+Target-Profile-Description:
+	QSDK Deluxe package set configuration.
+	Enables wifi open source packages
+@@
+
+

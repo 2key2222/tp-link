@@ -1,0 +1,37 @@
+Index: linux-3.3.8/include/linux/netfilter/nfnetlink.h
+===================================================================
+--- linux-3.3.8.orig/include/linux/netfilter/nfnetlink.h	2015-12-09 15:00:32.304602988 +0800
++++ linux-3.3.8/include/linux/netfilter/nfnetlink.h	2015-12-09 17:11:59.868635701 +0800
+@@ -87,6 +87,7 @@
+ 
+ extern void nfnl_lock(void);
+ extern void nfnl_unlock(void);
++extern void (*g_appdist_event)(unsigned int events, struct nf_ct_event *item);
+ 
+ #define MODULE_ALIAS_NFNL_SUBSYS(subsys) \
+ 	MODULE_ALIAS("nfnetlink-subsys-" __stringify(subsys))
+Index: linux-3.3.8/net/netfilter/nf_conntrack_netlink.c
+===================================================================
+--- linux-3.3.8.orig/net/netfilter/nf_conntrack_netlink.c	2015-12-09 15:00:32.224602987 +0800
++++ linux-3.3.8/net/netfilter/nf_conntrack_netlink.c	2015-12-09 17:15:59.144635385 +0800
+@@ -556,6 +556,9 @@
+ 	       ;
+ }
+ 
++void (*g_appdist_event)(unsigned int events, struct nf_ct_event *item);
++EXPORT_SYMBOL(g_appdist_event);
++
+ #ifdef CONFIG_NF_CONNTRACK_CHAIN_EVENTS
+ static int ctnetlink_conntrack_event(struct notifier_block *this,
+                            unsigned long events, void *ptr)
+@@ -584,6 +587,10 @@
+ 	if (events & (1 << IPCT_DESTROY)) {
+ 		type = IPCTNL_MSG_CT_DELETE;
+ 		group = NFNLGRP_CONNTRACK_DESTROY;
++		if(g_appdist_event)
++		{
++			(*g_appdist_event)(events, item);
++		}
+ 	} else  if (events & ((1 << IPCT_NEW) | (1 << IPCT_RELATED))) {
+ 		type = IPCTNL_MSG_CT_NEW;
+ 		flags = NLM_F_CREATE|NLM_F_EXCL;

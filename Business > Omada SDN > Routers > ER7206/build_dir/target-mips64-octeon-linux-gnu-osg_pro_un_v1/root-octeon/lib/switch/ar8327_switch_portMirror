@@ -1,0 +1,192 @@
+#!/bin/sh
+
+
+g_ingressMirrorReg="$S17_P1LOOKUP_CTRL_REG $S17_P2LOOKUP_CTRL_REG $S17_P3LOOKUP_CTRL_REG $S17_P4LOOKUP_CTRL_REG $S17_P5LOOKUP_CTRL_REG"
+g_egressMirrorReg="$S17_PORT1_HOL_CTRL1 $S17_PORT2_HOL_CTRL1 $S17_PORT3_HOL_CTRL1 $S17_PORT4_HOL_CTRL1 $S17_PORT5_HOL_CTRL1"
+
+
+# clear port mirror
+# clear cpu and control register
+clear_port_mirror()
+{
+	local reg=0
+	local value=0
+
+	value=`swconfig_reg_read $S17_GLOFW_CTRL0_REG`
+	value=$(($value | 0x0f0))
+	swconfig_reg_write $S17_GLOFW_CTRL0_REG $value
+
+	#clear old config
+	for i in `seq 1 $MAX_PORT_NUM`; do
+		reg=`echo $g_ingressMirrorReg | cut -d " " -f $i`
+		value=`swconfig_reg_read $reg`
+		value=`set_bit_value $value 25 0`
+		swconfig_reg_write $reg $value
+
+		reg=`echo $g_egressMirrorReg | cut -d " " -f $i`
+		value=`swconfig_reg_read $reg`
+		value=`set_bit_value $value 16 0`
+		swconfig_reg_write $reg $value
+	done
+}
+
+# enable port mirror
+# $1:mirror mode
+# $2:mirror port id
+# $3:mirrored port list
+enable_port_mirror()
+{
+	local mode=$1
+	local mirrorport=$2
+	local mirroredPortlist=$3
+	local value=0
+	local reg=0
+
+	#clear old config
+	clear_port_mirror
+
+	#set the cpu port register - mirror port
+	value=`swconfig_reg_read $S17_GLOFW_CTRL0_REG`
+	value=$(($(($value & 0xf0f)) | $(($mirrorport << 4))))
+	swconfig_reg_write $S17_GLOFW_CTRL0_REG $value
+
+	#set port control register - mirror port
+	for i in $mirroredPortlist; do
+
+		#set ingress mode
+		reg=`echo $g_ingressMirrorReg | cut -d " " -f $i`		
+		value=`swconfig_reg_read $reg`
+		if [ $mode = "ingress" ] || [ $mode = "both" ]; then
+			value=`set_bit_value $value 25 1`
+		else
+			value=`set_bit_value $value 25 0`
+		fi
+		swconfig_reg_write $reg $value
+
+		#set egress mode
+		reg=`echo $g_egressMirrorReg | cut -d " " -f $i`
+		value=`swconfig_reg_read $reg`
+		if [ $mode = "egress" ] || [ $mode = "both" ]; then
+			value=`set_bit_value $value 16 1`
+		else
+			value=`set_bit_value $value 16 0`				
+		fi
+		swconfig_reg_write $reg $value
+	done
+}
+
+mirror_usage()
+{
+	echo ""
+	echo "Usage: switch -t mirror -o <get|set> [-s state] [-m mode] [-P mirrorport] [-p mirroredports]"
+	echo ""
+	echo "Example:"
+	echo "       switch -t mirror -o get"
+	echo "       switch -t mirror -o set -s on -m ingress -P 3 -p \"1 2 4\" "
+	echo ""
+}
+
+# check mode mirror port and mirrored portlist
+# exit when arg is invalid
+# $1: mode
+# $2: mirror port
+# $3: mirrored ports
+mirror_arg_check()
+{
+	local mode=$1
+	local portid=$2
+	local ports=$3
+
+    if [ "$mode" != "" ] && [ "$mode" != "ingress" ] && [ "$mode" != "egress" ] && [ "$mode" != "both" ]; then
+    	echo "[mirror] mode is error. (ingress | egress | both)"
+        mirror_usage
+        exit 0 
+    fi 
+
+    # check input portid
+	if [ -z $portid ] || [ `expr match $portid "[0-9]"` = 0 ] || [ $portid -lt 1 ] || [ $portid -gt 5 ];then
+		echo "[mirror] port is error.(1~5)"
+		mirror_usage
+		exit 0
+	fi
+
+	if [ -z "$ports" ]; then
+		echo "[mirror] mirrored port is null.(1~5)"
+		mirror_usage
+		exit 0
+	fi
+
+	for i in $ports; do		
+		if [ `expr match $i "[0-9]"` = 0 ] || [ $i -lt 1 ] || [ $i -gt 5 ] || [ $i -eq $portid ];then
+			echo "[mirror] mirrored port is error.(1~5)"
+			mirror_usage
+			exit 0
+		fi
+	done
+}
+ 
+
+print_mirror_info()
+{
+	config_get state "mirror" state     
+	config_get mode "mirror" mode  
+	config_get mirrorport "mirror" mirrorport
+	config_get mirroredports "mirror" mirroredports
+
+	echo "Mirror state   :  $state" 
+	echo "Mirror mode    :  $mode"
+	echo "Mirror port    :  $mirrorport"
+	echo "Mirrored ports :  $mirroredports"
+	echo ""
+} 
+
+# init ar8327 switch port mirror
+# $1: state
+# $2: mirror mode
+# $3: mirror port
+# $4: mirrored ports
+ar8327_switch_port_mirror_init()
+{
+	if [ "$1" = "on" ]; then		
+		#mirror_arg_check $mode $portid "$mirroredPorts"
+		enable_port_mirror $2 $3 "$4"
+	elif [ "$1" = "off" ]; then
+		clear_port_mirror
+	else
+		echo "[mirror] state is invalid.(on | off)"
+		exit 0
+	fi
+}
+
+# ar8327 switch port mirror
+# $1:op (get|set)
+# $2:state (on | off)
+# $3:mirror mode (ingress | egress | both)
+# $4:mirror port id (1 | 2 | 3 | 4 | 5)
+# $5:mirrored port list (1.2.3...)
+ar8327_switch_port_mirror()
+{
+	local op=$1
+	local state=$2
+	local mode=$3
+	local portid=$4
+	local mirroredPorts=$5	
+
+	#get port mirror info
+	if [ "$op" = "get" ]; then
+		print_mirror_info
+	elif [ "$op" = "set" ]; then
+		if [ "$state" = "off" ]; then
+			clear_port_mirror
+		elif [ "$state" = "on" ]; then
+			mirror_arg_check $mode $portid "$mirroredPorts"
+			enable_port_mirror $mode $portid "$mirroredPorts"
+		else
+			echo "[mirror] state is invalid.(on | off)"
+			exit 0
+		fi
+
+	else
+		echo "[mirror] error op. (set | get)"
+	fi
+}

@@ -1,0 +1,98 @@
+diff -Nuar a/src/dnsmasq.c b/src/dnsmasq.c
+--- a/src/dnsmasq.c	2016-03-15 14:56:41.000000000 +0800
++++ b/src/dnsmasq.c	2016-05-02 11:24:13.000000000 +0800
+@@ -18,6 +18,7 @@
+ #define DNSMASQ_COMPILE_OPTS
+ 
+ #include "dnsmasq.h"
++#include "uci.h"
+ 
+ #define SONAME "libippoolx.so"
+ 
+@@ -37,6 +38,27 @@
+ static void fatal_event(struct event_desc *ev, char *msg);
+ static int read_event(int fd, struct event_desc *evp, char **msg);
+ 
++int g_dhcps_max_lease = MAXLEASES;
++
++static void dhcps_get_profile()
++{
++    unsigned int tmp_max = 0;
++
++    tmp_max = uci_get_profile("dhcps", "lease_max");
++    my_syslog(MS_DHCP | LOG_INFO,"tmp_max:%d\n",tmp_max);
++    if (tmp_max <= 0)
++    {
++      my_syslog(MS_DHCP | LOG_ERR,"Cannot get dhcp server profile\n");
++      g_dhcps_max_lease = MAXLEASES;
++    }
++    else
++    {
++      g_dhcps_max_lease = tmp_max;
++    }
++
++    my_syslog(MS_DHCP | LOG_INFO,"g_dhcps_max_lease:%d\n",g_dhcps_max_lease);
++}
++
+ static void loadfunc()
+ {
+ 		dp = dlopen(SONAME,RTLD_LAZY);
+@@ -98,6 +120,8 @@
+   struct dhcp_relay *relay;
+ #endif
+ 
++  dhcps_get_profile();
++
+ #ifdef LOCALEDIR
+   setlocale(LC_ALL, "");
+   bindtextdomain("dnsmasq", LOCALEDIR); 
+diff -Nuar a/src/lease.c b/src/lease.c
+--- a/src/lease.c	2016-03-15 14:56:41.000000000 +0800
++++ b/src/lease.c	2016-05-02 11:24:38.000000000 +0800
+@@ -22,6 +22,8 @@
+ static int dns_dirty, file_dirty, leases_left;
+ 
+ extern struct address_hook ip_hook;
++extern int g_dhcps_max_lease;
++
+ void lease_init(time_t now)
+ {
+   unsigned long ei;
+diff -Nuar a/src/option.c b/src/option.c
+--- a/src/option.c	2016-03-15 14:56:41.000000000 +0800
++++ b/src/option.c	2016-05-02 11:28:25.000000000 +0800
+@@ -23,6 +23,8 @@
+ static jmp_buf mem_jmp;
+ static int one_file(char *file, int hard_opt);
+ 
++extern int g_dhcps_max_lease;
++
+ /* Solaris headers don't have facility names. */
+ #ifdef HAVE_SOLARIS_NETWORK
+ static const struct {
+@@ -652,7 +654,7 @@
+   } tab[] = {
+     { '$', CACHESIZ },
+     { '*', EDNS_PKTSZ },
+-    { '&', MAXLEASES },
++    { '&', g_dhcps_max_lease },
+     { '!', FTABSIZ },
+     { '#', TFTP_MAX_CONNECTIONS },
+     { '\0', 0 }
+@@ -4437,6 +4439,7 @@
+   memset(daemon, 0, sizeof(struct daemon));
+   daemon->namebuff = buff;
+ 
++  my_syslog(MS_DHCP | LOG_INFO,"g_dhcps_max_lease:%d\n",g_dhcps_max_lease);
+   /* Set defaults - everything else is zero or NULL */
+   daemon->cachesize = CACHESIZ;
+   daemon->ftabsize = FTABSIZ;
+@@ -4448,7 +4451,7 @@
+   daemon->resolv_files = &daemon->default_resolv;
+   daemon->username = CHUSER;
+   daemon->runfile =  RUNFILE;
+-  daemon->dhcp_max = MAXLEASES;
++  daemon->dhcp_max = g_dhcps_max_lease;
+   daemon->tftp_max = TFTP_MAX_CONNECTIONS;
+   daemon->edns_pktsz = EDNS_PKTSZ;
+   daemon->log_fac = -1;

@@ -1,0 +1,33 @@
+--- a/net/netfilter/nf_conntrack_netlink.c	2017-05-24 10:03:34.956506164 +0800
++++ b/net/netfilter/nf_conntrack_netlink.c	2017-05-24 10:05:31.097458168 +0800
+@@ -65,6 +65,10 @@
+ 
+ EXPORT_SYMBOL(g_appdist_event);
+ 
++void (*g_special_route_create)(unsigned int events, struct nf_ct_event *item);
++EXPORT_SYMBOL(g_special_route_create);
++void (*g_special_route_destroy)(unsigned int events, struct nf_ct_event *item);
++EXPORT_SYMBOL(g_special_route_destroy);
+ 
+ static inline int
+ ctnetlink_dump_tuples_proto(struct sk_buff *skb,
+@@ -643,10 +647,19 @@
+                 {
+                         (*g_appdist_event)(events, item);
+                 }
++		if(g_special_route_destroy)
++		{
++			(*g_special_route_destroy)(events, item);
++		}
++
+ 	} else  if (events & ((1 << IPCT_NEW) | (1 << IPCT_RELATED))) {
+ 		type = IPCTNL_MSG_CT_NEW;
+ 		flags = NLM_F_CREATE|NLM_F_EXCL;
+ 		group = NFNLGRP_CONNTRACK_NEW;
++		if(g_special_route_create)
++		{
++			(*g_special_route_create)(events, item);
++		}
+ 	} else  if (events) {
+ 		type = IPCTNL_MSG_CT_NEW;
+ 		group = NFNLGRP_CONNTRACK_UPDATE;

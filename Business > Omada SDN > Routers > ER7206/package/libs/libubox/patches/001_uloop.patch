@@ -1,0 +1,21 @@
+--- a/uloop.c	2014-09-24 12:10:02.000000000 +0800
++++ b/uloop.c	2016-03-16 16:00:34.000000000 +0800
+@@ -256,7 +256,8 @@
+ static int uloop_fetch_events(int timeout)
+ {
+ 	int n, nfds;
+-
++       if(-1 == timeout)
++           timeout = 1000; 
+ 	nfds = epoll_wait(poll_fd, events, ARRAY_SIZE(events), timeout);
+ 	for (n = 0; n < nfds; ++n) {
+ 		struct uloop_fd_event *cur = &cur_fds[n];
+@@ -654,7 +655,7 @@
+ 		if (uloop_cancelled)
+ 			break;
+ 
+-		if (do_sigchld)
++		//if (do_sigchld)
+ 			uloop_handle_processes();
+ 		uloop_gettime(&tv);
+ 		uloop_run_events(uloop_get_next_timeout(&tv));

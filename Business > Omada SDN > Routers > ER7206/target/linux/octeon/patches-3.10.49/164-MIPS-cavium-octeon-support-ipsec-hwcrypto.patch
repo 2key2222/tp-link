@@ -1,0 +1,290 @@
+--- a/include/net/esp.h
++++ b/include/net/esp.h
+@@ -11,6 +11,13 @@ struct esp_data {
+ 
+ 	/* Confidentiality & Integrity */
+ 	struct crypto_aead *aead;
++
++#if defined(CONFIG_CAVIUM_OCTEON_IPSEC) && defined(CONFIG_NET_KEY)
++	 u8 *iv;
++	 int ivinitted;
++	 
++#endif	
++
+ };
+ 
+ extern void *pskb_put(struct sk_buff *skb, struct sk_buff *tail, int len);
+--- a/include/net/xfrm.h
++++ b/include/net/xfrm.h
+@@ -233,6 +233,11 @@ struct xfrm_state {
+ 	/* Private data of this transformer, format is opaque,
+ 	 * interpreted by xfrm_type methods. */
+ 	void			*data;
++#if defined(CONFIG_CAVIUM_OCTEON_IPSEC) && defined(CONFIG_NET_KEY)
++    void            *sa_handle;
++    struct xfrm_policy  *pol;
++#endif  /* defined(CONFIG_CAVIUM_OCTEON_IPSEC) && defined(CONFIG_NET_KEY) */
++
+ };
+ 
+ static inline struct net *xs_net(struct xfrm_state *x)
+@@ -537,6 +542,9 @@ struct xfrm_policy {
+ 	u16			family;
+ 	struct xfrm_sec_ctx	*security;
+ 	struct xfrm_tmpl       	xfrm_vec[XFRM_MAX_DEPTH];
++#if defined(CONFIG_CAVIUM_OCTEON_IPSEC) && defined(CONFIG_NET_KEY)
++    struct xfrm_state   *x;
++#endif /* defined(CONFIG_CAVIUM_OCTEON_IPSEC) && defined(CONFIG_NET_KEY) */
+ };
+ 
+ static inline struct net *xp_net(const struct xfrm_policy *xp)
+--- a/net/ipv4/esp4.c
++++ b/net/ipv4/esp4.c
+@@ -521,6 +521,12 @@ static void esp_destroy(struct xfrm_stat
+ 
+ 	crypto_free_aead(esp->aead);
+ 	kfree(esp);
++#if defined(CONFIG_CAVIUM_OCTEON_IPSEC) && defined(CONFIG_NET_KEY) 
++	kfree(esp->iv);
++	esp->iv = NULL;
++	
++#endif
++
+ }
+ 
+ static int esp_init_aead(struct xfrm_state *x)
+@@ -664,6 +670,15 @@ static int esp_init_state(struct xfrm_st
+ 
+ 	esp->padlen = 0;
+ 
++#if defined(CONFIG_CAVIUM_OCTEON_IPSEC) && defined(CONFIG_NET_KEY)
++	if(crypto_aead_ivsize(aead))    {
++           esp->iv = kmalloc(crypto_aead_ivsize(aead), GFP_KERNEL);
++                if (unlikely(esp->iv == NULL))
++                    goto error;
++		esp->ivinitted = 0;
++       }
++#endif
++
+ 	x->props.header_len = sizeof(struct ip_esp_hdr) +
+ 			      crypto_aead_ivsize(aead);
+ 	if (x->props.mode == XFRM_MODE_TUNNEL)
+--- a/net/ipv6/esp6.c
++++ b/net/ipv6/esp6.c
+@@ -461,6 +461,10 @@ static void esp6_destroy(struct xfrm_sta
+ 		return;
+ 
+ 	crypto_free_aead(esp->aead);
++#if defined(CONFIG_CAVIUM_OCTEON_IPSEC) && defined(CONFIG_NET_KEY) 
++	if (esp->iv) kfree(esp->iv);
++	esp->iv = NULL;
++#endif
+ 	kfree(esp);
+ }
+ 
+@@ -608,6 +612,14 @@ static int esp6_init_state(struct xfrm_s
+ 
+ 	esp->padlen = 0;
+ 
++#if defined(CONFIG_CAVIUM_OCTEON_IPSEC) && defined(CONFIG_NET_KEY)
++	if(crypto_aead_ivsize(aead))    {
++           esp->iv = kmalloc(crypto_aead_ivsize(aead), GFP_KERNEL);
++                if (unlikely(esp->iv == NULL))
++                    goto error;
++		esp->ivinitted = 0;
++       }
++#endif
+ 	x->props.header_len = sizeof(struct ip_esp_hdr) +
+ 			      crypto_aead_ivsize(aead);
+ 	switch (x->props.mode) {
+--- a/net/xfrm/xfrm_input.c
++++ b/net/xfrm/xfrm_input.c
+@@ -14,6 +14,10 @@
+ #include <net/ip.h>
+ #include <net/xfrm.h>
+ 
++#if defined(CONFIG_CAVIUM_OCTEON_IPSEC) && defined(CONFIG_NET_KEY)
++extern int (*cavium_ipsec_process)(void *, struct sk_buff *, int, int);
++#endif
++
+ static struct kmem_cache *secpath_cachep __read_mostly;
+ 
+ void __secpath_destroy(struct sec_path *sp)
+@@ -115,6 +119,9 @@ int xfrm_input(struct sk_buff *skb, int 
+ 	int decaps = 0;
+ 	int async = 0;
+ 
++#if defined(CONFIG_CAVIUM_OCTEON_IPSEC) && defined(CONFIG_NET_KEY)
++    	int offset = 0;
++#endif
+ 	/* A negative encap_type indicates async resumption. */
+ 	if (encap_type < 0) {
+ 		async = 1;
+@@ -177,6 +184,54 @@ int xfrm_input(struct sk_buff *skb, int 
+ 			XFRM_INC_STATS(net, LINUX_MIB_XFRMINSTATESEQERROR);
+ 			goto drop_unlock;
+ 		}
++#if defined(CONFIG_CAVIUM_OCTEON_IPSEC) && defined(CONFIG_NET_KEY)
++        /*
++ *      * If Octeon IPSEC Acceleration module has been loaded
++ *      * call it, otherwise, follow the software path
++ *      */
++        if (cavium_ipsec_process) {
++		if (x->props.replay_window && x->repl->check(x, skb, seq) ) {
++			XFRM_INC_STATS(net, LINUX_MIB_XFRMINSTATESEQERROR);
++			goto drop_unlock;
++		}
++
++            	if (xfrm_state_check_expire(x)) {
++			XFRM_INC_STATS(net, LINUX_MIB_XFRMINSTATEEXPIRED);
++                	goto drop_unlock;
++            	}
++
++            	spin_unlock(&x->lock);
++		seq_hi = htonl(xfrm_replay_seqhi(x, seq));
++
++		XFRM_SKB_CB(skb)->seq.input.low = seq;
++		XFRM_SKB_CB(skb)->seq.input.hi = seq_hi;
++
++		skb_dst_force(skb);
++            	switch (nexthdr) {
++                case IPPROTO_AH:
++                    offset = offsetof(struct ip_auth_hdr, spi);
++                    break;
++                case IPPROTO_ESP:
++                    offset = offsetof(struct ip_esp_hdr, spi);
++                    break;
++                default:
++                    return 1;
++            	}
++            	offset += (uint64_t)skb->data - (uint64_t)ip_hdr(skb);
++            /*
++ *          * skb->data points to the start of the esp/ah header
++ *          * but we require skb->data to point to the start of ip header.
++ *          */
++            	skb_push(skb, (unsigned int)((uint64_t)skb->data - (uint64_t)ip_hdr(skb)));
++            	if ((skb_is_nonlinear(skb) || skb_cloned(skb)) &&
++                	skb_linearize(skb) != 0) {
++                	err = -ENOMEM;
++                	goto drop_unlock;
++          	}
++            	nexthdr = cavium_ipsec_process(x, skb, offset, 0 /*DECRYPT*/);
++        } else  {  /* if (cavium_ipsec_process == NULL) */
++#endif
++
+ 
+ 		if (xfrm_state_check_expire(x)) {
+ 			XFRM_INC_STATS(net, LINUX_MIB_XFRMINSTATEEXPIRED);
+@@ -193,6 +248,9 @@ int xfrm_input(struct sk_buff *skb, int 
+ 		skb_dst_force(skb);
+ 
+ 		nexthdr = x->type->input(x, skb);
++#if defined(CONFIG_CAVIUM_OCTEON_IPSEC) && defined(CONFIG_NET_KEY)
++	}
++#endif
+ 
+ 		if (nexthdr == -EINPROGRESS)
+ 			return 0;
+--- a/net/xfrm/xfrm_output.c
++++ b/net/xfrm/xfrm_output.c
+@@ -19,6 +19,19 @@
+ #include <net/dst.h>
+ #include <net/xfrm.h>
+ 
++#if defined(CONFIG_CAVIUM_OCTEON_IPSEC) && defined(CONFIG_NET_KEY)
++
++int (*cavium_ipsec_process)(void *, struct sk_buff *, int, int) = NULL;
++
++void set_cavium_ipsec_process(void *func)
++{
++     cavium_ipsec_process = func;
++     return;
++}
++EXPORT_SYMBOL(set_cavium_ipsec_process);
++#endif
++
++
+ static int xfrm_output2(struct sk_buff *skb);
+ 
+ static int xfrm_skb_check_space(struct sk_buff *skb)
+@@ -87,7 +100,28 @@ static int xfrm_output_one(struct sk_buf
+ 
+ 		skb_dst_force(skb);
+ 
+-		err = x->type->output(x, skb);
++#if defined(CONFIG_CAVIUM_OCTEON_IPSEC) && defined(CONFIG_NET_KEY)
++ /*
++ *         * If Octeon IPSEC Acceleration module has been loaded
++ *         * call it, otherwise, follow the software path
++ *       */
++        if(cavium_ipsec_process)
++        {
++            if (skb_is_nonlinear(skb) &&
++                skb_linearize(skb) != 0) {
++                err = -ENOMEM;
++                goto error;
++            }
++            err = cavium_ipsec_process(x, skb, 0, 1 /*ENCRYPT*/);
++        }
++        else
++        {
++            err = x->type->output(x, skb);
++        }
++#else
++        err = x->type->output(x, skb);
++#endif
++
+ 		if (err == -EINPROGRESS)
+ 			goto out_exit;
+ 
+--- a/net/xfrm/xfrm_policy.c
++++ b/net/xfrm/xfrm_policy.c
+@@ -2297,6 +2297,10 @@ static inline int secpath_has_nontranspo
+ 	return 0;
+ }
+ 
++#if defined(CONFIG_CAVIUM_OCTEON_IPSEC) && defined(CONFIG_NET_KEY) 
++extern int (*cavium_ipsec_process)(void *, struct sk_buff *, int, int);
++#endif /* defined(CONFIG_CAVIUM_OCTEON_IPSEC) && defined(CONFIG_NET_KEY) */
++
+ int __xfrm_policy_check(struct sock *sk, int dir, struct sk_buff *skb,
+ 			unsigned short family)
+ {
+@@ -2390,6 +2394,11 @@ int __xfrm_policy_check(struct sock *sk,
+ #endif
+ 
+ 	if (pol->action == XFRM_POLICY_ALLOW) {
++
++#if defined(CONFIG_CAVIUM_OCTEON_IPSEC) && defined(CONFIG_NET_KEY)
++      if(!cavium_ipsec_process)
++      {
++#endif /* defined(CONFIG_CAVIUM_OCTEON_IPSEC) && defined(CONFIG_NET_KEY) */
+ 		struct sec_path *sp;
+ 		static struct sec_path dummy;
+ 		struct xfrm_tmpl *tp[XFRM_MAX_DEPTH];
+@@ -2442,6 +2451,9 @@ int __xfrm_policy_check(struct sock *sk,
+ 			goto reject;
+ 		}
+ 
++#if defined(CONFIG_CAVIUM_OCTEON_IPSEC) && defined(CONFIG_NET_KEY)
++      }
++#endif /* defined(CONFIG_CAVIUM_OCTEON_IPSEC) && defined(CONFIG_NET_KEY) */
+ 		xfrm_pols_put(pols, npols);
+ 		return 1;
+ 	}
+--- a/arch/mips/cavium-octeon/Kconfig
++++ b/arch/mips/cavium-octeon/Kconfig
+@@ -236,4 +236,13 @@ config OCTEON_ERROR_INJECTOR
+ 	  Used to test hardware error reporting.  Should never be used
+ 	  in a normal running system.
+ 
++
++config CAVIUM_OCTEON_IPSEC
++	bool "Enable enhancements to the IPSec stack to allow procotol offload."
++	default "n"
++	help
++	  This enables enhancements to the IPSec stack to allow some of the
++	    processing required for IPSec to be performed on another processor
++	    which must be running the ipsec-filter application.
++
+ endif #CAVIUM_OCTEON_SOC

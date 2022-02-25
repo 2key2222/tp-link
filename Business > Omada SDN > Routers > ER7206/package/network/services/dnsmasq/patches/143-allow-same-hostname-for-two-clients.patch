@@ -1,0 +1,23 @@
+--- a/src/lease.c	2017-08-16 19:47:34.705203802 +0800
++++ b/src/lease.c	2017-08-16 19:44:10.128753830 +0800
+@@ -970,7 +970,19 @@
+ 	      return;
+ 	    }
+ 	
+-	  kill_name(lease_tmp);
++	  //kill_name(lease_tmp);
++	  {
++	  int i = 0;
++	  char macbuf[32] = {0};
++	  for (i = 0; i < lease_tmp->hwaddr_len; i++)
++	    {
++	      sprintf(macbuf, "%.2x", lease_tmp->hwaddr[i]);
++	      if (i != lease->hwaddr_len - 1)
++		sprintf(macbuf, ":");
++	    }
++
++	  my_syslog(LOG_DEBUG | MS_DHCP,"get same hostname <%s, %s> with older clients!\n", macbuf, new_name);
++	  }
+ 	  break;
+ 	}
+     }

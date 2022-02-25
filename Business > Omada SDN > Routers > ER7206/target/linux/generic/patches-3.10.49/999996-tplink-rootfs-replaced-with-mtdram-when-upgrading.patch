@@ -1,0 +1,302 @@
+--- a/fs/squashfs/block.c	2014-07-17 18:58:15.000000000 -0400
++++ b/fs/squashfs/block.c	2021-06-18 02:29:07.491021265 -0400
+@@ -86,7 +86,7 @@
+  * generated a larger block - this does occasionally happen with compression
+  * algorithms).
+  */
+-int squashfs_read_data(struct super_block *sb, void **buffer, u64 index,
++static int __squashfs_read_data(struct super_block *sb, void **buffer, u64 index,
+ 			int length, u64 *next_index, int srclength, int pages)
+ {
+ 	struct squashfs_sb_info *msblk = sb->s_fs_info;
+@@ -209,3 +209,17 @@
+ 	kfree(bh);
+ 	return -EIO;
+ }
++
++int squashfs_read_data(struct super_block *sb, void **buffer, u64 index,
++                        int length, u64 *next_index, int srclength, int pages)
++{
++	struct super_block *ram_sblk = NULL;
++
++	ram_sblk = rcu_dereference(sb->ram_sblk);
++
++	if (ram_sblk) {
++		return __squashfs_read_data(ram_sblk, buffer, index, length, next_index, srclength, pages);
++	} else {
++		return __squashfs_read_data(sb, buffer, index, length, next_index, srclength, pages);	
++	}
++}
+--- a/include/linux/fs.h	2021-06-17 03:34:07.000630107 -0400
++++ b/include/linux/fs.h	2021-06-18 02:30:51.942753311 -0400
+@@ -1279,6 +1279,7 @@
+ 	int			s_nr_inodes_unused;	/* # of inodes on lru */
+ 
+ 	struct block_device	*s_bdev;
++	struct super_block	*ram_sblk;
+ 	struct backing_dev_info *s_bdi;
+ 	struct mtd_info		*s_mtd;
+ 	struct hlist_node	s_instances;
+--- a/drivers/mtd/devices/mtdram.c	2014-07-17 18:58:15.000000000 -0400
++++ b/drivers/mtd/devices/mtdram.c	2021-06-18 02:43:46.554014081 -0400
+@@ -16,6 +16,11 @@
+ #include <linux/init.h>
+ #include <linux/mtd/mtd.h>
+ #include <linux/mtd/mtdram.h>
++#include <linux/fs.h>
++#include <linux/sched.h>
++#include <linux/fs_struct.h>
++#include <linux/mount.h>
++#include <linux/path.h>
+ 
+ static unsigned long total_size = CONFIG_MTDRAM_TOTAL_SIZE;
+ static unsigned long erase_size = CONFIG_MTDRAM_ERASE_SIZE;
+@@ -31,6 +36,8 @@
+ 
+ // We could store these in the mtd structure, but we only support 1 device..
+ static struct mtd_info *mtd_info;
++static dev_t squashfs_mtdroot_dev;
++static dev_t squashfs_mtdram_dev;
+ 
+ static int ram_erase(struct mtd_info *mtd, struct erase_info *instr)
+ {
+@@ -82,8 +89,153 @@
+ 	return 0;
+ }
+ 
++static ssize_t mtdram_get_sysobj_attr(struct device *dev, struct device_attribute *attr, char *buf)
++{
++	if (squashfs_mtdroot_dev && squashfs_mtdram_dev) {
++		return snprintf(buf, (ssize_t)PAGE_SIZE, "squashfs,rootdev=%d,ramdev=%d\n", squashfs_mtdroot_dev, squashfs_mtdram_dev);
++	} else {
++		return 0;
++	}
++}
++static ssize_t mtdram_set_sysobj_attr(struct device *dev, struct device_attribute *attr, char *buf, size_t size)
++{
++	struct block_device *bdev = NULL;
++	struct super_block *mtdroot_sblk = NULL;
++	struct super_block *mtdram_sblk = NULL;
++	char *p = buf;
++	char *str = NULL;
++	u8 root_min, root_maj;
++	u8 ram_min, ram_maj;
++	int len = 0;
++	int err = 0;
++
++	/* skip squashfs, */
++	len = strlen("squashfs,");
++	if (strncmp(p, "squashfs,", len)) {
++		err = -EINVAL;
++		goto errout;
++	}
++	p += len;
++
++	/* skip ramdev= */
++	len = strlen("rootdev=");
++	if (strncmp(p, "rootdev=", len)) {
++		err = -EINVAL;
++		goto errout;
++	}
++	p += len;
++
++	/* get & skip root maj */
++	str = p;	
++	if (!(p = strstr(p, ":"))) {
++		err = -EINVAL;
++		goto errout;
++	}
++	*p++ = '\0';
++	if (kstrtos8(str, 0, &root_maj) < 0) {
++		err = -EINVAL;
++		goto errout;
++	}
++	/* get & skip root min */ 
++	str = p;	
++	if (!(p = strstr(p, ","))) {
++		err = -EINVAL;
++		goto errout;
++	}
++	*p++ = '\0';
++	if (kstrtos8(str, 0, &root_min) < 0) {
++		err = -EINVAL;
++		goto errout;
++	}
++
++	/* skip ramdev */
++	len = strlen("ramdev=");
++	if (strncmp(p, "ramdev=", len)) {
++		err = -EINVAL;
++		goto errout;
++	}
++	p += len;
++
++	/* get & skip root maj */
++	str = p;	
++	if (!(p = strstr(p, ":"))) {
++		err = -EINVAL;
++		goto errout;
++	}
++	*p++ = '\0';
++	if (kstrtos8(str, 0, &ram_maj) < 0) {
++		err = -EINVAL;
++		goto errout;
++	}
++	/* get & skip root min */ 
++	str = p;
++	if (kstrtos8(str, 0, &ram_min) < 0) {
++		err = -EINVAL;
++		goto errout;
++	}
++
++	/* get mtdroot super block */
++	bdev = bdget(MKDEV(root_maj, root_min));
++	if (IS_ERR(bdev)) {
++		printk(KERN_ERR"rootdev=%d,%d\n", root_maj, root_min);
++		err = PTR_ERR(bdev);
++		goto errout;
++	}
++	mtdroot_sblk = get_super(bdev);
++	if (!mtdroot_sblk) {
++		err = -ENODEV;
++		bdput(bdev);
++		goto errout;	
++	}
++	if (mtdroot_sblk->ram_sblk) {
++		err = -EBUSY;
++		bdput(bdev);
++		drop_super(mtdroot_sblk);
++		goto errout;
++	}
++	bdput(bdev);
++
++	/* get mtdram super block */
++	bdev = bdget(MKDEV(ram_maj, ram_min));
++	if (IS_ERR(bdev)) {
++		printk(KERN_ERR"ramdev=%d,%d, fs=%s\n", ram_maj, ram_min, current->fs->root.mnt->mnt_sb->s_type->name);
++		err = PTR_ERR(bdev);
++		drop_super(mtdroot_sblk);
++		goto errout;
++	}
++	mtdram_sblk = get_super(bdev);
++	if (!mtdram_sblk) {	
++		err = -ENODEV;
++		bdput(bdev);
++		drop_super(mtdroot_sblk);
++		goto errout;
++	}
++	bdput(bdev);
++
++	/* bind mtdram super block to mtdroot super block */
++	RCU_INIT_POINTER(mtdroot_sblk->ram_sblk, mtdram_sblk);
++	printk(KERN_ERR"fs:%s, mtd(%d:%d) changed to mtd(%d:%d)\n", mtdroot_sblk->s_type->name, 
++		MAJOR(mtdroot_sblk->s_dev), MINOR(mtdroot_sblk->s_dev), 
++		MAJOR(mtdram_sblk->s_dev), MINOR(mtdram_sblk->s_dev));
++	drop_super(mtdroot_sblk);
++	// drop_super of mtdram_sblk by mtdroot_sblk's squashfs_kill_block_super.
++
++	squashfs_mtdroot_dev = MKDEV(root_maj, root_min);
++	squashfs_mtdram_dev  = MKDEV(ram_maj, ram_min);
++	return size;
++
++errout:
++	return err;
++}
++
++static const struct device_attribute mtdram_sysobj_attr =
++	__ATTR(mtdram, S_IWUSR | S_IRUGO, mtdram_get_sysobj_attr, mtdram_set_sysobj_attr);
++
++static struct kobject *mtdram_sysobj;
+ static void __exit cleanup_mtdram(void)
+ {
++	sysfs_remove_file(mtdram_sysobj, &mtdram_sysobj_attr.attr);
++	kobject_put(mtdram_sysobj);
+ 	if (mtd_info) {
+ 		mtd_device_unregister(mtd_info);
+ 		vfree(mtd_info->priv);
+@@ -91,6 +243,8 @@
+ 	}
+ }
+ 
++static const char * const mtdram_part_types[] = {NULL};
++
+ int mtdram_init_device(struct mtd_info *mtd, void *mapped_address,
+ 		unsigned long size, char *name)
+ {
+@@ -114,7 +268,7 @@
+ 	mtd->_read = ram_read;
+ 	mtd->_write = ram_write;
+ 
+-	if (mtd_device_register(mtd, NULL, 0))
++	if (mtd_device_parse_register(mtd, mtdram_part_types, NULL, NULL, 0))
+ 		return -EIO;
+ 
+ 	return 0;
+@@ -139,7 +293,7 @@
+ 		mtd_info = NULL;
+ 		return -ENOMEM;
+ 	}
+-	err = mtdram_init_device(mtd_info, addr, MTDRAM_TOTAL_SIZE, "mtdram test device");
++	err = mtdram_init_device(mtd_info, addr, MTDRAM_TOTAL_SIZE, "mtdram");
+ 	if (err) {
+ 		vfree(addr);
+ 		kfree(mtd_info);
+@@ -147,6 +301,34 @@
+ 		return err;
+ 	}
+ 	memset(mtd_info->priv, 0xff, MTDRAM_TOTAL_SIZE);
++
++	/*
++	* Create sys/fast_classifier
++	*/
++	mtdram_sysobj = kobject_create_and_add("mtdram", NULL);
++	if (!mtdram_sysobj) {
++		printk(KERN_ERR"failed to register mtdram_sysobj\n");
++		if (mtd_info) {
++                	mtd_device_unregister(mtd_info);
++                	vfree(mtd_info->priv);
++                	kfree(mtd_info);
++		}
++		mtd_info = NULL;
++		return -1;
++	}
++
++	err = sysfs_create_file(mtdram_sysobj, &mtdram_sysobj_attr.attr);
++	if (err) {
++		printk(KERN_ERR"failed to register debug dev: %d\n", err);
++		kobject_put(mtdram_sysobj);
++		if (mtd_info) {
++                	mtd_device_unregister(mtd_info);
++                	vfree(mtd_info->priv);
++                	kfree(mtd_info);
++		}
++		mtd_info = NULL;
++		return err;
++	}
+ 	return err;
+ }
+ 
+--- a/fs/squashfs/super.c	2014-07-17 18:58:15.000000000 -0400
++++ b/fs/squashfs/super.c	2021-06-18 02:45:05.076067905 -0400
+@@ -481,12 +481,20 @@
+ 	call_rcu(&inode->i_rcu, squashfs_i_callback);
+ }
+ 
++static void squashfs_kill_block_super(struct super_block *sb)
++{
++	if (sb->ram_sblk) {
++		drop_super(sb->ram_sblk);
++		RCU_INIT_POINTER(sb->ram_sblk, NULL);
++	}
++	kill_block_super(sb);
++}
+ 
+ static struct file_system_type squashfs_fs_type = {
+ 	.owner = THIS_MODULE,
+ 	.name = "squashfs",
+ 	.mount = squashfs_mount,
+-	.kill_sb = kill_block_super,
++	.kill_sb = squashfs_kill_block_super,
+ 	.fs_flags = FS_REQUIRES_DEV
+ };
+ MODULE_ALIAS_FS("squashfs");

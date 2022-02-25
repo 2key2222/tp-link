@@ -1,0 +1,185 @@
+--- a/drivers/net/ethernet/octeon/ethernet-sgmii.c	2020-04-16 22:12:39.983683700 +0800
++++ a/drivers/net/ethernet/octeon/ethernet-sgmii.c	2020-04-16 22:07:17.766683946 +0800
+@@ -28,7 +28,12 @@
+ #include <linux/kernel.h>
+ #include <linux/netdevice.h>
+ #include <linux/ratelimit.h>
++#include <linux/gpio.h>
++#include <linux/proc_fs.h>
+ #include <net/dst.h>
++#include <linux/seq_file.h>
++#include <linux/fs.h>
++
+ 
+ #include <asm/octeon/octeon.h>
+ #include <asm/octeon/octeon-hw-status.h>
+@@ -42,6 +47,7 @@
+ #include <asm/octeon/cvmx-npei-defs.h>
+ 
+ #include <asm/octeon/cvmx-helper-board.h>
++#include <asm/octeon/cvmx-pcsx-defs.h>
+ 
+ #define INT_BIT_LOC_FAULT 20
+ #define INT_BIT_REM_FAULT 21
+@@ -49,6 +55,20 @@
+ /* Although these functions are called cvm_oct_sgmii_*, they also
+  * happen to be used for the XAUI ports as well.
+  */
++#define OCTEON_CARRIER_OFF_NUM  5
++#define OCTEON_CARRIER_ON_NUM   3
++
++#define SFP_DIR "sfp"
++static char str[5] = {}; 
++struct proc_dir_entry *sfp_dir;
++
++static struct {
++	uint8_t on_cnt	:3;
++	uint8_t off_cnt	:4;
++	uint8_t link	:1;
++} net_device_carrier[256];
++
++static ssize_t sfp_proc_write(struct file *file,const char __user *buffer,size_t count,loff_t *f_pos);
+ 
+ static void cvm_oct_sgmii_poll(struct net_device *dev)
+ {
+@@ -61,7 +81,6 @@
+ 
+ 	link_info = cvmx_helper_link_autoconf(priv->ipd_port);
+ 	priv->link_info = link_info.u64;
+-
+ 	/* Tell the core */
+ 	cvm_oct_set_carrier(priv, link_info);
+ }
+@@ -87,10 +106,76 @@
+ cvmx_helper_link_info_t agl_link_get(int port)
+ {
+         cvmx_helper_link_info_t result;
+-
+-        result.s.full_duplex = 1;
+-        result.s.link_up = 1;
+-        result.s.speed = 1000;
++	union cvmx_pcsx_miscx_ctl_reg pcsx_miscx_ctl_reg;
++	union cvmx_pcsx_mrx_status_reg pcsx_mrx_status_reg;
++	int interface = cvmx_helper_get_interface_num(port);
++	int index = cvmx_helper_get_interface_index_num(port);
++	pcsx_miscx_ctl_reg.u64 =
++		cvmx_read_csr(CVMX_PCSX_MISCX_CTL_REG(index, interface));
++	if (!pcsx_miscx_ctl_reg.s.mac_phy) {
++		/* 1000BASE-X */
++		if (pcsx_miscx_ctl_reg.s.mode) {
++			pcsx_mrx_status_reg.u64 =
++				cvmx_read_csr(CVMX_PCSX_MRX_STATUS_REG(index, interface));
++			if(pcsx_mrx_status_reg.s.lnk_st)
++			{
++				if(NULL == str)
++				{
++					sfp_proc_write(NULL, "1", 1, 0);
++				}
++				else if(strcmp(str,"1") != 0)
++				{
++					sfp_proc_write(NULL, "1", 1, 0);
++				}
++			}
++			else
++			{
++				if(NULL == str)
++				{
++					sfp_proc_write(NULL, "0", 1, 0);
++				}
++				else if(strcmp(str,"0") != 0)
++				{
++					sfp_proc_write(NULL, "0", 1, 0);
++				}
++			}
++
++			if (port >= sizeof(net_device_carrier)) {
++				result.s.link_up = pcsx_mrx_status_reg.s.lnk_st;
++			} else {
++				if (pcsx_mrx_status_reg.s.lnk_st) {
++					net_device_carrier[port].off_cnt = 0;
++					if (!net_device_carrier[port].link) {
++						net_device_carrier[port].on_cnt++;
++						if (net_device_carrier[port].on_cnt > OCTEON_CARRIER_ON_NUM) {
++							net_device_carrier[port].on_cnt = 0;
++							net_device_carrier[port].link = 1;
++						}
++					} else {
++						net_device_carrier[port].on_cnt = 0;
++					}
++				} else {
++					net_device_carrier[port].on_cnt = 0;
++					if (net_device_carrier[port].link) {
++						net_device_carrier[port].off_cnt++;
++						if (net_device_carrier[port].off_cnt > OCTEON_CARRIER_OFF_NUM) {
++							net_device_carrier[port].off_cnt = 0;
++							net_device_carrier[port].link = 0;
++						}
++					} else {
++						net_device_carrier[port].off_cnt = 0;
++					}
++				}
++				result.s.link_up = net_device_carrier[port].link;
++			}
++			result.s.full_duplex = 1;
++			result.s.speed = 1000;
++		}
++	} else {
++        	result.s.full_duplex = 1;
++        	result.s.link_up = 1;
++        	result.s.speed = 1000;
++	}
+         return result;
+ }
+ 
+@@ -231,10 +316,51 @@
+ 		octeon_error_tree_disable(CVMX_ERROR_GROUP_ETHERNET,
+ 					  priv->ipd_port);
+ }
++static int sfp_proc_show(struct seq_file *m, void *v)  
++{
++    seq_printf(m, "%s\n", str);
++    return 0;  
++}  
++
++static ssize_t sfp_proc_write(struct file *file,const char __user *buffer,size_t count,loff_t *f_pos)
++{
++	if(NULL == buffer)
++	{
++		return 0;
++	}
++	if(count > 4)
++	{
++		count = 4;
++	}
++	int i;
++	for(i = 0;i < count;i++)
++	{
++		str[i] = buffer[i];
++	}
++	return count;
++}
++static int sfp_proc_open(struct inode *innode,struct file *file)
++{
++	return single_open(file,sfp_proc_show,NULL);
++}
++
++static struct file_operations sfp_fops = {  
++	.owner   = THIS_MODULE,  
++	.open    = sfp_proc_open,  
++	.release = single_release,  
++	.read    = seq_read,  
++	.llseek  = seq_lseek,  
++	.write   = sfp_proc_write,  
++};  
+ 
+ int cvm_oct_sgmii_init(struct net_device *dev)
+ {
+ 	struct octeon_ethernet *priv = netdev_priv(dev);
++	sfp_dir = proc_create(SFP_DIR,0644,NULL,&sfp_fops);
++	if(!sfp_dir)
++	{
++		return -ENOMEM;
++	}
+ 
+ 	cvm_oct_common_init(dev);
+ 	dev->netdev_ops->ndo_stop(dev);

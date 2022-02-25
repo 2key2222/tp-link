@@ -1,0 +1,62 @@
+#!/usr/bin/lua
+
+local module
+local level
+local all
+local lan
+local crlf
+
+function usage()
+    -- TODO
+end
+
+local function eol()
+    io.write(crlf and "\r\n" or "\n")
+end
+
+-- Parse args.
+local i = 1
+while i <= #arg do
+    local v = arg[i]
+    i = i + 1
+
+    if v == "-a" then
+        all = true
+    elseif v == "-l" then
+        lan = arg[i]
+        i = i + 1
+    elseif v == "-m" then
+        module = arg[i]
+        i = i + 1
+    elseif v == "-p" then
+        level = arg[i]
+        i = i + 1
+    elseif v == "-w" then
+        crlf = true
+    else
+        usage()
+        os.exit(1)
+    end
+end
+
+local log = require "logger_cli"
+local log = log.open()
+local filter = {
+    lang = lan,
+    proj = module,
+    prio = level,
+    allow_all = all
+}
+log:read(filter,
+         function(rec)
+             if rec.proj_id then
+                 io.write(string.format("%s %s[%u]: <%u> %.3u%.3u ",
+                                        rec.date, rec.name, rec.pid,
+                                        rec.prio, rec.proj_id, rec.msg_id))
+                 io.write(rec.msg)
+             else
+                 io.write(rec.msg)
+             end
+             eol()
+end)
+log:close()

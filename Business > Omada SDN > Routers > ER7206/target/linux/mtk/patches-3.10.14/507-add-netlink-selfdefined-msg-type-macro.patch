@@ -1,0 +1,13 @@
+Index: linux-3.10.14/include/uapi/linux/netlink.h
+===================================================================
+--- linux-3.10.14.orig/include/uapi/linux/netlink.h	2014-09-02 16:42:55.000000000 +0800
++++ linux-3.10.14/include/uapi/linux/netlink.h	2014-10-30 09:05:27.364244216 +0800
+@@ -28,6 +28,8 @@
+ #define NETLINK_RDMA		20
+ #define NETLINK_CRYPTO		21	/* Crypto layer */
+ 
++#define NETLINK_SEL_DEF_MSG_TYPE	26	/* self defined msg */
++
+ #define NETLINK_INET_DIAG	NETLINK_SOCK_DIAG
+ 
+ #define MAX_LINKS 32		

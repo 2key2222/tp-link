@@ -1,0 +1,339 @@
+--- /dev/null
++++ b/include/linux/netfilter/xt_connextmark.h
+@@ -0,0 +1,31 @@
++#ifndef _XT_CONNEXTMARK_H
++#define _XT_CONNEXTMARK_H
++
++#include <linux/types.h>
++
++/* Copyright (C) 2002,2004 MARA Systems AB <http://www.marasystems.com>
++ * by Henrik Nordstrom <hno@marasystems.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ */
++
++enum {
++	XT_CONNEXTMARK_SET = 0,
++	XT_CONNEXTMARK_SAVE,
++	XT_CONNEXTMARK_RESTORE
++};
++
++struct xt_connextmark_tginfo1 {
++	__u32 ctmark, ctmask, nfmask;
++	__u8 mode;
++};
++
++struct xt_connextmark_mtinfo1 {
++	__u32 mark, mask;
++	__u8 invert;
++};
++
++#endif /*_XT_CONNEXTMARK_H*/
+--- a/include/net/netfilter/nf_conntrack.h
++++ b/include/net/netfilter/nf_conntrack.h
+@@ -124,6 +124,11 @@ struct nf_conn {
+ 	u_int32_t mark;
+ #endif
+ 
++#if defined(CONFIG_NF_CONNTRACK_EXTMARK)
++	u_int32_t extmark;
++#endif
++
++
+ #ifdef CONFIG_NF_CONNTRACK_SECMARK
+ 	u_int32_t secmark;
+ #endif
+--- a/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4_compat.c
++++ b/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4_compat.c
+@@ -176,6 +176,11 @@ static int ct_seq_show(struct seq_file *
+ 		goto release;
+ #endif
+ 
++#ifdef CONFIG_NF_CONNTRACK_EXTMARK
++	if (seq_printf(s, "extmark=%u ", ct->extmark))
++		goto release;
++#endif
++
+ 	if (ct_show_secctx(s, ct))
+ 		goto release;
+ 
+--- a/net/netfilter/Kconfig
++++ b/net/netfilter/Kconfig
+@@ -57,6 +57,15 @@ config NF_CONNTRACK_MARK
+ 	  of packets, but this mark value is kept in the conntrack session
+ 	  instead of the individual packets.
+ 
++config NF_CONNTRACK_EXTMARK
++	bool  'Connection extmark tracking support'
++	depends on NETFILTER_ADVANCED
++	help
++	  This option enables support for connection marks, used by the
++	  `CONNEXTMARK' target and `connextmark' match. Similar to the mark value
++	  of packets, but this mark value is kept in the conntrack session
++	  instead of the individual packets.
++
+ config NF_CONNTRACK_SECMARK
+ 	bool  'Connection tracking security mark support'
+ 	depends on NETWORK_SECMARK
+@@ -376,6 +385,18 @@ config NETFILTER_XT_CONNMARK
+ 	ctmark), similarly to the packet mark (nfmark). Using this
+ 	target and match, you can set and match on this mark.
+ 
++config NETFILTER_XT_CONNEXTMARK
++	tristate 'ctextmark target and match support'
++	depends on NF_CONNTRACK
++	depends on NETFILTER_ADVANCED
++	select NF_CONNTRACK_EXTMARK
++	---help---
++	This option adds the "CONNEXTMARK" target and "connextmark" match.
++
++	Netfilter allows you to store a mark value per connection (a.k.a.
++	ctmark), similarly to the packet mark (nfmark). Using this
++	target and match, you can set and match on this mark.
++
+ config NETFILTER_XT_SET
+ 	tristate 'set target and match support'
+ 	depends on IP_SET
+@@ -440,6 +461,16 @@ config NETFILTER_XT_TARGET_CONNMARK
+ 	(e.g. when running oldconfig). It selects
+ 	CONFIG_NETFILTER_XT_CONNMARK (combined connmark/CONNMARK module).
+ 
++config NETFILTER_XT_TARGET_CONNEXTMARK
++	tristate  '"CONNEXTMARK" target support'
++	depends on NF_CONNTRACK
++	depends on NETFILTER_ADVANCED
++	select NETFILTER_XT_CONNEXTMARK
++	---help---
++	This is a backwards-compat option for the user's convenience
++	(e.g. when running oldconfig). It selects
++	CONFIG_NETFILTER_XT_CONNEXTMARK (combined connextmark/CONNEXTMARK module).
++
+ config NETFILTER_XT_TARGET_CONNSECMARK
+ 	tristate '"CONNSECMARK" target support'
+ 	depends on NF_CONNTRACK && NF_CONNTRACK_SECMARK
+@@ -748,6 +779,16 @@ config NETFILTER_XT_MATCH_CONNMARK
+ 	(e.g. when running oldconfig). It selects
+ 	CONFIG_NETFILTER_XT_CONNMARK (combined connmark/CONNMARK module).
+ 
++config NETFILTER_XT_MATCH_CONNEXTMARK
++	tristate  '"connextmark" connection mark match support'
++	depends on NF_CONNTRACK
++	depends on NETFILTER_ADVANCED
++	select NETFILTER_XT_CONNEXTMARK
++	---help---
++	This is a backwards-compat option for the user's convenience
++	(e.g. when running oldconfig). It selects
++	CONFIG_NETFILTER_XT_CONNEXTMARK (combined connextmark/CONNEXTMARK module).
++
+ config NETFILTER_XT_MATCH_CONNTRACK
+ 	tristate '"conntrack" connection tracking match support'
+ 	depends on NF_CONNTRACK
+--- a/net/netfilter/Makefile
++++ b/net/netfilter/Makefile
+@@ -47,6 +47,7 @@ obj-$(CONFIG_NETFILTER_XTABLES) += x_tab
+ # combos
+ obj-$(CONFIG_NETFILTER_XT_MARK) += xt_mark.o
+ obj-$(CONFIG_NETFILTER_XT_CONNMARK) += xt_connmark.o
++obj-$(CONFIG_NETFILTER_XT_CONNEXTMARK) += xt_connextmark.o
+ obj-$(CONFIG_NETFILTER_XT_SET) += xt_set.o
+ 
+ # targets
+--- a/net/netfilter/nf_conntrack_core.c
++++ b/net/netfilter/nf_conntrack_core.c
+@@ -825,6 +825,9 @@ init_conntrack(struct net *net, struct n
+ #ifdef CONFIG_NF_CONNTRACK_MARK
+ 		ct->mark = exp->master->mark;
+ #endif
++#ifdef CONFIG_NF_CONNTRACK_EXTMARK
++		ct->extmark = exp->master->extmark;
++#endif
+ #ifdef CONFIG_NF_CONNTRACK_SECMARK
+ 		ct->secmark = exp->master->secmark;
+ #endif
+--- a/net/netfilter/nf_conntrack_standalone.c
++++ b/net/netfilter/nf_conntrack_standalone.c
+@@ -228,6 +228,11 @@ static int ct_seq_show(struct seq_file *
+ 		goto release;
+ #endif
+ 
++#if defined(CONFIG_NF_CONNTRACK_EXTMARK)
++	if (seq_printf(s, "extmark=%u ", ct->extmark))
++		goto release;
++#endif
++
+ 	if (ct_show_secctx(s, ct))
+ 		goto release;
+ 
+--- /dev/null
++++ b/net/netfilter/xt_connextmark.c
+@@ -0,0 +1,167 @@
++/*
++ *	xt_connextmark - Netfilter module to operate on connection marks
++ *
++ *	Copyright (C) 2002,2004 MARA Systems AB <http://www.marasystems.com>
++ *	by Henrik Nordstrom <hno@marasystems.com>
++ *	Copyright © CC Computer Consultants GmbH, 2007 - 2008
++ *	Jan Engelhardt <jengelh@medozas.de>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
++ */
++
++#include <linux/module.h>
++#include <linux/skbuff.h>
++#include <net/netfilter/nf_conntrack.h>
++#include <net/netfilter/nf_conntrack_ecache.h>
++#include <linux/netfilter/x_tables.h>
++#include <linux/netfilter/xt_connextmark.h>
++
++MODULE_AUTHOR("Henrik Nordstrom <hno@marasystems.com>");
++MODULE_DESCRIPTION("Xtables: connection extmark operations");
++MODULE_LICENSE("GPL");
++MODULE_ALIAS("ipt_CONNEXTMARK");
++MODULE_ALIAS("ip6t_CONNEXTMARK");
++MODULE_ALIAS("ipt_connextmark");
++MODULE_ALIAS("ip6t_connextmark");
++
++static unsigned int
++connextmark_tg(struct sk_buff *skb, const struct xt_action_param *par)
++{
++	const struct xt_connextmark_tginfo1 *info = par->targinfo;
++	enum ip_conntrack_info ctinfo;
++	struct nf_conn *ct;
++	u_int32_t newmark;
++
++	ct = nf_ct_get(skb, &ctinfo);
++	if (ct == NULL)
++		return XT_CONTINUE;
++
++	switch (info->mode) {
++	case XT_CONNEXTMARK_SET:
++		newmark = (ct->extmark & ~info->ctmask) ^ info->ctmark;
++		if (ct->extmark != newmark) {
++			ct->extmark = newmark;
++			nf_conntrack_event_cache(IPCT_MARK, ct);
++		}
++		break;
++	case XT_CONNEXTMARK_SAVE:
++		newmark = (ct->extmark & ~info->ctmask) ^
++		          (skb->extmark & info->nfmask);
++		if (ct->extmark != newmark) {
++			ct->extmark = newmark;
++			nf_conntrack_event_cache(IPCT_MARK, ct);
++		}
++		break;
++	case XT_CONNEXTMARK_RESTORE:
++		newmark = (skb->extmark & ~info->nfmask) ^
++		          (ct->extmark & info->ctmask);
++		skb->extmark = newmark;
++		break;
++	}
++
++	return XT_CONTINUE;
++}
++
++static int connextmark_tg_check(const struct xt_tgchk_param *par)
++{
++	int ret;
++
++	ret = nf_ct_l3proto_try_module_get(par->family);
++	if (ret < 0)
++		pr_info("cannot load conntrack support for proto=%u\n",
++			par->family);
++	return ret;
++}
++
++static void connextmark_tg_destroy(const struct xt_tgdtor_param *par)
++{
++	nf_ct_l3proto_module_put(par->family);
++}
++
++static bool
++connextmark_mt(const struct sk_buff *skb, struct xt_action_param *par)
++{
++	const struct xt_connextmark_mtinfo1 *info = par->matchinfo;
++	enum ip_conntrack_info ctinfo;
++	const struct nf_conn *ct;
++
++	ct = nf_ct_get(skb, &ctinfo);
++	if (ct == NULL)
++		return false;
++
++	return ((ct->extmark & info->mask) == info->mark) ^ info->invert;
++}
++
++static int connextmark_mt_check(const struct xt_mtchk_param *par)
++{
++	int ret;
++
++	ret = nf_ct_l3proto_try_module_get(par->family);
++	if (ret < 0)
++		pr_info("cannot load conntrack support for proto=%u\n",
++			par->family);
++	return ret;
++}
++
++static void connextmark_mt_destroy(const struct xt_mtdtor_param *par)
++{
++	nf_ct_l3proto_module_put(par->family);
++}
++
++static struct xt_target connextmark_tg_reg __read_mostly = {
++	.name           = "CONNEXTMARK",
++	.revision       = 1,
++	.family         = NFPROTO_UNSPEC,
++	.checkentry     = connextmark_tg_check,
++	.target         = connextmark_tg,
++	.targetsize     = sizeof(struct xt_connextmark_tginfo1),
++	.destroy        = connextmark_tg_destroy,
++	.me             = THIS_MODULE,
++};
++
++static struct xt_match connextmark_mt_reg __read_mostly = {
++	.name           = "connextmark",
++	.revision       = 1,
++	.family         = NFPROTO_UNSPEC,
++	.checkentry     = connextmark_mt_check,
++	.match          = connextmark_mt,
++	.matchsize      = sizeof(struct xt_connextmark_mtinfo1),
++	.destroy        = connextmark_mt_destroy,
++	.me             = THIS_MODULE,
++};
++
++static int __init connextmark_mt_init(void)
++{
++	int ret;
++
++	ret = xt_register_target(&connextmark_tg_reg);
++	if (ret < 0)
++		return ret;
++	ret = xt_register_match(&connextmark_mt_reg);
++	if (ret < 0) {
++		xt_unregister_target(&connextmark_tg_reg);
++		return ret;
++	}
++	return 0;
++}
++
++static void __exit connextmark_mt_exit(void)
++{
++	xt_unregister_match(&connextmark_mt_reg);
++	xt_unregister_target(&connextmark_tg_reg);
++}
++
++module_init(connextmark_mt_init);
++module_exit(connextmark_mt_exit);

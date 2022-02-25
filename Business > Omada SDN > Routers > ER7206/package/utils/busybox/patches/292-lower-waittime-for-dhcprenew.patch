@@ -1,0 +1,11 @@
+--- a/networking/udhcp/dhcpc.c	2017-01-13 14:49:03.996201305 +0800
++++ b/networking/udhcp/dhcpc.c	2017-01-13 14:50:20.786200236 +0800
+@@ -1735,7 +1735,7 @@
+ 			case RENEW_REQUESTED: /* manual (SIGUSR1) renew */
+ 			case_RENEW_REQUESTED:
+ 			case RENEWING:
+-				if (timeout > 60) {
++				if (timeout >= 30) {
+ 					/* send an unicast renew request */
+ 			/* Sometimes observed to fail (EADDRNOTAVAIL) to bind
+ 			 * a new UDP socket for sending inside send_renew.

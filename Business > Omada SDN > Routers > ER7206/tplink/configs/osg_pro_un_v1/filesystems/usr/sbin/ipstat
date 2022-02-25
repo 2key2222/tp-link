@@ -1,0 +1,130 @@
+#!/bin/sh
+
+OP=$1
+IP=$2
+MASK=$3
+INTERVAL=$4
+
+echo "OP=${OP},IP=${IP},MASK=${MASK},INTERVAL=${INTERVAL}"
+
+TNAME=acct_fwd
+STAT_DIR=/tmp/ipstat
+STAT_CUR=${STAT_DIR}/stat_current
+STAT_CUR_BUILD=${STAT_DIR}/stat_current_build
+STAT_PREV=${STAT_DIR}/stat_prev
+STAT_PREV_BUILD=${STAT_DIR}/stat_prev_build
+STAT_CUR_SFE_ORIGIN=/proc/net/sfe_ipstat
+STAT_SFE_IPSTAT_SWITCH=/sys/fast_classifier/sfe_ipstat_switch
+STAT_CUR_NSS_ORIGIN=/sys/kernel/debug/ecm/ecm_nss_ipv4/stat_current
+STAT_NSS_CUR=${STAT_DIR}/stat_nss_current
+STAT_NSS_CUR_BUILD=${STAT_DIR}/stat_nss_current_build
+STAT_NSS_PREV=${STAT_DIR}/stat_nss_prev
+STAT_NSS_PREV_BUILD=${STAT_DIR}/stat_nss_prev_build
+STAT_NSS_ERASE=/sys/kernel/debug/ecm/ecm_nss_ipv4/stat_erase
+STAT_4G_COUNT=${STAT_DIR}/stat_count
+STAT_4G_COUNT_BUILD=${STAT_DIR}/stat_count_build
+STAT_LIBDIR=/lib/ipstat
+
+if [ "${OP}" == "clean" ];then
+	rm -f ${STAT_CUR}
+	rm -f ${STAT_PREV}
+	rm -f ${STAT_4G_COUNT}
+
+	sfe=`uci -q get sfe.setting.switch`
+	if [ "${sfe}" == "on" ];then
+		[ -f ${STAT_SFE_IPSTAT_SWITCH} ] && {
+			echo 0 > ${STAT_SFE_IPSTAT_SWITCH}
+		}
+		exit 0
+	fi
+
+	nss=`uci -q get ecm.global.enable`
+	if [ "${nss}" == "on" ];then
+		[ -f ${STAT_NSS_ERASE} ] && {
+			echo 0xffffffff > ${STAT_NSS_ERASE}
+		}
+		rm -f ${STAT_NSS_CUR}
+		rm -f ${STAT_NSS_PREV}
+	fi
+
+	iptables -w -t mangle -F IPSTAT
+	iptables -w -t mangle -D FORWARD -j IPSTAT
+	iptables -w -t mangle -X IPSTAT
+
+	exit 0
+fi
+
+if [ "${OP}" == "start" ];then
+	if [ -z ${INTERVAL} ];then 
+		INTERVAL=10 
+	fi
+	mkdir -p ${STAT_DIR}
+
+	sfe=`uci -q get sfe.setting.switch`
+	nss=`uci -q get ecm.global.enable`
+	if [ "${sfe}" == "on" ];then
+		#echo "start sfe is on" > /dev/console
+		#flush SFE stat data before start
+		ip=$(uci get ipstat.setting.ip)
+		mask=$(uci get ipstat.setting.mask)
+		[ -e ${STAT_CUR_SFE_ORIGIN} ] && {
+			echo -n  ${ip} ${mask} >  ${STAT_CUR_SFE_ORIGIN}
+		}
+
+		[ -f ${STAT_SFE_IPSTAT_SWITCH} ] && {
+			echo 1 > ${STAT_SFE_IPSTAT_SWITCH}
+		}
+
+		while true
+		do
+			#echo "`cat ${STAT_CUR_SFE_ORIGIN}`" > /dev/console
+			cp -f ${STAT_CUR} ${STAT_PREV_BUILD}
+			cat ${STAT_CUR_SFE_ORIGIN} > ${STAT_CUR_BUILD}
+			lua $STAT_LIBDIR/ipstat_count
+			#do copy at last
+			mv -f ${STAT_PREV_BUILD} ${STAT_PREV} 2>/dev/null
+			mv -f ${STAT_CUR_BUILD} ${STAT_CUR} 2>/dev/null
+			[ -f ${STAT_4G_COUNT_BUILD} ] && {
+				mv -f ${STAT_4G_COUNT_BUILD} ${STAT_4G_COUNT} 2>/dev/null
+			}
+			sleep ${INTERVAL}
+		done
+	else
+		#echo "start sfe not on" > /dev/console
+		iptables -w -t mangle -N IPSTAT
+
+		iptables -w -t mangle -C FORWARD -j IPSTAT
+		if [ $? -ne 0 ];then
+			iptables -w -t mangle -A FORWARD -j IPSTAT
+		fi
+
+		iptables -w -t mangle -F IPSTAT
+
+		iptables -w -t mangle -A IPSTAT -j ACCOUNT --addr ${IP}/${MASK} --tname ${TNAME}
+
+		while true
+		do
+			cp -f ${STAT_CUR} ${STAT_PREV_BUILD}
+			iptaccount -l ${TNAME} -s 2>/dev/null | sed '1,4d' | sed '$d' > ${STAT_CUR_BUILD}
+			lua $STAT_LIBDIR/ipstat_count
+			#do copy at last
+			mv -f ${STAT_PREV_BUILD} ${STAT_PREV} 2>/dev/null
+			mv -f ${STAT_CUR_BUILD} ${STAT_CUR} 2>/dev/null
+			[ -f ${STAT_4G_COUNT_BUILD} ] && {
+				mv -f ${STAT_4G_COUNT_BUILD} ${STAT_4G_COUNT} 2>/dev/null
+			}
+			[ "${nss}" == "on" ] && {
+				nss_ipstat=`cat ${STAT_CUR_NSS_ORIGIN}`
+				if [ -n "${nss_ipstat}" ];then
+					cp -f ${STAT_NSS_CUR} ${STAT_NSS_PREV_BUILD}
+					cat ${STAT_CUR_NSS_ORIGIN} > ${STAT_NSS_CUR_BUILD}
+					#do copy at last
+					mv -f ${STAT_NSS_PREV_BUILD} ${STAT_NSS_PREV} 2>/dev/null
+					mv -f ${STAT_NSS_CUR_BUILD} ${STAT_NSS_CUR} 2>/dev/null
+				fi
+			}
+			sleep ${INTERVAL}
+		done
+	fi
+
+fi

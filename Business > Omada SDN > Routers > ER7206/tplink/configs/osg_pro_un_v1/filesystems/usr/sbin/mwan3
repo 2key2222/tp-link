@@ -1,0 +1,105 @@
+#!/bin/sh /etc/rc.common
+
+. /lib/network/config.sh
+
+IPT="iptables -t mangle -w"
+
+SR_CUR_ID="/tmp/special_route/.cur_id"
+SR_INFACE_ID="/tmp/special_route/.iface_id"
+
+
+ifdown()
+{
+	if [ -z "$1" ]; then
+		echo "Error: Expecting interface. Usage: mwan3 ifdown <interface>" && exit 0
+	fi
+
+	. /lib/zone/zone_api.sh	
+	device=`zone_get_effect_devices $1`
+
+	if [ -n "$device" ] ; then
+		ACTION=ifdown INTERFACE=$1 DEVICE=$device /sbin/hotplug-call balance
+	fi
+}
+
+
+ifup()
+{
+	if [ -z "$1" ]; then
+		echo "Expecting interface. Usage: mwan3 ifup <interface>" && exit 0
+	fi	
+
+	. /lib/zone/zone_api.sh		
+
+	device=`zone_get_effect_devices $1`
+	
+	if [ -n "$device" ] ; then
+		config_load mwan3
+		config_get balance "$1" balance 0
+
+		[ "$balance" -eq 1 ] && ACTION=ifup INTERFACE=$1 DEVICE=$device /sbin/hotplug-call balance
+	fi
+
+}
+
+check_nf_conntrack_max()
+{
+	sys_max=`cat /proc/sys/net/nf_conntrack_max`
+	pf_max=`uci get profile.@system_params[0].nf_conntrack_max -c /etc/profile.d`
+
+	if [ $sys_max -ne $pf_max ];then
+		echo $pf_max > /proc/sys/net/nf_conntrack_max
+	fi
+}
+
+start()
+{
+	. /lib/functions.sh
+	config_load mwan3
+
+	config_get state global state
+	if [ "$state" == "on" ]; then
+		config_get state special_rule state
+		if [ "$state" == "on" ]; then
+			check_nf_conntrack_max
+
+			insmod special_route
+			insmod special_route_target	
+
+			config_foreach ifup interface
+		fi
+	fi
+}
+
+stop()
+{
+	local rule table
+
+	for rule in $(ip -4 rule list | egrep '^[3-4][0-9]{3}\:' | cut -d ':' -f 1); do
+		ip -4 rule del pref $rule &> /dev/null
+	done
+
+	$IPT -D PREROUTING -j TP_sr_hook &> /dev/null
+	$IPT -D POSTROUTING -m conntrack --ctstate NEW -j TP_sr_post_hook &> /dev/null
+
+	for table in $($IPT -S | awk '{print $2}' | grep TP_sr | sort -u); do
+		$IPT -F $table &> /dev/null
+	done
+
+	for table in $($IPT -S | awk '{print $2}' | grep TP_sr | sort -u); do
+		$IPT -X $table &> /dev/null
+	done
+
+	rmmod special_route_target &> /dev/null
+	rmmod special_route &> /dev/null
+
+	ipset destroy TP_sr_connected &> /dev/null
+
+	rm $SR_CUR_ID -f
+	rm $SR_INFACE_ID -f
+}
+
+restart() {
+	stop
+	start
+}

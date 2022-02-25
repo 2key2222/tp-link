@@ -1,0 +1,8 @@
+config global 'setting'
+    option status 'on'
+	option interval '10'
+	list ignore_interface "loop.*"
+	list ignore_interface "npi.*"
+	list ignore_interface "gre.*"
+	list ignore_interface "bond.*"
+	list ignore_interface "lo"

@@ -1,0 +1,28 @@
+#!/bin/sh
+
+# mt7621 switch set led state
+# $1: state (on|pff)
+mt7621_switch_global_led()
+{
+	if [ -d /sys/class/gpio/gpio12 ];then
+		echo "gpio12 in control"
+	else
+		echo 12 > /sys/class/gpio/export
+		echo out > /sys/class/gpio/gpio12/direction
+		echo "create gpio12"
+	fi
+	
+	local state=$1
+	if [ "$state" = "off" ]; then
+		swconfig dev switch0 reg set 0x00007d00 0x00000
+		echo 0 > /sys/class/leds/SYS_LED/brightness
+		echo 1 > /sys/class/gpio/gpio12/value
+	elif [ "$state" = "on" ]; then
+		swconfig dev switch0 reg set 0x00007d00 0x77777
+		/etc/init.d/led start
+		echo 0 > /sys/class/gpio/gpio12/value
+	else
+		echo "[led] state is invalid.(on | off)"
+		exit 0
+	fi
+}

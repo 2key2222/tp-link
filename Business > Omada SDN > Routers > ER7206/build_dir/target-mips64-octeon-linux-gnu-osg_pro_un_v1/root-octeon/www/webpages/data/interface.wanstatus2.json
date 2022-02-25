@@ -1,0 +1,39 @@
+{
+	"id" : 1,
+	"result" : {
+		"normal" : [{
+				"t_bindif" : "eth0",
+				"macaddr" : "02-12-AB-B7-2A-01",
+				"ipaddr" : "192.168.1.1",
+				"t_isup" : true,
+				"netmask" : "255.255.255.0",
+				"t_name" : "LAN",
+				"t_type" : "ethernet",
+				"t_linktype" : "static"
+			}, {
+				"ipaddr" : "192.168.137.11",
+				"dns2" : "0.0.0.0",
+				"netmask" : "255.255.255.0",
+				"t_linktype" : "dhcp",
+				"t_bindif" : "eth0",
+				"macaddr" : "02-12-AB-B7-2A-02",
+				"dns1" : "192.168.137.10",
+				"gateway" : "192.168.137.10",
+				"t_isup" : true,
+				"t_type" : "ethernet",
+				"t_name" : "WAN1"
+			}, {
+				"macaddr" : "00-00-00-00-00-00",
+				"t_isup" : true,
+				"ipaddr" : "192.168.3.1",
+				"netmask" : "255.255.255.255",
+				"t_name" : "WAN2",
+				"gateway" : "192.168.0.1",
+				"t_type" : "pppoe"
+			}
+		],
+		"vpn" : {}
+
+	},
+	"error_code" : "0"
+}

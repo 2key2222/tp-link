@@ -1,0 +1,131 @@
+--- a/networking/ping.c	2014-01-20 10:38:10.000000000 +0800
++++ b/networking/ping.c	2018-01-17 08:58:39.725204006 +0800
+@@ -27,6 +27,7 @@
+ 
+ #include <net/if.h>
+ #include <netinet/ip_icmp.h>
++#include <resolv.h>
+ #include "libbb.h"
+ 
+ #ifdef __BIONIC__
+@@ -102,6 +103,7 @@
+ //usage:     "\n			(can exit earlier with -c CNT)"
+ //usage:     "\n	-q		Quiet, only displays output at start"
+ //usage:     "\n			and when finished"
++//usage:     "\n	-N IP[,IP..]	Server ips for name resolv."
+ //usage:
+ //usage:# define ping6_trivial_usage
+ //usage:       "[OPTIONS] HOST"
+@@ -343,7 +345,7 @@
+ 
+ /* Full(er) version */
+ 
+-#define OPT_STRING ("qvc:s:t:w:W:I:n4" IF_PING6("6"))
++#define OPT_STRING ("qvc:s:t:w:W:I:nN:4" IF_PING6("6"))
+ enum {
+ 	OPT_QUIET = 1 << 0,
+ 	OPT_VERBOSE = 1 << 1,
+@@ -354,8 +356,9 @@
+ 	OPT_W = 1 << 6,
+ 	OPT_I = 1 << 7,
+ 	/*OPT_n = 1 << 8, - ignored */
+-	OPT_IPV4 = 1 << 9,
+-	OPT_IPV6 = (1 << 10) * ENABLE_PING6,
++	OPT_N = 1 << 9,
++	OPT_IPV4 = 1 << 10,
++	OPT_IPV6 = (1 << 11) * ENABLE_PING6,
+ };
+ 
+ 
+@@ -860,16 +863,79 @@
+ 	}
+ }
+ 
++/* alter the global _res nameserver structure to use
++   an explicit dns server instead of what is in /etc/resolv.conf */
++static void set_default_dns(const char *server)
++{
++	len_and_sockaddr *lsa;
++
++	if (!server)
++		return;
++
++	/* NB: this works even with, say, "[::1]:5353"! :) */
++	lsa = xhost2sockaddr(server, 53);
++	if (lsa->u.sa.sa_family == AF_INET) {
++		_res.nscount++;
++		/* struct copy */
++		_res.nsaddr_list[_res.nscount-1] = lsa->u.sin;
++#if defined(__UCLIBC__)
++#if ENABLE_FEATURE_IPV6
++		_res._u._ext.nscount++;
++		_res._u._ext.nsaddrs[0] = (void *)&_res.nsaddr_list[0];
++#endif
++#endif
++	}
++#if ENABLE_FEATURE_IPV6
++	/* Hoped libc can cope with IPv4 address there too.
++	 * No such luck, glibc 2.4 segfaults even with IPv6,
++	 * maybe I misunderstand how to make glibc use IPv6 addr?
++	 * (uclibc 0.9.31+ should work) */
++	if (lsa->u.sa.sa_family == AF_INET6) {
++		// glibc neither SEGVs nor sends any dgrams with this
++		// (strace shows no socket ops):
++		//_res.nscount = 0;
++		_res._u._ext.nscount++;
++		/* store a pointer to part of malloc'ed lsa */
++		_res._u._ext.nsaddrs[_res._u._ext.nscount-1] = &lsa->u.sin6;
++		/* must not free(lsa)! */
++	}
++#endif
++}
++
++static void specfic_resolv_servers(char *servers)
++{
++	char *s = servers;
++	char *t;
++
++	res_init();
++	_res.nscount = 0;
++#if ENABLE_FEATURE_IPV6
++	_res._u._ext.nscount = 0;
++#endif
++
++	while (s && *s) {
++		t = strchr(s, ',');
++		if (t)
++			*t = '\0';	
++		set_default_dns(s);
++		if (t)
++			s = t + 1;
++		else
++			s = NULL;
++	}
++}
++
+ static int common_ping_main(int opt, char **argv)
+ {
+ 	len_and_sockaddr *lsa;
+ 	char *str_s;
++	char *str_N;
+ 
+ 	INIT_G();
+ 
+ 	/* exactly one argument needed; -v and -q don't mix; -c NUM, -t NUM, -w NUM, -W NUM */
+ 	opt_complementary = "=1:q--v:v--q:c+:t+:w+:W+";
+-	opt |= getopt32(argv, OPT_STRING, &pingcount, &str_s, &opt_ttl, &deadline, &timeout, &str_I);
++	opt |= getopt32(argv, OPT_STRING, &pingcount, &str_s, &opt_ttl, &deadline, &timeout, &str_I, &str_N);
+ 	if (opt & OPT_s)
+ 		datalen = xatou16(str_s); // -s
+ 	if (opt & OPT_I) { // -I
+@@ -880,6 +946,10 @@
+ 			str_I = NULL; /* don't try to bind to device later */
+ 		}
+ 	}
++
++	if (opt & OPT_N) {
++		specfic_resolv_servers(str_N);
++	}
+ 	myid = (uint16_t) getpid();
+ 	hostname = argv[optind];
+ #if ENABLE_PING6

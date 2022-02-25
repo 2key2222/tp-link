@@ -1,0 +1,47 @@
+--- a/net/8021q/Kconfig	2014-07-17 22:58:15.000000000 +0000
++++ b/net/8021q/Kconfig	2016-10-17 22:56:08.504884400 +0000
+@@ -38,3 +38,14 @@
+ 	  supersedes GVRP and is not backwards-compatible.
+ 
+ 	  If unsure, say N.
++
++config VLAN_MULTICAST_IPTV
++	bool "Multicast IPTV"
++	depends on VLAN_8021Q
++	---help---
++	  If you say Y here, then the IPTV will do with multicast and unicast vlan id
++	  based on VLAN information in the packet.
++
++	  Say N to exclude this support and reduce the binary size.
++
++	  If unsure, say Y.
+
+--- a/net/8021q/vlan_core.c	2014-07-17 22:58:15.000000000 +0000
++++ b/net/8021q/vlan_core.c	2016-10-17 23:04:44.039432900 +0000
+@@ -5,6 +5,11 @@
+ #include <linux/export.h>
+ #include "vlan.h"
+ 
++#ifdef CONFIG_VLAN_MULTICAST_IPTV
++u16 (*iptv_handle_frame_hook)(struct sk_buff *skb, u16 vlan_tci, int flag) __read_mostly;
++EXPORT_SYMBOL_GPL(iptv_handle_frame_hook);
++#endif
++
+ bool vlan_do_receive(struct sk_buff **skbp)
+ {
+ 	struct sk_buff *skb = *skbp;
+@@ -129,6 +134,14 @@
+ 
+ 	vhdr = (struct vlan_hdr *) skb->data;
+ 	vlan_tci = ntohs(vhdr->h_vlan_TCI);
++	#ifdef CONFIG_VLAN_MULTICAST_IPTV
++	if (iptv_handle_frame_hook)
++	{
++		u16 tmp_tci;
++		tmp_tci  = iptv_handle_frame_hook(skb, vlan_tci, 0);
++		vlan_tci = tmp_tci?tmp_tci:vlan_tci;
++	}
++	#endif
+ 	__vlan_hwaccel_put_tag(skb, skb->protocol, vlan_tci);
+ 
+ 	skb_pull_rcsum(skb, VLAN_HLEN);

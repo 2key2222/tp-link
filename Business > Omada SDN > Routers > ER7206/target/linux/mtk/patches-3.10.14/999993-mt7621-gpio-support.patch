@@ -1,0 +1,11 @@
+diff -urN a/arch/mips/Kconfig b/arch/mips/Kconfig
+--- a/arch/mips/Kconfig	2017-11-18 03:13:20.287781700 +0800
++++ b/arch/mips/Kconfig	2017-11-18 03:42:02.499778861 +0800
+@@ -73,6 +73,7 @@
+ 
+ config RALINK_MT7621
+ 	bool "Ralink MT7621 board"
++	select ARCH_REQUIRE_GPIOLIB
+ 	select CEVT_R4K
+ 	select CSRC_R4K
+ 	select BOOT_ELF32 if !SUPPORT_OPENWRT

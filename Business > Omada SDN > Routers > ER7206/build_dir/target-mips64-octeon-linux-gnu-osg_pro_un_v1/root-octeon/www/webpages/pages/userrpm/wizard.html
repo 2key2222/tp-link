@@ -1,0 +1,815 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<style type="text/css">
+    #wizard-setting h3.panel-title{
+        color: #21638E;
+        font-size: 14px;
+        font-weight: bold;
+        border-bottom: 2px solid #21628E;
+        background: none;
+        padding: 8px 0 8px 5px;
+    }
+
+    #wizard-setting {
+        margin-bottom: 60px;
+    }
+    .slide-sets{
+        padding-left: 15px;
+    }
+    .slide-set{
+    }
+    .slide-content{
+        min-height: 60px;
+    }
+    .slide-content p{
+        margin-bottom: 15px;
+    }
+    .wireless-title {
+        margin: 5px 0;
+        font-weight: bold;
+    }
+    #wizard-slide-lights{
+        border: 1px solid #d5d6d5;
+        padding: 10px 20px;
+        width: 350px;
+        margin: 15px auto;
+    }
+    #wizard-slide-lights table{
+        width: 100%;
+    }
+    #wizard-slide-lights td{
+        vertical-align: middle;
+        width: 20%;
+    }
+    .light-icon, .light-description{
+        display: inline-block;
+    }
+    #wizard-msg{
+        width: 600px;
+    }
+    #wizard-welcome-info{
+        line-height: 20px;
+    }
+    #radio-wrap{
+        margin: 0 62px;
+    }
+    #step-setting{
+        text-align: right;
+        margin: 20px 0;
+    }
+    #wan_f{
+        margin-left: 80px;
+    }
+    #wireless-note{
+        margin-top: 20px;
+        color: #ff0000;
+    }
+</style>
+<title>Wizard</title>
+</head>
+
+<body>
+<div class="wizard-container">
+    <div id="wizard-setting">
+        <div class="slide-sets">
+            <div id="wizard-slide-lights" style="display: none;">
+                <table>
+                    <tbody>
+                    <tr>
+                        <td>
+                            <div id="lights-icon-1" class="light-icon"></div>
+                        </td>
+                        <td>
+                            <div id="lights-icon-2" class="light-icon"></div>
+                        </td>
+                        <td>
+                            <div id="lights-icon-3" class="light-icon"></div>
+                        </td>
+                        <td>
+                            <div id="lights-icon-4" class="light-icon"></div>
+                        </td>
+                        <td>
+                            <div id="lights-icon-5" class="light-icon"></div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div id="lights-description-1" class="light-description"></div>
+                        </td>
+                        <td>
+                            <div id="lights-description-2" class="light-description"></div>
+                        </td>
+                        <td>
+                            <div id="lights-description-3" class="light-description"></div>
+                        </td>
+                        <td>
+                            <div id="lights-description-4" class="light-description"></div>
+                        </td>
+                        <td>
+                            <div id="lights-description-5" class="light-description"></div>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="slide-set" id="slide-welcome">
+                <div class="slide-content">
+                    <p id="wizard-welcome-info"></p>
+                </div>
+            </div>
+            <div class="slide-set" id="slide-wan-count">
+                <div class="slide-content">
+                    <form id="form-wan-count">
+                        
+                        <div id="radio-wrap">
+                            <div style="margin:20px 10px 10px;">WAN口数量：</div>
+                            <input id="wizard-wan-count" name="txt_wan_num"/>
+                        </div>
+                        
+                    </form>
+                </div>
+            </div>
+            <div class="slide-set" id="slide-wan">
+                <div class="slide-content">
+                    <form id="wan_f">
+                        <input id="wan_connect" name="connect"/>
+                        <input id="wan_ip" name="ip" class="static"/>
+                        <input id="wan_mask" name="mask" class="static"/>
+                        <input id="wan_gateway" name="gateway" class="static"/>
+                        <input id="wan_first_dns" name="first_dns" class="static"/>
+                        <input id="wan_second_dns" name="second_dns" class="static"/>
+                        <input id="wan_user" name="user" class="pppoe"/>
+                        <input id="wan_password" name="password" class="pppoe"/>
+                        <!--<input id="wan_bandwidth_up" name="bandwidth_up" class="static dynamic pppoe"/>
+                        <input id="wan_bandwidth_down" name="bandwidth_down" class="static dynamic pppoe"/>-->
+                    </form>
+                </div>
+            </div>
+            <div class="slide-set" id="slide-wireless">
+                <div class="slide-content">
+                    <form id="wireless_f">
+                        <div class="wireless-title">
+                            <span id="wireless-title-2"></span>
+                        </div>
+                        <input id="wireless-name" name="name_2_4"/>
+                        <input id="wireless-password" name="pwd_2_4" />
+                        <div class="wireless-title">
+                            <span id="wireless-title-5"></span>
+                        </div>
+                        <input id="wireless-name-5" name="name_5" />
+                        <input id="wireless-password-5" name="pwd_5" />
+                        <input id="wireless-sync" name="pwd_sync" />
+                        <div id="wireless-note"></div>
+                    </form>
+                </div>
+            </div>
+            <div class="slide-set" id="slide-complete">
+                <div class="slide-content">
+                    <p id="wizard-complete"></p>
+                </div>
+            </div>
+            <div class="slide-set" id="waiting">
+                <div class="slide-content">
+                    <input id="wizard-progress-bar" type="text" />
+                </div>
+            </div>
+
+            
+        </div>
+    </div>
+
+    <div id="step-setting">
+        <input id="step-backward"/>
+        <input id="step-forward"/>
+        <input id="step-skip"/>
+        <input id="step-complete"/>
+    </div>
+
+
+</div>
+
+<script type="text/javascript">
+
+//<![CDATA[
+try{
+    $
+}catch(e){
+    location.href = "/";
+};
+
+$(document).ready(function(e){
+    var currentStep = 'welcome', // 'welcome',
+                            // 'wan-count',
+                            // 'wan',
+                            // 'wireless'
+                            // 'complete'
+
+        wanCount = 2,
+        wanCurrent = 1;
+
+    var configData = [];
+
+    function refreshLight(type){
+        var $icons = $('#wizard-setting .light-icon');
+        var $descriptions = $('#wizard-setting .light-description');
+        var i = 0;
+        var total = 5;
+        //$('#wizard-slide-lights').show();
+        $icons.removeClass().addClass('light-icon');
+        switch (type){
+            case 'all':
+                for(i = 0; i < total; i++){
+                    if(i < wanCount){
+                        $icons.eq(i).addClass('light-wan');
+                        $descriptions.eq(i).text('WAN' + (i + 1));
+                    }else{
+                        $icons.eq(i).addClass('light-lan');
+                        $descriptions.eq(i).text('LAN');
+                    }
+                }
+                break;
+            case 'single':
+                for(i = 0; i < total; i++){
+                    if(i == wanCurrent - 1){
+                        $icons.eq(i).addClass('light-enable');
+                    }
+                }
+                break;
+            default :
+                break;
+        }
+    }
+
+    var waitingBar  = $('#wizard-progress-bar').waitingbar({
+        labelCls:"xxl",
+        fieldLabel: "正在进行配置，请不要做任何其他操作",
+        separator: "",
+        barWidth: 470
+    });
+
+    waitingBar.waitingbar("hide");
+
+    function reloadStatus(isBackward){
+        var $lights = $('#wizard-slide-lights');
+        $('.slide-set').hide();
+        switch (currentStep){
+            case 'welcome':
+                $panel.panel('setTitle', '设置向导');
+                if($.su.radioCount > 0){
+                    $('#wizard-welcome-info').text('通过本向导可快速配置无线参数、WAN口的上网方式以及相关参数，以便将设备连入指定网络。\n点击<下一步>开始设置。');
+                }else{
+                    $('#wizard-welcome-info').text('通过本向导可快速配置WAN口的上网方式以及相关参数，以便将设备连入指定网络。\n点击<下一步>开始设置。');
+                }
+                $lights.hide();
+                $('#slide-welcome').show();
+                $stepBackward.button('hide');
+                $stepForward.button('show');
+                $stepSkip.button('hide');
+                $stepComplete.button('hide');
+                break;
+            case 'wan-count':
+                $panel.panel('setTitle', '接口模式设置');
+                $lights.show();
+                $('#slide-wan-count').show();
+                $stepBackward.button('show');
+                $stepForward.button('show');
+                $stepSkip.button('hide');
+                $stepComplete.button('hide');
+                popData();
+                refreshLight('all');
+                break;
+            case 'wan':
+                $panel.panel('setTitle', 'WAN' + wanCurrent + '口设置');
+                $lights.show();
+                $('#slide-wan').show();
+                if(wanCurrent == 1){
+                    //refreshLight('all');
+                    $stepBackward.button('show');
+                    $stepForward.button('show');
+                    $stepSkip.button('hide');
+                    $stepComplete.button('hide');
+                }else{
+                    $stepBackward.button('show');
+                    $stepForward.button('show');
+                    $stepSkip.button('show');
+                    $stepComplete.button('hide');
+                }
+                popData();
+                refreshLight('single');
+                break;
+            case 'wireless':
+                $panel.panel('setTitle', '无线设置');
+                $('#slide-wireless').show();
+                $stepBackward.button('show');
+                $stepForward.button('hide');
+                $stepSkip.button('hide');
+                $stepComplete.button('show');
+                $lights.hide();
+                popData();
+                break;
+            case 'complete':
+                $panel.panel('setTitle', '完成快速配置');
+                $('#slide-complete').show();
+                $stepBackward.button('show');
+                $stepForward.button('hide');
+                $stepSkip.button('hide');
+                $stepComplete.button('show');
+                $lights.hide();
+                break;
+            case 'waiting':
+                $panel.panel('setTitle', '请稍候');
+                $('#slide-complete').hide();
+                $("#waiting").show();
+                $stepBackward.button('hide');
+                $stepForward.button('hide');
+                $stepSkip.button('hide');
+                $stepComplete.button('hide');
+                $("a.widget-close.msg-close").hide();
+                waitingBar.waitingbar('show');
+                waitingBar.waitingbar('run');
+
+            default :
+                break;
+        }
+    }
+
+    function pushData(){
+        var $form = $('.slide-set:visible form');
+        var isFound = false;
+        if(!$form.length){
+            return true;
+        }
+        if(!$form.form('validate')){
+            return false;
+        }else{
+            var formData = $form.form('serialize');
+            $.each(configData, function(i, cd){
+                if(cd.type == currentStep){
+                    if(currentStep === 'wan' && cd.wanIndex !== wanCurrent){
+                        return true;//continue;
+                    }else{
+                        isFound = true;
+                        cd.data = formData;
+                        cd.isValid = true;
+                        return false;
+                    }
+                }
+            });
+            if(!isFound){
+                configData.push({
+                    type: currentStep,
+                    wanIndex: wanCurrent,
+                    data: formData,
+                    isValid: true
+                });
+            }
+            if(currentStep === 'wan') $form.form('reset');
+            return true;
+        }
+    }
+
+    function isUsedIp(ip){
+        for(var cd in configData){
+            if(configData[cd].isValid && configData[cd].data  && configData[cd].data.ip == ip && ip !== "0.0.0.0"){
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function popData(){
+        var $form = $('.slide-set:visible form'), data = {};
+        if(!configData.length || !$form.length){
+            return false;
+        }
+        $.each(configData, function(i, cd){
+            if(cd.type == currentStep){
+                if(currentStep === 'wan' && cd.wanIndex !== wanCurrent){
+                    return true;//continue;
+                }else{
+                    data = cd;
+                    cd.isValid = false;
+                    return false;
+                }
+            }
+        });
+        if(data.data){
+            $form.form('loadData', data.data);
+            return true;
+        }else{
+            return false;
+        }
+    }
+
+    function resolveData(){
+        var send = {};
+        $.each(configData, function(i, d){
+            var data = d.data;
+            if(!d.isValid){
+                return true;//continue;
+            }
+            switch (d.type){
+                case 'wan-count':
+                    $.extend(send, d.data);
+                    break;
+                case 'wan':
+                    send['wan'+ d.wanIndex +'_info'] = data;
+                    break;
+                case 'wireless':
+                    send['wireless_info'] = data;
+                    break;
+                default :
+                    break;
+            }
+        });
+        return {
+            send: send
+        }
+    }
+
+    var $panel = $('#wizard-setting').panel({
+        title: "."
+    });
+    $('#wireless-title-2').text('2.4G无线设置');
+    $('#wireless-title-5').text('5G无线设置');
+    $('#wizard-complete').text('点击<完成>按钮，提交所有配置项。');
+
+    var $stepBackward = $('#step-backward').button({
+        fieldLabel: null,
+        text: '上一步',
+        cls: 'inline',
+        handler: function(){
+            switch (currentStep){
+                case 'wan-count':
+                    currentStep = 'welcome';
+                    break;
+                case 'wan':
+                    if(wanCurrent > 1){
+                        wanCurrent--;
+                    }else{
+                        currentStep = 'wan-count';
+                    }
+                    break;
+                /*
+                case 'wireless':
+                    currentStep = 'wan';
+                    break;
+                */
+                case 'complete':
+                    currentStep = 'wan';
+                    break;
+                default :
+                    break;
+            }
+            reloadStatus(true);
+        }
+    }).button('hide');
+    var $stepForward = $('#step-forward').button({
+        fieldLabel: null,
+        text: '下一步',
+        cls: 'inline',
+        handler: function(){
+            if(!pushData()){
+                return;
+            }
+            switch (currentStep){
+                case 'welcome':
+                    currentStep = 'wan-count';
+                    break;
+                
+                case 'wan-count':
+                    currentStep = 'wan';
+                    break;
+                
+                case 'wan':
+                    if(wanCurrent < wanCount){
+                        wanCurrent++;
+                    }else{
+                        if($.su.radioCount > 0){
+                            currentStep = 'wireless';
+                        }else{
+                            currentStep = 'complete';
+                        }
+                    }
+                    break;
+                default :
+                    break;
+            }
+            reloadStatus();
+        }
+    });
+
+    
+
+
+    var rebootInterval = 0;
+    var isRebootFinish = false;
+    var timeout = 0;
+    var $stepComplete = $('#step-complete').button({
+        fieldLabel: null,
+        text: '完成',
+        cls: 'inline',
+        handler: function(){
+            if(!pushData()){
+                return;
+            }
+            currentStep = 'waiting';
+            reloadStatus();
+            /*
+            $.su.wizard.hide();
+            rebootMsg.msg('show');
+            rebootMsg.msg('hideButtons');
+            waitingBar.waitingbar('run');
+            */
+            $("div.progressbar-wrap-outer").css("marginTop", "25px");
+            setTimeout(function() {
+                $("label.processbar-fieldlabel").html("系统正在重启，请稍候");
+               
+            }, 20000);
+
+            var config = resolveData();
+            var proxy = new $.su.Proxy({url: $.su.url('/admin/wizard?form=wizard')});
+            var data = config.send;
+            proxy.write({params: config.send});
+
+            timeout = setTimeout(function() {
+                location.href= "./login.html";
+            }, 160000);
+        }
+    }).button('hide');
+    var $stepSkip = $('#step-skip').button({
+        fieldLabel: null,
+        text: '跳过',
+        cls: 'inline',
+        handler: function(){
+            if(wanCurrent < wanCount){
+                wanCurrent++;
+                var $form = $('.slide-set:visible form');
+                $form.form('reset');
+            }else{
+                if($.su.radioCount > 0){
+                    currentStep = 'wireless';
+                }else{
+                    currentStep = 'complete';
+                }
+            }
+            reloadStatus();
+        }
+    }).button('hide');
+
+
+    var wanSetting = (function(){
+        $('#wizard-wan-count').radio({
+            fieldLabel: '',
+            labelCls: 'l',
+            columns: 4,
+            items: [{
+                boxlabel: '单WAN口', inputValue: 1
+            },{
+                boxlabel: '双WAN口', inputValue: 2, checked: true
+            },{
+                boxlabel: '三WAN口', inputValue: 3
+            },{
+                boxlabel: '四WAN口', inputValue: 4
+            }]
+        }).on('ev_change', function(e, oldValue, newValue){
+                    onWanCountChange(newValue);
+                    refreshLight('all');
+                });
+
+        function onWanCountChange(newValue){
+            wanCount = parseInt(newValue[0], 10);
+        }
+
+        $('#form-wan-count').form({
+            fields: [
+                {name: "txt_wan_num", mapping: "txt_wan_num"}
+            ]
+        });
+        function onConnectChange(newValue){
+            $("#wan_f").find("input").each(function(index, e){
+                var $e = $(e);
+                if($e.hasClass("static") || $e.hasClass("dhcp") || $e.hasClass("pppoe")){
+                    $e.textbox("disable").textbox("hide");
+                    if($e.hasClass(newValue)){
+                        $e.textbox("enable").textbox("show");
+                    }
+                }
+            });
+        }
+        $("#wan_connect").combobox({
+            fieldLabel:"连接方式",
+            multiSelect:false,
+            allowBlank: false,
+            items:[
+                {name:"固定IP地址",value:"static"},
+                {name:"自动获取IP地址",value:"dhcp"},
+                {name:"PPPoE拨号",value:"pppoe", selected: true}
+            ]
+        }).on('ev_change', function(e, oldValue, newValue){
+            onConnectChange(newValue[0]);
+        });
+        setTimeout(function(){
+            onConnectChange("pppoe");
+        }, 0);
+
+        $("#wan_ip").textbox({
+            fieldLabel: $.su.CHAR.INTERFACE.IPADDR,
+            allowBlank: false,
+            value: "0.0.0.0",
+            //vtype: "ip",
+            validator: function(v) {
+                if((new $.su.vtype('ip').validate(v) === true)){
+                    if(isUsedIp(v)){
+                        return "接口IP地址冲突";
+                    }
+                    return true;
+                }else if(v == "0.0.0.0"){
+                    return $.su.CHAR.VTYPETEXT.IP_NO_ALL_ZERO;
+                }
+                return "IP格式错误";
+            }
+        });
+
+        $("#wan_mask").textbox({
+            fieldLabel: $.su.CHAR.INTERFACE.NETMASK,
+            allowBlank: false,
+            value:"255.255.255.0",
+            //vtype: "netmask",
+            validator: function(v) {
+                if(v == "0.0.0.0" || (new $.su.vtype('netmask').validate(v) === true)){
+                    return true;
+                }
+                return "子网掩码格式错误";
+            }
+        });
+
+        $("#wan_gateway").textbox({
+            fieldLabel: $.su.CHAR.INTERFACE.GATEWAY,
+            vtype: "ip",
+            //value: "0.0.0.0",
+            tips: $.su.CHAR.INTERFACE.OPTIONAL,
+            tipsCls: 'xxs'
+        });
+
+        $("#wan_first_dns").textbox({
+            fieldLabel: $.su.CHAR.INTERFACE.DNS1,
+            vtype: "ip",
+            //value: "0.0.0.0",
+            tips: $.su.CHAR.INTERFACE.OPTIONAL,
+            tipsCls: 'xxs'
+        });
+
+        $("#wan_second_dns").textbox({
+            fieldLabel: $.su.CHAR.INTERFACE.DNS2,
+            vtype: "ip",
+            //value: "0.0.0.0",
+            tips: $.su.CHAR.INTERFACE.OPTIONAL,
+            tipsCls: 'xxs'
+        });
+
+        $("#wan_bandwidth_up").textbox({
+            fieldLabel: $.su.CHAR.INTERFACE.UPLINK,
+            allowBlank: false,
+            value: "1000000",
+            tips: "Kbps（100-1000000）",
+            tipsCls: 'xs',
+            vtype: {
+                vtype: "number",
+                max: 1000000,
+                min: 100
+            }
+        }).textbox("hide").textbox("disable");
+
+        $("#wan_bandwidth_down").textbox({
+            fieldLabel: $.su.CHAR.INTERFACE.DOWNLINK,
+            allowBlank: false,
+            value: "1000000",
+            tips: "Kbps（100-1000000）",
+            tipsCls: 'xs',
+            vtype: {
+                vtype: "number",
+                max: 1000000,
+                min: 100
+            }
+        }).textbox("hide").textbox("disable");
+
+        $("#wan_user").textbox({
+            fieldLabel: '账号', //$.su.CHAR.INTERFACE.GATEWAY,
+            vtype:"ascii_visible",
+            allowBlank: false
+        });
+
+        $("#wan_password").password({
+            fieldLabel: "密码",
+            allowBlank: false,
+            vtype:"ascii_visible",
+            minLength:1,
+            maxLength:15
+        });
+
+        $('#wan_f').form({
+            fields: [
+                {name: "connect", mapping: "connect"},
+                {name: "ip",mapping: "ip"},
+                {name: "mask",mapping: "mask"},
+                {name: "gateway",mapping: "gateway"},
+                {name: "first_dns",mapping: "first_dns"},
+                {name: "second_dns",mapping: "second_dns"},
+
+                {name: "bandwidth_up",mapping: "bandwidth_up"},
+                {name: "bandwidth_down",mapping: "bandwidth_down"},
+
+                {name: "user",mapping: "user"},
+                {name: "password",mapping: "password"}
+            ]
+        });
+    })();
+
+    var wirelessSetting = (function(){
+        $("#wireless-name").textbox({
+            fieldLabel: '无线名称',
+            value: 'TP-LINK_1234',
+            autoTrim: false,
+            vtype:"string_wireless_name",
+            allowBlank: false,
+            inputCls:"xxl"
+        });
+        $("#wireless-password").textbox({
+            fieldLabel: '无线密码',
+            maxLength: 64,
+            vtype:"strange_pwd",
+            allowBlank: false,
+            //tips: "（密码长度为8至63个字符，最好是数字、字母、符号的组合）",
+            tipsCls: 'xs',
+            inputCls:"xxl"
+        });
+
+        $("#wireless-note").text("密码长度为8至63个字符，推荐设置为数字、字母、符号的组合");
+        $("#wireless-name-5").textbox({
+            fieldLabel: '无线名称',
+            value: 'TP-LINK_5G_1234',
+            autoTrim: false,
+            vtype:"string_wireless_name",
+            allowBlank: false,
+            inputCls:"xxl"
+        });
+        var $pwd5 = $("#wireless-password-5").textbox({
+            fieldLabel: '无线密码',
+            maxLength: 64,
+            vtype:"strange_pwd",
+            allowBlank: false,
+            inputCls:"xxl"
+        }).textbox("disable");
+        $("#wireless-sync").checkbox({
+            fieldLabel: "",
+            items: [
+                {boxlabel: "同2.4G无线密码", inputValue: "on", uncheckedValue: "off", checked: true}
+            ]
+        }).on("ev_change", function(e, oldValue, newValue){
+            var val = (newValue[0]=="pwd_sync"||newValue[0]=="on") ? "on" : "off";
+            switch(val)
+            {
+                case "on":
+                    $pwd5.textbox("disable");
+                    break;
+                case "off":
+                    $pwd5.textbox("enable");
+                    break;
+            }
+        });
+        $('#wireless_f').form({
+            fields: [
+                {name: "name_2_4", mapping: "name_2_4"},
+                {name: "pwd_2_4", mapping: "pwd_2_4"},
+                {name: "name_5", mapping: "name_5"},
+                {name: "pwd_5", mapping: "pwd_5"},
+                {name: "pwd_sync", mapping: "pwd_sync"}
+            ]
+        });
+    })();
+
+    
+
+    var wizardProxy = new $.su.Proxy({
+        url: $.su.url("/admin/wizard?form=routeInfo")
+    });
+
+    wizardProxy.read({}, function(data){
+        if(data){
+            if(data.txt_wan_num) $("#wizard-wan-count").radio("setValue", data.txt_wan_num);
+            if(data.name_2_4) $("#wireless-name").textbox("setValue", data.name_2_4);
+            if(data.name_5) $("#wireless-name-5").textbox("setValue", data.name_5);
+        }
+    });
+
+    reloadStatus();
+});
+
+//]]>
+</script>
+</body>
+
+</html>

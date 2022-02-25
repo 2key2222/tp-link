@@ -1,0 +1,611 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>BALANCE_BASIC</title>
+<style type="text/css">
+</style>
+</head>
+
+<body>
+<div class="func-container">
+    <div id="reboot_alert_cnt">
+        <h4 class="title"  id="reboot_confirm_cnt">
+            <span class="icon"></span>
+            <span class="text" id="reboot_confirm_content"></span>
+        </h4>
+        <div id="reboot_pro_cnt" class="reboot-loading-msg hidden">
+            <p id="reboot_note"  class="reboot-progressbar-text"></p>
+            <input id="reboot_pro_bar" type="text" />
+        </div>
+    </div> 
+
+    <div id="reboot_failed_cnt">
+        <h4 class="title">
+            <span class="icon" ></span>
+            <span class="text" id="reboot_error_str"></span>
+        </h4>
+    </div> 
+
+    <div id="own-editor">
+        <input id="bridge-name" name="t_name"/>
+        <input id="include_ifs" name="t_bindif"/>
+        <input id="config_conn" name="t_useconfig"/>
+        <input id="config_conn_ifname" name="t_configif"/>
+    </div>
+    <div id="bridge_list">
+        <div id="bridge_grid">
+        </div>
+    </div>
+    
+    <div id="bridge_help">    
+    </div>
+
+<script type="text/javascript">
+try{
+    $
+}catch(e){
+    location.href = "/";
+};
+
+
+$(document).ready(function(e){
+    var insert = true;
+
+    var BRIDGE_LIST = $.su.url("/admin/bridge?form=bridge_setting");
+
+    var Bridge_Proxy = new $.su.Proxy({
+        url: BRIDGE_LIST,
+    });
+
+    $("#bridge_list").panel({
+        title: $.su.CHAR.MENU.BRIDGE/*$.su.CHAR.BRIDGE.BRIDGE_SETTING*/,
+        collapsible: false
+    });
+
+    $('#bridge-name').textbox({
+        fieldLabel: $.su.CHAR.BRIDGE.BRIDGE_NAME/*$.su.CHAR.INTERFACE.IFNAME*/,
+        allowBlank: false,
+        maxLength: 12,
+        tips: $.su.CHAR.INTERFACE.IFNAMETIPS,
+        validator: function(v) {
+            if(new $.su.vtype('name').validate(v) !== true)
+            {
+                return $.su.CHAR.BRIDGE.WRONG_NAME;
+            } 
+            if (v.length > 12)
+            {
+                return $.su.CHAR.BRIDGE.WRONG_NAME_LENGTH;
+            }
+            return true;
+        }
+    });
+
+    $("#include_ifs").combobox({ 
+        fieldLabel: $.su.CHAR.BRIDGE.INCLUDE_IFNAME,  
+        multiSelect: true ,
+        allowBlank: false,  
+        items:[
+                /*{name:"---",value:"---"}*/
+            ]
+    });
+
+
+    $("#config_conn_ifname").combobox({
+        fieldLabel: $.su.CHAR.BRIDGE.CONFIG_CONN_IFNAME,
+        allowBlank: false,
+        items:[
+            /* {value: "---", name: "---"} */
+        ]
+    });
+
+    $("#config_conn").checkbox("setValue", "0");
+
+    $("#config_conn").checkbox({
+        fieldLabel: $.su.CHAR.BRIDGE.CONFIG_CONN,
+        items:[
+            {boxlabel: $.su.CHAR.BRIDGE.CONFIG_CONN_ENABLE, inputValue: "1", uncheckedValue: "0"}
+        ]
+    }).on("ev_change", function(e, oldValue, newValue){
+        var val = (newValue[0]=="t_useconfig"||newValue[0]=="1") ? "on" : "off";
+        //console.log(val)
+        switch(val)
+        {
+            case "on":
+                 $bridgeEditor.find('#config_conn_ifname').combobox("enable");
+                var t_bindif =  $bridgeEditor.find("#include_ifs").combobox("getValue");
+                var interfaceItem=[];
+                for (var i=0; i< t_bindif.length; i++){
+                    interfaceItem.push({name:t_bindif[i],value:t_bindif[i]}); 
+                }
+                $bridgeEditor.find("#config_conn_ifname").combobox('loadData',interfaceItem); 
+                break;
+            case "off":
+                 $bridgeEditor.find('#config_conn_ifname').combobox("disable");
+                break;
+        }
+    });
+
+
+    var phyItem = {};
+    var Bridge_Grid = $("#bridge_grid").grid({
+        maxRulesProperty: "bridge_max",
+        editor: {
+            validator: function()
+            {
+                var editor  = $(Bridge_Grid.grid("getEditor"));
+                var t_name = editor.find(".text-text[name=t_name]").textbox("getValue");
+                var t_bindif = editor.find("#include_ifs").combobox("getValue")
+                var store   = Bridge_Grid.grid("getStore");
+                var keyProperty = store.keyProperty;
+                var grid_array  = store.data;
+                var config_conn = editor.find("#config_conn").checkbox("getValue1")
+                var editingId = editor.editor("getEditingId"); 
+
+                var config_conn_ifname = editor.find("#config_conn_ifname").combobox("getValue")
+
+                if (config_conn.length > 0 && config_conn[0] == 1)
+                {
+                    var cciflag = 0
+                    for (var j = 0; j < t_bindif.length; j++)
+                    {
+
+                        if (t_bindif[j] == config_conn_ifname)
+                        {
+                            cciflag = 1
+                        }
+                    }
+                    if (cciflag == 0) {
+                            $($("div#bridge_grid").grid("getEditor")).form('setError', "包含接口必须含有配置关联接口！");
+                            return false;
+                    }
+                }
+
+                //console.log("11", t_bindif);
+                //console.log("12", phyItem);
+                //console.log(grid_array)
+                var t_names = []
+                var t_bindifs = []
+                if($.isArray(grid_array) && grid_array.length > 0)
+                {
+                    for(var k = 0; k < grid_array.length;k++)
+                    {
+                        var data = grid_array[k];
+                        
+                        if(data[keyProperty] == editingId)
+                        {
+                            continue;
+                        }
+                        else if((data["t_name"] == t_name))
+                        {
+                            $($("div#bridge_grid").grid("getEditor")).form('setError', "网桥名称冲突！");
+                            return false;
+                        }
+                        else 
+                        {
+                            //console.log(t_bindif);
+                            //console.log(phyItem);
+                            t_names[data["t_name"]] = data["t_name"];
+                            for (var i = 0; i < data["t_bindif"].length; i++)
+                            {
+                                t_bindifs[data["t_bindif"][i]] = data["t_bindif"][i];
+                            }
+                            /*
+                            if ($.isArray(t_bindif) && t_bindif.length > 0)
+                            {
+
+                                if (data["t_bindif"].length == t_bindif.length)
+                                {
+                                    for(var k1 = 0; k1 < t_bindif.length;k1++)
+                                    {
+                                        var fg = 0;
+                                        for (var k2 = 0; k2 < data["t_bindif"].length; k2++)
+                                        {
+                                            if (t_bindif[k1] == data["t_bindif"][k2])
+                                            {  
+                                                fg = 1;
+                                                break;
+                                            }
+                                        }
+                                        if (fg == 0)
+                                            break;
+                                        else if (k1 == t_bindif.length - 1)
+                                        {
+                                            $($("div#bridge_grid").grid("getEditor")).form('setError', "包含接口冲突！");
+                                            return false
+                                        }
+                                    }
+                                }
+
+                            }
+                            */
+                        }
+                    }
+                    for (var j = 0; j < t_bindif.length; j++)
+                    {
+                        if (t_bindifs[t_bindif[j]])
+                        {
+                            $($("div#bridge_grid").grid("getEditor")).form('setError', "包含接口冲突！");
+                            return false;
+                        }
+                    }
+                }
+                //check interface name confliction, add by Chen Youliang, 2015.10.9
+                var statusProxy_sync = new $.su.Proxy({
+                    url: $.su.url("/admin/interface?form=status"),
+                    async: false
+                });
+                var conflict = false;
+                statusProxy_sync.read({}, function(data){
+                    if (data['normal'].length > 0)
+                    {
+                        for (var k = 0; k < data['normal'].length; k++)
+                        {
+                            element = data['normal'][k]
+                            if (!t_names[element['t_name']] && t_name == element['t_name'])
+                            {
+                                if (false == insert)
+                                {
+                                    continue;
+                                }
+                                conflict = true;
+                                return;
+                            }
+                        }                        
+                    }
+                    if (data['vpn'].length > 0)
+                    {
+                        for (var k = 0; k < data['vpn'].length; k++)
+                        {
+                            element = data['vpn'][k]
+                            if (!t_names[element['t_name']] && t_name == element['t_name'])
+                            {
+                                if (false == insert)
+                                {
+                                    continue;
+                                }
+                                conflict = true;
+                                return;
+                            }
+                        }                        
+                    }
+                });
+                if (true == conflict)
+                {
+                    $($("div#bridge_grid").grid("getEditor")).form('setError', "网桥名称冲突！");
+                    return false;
+                }
+
+                /*
+                if ($.isArray(t_bindif) && t_bindif.length > 0)
+                {
+                    for(var k1 = 0; k1 < t_bindif.length;k1++)
+                    {
+                        /*if (!phyItem[t_bindif[k1]])
+                        return false*/
+                /*
+                        if (phyItem[t_bindif[k1]]["t_reference"] > 0)
+                        {
+                            $($("div#bridge_grid").grid("getEditor")).form('setError', "端口" + t_bindif[k1] + "已被引用，不能建立网桥！");
+                            return false;
+                        }
+
+                                    
+                    }
+
+                    for(var k1 = 0; k1 < t_bindif.length;k1++)
+                    {
+                        if (phyItem[t_bindif[k1]]["proto"] != "static" ||
+                            phyItem[t_bindif[k1]]["ipaddr"])
+                        {
+                                ;
+                        }
+                    }
+                }
+                */
+
+                return true;
+            },
+            content:"#own-editor",
+            fields: [
+                {name: "t_name"},
+                {name: "t_bindif"},
+                {name: "t_useconfig"},
+                {name: "t_configif"},
+                {name: "t_reference"},
+                {name: "t_issys"}
+            ]
+        },
+        store:{
+            proxy: Bridge_Proxy,
+            extraProperty: "t_name",
+            fields: [
+                {name: "t_name"},
+                {name: "t_bindif"},
+                {name: "t_useconfig"},
+                {name: "t_configif"},
+                {name: "t_reference"},
+                {name: "t_issys"}
+            ],
+            autoLoad: true
+        },
+        paging:[],
+        columns: [
+            {
+                xtype: "checkcolumn",
+                width: $.su.CHAR.SETTING.VPN_USER.CHECK_COLUMN_WIDTH
+            },
+            {
+                xtype: "rownumberer",
+                width: $.su.CHAR.SETTING.VPN_USER.ROW_NUMBER_WIDTH
+            },
+            {
+                text: $.su.CHAR.BRIDGE.BRIDGE_NAME/*$.su.CHAR.BRIDGE.BRIDGENAME*/,
+                width: 50,
+                dataIndex: "t_name"
+            },
+            {
+                text: $.su.CHAR.BRIDGE.INCLUDE_IFNAME/*$.su.CHAR.BRIDGE.INCLUDEIF*/,
+                width: 50,
+                dataIndex: "t_bindif"
+            },
+            {
+                text: $.su.CHAR.BRIDGE.CONFIG_CONN,
+                width: 50,
+                hidden: true,
+                dataIndex: "t_useconfig"
+            },
+            {
+                text: $.su.CHAR.BRIDGE.CONFIG_CONN_IFNAME,
+                width: 50,
+                dataIndex: "t_configif"
+            },
+            {
+                xtype: "settings",
+                width: $.su.CHAR.SETTING.VPN_USER.SETTING_WIDTH
+            }
+        ],
+        operation: 'prompt|add|delete'
+    }).on("ev_load", function(e,data, others){
+        if(others && others.bridge_max)
+        {
+            maxrules = others.bridge_max;
+            //console.log(maxrules);
+        }
+        var interfaceProxy = new $.su.Proxy({
+            url: $.su.url('/admin/bridge?form=phyinfo'),
+            async: false
+        });    
+ 
+        interfaceProxy.read({}, function(data){
+            var interfaceItem=[];
+            for (var i=0; i< data.length; i++){
+                interfaceItem.push({name:data[i].t_label,value:data[i].t_name}); 
+                phyItem[data[i].t_name] = data[i]; 
+            }
+            var $editor = $(Bridge_Grid.grid("getEditor"));
+            var combobox = $editor.find('#include_ifs')
+            combobox.combobox('loadData',interfaceItem); 
+        });
+    });
+
+    var bridgeStore = Bridge_Grid.grid('getStore');
+    var $bridgeEditor = $(Bridge_Grid.grid('getEditor')); 
+    $bridgeEditor.on('ev_startEdit', function(e, index, key){
+        if(index == 'add')
+        {
+            insert = true;
+            $bridgeEditor.find(".text-text[name=t_name]").textbox("enable");
+            $bridgeEditor.find("#config_conn").checkbox("enable");
+            $("#config_conn").checkbox("setValue", "0");
+        }
+        else
+        {
+            insert = false;
+            $bridgeEditor.find(".text-text[name=t_name]").textbox("disable");
+            $bridgeEditor.find("#config_conn").checkbox("disable");
+            $bridgeEditor.find("#config_conn_ifname").combobox("disable");
+        }
+    }).undelegate("button.btn-submit", 'click')
+    .delegate("button.btn-submit", "click", function(e){
+        /*自定义部分*/
+        var editor  = $(Bridge_Grid.grid("getEditor"));
+        var config_conn = editor.find("#config_conn").checkbox("getValue1")
+        //console.log(config_conn)
+
+        if (insert === true && config_conn.length > 0 && config_conn[0] == 1)
+        {
+            $("#reboot_alert_cnt").msg("show");
+            return;
+        }
+
+
+        /*常规提交部分*/
+        $("button.btn-submit").attr("disabled",true);
+        var obj = $bridgeEditor.get(0);
+        if (obj.beforeSubmit){
+            var t = obj.beforeSubmit();
+            if (!t){
+                $("button.btn-submit").attr("disabled",false);
+                return;
+            };
+        };
+        $bridgeEditor.editor("completeEdit");
+       
+    });
+
+    $("#reboot_failed_cnt").msg({
+        cls: 'warning reboot-confirm-size',
+        type: "alert"
+    });
+
+    var reboot_total_time = 2*60*1000;
+    var reboot_query_interval = false;
+    var BACKUP_URL_NEW = $.su.url("/admin/firmware?form=config");
+
+    var reboot_proxy = new $.su.Proxy({
+        url: BACKUP_URL_NEW
+    });
+
+    function reboot_getResult()
+    {
+        reboot_proxy.write({method:'check'}, function(data){
+        }, function(errcode){
+            // console.log(arguments);
+            function showAlertMag()
+            {
+                 $("#reboot_failed_cnt").msg("show");
+            }
+
+            function hideProMsg()
+            {
+                clearTimeout(reboot_query_interval);
+                reboot_pro_bar.progressbar("stop");
+                reboot_pro_bar.progressbar("reset");
+                reboot_query_interval = false;
+
+                
+                // pro_bar.progressbar("hide");
+                // $("#reboot_pro_cnt").hide();
+                
+                $("#reboot_alert_cnt").hide();
+                $("#reboot_alert_cnt").msg("close", function(){
+                    $("#reboot_alert_cnt").msg('showButtons');
+                    $('#reboot_confirm_cnt').show();
+                    $("#reboot_pro_cnt").hide();
+                });
+            }
+
+            if(errcode == "err_form")
+            {
+                $("#reboot_error_str").html($.su.CHAR.ERROR["00000001"]);
+                hideProMsg();
+                showAlertMag();
+            }
+            else if(errcode == "err_check")
+            {
+                $("#reboot_error_str").html($.su.CHAR.ERROR["00000002"]);
+                hideProMsg();
+                showAlertMag();
+            }
+            else if(errcode == "err_sizex")
+            {
+                $("#reboot_error_str").html($.su.CHAR.ERROR["00000003"]);
+                hideProMsg();
+                showAlertMag();
+            }
+            else if(errcode == "err_flash")
+            {
+                $("#reboot_error_str").html($.su.CHAR.ERROR["00000004"]);
+                hideProMsg();
+                showAlertMag();
+            }
+            else if(errcode == "err_reboot")
+            {
+                $("#reboot_error_str").html($.su.CHAR.ERROR["00000005"]);
+                hideProMsg();
+                showAlertMag();
+            }
+            else if(errcode == "err_other")
+            {
+                $("#reboot_error_str").html($.su.CHAR.ERROR["00000006"]);
+                hideProMsg();
+                showAlertMag();
+            }
+            else if(errcode == "err_failed")
+            {
+                $("#reboot_error_str").html($.su.CHAR.ERROR["00000136"]);
+                hideProMsg();
+                showAlertMag();
+            }
+            else
+            {
+                hideProMsg();
+            }
+        });
+    }
+
+    function reboot_write()
+    {
+        // $("#reboot_pro_cnt").fadeIn(200); 
+        reboot_proxy.write({method:'check'}, function(data){
+            // console.log(data);
+            clearTimeout(reboot_query_interval);
+            reboot_query_interval = setTimeout(reboot_getResult,1000);
+            reboot_pro_bar.progressbar("animate", 0, 1, reboot_total_time,function(){
+                if(localStorage){
+                    localStorage.setItem("token", "");
+                };
+                    location.href = "/";
+            });
+
+        },function(){
+            clearTimeout(reboot_query_interval);
+            reboot_getResult();
+        },function(){
+            
+        });
+    }
+
+    $("#reboot_alert_cnt").msg({
+        okHandler:function(){
+            /* submit form */
+            $("button.btn-submit").attr("disabled",true);
+            var obj = $bridgeEditor.get(0);
+            if (obj.beforeSubmit){
+                var t = obj.beforeSubmit();
+                if (!t){
+                    $("button.btn-submit").attr("disabled",false);
+                    return;
+                };
+            };
+
+            $bridgeEditor.editor("completeEdit",{},function(){
+                /*成功回调*/
+                $("#reboot_alert_cnt").msg('hideButtons');
+                $('#reboot_confirm_cnt').hide();
+                $("#reboot_pro_cnt").show();
+                reboot_write();
+                //console.log("success");
+            },function(errcode,others){
+                /*有错误的回调*/
+                //console.log(errcode,others);
+            });
+            return false;
+        },
+        // cls:"m warning",
+        cancelHandler:function(){
+            return true;
+        },
+        cls: 'warning reboot-confirm-size',
+        closeBtn: false,
+        type: "confirm"
+    });
+
+    var reboot_pro_bar  = $('input#reboot_pro_bar').progressbar({
+        fieldLabel: null,
+        cls: 'inline',
+        width: 326,
+        height: 6,
+        value: 0
+    });
+
+    $.su.app.runningModule.addUnloadHandler(function(){
+        if(reboot_query_interval)
+        {
+            clearTimeout(reboot_query_interval);
+            reboot_query_interval = false;
+        }
+
+        reboot_pro_bar.progressbar("stop");
+        reboot_pro_bar.progressbar("reset");
+    });
+
+
+    $("#reboot_confirm_content").html($.su.CHAR.BRIDGE.REBOOT_CONFIRM_CONTENT);
+    $("#reboot_note").html($.su.CHAR.BACKUP.REBOOT_WARN);
+});
+</script>
+</body>
+
+</html>

@@ -1,0 +1,72 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<title>action_check</title>
+	<style type="text/css">
+	</style>
+</head>
+
+<body>
+	<div class="func-container">
+		<div id="action_check">
+			<form id="action_form">
+				<input id="serverip" name="serverip" value=""/>
+				<input id="enable" name="enable" value=""/>
+			</form>
+		</div>
+		
+	</div>
+	<div id="help"></div>
+<script type="text/javascript">
+try{
+    $
+}catch(e){
+    location.href = "/";
+};
+
+$(document).ready(function(e){ 
+	var actionCheck_proxy = new $.su.Proxy({
+		url:$.su.url('/admin/logger?form=action_check')
+	})
+
+
+	$("div#action_check").panel({
+		title: "上网行为分析",
+		collapsible: false
+	});
+
+	$("#serverip").textbox({
+		fieldLabel:"行为审计服务器地址",
+		vtype:"ip",
+		allowBlank:false
+	});
+	
+	$("#enable").checkbox({
+		fieldLabel:"上传用户上网行为",
+		defaultValue:["on"],
+		items: [
+			{boxlabel: $.su.CHAR.VIRTUAL_SERVERS.ENABLE_THIS_ENTRY, uncheckedValue:"off", inputValue: "on", id: "chk_enable",  checked:true}
+		]
+	});
+
+	$("#action_form").form({
+		autoLoad:true,
+		proxy: actionCheck_proxy,
+        fields: [
+            {name: "enable", mapping: "enable"},
+			{name: "serverip", mapping: "serverip"}
+        ],
+        submitBtn: "default"
+	});
+
+	var help = new $.su.Help({
+        container: "div#help",
+        content: "ACTION_CHECK"
+    });
+
+});
+</script>
+</body>
+
+</html>

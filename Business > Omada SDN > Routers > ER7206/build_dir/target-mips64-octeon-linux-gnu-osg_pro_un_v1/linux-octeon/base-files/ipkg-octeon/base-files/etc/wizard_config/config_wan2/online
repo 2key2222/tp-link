@@ -1,0 +1,17 @@
+config interface 'WAN1'
+	option mode 'auto'
+	option gateway '0.0.0.0'
+	option dns '0.0.0.0'
+
+config interface 'WAN2'
+	option mode 'auto'
+	option gateway '0.0.0.0'
+	option dns '0.0.0.0'
+
+config global 'online_check'
+	list track_dns 'www.baidu.com'
+	list track_dns 'www.163.com'
+	list track_dns 'www.qq.com'
+	list track_dns 'www.w3.org'
+
+

@@ -1,0 +1,415 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Service</title>
+<style type="text/css">
+</style>
+</head>
+
+<body>
+	<div class="func-container">
+		<div id="service_type">
+			<div id="service_type_grid" class="natSeries">
+			</div>
+		</div>
+
+		<div id="own_editor">
+			<input type="text" id="name" name="name">
+			<input id="proto" name="proto">
+			<div id="div_protocol_port" style="display:none">
+				<input type="text" id="sport" name="sport">
+				<input type="text" id="dport" name="dport">
+			</div>
+			<div id="div_icmp" style="display:none">
+				<input type="text" id="type" name="type">
+				<input type="text" id="code" name="code">
+			</div>
+			<div id="div_other" style="display:none">
+				<input id="other" name="other">
+			</div>
+			<input id="comment" name="comment">
+			<input id="flag" name="flag" class="hidden">
+		</div>
+		<span id="service_notice" class="hidden"></span>
+	 	<div id="service_help"></div>
+	</div>
+<script type="text/javascript">
+//<![CDATA[
+try{
+    $
+}catch(e){
+    location.href = "/";
+};
+
+$(document).ready(function(e){
+	var URL_PORT = $.su.url("/admin/service?form=service");
+
+	$("span#service_notice").html($.su.CHAR.SERVICE_TYPE.NOTICE);
+
+	$("div.func-container").page({
+		title: $.su.CHAR.SERVICE_TYPE.TITLE,
+		help: ""	//可能是个调用的id 也可能是个url
+	});
+
+	$('div#service_type').panel({
+		title: $.su.CHAR.SERVICE_TYPE.MAPPING_LIST,
+		collapsible: false
+	});
+	
+	$("input#name").textbox({
+		fieldLabel: $.su.CHAR.SERVICE_TYPE.NAME,
+		maxLength:32,
+		cls: 'inline',
+		vtype: "name"
+	});
+		
+	$("input#proto").radio({
+		fieldLabel: $.su.CHAR.SERVICE_TYPE.PROTOCOL_TYPE,
+		columns:5,
+		items:[
+			{boxlabel: $.su.CHAR.SERVICE_TYPE.PROTOCOL_TCP, cls: '', inputValue: 'tcp',checked:true},
+			{boxlabel: $.su.CHAR.SERVICE_TYPE.PROTOCOL_UDP, cls: '', inputValue: 'udp'},
+			{boxlabel: $.su.CHAR.SERVICE_TYPE.PROTOCOL_ALL, cls: '', inputValue: 'tcp-udp'},
+			{boxlabel: $.su.CHAR.SERVICE_TYPE.PROTOCOL_ICMP, cls: '', inputValue: 'icmp'},
+			{boxlabel: $.su.CHAR.SERVICE_TYPE.PROTOCOL_OTHER, cls: '', inputValue: 'other'}
+		] 
+	}).on('ev_change', function(e, oldValue, newValue){
+		//console.log(oldValue);
+		//console.log(newValue);
+		$editor = $(o.grid("getEditor"));
+		if(newValue === 'icmp'){
+			$('div#div_protocol_port').hide();
+			$('div#div_icmp').form("show");
+			$('div#div_other').form("hide");
+
+			$("input#sport").textbox('disable');
+			$("input#dport").textbox('disable');
+			$("input#type").textbox('enable');
+			$("input#code").textbox('enable');
+			$("input#other").textbox('disable');
+						
+			$("input#type").textbox("setValue", "");
+			$("input#code").textbox("setValue", "");		
+		}
+		else if(newValue === "other"){
+			$('div#div_protocol_port').form("hide");
+			$('div#div_icmp').form("hide");
+			$('div#div_other').form("show");
+
+			$("input#sport").textbox('disable');
+			$("input#dport").textbox('disable');
+			$("input#type").textbox('disable');
+			$("input#code").textbox('disable');
+			$("input#other").textbox('enable');
+			
+			$("input#other").textbox("setValue", "");
+		}
+		else if(newValue === "tcp" || newValue === "udp" || newValue === "tcp-udp")
+		{
+			$('div#div_protocol_port').form("show");
+			$('div#div_icmp').form("hide");
+			$('div#div_other').form("hide");
+
+			$("input#sport").textbox('enable');
+			$("input#dport").textbox('enable');
+			$("input#type").textbox('disable');
+			$("input#code").textbox('disable');
+			$("input#other").textbox('disable');
+			
+			$("input#sport").textbox("setValue", "-");
+			$("input#dport").textbox("setValue", "-");
+		}
+	});
+	$("input#sport").portrange({
+		fieldLabel: $.su.CHAR.SERVICE_TYPE.SRC_PORT_RANGE,
+		editor: 
+		{
+			xtype: "portrange",				
+			allowBlank: false
+        }
+	});
+	$("input#dport").portrange({
+		fieldLabel: $.su.CHAR.SERVICE_TYPE.DST_PORT_RANGE,
+		editor: 
+		{
+			xtype: "portrange",				
+			allowBlank: false
+        }
+	});
+	$("input#type").textbox({
+		fieldLabel: $.su.CHAR.SERVICE_TYPE.ICMP_TYPE,
+		textFormat: $.su.format.number,
+		vtype: {
+			vtype: "number",
+			max: 255,
+			min: 0
+		},
+		maxLength:5,
+		tipsCls:"s",
+		allowBlank:false,
+		validateIcon: true
+	});
+	$("input#code").textbox({
+		fieldLabel: $.su.CHAR.SERVICE_TYPE.ICMP_CODE,
+		textFormat: $.su.format.number,
+		vtype: {
+		    vtype: "number",
+		    max: 255,
+		    min: 0
+		},
+		maxLength:5,
+		tipsCls:"s",
+		allowBlank:false,
+		validateIcon: true
+	});
+	$("input#other").textbox({
+		fieldLabel: $.su.CHAR.SERVICE_TYPE.PROTOCOL_CODE,
+		textFormat: $.su.format.number,
+		        vtype: {
+		            vtype: "number",
+		            max: 255,
+		            min: 1
+		        },
+		maxLength:5,
+		tipsCls:"s",
+		allowBlank:false,
+		validateIcon: true
+	});
+	$("input#comment").textbox({
+		fieldLabel: $.su.CHAR.SERVICE_TYPE.NOTE,
+		vtype:"string_visible_allow_blank",
+		tips: $.su.CHAR.GRID.OPTIONAL,
+		maxLength:32,
+		allowBlank:true,
+		cls: 'inline'
+	});
+	$("input#flag").textbox({
+		vtype:"string_visible_allow_blank",
+		maxLength:32,
+		cls: 'inline',
+		allowBlank:true,
+	});
+	var portProxy = new $.su.Proxy({
+		url: URL_PORT
+	});
+
+	var o = $("div#service_type_grid").grid({
+		store:{
+			proxy: portProxy,
+			fields: [
+			{name: "name"},
+			{name: "proto"},
+			{name: "sport"},
+	 		{name: "dport"},
+	 		{name: "type"},
+			{name: "code"},
+			{name: "comment"},
+			{name: "flag"},
+			{name: "ref"}
+			],
+			autoLoad: true
+		},
+		editor: {
+			validator:function()
+			{
+				var editor  = $(o.grid("getEditor"));
+				var ruleName = editor.find(".text-text[name=name]").textbox("getValue");
+				var protocol  = $("input#proto").radio('getValue');
+				//console.log(protocol)
+				var subnet  = editor.find("[name=ipaddr]").subnet("getValue");
+
+				var store 	= o.grid("getStore");
+				var keyProperty = store.keyProperty;
+				var grid_array  = store.data;
+				
+				var editingId = editor.editor("getEditingId"); 
+				if($.isArray(grid_array) && grid_array.length > 0)
+				{
+					for(var k = 0; k < grid_array.length;k++)
+					{
+						var data = grid_array[k];
+						
+						if(data[keyProperty] == editingId)
+						{
+							continue;
+						}
+						//name conflict
+						else if(data["name"] == ruleName)
+						{
+							//$($("#o").grid("getEditor")).form('setError',  $.su.CHAR.ERROR['00000076']);
+							//console.log('conflict name');
+							$($("#service_type_grid").grid("getEditor")).form('setError',$.su.CHAR.SERVICE_TYPE.ERR);//"您输入的名称已经存在，请重新输入");
+							return false;
+						}
+					}
+				}
+
+				if( protocol ===  'other' && (!$("input#other").textbox("validate"))){
+					return false;
+				}
+				return true;
+			},
+			content: "#own_editor",
+			
+			fields: [
+			{name: "name"},
+			{name: "proto"},
+			{name: "sport"},
+	 		{name: "dport"},
+	 		{name: "type"},
+			{name: "code"},
+			{name: "comment"}
+			]
+			
+		},
+
+		paging:[],
+		columns: [
+			{
+				xtype: "checkcolumn",
+				width: $.su.CHAR.SETTING.SERVICE_TYPE.CHECK_COLUMN_WIDTH
+			},
+			{
+				text: $.su.CHAR.SERVICE_TYPE.ID, 
+				xtype: "rownumberer",
+				width: $.su.CHAR.SETTING.SERVICE_TYPE.ROW_NUMBER_WIDTH
+			},
+			{
+				text: $.su.CHAR.SERVICE_TYPE.NAME, 
+				width: $.su.CHAR.SETTING.SERVICE_TYPE.NAME_WIDTH,
+				dataIndex: "name",
+				renderer:function(v)
+				{
+					if(v == "H323")
+						return "H.323";
+					else
+						return v;
+				}
+			},
+			{
+				text: $.su.CHAR.SERVICE_TYPE.PROTOCOL_TYPE, 
+				width: $.su.CHAR.SETTING.SERVICE_TYPE.PROTOCOL_WIDTH,
+				dataIndex: "proto",
+				renderer: function(dd, index, data)
+			                {
+			                    if (data.name == "ALL")
+			                    {
+			                    	return "0-255";
+			                    }
+			                    if(data.proto == "tcp-udp")
+			                    {
+			                        return "TCP/UDP";
+			                    }
+
+			                    return data.proto.toUpperCase();
+			                }
+			},
+			{
+				text: $.su.CHAR.SERVICE_TYPE.DETAIL_INFO, 
+				width: $.su.CHAR.SETTING.SERVICE_TYPE.DETAIL_INFO_WIDTH,
+				dataIndex: "sport",
+				renderer: function(dd, index, data){
+					if (data.name == "ALL")
+					{
+						return "---";
+					}
+					if(data.proto == 'icmp')
+						return 'Type =' + data.type + '; Code = ' + data.code;
+					else if(data.proto == "tcp" || data.proto == "udp" || data.proto == "tcp-udp")
+						return $.su.CHAR.SERVICE_TYPE.SRC_PORT+' = ' + data.sport + '; '+$.su.CHAR.SERVICE_TYPE.DST_PORT+' = ' + data.dport;
+					else
+						return '---';
+				}
+			},
+			{
+				text: $.su.CHAR.SERVICE_TYPE.NOTE, 
+				width: $.su.CHAR.SETTING.SERVICE_TYPE.COMMENT_WIDTH,
+				dataIndex: "comment",
+				xtype:"comment"
+			},
+			{
+				xtype: "settings"
+			}
+		],
+		operation: "prompt|add|delete"
+	}).on("ev_load", function(e,data, others){
+			if(others)/* 閫氳繃json閲岀殑others鍙傛暟浼犻€掑姩鎬侀榾鍊?*/
+			{
+				/*淇濈暀涓嶇敤*/
+				//console.log(others.max_rules);
+                			maxrules = others.max_rules;
+			}
+
+			for (var i=0; i<data.length; i++){
+		            if ( data[i].ref > 0 || data[i].flag == 0 )
+		            {
+		                $("div#service_type_grid").grid('disableRow',i);
+		            }
+		        }
+		});
+
+
+	var editor = $("div#service_type_grid").grid("getEditor");
+	$(editor).on("ev_startEdit", function(e, index, key){
+	
+		//console.log('ev_startEdit');
+		if(index == "add")
+		{
+			$("input#name").textbox('enable');
+			$('div#div_protocol_port').form("show");
+			$('div#div_icmp').form("hide");
+			$('div#div_other').form("hide");
+			$("#flag").textbox("setValue", "0");
+			
+			$("input#sport").textbox('enable');
+			$("input#dport").textbox('enable');
+			$("input#type").textbox('disable');
+			$("input#code").textbox('disable');
+			$("input#other").textbox('disable');
+			
+		}else {
+		
+			$("input#name").textbox('disable');
+			var protoValue = $("input#proto").radio("getValue");
+			if(protoValue === 'icmp'){
+				$('div#div_protocol_port').hide();
+				$('div#div_icmp').form("show");
+				$('div#div_other').form("hide");
+			}
+			else if(protoValue === "tcp" || protoValue === "udp" || protoValue === "tcp-udp")
+			{
+				$('div#div_protocol_port').form("show");
+				$('div#div_icmp').form("hide");
+				$('div#div_other').form("hide");
+			}
+			else{
+				$('div#div_protocol_port').form("hide");
+				$('div#div_icmp').form("hide");
+				$('div#div_other').form("show");
+				
+				$("input#proto").radio("setValue","other");
+				
+				if(protoValue !== "other")
+				{
+					$("input#other").textbox("setValue",protoValue);
+				}
+				else
+				{
+					otherValue = $("input#other").textbox("getValue");
+					$("input#other").textbox("setValue",parseInt(otherValue));
+				}
+			}
+		}
+	});
+
+	var helpService = new $.su.Help({
+		container: "div#service_help",
+		content: "SERVICE_TYPE"
+	});
+
+});
+
+</script>
+</body>
+</html>

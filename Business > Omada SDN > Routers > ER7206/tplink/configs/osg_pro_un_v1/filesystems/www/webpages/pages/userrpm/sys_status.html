@@ -1,0 +1,233 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Status</title>
+<style type="text/css">
+</style>
+</head>
+
+<body>
+	<div class="func-container">
+		<div id="version_info">
+			<input  class="" id="hardware_version" />
+			<input  class="" id="software_version" />
+		<div>
+		
+		<div id="system_time">
+			<input  class="" id="time_of_system" />
+			<input  class="" id="time_in_running" />
+		</div>
+		
+		<div id="resource_usage">
+			<p id="performance_cpu_load" class="performance-line"></p>
+			<input type="text" id="performance_cpu_load_bar1" class="" name="cpu_usage" />
+			<input type="text" id="performance_cpu_load_bar2" class="" name="cpu_usage" />
+			<input type="text" id="performance_cpu_load_bar3" class="" name="cpu_usage" />
+			<input type="text" id="performance_cpu_load_bar4" class="" name="cpu_usage" />
+
+		</div>
+		
+		<div id="quick_show">
+		</div>
+		<div id="status_help"></div>
+	</div>
+	
+	
+<script type="text/javascript">
+try{
+    $
+}catch(e){
+    location.href = "/";
+};
+
+$(document).ready(function(e){
+	var version_status = $.su.url("/admin/status?form=version");
+	var time_status = $.su.url("/admin/status?form=time_run");
+	var resource_status = $.su.url("admin/status?form=resource");
+	
+	$("#version_info").panel({
+        title: '版本信息',
+        collapsible: false
+    });
+	
+	$("#system_time").panel({
+        title: '系统时间',
+        collapsible: false
+    });
+	
+	$("#resource_usage").panel({
+        title: 'CPU使用',
+        collapsible: false
+    });
+	
+	$("#quick_show").panel({
+        title: '快速显示',
+        collapsible: false
+    });
+	
+	$("#hardware_version").textbox({
+		fieldLabel: '硬件版本',
+		labelCls:"xs",
+		readOnly: true
+	});
+	
+	$("#software_version").textbox({
+		fieldLabel: '软件版本',
+		labelCls:"xs",
+		readOnly: true
+	});
+	
+	$("#time_of_system").textbox({
+		fieldLabel: '系统时间',
+		labelCls:"xs",
+		readOnly: true
+	});
+	
+	$("#time_in_running").textbox({
+		fieldLabel: '运行时间',
+		labelCls:"xs",
+		readOnly: true
+	});
+	
+	var version_proxy = new $.su.Proxy({
+		url:version_status,
+		async:false
+	});
+	
+	version_proxy.read({},function(data){
+		var i;
+		for(i=0;i<data.length;i++){
+			//console.log(data[i]);
+			if(i==0)
+			{
+				$('#hardware_version').textbox('setValue', data[i]);
+			}
+			else{
+				$('#software_version').textbox('setValue', data[i]);
+			}
+		}
+	});
+	
+	var time_proxy = new $.su.Proxy({
+		url:time_status,
+		async:false
+	});
+	
+	time_proxy.read({},function(data){
+		var i;
+		for(i=0;i<data.length;i++){
+			//console.log(data[i]);
+			if(i==0){
+				var tdata=data[0].split(" ");
+				var display="";
+				var j=0;
+				for(j=0;j<tdata.length;j++)
+				{
+					if(j==2)
+					{
+						switch(tdata[j]){
+							case "Sunday":
+								display+=" 星期日";
+								break;
+							case "Monday":
+								display+= " 星期一";
+								break;
+							case "Tuesday":
+								display+= " 星期二";
+								break;
+							case "Wednesday":
+								display+= " 星期三";
+								break;
+							case "Thursday":
+								display+= " 星期四";
+								break;
+							case "Friday":
+								display+=" 星期五";
+								break;
+							case "Saturday":
+								display+=" 星期六";
+								break;
+						}
+					}
+					else 
+						display+=tdata[j]+" ";
+				}
+				$('#time_of_system').textbox('setValue', display);
+			}
+			else if(i==1){
+				var tdata=data[1].split(" ");
+				var display="";
+				var j=0;
+				for(j=0;j<tdata.length;j++)
+				{
+					if(j==0)
+						display+=tdata[j]+"天";
+					else if(j==1)
+						display+=tdata[j]+"时";
+					else if(j==2)
+						display+=tdata[j]+"分";
+					else if(j==3)
+						display+=tdata[j]+"秒";
+				}
+				$('#time_in_running').textbox('setValue', display);
+			}
+		}
+	});
+
+	$('input#performance_cpu_load_bar1').progressbar({
+		text: "",
+		fieldLabel: 'cpu1',
+		cls: 'performance-cpu-usage',
+		unit: "%",
+		expression: "percentage*100",
+		// value: 0.1,
+		isProgressbar: true,
+		showPercentage: true,
+		width: 213,
+		height: 16
+	});
+
+	$('input#performance_cpu_load_bar2').progressbar({
+		text: "",
+		fieldLabel: null,
+		cls: 'performance-cpu-usage',
+		unit: "%",
+		expression: "percentage*100",
+		// value: 0.1,
+		isProgressbar: true,
+		showPercentage: true,
+		width: 213,
+		height: 16
+	});
+
+	$('input#performance_cpu_load_bar3').progressbar({
+		text: "",
+		fieldLabel: null,
+		cls: 'performance-cpu-usage',
+		unit: "%",
+		expression: "percentage*100",
+		// value: 0.1,
+		isProgressbar: true,
+		showPercentage: true,
+		width: 213,
+		height: 16
+	});
+
+	$('input#performance_cpu_load_bar4').progressbar({
+		text: "",
+		fieldLabel: null,
+		cls: 'performance-cpu-usage',
+		unit: "%",
+		expression: "percentage*100",
+		// value: 0.1,
+		isProgressbar: true,
+		showPercentage: true,
+		width: 213,
+		height: 16
+	});
+	$('input#performance_cpu_load_bar1').progressbar('setValue',0.4);
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,2888 @@
+Package: kmod-shortcut_fe
+Version: 3.10.49
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ppp, kmod-ipv6
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: policy_route
+Version: 0.1-1
+Depends: libc, ip, iptables, iptables-mod-conntrack-extra, iptables-mod-ipopt, libpthread, libuci, libcomm, libubus, ubus, ubusd
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542360
+
+Package: terminfo
+Version: 5.9-1
+Depends: libc
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542359
+Auto-Installed: yes
+
+Package: kmod-ipt-flood
+Version: 3.10.49+1-0.1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ipt-core
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542359
+Auto-Installed: yes
+
+Package: libuci-lua
+Version: 2014-04-11.1-1
+Depends: libc, libuci, liblua
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542360
+
+Package: libipt_websec_match
+Version: 1-0.1
+Depends: libc, iptables, kmod-ipt-conntrack, kmod-urlset
+Status: install user installed
+Architecture: all
+Installed-Time: 1632542359
+
+Package: kmod-ipt-nfqueue
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ipt-core, kmod-nfnetlink-queue
+Status: install hold installed
+Architecture: octeon
+Installed-Time: 1632542359
+Auto-Installed: yes
+
+Package: kmod-ipt_urlset_match
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ipt-core
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: kmod-lib-textsearch
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb)
+Status: install hold installed
+Architecture: octeon
+Installed-Time: 1632542359
+Auto-Installed: yes
+
+Package: kmod-swconfig
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-libphy
+Status: install hold installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: libc
+Version: -1
+Depends: libgcc
+Status: install hold installed
+Essential: yes
+Architecture: octeon
+Installed-Time: 1632542358
+Auto-Installed: yes
+
+Package: kmod-l2tp
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ipv6
+Status: install hold installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: logger_reg
+Version: 1.0
+Depends: libc, liblogger, loggerd
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542360
+
+Package: administration
+Version: 1.0
+Depends: libc, luasec, librsa
+Status: install user installed
+Architecture: all
+Conffiles:
+ /etc/config/administration 3561643d3e2d60492d71f86cc0fc6077
+Installed-Time: 1632542358
+
+Package: kmod-ip6-tunnel
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ipv6, kmod-iptunnel6
+Status: install hold installed
+Architecture: octeon
+Installed-Time: 1632542359
+Auto-Installed: yes
+
+Package: kmod-cavium_ipsec_kame
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ipv6
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: dhcp_server_vnet
+Version: 1.0-1
+Depends: libc
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: opkg
+Version: 9c97d5ecd795709c8584e972bfdf3aee3a5b846d-7
+Depends: libc
+Status: install user installed
+Architecture: octeon
+Conffiles:
+ /etc/opkg.conf d0612e944c463a4fcf0288de4c1aa495
+Installed-Time: 1632542360
+
+Package: iptables-mod-extra
+Version: 1.4.21-1
+Depends: libc, iptables, kmod-ipt-extra
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: pppox-tplink
+Version: 0.1-1
+Depends: libc
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542360
+
+Package: ip
+Version: 3.15.0-1
+Depends: libc, libnl-tiny
+Status: install user installed
+Architecture: octeon
+Conffiles:
+ /etc/iproute2/rt_tables a1313318d6778fe6b8c680248ef5a463
+Installed-Time: 1632542359
+
+Package: kmod-bonding
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb)
+Status: install hold installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: libpthread
+Version: -1
+Depends: libgcc
+Status: install hold installed
+Essential: yes
+Architecture: octeon
+Installed-Time: 1632542358
+Auto-Installed: yes
+
+Package: ubus
+Version: 2014-09-17-4c4f35cf2230d70b9ddd87638ca911e8a563f2f3
+Depends: libc, libubus, libblobmsg-json, ubusd, libjson, libjson-c
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542358
+Auto-Installed: yes
+
+Package: kmod-crypto-manager
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-crypto-hash, kmod-crypto-pcompress, kmod-crypto-core
+Status: install hold installed
+Architecture: octeon
+Installed-Time: 1632542359
+Auto-Installed: yes
+
+Package: kmod-crypto-pcompress
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-crypto-core
+Status: install hold installed
+Architecture: octeon
+Installed-Time: 1632542359
+Auto-Installed: yes
+
+Package: loggerd
+Version: 1.0
+Depends: libc, mtd, logger-lang, libuci, libiconv-full
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542360
+Auto-Installed: yes
+
+Package: mtd-utils-ubirsvol
+Version: 2.1.2-1
+Depends: libc, mtd-utils, librt
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542360
+
+Package: strongswan-mod-constraints
+Version: 5.3.5-1
+Depends: libc, strongswan
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542361
+Auto-Installed: yes
+
+Package: busybox
+Version: 1.22.1-3
+Depends: libc, liblogger
+Status: install user installed
+Essential: yes
+Architecture: octeon
+Installed-Time: 1632542358
+
+Package: open-luci
+Version: 1.0
+Depends: libc
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542360
+
+Package: kmod-ipt_TRIGGER
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ipt-nat, kmod-ipt-conntrack
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: kmod-nfnetlink
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ipt-core
+Status: install hold installed
+Architecture: octeon
+Installed-Time: 1632542358
+Auto-Installed: yes
+
+Package: ipset-tplink
+Version: 6.29-2
+Depends: libc, libmnl, kmod-ipt-ipset-tplink
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542358
+Auto-Installed: yes
+
+Package: wide-dhcpv6-server
+Version: 20080615-11
+Depends: libc, kmod-ipv6, liblogger
+Status: install user installed
+Architecture: octeon
+Conffiles:
+ /etc/config/dhcp6s 29152a519c2b2647528e2a8679f0453b
+Installed-Time: 1632542359
+Auto-Installed: yes
+
+Package: kmod-crypto-iv
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-crypto-manager, kmod-crypto-rng, kmod-crypto-wq, kmod-crypto-core
+Status: install hold installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: libubus-lua
+Version: 2014-09-17-4c4f35cf2230d70b9ddd87638ca911e8a563f2f3
+Depends: libc, libubus, liblua, libjson, libjson-c
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542360
+
+Package: libipt_url_dns_match
+Version: 1-0.1
+Depends: libc, iptables, kmod-ipt-conntrack, kmod-urlset
+Status: install user installed
+Architecture: all
+Installed-Time: 1632542359
+
+Package: mtd-utils-ubinize
+Version: 2.1.2-1
+Depends: libc, mtd-utils, librt
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542360
+
+Package: kmod-ipt-tproxy
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ipt-conntrack, kmod-ipv6, kmod-ip6tables, kmod-ipt-core
+Status: install hold installed
+Architecture: octeon
+Installed-Time: 1632542359
+Auto-Installed: yes
+
+Package: openvpn-mgmt
+Version: 1
+Depends: libc, libuci
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542360
+
+Package: kmod-crypto-hash
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-crypto-core
+Status: install hold installed
+Architecture: octeon
+Installed-Time: 1632542359
+Auto-Installed: yes
+
+Package: libxt_CONNEXTMARK
+Version: 1-0.1
+Depends: libc, iptables, kmod-ipt-conntrack, kmod-ipt-conntrack-extra, libxt_connextmark
+Status: install user installed
+Architecture: all
+Installed-Time: 1632542360
+
+Package: xt_tplimit
+Version: 1
+Depends: libc, iptables
+Status: install user installed
+Architecture: all
+Installed-Time: 1632542360
+Auto-Installed: yes
+
+Package: kmod-tun
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb)
+Status: install hold installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: libiwinfo-lua
+Version: 51
+Depends: libc, libiwinfo, liblua
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: ppp-mod-radius
+Version: 2.4.7-2
+Depends: libc
+Status: install user installed
+Architecture: octeon
+Conffiles:
+ /etc/ppp/radius.conf 3169bf2a35ce81fca99cba47f3eb4fd4
+ /etc/ppp/radius/dictionary cd14cf79ffd954f348983f007e6563b2
+ /etc/ppp/radius/dictionary.asnet 6916c5d5c18dd584300946a45e07c33e
+ /etc/ppp/radius/dictionary.microsoft 15199d375d4f3f5db5ce1448f96725eb
+ /etc/ppp/radius/servers a6d4a0a9c3ab3c4d65419d887127baa8
+Installed-Time: 1632542360
+
+Package: dkmgt
+Version: 1.0
+Depends: libc
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: nbptc
+Version: 1-0.1
+Depends: libc
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542360
+
+Package: kmod-crypto-deflate
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-lib-zlib, kmod-crypto-core
+Status: install hold installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: zone
+Version: 1.0-1
+Depends: libc
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542360
+Auto-Installed: yes
+
+Package: strongswan-mod-sha1
+Version: 5.3.5-1
+Depends: libc, strongswan
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542361
+Auto-Installed: yes
+
+Package: strongswan-mod-sha2
+Version: 5.3.5-1
+Depends: libc, strongswan
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542361
+Auto-Installed: yes
+
+Package: conntrack-tools
+Version: 1.0.0-1
+Depends: libc, libnetfilter-conntrack
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: strace
+Version: 4.8-1
+Depends: libc
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542361
+
+Package: libiwinfo
+Version: 51
+Depends: libc
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542359
+Auto-Installed: yes
+
+Package: iptvc
+Version: 1-0.1
+Depends: libc
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: mtd-utils-ubirename
+Version: 2.1.2-1
+Depends: libc, mtd-utils, librt
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542360
+
+Package: wifidog-gateway
+Version: 1.2.1
+Depends: libc, iptables-mod-extra, iptables-mod-ipopt, iptables-mod-nat-extra, libpthread, libsqlite3, libcomm, libdnsq, librt
+Status: install user installed
+Architecture: octeon
+Conffiles:
+ /etc/wifidog.conf 465a50e59c2d8eac8feaefaef0232a3c
+Installed-Time: 1632542361
+
+Package: kmod-crypto-md5
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-crypto-hash, kmod-crypto-core
+Status: install hold installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: libcurl
+Version: 7.38.0-1
+Depends: libc, libpolarssl, librt
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542358
+Auto-Installed: yes
+
+Package: openssl-util
+Version: 1.0.2p-1
+Depends: libc, libopenssl
+Status: install user installed
+Architecture: octeon
+Conffiles:
+ /etc/ssl/openssl.cnf 7df26c55291b33344dc15e3935dabaf3
+Installed-Time: 1632542360
+
+Package: ippool
+Version: 0.1-1
+Depends: libc, libuci, libjson, libpthread
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: dnsq
+Version: 1.0
+Depends: libc, libdnsq
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: kmod-ipt-filter
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ipt-core, kmod-lib-textsearch, kmod-ipt-conntrack
+Status: install hold installed
+Architecture: octeon
+Installed-Time: 1632542359
+Auto-Installed: yes
+
+Package: kmod-lib-crc-ccitt
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb)
+Status: install hold installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: kmod-ipt-nat-extra
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ipt-core, kmod-ipt-nat
+Status: install hold installed
+Architecture: octeon
+Installed-Time: 1632542359
+Auto-Installed: yes
+
+Package: strongswan-mod-connmark
+Version: 5.3.5-1
+Depends: libc, strongswan
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542361
+
+Package: kmod-ipsec
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-crypto-authenc, kmod-crypto-iv, kmod-crypto-des, kmod-crypto-hmac, kmod-crypto-md5, kmod-crypto-sha1, kmod-crypto-deflate, kmod-crypto-cbc
+Status: install hold installed
+Architecture: octeon
+Installed-Time: 1632542359
+Auto-Installed: yes
+
+Package: libnet1
+Version: 1.1.2.1-2
+Depends: libc, libpcap
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542358
+Auto-Installed: yes
+
+Package: route
+Version: 0.1-1
+Depends: libc
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542360
+
+Package: tddpd
+Version: 1.0
+Depends: libc, libuci, libpthread, libubus, ubus, ubusd, libcyassl
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542361
+
+Package: kmod-gre
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ipv6, kmod-iptunnel
+Status: install hold installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: libnetfilter-queue
+Version: 1.0.0-1
+Depends: libc, libnfnetlink, kmod-nfnetlink-queue
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: kmod-pppoa
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ppp, kmod-atm
+Status: install hold installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: asciimaker
+Version: 1.0.0-1
+Depends: libc
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542358
+
+Package: mtd-utils-ubidetach
+Version: 2.1.2-1
+Depends: libc, mtd-utils, librt
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542360
+
+Package: kmod-pppoe
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ppp, kmod-pppox
+Status: install hold installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: libipt_urlset_target
+Version: 1-0.1
+Depends: libc, iptables, kmod-ipt-conntrack, kmod-urlset
+Status: install user installed
+Architecture: all
+Installed-Time: 1632542359
+
+Package: monitor
+Version: 1.0
+Depends: libc, libpthread, libcomm, librt, libubox, libubus
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542360
+
+Package: kmod-pppox
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ppp
+Status: install hold installed
+Architecture: octeon
+Installed-Time: 1632542359
+Auto-Installed: yes
+
+Package: kmod-veth
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb)
+Status: install hold installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: qos-tplink
+Version: 0.1-1
+Depends: libc, iptables, ipset-tplink, flock, xt_tplimit, xt_multinetdev
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542360
+
+Package: libipt_webfilter_match
+Version: 1-0.1
+Depends: libc, iptables, kmod-ipt-conntrack, kmod-urlset
+Status: install user installed
+Architecture: all
+Installed-Time: 1632542359
+
+Package: strongswan-mod-openssl
+Version: 5.3.5-1
+Depends: libc, strongswan, libopenssl
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542361
+
+Package: kmod-ipt-conntrack
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ipt-core
+Status: install hold installed
+Architecture: octeon
+Installed-Time: 1632542359
+Auto-Installed: yes
+
+Package: kmod-ipt-ipset-tplink
+Version: 3.10.49+6.29-2
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ipt-core, kmod-nfnetlink
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542358
+Auto-Installed: yes
+
+Package: improxy
+Version: 1.0-1
+Depends: libc
+Status: install user installed
+Architecture: octeon
+Conffiles:
+ /etc/config/improxy bedd4c7c8e3581a412fbe379daef393c
+Installed-Time: 1632542359
+
+Package: base-files
+Version: 156-unknown
+Depends: libc, netifd, procd, jsonfilter
+Status: install user installed
+Architecture: octeon
+Conffiles:
+ /etc/hosts 0eea71665fb6890c06421fd13aa3f849
+ /etc/inittab e505fa469df79c113a1fd511eb99bd4a
+ /etc/group 4a116d818b2f49e14939d581ec786de1
+ /etc/passwd 8a31e6d3e2d67fc7b99f56055e9d802b
+ /etc/shadow 6ba631ddc64c3cbd0c919b7ca4a71619
+ /etc/profile 504c8989ffe57c5fed8471e6112936b8
+ /etc/shells 725ba6f40dff0612f61ecd3f171bb3e1
+ /etc/sysctl.conf 9d7f4e791b6399374a8d07dd7a5d5554
+ /etc/rc.local 3f2e901f9326ce707c7760f5ce240c5f
+ /etc/sysupgrade.conf f91aef484370cefee501d64b5725c1d2
+ /etc/config/system 0d4e53488a0a5d2a1d55753e0eeb8fab
+Installed-Time: 1632542358
+
+Package: libxt_EXTMARK
+Version: 1-0.1
+Depends: libc, iptables, kmod-ipt-conntrack, kmod-ipt-conntrack-extra, libxt_extmark
+Status: install user installed
+Architecture: all
+Installed-Time: 1632542360
+
+Package: zoneinfo-simple
+Version: 2011n-1
+Depends: libc
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542361
+
+Package: libpcre
+Version: 8.35-2
+Depends: libc
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542360
+
+Package: dnsproxy
+Version: 1.0
+Depends: libc, libuci, libpthread, libcomm, librt
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: libipt_web_dns_match
+Version: 1-0.1
+Depends: libc, iptables, kmod-ipt-conntrack, kmod-urlset
+Status: install user installed
+Architecture: all
+Installed-Time: 1632542359
+
+Package: zoneinfo-asia
+Version: 2011n-1
+Depends: libc
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542361
+
+Package: kmod-urlset
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-nfnetlink
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: netifd
+Version: 2014-09-08-46c569989f984226916fec28dd8ef152a664043e
+Depends: libc, libuci, libnl-tiny, libubus, ubus, ubusd, jshn, libubox, libcomm
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542358
+Auto-Installed: yes
+
+Package: libmnl
+Version: 1.0.3-1
+Depends: libc
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542358
+Auto-Installed: yes
+
+Package: dnsproxyvnet
+Version: 1.0
+Depends: libc, libuci, libpthread, libcomm, librt
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: dynnoipddns
+Version: 1.0
+Depends: libc, libuci, libpthread, libcomm, librt, dnslookup
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: switch-tplink
+Version: 0.1-1
+Depends: libc
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542361
+
+Package: strongswan-mod-pem
+Version: 5.3.5-1
+Depends: libc, strongswan
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542361
+Auto-Installed: yes
+
+Package: balance_route
+Version: 1
+Depends: libc
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542358
+
+Package: dnsmasq
+Version: 2.71-4
+Depends: libc, libuci, liblogger
+Status: install user installed
+Architecture: octeon
+Conffiles:
+ /etc/config/dhcp bb9b8537bb72785ed3a54191dcde4fdb
+ /etc/dnsmasq.conf 7cf378e58d3fe5db31f4116a16c15c61
+Installed-Time: 1632542359
+
+Package: procd
+Version: 2014-09-15-c1a558f7d0c1e6c1ffa5a47d557a7b45205eef1d
+Depends: libc, ubusd, ubus, libjson-script, ubox, libubox, libubus, librt
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542358
+Auto-Installed: yes
+
+Package: mtd-utils-ubiformat
+Version: 2.1.2-1
+Depends: libc, mtd-utils, librt
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542360
+
+Package: resolveip
+Version: 2
+Depends: libc
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542360
+Auto-Installed: yes
+
+Package: mtd-utils-nandwrite
+Version: 2.1.2-1
+Depends: libc, mtd-utils, librt
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542360
+
+Package: kmod-crypto-hmac
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-crypto-manager, kmod-crypto-core
+Status: install hold installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: iptables-mod-nat-extra
+Version: 1.4.21-1
+Depends: libc, iptables, kmod-ipt-nat-extra
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: ubusd
+Version: 2014-09-17-4c4f35cf2230d70b9ddd87638ca911e8a563f2f3
+Depends: libc, libubox, libjson, libjson-c
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542358
+Auto-Installed: yes
+
+Package: load_balance
+Version: 0.1-1
+Depends: libc
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542360
+
+Package: arp_scan
+Version: 1-0.1
+Depends: libc, libnet1
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542358
+
+Package: libustream-openssl
+Version: 2014-03-25-fc0b5ec804ee43c532978dd04ab0509c34baefb0
+Depends: libc, libubox, libopenssl
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542360
+
+Package: omada-tool
+Version: 1-0.1
+Depends: libc, librt
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542360
+
+Package: webpages
+Version: 1.0-1
+Depends: libc
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542361
+
+Package: logger-lang
+Version: 1.0
+Depends: libc
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542360
+
+Package: ipstat
+Version: 1.0
+Depends: libc, libuci, libjson, libpthread
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: libiconv-full
+Version: 1.11.1-1
+Depends: libc
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542358
+Auto-Installed: yes
+
+Package: strongswan
+Version: 5.3.5-1
+Depends: libc, libpthread, ip, kmod-crypto-authenc, kmod-ipsec, kmod-ipsec4, kmod-ipsec6, kmod-ipt-ipsec, iptables-mod-ipsec, librt, libgmp, liblogger
+Status: install user installed
+Architecture: octeon
+Conffiles:
+ /etc/ipsec.conf 01485a8658db82dd781f9229f4151661
+ /etc/ipsec.secrets 7fc91712904275902e1e9cf177db8b57
+Installed-Time: 1632542361
+Auto-Installed: yes
+
+Package: snmpd-static
+Version: 5.4.4-1
+Depends: libc
+Status: install user installed
+Architecture: octeon
+Conffiles:
+ /etc/config/snmpd 6c2f9e5c10cc1d6df52eb3dd58ba057d
+Installed-Time: 1632542361
+
+Package: veth
+Version: 1.0-1
+Depends: libc, kmod-tun
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542361
+
+Package: dos_defense
+Version: 1-0.1
+Depends: libc, iptables, iptables-mod-ipv4options, xt_dosdrop
+Status: install user installed
+Architecture: all
+Installed-Time: 1632542359
+
+Package: iptables-mod-ipsec
+Version: 1.4.21-1
+Depends: libc, iptables, kmod-ipt-ipsec
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: kmod-iptunnel
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb)
+Status: install hold installed
+Architecture: octeon
+Installed-Time: 1632542358
+Auto-Installed: yes
+
+Package: strongswan-mod-aes
+Version: 5.3.5-1
+Depends: libc, strongswan
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542361
+Auto-Installed: yes
+
+Package: arp_imb_pass
+Version: 1-0.1
+Depends: libc, imb
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542358
+
+Package: strongswan-mod-pgp
+Version: 5.3.5-1
+Depends: libc, strongswan
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542361
+Auto-Installed: yes
+
+Package: libipt_special_route_target
+Version: 1
+Depends: libc
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: kmod-pptp
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ppp, kmod-gre, kmod-pppox
+Status: install hold installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: iconv
+Version: 1.11.1-1
+Depends: libc, libiconv-full, libcharset
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: linux-atm
+Version: 2.5.2-5
+Depends: libc
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542360
+
+Package: luasocket
+Version: 3.0-rc1-20130909-2
+Depends: libc, lua
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542358
+Auto-Installed: yes
+
+Package: strongswan-mod-xcbc
+Version: 5.3.5-1
+Depends: libc, strongswan
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542361
+Auto-Installed: yes
+
+Package: strongswan-mod-random
+Version: 5.3.5-1
+Depends: libc, strongswan
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542361
+Auto-Installed: yes
+
+Package: iptables-mod-iprange
+Version: 1.4.21-1
+Depends: libc, iptables, kmod-ipt-iprange
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: improxyvnet
+Version: 1.0-1
+Depends: libc
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: firewall
+Version: 2-55.1
+Depends: libc, iptables, kmod-ipt-conntrack, kmod-ipt-nat, ipset-tplink
+Status: install user installed
+Architecture: all
+Conffiles:
+ /etc/config/firewall 50b519e6e3cec7ca6f4e72eac4a5342e
+ /etc/firewall.user 43e25ef73306f7ea73813d648990b181
+Installed-Time: 1632542359
+
+Package: kmod-ipt-compat-xtables
+Version: 3.10.49+2.3-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ipt-core, kmod-ip6tables
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542359
+Auto-Installed: yes
+
+Package: libxml2
+Version: 2.9.2-2
+Depends: libc, libpthread, zlib
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542360
+
+Package: sfp_led
+Version: 1.0
+Depends: libc, libuci, libjson, libpthread
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542361
+
+Package: client
+Version: 1-0.1
+Depends: libc, libnet1, librt
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542358
+
+Package: phddns
+Version: 1.0
+Depends: libc, libuci, libpthread, libcomm, librt, liblogger
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542360
+
+Package: kmod-ipt-conntrack-extra
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ipt-core, kmod-ipt-conntrack
+Status: install hold installed
+Architecture: octeon
+Installed-Time: 1632542359
+Auto-Installed: yes
+
+Package: iptables-mod-nfqueue
+Version: 1.4.21-1
+Depends: libc, iptables, kmod-nfnetlink-queue, kmod-ipt-nfqueue
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: sqlite3-cli
+Version: 3080704-1
+Depends: libc, libsqlite3, libncurses, libreadline
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542361
+
+Package: libevent2
+Version: 2.0.21-1
+Depends: libc, librt
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: ipv6-lan
+Version: 1.0-1
+Depends: libc, radvd, wide-dhcpv6-server
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: service
+Version: 1-0.1
+Depends: libc, iptables
+Status: install user installed
+Architecture: all
+Installed-Time: 1632542360
+
+Package: strongswan-mod-pkcs1
+Version: 5.3.5-1
+Depends: libc, strongswan
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542361
+Auto-Installed: yes
+
+Package: libuci
+Version: 2014-04-11.1-1
+Depends: libc, libubox
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542358
+Auto-Installed: yes
+
+Package: liblua
+Version: 5.1.5-1
+Depends: libc
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542358
+Auto-Installed: yes
+
+Package: libip4tc
+Version: 1.4.21-1
+Depends: libc
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542358
+Auto-Installed: yes
+
+Package: tcpdump
+Version: 4.5.1-4
+Depends: libc, libpcap
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542361
+
+Package: vnet
+Version: 1-0.1
+Depends: libc, iproute2
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542361
+
+Package: sfe
+Version: 1.0-1
+Depends: libc
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542361
+
+Package: strongswan-mod-dnskey
+Version: 5.3.5-1
+Depends: libc, strongswan
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542361
+Auto-Installed: yes
+
+Package: remote_mngt
+Version: 1.1
+Depends: libc, iptables, zone
+Status: install user installed
+Architecture: all
+Installed-Time: 1632542360
+
+Package: kmod-ip6tables
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ipv6, kmod-ipt-core, kmod-ipt-conntrack
+Status: install hold installed
+Architecture: octeon
+Installed-Time: 1632542359
+Auto-Installed: yes
+
+Package: mtd-utils
+Version: 2.1.2-1
+Depends: libc
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542360
+Auto-Installed: yes
+
+Package: webfilter
+Version: 1-0.1
+Depends: libc, kmod-urlset, kmod-ipt_urlset_match, kmod-ipt_urlset_target
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542361
+
+Package: libcyassl
+Version: 3.2.0-1
+Depends: libc
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: liblogger-lua
+Version: 1.0
+Depends: libc, liblua, liblogger
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: fstools
+Version: 2014-06-22-e0430f5c62f367e5a8e02755412977b02c3fc45e
+Depends: libc, ubox
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: libipt_urlset_match
+Version: 1-0.1
+Depends: libc, iptables, kmod-ipt-conntrack, kmod-urlset
+Status: install user installed
+Architecture: all
+Installed-Time: 1632542359
+
+Package: strongswan-utils
+Version: 5.3.5-1
+Depends: libc, strongswan
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542361
+Auto-Installed: yes
+
+Package: kmod-ipt-extra
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ipt-core
+Status: install hold installed
+Architecture: octeon
+Installed-Time: 1632542359
+Auto-Installed: yes
+
+Package: iptables-mod-ipopt
+Version: 1.4.21-1
+Depends: libc, iptables, kmod-ipt-ipopt
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: xt_vlan
+Version: 1
+Depends: libc, iptables
+Status: install user installed
+Architecture: all
+Installed-Time: 1632542361
+
+Package: libxt_extmark
+Version: 1-0.1
+Depends: libc, iptables, kmod-ipt-conntrack, kmod-ipt-conntrack-extra
+Status: install user installed
+Architecture: all
+Installed-Time: 1632542360
+Auto-Installed: yes
+
+Package: tp-luci
+Version: 1.0
+Depends: libc
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542361
+
+Package: uci
+Version: 2014-04-11.1-1
+Depends: libc, libuci
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542361
+
+Package: lua
+Version: 5.1.5-1
+Depends: libc, liblua
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542358
+Auto-Installed: yes
+
+Package: luasql-sqlite3
+Version: 2.1.1-1
+Depends: libc, lua, libsqlite3
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542360
+
+Package: ipgroup
+Version: 1-0.1
+Depends: libc, ipset-tplink
+Status: install user installed
+Architecture: all
+Installed-Time: 1632542359
+
+Package: queueventd
+Version: 1.0.0-1
+Depends: libc, libubox
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542360
+
+Package: strongswan-mod-hmac
+Version: 5.3.5-1
+Depends: libc, strongswan
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542361
+Auto-Installed: yes
+
+Package: ppp-mod-pppol2tp
+Version: 2.4.7-2
+Depends: libc, kmod-pppol2tp
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542360
+
+Package: libxt_connextmark
+Version: 1-0.1
+Depends: libc, iptables, kmod-ipt-conntrack, kmod-ipt-conntrack-extra
+Status: install user installed
+Architecture: all
+Installed-Time: 1632542360
+Auto-Installed: yes
+
+Package: flock
+Version: 2.24.1-1
+Depends: libc
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: dropbear
+Version: 2014.63-2
+Depends: libc
+Status: install user installed
+Architecture: octeon
+Conffiles:
+ /etc/dropbear/dropbear_rsa_host_key d41d8cd98f00b204e9800998ecf8427e
+ /etc/dropbear/dropbear_dss_host_key d41d8cd98f00b204e9800998ecf8427e
+ /etc/config/dropbear 017c7f44057bce1bbfe4cdbd0f3d1d25
+Installed-Time: 1632542359
+
+Package: libxt_l2tp_match
+Version: 1-0.1
+Depends: libc, iptables, kmod-l2tp, kmod-xt_l2tp
+Status: install user installed
+Architecture: all
+Installed-Time: 1632542360
+
+Package: kmod-ledtrig-timer
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb)
+Status: install hold installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: libnetfilter-conntrack
+Version: 1.0.3-1
+Depends: libc, libnfnetlink, kmod-nf-conntrack-netlink, libmnl
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542359
+Auto-Installed: yes
+
+Package: curl
+Version: 7.38.0-1
+Depends: libc, libcurl
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: strongswan-charon
+Version: 5.3.5-1
+Depends: libc, strongswan, liblogger
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542361
+
+Package: zoneinfo-core
+Version: 2011n-1
+Depends: libc
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542361
+
+Package: kmod-crypto-aes
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-crypto-core
+Status: install hold installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: kmod-arp_garp
+Version: 3.10.49+1-0.1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb)
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542358
+Auto-Installed: yes
+
+Package: mtd
+Version: 20
+Depends: libc, libubox
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542360
+Auto-Installed: yes
+
+Package: libstdcpp
+Version: -1
+Status: install hold installed
+Essential: yes
+Architecture: octeon
+Installed-Time: 1632542358
+Auto-Installed: yes
+
+Package: kmod-special_route
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-nf-conntrack-netlink
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: time_setting
+Version: 1.0
+Depends: libc
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542361
+
+Package: cloud_lib
+Version: 0.1-1
+Depends: libc, libuci, libubus, libubox, libopenssl, libcurl, libstdcpp
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542358
+
+Package: kmod-crypto-cbc
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-crypto-manager, kmod-crypto-core
+Status: install hold installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: kmod-crypto-core
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb)
+Status: install hold installed
+Architecture: octeon
+Installed-Time: 1632542359
+Auto-Installed: yes
+
+Package: dhcp_server
+Version: 1.0-1
+Depends: libc
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: xl2tpd-tplink
+Version: 1.3.6-5619e1771048e74b729804e8602f409af0f3faea
+Depends: libc, ppp-mod-pppol2tp, ip, resolveip, libuci, libubox, libdnsq, liblogger, libnetfilter-queue
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542361
+
+Package: mtd-utils-ubirmvol
+Version: 2.1.2-1
+Depends: libc, mtd-utils, librt
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542360
+
+Package: libjson-c
+Version: 0.11-2
+Depends: libc
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542358
+Auto-Installed: yes
+
+Package: libgcc
+Version: -1
+Status: install hold installed
+Essential: yes
+Architecture: octeon
+Installed-Time: 1632542358
+Auto-Installed: yes
+
+Package: cloud_proc
+Version: 0.1-1
+Depends: libc, libuci, libubus, libubox, libopenssl, libcurl, libstdcpp, lcloud_lib
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542358
+
+Package: strongswan-mod-des
+Version: 5.3.5-1
+Depends: libc, strongswan
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542361
+Auto-Installed: yes
+
+Package: kmod-crypto-authenc
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-crypto-manager, kmod-crypto-core
+Status: install hold installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: ppp-tplink
+Version: 2.4.7-2
+Depends: libc, kmod-ppp, liblogger
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542360
+
+Package: zoneinfo-northamerica
+Version: 2011n-1
+Depends: libc
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542361
+
+Package: access_ctl
+Version: 1-0.1
+Depends: libc, iptables, ipset-tplink
+Status: install user installed
+Architecture: all
+Installed-Time: 1632542358
+
+Package: ipsec
+Version: 1.0-1
+Depends: libc
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: strongswan-mod-fips-prf
+Version: 5.3.5-1
+Depends: libc, strongswan, strongswan-mod-sha1
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542361
+Auto-Installed: yes
+
+Package: libreadline
+Version: 6.2-1
+Depends: libc
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542360
+
+Package: libip6tc
+Version: 1.4.21-1
+Depends: libc
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542358
+Auto-Installed: yes
+
+Package: strongswan-mod-socket-default
+Version: 5.3.5-1
+Depends: libc, strongswan
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542361
+Auto-Installed: yes
+
+Package: bpalogin
+Version: 2.0.2-1
+Depends: libc, liblogger
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542358
+
+Package: kmod-crypto-wq
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-crypto-core
+Status: install hold installed
+Architecture: octeon
+Installed-Time: 1632542359
+Auto-Installed: yes
+
+Package: libuuid
+Version: 2.24.1-1
+Depends: libc
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542360
+
+Package: strongswan-mod-resolve
+Version: 5.3.5-1
+Depends: libc, strongswan
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542361
+Auto-Installed: yes
+
+Package: libubox
+Version: 2014-08-04-dffbc09baf71b294185a36048166d00066d433b5
+Depends: libc, librt
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542358
+Auto-Installed: yes
+
+Package: luci-base
+Version: 0.12+git-21.249.12145-c5baae5-1
+Depends: libc, lua, libuci-lua, libubus-lua
+Status: install user installed
+Architecture: octeon
+Conffiles:
+ /etc/config/luci f5cecb0ba00886173676c81239b1bdc2
+Installed-Time: 1632542360
+
+Package: session_limits
+Version: 1.0-1
+Depends: libc
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542361
+
+Package: websec
+Version: 1-0.1
+Depends: libc, kmod-urlset, kmod-ipt_websec_match, kmod-ipt_urlset_target
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542361
+
+Package: kmod-leds-gpio
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb)
+Status: install hold installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: kmod-ipt-account
+Version: 3.10.49+2.3-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ipt-core, kmod-ipt-compat-xtables
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542359
+Auto-Installed: yes
+
+Package: kmod-gpio-button-hotplug
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb)
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: strongswan-mod-pubkey
+Version: 5.3.5-1
+Depends: libc, strongswan
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542361
+Auto-Installed: yes
+
+Package: snmpd
+Version: 5.4.4-1
+Depends: libc, libnetsnmp
+Status: install user installed
+Architecture: octeon
+Conffiles:
+ /etc/default/snmpd 5f2dc66258ba06b7590a6aea030d5093
+ /etc/config/snmpd 6c2f9e5c10cc1d6df52eb3dd58ba057d
+Installed-Time: 1632542361
+
+Package: kmod-xt_l2tp
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-l2tp, ip6tables
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: mwan3-tplink
+Version: 0.0-1
+Depends: libc, ip, iptables, iptables-mod-conntrack-extra, iptables-mod-ipopt
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542360
+
+Package: kmod-portal
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb)
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: arp_garp
+Version: 1-0.1
+Depends: libc, kmod-arp_garp, imb
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542358
+
+Package: liblzo
+Version: 2.08-1
+Depends: libc
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: pptpd-accel
+Version: 1.3.3-1
+Depends: libc
+Status: install user installed
+Architecture: octeon
+Conffiles:
+ /etc/pptpd.conf f9a28236a4043b999d85de1254aa4c91
+ /etc/ppp/options.pptpd fbb9cccb952504e2446f9ac01559ba17
+Installed-Time: 1632542360
+
+Package: ppp-mod-pptp
+Version: 2.4.7-2
+Depends: libc, kmod-pptp, kmod-mppe, resolveip, libuci, liblogger, libdnsq
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542360
+
+Package: kmod-ipv6-pass-through
+Version: 3.10.49+1.0-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ipv6
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: kmod-liblogger
+Version: 3.10.49+1.0-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb)
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: libjson
+Version: 0.11-2
+Depends: libc, libjson-c
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542358
+Auto-Installed: yes
+
+Package: px5g-standalone
+Version: 2
+Depends: libc
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542360
+
+Package: librt
+Version: -1
+Depends: libpthread
+Status: install hold installed
+Essential: yes
+Architecture: octeon
+Installed-Time: 1632542358
+Auto-Installed: yes
+
+Package: cfg_save
+Version: 1-0.1
+Depends: libc
+Status: install user installed
+Architecture: all
+Installed-Time: 1632542358
+
+Package: swconfig-tplink
+Version: 10
+Depends: libc, libubox, libuci, libnl-tiny
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542361
+
+Package: libcomm
+Version: 1
+Depends: libc, librt
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542358
+Auto-Installed: yes
+
+Package: iptables-mod-tproxy
+Version: 1.4.21-1
+Depends: libc, iptables, kmod-ipt-tproxy
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: mtd-utils-ubiattach
+Version: 2.1.2-1
+Depends: libc, mtd-utils, librt
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542360
+
+Package: kmod-ipt_websec_match
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ipt-core
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: radiusclient-ng
+Version: 0.5.6-1
+Depends: libc
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542360
+
+Package: kmod-mtd-ram
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb)
+Status: install hold installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: libjson-script
+Version: 2014-08-04-dffbc09baf71b294185a36048166d00066d433b5
+Depends: libc, libubox
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542358
+Auto-Installed: yes
+
+Package: strongswan-mod-kernel-netlink
+Version: 5.3.5-1
+Depends: libc, strongswan
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542361
+Auto-Installed: yes
+
+Package: net-tools-arp
+Version: 1.60-3
+Depends: libc
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542358
+Auto-Installed: yes
+
+Package: libblobmsg-json
+Version: 2014-08-04-dffbc09baf71b294185a36048166d00066d433b5
+Depends: libc, libjson-c, libubox
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542358
+Auto-Installed: yes
+
+Package: system_params
+Version: 1.0
+Depends: libc
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542361
+
+Package: kmod-crypto-ecb
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-crypto-manager, kmod-crypto-core
+Status: install hold installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: iptables
+Version: 1.4.21-1
+Depends: libc, kmod-ipt-core, libip4tc, libip6tc, libxtables
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542358
+Auto-Installed: yes
+
+Package: iptables-mod-filter
+Version: 1.4.21-1
+Depends: libc, iptables, kmod-ipt-filter
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: kmod-ipt-nathelper
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ipt-core, kmod-ipt-nat
+Status: install hold installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: libipt_TRIGGER
+Version: 1-0.1
+Depends: libc, iptables, kmod-ipt-conntrack, kmod-ipt-nat
+Status: install user installed
+Architecture: all
+Installed-Time: 1632542359
+
+Package: openvpn-openssl
+Version: 2.3.8-1
+Depends: libc, kmod-tun, liblzo, libopenssl
+Status: install user installed
+Architecture: octeon
+Conffiles:
+ /etc/config/openvpn c9fa77e14cd0f209e9d6abe103925728
+Installed-Time: 1632542360
+
+Package: urlfilter
+Version: 1-0.1
+Depends: libc, kmod-urlset, kmod-ipt_urlset_match, kmod-ipt_urlset_target
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542361
+
+Package: kmod-nf-conntrack-netlink
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-nfnetlink, kmod-ipt-conntrack
+Status: install hold installed
+Architecture: octeon
+Installed-Time: 1632542359
+Auto-Installed: yes
+
+Package: kmod-libphy
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb)
+Status: install hold installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: kmod-crypto-des
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-crypto-core
+Status: install hold installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: kmod-sit
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ipv6, kmod-iptunnel, kmod-iptunnel4
+Status: install hold installed
+Architecture: octeon
+Installed-Time: 1632542358
+Auto-Installed: yes
+
+Package: ds-lite
+Version: 4-1
+Depends: libc, kmod-ipv6, kmod-ip6-tunnel
+Status: install user installed
+Architecture: all
+Installed-Time: 1632542359
+
+Package: jshn
+Version: 2014-08-04-dffbc09baf71b294185a36048166d00066d433b5
+Depends: libc, libjson-c, libubox, libblobmsg-json
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542358
+Auto-Installed: yes
+
+Package: mtd-utils-ubimkvol
+Version: 2.1.2-1
+Depends: libc, mtd-utils, librt
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542360
+
+Package: libncurses
+Version: 5.9-1
+Depends: libc, terminfo
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: kmod-ipt-core
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb)
+Status: install hold installed
+Architecture: octeon
+Installed-Time: 1632542358
+Auto-Installed: yes
+
+Package: libpcap
+Version: 1.5.3-1
+Depends: libc
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542358
+Auto-Installed: yes
+
+Package: kmod-ipv6
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb)
+Status: install hold installed
+Architecture: octeon
+Installed-Time: 1632542358
+Auto-Installed: yes
+
+Package: mtd-utils-ubiupdatevol
+Version: 2.1.2-1
+Depends: libc, mtd-utils, librt
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542360
+
+Package: kmod-ipt-ipsec
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ipt-core
+Status: install hold installed
+Architecture: octeon
+Installed-Time: 1632542359
+Auto-Installed: yes
+
+Package: xfwdm
+Version: 0.1-1
+Depends: libc
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542361
+
+Package: libpolarssl
+Version: 1.3.8-2
+Depends: libc
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542358
+Auto-Installed: yes
+
+Package: kmod-ppp
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-lib-crc-ccitt, kmod-slhc
+Status: install hold installed
+Architecture: octeon
+Installed-Time: 1632542359
+Auto-Installed: yes
+
+Package: mtd-utils-ubinfo
+Version: 2.1.2-1
+Depends: libc, mtd-utils, librt
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542360
+
+Package: uhttpd-mod-lua
+Version: 2014-10-27-fd8e5e379c23c5fbcec3e76894b839233df09067
+Depends: libc, uhttpd, liblua
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542361
+
+Package: omada_server
+Version: 0.1-1
+Depends: libc, libuci, libubus, libubox, libopenssl, libcurl, libstdcpp
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542360
+
+Package: openvpn-easy-rsa
+Version: 2013-01-30-2
+Depends: libc, openssl-util
+Status: install user installed
+Architecture: octeon
+Conffiles:
+ /etc/easy-rsa/keys/serial 0ade138937c4b9cb36a28e2edb6485fc
+ /etc/easy-rsa/keys/index.txt d41d8cd98f00b204e9800998ecf8427e
+Installed-Time: 1632542360
+
+Package: librsa
+Version: 1
+Depends: libc, libopenssl
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542358
+Auto-Installed: yes
+
+Package: libnfnetlink
+Version: 1.0.1-1
+Depends: libc
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542359
+Auto-Installed: yes
+
+Package: upnp
+Version: 0.1-1
+Depends: libc, libpthread, libuci, libcomm, libubus, ubus, ubusd
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542361
+
+Package: kmod-ipt_url_dns_match
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ipt-core
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: mdio-utils
+Version: 1-unknown
+Depends: libc
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542360
+
+Package: strongswan-default
+Version: 5.3.5-1
+Depends: libc, strongswan, strongswan-charon, strongswan-mod-aes, strongswan-mod-attr, strongswan-mod-constraints, strongswan-mod-des, strongswan-mod-dnskey, strongswan-mod-fips-prf, strongswan-mod-gmp, strongswan-mod-hmac, strongswan-mod-kernel-netlink, strongswan-mod-md5, strongswan-mod-nonce, strongswan-mod-pem, strongswan-mod-pgp, strongswan-mod-pkcs1, strongswan-mod-pubkey, strongswan-mod-random, strongswan-mod-resolve, strongswan-mod-revocation, strongswan-mod-sha1, strongswan-mod-sha2, strongswan-mod-socket-default, strongswan-mod-stroke, strongswan-mod-updown, strongswan-mod-x509, strongswan-mod-xauth-generic, strongswan-mod-xcbc, strongswan-utils, liblogger
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542361
+
+Package: strongswan-mod-updown
+Version: 5.3.5-1
+Depends: libc, strongswan
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542361
+Auto-Installed: yes
+
+Package: cmxddns
+Version: 1.0
+Depends: libc, libuci, libpthread, libcomm, librt, liblogger
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: libxt_tpconnlimit
+Version: 1
+Depends: libc, iptables, kmod-ipt-conntrack
+Status: install user installed
+Architecture: all
+Installed-Time: 1632542360
+
+Package: libubus
+Version: 2014-09-17-4c4f35cf2230d70b9ddd87638ca911e8a563f2f3
+Depends: libc, libubox, libjson, libjson-c
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542358
+Auto-Installed: yes
+
+Package: uhttpd
+Version: 2014-10-27-fd8e5e379c23c5fbcec3e76894b839233df09067
+Depends: libc, libubox
+Status: install user installed
+Architecture: octeon
+Conffiles:
+ /etc/config/uhttpd 542a22b2963a638bbcc216a9240b56d6
+Installed-Time: 1632542361
+Auto-Installed: yes
+
+Package: kmod-iptunnel4
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb)
+Status: install hold installed
+Architecture: octeon
+Installed-Time: 1632542358
+Auto-Installed: yes
+
+Package: luasec
+Version: 0.4-1
+Depends: libc, lua, libopenssl, luasocket
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542358
+Auto-Installed: yes
+
+Package: kmod-iptunnel6
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ipv6
+Status: install hold installed
+Architecture: octeon
+Installed-Time: 1632542359
+Auto-Installed: yes
+
+Package: iptables-mod-ipv4options
+Version: 2.3-1
+Depends: libc, iptables, kmod-ipt-ipv4options
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542359
+Auto-Installed: yes
+
+Package: dnslookup
+Version: 1.0
+Depends: libc
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: kmod-ipsec4
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ipsec, kmod-iptunnel4
+Status: install hold installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: iptables-mod-conntrack-extra
+Version: 1.4.21-1
+Depends: libc, iptables, kmod-ipt-conntrack-extra
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: kmod-ipsec6
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ipsec, kmod-iptunnel6
+Status: install hold installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: strongswan-mod-nonce
+Version: 5.3.5-1
+Depends: libc, strongswan
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542361
+Auto-Installed: yes
+
+Package: strongswan-mod-xauth-generic
+Version: 5.3.5-1
+Depends: libc, strongswan
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542361
+Auto-Installed: yes
+
+Package: sys_monitor
+Version: 1-0.0
+Depends: libc
+Status: install user installed
+Architecture: all
+Installed-Time: 1632542361
+
+Package: ip6tables
+Version: 1.4.21-1
+Depends: libc, kmod-ip6tables, iptables
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: libxtables
+Version: 1.4.21-1
+Depends: libc
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542358
+Auto-Installed: yes
+
+Package: zlib
+Version: 1.2.8-1
+Depends: libc
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542358
+Auto-Installed: yes
+
+Package: rsa_check
+Version: 0.1-1
+Depends: libc, libuci
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542360
+
+Package: kmod-nbptx
+Version: 3.10.49+1-0.1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb)
+Status: install user installed
+Architecture: all
+Installed-Time: 1632542359
+
+Package: luci-lib-nixio
+Version: 0.12+git-21.249.12145-c5baae5-1
+Depends: libc, luci-base
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542360
+
+Package: strongswan-mod-x509
+Version: 5.3.5-1
+Depends: libc, strongswan
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542361
+Auto-Installed: yes
+
+Package: kmod-iptvx
+Version: 3.10.49+1-0.1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb)
+Status: install user installed
+Architecture: all
+Installed-Time: 1632542359
+
+Package: mac_filter
+Version: 1-0.1
+Depends: libc, ipset-tplink
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542360
+
+Package: kmod-ipt-ipopt
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ipt-core, kmod-ipt-conntrack
+Status: install hold installed
+Architecture: octeon
+Installed-Time: 1632542359
+Auto-Installed: yes
+
+Package: kmod-ipt-nathelper-extra
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ipt-core, kmod-ipt-nat, kmod-lib-textsearch
+Status: install hold installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: mtd-utils-nanddump
+Version: 2.1.2-1
+Depends: libc, mtd-utils, librt
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542360
+
+Package: kmod-ipt_urlset_target
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ipt-core
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: kmod-crypto-rng
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-crypto-core
+Status: install hold installed
+Architecture: octeon
+Installed-Time: 1632542359
+Auto-Installed: yes
+
+Package: libdnsq
+Version: 1
+Depends: libc
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542359
+Auto-Installed: yes
+
+Package: wide-dhcpv6-client
+Version: 20080615-11
+Depends: libc, kmod-ipv6, liblogger
+Status: install user installed
+Architecture: octeon
+Conffiles:
+ /etc/config/dhcp6c d3ede5fcf99390d0e0396b52677c5ced
+Installed-Time: 1632542361
+
+Package: radvd
+Version: 1.7-1
+Depends: libc, kmod-ipv6, librt
+Status: install user installed
+Architecture: octeon
+Conffiles:
+ /etc/config/radvd c8c32644b0b91d2a2d6dd3e6705cf21a
+Installed-Time: 1632542359
+Auto-Installed: yes
+
+Package: website_sort
+Version: 1-0.1
+Depends: libc, iptables, ipset-tplink, kmod-urlset
+Status: install user installed
+Architecture: all
+Installed-Time: 1632542361
+
+Package: libgmp
+Version: 6.0.0-1
+Depends: libc
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: libsqlite3
+Version: 3080704-1
+Depends: libc, libpthread
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542360
+
+Package: line_backup
+Version: 0.1-1
+Depends: libc, libuci, liblogger
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542360
+
+Package: led_set
+Version: 1.0-1
+Depends: libc
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: ppp-mod-ppp4tplink
+Version: 2.4.7-2
+Depends: libc, libuci, libcomm, liblogger
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542360
+
+Package: ifstat-mini
+Version: 1.0
+Depends: libc, libuci, libjson, libpthread
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: xt_dosdrop
+Version: 1
+Depends: libc, iptables
+Status: install user installed
+Architecture: all
+Installed-Time: 1632542359
+Auto-Installed: yes
+
+Package: netifd-tl
+Version: 1.0-1
+Depends: libc
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542360
+
+Package: strongswan-mod-stroke
+Version: 5.3.5-1
+Depends: libc, strongswan, strongswan-utils
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542361
+Auto-Installed: yes
+
+Package: strongswan-mod-attr
+Version: 5.3.5-1
+Depends: libc, strongswan
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542361
+Auto-Installed: yes
+
+Package: zombie_monitor
+Version: 1-0.0
+Depends: libc
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542361
+
+Package: kmod-ipt_web_dns_match
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ipt-core
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: kmod-ipt_special_route
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ipt-core
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: usermngr
+Version: 1-0.1
+Depends: libc
+Status: install user installed
+Architecture: all
+Installed-Time: 1632542361
+
+Package: kmod-switch-rtl8367s
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-swconfig
+Status: install hold installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: kmod-atm
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb)
+Status: install hold installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: ubox
+Version: 2014-09-16-5c45b560bc8c9e13682269ed963a8a4a65959518
+Depends: libc, libubox, ubusd, ubus, libubus, libuci, librt
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542358
+Auto-Installed: yes
+
+Package: kernel
+Version: 3.10.49-1-050f6efca73e5de1f972d512a9865dcb
+Depends: libc
+Status: install hold installed
+Architecture: octeon
+Installed-Time: 1632542358
+Auto-Installed: yes
+
+Package: libcharset
+Version: 1.11.1-1
+Depends: libc
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542359
+Auto-Installed: yes
+
+Package: kmod-ipt-ipv4options
+Version: 3.10.49+2.3-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ipt-core
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542359
+Auto-Installed: yes
+
+Package: libnl-tiny
+Version: 0.1-3
+Depends: libc
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542358
+Auto-Installed: yes
+
+Package: online_check
+Version: 1
+Depends: libc, libpthread, libuci, libcomm, libubus, ubus, ubusd, libdnsq
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542360
+
+Package: strongswan-mod-revocation
+Version: 5.3.5-1
+Depends: libc, strongswan
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542361
+Auto-Installed: yes
+
+Package: kmod-mtd-oops
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb)
+Status: install hold installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: kmod-lib-zlib
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb)
+Status: install hold installed
+Architecture: octeon
+Installed-Time: 1632542359
+Auto-Installed: yes
+
+Package: flood_defense
+Version: 1-0.1
+Depends: libc, kmod-ipt-flood
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: mtd-utils-ubicrc32
+Version: 2.1.2-1
+Depends: libc, mtd-utils, librt
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542360
+
+Package: authlimit
+Version: 1
+Depends: libc, iptables
+Status: install user installed
+Architecture: all
+Installed-Time: 1632542358
+
+Package: kmod-nfnetlink-queue
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-nfnetlink
+Status: install hold installed
+Architecture: octeon
+Installed-Time: 1632542359
+Auto-Installed: yes
+
+Package: kmod-ipt_webfilter_match
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ipt-core
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: libnetsnmp
+Version: 5.4.4-1
+Depends: libc
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542360
+
+Package: kmod-mppe
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ppp, kmod-crypto-core, kmod-crypto-arc4, kmod-crypto-sha1, kmod-crypto-ecb
+Status: install hold installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: xt_ipsecmark
+Version: 1
+Depends: libc, iptables
+Status: install user installed
+Architecture: all
+Installed-Time: 1632542361
+
+Package: 6rd
+Version: 7-1
+Depends: libc, kmod-ipv6, kmod-sit
+Status: install user installed
+Architecture: all
+Installed-Time: 1632542358
+
+Package: kmod-balance_route
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ipt-core, kmod-ipt-ipset-tplink
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: lldpd
+Version: 1.0.4-1
+Depends: libc, libevent2, libjson-c, libxml2, libssp
+Status: install user installed
+Architecture: octeon
+Conffiles:
+ /etc/config/lldpd 695fa173a75e83f3a0fcefb955fe55c4
+Installed-Time: 1632542360
+
+Package: uhttpd-mod-ubus
+Version: 2014-10-27-fd8e5e379c23c5fbcec3e76894b839233df09067
+Depends: libc, uhttpd, libubus, libblobmsg-json
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542361
+
+Package: portal-mgmt
+Version: 1
+Depends: libc, libuci
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542360
+
+Package: liblogger
+Version: 1.0
+Depends: libc, libuci, libiconv-full
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542358
+Auto-Installed: yes
+
+Package: iptables-mod-account
+Version: 2.3-1
+Depends: libc, iptables, kmod-ipt-account
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: nvmanager
+Version: 1.1
+Depends: libc, libpthread, libubus, libubox
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542360
+
+Package: jsonfilter
+Version: 2014-06-19-cdc760c58077f44fc40adbbe41e1556a67c1b9a9
+Depends: libc, libubox, libjson-c
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542358
+Auto-Installed: yes
+
+Package: nat
+Version: 1-0.1
+Depends: libc, iptables, kmod-ipt-conntrack, kmod-ipt-nat, kmod-ipt_TRIGGER, libipt_TRIGGER, kmod-ipt-nathelper, kmod-ipt-nathelper-extra
+Status: install user installed
+Architecture: all
+Installed-Time: 1632542360
+
+Package: radvdump
+Version: 1.7-1
+Depends: libc, kmod-ipv6, librt
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542360
+
+Package: uhttpd-mod-tls
+Version: 2014-10-27-fd8e5e379c23c5fbcec3e76894b839233df09067
+Depends: libc, uhttpd, libustream-openssl
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542361
+
+Package: kmod-crypto-arc4
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-crypto-core
+Status: install hold installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: kmod-crypto-sha1
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-crypto-hash, kmod-crypto-core
+Status: install hold installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: strongswan-mod-gmp
+Version: 5.3.5-1
+Depends: libc, strongswan, libgmp
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542361
+Auto-Installed: yes
+
+Package: freeStrategy
+Version: 1-0.1
+Depends: libc, iptables
+Status: install user installed
+Architecture: all
+Installed-Time: 1632542359
+
+Package: kmod-ipt_tpconnlimit
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ipt-core
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: liburlset
+Version: 0.1-1
+Depends: libc, libmnl, ipset-tplink
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542360
+
+Package: kmod-pppol2tp
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ppp, kmod-pppox, kmod-l2tp
+Status: install hold installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: iptaccount
+Version: 2.3-1
+Depends: libc, iptables, iptables-mod-account
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542359
+
+Package: libopenssl
+Version: 1.0.2p-1
+Depends: libc, zlib
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542358
+Auto-Installed: yes
+
+Package: xt_multinetdev
+Version: 1
+Depends: libc, iptables
+Status: install user installed
+Architecture: all
+Installed-Time: 1632542360
+Auto-Installed: yes
+
+Package: kmod-slhc
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-lib-crc-ccitt
+Status: install hold installed
+Architecture: octeon
+Installed-Time: 1632542359
+Auto-Installed: yes
+
+Package: nginx
+Version: 1.8.1-1
+Depends: libc, libpcre, libopenssl, zlib, libpthread, liblua, librt
+Status: install user installed
+Architecture: octeon
+Conffiles:
+ /etc/nginx/nginx.conf af97d80aa245a75d6051aa83d826f0c9
+ /etc/nginx/mime.types bd837e7b34f5c9b8d89957d0527f0d44
+ /etc/nginx/fastcgi_params f597fb54a6fa1c9a9678dd3ae377d385
+ /etc/nginx/koi-utf 3e338aca6a53a5420fc791b5ef86f64c
+ /etc/nginx/koi-win bfa0b80381fed2b1dfcf617b0ba204ec
+ /etc/nginx/win-utf 3749ffe19bedd842eb87e83d544e5ce6
+ /www/luci-static/resources/authserver/background.jpg 5925cb77efe06c71139dd42d30cabec8
+ /www/luci-static/resources/authserver/mobile_wifi.html f5981e7157a682db72ececc8fcb9eb1c
+ /www/luci-static/resources/authserver/nobody.jpg 83907288fb679dddbeed7b779ed441fb
+ /www/luci-static/resources/authserver/pc_wifi.html 5a328ae85ab4f0676ccca82c6ccfc799
+ /www/luci-static/resources/authserver/pcauth.js 9362099b3b99ee2750b106b9a13f9fbe
+ /www/luci-static/resources/authserver/style-pcdemo.css 7d90164bff7b8a99db14b4a57c54bce7
+ /www/luci-static/resources/authserver/style-simple-follow.css 6c0d829200e01430598c2bb9a716a4f0
+ /www/luci-static/resources/authserver/web_login.html bdf0a1e4e6ba35569c6d5dc2831e335d
+ /www/luci-static/resources/authserver/wechat.html 54c3da427545c41862d9b6371aeae47e
+ /www/luci-static/resources/authserver/wifi-bgd.jpg 39cba91c15d6b625dbf1d65bab8ad3ff
+ /www/luci-static/resources/authserver/wifi-logo.png 5d61011032b5af6a921618dcb3ae7522
+Installed-Time: 1632542360
+
+Package: time_mngt
+Version: 1.0
+Depends: libc, libuci, libjson, libpthread
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542361
+
+Package: 6to4
+Version: 12-1
+Depends: libc, kmod-ipv6, kmod-sit
+Status: install user installed
+Architecture: all
+Installed-Time: 1632542358
+
+Package: ppp-mod-pppoe
+Version: 2.4.7-2
+Depends: libc, kmod-pppoe
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542360
+
+Package: kmod-ipt-nat
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ipt-core, kmod-ipt-conntrack
+Status: install hold installed
+Architecture: octeon
+Installed-Time: 1632542359
+Auto-Installed: yes
+
+Package: strongswan-mod-md5
+Version: 5.3.5-1
+Depends: libc, strongswan
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542361
+Auto-Installed: yes
+
+Package: imb
+Version: 1-0.1
+Depends: libc, ipset-tplink, net-tools-arp, libuci, libjson
+Status: install user installed
+Architecture: octeon
+Installed-Time: 1632542358
+Auto-Installed: yes
+
+Package: kmod-ipt-iprange
+Version: 3.10.49-1
+Depends: kernel (= 3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ipt-core
+Status: install hold installed
+Architecture: octeon
+Installed-Time: 1632542359
+Auto-Installed: yes
+

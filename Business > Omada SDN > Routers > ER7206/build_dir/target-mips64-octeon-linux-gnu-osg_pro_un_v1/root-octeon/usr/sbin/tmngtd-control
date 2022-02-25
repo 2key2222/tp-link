@@ -1,0 +1,65 @@
+#!/usr/bin/lua
+
+local tmngtd_control = require "tmngtd-control"
+local cmd, config, entry_name, slots, rule_name
+
+local function usage()
+    print("Usage:", arg[0].. " <command> MODULE_NAME [<arguments>]")
+    print("command:")
+    print("\t-a Add a timeobj to the module of MODULE_NAME")
+    print("\t-d Delete a timeobj from the module of MODULE_NAME")
+    print("\t-D Delete all timeobj from the module of MODULE_NAME")
+    print("\t-u Update the module if MODULE_NAME")
+    print("\t-s Show timeobj in the module of MODULE_NAME")
+    print("arguments:")
+    print("\tMODULE_NAME The name of the module,such as tc,access_control..")
+    print("\tENTRY_NAME The name of a timeobj")
+    print("\tSLOTS The time slots for the timeobj")
+    os.exit(1)
+end
+
+local function check(ret)
+    if not ret then
+        print("Error occured")
+        os.exit(1)
+    end
+end
+
+local function check_args(...)
+    for i = 1, select('#', ...) do
+        if not select(i, ...) then
+            usage()
+        end
+    end
+end
+
+cmd = arg[1]
+config = arg[2]
+entry_name = arg[3]
+slots = arg[4]
+rule_name = arg[5]
+
+check_args(cmd, config)
+
+tc = tmngtd_control.Tmngtcontrol(config)
+
+if cmd == "-D" then
+    check(tc:del_all())
+    check(tc:save(true))
+elseif cmd == "-a" then
+    check_args(entry_name, slots,rule_name)
+    check(tc:add_entry(entry_name, slots,rule_name))
+    check(tc:save())
+elseif cmd == "-d" then
+    check_args(entry_name, slots,rule_name)
+    check(tc:del_entry(entry_name, slots,rule_name))
+    check(tc:save())
+elseif cmd == "-u" then
+    check(tc:update())
+elseif cmd == "-s" then
+    -- DEBUG ONLY
+    check(tc:show())
+else
+    usage()
+    os.exit(1)
+end

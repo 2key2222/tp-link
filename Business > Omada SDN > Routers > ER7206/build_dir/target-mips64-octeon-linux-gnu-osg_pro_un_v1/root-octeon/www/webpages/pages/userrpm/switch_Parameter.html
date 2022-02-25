@@ -1,0 +1,250 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Switch_parameter</title>
+</head>
+
+<body>
+<div class="func-container">
+
+<form id="switch_parameter">
+	<div id="switch_parameter_panel">
+		<div class="container grid-container">
+			
+			<div class="container grid-header-container">
+				<table border="0" cellspacing="0" cellpadding="0">
+					<tr class="grid-header-tr">
+						<th class="grid-header grid-header-0 port">
+							<span class="content">Port</span>
+						</th>
+						<th class="grid-header grid-header-1 status">
+							<span id="pstatus" class="content"></span>
+						</th>
+						<th class="grid-header grid-header-2 control">
+							<span id="traffic" class="content"></span>
+						</th>
+						<th class="grid-header grid-header-3 mode">
+							<span id="nego" class="content"></span>
+						</th>
+						
+					</tr>
+				</table>
+			</div>
+			<div id="forform"></div>
+			<div class="grid-content-container-outer">
+
+				<div class="grid-content-container" style="overflow:visible;">
+					<table border="0" cellspacing="0" cellpadding="0" id="table">
+						
+					</table>
+					
+				</div>
+
+			</div>
+		</div>
+		
+		<div id="button-wrap" style="margin-top:30px;">
+			<button id="submit_btn"></button>
+		</div>
+		
+	</div>
+
+</form>
+     		
+
+	 <div id="switchParameter_help"></div>
+</div>
+
+<script type="text/javascript">
+try{
+    $
+}catch(e){
+    location.href = "/";
+};
+
+$(document).ready(function(e){
+	var URL_PARA = $.su.url("/admin/switch?form=para");
+	var paraProxy = new $.su.Proxy({
+		url: URL_PARA 
+	});
+
+    $("#switch_parameter_panel").panel({
+        title: $.su.CHAR.SWITCH.FUNCTION,
+        collapsible: false
+    }); 
+
+    $("span#pstatus").html($.su.CHAR.SWITCH.PORT_STATUS);
+    $("span#traffic").html($.su.CHAR.SWITCH.TRAFFIC_CONTROL);
+    $("span#nego").html($.su.CHAR.SWITCH.NEGO_MODE);
+    $("button#submit_btn").html($.su.CHAR.OPERATION.SAVE);
+
+    var inHTML = "";
+
+    for(var i = 1; i <= 5; i++){
+	    inHTML += "<tr class=\"grid-content-tr grid-content-tr-key-"+i+"\">";
+	    inHTML +=      "<td class=\"grid-content-td grid-content-td-0 grid-content-td-port fst\">";
+	    inHTML +=      	    "<span>Port"+i+"</span>";
+	    inHTML +=	   "</td>";
+	    inHTML +=      "<td class=\"grid-content-td grid-content-td-1 grid-content-td-status-column\">";
+	    inHTML +=           "<input id=\"port"+i+"_status\" name=\"port"+i+"_status\"/>";
+	    inHTML +=	   "</td>";
+	    inHTML +=	   "<td class=\"grid-content-td grid-content-td-2 grid-content-td-port-control\">";
+	    inHTML +=			"<input id=\"port"+i+"_control\" name=\"port"+i+"_control\"/>";    
+	    inHTML +=	   "</td>";
+	    inHTML +=      "<td class=\"grid-content-td grid-content-td-3 grid-content-td-mode\">";
+	    inHTML +=           "<input id=\"port"+i+"_mode\" name=\"port"+i+"_mode\"/>";
+	    inHTML +=	   "</td>";
+	    inHTML += "</tr>";
+    }
+
+    $("#table").html(inHTML);
+
+    //隐藏状态列
+    $(".grid-content-td-status-column").hide();
+    $(".grid-header-1").hide();
+
+    var mode_100M = [
+	    		{name:$.su.CHAR.SWITCH.AUTO_NEGO, value:"auto", selected:true},
+	    		{name:"10M "+$.su.CHAR.SWITCH.HALF_DUPLEX, value:"10MH"},
+	    		{name:"10M "+$.su.CHAR.SWITCH.FULL_DUPLEX, value:"10MF"},
+	    		{name:"100M "+$.su.CHAR.SWITCH.HALF_DUPLEX, value:"100MH"},
+	    		{name:"100M "+$.su.CHAR.SWITCH.FULL_DUPLEX, value:"100MF"}
+	    	];
+	// var mode_1000M = [
+	//     		{name:$.su.CHAR.SWITCH.AUTO_NEGO, value:"auto", selected:true},
+	//     		{name:"10M "+$.su.CHAR.SWITCH.HALF_DUPLEX, value:"10MH"},
+	//     		{name:"10M "+$.su.CHAR.SWITCH.FULL_DUPLEX, value:"10MF"},
+	//     		{name:"100M "+$.su.CHAR.SWITCH.HALF_DUPLEX, value:"100MH"},
+	//     		{name:"100M "+$.su.CHAR.SWITCH.FULL_DUPLEX, value:"100MF"},
+	//     		{name:"1000M "+$.su.CHAR.SWITCH.FULL_DUPLEX, value:"1000MF"}
+	//     	];
+
+    /*tr1-5*/
+    for(var i = 1; i <= 5; i++){
+	    $("#port"+i+"_status").checkbox({
+	    	items:[
+	    		{boxlabel:"&nbsp&nbsp"+$.su.CHAR.GRID.ENABLE, inputValue: "on", uncheckedValue: "off"}
+	    	]
+	    });
+
+	    $("#port"+i+"_control").checkbox({
+	    	items:[
+	    		{boxlabel:"&nbsp&nbsp"+$.su.CHAR.GRID.ENABLE, inputValue: "on", uncheckedValue: "off"}
+	    	]
+	    });
+
+	    $("#port"+i+"_mode").combobox({
+	    	items:[
+	    		{name:$.su.CHAR.SWITCH.AUTO_NEGO, value:"auto", selected:true},
+	    		{name:"10M "+$.su.CHAR.SWITCH.HALF_DUPLEX, value:"10MH"},
+	    		{name:"10M "+$.su.CHAR.SWITCH.FULL_DUPLEX, value:"10MF"},
+	    		{name:"100M "+$.su.CHAR.SWITCH.HALF_DUPLEX, value:"100MH"},
+	    		{name:"100M "+$.su.CHAR.SWITCH.FULL_DUPLEX, value:"100MF"}
+	    	]
+	    });
+
+
+    }
+
+    var forform = $("#forform").form({
+        showPrompt:true
+    });
+
+
+    var params = [];
+
+    function loadData(){
+    	paraProxy.read({
+			'method':'get',
+			'params': {},
+			'id':1
+		},function(data){
+			for(var i = 0; i <= 4; i++){
+				var j = i + 1;
+				if(data[i].max_speed == "1000M"){
+					mode_100M.push({name:"1000M "+$.su.CHAR.SWITCH.FULL_DUPLEX, value:"1000MF"}); 
+				}
+				$("#port"+j+"_mode").combobox('loadData', mode_100M);
+
+				$("#port"+j+"_status").checkbox("setValue", data[i].port_state);
+				$("#port"+j+"_control").checkbox("setValue", data[i].flowcontrol);
+				$("#port"+j+"_mode").combobox("setValue", data[i].negotiation_mode);
+
+				if(data[i].max_speed == "1000M"){
+					mode_100M.pop({name:"1000M "+$.su.CHAR.SWITCH.FULL_DUPLEX, value:"1000MF"});
+				}
+			}
+		},function(errcode){});
+    }
+    
+    loadData();
+    
+    $("button#submit_btn").button({
+    	handler:function(e){
+			params = [];
+    		for(var i = 1; i <= 5; i++){
+		    	var state = $("#port"+i+"_status").checkbox("getValue1");
+		    	if("on" == state[0] || "port"+i+"_status" == state[0]){
+		    		state = "on";
+		    	}else{
+		    		state = "off";
+		    	}
+
+		    	var control = $("#port"+i+"_control").checkbox("getValue1");
+
+				if("on" == control[0] || "port"+i+"_control" == control[0]){
+		    		control = "on";
+		    	}else{
+		    		control = "off";
+		    	}
+
+
+		    	var mode = $("#port"+i+"_mode").combobox("getValue");
+	
+		    	var eachPara = {
+			    	"port": i,
+			    	"state": state,
+			    	"flowcontrol": control,
+			    	"negotiation_mode": mode[0]
+			    };
+			   
+
+			    params.push(eachPara);
+		    }
+		    $.su.loading.show();
+			paraProxy.write(
+			{
+				'method':'set',
+				'params': params
+			}, 
+			function(data){
+				$.su.loading.hide();
+				forform.form("prompt", true);
+			},function(errcode){
+				$.su.loading.hide();
+				forform.form("prompt", false);
+				loadData();
+			},function(fail){
+				$.su.loading.hide();
+				forform.form("prompt", false);
+			});
+    	}
+    });
+
+
+
+   
+    
+
+	var switchParameter_help = new $.su.Help({
+		container: "div#switchParameter_help",
+		content: ["SWICH_PARAMETER"]
+	});
+});
+</script>
+</body>
+
+</html>
+
+			

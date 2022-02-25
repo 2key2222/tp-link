@@ -1,0 +1,731 @@
+--- a/drivers/net/ethernet/atheros/ag71xx/ag71xx_main.c
++++ b/drivers/net/ethernet/atheros/ag71xx/ag71xx_main.c
+@@ -50,7 +50,9 @@ static unsigned long ag71xx_ring_bufs[MA
+ };
+ #endif /* CONFIG_AG71XX_SRAM_DESCRIPTORS */
+ 
++/*#define DEBUG*/
+ #ifdef DEBUG
++
+ static void ag71xx_dump_dma_regs(struct ag71xx *ag)
+ {
+ 	DBG("%s: dma_tx_ctrl=%08x, dma_tx_desc=%08x, dma_tx_status=%08x\n",
+@@ -461,6 +463,8 @@ static void ag71xx_hw_setup(struct ag71x
+ {
+ 	struct ag71xx_platform_data *pdata = ag71xx_get_pdata(ag);
+ 
++    printk(KERN_EMERG" @@@@@@@@ %s-%d, ag71xx_hw_setup in! \n", __FUNCTION__, __LINE__);
++
+ 	/* setup MAC configuration registers */
+ 	ag71xx_wr(ag, AG71XX_REG_MAC_CFG1, MAC_CFG1_INIT);
+ 
+@@ -526,6 +530,8 @@ static void ag71xx_fast_reset(struct ag7
+ 	u32 rx_ds, tx_ds;
+ 	u32 mii_reg;
+ 
++    printk(KERN_EMERG" @@@@@@@@ %s-%d, ag71xx_fast_reset in! \n", __FUNCTION__, __LINE__);
++
+ 	reset_mask &= AR71XX_RESET_GE0_MAC | AR71XX_RESET_GE1_MAC;
+ 
+ 	mii_reg = ag71xx_rr(ag, AG71XX_REG_MII_CFG);
+@@ -588,6 +594,18 @@ void ag71xx_link_adjust(struct ag71xx *a
+ 		return;
+ 	}
+ 
++    /* @@@@@@ pdata is 1,0,0,1,0,1,1
++    printk(KERN_EMERG " @@@@@@ pdata is %d,%d,%d,%d,%d,%d,%d \n",
++                    pdata->has_gbit,
++                    pdata->is_ar91xx,
++                    pdata->is_ar7240,
++                    pdata->is_ar724x,
++                    pdata->has_ar8216,
++                    pdata->force_link,
++                    pdata->is_qca956x
++                    );
++	*/
++
+ 	if (pdata->is_ar724x)
+ 		ag71xx_fast_reset(ag);
+ 
+@@ -856,6 +874,8 @@ static void ag71xx_tx_timeout(struct net
+ {
+ 	struct ag71xx *ag = netdev_priv(dev);
+ 
++    printk(KERN_EMERG" @@@@@@@@ %s-%d, ag71xx_tx_timeout in! \n", __FUNCTION__, __LINE__);
++    dump_stack();
+ 	if (netif_msg_tx_err(ag))
+ 		pr_info("%s: tx timeout\n", ag->dev->name);
+ 
+@@ -1462,7 +1482,7 @@ static int __devinit ag71xx_probe(struct
+ 		goto err_free_desc;
+ 	}
+ 
+-	pr_info("%s: Atheros AG71xx at 0x%08lx, irq %d\n",
++	printk(KERN_INFO "%s: Atheros AG71xx at 0x%08lx, irq %d\n",
+ 		dev->name, dev->base_addr, dev->irq);
+ 
+ 	ag71xx_dump_regs(ag);
+--- a/drivers/net/ethernet/atheros/ag71xx/ag71xx.h
++++ b/drivers/net/ethernet/atheros/ag71xx/ag71xx.h
+@@ -81,6 +81,11 @@
+ 
+ #ifdef CONFIG_AG71XX_DEBUG
+ #define DBG(fmt, args...)	pr_debug(fmt, ## args)
++/*#define DBG(format, arg...) do { \
++printk(KERN_DEBUG "%s: " format "\n" , __func__ , ## arg); \
++} while (0)
++*/
++
+ #else
+ #define DBG(fmt, args...)	do {} while (0)
+ #endif
+--- a/arch/mips/ath79/common.c
++++ b/arch/mips/ath79/common.c
+@@ -41,6 +41,8 @@ void __iomem *ath79_pll_base;
+ EXPORT_SYMBOL_GPL(ath79_pll_base);
+ void __iomem *ath79_reset_base;
+ EXPORT_SYMBOL_GPL(ath79_reset_base);
++void __iomem *ath79_mii_base;
++EXPORT_SYMBOL_GPL(ath79_mii_base);
+ void __iomem *ath79_ddr_base;
+ 
+ void ath79_ddr_wb_flush(u32 reg)
+--- a/arch/mips/ath79/dev-eth.c
++++ b/arch/mips/ath79/dev-eth.c
+@@ -597,6 +597,7 @@ static int __init ath79_setup_phy_if_mod
+ {
+ 	unsigned int mii_if;
+ 
++    printk(KERN_EMERG" @@@@@@@@ %s-%d, setup eth%d  phy_if_mode!  ! \n", __FUNCTION__, __LINE__, id);
+ 	switch (id) {
+ 	case 0:
+ 		switch (ath79_soc) {
+@@ -630,7 +631,48 @@ static int __init ath79_setup_phy_if_mod
+ 		case ATH79_SOC_AR9331:
+ 		case ATH79_SOC_QCA9531:
+ 		case ATH79_SOC_QCA956X:
+-			pdata->phy_if_mode = PHY_INTERFACE_MODE_MII;
++			pdata->phy_if_mode = PHY_INTERFACE_MODE_SGMII;
++            /* BEGIN: config mii & phy for eth 
++                regtool mii wr 0x0 0x3c041
++                regtool mii wr 0x14 0x1f
++                regtool mii wr 0x18 0x1b838116  
++                regtool mii wr 0x1c 0x140
++                regtool mii wr 0x34 0xa2
++            */
++            {
++                unsigned int data = 0;
++
++                data = MII_ETH_CFG_GE_TO_SGMII |
++                        MII_ETH_CFG_ETH_RXD_DELAY |
++                        MII_ETH_CFG_ETH_RXDV_DELAY;
++                ath79_mii_wr(MII_ETH_CFG_REG, data);
++
++                data = ath79_mii_rr(MII_SGMII_SERDES_REG);
++                data = (data & (~SGMII_SERDES_RES_CALIBRATION_MASK)) | MII_SGMII_SERDES_RES_CALIBRATION;
++                ath79_mii_wr(MII_SGMII_SERDES_REG, data);
++
++                data = MII_MR_AN_CONTROL_DUPLEX_MODE |
++                        MII_MR_AN_CONTROL_SPEED_SEL1;
++                ath79_mii_wr(MII_MR_AN_CONTROL_REG, data);
++
++                data = MII_SGMII_CONFIG_MODE_CTRL | 
++                        MII_SGMII_CONFIG_FORCE_SPEED |
++                        MII_SGMII_CONFIG_SPEED;
++                ath79_mii_wr(MII_SGMII_CONFIG_REG, data);
++
++                ath79_mii_wr(MII_SGMII_RESET_REG, MII_SGMII_RESET_REG_VAL);
++
++                printk(KERN_EMERG" @@@@@@@@ %s-%d, mii regs 0x0=0x%08x, 0x14=0x%08x, 0x18=0x%08x, 0x1c=0x%08x, 0x34=0x%08x !\n", 
++                                    __FUNCTION__, __LINE__,
++                                    ath79_mii_rr(MII_ETH_CFG_REG),
++                                    ath79_mii_rr(MII_SGMII_RESET_REG),
++                                    ath79_mii_rr(MII_SGMII_SERDES_REG),
++                                    ath79_mii_rr(MII_MR_AN_CONTROL_REG),
++                                    ath79_mii_rr(MII_SGMII_CONFIG_REG)
++                                    );
++            }
++            /* END: config mii & phy for eth */
++
+ 			break;
+ 
+ 		case ATH79_SOC_AR7242:
+@@ -785,6 +827,8 @@ void ath79_init_eth_pdata(unsigned int i
+ 		return;
+ 	}
+ 
++    printk(KERN_EMERG" @@@@@@@@ %s-%d, ath79_soc = %d \n", __FUNCTION__, __LINE__, ath79_soc);
++
+ 	ath79_init_eth_pll_data(id);
+ 
+ 	if (id == 0)
+@@ -1044,6 +1088,127 @@ void __init ath79_register_eth(unsigned 
+ 	platform_device_register(id ? &ath79_eth1_device : &ath79_eth0_device);
+ }
+ 
++/*********************************************************************
++  BEGIN:  fixbug  for qsdk linux eth init - serdes not init  */
++void __init athrs_sgmii_res_cal(void)
++{
++	unsigned int read_data;
++	unsigned int reversed_sgmii_value;
++	unsigned int i=0;
++	unsigned int vco_fast,vco_slow;
++	unsigned int startValue=0, endValue=0;
++
++    printk(KERN_EMERG" @@@@@@@@ %s-%d, begin! \n", __FUNCTION__, __LINE__);
++
++	ath79_pll_wr(ETH_SGMII_SERDES_ADDRESS,
++			ETH_SGMII_SERDES_EN_LOCK_DETECT_MASK |
++			ETH_SGMII_SERDES_EN_PLL_MASK);
++
++	read_data = ath79_mii_rr(SGMII_SERDES_ADDRESS);
++
++	vco_fast = SGMII_SERDES_VCO_FAST_GET(read_data);
++	vco_slow = SGMII_SERDES_VCO_SLOW_GET(read_data);
++	/* set resistor Calibration from 0000 -> 1111 */
++	for (i=0; i < 0x10; i++)
++	{
++		read_data = (ath79_mii_rr(SGMII_SERDES_ADDRESS) &
++					~SGMII_SERDES_RES_CALIBRATION_MASK) |
++				SGMII_SERDES_RES_CALIBRATION_SET(i);
++		ath79_mii_wr(SGMII_SERDES_ADDRESS, read_data);
++
++		udelay(50);
++
++		read_data = ath79_mii_rr(SGMII_SERDES_ADDRESS);
++		if ((vco_fast != SGMII_SERDES_VCO_FAST_GET(read_data)) ||
++			(vco_slow != SGMII_SERDES_VCO_SLOW_GET(read_data)) ){
++			if (startValue == 0){
++				startValue=endValue=i;
++			}else{
++				endValue=i;
++			}
++		}
++		vco_fast = SGMII_SERDES_VCO_FAST_GET(read_data);
++		vco_slow = SGMII_SERDES_VCO_SLOW_GET(read_data);
++	}
++
++	if (startValue == 0){
++		/* No boundary found, use middle value for resistor calibration value */
++		reversed_sgmii_value = 0x7;
++	}else{
++		/* get resistor calibration from the middle of boundary */
++		reversed_sgmii_value = (startValue + endValue)/2;
++	}
++
++	read_data = (ath79_mii_rr(SGMII_SERDES_ADDRESS) &
++				~SGMII_SERDES_RES_CALIBRATION_MASK) |
++			SGMII_SERDES_RES_CALIBRATION_SET(reversed_sgmii_value);
++
++	ath79_mii_wr(SGMII_SERDES_ADDRESS, read_data);
++
++
++	ath79_pll_wr(ETH_SGMII_SERDES_ADDRESS,
++			ETH_SGMII_SERDES_EN_LOCK_DETECT_MASK |
++			/*ETH_SGMII_SERDES_PLL_REFCLK_SEL_MASK |*/
++			ETH_SGMII_SERDES_EN_PLL_MASK);
++
++
++    {
++        reversed_sgmii_value = SGMII_SERDES_CDR_BW_SET(3) |
++			SGMII_SERDES_TX_DR_CTRL_SET(1) |
++			SGMII_SERDES_PLL_BW_SET(1) |
++			SGMII_SERDES_EN_SIGNAL_DETECT_SET(1) |
++			SGMII_SERDES_FIBER_SDO_SET(1) |
++			SGMII_SERDES_VCO_REG_SET(3);
++        read_data = ath79_mii_rr(SGMII_SERDES_ADDRESS);
++        ath79_mii_wr(SGMII_SERDES_ADDRESS, read_data | reversed_sgmii_value);
++    }
++
++    {
++        reversed_sgmii_value = RST_RESET_ETH_SGMII_ARESET_MASK;
++        read_data = ath79_reset_rr(RST_RESET_ADDRESS);
++        ath79_reset_wr(RST_RESET_ADDRESS, read_data & (~reversed_sgmii_value));
++
++        udelay(25);
++        reversed_sgmii_value = RST_RESET_ETH_SGMII_RESET_MASK;
++        read_data = ath79_reset_rr(RST_RESET_ADDRESS);
++        ath79_reset_wr(RST_RESET_ADDRESS, read_data & (~reversed_sgmii_value));
++    }
++
++	while (!(ath79_mii_rr(SGMII_SERDES_ADDRESS) & SGMII_SERDES_LOCK_DETECT_STATUS_MASK))
++    {
++        if (i++  > 1000000)
++        {
++            printk(KERN_EMERG "   @@@@@@@@ %s-%d, i = %d   cannot lock sgmii pll ! \n", __FUNCTION__, __LINE__, i);
++            break;
++        }
++    }   
++
++    /* BEGIN: config pll for eth phy sgmii 
++        regtool pll wr 0x28 0xc1240
++        regtool pll wr 0x30 0xa6000000    
++    */
++    ath79_pll_wr(PLL_SWITCH_CLOCK_CONTROL_REG, PLL_CLOCK_MDIO_SELECT_100MHZ | 
++                                        PLL_USB_REFCLK_FREQ_SEL |
++                                        PLL_ETH_PHY_PLL_EN |
++                                        PLL_CLOCK_FROM_ETH_PHY_EN |
++                                        PLL_SWITCH_CLOCK_SELECT_25M);
++    udelay(25);
++    ath79_pll_wr(PLL_ETH_XMII_REG, PLL_XMII_GIGE_ENABLE | 
++                                        PLL_XMII_TX_DELAY |
++                                        PLL_XMII_RX_DELAY |
++                                        PLL_XMII_TX_INVERT );
++    udelay(25);
++    printk(KERN_EMERG" @@@@@@@@ %s-%d, pll regs 0x28=0x%08x, 0x30=0x%08x \n", 
++                        __FUNCTION__, __LINE__, 
++                        ath79_pll_rr(PLL_SWITCH_CLOCK_CONTROL_REG), ath79_pll_rr(PLL_ETH_XMII_REG));
++    /* END: config pll for eth phy sgmii */
++
++    printk(KERN_EMERG" @@@@@@@@ %s-%d, done  i = %d! \n", __FUNCTION__, __LINE__, i);
++}
++/*********************************************************************
++  END:  fixbug  for qsdk linux eth init - serdes not init  */
++
++
+ void __init ath79_set_mac_base(unsigned char *mac)
+ {
+ 	memcpy(ath79_mac_base, mac, ETH_ALEN);
+--- a/arch/mips/ath79/setup.c
++++ b/arch/mips/ath79/setup.c
+@@ -215,6 +215,8 @@ void __init plat_mem_setup(void)
+ 					   AR71XX_RESET_SIZE);
+ 	ath79_pll_base = ioremap_nocache(AR71XX_PLL_BASE,
+ 					 AR71XX_PLL_SIZE);
++    ath79_mii_base = ioremap_nocache(AR71XX_MII_BASE,
++					 AR71XX_MII_SIZE);
+ 	ath79_ddr_base = ioremap_nocache(AR71XX_DDR_CTRL_BASE,
+ 					 AR71XX_DDR_CTRL_SIZE);
+ 
+--- a/arch/mips/include/asm/mach-ath79/ath79.h
++++ b/arch/mips/include/asm/mach-ath79/ath79.h
+@@ -140,6 +140,7 @@ static inline int soc_is_qca956x(void)
+ extern void __iomem *ath79_ddr_base;
+ extern void __iomem *ath79_gpio_base;
+ extern void __iomem *ath79_pll_base;
++extern void __iomem *ath79_mii_base;
+ extern void __iomem *ath79_reset_base;
+ extern void __iomem *ath79_dma_base;
+ extern void __iomem *ath79_stereo_base;
+@@ -165,6 +166,16 @@ static inline u32 ath79_reset_rr(unsigne
+ 	return __raw_readl(ath79_reset_base + reg);
+ }
+ 
++static inline void ath79_mii_wr(unsigned reg, u32 val)
++{
++	__raw_writel(val, ath79_mii_base + reg);
++}
++
++static inline u32 ath79_mii_rr(unsigned reg)
++{
++	return __raw_readl(ath79_mii_base + reg);
++}
++
+ void ath79_device_reset_set(u32 mask);
+ void ath79_device_reset_clear(u32 mask);
+ u32 ath79_device_reset_get(u32 mask);
+--- a/drivers/net/ethernet/atheros/ag71xx/ag71xx_mdio.c
++++ b/drivers/net/ethernet/atheros/ag71xx/ag71xx_mdio.c
+@@ -93,14 +93,14 @@ int ag71xx_mdio_mii_read(struct ag71xx_m
+ 	ret = ag71xx_mdio_rr(am, AG71XX_REG_MII_STATUS) & 0xffff;
+ 	ag71xx_mdio_wr(am, AG71XX_REG_MII_CMD, MII_CMD_WRITE);
+ 
+-	DBG("mii_read: addr=%04x, reg=%04x, value=%04x\n", addr, reg, ret);
++	//DBG("mii_read: addr=%04x, reg=%04x, value=%04x\n", addr, reg, ret);
+ 
+ 	return ret;
+ }
+ 
+ void ag71xx_mdio_mii_write(struct ag71xx_mdio *am, int addr, int reg, u16 val)
+ {
+-	DBG("mii_write: addr=%04x, reg=%04x, value=%04x\n", addr, reg, val);
++	//DBG("mii_write: addr=%04x, reg=%04x, value=%04x\n", addr, reg, val);
+ 
+ 	ag71xx_mdio_wr(am, AG71XX_REG_MII_ADDR,
+ 			((addr & 0xff) << MII_ADDR_SHIFT) | (reg & 0xff));
+--- a/arch/mips/include/asm/mach-ath79/ar71xx_regs.h
++++ b/arch/mips/include/asm/mach-ath79/ar71xx_regs.h
+@@ -1314,4 +1314,343 @@
+ 
+ #define AR934X_NAND_CMD_END_INT		BIT(1)
+ 
++/*********************************************************************
++  BEGIN:  fixbug  for qsdk linux eth init - serdes not init  */
++#define ETH_SGMII_SERDES_EN_LOCK_DETECT_MSB                          2
++#define ETH_SGMII_SERDES_EN_LOCK_DETECT_LSB                          2
++#define ETH_SGMII_SERDES_EN_LOCK_DETECT_MASK                         0x00000004
++#define ETH_SGMII_SERDES_EN_LOCK_DETECT_GET(x)                       (((x) & ETH_SGMII_SERDES_EN_LOCK_DETECT_MASK) >> ETH_SGMII_SERDES_EN_LOCK_DETECT_LSB)
++#define ETH_SGMII_SERDES_EN_LOCK_DETECT_SET(x)                       (((x) << ETH_SGMII_SERDES_EN_LOCK_DETECT_LSB) & ETH_SGMII_SERDES_EN_LOCK_DETECT_MASK)
++#define ETH_SGMII_SERDES_EN_LOCK_DETECT_RESET                        0x0 // 0
++#define ETH_SGMII_SERDES_PLL_REFCLK_SEL_MSB                          1
++#define ETH_SGMII_SERDES_PLL_REFCLK_SEL_LSB                          1
++#define ETH_SGMII_SERDES_PLL_REFCLK_SEL_MASK                         0x00000002
++#define ETH_SGMII_SERDES_PLL_REFCLK_SEL_GET(x)                       (((x) & ETH_SGMII_SERDES_PLL_REFCLK_SEL_MASK) >> ETH_SGMII_SERDES_PLL_REFCLK_SEL_LSB)
++#define ETH_SGMII_SERDES_PLL_REFCLK_SEL_SET(x)                       (((x) << ETH_SGMII_SERDES_PLL_REFCLK_SEL_LSB) & ETH_SGMII_SERDES_PLL_REFCLK_SEL_MASK)
++#define ETH_SGMII_SERDES_PLL_REFCLK_SEL_RESET                        0x0 // 0
++#define ETH_SGMII_SERDES_EN_PLL_MSB                                  0
++#define ETH_SGMII_SERDES_EN_PLL_LSB                                  0
++#define ETH_SGMII_SERDES_EN_PLL_MASK                                 0x00000001
++#define ETH_SGMII_SERDES_EN_PLL_GET(x)                               (((x) & ETH_SGMII_SERDES_EN_PLL_MASK) >> ETH_SGMII_SERDES_EN_PLL_LSB)
++#define ETH_SGMII_SERDES_EN_PLL_SET(x)                               (((x) << ETH_SGMII_SERDES_EN_PLL_LSB) & ETH_SGMII_SERDES_EN_PLL_MASK)
++#define ETH_SGMII_SERDES_EN_PLL_RESET                                0x1 // 1
++#define ETH_SGMII_SERDES_ADDRESS                                     0x4c //0x1805004c
++
++
++#define PLL_SWITCH_CLOCK_CONTROL_REG        0x28
++#define PLL_CLOCK_MDIO_SELECT_100MHZ        BIT(6)
++#define PLL_USB_REFCLK_FREQ_SEL             (2 << 8)
++#define PLL_ETH_PHY_PLL_EN                  BIT(12)
++#define PLL_CLOCK_FROM_ETH_PHY_EN           BIT(18)
++#define PLL_SWITCH_CLOCK_SELECT_25M         BIT(19)
++
++#define PLL_ETH_XMII_REG                    0x30
++#define PLL_XMII_GIGE_ENABLE                BIT(25)
++#define PLL_XMII_TX_DELAY                   (1 << 26)
++#define PLL_XMII_RX_DELAY                   (2 << 28)
++#define PLL_XMII_TX_INVERT                  BIT(31)
++
++
++
++#define SGMII_SERDES_VCO_REG_MSB                                     30
++#define SGMII_SERDES_VCO_REG_LSB                                     27
++#define SGMII_SERDES_VCO_REG_MASK                                    0x78000000
++#define SGMII_SERDES_VCO_REG_GET(x)                                  (((x) & SGMII_SERDES_VCO_REG_MASK) >> SGMII_SERDES_VCO_REG_LSB)
++#define SGMII_SERDES_VCO_REG_SET(x)                                  (((x) << SGMII_SERDES_VCO_REG_LSB) & SGMII_SERDES_VCO_REG_MASK)
++#define SGMII_SERDES_VCO_REG_RESET                                   0x3 // 3
++#define SGMII_SERDES_RES_CALIBRATION_MSB                             26
++#define SGMII_SERDES_RES_CALIBRATION_LSB                             23
++#define SGMII_SERDES_RES_CALIBRATION_MASK                            0x07800000
++#define SGMII_SERDES_RES_CALIBRATION_GET(x)                          (((x) & SGMII_SERDES_RES_CALIBRATION_MASK) >> SGMII_SERDES_RES_CALIBRATION_LSB)
++#define SGMII_SERDES_RES_CALIBRATION_SET(x)                          (((x) << SGMII_SERDES_RES_CALIBRATION_LSB) & SGMII_SERDES_RES_CALIBRATION_MASK)
++#define SGMII_SERDES_RES_CALIBRATION_RESET                           0x0 // 0
++#define SGMII_SERDES_FIBER_MODE_MSB                                  21
++#define SGMII_SERDES_FIBER_MODE_LSB                                  20
++#define SGMII_SERDES_FIBER_MODE_MASK                                 0x00300000
++#define SGMII_SERDES_FIBER_MODE_GET(x)                               (((x) & SGMII_SERDES_FIBER_MODE_MASK) >> SGMII_SERDES_FIBER_MODE_LSB)
++#define SGMII_SERDES_FIBER_MODE_SET(x)                               (((x) << SGMII_SERDES_FIBER_MODE_LSB) & SGMII_SERDES_FIBER_MODE_MASK)
++#define SGMII_SERDES_FIBER_MODE_RESET                                0x0 // 0
++#define SGMII_SERDES_THRESHOLD_CTRL_MSB                              19
++#define SGMII_SERDES_THRESHOLD_CTRL_LSB                              18
++#define SGMII_SERDES_THRESHOLD_CTRL_MASK                             0x000c0000
++#define SGMII_SERDES_THRESHOLD_CTRL_GET(x)                           (((x) & SGMII_SERDES_THRESHOLD_CTRL_MASK) >> SGMII_SERDES_THRESHOLD_CTRL_LSB)
++#define SGMII_SERDES_THRESHOLD_CTRL_SET(x)                           (((x) << SGMII_SERDES_THRESHOLD_CTRL_LSB) & SGMII_SERDES_THRESHOLD_CTRL_MASK)
++#define SGMII_SERDES_THRESHOLD_CTRL_RESET                            0x0 // 0
++#define SGMII_SERDES_FIBER_SDO_MSB                                   17
++#define SGMII_SERDES_FIBER_SDO_LSB                                   17
++#define SGMII_SERDES_FIBER_SDO_MASK                                  0x00020000
++#define SGMII_SERDES_FIBER_SDO_GET(x)                                (((x) & SGMII_SERDES_FIBER_SDO_MASK) >> SGMII_SERDES_FIBER_SDO_LSB)
++#define SGMII_SERDES_FIBER_SDO_SET(x)                                (((x) << SGMII_SERDES_FIBER_SDO_LSB) & SGMII_SERDES_FIBER_SDO_MASK)
++#define SGMII_SERDES_FIBER_SDO_RESET                                 0x0 // 0
++#define SGMII_SERDES_EN_SIGNAL_DETECT_MSB                            16
++#define SGMII_SERDES_EN_SIGNAL_DETECT_LSB                            16
++#define SGMII_SERDES_EN_SIGNAL_DETECT_MASK                           0x00010000
++#define SGMII_SERDES_EN_SIGNAL_DETECT_GET(x)                         (((x) & SGMII_SERDES_EN_SIGNAL_DETECT_MASK) >> SGMII_SERDES_EN_SIGNAL_DETECT_LSB)
++#define SGMII_SERDES_EN_SIGNAL_DETECT_SET(x)                         (((x) << SGMII_SERDES_EN_SIGNAL_DETECT_LSB) & SGMII_SERDES_EN_SIGNAL_DETECT_MASK)
++#define SGMII_SERDES_EN_SIGNAL_DETECT_RESET                          0x1 // 1
++#define SGMII_SERDES_LOCK_DETECT_STATUS_MSB                          15
++#define SGMII_SERDES_LOCK_DETECT_STATUS_LSB                          15
++#define SGMII_SERDES_LOCK_DETECT_STATUS_MASK                         0x00008000
++#define SGMII_SERDES_LOCK_DETECT_STATUS_GET(x)                       (((x) & SGMII_SERDES_LOCK_DETECT_STATUS_MASK) >> SGMII_SERDES_LOCK_DETECT_STATUS_LSB)
++#define SGMII_SERDES_LOCK_DETECT_STATUS_SET(x)                       (((x) << SGMII_SERDES_LOCK_DETECT_STATUS_LSB) & SGMII_SERDES_LOCK_DETECT_STATUS_MASK)
++#define SGMII_SERDES_LOCK_DETECT_STATUS_RESET                        0x0 // 0
++#define SGMII_SERDES_SPARE0_MSB                                      14
++#define SGMII_SERDES_SPARE0_LSB                                      11
++#define SGMII_SERDES_SPARE0_MASK                                     0x00007800
++#define SGMII_SERDES_SPARE0_GET(x)                                   (((x) & SGMII_SERDES_SPARE0_MASK) >> SGMII_SERDES_SPARE0_LSB)
++#define SGMII_SERDES_SPARE0_SET(x)                                   (((x) << SGMII_SERDES_SPARE0_LSB) & SGMII_SERDES_SPARE0_MASK)
++#define SGMII_SERDES_SPARE0_RESET                                    0x0 // 0
++#define SGMII_SERDES_VCO_SLOW_MSB                                    10
++#define SGMII_SERDES_VCO_SLOW_LSB                                    10
++#define SGMII_SERDES_VCO_SLOW_MASK                                   0x00000400
++#define SGMII_SERDES_VCO_SLOW_GET(x)                                 (((x) & SGMII_SERDES_VCO_SLOW_MASK) >> SGMII_SERDES_VCO_SLOW_LSB)
++#define SGMII_SERDES_VCO_SLOW_SET(x)                                 (((x) << SGMII_SERDES_VCO_SLOW_LSB) & SGMII_SERDES_VCO_SLOW_MASK)
++#define SGMII_SERDES_VCO_SLOW_RESET                                  0x0 // 0
++#define SGMII_SERDES_VCO_FAST_MSB                                    9
++#define SGMII_SERDES_VCO_FAST_LSB                                    9
++#define SGMII_SERDES_VCO_FAST_MASK                                   0x00000200
++#define SGMII_SERDES_VCO_FAST_GET(x)                                 (((x) & SGMII_SERDES_VCO_FAST_MASK) >> SGMII_SERDES_VCO_FAST_LSB)
++#define SGMII_SERDES_VCO_FAST_SET(x)                                 (((x) << SGMII_SERDES_VCO_FAST_LSB) & SGMII_SERDES_VCO_FAST_MASK)
++#define SGMII_SERDES_VCO_FAST_RESET                                  0x0 // 0
++#define SGMII_SERDES_PLL_BW_MSB                                      8
++#define SGMII_SERDES_PLL_BW_LSB                                      8
++#define SGMII_SERDES_PLL_BW_MASK                                     0x00000100
++#define SGMII_SERDES_PLL_BW_GET(x)                                   (((x) & SGMII_SERDES_PLL_BW_MASK) >> SGMII_SERDES_PLL_BW_LSB)
++#define SGMII_SERDES_PLL_BW_SET(x)                                   (((x) << SGMII_SERDES_PLL_BW_LSB) & SGMII_SERDES_PLL_BW_MASK)
++#define SGMII_SERDES_PLL_BW_RESET                                    0x1 // 1
++#define SGMII_SERDES_TX_IMPEDANCE_MSB                                7
++#define SGMII_SERDES_TX_IMPEDANCE_LSB                                7
++#define SGMII_SERDES_TX_IMPEDANCE_MASK                               0x00000080
++#define SGMII_SERDES_TX_IMPEDANCE_GET(x)                             (((x) & SGMII_SERDES_TX_IMPEDANCE_MASK) >> SGMII_SERDES_TX_IMPEDANCE_LSB)
++#define SGMII_SERDES_TX_IMPEDANCE_SET(x)                             (((x) << SGMII_SERDES_TX_IMPEDANCE_LSB) & SGMII_SERDES_TX_IMPEDANCE_MASK)
++#define SGMII_SERDES_TX_IMPEDANCE_RESET                              0x0 // 0
++#define SGMII_SERDES_TX_DR_CTRL_MSB                                  6
++#define SGMII_SERDES_TX_DR_CTRL_LSB                                  4
++#define SGMII_SERDES_TX_DR_CTRL_MASK                                 0x00000070
++#define SGMII_SERDES_TX_DR_CTRL_GET(x)                               (((x) & SGMII_SERDES_TX_DR_CTRL_MASK) >> SGMII_SERDES_TX_DR_CTRL_LSB)
++#define SGMII_SERDES_TX_DR_CTRL_SET(x)                               (((x) << SGMII_SERDES_TX_DR_CTRL_LSB) & SGMII_SERDES_TX_DR_CTRL_MASK)
++#define SGMII_SERDES_TX_DR_CTRL_RESET                                0x1 // 1
++#define SGMII_SERDES_HALF_TX_MSB                                     3
++#define SGMII_SERDES_HALF_TX_LSB                                     3
++#define SGMII_SERDES_HALF_TX_MASK                                    0x00000008
++#define SGMII_SERDES_HALF_TX_GET(x)                                  (((x) & SGMII_SERDES_HALF_TX_MASK) >> SGMII_SERDES_HALF_TX_LSB)
++#define SGMII_SERDES_HALF_TX_SET(x)                                  (((x) << SGMII_SERDES_HALF_TX_LSB) & SGMII_SERDES_HALF_TX_MASK)
++#define SGMII_SERDES_HALF_TX_RESET                                   0x0 // 0
++#define SGMII_SERDES_CDR_BW_MSB                                      2
++#define SGMII_SERDES_CDR_BW_LSB                                      1
++#define SGMII_SERDES_CDR_BW_MASK                                     0x00000006
++#define SGMII_SERDES_CDR_BW_GET(x)                                   (((x) & SGMII_SERDES_CDR_BW_MASK) >> SGMII_SERDES_CDR_BW_LSB)
++#define SGMII_SERDES_CDR_BW_SET(x)                                   (((x) << SGMII_SERDES_CDR_BW_LSB) & SGMII_SERDES_CDR_BW_MASK)
++#define SGMII_SERDES_CDR_BW_RESET                                    0x3 // 3
++#define SGMII_SERDES_RX_IMPEDANCE_MSB                                0
++#define SGMII_SERDES_RX_IMPEDANCE_LSB                                0
++#define SGMII_SERDES_RX_IMPEDANCE_MASK                               0x00000001
++#define SGMII_SERDES_RX_IMPEDANCE_GET(x)                             (((x) & SGMII_SERDES_RX_IMPEDANCE_MASK) >> SGMII_SERDES_RX_IMPEDANCE_LSB)
++#define SGMII_SERDES_RX_IMPEDANCE_SET(x)                             (((x) << SGMII_SERDES_RX_IMPEDANCE_LSB) & SGMII_SERDES_RX_IMPEDANCE_MASK)
++#define SGMII_SERDES_RX_IMPEDANCE_RESET                              0x0 // 0
++#define SGMII_SERDES_ADDRESS                                         0x18  //0x18070018
++
++
++#define MII_ETH_CFG_REG                     0x00
++#define MII_ETH_CFG_GE_TO_SGMII             BIT(6)
++#define MII_ETH_CFG_ETH_RXD_DELAY           (3 << 14)
++#define MII_ETH_CFG_ETH_RXDV_DELAY          (3 << 16)
++
++#define MII_SGMII_RESET_REG                 0x14
++#define MII_SGMII_RESET_REG_VAL             0x1f
++
++#define MII_SGMII_SERDES_REG                SGMII_SERDES_ADDRESS
++#define MII_SGMII_SERDES_RES_CALIBRATION    7
++
++#define MII_MR_AN_CONTROL_REG               0x1c
++#define MII_MR_AN_CONTROL_SPEED_SEL1        BIT(6)
++#define MII_MR_AN_CONTROL_SPEED_SEL0        BIT(13)
++#define MII_MR_AN_CONTROL_DUPLEX_MODE       BIT(8)
++#define MII_MR_AN_CONTROL_AN_ENABLE         BIT(12)
++
++#define MII_SGMII_CONFIG_REG                0x34
++#define MII_SGMII_CONFIG_MODE_CTRL          (2 << 0)
++#define MII_SGMII_CONFIG_FORCE_SPEED        BIT(5)
++#define MII_SGMII_CONFIG_SPEED              (2 << 6)
++
++
++#define RST_RESET_HOST_RESET_MSB                                     31
++#define RST_RESET_HOST_RESET_LSB                                     31
++#define RST_RESET_HOST_RESET_MASK                                    0x80000000
++#define RST_RESET_HOST_RESET_GET(x)                                  (((x) & RST_RESET_HOST_RESET_MASK) >> RST_RESET_HOST_RESET_LSB)
++#define RST_RESET_HOST_RESET_SET(x)                                  (((x) << RST_RESET_HOST_RESET_LSB) & RST_RESET_HOST_RESET_MASK)
++#define RST_RESET_HOST_RESET_RESET                                   0x0 // 0
++#define RST_RESET_EXTERNAL_RESET_MSB                                 28
++#define RST_RESET_EXTERNAL_RESET_LSB                                 28
++#define RST_RESET_EXTERNAL_RESET_MASK                                0x10000000
++#define RST_RESET_EXTERNAL_RESET_GET(x)                              (((x) & RST_RESET_EXTERNAL_RESET_MASK) >> RST_RESET_EXTERNAL_RESET_LSB)
++#define RST_RESET_EXTERNAL_RESET_SET(x)                              (((x) << RST_RESET_EXTERNAL_RESET_LSB) & RST_RESET_EXTERNAL_RESET_MASK)
++#define RST_RESET_EXTERNAL_RESET_RESET                               0x0 // 0
++#define RST_RESET_RTC_RESET_MSB                                      27
++#define RST_RESET_RTC_RESET_LSB                                      27
++#define RST_RESET_RTC_RESET_MASK                                     0x08000000
++#define RST_RESET_RTC_RESET_GET(x)                                   (((x) & RST_RESET_RTC_RESET_MASK) >> RST_RESET_RTC_RESET_LSB)
++#define RST_RESET_RTC_RESET_SET(x)                                   (((x) << RST_RESET_RTC_RESET_LSB) & RST_RESET_RTC_RESET_MASK)
++#define RST_RESET_RTC_RESET_RESET                                    0x1 // 1
++#define RST_RESET_PCIEEP_RST_INT_MSB                                 26
++#define RST_RESET_PCIEEP_RST_INT_LSB                                 26
++#define RST_RESET_PCIEEP_RST_INT_MASK                                0x04000000
++#define RST_RESET_PCIEEP_RST_INT_GET(x)                              (((x) & RST_RESET_PCIEEP_RST_INT_MASK) >> RST_RESET_PCIEEP_RST_INT_LSB)
++#define RST_RESET_PCIEEP_RST_INT_SET(x)                              (((x) << RST_RESET_PCIEEP_RST_INT_LSB) & RST_RESET_PCIEEP_RST_INT_MASK)
++#define RST_RESET_PCIEEP_RST_INT_RESET                               0x0 // 0
++#define RST_RESET_CHKSUM_ACC_RESET_MSB                               25
++#define RST_RESET_CHKSUM_ACC_RESET_LSB                               25
++#define RST_RESET_CHKSUM_ACC_RESET_MASK                              0x02000000
++#define RST_RESET_CHKSUM_ACC_RESET_GET(x)                            (((x) & RST_RESET_CHKSUM_ACC_RESET_MASK) >> RST_RESET_CHKSUM_ACC_RESET_LSB)
++#define RST_RESET_CHKSUM_ACC_RESET_SET(x)                            (((x) << RST_RESET_CHKSUM_ACC_RESET_LSB) & RST_RESET_CHKSUM_ACC_RESET_MASK)
++#define RST_RESET_CHKSUM_ACC_RESET_RESET                             0x0 // 0
++#define RST_RESET_FULL_CHIP_RESET_MSB                                24
++#define RST_RESET_FULL_CHIP_RESET_LSB                                24
++#define RST_RESET_FULL_CHIP_RESET_MASK                               0x01000000
++#define RST_RESET_FULL_CHIP_RESET_GET(x)                             (((x) & RST_RESET_FULL_CHIP_RESET_MASK) >> RST_RESET_FULL_CHIP_RESET_LSB)
++#define RST_RESET_FULL_CHIP_RESET_SET(x)                             (((x) << RST_RESET_FULL_CHIP_RESET_LSB) & RST_RESET_FULL_CHIP_RESET_MASK)
++#define RST_RESET_FULL_CHIP_RESET_RESET                              0x0 // 0
++#define RST_RESET_GE1_MDIO_RESET_MSB                                 23
++#define RST_RESET_GE1_MDIO_RESET_LSB                                 23
++#define RST_RESET_GE1_MDIO_RESET_MASK                                0x00800000
++#define RST_RESET_GE1_MDIO_RESET_GET(x)                              (((x) & RST_RESET_GE1_MDIO_RESET_MASK) >> RST_RESET_GE1_MDIO_RESET_LSB)
++#define RST_RESET_GE1_MDIO_RESET_SET(x)                              (((x) << RST_RESET_GE1_MDIO_RESET_LSB) & RST_RESET_GE1_MDIO_RESET_MASK)
++#define RST_RESET_GE1_MDIO_RESET_RESET                               0x1 // 1
++#define RST_RESET_GE0_MDIO_RESET_MSB                                 22
++#define RST_RESET_GE0_MDIO_RESET_LSB                                 22
++#define RST_RESET_GE0_MDIO_RESET_MASK                                0x00400000
++#define RST_RESET_GE0_MDIO_RESET_GET(x)                              (((x) & RST_RESET_GE0_MDIO_RESET_MASK) >> RST_RESET_GE0_MDIO_RESET_LSB)
++#define RST_RESET_GE0_MDIO_RESET_SET(x)                              (((x) << RST_RESET_GE0_MDIO_RESET_LSB) & RST_RESET_GE0_MDIO_RESET_MASK)
++#define RST_RESET_GE0_MDIO_RESET_RESET                               0x1 // 1
++#define RST_RESET_CPU_NMI_MSB                                        21
++#define RST_RESET_CPU_NMI_LSB                                        21
++#define RST_RESET_CPU_NMI_MASK                                       0x00200000
++#define RST_RESET_CPU_NMI_GET(x)                                     (((x) & RST_RESET_CPU_NMI_MASK) >> RST_RESET_CPU_NMI_LSB)
++#define RST_RESET_CPU_NMI_SET(x)                                     (((x) << RST_RESET_CPU_NMI_LSB) & RST_RESET_CPU_NMI_MASK)
++#define RST_RESET_CPU_NMI_RESET                                      0x0 // 0
++#define RST_RESET_CPU_COLD_RESET_MSB                                 20
++#define RST_RESET_CPU_COLD_RESET_LSB                                 20
++#define RST_RESET_CPU_COLD_RESET_MASK                                0x00100000
++#define RST_RESET_CPU_COLD_RESET_GET(x)                              (((x) & RST_RESET_CPU_COLD_RESET_MASK) >> RST_RESET_CPU_COLD_RESET_LSB)
++#define RST_RESET_CPU_COLD_RESET_SET(x)                              (((x) << RST_RESET_CPU_COLD_RESET_LSB) & RST_RESET_CPU_COLD_RESET_MASK)
++#define RST_RESET_CPU_COLD_RESET_RESET                               0x0 // 0
++#define RST_RESET_HOST_RESET_INT_MSB                                 19
++#define RST_RESET_HOST_RESET_INT_LSB                                 19
++#define RST_RESET_HOST_RESET_INT_MASK                                0x00080000
++#define RST_RESET_HOST_RESET_INT_GET(x)                              (((x) & RST_RESET_HOST_RESET_INT_MASK) >> RST_RESET_HOST_RESET_INT_LSB)
++#define RST_RESET_HOST_RESET_INT_SET(x)                              (((x) << RST_RESET_HOST_RESET_INT_LSB) & RST_RESET_HOST_RESET_INT_MASK)
++#define RST_RESET_HOST_RESET_INT_RESET                               0x0 // 0
++#define RST_RESET_PCIEEP_RESET_MSB                                   18
++#define RST_RESET_PCIEEP_RESET_LSB                                   18
++#define RST_RESET_PCIEEP_RESET_MASK                                  0x00040000
++#define RST_RESET_PCIEEP_RESET_GET(x)                                (((x) & RST_RESET_PCIEEP_RESET_MASK) >> RST_RESET_PCIEEP_RESET_LSB)
++#define RST_RESET_PCIEEP_RESET_SET(x)                                (((x) << RST_RESET_PCIEEP_RESET_LSB) & RST_RESET_PCIEEP_RESET_MASK)
++#define RST_RESET_PCIEEP_RESET_RESET                                 0x0 // 0
++#define RST_RESET_UART1_RESET_MSB                                    17
++#define RST_RESET_UART1_RESET_LSB                                    17
++#define RST_RESET_UART1_RESET_MASK                                   0x00020000
++#define RST_RESET_UART1_RESET_GET(x)                                 (((x) & RST_RESET_UART1_RESET_MASK) >> RST_RESET_UART1_RESET_LSB)
++#define RST_RESET_UART1_RESET_SET(x)                                 (((x) << RST_RESET_UART1_RESET_LSB) & RST_RESET_UART1_RESET_MASK)
++#define RST_RESET_UART1_RESET_RESET                                  0x0 // 0
++#define RST_RESET_DDR_RESET_MSB                                      16
++#define RST_RESET_DDR_RESET_LSB                                      16
++#define RST_RESET_DDR_RESET_MASK                                     0x00010000
++#define RST_RESET_DDR_RESET_GET(x)                                   (((x) & RST_RESET_DDR_RESET_MASK) >> RST_RESET_DDR_RESET_LSB)
++#define RST_RESET_DDR_RESET_SET(x)                                   (((x) << RST_RESET_DDR_RESET_LSB) & RST_RESET_DDR_RESET_MASK)
++#define RST_RESET_DDR_RESET_RESET                                    0x0 // 0
++#define RST_RESET_USB_PHY_PLL_PWD_EXT_MSB                            15
++#define RST_RESET_USB_PHY_PLL_PWD_EXT_LSB                            15
++#define RST_RESET_USB_PHY_PLL_PWD_EXT_MASK                           0x00008000
++#define RST_RESET_USB_PHY_PLL_PWD_EXT_GET(x)                         (((x) & RST_RESET_USB_PHY_PLL_PWD_EXT_MASK) >> RST_RESET_USB_PHY_PLL_PWD_EXT_LSB)
++#define RST_RESET_USB_PHY_PLL_PWD_EXT_SET(x)                         (((x) << RST_RESET_USB_PHY_PLL_PWD_EXT_LSB) & RST_RESET_USB_PHY_PLL_PWD_EXT_MASK)
++#define RST_RESET_USB_PHY_PLL_PWD_EXT_RESET                          0x0 // 0
++#define RST_RESET_GE1_MAC_RESET_MSB                                  13
++#define RST_RESET_GE1_MAC_RESET_LSB                                  13
++#define RST_RESET_GE1_MAC_RESET_MASK                                 0x00002000
++#define RST_RESET_GE1_MAC_RESET_GET(x)                               (((x) & RST_RESET_GE1_MAC_RESET_MASK) >> RST_RESET_GE1_MAC_RESET_LSB)
++#define RST_RESET_GE1_MAC_RESET_SET(x)                               (((x) << RST_RESET_GE1_MAC_RESET_LSB) & RST_RESET_GE1_MAC_RESET_MASK)
++#define RST_RESET_GE1_MAC_RESET_RESET                                0x1 // 1
++#define RST_RESET_ETH_SGMII_ARESET_MSB                               12
++#define RST_RESET_ETH_SGMII_ARESET_LSB                               12
++#define RST_RESET_ETH_SGMII_ARESET_MASK                              0x00001000
++#define RST_RESET_ETH_SGMII_ARESET_GET(x)                            (((x) & RST_RESET_ETH_SGMII_ARESET_MASK) >> RST_RESET_ETH_SGMII_ARESET_LSB)
++#define RST_RESET_ETH_SGMII_ARESET_SET(x)                            (((x) << RST_RESET_ETH_SGMII_ARESET_LSB) & RST_RESET_ETH_SGMII_ARESET_MASK)
++#define RST_RESET_ETH_SGMII_ARESET_RESET                             0x1 // 1
++#define RST_RESET_USB_PHY_ARESET_MSB                                 11
++#define RST_RESET_USB_PHY_ARESET_LSB                                 11
++#define RST_RESET_USB_PHY_ARESET_MASK                                0x00000800
++#define RST_RESET_USB_PHY_ARESET_GET(x)                              (((x) & RST_RESET_USB_PHY_ARESET_MASK) >> RST_RESET_USB_PHY_ARESET_LSB)
++#define RST_RESET_USB_PHY_ARESET_SET(x)                              (((x) << RST_RESET_USB_PHY_ARESET_LSB) & RST_RESET_USB_PHY_ARESET_MASK)
++#define RST_RESET_USB_PHY_ARESET_RESET                               0x1 // 1
++#define RST_RESET_HOST_DMA_INT_MSB                                   10
++#define RST_RESET_HOST_DMA_INT_LSB                                   10
++#define RST_RESET_HOST_DMA_INT_MASK                                  0x00000400
++#define RST_RESET_HOST_DMA_INT_GET(x)                                (((x) & RST_RESET_HOST_DMA_INT_MASK) >> RST_RESET_HOST_DMA_INT_LSB)
++#define RST_RESET_HOST_DMA_INT_SET(x)                                (((x) << RST_RESET_HOST_DMA_INT_LSB) & RST_RESET_HOST_DMA_INT_MASK)
++#define RST_RESET_HOST_DMA_INT_RESET                                 0x0 // 0
++#define RST_RESET_GE0_MAC_RESET_MSB                                  9
++#define RST_RESET_GE0_MAC_RESET_LSB                                  9
++#define RST_RESET_GE0_MAC_RESET_MASK                                 0x00000200
++#define RST_RESET_GE0_MAC_RESET_GET(x)                               (((x) & RST_RESET_GE0_MAC_RESET_MASK) >> RST_RESET_GE0_MAC_RESET_LSB)
++#define RST_RESET_GE0_MAC_RESET_SET(x)                               (((x) << RST_RESET_GE0_MAC_RESET_LSB) & RST_RESET_GE0_MAC_RESET_MASK)
++#define RST_RESET_GE0_MAC_RESET_RESET                                0x1 // 1
++#define RST_RESET_ETH_SGMII_RESET_MSB                                8
++#define RST_RESET_ETH_SGMII_RESET_LSB                                8
++#define RST_RESET_ETH_SGMII_RESET_MASK                               0x00000100
++#define RST_RESET_ETH_SGMII_RESET_GET(x)                             (((x) & RST_RESET_ETH_SGMII_RESET_MASK) >> RST_RESET_ETH_SGMII_RESET_LSB)
++#define RST_RESET_ETH_SGMII_RESET_SET(x)                             (((x) << RST_RESET_ETH_SGMII_RESET_LSB) & RST_RESET_ETH_SGMII_RESET_MASK)
++#define RST_RESET_ETH_SGMII_RESET_RESET                              0x1 // 1
++#define RST_RESET_PCIE_PHY_RESET_MSB                                 7
++#define RST_RESET_PCIE_PHY_RESET_LSB                                 7
++#define RST_RESET_PCIE_PHY_RESET_MASK                                0x00000080
++#define RST_RESET_PCIE_PHY_RESET_GET(x)                              (((x) & RST_RESET_PCIE_PHY_RESET_MASK) >> RST_RESET_PCIE_PHY_RESET_LSB)
++#define RST_RESET_PCIE_PHY_RESET_SET(x)                              (((x) << RST_RESET_PCIE_PHY_RESET_LSB) & RST_RESET_PCIE_PHY_RESET_MASK)
++#define RST_RESET_PCIE_PHY_RESET_RESET                               0x1 // 1
++#define RST_RESET_PCIE_RESET_MSB                                     6
++#define RST_RESET_PCIE_RESET_LSB                                     6
++#define RST_RESET_PCIE_RESET_MASK                                    0x00000040
++#define RST_RESET_PCIE_RESET_GET(x)                                  (((x) & RST_RESET_PCIE_RESET_MASK) >> RST_RESET_PCIE_RESET_LSB)
++#define RST_RESET_PCIE_RESET_SET(x)                                  (((x) << RST_RESET_PCIE_RESET_LSB) & RST_RESET_PCIE_RESET_MASK)
++#define RST_RESET_PCIE_RESET_RESET                                   0x1 // 1
++#define RST_RESET_USB_HOST_RESET_MSB                                 5
++#define RST_RESET_USB_HOST_RESET_LSB                                 5
++#define RST_RESET_USB_HOST_RESET_MASK                                0x00000020
++#define RST_RESET_USB_HOST_RESET_GET(x)                              (((x) & RST_RESET_USB_HOST_RESET_MASK) >> RST_RESET_USB_HOST_RESET_LSB)
++#define RST_RESET_USB_HOST_RESET_SET(x)                              (((x) << RST_RESET_USB_HOST_RESET_LSB) & RST_RESET_USB_HOST_RESET_MASK)
++#define RST_RESET_USB_HOST_RESET_RESET                               0x1 // 1
++#define RST_RESET_USB_PHY_RESET_MSB                                  4
++#define RST_RESET_USB_PHY_RESET_LSB                                  4
++#define RST_RESET_USB_PHY_RESET_MASK                                 0x00000010
++#define RST_RESET_USB_PHY_RESET_GET(x)                               (((x) & RST_RESET_USB_PHY_RESET_MASK) >> RST_RESET_USB_PHY_RESET_LSB)
++#define RST_RESET_USB_PHY_RESET_SET(x)                               (((x) << RST_RESET_USB_PHY_RESET_LSB) & RST_RESET_USB_PHY_RESET_MASK)
++#define RST_RESET_USB_PHY_RESET_RESET                                0x1 // 1
++#define RST_RESET_USB_PHY_SUSPEND_OVERRIDE_MSB                       3
++#define RST_RESET_USB_PHY_SUSPEND_OVERRIDE_LSB                       3
++#define RST_RESET_USB_PHY_SUSPEND_OVERRIDE_MASK                      0x00000008
++#define RST_RESET_USB_PHY_SUSPEND_OVERRIDE_GET(x)                    (((x) & RST_RESET_USB_PHY_SUSPEND_OVERRIDE_MASK) >> RST_RESET_USB_PHY_SUSPEND_OVERRIDE_LSB)
++#define RST_RESET_USB_PHY_SUSPEND_OVERRIDE_SET(x)                    (((x) << RST_RESET_USB_PHY_SUSPEND_OVERRIDE_LSB) & RST_RESET_USB_PHY_SUSPEND_OVERRIDE_MASK)
++#define RST_RESET_USB_PHY_SUSPEND_OVERRIDE_RESET                     0x0 // 0
++#define RST_RESET_ETH_SWITCH_ANALOG_RESET_MSB                        2
++#define RST_RESET_ETH_SWITCH_ANALOG_RESET_LSB                        2
++#define RST_RESET_ETH_SWITCH_ANALOG_RESET_MASK                       0x00000004
++#define RST_RESET_ETH_SWITCH_ANALOG_RESET_GET(x)                     (((x) & RST_RESET_ETH_SWITCH_ANALOG_RESET_MASK) >> RST_RESET_ETH_SWITCH_ANALOG_RESET_LSB)
++#define RST_RESET_ETH_SWITCH_ANALOG_RESET_SET(x)                     (((x) << RST_RESET_ETH_SWITCH_ANALOG_RESET_LSB) & RST_RESET_ETH_SWITCH_ANALOG_RESET_MASK)
++#define RST_RESET_ETH_SWITCH_ANALOG_RESET_RESET                      0x1 // 1
++#define RST_RESET_MBOX_RESET_MSB                                     1
++#define RST_RESET_MBOX_RESET_LSB                                     1
++#define RST_RESET_MBOX_RESET_MASK                                    0x00000002
++#define RST_RESET_MBOX_RESET_GET(x)                                  (((x) & RST_RESET_MBOX_RESET_MASK) >> RST_RESET_MBOX_RESET_LSB)
++#define RST_RESET_MBOX_RESET_SET(x)                                  (((x) << RST_RESET_MBOX_RESET_LSB) & RST_RESET_MBOX_RESET_MASK)
++#define RST_RESET_MBOX_RESET_RESET                                   0x0 // 0
++#define RST_RESET_ETH_SWITCH_RESET_MSB                               0
++#define RST_RESET_ETH_SWITCH_RESET_LSB                               0
++#define RST_RESET_ETH_SWITCH_RESET_MASK                              0x00000001
++#define RST_RESET_ETH_SWITCH_RESET_GET(x)                            (((x) & RST_RESET_ETH_SWITCH_RESET_MASK) >> RST_RESET_ETH_SWITCH_RESET_LSB)
++#define RST_RESET_ETH_SWITCH_RESET_SET(x)                            (((x) << RST_RESET_ETH_SWITCH_RESET_LSB) & RST_RESET_ETH_SWITCH_RESET_MASK)
++#define RST_RESET_ETH_SWITCH_RESET_RESET                             0x1 // 1
++#define RST_RESET_ADDRESS                                            0x1c   //0x1806001c
++/*********************************************************************
++  END:  fixbug  for qsdk linux eth init - serdes not init  */
++
+ #endif /* __ASM_MACH_AR71XX_REGS_H */
++
+--- a/arch/mips/ath79/dev-eth.h
++++ b/arch/mips/ath79/dev-eth.h
+@@ -36,6 +36,7 @@ extern struct ag71xx_platform_data ath79
+ extern struct platform_device ath79_eth0_device;
+ extern struct platform_device ath79_eth1_device;
+ void ath79_register_eth(unsigned int id);
++void athrs_sgmii_res_cal(void);
+ void ath79_init_eth_pdata(unsigned int id);
+ 
+ extern struct ag71xx_switch_platform_data ath79_switch_data;
+--- a/arch/mips/ath79/mach-ap152.c
++++ b/arch/mips/ath79/mach-ap152.c
+@@ -142,11 +142,14 @@ static void __init ap152_setup(void)
+ 
+ 	ath79_register_usb();
+ 
++    printk(KERN_EMERG" @@@@@@@@ %s-%d  ! \n", __FUNCTION__, __LINE__);
+ 	ap152_mdio_setup();
++    printk(KERN_EMERG" @@@@@@@@ %s-%d  ! \n", __FUNCTION__, __LINE__);
+ 
+ 	mdiobus_register_board_info(ap152_mdio0_info,
+ 				    ARRAY_SIZE(ap152_mdio0_info));
+ 
++    printk(KERN_EMERG" @@@@@@@@ %s-%d  ! \n", __FUNCTION__, __LINE__);
+ 	ath79_register_wmac(art + AP152_WMAC_CALDATA_OFFSET, NULL);
+ 	ath79_register_pci();
+ 
+@@ -159,7 +162,11 @@ static void __init ap152_setup(void)
+ 	ath79_eth0_data.force_link = 1;
+ 	ath79_eth0_data.mii_bus_dev = &ath79_mdio0_device.dev;
+ 	ath79_eth0_pll_data.pll_1000 = 0x06000000;
++
++    athrs_sgmii_res_cal();
++    printk(KERN_EMERG" @@@@@@@@ %s-%d  ! \n", __FUNCTION__, __LINE__);
+ 	ath79_register_eth(0);
++    printk(KERN_EMERG" @@@@@@@@ %s-%d  ! \n", __FUNCTION__, __LINE__);
+ }
+ 
+ MIPS_MACHINE(ATH79_MACH_AP152, "AP152", "Qualcomm Atheros AP152 reference board",

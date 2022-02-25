@@ -1,0 +1,34 @@
+--- linux-3.10.49.orig/net/netfilter/nf_conntrack_netlink.c	2016-04-08 17:19:33.896822757 +0800
++++ linux-3.10.49/net/netfilter/nf_conntrack_netlink.c	2016-04-08 17:21:29.375822308 +0800
+@@ -61,6 +61,11 @@
+ 
+ EXPORT_SYMBOL(g_appdist_event);
+ 
++void (*g_special_route_create)(unsigned int events, struct nf_ct_event *item);
++EXPORT_SYMBOL(g_special_route_create);
++void (*g_special_route_destroy)(unsigned int events, struct nf_ct_event *item);
++EXPORT_SYMBOL(g_special_route_destroy);
++
+ static inline int
+ ctnetlink_dump_tuples_proto(struct sk_buff *skb,
+ 			    const struct nf_conntrack_tuple *tuple,
+@@ -630,11 +635,19 @@
+                 {
+                         (*g_appdist_event)(events, item);
+                 }
++		if(g_special_route_destroy)
++		{
++			(*g_special_route_destroy)(events, item);
++		}
+ 
+ 	} else  if (events & ((1 << IPCT_NEW) | (1 << IPCT_RELATED))) {
+ 		type = IPCTNL_MSG_CT_NEW;
+ 		flags = NLM_F_CREATE|NLM_F_EXCL;
+ 		group = NFNLGRP_CONNTRACK_NEW;
++		if(g_special_route_create)
++		{
++			(*g_special_route_create)(events, item);
++		}
+ 	} else  if (events) {
+ 		type = IPCTNL_MSG_CT_NEW;
+ 		group = NFNLGRP_CONNTRACK_UPDATE;

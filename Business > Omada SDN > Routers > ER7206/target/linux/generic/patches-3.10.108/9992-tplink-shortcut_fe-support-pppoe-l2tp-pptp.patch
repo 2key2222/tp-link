@@ -1,0 +1,459 @@
+--- a/net/core/dev.c	2020-03-23 06:46:05.906416861 +0800
++++ b/net/core/dev.c	2020-03-28 11:01:46.434612795 +0800
+@@ -138,6 +138,22 @@
+ struct TPHOOK_AUTHLIMIT tphook_authlimit = {0};
+ EXPORT_SYMBOL(tphook_authlimit);
+ 
++int (* fastpath_lookup_chan)(u16 call_id, u32 s_addr);
++int (* fastpath_update_chan)(u16 call_id, u32 s_addr, u8 *ghdr);
++int (* fastpath_add_pptp_header)(u16 call_id, u32 s_addr, struct sk_buff *skb);
++EXPORT_SYMBOL(fastpath_lookup_chan);
++EXPORT_SYMBOL(fastpath_update_chan);
++EXPORT_SYMBOL(fastpath_add_pptp_header);
++int (* fastpath_lookup_session)(struct net *net, u32 tunnel_id, u32 session_id, u16 hdrflags);
++int (* fastpath_update_session)(struct net *net, u32 tunnel_id, u32 session_id, u16 hdrflags);
++int (* fastpath_add_l2tp_header)(struct net *net, u32 tunnel_id, u32 session_id, struct sk_buff *skb);
++EXPORT_SYMBOL(fastpath_lookup_session);
++EXPORT_SYMBOL(fastpath_update_session);
++EXPORT_SYMBOL(fastpath_add_l2tp_header);  
++int (* fastpath_lookup_item)(struct net_device *dev, u16 sid, unsigned char source[]);
++int (* fastpath_add_pppoe_header)(struct net_device *dev, u16 sid, unsigned char source[], struct sk_buff *skb);
++EXPORT_SYMBOL(fastpath_lookup_item);
++EXPORT_SYMBOL(fastpath_add_pppoe_header); 
+
+ /* Instead of increasing this, you should create a hash table. */
+ #define MAX_GRO_SKBS 8
+--- a/drivers/net/ppp/pppoe.c	2020-03-30 18:53:13.934415883 +0800
++++ b/drivers/net/ppp/pppoe.c	2020-03-30 19:17:08.923179061 +0800
+@@ -89,6 +89,9 @@
+ #define PPPOE_HASH_SIZE (1 << PPPOE_HASH_BITS)
+ #define PPPOE_HASH_MASK	(PPPOE_HASH_SIZE - 1)
+ 
++extern int (* fastpath_lookup_item)(struct net_device *dev, u16 sid, unsigned char source[]);
++extern int (* fastpath_add_pppoe_header)(struct net_device *dev, u16 sid, unsigned char source[], struct sk_buff *skb);
++
+ static int __pppoe_xmit(struct sock *sk, struct sk_buff *skb);
+ 
+ static const struct proto_ops pppoe_ops;
+@@ -270,6 +273,52 @@
+ 	write_unlock_bh(&pn->hash_lock);
+ }
+ 
++static int pppoe_lookup_item(struct net_device *dev, u16 sid, unsigned char source[])
++{
++	struct pppox_sock *po;
++	struct pppoe_net *pn;
++	int ppp_ifindex = 0;
++
++	pn = pppoe_pernet(dev_net(dev));
++
++	read_lock_bh(&pn->hash_lock);
++	po = __get_item(pn, sid, source, dev->ifindex); /* no need hold sock */
++	ppp_ifindex = po ? ppp_dev_unencrypted_index(&po->chan) : 0;
++	read_unlock_bh(&pn->hash_lock);
++
++	return ppp_ifindex;
++}
++
++static int pppoe_add_pppoe_header(struct net_device *dev, u16 sid, unsigned char source[], struct sk_buff *skb)
++{
++	struct pppox_sock *po;
++	struct pppoe_net *pn;
++	struct pppoe_hdr *phdr;
++	u16 pppoe_sid = 0xFFFF;
++	u16 data_len = skb->len;
++
++	pn = pppoe_pernet(dev_net(dev));
++
++	read_lock_bh(&pn->hash_lock);
++	po = __get_item(pn, sid, source, dev->ifindex); /* no need hold sock */
++	if (po)
++		pppoe_sid = po->num;
++	read_unlock_bh(&pn->hash_lock);
++
++	if (pppoe_sid == 0xFFFF)
++		return 0;
++
++	skb_push(skb, sizeof(*phdr));
++	phdr = (struct pppoe_hdr *)skb->data;
++	phdr->ver	= 1;
++	phdr->type = 1;
++	phdr->code = 0;
++	phdr->sid	= pppoe_sid;
++	phdr->length = htons(data_len);
++
++	return 1;
++}
++
+ /***************************************************************************
+  *
+  *  Handler for device events.
+@@ -1172,6 +1219,11 @@
+ 	dev_add_pack(&pppoed_ptype);
+ 	register_netdevice_notifier(&pppoe_notifier);
+ 
++	BUG_ON(fastpath_lookup_item != NULL);
++	RCU_INIT_POINTER(fastpath_lookup_item, pppoe_lookup_item);
++	BUG_ON(fastpath_add_pppoe_header != NULL);
++	RCU_INIT_POINTER(fastpath_add_pppoe_header, pppoe_add_pppoe_header);
++
+ 	return 0;
+ 
+ out_unregister_pppoe_proto:
+@@ -1184,6 +1236,9 @@
+ 
+ static void __exit pppoe_exit(void)
+ {
++	RCU_INIT_POINTER(fastpath_lookup_item, NULL);
++	RCU_INIT_POINTER(fastpath_add_pppoe_header, NULL);
++
+ 	unregister_netdevice_notifier(&pppoe_notifier);
+ 	dev_remove_pack(&pppoed_ptype);
+ 	dev_remove_pack(&pppoes_ptype);
+--- a/drivers/net/ppp/pptp.c	2020-03-23 06:38:46.396415907 +0800
++++ b/drivers/net/ppp/pptp.c	2020-03-31 14:16:42.191415883 +0800
+@@ -98,6 +98,10 @@
+ 	u32 ack;
+ } __packed;
+ 
++extern int (*fastpath_lookup_chan)(u16 call_id, u32 s_addr);
++extern int (*fastpath_update_chan)(u16 call_id, u32 s_addr, u8 *ghdr);
++extern int (*fastpath_add_pptp_header)(u16 call_id, u32 s_addr, struct sk_buff *skb);
++
+ static struct pppox_sock *lookup_chan(u16 call_id, __be32 s_addr)
+ {
+ 	struct pppox_sock *sock;
+@@ -175,6 +179,86 @@
+ 	synchronize_rcu();
+ }
+ 
++static int pptp_lookup_chan(u16 call_id, __be32 s_addr)
++{
++	struct pppox_sock *po = NULL;
++	int ppp_ifindex = 0;
++
++	po = lookup_chan(call_id, s_addr);
++	if (po) {
++		ppp_ifindex = ppp_dev_unencrypted_index(&po->chan);
++		sock_put(sk_pppox(po));
++	}
++	return ppp_ifindex;
++}
++static int pptp_update_chan(u16 call_id, __be32 s_addr, u8 *ghdr)
++{
++	struct pppox_sock *po = NULL;
++	struct pptp_opt *opt = NULL;
++	struct pptp_gre_header *pgh = (struct pptp_gre_header *)ghdr;
++	uint32_t seq, ack;
++
++	po = lookup_chan(call_id, s_addr);
++	if (!po)
++		return 0;
++
++	/* locked by sock ? */
++	opt = &po->proto.pptp;
++	if (PPTP_GRE_IS_A(pgh->ver)) {
++		ack =  pgh->ack;
++		ack = ntohl(ack);
++		if (ack < opt->ack_recv)
++			opt->ack_recv = ack;
++		if (WRAPPED(ack, opt->ack_recv))
++			opt->ack_recv = ack;
++	}
++	seq = ntohl(pgh->seq);
++	opt->seq_recv = seq;
++	/* unlocked by sock ? */
++
++	sock_put(sk_pppox(po));
++	return 1;
++}
++static int pptp_add_pptp_header(u16 call_id, __be32 s_addr, struct sk_buff *skb)
++{
++	struct pptp_gre_header *greh;
++	struct pppox_sock *po = NULL;
++	struct pptp_opt *opt = NULL;
++	uint32_t seq_recv = 0;
++	int len = skb->len, header_len = 0;
++
++	po = lookup_chan(call_id, s_addr);
++	if (!po)
++		return 0;
++
++	/* locked by ppp chan ? */
++	header_len = sizeof(*greh);
++	opt = &po->proto.pptp;
++	seq_recv = opt->seq_recv;
++
++	if (opt->ack_sent == seq_recv)
++		header_len -= sizeof(greh->ack);
++
++	skb_push(skb, header_len);
++	greh = (struct pptp_gre_header *)(skb->data);
++	greh->flags		= PPTP_GRE_FLAG_K | PPTP_GRE_FLAG_S;
++	greh->ver		= PPTP_GRE_VER;
++	greh->protocol		= htons(PPTP_GRE_PROTO); /*ppp type = 0x880b*/
++	greh->payload_len	= htons(len);
++	greh->call_id		= htons(opt->dst_addr.call_id);			
++	greh->seq 		    = htonl(++opt->seq_sent);
++	if (opt->ack_sent != seq_recv)	{
++		/* send ack with this message */
++		greh->ver |= PPTP_GRE_FLAG_A;
++		greh->ack  = htonl(seq_recv);
++		opt->ack_sent = seq_recv;
++	}
++	/* unlocked by ppp chan ? */
++
++	sock_put(sk_pppox(po));
++	return 1;
++}
++
+ static int pptp_xmit(struct ppp_channel *chan, struct sk_buff *skb)
+ {
+ 	struct sock *sk = (struct sock *) chan->private;
+@@ -733,6 +815,13 @@
+ 		goto out_unregister_sk_proto;
+ 	}
+ 
++	BUG_ON(fastpath_lookup_chan != NULL);
++	RCU_INIT_POINTER(fastpath_lookup_chan, pptp_lookup_chan);
++	BUG_ON(fastpath_update_chan != NULL);
++	RCU_INIT_POINTER(fastpath_update_chan, pptp_update_chan);
++	BUG_ON(fastpath_add_pptp_header != NULL);
++	RCU_INIT_POINTER(fastpath_add_pptp_header, pptp_add_pptp_header);
++
+ 	return 0;
+ 
+ out_unregister_sk_proto:
+@@ -747,6 +836,9 @@
+ 
+ static void __exit pptp_exit_module(void)
+ {
++	RCU_INIT_POINTER(fastpath_lookup_chan, NULL);
++	RCU_INIT_POINTER(fastpath_update_chan, NULL);
++	RCU_INIT_POINTER(fastpath_add_pptp_header, NULL);
+ 	unregister_pppox_proto(PX_PROTO_PPTP);
+ 	proto_unregister(&pptp_sk_proto);
+ 	gre_del_protocol(&gre_pptp_protocol, GREPROTO_PPTP);
+--- a/net/l2tp/l2tp_ppp.c	2020-04-09 10:01:22.211414275 +0800
++++ b/net/l2tp/l2tp_ppp.c	2020-04-09 10:03:55.062396544 +0800
+@@ -130,6 +130,13 @@
+ 						 * Unused. */
+ };
+
++#define L2TP_HDRFLAG_S	   0x0800
++#define L2TP_HDR_VER_2	   0x0002
++ 
++extern int (* fastpath_lookup_session)(struct net *net, u32 tunnel_id, u32 session_id, u16 hdrflags);
++extern int (* fastpath_update_session)(struct net *net, u32 tunnel_id, u32 session_id, u16 hdrflags);
++extern int (* fastpath_add_l2tp_header)(struct net *net, u32 tunnel_id, u32 session_id, struct sk_buff *skb);
++
+ static int pppol2tp_xmit(struct ppp_channel *chan, struct sk_buff *skb);
+ 
+ static const struct ppp_channel_ops pppol2tp_chan_ops = {
+@@ -1813,6 +1817,135 @@
+ 
+ #endif /* CONFIG_L2TP_V3 */
+ 
++/* export to shortcut-fe modules */
++static int l2tp_tunnel_session_find(struct net *net, u32 tunnel_id, u32 session_id, u16 hdrflags)
++{
++	struct l2tp_session *session = NULL;
++	struct l2tp_tunnel *xtunnel = NULL;
++	struct pppol2tp_session *ps = NULL;
++	struct pppox_sock *po = NULL;
++	int ppp_ifindex = 0;
++
++	rcu_read_lock_bh();
++	xtunnel = l2tp_tunnel_find(net, tunnel_id);
++	if (!xtunnel) {
++		rcu_read_unlock_bh();
++		return 0;
++	}
++
++#ifdef CONFIG_XFRM
++	/* ipsec */
++	if (xtunnel->sock)  {
++		struct dst_entry *dst = __sk_dst_get(xtunnel->sock);
++		if (!dst || dst->xfrm) {
++			rcu_read_unlock_bh();
++			return 0;
++		}
++	}
++#endif
++
++	/* get session */
++	session = l2tp_session_find(net, xtunnel, session_id);
++	if (!session || !session->recv_skb) {
++		rcu_read_unlock_bh();
++		return 0;
++	}
++
++	/* more check */
++	if (!(hdrflags & L2TP_HDRFLAG_S)) {
++		if (session->recv_seq) {
++			rcu_read_unlock_bh();
++			return 0;
++		}
++	
++		if (session->lns_mode && session->send_seq) {
++			rcu_read_unlock_bh();
++			return 0;
++		}
++	}
++	ps = l2tp_session_priv(session);
++	if (ps && ps->sock) {
++		po = pppox_sk(ps->sock);
++		ppp_ifindex = ppp_dev_unencrypted_index(&po->chan);
++	}
++	rcu_read_unlock_bh();
++	return ppp_ifindex;
++}
++
++static int l2tp_tunnel_session_update(struct net *net, u32 tunnel_id, u32 session_id, u16 hdrflags)
++{
++	struct l2tp_session *session = NULL;
++	struct l2tp_tunnel *xtunnel = NULL;
++
++	rcu_read_lock_bh();
++	xtunnel = l2tp_tunnel_find(net, tunnel_id);
++	if (!xtunnel) {
++		rcu_read_unlock_bh();
++		return 0;
++	}
++	
++	/* get session */
++	session = l2tp_session_find(net, xtunnel, session_id);
++	if (!session || !session->recv_skb) {
++		rcu_read_unlock_bh();
++		return 0;
++	}
++
++	if (hdrflags & L2TP_HDRFLAG_S) {
++		if ((!session->lns_mode) && (!session->send_seq)) {
++			session->send_seq = -1;
++			session->hdr_len = 10;
++		}
++	} else {
++		if ((!session->lns_mode) && (session->send_seq)) {
++			session->send_seq = 0;
++			session->hdr_len = 6;
++		}
++	}
++
++	rcu_read_unlock_bh();
++	return 1;
++}
++
++static int l2tp_tunnel_session_add_header(struct net *net, u32 tunnel_id, u32 session_id, struct sk_buff *skb)
++{
++	struct l2tp_session *session = NULL;
++	struct l2tp_tunnel *xtunnel = NULL;
++	u16 flags = L2TP_HDR_VER_2;
++	u16 *bufp = NULL;
++
++	rcu_read_lock_bh();
++	xtunnel = l2tp_tunnel_find(net, tunnel_id);
++	if (!xtunnel) {
++		rcu_read_unlock_bh();
++		return 0;
++	}
++	
++	/* get session */
++	session = l2tp_session_find(net, xtunnel, session_id);
++	if (!session || !session->recv_skb) {
++		rcu_read_unlock_bh();
++		return 0;
++	}
++
++	if (session->send_seq)
++		flags |= L2TP_HDRFLAG_S;
++	skb_push(skb, session->hdr_len);
++	bufp = skb->data;
++	*bufp++ = htons(flags);
++	*bufp++ = htons(xtunnel->peer_tunnel_id);
++	*bufp++ = htons(session->peer_session_id);
++	if (session->send_seq) {
++		*bufp++ = htons(session->ns);
++		*bufp++ = 0;
++		session->ns++;
++		session->ns &= 0xffff;
++	}
++
++	rcu_read_unlock_bh();
++	return 1;
++}
++
+ static int __init pppol2tp_init(void)
+ {
+ 	int err;
+@@ -1835,6 +1968,13 @@
+ 		goto out_unregister_pppox;
+ #endif
+ 
++	BUG_ON(fastpath_lookup_session != NULL);
++	RCU_INIT_POINTER(fastpath_lookup_session, l2tp_tunnel_session_find);
++	BUG_ON(fastpath_update_session != NULL);
++	RCU_INIT_POINTER(fastpath_update_session, l2tp_tunnel_session_update);
++	BUG_ON(fastpath_add_l2tp_header != NULL);
++	RCU_INIT_POINTER(fastpath_add_l2tp_header, l2tp_tunnel_session_add_header);
++
+ 	pr_info("PPPoL2TP kernel driver, %s\n", PPPOL2TP_DRV_VERSION);
+ 
+ out:
+@@ -1853,6 +1993,10 @@
+ 
+ static void __exit pppol2tp_exit(void)
+ {
++	RCU_INIT_POINTER(fastpath_lookup_session, NULL);
++	RCU_INIT_POINTER(fastpath_update_session, NULL);
++	RCU_INIT_POINTER(fastpath_add_l2tp_header, NULL);
++
+ #ifdef CONFIG_L2TP_V3
+ 	l2tp_nl_unregister_ops(L2TP_PWTYPE_PPP);
+ #endif
+--- a/drivers/net/ppp/ppp_generic.c	2020-04-21 18:25:10.031412626 +0800
++++ b/drivers/net/ppp/ppp_generic.c	2020-04-21 18:40:13.567953510 +0800
+@@ -2937,6 +2937,23 @@
+ 	kfree(pch);
+ }
+ 
++int ppp_dev_unencrypted_index(struct ppp_channel *chan)
++{
++	struct channel *pch = chan->ppp;
++	int ifindex = 0;
++
++	if (pch) {
++		read_lock_bh(&pch->upl);
++		if (pch->ppp && pch->ppp->dev && (pch->ppp->dev->flags & IFF_UP)) {
++			if (!((pch->ppp->rstate & SC_DECOMP_RUN) || (pch->ppp->xstate & SC_COMP_RUN))) {
++				ifindex = pch->ppp->dev->ifindex;
++			}
++		}
++		read_unlock_bh(&pch->upl);
++	}
++	return ifindex;
++}
++
+ /* Return the PPP net device index */
+ int ppp_dev_index(struct ppp_channel *chan)
+ {
+@@ -3009,6 +3026,7 @@
+ EXPORT_SYMBOL(ppp_unit_number);
+ EXPORT_SYMBOL(ppp_dev_name);
+ EXPORT_SYMBOL(ppp_dev_index);
++EXPORT_SYMBOL(ppp_dev_unencrypted_index);
+ EXPORT_SYMBOL(ppp_input);
+ EXPORT_SYMBOL(ppp_input_error);
+ EXPORT_SYMBOL(ppp_output_wakeup);
+--- a/include/linux/ppp_channel.h	2020-04-21 18:55:00.672413376 +0800
++++ b/include/linux/ppp_channel.h	2020-04-21 18:55:41.722966255 +0800
+@@ -78,6 +78,9 @@
+ /* Get the device name associated with a channel, or NULL if none */
+ extern char *ppp_dev_name(struct ppp_channel *);
+ 
++/* Get the device index  associated with a channel (unencrypted), or 0, if none */
++extern int ppp_dev_unencrypted_index(struct ppp_channel *chan);
++
+ /*
+  * SMP locking notes:
+  * The channel code must ensure that when it calls ppp_unregister_channel,

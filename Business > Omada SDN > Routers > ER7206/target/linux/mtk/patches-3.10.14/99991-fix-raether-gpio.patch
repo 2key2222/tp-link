@@ -1,0 +1,12 @@
+diff -urN a/drivers/net/raeth/raether.c b/drivers/net/raeth/raether.c
+--- a/drivers/net/raeth/raether.c	2016-12-24 21:39:08.788011100 +0800
++++ b/drivers/net/raeth/raether.c	2016-12-24 21:43:54.907526377 +0800
+@@ -4413,7 +4413,7 @@
+ 	sysRegWrite(RSTCTRL, val);
+ 
+ 
+-	sysRegRead(RALINK_SYSCTL_BASE + 0x64);
++	val = sysRegRead(RALINK_SYSCTL_BASE + 0x64);
+ #if defined (CONFIG_ETH_ONE_PORT_ONLY)
+ 	val &= 0xf003f003;
+ 	val |= 0x05540554;

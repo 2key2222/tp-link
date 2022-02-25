@@ -1,0 +1,10 @@
+--- a/arch/mips/Kconfig	2018-09-03 10:13:06.000000000 +0800
++++ b/arch/mips/Kconfig	2019-07-18 17:03:37.853394500 +0800
+@@ -72,6 +72,7 @@ config RALINK_MT7620
+ 
+ config RALINK_MT7621
+ 	bool "Ralink MT7621 board"
++	select ARCH_REQUIRE_GPIOLIB
+ 	select CEVT_R4K
+ 	select CSRC_R4K
+ 	select BOOT_ELF32 if !SUPPORT_OPENWRT

@@ -1,0 +1,13 @@
+prefix=/usr
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+enginesdir=${libdir}/engines
+
+Name: OpenSSL-libcrypto
+Description: OpenSSL cryptography library
+Version: 1.0.2p
+Requires: 
+Libs: -L${libdir} -lcrypto
+Libs.private: -L/home/ubuntu/tp-link/ER7206_trunk/staging_dir/target-mips64-octeon-linux-gnu-osg_pro_un_v1/usr/lib -L/home/ubuntu/tp-link/ER7206_trunk/staging_dir/target-mips64-octeon-linux-gnu-osg_pro_un_v1/lib -L/home/ubuntu/tp-link/ER7206_trunk/staging_dir/toolchain-cavium-sdk-3.x/usr/lib -L/home/ubuntu/tp-link/ER7206_trunk/staging_dir/toolchain-cavium-sdk-3.x/lib -ldl -ldl
+Cflags: -I${includedir} 

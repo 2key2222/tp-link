@@ -1,0 +1,24 @@
+--- a/net/netfilter/nf_conntrack_ecache.c	2019-02-12 13:56:31.790201089 +0800
++++ b/net/netfilter/nf_conntrack_ecache.c	2019-02-12 14:11:08.533240448 +0800
+@@ -106,6 +106,9 @@
+ #ifdef CONFIG_NF_CONNTRACK_CHAIN_EVENTS
+ int nf_conntrack_register_notifier(struct net *net, struct notifier_block *nb)
+ {
++	if (net != &init_net)
++		return 0;
++
+ 	return atomic_notifier_chain_register(&nf_conntrack_chain, nb);
+ }
+ #else
+--- a/net/netfilter/nf_conntrack_ecache.c	2020-04-14 08:43:26.366414316 +0800
++++ b/net/netfilter/nf_conntrack_ecache.c	2020-04-14 08:43:56.445048752 +0800
+@@ -138,6 +138,9 @@
+ #ifdef CONFIG_NF_CONNTRACK_CHAIN_EVENTS
+ int nf_conntrack_unregister_notifier(struct net *net, struct notifier_block *nb)
+ {
++	if (net != &init_net)
++		return 0;
++
+ 	return atomic_notifier_chain_unregister(&nf_conntrack_chain, nb);
+ }
+ #else

@@ -1,0 +1,73 @@
+#!/bin/sh
+# TP-LINK ganguoheng@tp-link.net
+
+. /lib/functions.sh
+. /lib/functions/userconfig.sh
+
+rm -f /var/run/sleep_restorefactory.pid
+
+# if restorfactory is on-going , just return 1 ?
+if [ "$1" != "force" -a -f /var/run/restorefactory.pid ];then
+    logger -p user.info -t "restorefactory" "restorfactory is on-going!"
+    echo "restorefactory is on-going!" >/dev/console
+    exit 1
+fi;
+
+
+# make a #.pid lock first.
+rm -f /var/run/restorefactory.pid
+echo $$ > /var/run/restorefactory.pid
+
+logger -p user.info -t "restorefactory" "restoring to factory defaults ..."
+echo " " >/dev/console
+echo "##############################################" >/dev/console
+echo "## restoring to factory defaults ...        ##" >/dev/console
+echo "##############################################" >/dev/console
+echo " " >/dev/console
+
+# blink sys leds.
+if [ -d /sys/class/leds/SYS_LED ];then
+	/etc/init.d/led start
+	echo 100 >/sys/class/leds/SYS_LED/delay_on
+	echo 100 >/sys/class/leds/SYS_LED/delay_off
+
+	#sleep 2
+
+	#echo 1000 >/sys/class/leds/SYS_LED/delay_on
+	#echo 1000 >/sys/class/leds/SYS_LED/delay_off
+fi;
+
+###### custom restore commands begin ###### 
+. /usr/sbin/logger_restore
+cfg_reset_to_dftcfg 
+RET=$?
+###### custom restore commands end ######
+
+# check if operation is success.
+if [ "$RET" -ne "0" ];then
+    logger -p user.info -t "restorefactory" "failed to erase rootfs_data partition, restorefactory failed!"
+    echo "failed to erase rootfs_data partition, restorefactory failed!" >/dev/console
+	exit 1
+fi;
+
+# umount the userconfig, avoid the kernel panic ...
+
+umount /tmp/userconfig
+
+# log it.
+logger -p user.info -t "restorefactory" "restoring is finished, rebooting now ..."
+echo " " >/dev/console
+echo "##############################################" >/dev/console
+echo "## restoring is finished, rebooting now ... ##" >/dev/console
+echo "##############################################" >/dev/console
+echo " " >/dev/console
+# force a quick reboot.
+reboot 
+
+exit 0
+
+
+
+
+
+

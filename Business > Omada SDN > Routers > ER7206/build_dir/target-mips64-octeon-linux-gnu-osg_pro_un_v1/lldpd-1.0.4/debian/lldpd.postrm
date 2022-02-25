@@ -1,0 +1,18 @@
+#!/bin/sh
+
+set -e
+
+#DEBHELPER#
+
+case "$1" in
+    purge)
+	dpkg-statoverride --remove /usr/sbin/lldpcli
+	dpkg-statoverride --quiet --remove /usr/sbin/lldpctl || true
+
+        rm -rf /var/run/lldpd
+    ;;
+    *)
+    ;;
+esac
+
+exit 0

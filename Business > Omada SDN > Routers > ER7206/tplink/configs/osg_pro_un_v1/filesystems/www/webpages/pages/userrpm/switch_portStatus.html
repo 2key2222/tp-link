@@ -1,0 +1,194 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Switch_portStatus</title>
+</head>
+
+<body>
+<div class="func-container">
+
+<form id="switch_portStatus">
+	<div id="switch_portStatus_panel">
+		<div class="container grid-container">
+			<div class="container grid-header-container">
+				<table border="0" cellspacing="0" cellpadding="0">
+					<tr class="grid-header-tr">
+						<th class="grid-header grid-header-0 port">
+							<span class="content">Port</span>
+						</th>
+						<th class="grid-header grid-header-0 port">
+							<span id="pstatus" class="content"></span>
+						</th>
+						<th class="grid-header grid-header-0 port">
+							<span id="linkspeed" class="content"></span>
+						</th>
+						<th class="grid-header grid-header-0 port">
+							<span id="duplex" class="content"></span>
+						</th>
+						<th class="grid-header grid-header-0 port">
+							<span id="traffic" class="content"></span>
+						</th>
+					</tr>
+				</table>
+			</div>
+			<div class="grid-content-container-outer">
+				<div class="grid-content-container" style="overflow:visible;">
+					<table border="0" cellspacing="0" cellpadding="0" id="table">
+						
+					</table>
+				</div>
+			</div>
+		</div>
+		<div id="button-wrap" style="margin-top:30px;">
+			<button id="refresh_btn"></button>
+		</div>
+		
+	</div>
+
+</form>
+     		
+
+	 <div id="switchStatus_help"></div>
+</div>
+
+<script type="text/javascript">
+try{
+    $
+}catch(e){
+    location.href = "/";
+};
+
+$(document).ready(function(e){
+	var URL_STATE = $.su.url("/admin/switch?form=state");
+	var stateProxy = new $.su.Proxy({
+		url: URL_STATE
+	});
+
+    $("#switch_portStatus_panel").panel({
+        title: $.su.CHAR.SWITCH.STATUS,
+        collapsible: false
+    }); 
+
+    $("span#pstatus").html($.su.CHAR.SWITCH.PORT_STATUS);
+    $("span#linkspeed").html($.su.CHAR.SWITCH.SPEED+"(Mbps)");
+    $("span#duplex").html($.su.CHAR.SWITCH.DUPLEX);
+    $("span#traffic").html($.su.CHAR.SWITCH.TRAFFIC_CONTROL);
+    $("button#refresh_btn").html($.su.CHAR.OPERATION.REFRESH);
+
+    var inHTML = "";
+
+    for(var i = 1; i <= 5; i++){
+	    inHTML += "<tr class=\"grid-content-tr grid-content-tr-key-"+i+"\">";
+	    inHTML +=      "<td class=\"grid-content-td grid-content-td-0 grid-content-td-port fst\">";
+	    inHTML +=      	    "<span>Port"+i+"</span>";
+	    inHTML +=	   "</td>";
+	    inHTML +=      "<td class=\"grid-content-td grid-content-td-1 grid-content-td-status-column\">";
+	    inHTML +=	   "</td>";
+	    inHTML +=	   "<td class=\"grid-content-td grid-content-td-2 grid-content-td-speed\">";
+	    inHTML +=	   "</td>";
+	    inHTML +=      "<td class=\"grid-content-td grid-content-td-3 grid-content-td-mode\">";
+	    inHTML +=	   "</td>";
+	    inHTML +=      "<td class=\"grid-content-td grid-content-td-4 grid-content-td-control\">";
+	    inHTML +=	   "</td>";
+	    inHTML += "</tr>";
+    }
+
+    $("#table").html(inHTML);
+
+
+    function loadData(){
+    	$.su.loading.show();
+    	stateProxy.read({
+			'method':'get',
+			'params': {},
+			'id':1
+		},function(data){
+			
+			for(var i = 0; i <= 4; i++){
+				var j = i + 1;
+				var row = $("#table").find("tr.grid-content-tr-key-"+j);
+				var status = $(row).find("td.grid-content-td-1");
+				var speed = $(row).find("td.grid-content-td-2");
+				var mode = $(row).find("td.grid-content-td-3");
+				var control = $(row).find("td.grid-content-td-4");
+
+				switch(data[i].state){	
+					case "disconnected":
+						status.html($.su.CHAR.SWITCH.DISCONNECTED); //"已断开");
+					    break;
+					case "connected":
+						status.html($.su.CHAR.SWITCH.CONNECTED); //"已连接");
+						break;
+					case "disable":
+						status.html($.su.CHAR.GRID.IS_DISABLED); //"已禁用");
+						break;
+					default:
+						status.html($.su.CHAR.SWITCH.UNKOWN);//"未知");
+				}
+
+				if(data[i].state == "disconnected")
+						control.html("---");
+				else
+					switch(data[i].flowcontrol){
+							case "0":
+								control.html($.su.CHAR.SWITCH.DISCONNECTED); //"已断开");
+							    break;
+							case "on":
+								control.html($.su.CHAR.GRID.IS_ENABLED); //"已启用");
+								break;
+							case "off":
+								control.html($.su.CHAR.GRID.IS_DISABLED); //"已禁用");
+								break;
+							default:
+								control.html($.su.CHAR.SWITCH.UNKOWN);//"未知");
+					}
+
+				switch(data[i].duplex){
+					case "0":
+						mode.html($.su.CHAR.SWITCH.DISCONNECTED); //"已断开");
+						break;
+					case "Half":
+						mode.html($.su.CHAR.SWITCH.HALF_DUPLEX);//"半双工");
+						break;
+					case "Full":
+						mode.html($.su.CHAR.SWITCH.FULL_DUPLEX);//"全双工");
+						break;
+					default:
+						mode.html("---");
+				}
+				speed.html(data[i].speed);
+			}
+			$.su.loading.hide();
+			
+		},function(errcode){
+			$.su.loading.hide();
+		},function(fail){
+			$.su.loading.hide();
+		});
+    }
+    
+    loadData();
+    
+    $("button#refresh_btn").button({
+    	handler:function(e){
+    		loadData();
+    	}
+    });
+
+
+
+    
+    
+
+	var switchParameter_help = new $.su.Help({
+		container: "div#switchStatus_help",
+		content: ["SWITCH_STATUS"]
+	});
+});
+</script>
+</body>
+
+</html>
+
+			

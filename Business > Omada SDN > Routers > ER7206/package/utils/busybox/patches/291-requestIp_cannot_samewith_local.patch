@@ -1,0 +1,264 @@
+diff -urN a/networking/udhcp/dhcpc.c b/networking/udhcp/dhcpc.c
+--- a/networking/udhcp/dhcpc.c	2016-05-25 02:00:43.035333400 -0700
++++ b/networking/udhcp/dhcpc.c	2016-07-04 01:48:24.660521676 -0700
+@@ -41,9 +41,183 @@
+ #define DHCP_CLIENT_REBIND_FAIL			12156
+ #define DHCP_CLIENT_DISCOVER_TIMEOUT	12157
+ #define DHCP_CLIENT_REQUEST_TIMEOUT	12158
++#define DHCP_CLIENT_IP_CONFLICT	12159
+ 
+ #define DHCP_CLIENT_LOGGER_REG(info_id,...)			\
+ 	logger_reg(LOGGER_MODULE_ID_DHCP_CLIENT,info_id,##__VA_ARGS__)
++	
++
++#include <stdio.h>
++#include <string.h>
++#include <sys/types.h>
++#include <sys/socket.h>
++#include <net/if.h>
++#include <sys/ioctl.h>
++#include <unistd.h>
++#include <arpa/inet.h>
++#include <malloc.h>
++
++struct interface_ip_mask {
++	char name[IFNAMSIZ];
++	struct in_addr addr;
++	struct in_addr mask;
++};
++
++struct interface_ip_mask *all_ifs = NULL;
++static int all_ifnum = 0;
++
++static int get_interface_ip()
++{
++	int fd = -1;
++	struct ifconf ifc;
++	struct ifreq *buf =NULL;
++	int if_num = 0;
++	unsigned bufsize = 0;
++	
++	all_ifnum = 0;
++	if (all_ifs) {
++		free(all_ifs);
++		all_ifs = NULL;
++	}
++	
++#define MAXIFS 1024
++
++	if((fd = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
++	{
++		goto leave;
++	}
++
++#ifdef SIOCGIFNUM
++	if (ioctl(sock, SIOCGIFNUM, (char *)&if_num) < 0) 
++      {
++		if_num = MAXIFS;
++	}
++#else
++	if_num = MAXIFS;
++#endif
++
++	bufsize = if_num * sizeof(struct ifreq);
++	buf = (struct ifreq *)malloc(bufsize);
++	if (buf == NULL) {
++		goto leave;
++	}
++
++	memset(buf,0, bufsize);
++	ifc.ifc_len = bufsize;
++	ifc.ifc_req = buf;
++	if(ioctl(fd, SIOCGIFCONF, (char *)&ifc) < 0) {
++		goto leave;
++	}
++
++	if_num = ifc.ifc_len / sizeof(struct ifreq);
++	all_ifnum = if_num;
++		
++	all_ifs = (struct interface_ip_mask *)calloc(if_num, sizeof(struct interface_ip_mask));
++	if (!all_ifs) {
++		goto leave;
++	}
++	
++	int pos = 0;
++	while(pos < if_num)
++	{
++
++		if(ioctl(fd,SIOCGIFADDR,(char*)&buf[pos]) < 0)
++		{
++			goto leave;
++		}
++		
++		strncpy(all_ifs[pos].name, buf[pos].ifr_name, IFNAMSIZ - 1);
++		all_ifs[pos].addr = ((struct sockaddr_in *)(&buf[pos].ifr_addr))->sin_addr;
++		
++		if (ioctl(fd, SIOCGIFNETMASK, (char *)&buf[pos]) < 0)
++		{
++			goto leave;
++		}
++		
++		all_ifs[pos].mask = ((struct sockaddr_in *)(&buf[pos].ifr_netmask))->sin_addr;
++
++		pos++;
++	}
++
++leave:
++    if (-1 != fd)
++    {
++        close(fd);
++        fd = -1;
++    }
++      
++    if (NULL != buf)
++    {
++        free(buf);
++        buf = NULL;
++    }
++	
++	return 0;
++}
++
++static int get_lan_dev(char *zone, char *store)
++{
++	char cmd[256] = {0};
++	
++	snprintf(cmd, 256, ". /lib/zone/zone_api.sh; zone_get_effect_devices %s;", zone);
++	
++	FILE *fp = popen(cmd, "r");
++	if (!fp)
++		return -1;
++	
++	char str[32] = {0};
++	if (fgets(str, 32, fp) == NULL) {
++		pclose(fp);
++		return -1;
++	}
++	pclose(fp);
++	
++	int len = strlen(str);
++	if (len <= 0)
++		return -1;
++		
++	if (str[len - 1] == '\n')
++		str[len - 1] = 0;
++	
++	char *space = strchr(str, ' ');
++	if (space)
++		*space = 0;
++	
++	if (strlen(str) <= 0)
++		return -1;
++		
++	strncpy(store, str, 32);
++	
++	return 0;
++}
++
++static int check_ip_available(uint32_t requested_ip)
++{
++	get_interface_ip();
++	if (all_ifnum <= 0 || all_ifs == NULL)
++		return 0;
++		
++	char lan_dev[32] = {0};
++	if (get_lan_dev("LAN", lan_dev) < 0)
++		return -1;
++		
++	int pos = 0;
++	
++	while (pos < all_ifnum) {
++		if (ntohl(all_ifs[pos].addr.s_addr) == requested_ip)
++			return -1;
++		
++		if (strcmp(all_ifs[pos].name, lan_dev) == 0) {
++			if ((ntohl(all_ifs[pos].addr.s_addr) & ntohl(all_ifs[pos].mask.s_addr)) == (requested_ip & ntohl(all_ifs[pos].mask.s_addr)))
++				return -1;
++		}
++		pos++;
++	}
++	
++	return 0;
++}
++
++static char router_x[32] = {0};
+ 
+ #if ENABLE_LONG_OPTS
+ static const char udhcpc_longopts[] ALIGN1 =
+@@ -584,7 +758,10 @@
+ 	char *argv[3];
+ 
+ 	envp = fill_envp(packet);
+-
++	char *tmp = getenv("router");
++	if (tmp) {
++		strncpy(router_x, tmp, 31);
++	}
+ 	/* call script */
+ 	log1("Executing %s %s", client_config.script, name);
+ 	argv[0] = (char*) client_config.script;
+@@ -1568,7 +1745,6 @@
+ 			 * Anyway, it does recover by eventually failing through
+ 			 * into INIT_SELECTING state.
+ 			 */
+-					DHCP_CLIENT_LOGGER_REG(DHCP_CLIENT_REBIND_FAIL,LOGGER_PARAM_STRING,zone_namex/*client_config.interface*/);
+ 					send_renew(xid, server_addr, requested_ip);
+ 					timeout >>= 1;
+ 					continue;
+@@ -1588,6 +1764,7 @@
+ 					timeout >>= 1;
+ 					continue;
+ 				}
++				DHCP_CLIENT_LOGGER_REG(DHCP_CLIENT_REBIND_FAIL,LOGGER_PARAM_STRING,zone_namex/*client_config.interface*/);
+ 				/* Timed out, enter init state */
+ 				bb_info_msg("Lease lost, entering init state");
+ 				udhcp_run_script(NULL, "deconfig");
+@@ -1729,12 +1906,19 @@
+ 				}
+ 				/*xid = packet.xid; - already is */
+ 				requested_ip = packet.yiaddr;
+-
++				
+ 				/* enter requesting state */
+ 				state = REQUESTING;
+ 				timeout = 0;
+ 				packet_num = 0;
+ 				already_waited_sec = 0;
++				
++				/* ip conflict, get ip again */
++				if (check_ip_available(ntohl(requested_ip)) != 0) {
++					state = INIT_SELECTING;
++					DHCP_CLIENT_LOGGER_REG(DHCP_CLIENT_IP_CONFLICT,LOGGER_PARAM_STRING,zone_namex/*client_config.interface*/,LOGGER_PARAM_IPV4,ntohl(requested_ip));
++					sleep(5);
++				}
+ 			}
+ 			continue;
+ 		case REQUESTING:
+@@ -1799,13 +1983,25 @@
+ 				bb_info_msg("Lease of %s obtained, lease time %u",
+ 					inet_ntoa(temp_addr), (unsigned)lease_seconds);
+ 				requested_ip = packet.yiaddr;
++				memset(router_x, 0, 32);
+ 				udhcp_run_script(&packet, state == REQUESTING ? "bound" : "renew");
++				
++				unsigned int router_xx = 0;
++				if (router_x[0]) {
++					char *tt = strrchr(router_x, ' ');
++					if (tt)
++						*tt = 0;
++					router_xx = inet_addr(router_x);
++				}
++				if (router_xx == (unsigned int)-1)
++					router_xx = 0;
++					
+ 				if(state == REQUESTING){
+ 					/****/
+-			DHCP_CLIENT_LOGGER_REG(DHCP_CLIENT_GET_IP_SUC,LOGGER_PARAM_STRING,zone_namex/*client_config.interface*/,LOGGER_PARAM_IPV4,requested_ip,LOGGER_PARAM_IPV4,packet.siaddr_nip);
++			DHCP_CLIENT_LOGGER_REG(DHCP_CLIENT_GET_IP_SUC,LOGGER_PARAM_STRING,zone_namex/*client_config.interface*/,LOGGER_PARAM_IPV4,ntohl(requested_ip),LOGGER_PARAM_IPV4,ntohl(router_xx));
+ 				}else{
+ 					/****/
+-			DHCP_CLIENT_LOGGER_REG(DHCP_CLIENT_REBIND_SUC,LOGGER_PARAM_STRING,zone_namex/*client_config.interface*/,LOGGER_PARAM_IPV4,requested_ip,LOGGER_PARAM_IPV4,packet.siaddr_nip);
++			DHCP_CLIENT_LOGGER_REG(DHCP_CLIENT_REBIND_SUC,LOGGER_PARAM_STRING,zone_namex/*client_config.interface*/,LOGGER_PARAM_IPV4,ntohl(requested_ip),LOGGER_PARAM_IPV4,ntohl(router_xx));
+ 				}
+ 
+ 				state = BOUND;

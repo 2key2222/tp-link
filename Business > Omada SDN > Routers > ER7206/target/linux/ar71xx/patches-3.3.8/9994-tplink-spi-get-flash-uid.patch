@@ -1,0 +1,128 @@
+--- a/drivers/spi/spi.c	星期一 一月 11 14:37:14 2016
++++ b/drivers/spi/spi.c	星期一 一月 11 14:01:16 2016
+@@ -34,6 +34,9 @@
+ #include <linux/delay.h>
+ #include <linux/kthread.h>
+ 
++typedef void l_spi_get_uid_func(const struct spi_device	*spi, char *buf);
++static l_spi_get_uid_func* l_spi_get_uid = NULL;
++
+ static void spidev_release(struct device *dev)
+ {
+ 	struct spi_device	*spi = to_spi_device(dev);
+@@ -47,6 +50,23 @@
+ }
+ 
+ static ssize_t
++device_id_show(struct device *dev, struct device_attribute *a, char *buf)
++{
++	char uid[8];
++	const struct spi_device	*spi = to_spi_device(dev);
++	if(l_spi_get_uid)
++	{
++		l_spi_get_uid(spi,uid);
++		return sprintf(buf, "%08x%08x\n", *(u32*)(uid),*(u32*)(&uid[4]));
++	}
++	else
++	{
++		return sprintf(buf, "%s\n", "none");
++	}
++		
++}
++
++static ssize_t
+ modalias_show(struct device *dev, struct device_attribute *a, char *buf)
+ {
+ 	const struct spi_device	*spi = to_spi_device(dev);
+@@ -56,6 +76,7 @@
+ 
+ static struct device_attribute spi_dev_attrs[] = {
+ 	__ATTR_RO(modalias),
++	__ATTR_RO(device_id),
+ 	__ATTR_NULL,
+ };
+ 
+@@ -508,6 +529,12 @@
+ 	return 0;
+ }
+ 
++int spi_uid_get_register(l_spi_get_uid_func * func)
++{
++	if(func)l_spi_get_uid = func;
++	return 0;
++}
++EXPORT_SYMBOL_GPL(spi_uid_get_register);
+ /*-------------------------------------------------------------------------*/
+ 
+ /**
+--- a/drivers/mtd/devices/m25p80.c	星期一 一月 11 14:37:17 2016
++++ b/drivers/mtd/devices/m25p80.c	星期一 一月 11 14:20:54 2016
+@@ -1070,8 +1070,68 @@
+ };
+ 
+ 
++static void flash_get_uid(const struct spi_device *spi, char * buf)
++{
++	
++	const struct spi_device_id *jid;
++	struct flash_info		*info;
++
++	int			tmp;
++	u8 code[4];;	
++	u8			id[16];
++
++	jid=jedec_probe(spi);
++	if(!IS_ERR(jid))
++		info=(void *)jid->driver_data;
++	switch(JEDEC_MFR(info->jedec_id))
++	{
++		case CFI_MFR_MACRONIX:
++			code[0]=0x5a;
++			code[1]=0x00;
++			code[2]=0x00;
++			code[3]=0x8c;
++			tmp = spi_write_then_read(spi, code, 4, id, 14);
++			if (tmp < 0) {
++				sprintf(buf, "none\n");
++			}
++			else{
++				memcpy(buf,&id[5],8);
++			}
++			break;
++		case 0XC8:/*GD flash device*/
++			code[0] = 0x4b;	
++			tmp = spi_write_then_read(spi, code, 1, id, 12);	
++			if (tmp < 0) {		
++				sprintf(buf, "none\n");	
++			}	
++			else
++			{		
++				memcpy(buf,&id[4],8);	
++			}
++			break;
++		case 0XEF:/*winbond*/
++			code[0] = 0x4b;
++			tmp = spi_write_then_read(spi, code, 1, id, 13);
++			if (tmp < 0) {
++				return sprintf(buf, "none\n");
++			}
++			else
++			{
++				memcpy(buf,&id[5],8);
++			}
++			break;
++		default:
++			sprintf(buf, "none\n");
++			break;
++	}
++}
++
++typedef void l_spi_get_uid_func(const struct spi_device	*spi, char * buf);
++extern int spi_uid_get_register(l_spi_get_uid_func * func);
++
+ static int __init m25p80_init(void)
+ {
++	spi_uid_get_register(flash_get_uid);
+ 	return spi_register_driver(&m25p80_driver);
+ }
+ 

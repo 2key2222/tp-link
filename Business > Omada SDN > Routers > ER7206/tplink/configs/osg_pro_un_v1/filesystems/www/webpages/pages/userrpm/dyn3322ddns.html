@@ -1,0 +1,397 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>dyn3322ddns</title>
+<style type="text/css">
+</style>
+</head>
+
+<body>
+	<div class="func-container" >
+		<div id="div_dyn3322ddns">
+				<div id="dyn3322ddnsGrid" class="ddnsSeries">
+				</div>
+		</div>
+
+		<div id="own_editor">
+			<input id="interface" name="interface">
+			<input id="name" name="name">
+			<input id="passwd" name="passwd">
+			<input id="domain" name="domain">
+			<input id="enable" name="enable">
+		</div>
+
+	 	<div id="dyn3322ddns_alert_cnt">
+			<h4 class="title">
+		    	<span class="icon"></span>
+		 		<span class="text" id="dyn3322ddns_confirm_content"></span>
+		 	</h4>
+		</div> 
+		<div id="link-detail-window">
+	        <table class="link-detail-table detail">
+	            <tr>
+	                <td class="detail-value"></td>
+	            </tr>
+	        </table>
+	    </div>
+
+		<span id="ddns_notice" class="hidden"></span>
+		
+	 	<div id="dyn3322ddns_help"></div>
+
+	</div>
+	
+<script type="text/javascript">
+//<![CDATA[
+	try{
+	    $
+	}catch(e){
+	    location.href = "/";
+	};
+
+	$(document).ready(function(e){
+	var URL_dyn3322ddns = $.su.url("/admin/dyn3322ddns?form=dyn3322ddns"); //data/virtualServers.json
+
+	//$("span#ddns_notice").html($.su.CHAR.VIRTUAL_SERVERS.ddns_ENABLE_NOTICE);
+
+	$("div.func-container").page({
+		title: "3322动态域名",
+		help: ""
+	});
+
+	$("div#div_dyn3322ddns").panel({
+		title: "3322动态域名",
+		collapsible: false
+	});
+	
+	$("input#interface").combobox({
+		fieldLabel: "服务接口",
+		allowBlank: false,					
+		vtype:"string_visible_allow_blank",
+		items:[
+			{name:"---",value:'---'}
+		]
+	});
+	
+	$("input#name").textbox({
+		fieldLabel: "用户名",
+		maxLength:32,
+		vtype:"ascii_visible",
+		allowBlank:"false",
+		tips:"<a target=\"_blank\" href=\"http://www.pubyun.com\">注册用户名</a>"
+
+	});
+
+	$("input#passwd").password({
+		fieldLabel: "密码",
+		maxLength:32,
+		showLevel: false,
+        		vtype: "password",
+		allowBlank:"false"
+	});
+
+	$("input#domain").textbox({
+		fieldLabel: "域名信息",
+		maxLength:253,
+		allowBlank:"false",
+		vtype:"domain"
+	});
+
+	$("input#enable").checkbox({
+		fieldLabel:$.su.CHAR.USERMNGR.ENABLE,
+		defaultValue:["on"],
+		items: [
+			{boxlabel: $.su.CHAR.VIRTUAL_SERVERS.ENABLE_THIS_ENTRY, uncheckedValue:"off", inputValue: "on", id: "chk_enable",  checked:true}
+		]
+	});
+
+	var $linkDetail = $("#link-detail-window").msg({
+        closeBtn: true,
+        cls:"l",
+        title: "域名",
+        type: "window"
+    }).msg("hide");
+
+	function showDetail(domain){
+ 		var domainString = "";  
+		var domainArray = domain.split(';');
+		
+		for(var i = 0; i < domainArray.length; i++){
+			domainString += domainArray[i] + "</br></br>";
+		}
+		$linkDetail.find(".detail-value").html(domainString).css({
+			"lineHeight":"20px",
+			"textAlign":"center",
+			"wordBreak":"break-all"
+		});
+        $linkDetail.msg('show');
+    }
+
+	var virtualProxy = new $.su.Proxy({
+		url: URL_dyn3322ddns
+	});
+
+	var o = $("div#dyn3322ddnsGrid").grid({
+		store:{
+			proxy: virtualProxy,
+			fields: [
+			{name: "interface"},
+			{name: "name"},
+	 		{name: "passwd"},
+	 		{name: "enable"},
+	 		{name: "connState"},
+	 		{name: "domain"}
+			],
+			autoLoad: true
+		},
+		editor: {
+			validator:function(){
+				var editor  = $(o.grid("getEditor"));
+				var interfaceName    = editor.find("#interface").combobox("getValue");
+				//console.log(interfaceName);
+				var store 	= o.grid("getStore");
+				var keyProperty = store.keyProperty;
+				var grid_array  = store.data;
+				
+				var editingId = editor.editor("getEditingId"); 
+				if($.isArray(grid_array) && grid_array.length > 0)
+				{
+					for(var k = 0; k < grid_array.length;k++)
+					{
+						var data = grid_array[k];
+						
+						if(data[keyProperty] == editingId)
+						{
+							continue;
+						}
+						//interface conflict
+						else if(data["interface"] == interfaceName)
+						{
+							//console.log('conflict interface');
+							return false;
+						}
+					}
+				}
+				return true;
+			},
+			content: "#own_editor",
+			fields: [
+			{name: "interface"},
+			{name: "name"},
+			{name: "passwd"},
+			{name: "enable"},
+			{name: "domain"}
+			]
+
+		},
+		paging: {
+		},
+		columns: [
+			{
+				xtype: "checkcolumn",
+				width: 50
+			},
+			{
+				text: "序号", 
+				xtype: "rownumberer",
+				width:50
+			},
+			{
+				text: "服务接口", 
+				width:120,
+				dataIndex: "interface"
+			},
+			{
+				text: "用户名", 
+				width:150,
+				dataIndex: "name"
+				
+			},
+			// {
+			// 	text: "密码", 
+			// 	width:120,
+			// 	dataIndex: "passwd"
+				
+			// },
+			{
+				text: "启用/禁用", 
+				width:120,
+				dataIndex: "enable",
+				xtype: "statuscolumn"
+			},
+			{
+				text: "状态", 
+				width:150,
+				dataIndex: "connState",
+				renderer: function(v)
+				{
+					switch(v)
+					{
+						case '0' :
+							return '服务没有运行';
+						case '1' :
+							return '服务正在连接，请稍候';
+						case '2' :
+							return '服务已运行';
+						case '3' :
+							return '用户名或密码错误';
+						case '4' :
+							return '域名错误';
+						case '5' :
+							return '服务被阻止';
+						default :
+							return '服务正在连接，请稍候';
+					}
+				}
+			},
+			{
+				text: "域名", 
+				width:150,
+				dataIndex: "domain",
+				renderer: function(dd, index, data){
+					//console.log(data.domain);
+					var domainArray= new Array(); 
+					var domainString = "";
+					if("" == data.domain || typeof data.domain == "undefined"){
+						return "---";
+					}
+					domainArray = data.domain.split(';');
+					switch(domainArray.length){
+						case 0:
+							return "---";
+							break;
+						case 1:
+							return domainArray[0];
+							break;
+						case 2:
+							return domainArray[0] + "</br>" + domainArray[1];
+							break;
+						default:
+							return domainArray[0] + "&nbsp&nbsp" + "<a href='javascript:void(0);' class='btn-detail' data-index='"+ index +"'>更多</a>";
+							break;
+					}        
+                }
+				/*
+				renderer:function(v)
+				{
+					var domainArray= new Array();   
+					domainArray = v.split(';');
+
+					if(domainArray.length > 0)
+					{
+						return domainArray[0];
+					}
+					else
+					{
+						return v;
+					}
+				}*/
+			},
+			{
+				xtype: "settings"
+			}
+		],
+		operation: "prompt|add|delete"
+	}).on("ev_load", function(e,data, others){
+			if(others)
+			{
+				maxrules = others.max_rules;
+			}
+			var interfaceItem=[];
+			var interfaceProxy = new $.su.Proxy({
+					url: $.su.url('/admin/interface?form=status'),
+					async: false
+			});		
+			interfaceProxy.read({}, function(data){
+				//	console.log("length: "+data.vpn.length);						
+				var i
+				for (i=0; i<data.normal.length; i++){
+					if ($.su.func.isLan(data.normal[i].t_name) && data.normal[i].t_name != "LAN") {
+						continue
+					}
+					interfaceItem.push({name:data.normal[i].t_label,value:data.normal[i].t_name});						
+				}
+				for (i=0; i<data.vpn.length; i++){						
+					interfaceItem.push({name:data.vpn[i].t_label,value:data.vpn[i].t_name});	
+				}	
+			});	
+			var editor = $("div#dyn3322ddnsGrid").grid("getEditor");
+			var combobox = $(editor).find('.combobox-value[name=interface]');
+				combobox.combobox('loadData',interfaceItem);
+		}).delegate('a.btn-detail', 'click', function(e){
+        var index = $(this).data('index');
+        showDetail(o.grid("getStore").data[index].domain);
+        //console.log(o.grid("getStore").data[index].domain);
+    });
+
+
+	var editor = $("div#dyn3322ddnsGrid").grid("getEditor");
+	$(editor).on("ev_startEdit", function(e, index, key){
+		var ifSelected = {};
+		var interfaceItem=[];
+		var interfaceProxy = new $.su.Proxy({
+				url: $.su.url('/admin/interface?form=status'),
+				async: false
+		});		
+		var data = $("div#dyn3322ddnsGrid").grid("getStore").data;
+		for (i = 0; i < data.length; i++) {
+			ifSelected[data[i]["interface"]] = data[i]["interface"];
+		}	
+		// delete the selected interfaces from all interfaces
+		interfaceProxy.read({}, function(data){				
+			for (i=0; i<data.normal.length; i++){
+				if (ifSelected[data.normal[i].t_name]) {
+					continue;
+				}
+				interfaceItem.push({name:data.normal[i].t_label,value:""+data.normal[i].t_name});						
+			}
+			for (i=0; i<data.vpn.length; i++){						
+				if (ifSelected[data.vpn[i].t_name]) {
+					continue;
+				}
+				interfaceItem.push({name:data.vpn[i].t_label,value:""+data.vpn[i].t_name});	
+			}			
+		});	
+		if (index != 'add'){
+			var dyn3322ddnsData = $("div#dyn3322ddnsGrid").grid("getStore").getData(key)
+			var ifnameItem = dyn3322ddnsData['interface'];
+			var ifname = [];
+			ifname.push({name:""+ifnameItem, value:""+ifnameItem, selected:true});
+			$(editor).find("#interface").combobox("reset");
+			$(editor).find("#interface").combobox("loadData", ifname);
+			//$(editor).find("#interface").combobox("disable");
+			var ifbox = $(editor).find('.combobox-container');
+			//console.log(ifbox[0]);
+			$(ifbox[0]).addClass('disabled');
+		}
+		else {
+			$(editor).find("#interface").combobox("enable");
+			$(editor).find("#interface").combobox("loadData", interfaceItem);
+			$(editor).find("#passwd").password("setValue", "");
+		}
+	});
+
+	
+	$("#dyn3322ddns_alert_cnt").msg({
+		okHandler:function(){
+			$($("div#dyn3322ddnsGrid").grid("getEditor")).editor("completeEdit");
+		},
+		cls:"m warning",
+		cancelHandler:function(){
+			return true;
+		},
+		type: "prompt"
+	});
+
+	$("#dyn3322ddns_confirm_content").html();
+
+	var helpDyn3322ddns = new $.su.Help({
+		container: "div#dyn3322ddns_help",
+		content: "DYN3322DDNS"
+	});
+
+});
+</script>
+</body>
+</html>

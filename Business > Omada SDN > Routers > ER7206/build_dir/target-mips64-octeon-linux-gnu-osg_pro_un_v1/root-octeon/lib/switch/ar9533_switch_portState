@@ -1,0 +1,102 @@
+#!/bin/sh
+
+
+# get port state
+# $1: portid
+hex()
+{
+	echo `echo $1 |awk '{printf("%x"),$0}'`
+}
+
+get_port_state()
+{
+	local port=$1
+	local val=0
+	local bit=0
+
+	local port_state=0
+	local port_speed=0
+	local port_dup_mode=0
+	local port_flowcontrol="off"
+	local reg=0x11
+
+	val=`swconfig_phy_reg_read $(($port-1)) $reg`
+	bit=`get_bit_value $val 10`
+
+	if [ $bit -eq 1 ]; then
+		port_state="connected"
+
+		#get speed
+		speed=`get_bit_value $val 14`
+		if [ $speed -eq 1 ];then
+			port_speed="100M"
+		else
+			port_speed="10M"
+		fi
+
+		# get duplex mode
+		duplex=`get_bit_value $val 13`
+		if [ $duplex -eq 1 ]; then
+			port_dup_mode="Full"
+		else
+			port_dup_mode="Half"
+		fi
+
+		local st_reg=$(hex $((0x100*($port+1))))
+		val=$(swconfig_reg_read $st_reg)
+		bit=`get_bit_value $val 4`
+		if [ $bit -eq 1 ]; then
+			port_flowcontrol="on"
+		else
+			bit=`get_bit_value $val 5`
+			if [ $bit -eq 1 ]; then
+				port_flowcontrol="on"
+			else
+				port_flowcontrol="off"
+			fi
+		fi
+	else
+		port_state="disconnected"
+
+		port_speed="---"
+		port_dup_mode="---"
+		port_flowcontrol="---"
+	fi	
+
+	echo "Port $port:"
+	echo "   state       : $port_state "
+	echo "   speed       : $port_speed "
+	echo "   dup_mode    : $port_dup_mode "
+	echo "   flowcontrol : $port_flowcontrol "
+	echo ""
+}
+
+
+stata_arg_check()
+{
+	local portsid=$1
+
+	for i in $portsid; do
+		if [ `expr match $i "[0-9]"` = 0 ] || [ $i -lt 1 ] || [ $i -gt 5 ] ;then
+		echo "[state] port is invalid. (1~5)"
+		exit 0
+		fi
+	done
+}
+# rtl8367s switch get port state
+# $1: op (get)
+# $2: portsid (1.2.3.4.5)
+ar9533_switch_port_state()
+{
+	local op=$1
+	local portsid=$2
+
+	if [ $op = "get" ]; then	
+		stata_arg_check "$portsid"
+		for i in $portsid; do			
+			get_port_state $i
+		done
+	else
+		echo "[state] error op. (get)"
+	fi
+}

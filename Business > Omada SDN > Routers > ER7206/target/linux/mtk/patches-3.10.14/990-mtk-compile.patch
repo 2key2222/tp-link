@@ -1,0 +1,24 @@
+diff -urN a/ralink/Kconfig b/ralink/Kconfig
+--- a/ralink/Kconfig	2014-09-02 16:43:04.000000000 +0800
++++ b/ralink/Kconfig	2016-12-08 21:20:47.733529949 +0800
+@@ -203,9 +203,6 @@
+         default 5592 if FIRST_IF_RT5592
+         default 3593 if FIRST_IF_RT3593
+         default 7610 if FIRST_IF_MT7610E
+-	default 7612e if FIRST_IF_MT7612E
+-	default 7602e if FIRST_IF_MT7602E
+-	default 7603e if FIRST_IF_MT7603E
+         
+ config  RT_SECOND_CARD
+         int
+@@ -218,10 +215,6 @@
+         default 8592 if SECOND_IF_RT8592
+         default 3572 if SECOND_IF_RT3572
+         default 5572 if SECOND_IF_RT5572
+-	default 7612e if SECOND_IF_MT7612E
+-	default 7612u if SECOND_IF_MT7612U
+-	default 7602e if SECOND_IF_MT7602E
+-	default 7603e if SECOND_IF_MT7603E
+         
+ config  RT_FIRST_IF_RF_OFFSET
+         hex

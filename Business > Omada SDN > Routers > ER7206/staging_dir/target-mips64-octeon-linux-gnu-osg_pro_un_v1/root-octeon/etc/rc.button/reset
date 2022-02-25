@@ -1,0 +1,55 @@
+#!/bin/sh
+
+. /lib/functions.sh
+
+# if restorfactory is on-going , just return 1 ?
+if [ -f /var/run/restorefactory.pid ];then
+    logger -p user.info -t "restorefactory" "restorfactory is on-going!"
+    echo "restorefactory is on-going!" >/dev/console
+    exit 1
+fi;
+
+TIMEOUT=5
+PID_FILE=/var/run/sleep_restorefacotry.pid
+
+case ${ACTION} in
+pressed)
+    #echo "${BUTTON} pressed at `date`" >/dev/console
+	if [ -d /sys/class/leds/SYS_LED ];then
+		echo 0 > /sys/class/leds/SYS_LED/brightness
+		echo 1 > /sys/class/leds/SYS_LED/brightness
+	fi;
+    if [ -f ${PID_FILE} ];then
+        read PID < ${PID_FILE} && kill ${PID} && rm -f ${PID_FILE}
+    fi;
+
+    sleep "${TIMEOUT}" && /sbin/restorefactory &
+    echo $! > ${PID_FILE}
+
+    cat ${PID_FILE}
+
+;;
+
+released)
+    #echo "${BUTTON} released at `date`" >/dev/console
+	if [ -d /sys/class/leds/SYS_LED ];then
+		/etc/init.d/led_set start
+	fi;
+    if [ "${SEEN}" -lt ${TIMEOUT} ]; then
+	    if [ -f ${PID_FILE} ]; then
+            read PID < ${PID_FILE} && kill ${PID} && rm -f ${PID_FILE}
+            #echo "restorefactor abort at `date`" >/dev/console
+        fi;
+    fi;
+
+;;
+
+*)
+    #echo "${BUTTON} got unknown action[${ACTION}] at `date`" >/dev/console
+;;
+
+esac
+
+exit 0
+
+

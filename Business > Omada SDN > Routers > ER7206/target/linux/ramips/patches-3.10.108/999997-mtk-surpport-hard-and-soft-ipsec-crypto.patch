@@ -1,0 +1,365 @@
+diff -Nuar a/include/linux/skbuff.h b/include/linux/skbuff.h
+--- a/include/linux/skbuff.h	2020-07-17 19:02:42.000000000 +0800
++++ b/include/linux/skbuff.h	2020-07-21 16:23:27.000000000 +0800
+@@ -506,6 +506,7 @@
+ 	dma_cookie_t		dma_cookie;
+ #endif
+ #ifdef CONFIG_NETWORK_SECMARK
++#define RA_SOFT_CRYPTO_SEC_MARK  0x11223344
+ 	__u32			secmark;
+ #endif
+ 	union {
+diff -Nuar a/net/ipv4/esp4.c b/net/ipv4/esp4.c
+--- a/net/ipv4/esp4.c	2018-09-03 10:15:18.000000000 +0800
++++ b/net/ipv4/esp4.c	2020-07-21 16:34:41.000000000 +0800
+@@ -18,6 +18,9 @@
+ #include <net/protocol.h>
+ #include <net/udp.h>
+ 
++static int esp_output(struct xfrm_state *x, struct sk_buff *skb);
++static int esp_input(struct xfrm_state *x, struct sk_buff *skb);
++
+ #if defined (CONFIG_RALINK_HWCRYPTO) || defined (CONFIG_RALINK_HWCRYPTO_MODULE)
+ extern int 
+ ipsec_esp_output(
+@@ -29,7 +32,40 @@
+ 	struct xfrm_state *x, 
+ 	struct sk_buff *skb
+ );
+-#else
++
++int stub_esp_output(struct xfrm_state *x, struct sk_buff *skb)
++{
++	int err = 0;
++
++#ifdef CONFIG_NETWORK_SECMARK
++    if(skb->secmark == RA_SOFT_CRYPTO_SEC_MARK)
++        err = esp_output(x, skb);
++    else
++        err = ipsec_esp_output(x, skb);
++#else    
++        err = ipsec_esp_output(x, skb);
++#endif
++
++    return err;
++}
++
++int stub_esp_input(struct xfrm_state *x, struct sk_buff *skb)
++{
++	int err = 0;
++
++#ifdef CONFIG_NETWORK_SECMARK
++    if(skb->secmark == RA_SOFT_CRYPTO_SEC_MARK)
++        err = esp_input(x, skb);
++    else
++        err = ipsec_esp_input(x, skb);
++#else    
++        err = ipsec_esp_input(x, skb);
++#endif
++
++    return err;
++}
++
++#endif
+ struct esp_skb_cb {
+ 	struct xfrm_skb_cb xfrm;
+ 	void *tmp;
+@@ -468,7 +504,6 @@
+ out:
+ 	return err;
+ }
+-#endif /* #if defined (CONFIG_RALINK_HWCRYPTO) || defined (CONFIG_RALINK_HWCRYPTO_MODULE) */
+ 
+ static u32 esp4_get_mtu(struct xfrm_state *x, int mtu)
+ {
+@@ -717,8 +752,8 @@
+ 	.destructor	= esp_destroy,
+ 	.get_mtu	= esp4_get_mtu,
+ #if defined (CONFIG_RALINK_HWCRYPTO) || defined (CONFIG_RALINK_HWCRYPTO_MODULE)
+-	.input		= ipsec_esp_input,
+-	.output		= ipsec_esp_output
++	.input		= stub_esp_input,
++	.output		= stub_esp_output
+ #else
+ 	.input		= esp_input,
+ 	.output		= esp_output
+diff -Nuar a/net/ipv4/mtk_esp4.c b/net/ipv4/mtk_esp4.c
+--- a/net/ipv4/mtk_esp4.c	2018-09-03 10:15:18.000000000 +0800
++++ b/net/ipv4/mtk_esp4.c	2020-07-22 08:16:07.790412065 +0800
+@@ -2650,6 +2650,77 @@
+ EXPORT_SYMBOL(ipsec_eip93_adapters_init);
+ EXPORT_SYMBOL(ipsec_cryptoLock_init);
+ 
++
++int ipsec_hw_cap(struct xfrm_state *x, unsigned int direction)
++{
++    int ret = 0;
++	ipsecEip93Adapter_t **ipsecEip93AdapterList;
++	unsigned int i = 0;
++	ipsecEip93Adapter_t *currAdapterPtr;
++	unsigned int spi = x->id.spi;
++#if defined (CONFIG_HWCRYPTO_MEMPOOL)
++	unsigned int* spi_tbl;
++#endif
++
++	if (direction == HASH_DIGEST_OUT)
++	{
++		spin_lock(&ipsec_adapters_outlock);
++		ipsecEip93AdapterList = &ipsecEip93AdapterListOut[0];
++#if defined (CONFIG_HWCRYPTO_MEMPOOL)
++		spi_tbl = spi_outbound_tbl;
++#endif
++	}
++	else
++	{
++		spin_lock(&ipsec_adapters_inlock);
++		ipsecEip93AdapterList = &ipsecEip93AdapterListIn[0];
++#if defined (CONFIG_HWCRYPTO_MEMPOOL)
++		spi_tbl = spi_inbound_tbl;
++#endif
++	}
++
++	//try to find the matched ipsecEip93Adapter for the ipsec flow
++	for (i = 0; i < IPESC_EIP93_ADAPTERS; i++)
++	{
++#if defined (CONFIG_HWCRYPTO_MEMPOOL)
++		if (spi_tbl[i]!=0xFFFFFFFF)
++		{
++			if (spi_tbl[i]==spi)
++			{
++                ret = 1;
++                goto leave;
++			}
++		}
++#else
++		if ((currAdapterPtr = ipsecEip93AdapterList[i]) != NULL)
++		{
++			if (currAdapterPtr->spi == spi)
++			{
++                ret = 1;
++                goto leave;
++			}
++		}
++#endif
++		else
++		{
++            ret = 1;
++            goto leave;
++		}
++	}
++
++leave:
++	if (direction == HASH_DIGEST_OUT)
++		spin_unlock(&ipsec_adapters_outlock);
++	else
++		spin_unlock(&ipsec_adapters_inlock);
++
++    return ret;
++	
++}
++
++EXPORT_SYMBOL(ipsec_hw_cap);
++
++
+ /*_______________________________________________________________________
+ **function name: ipsec_BH_handler_resultGet
+ **
+diff -Nuar a/net/ipv4/xfrm4_mode_transport.c b/net/ipv4/xfrm4_mode_transport.c
+--- a/net/ipv4/xfrm4_mode_transport.c	2018-09-03 10:15:19.000000000 +0800
++++ b/net/ipv4/xfrm4_mode_transport.c	2020-07-21 16:35:35.000000000 +0800
+@@ -39,8 +39,14 @@
+ 				offset = 8;
+ 			else
+ 				offset = 0;
+-		}		
+-		skb_set_network_header(skb, -offset);
++		}	
++
++#ifdef CONFIG_NETWORK_SECMARK
++        if(skb->secmark == RA_SOFT_CRYPTO_SEC_MARK)
++            skb_set_network_header(skb, -x->props.header_len);
++        else
++#endif
++		    skb_set_network_header(skb, -offset);
+ 	}
+ #else
+ 	skb_set_network_header(skb, -x->props.header_len);
+diff -Nuar a/net/ipv4/xfrm4_mode_tunnel.c b/net/ipv4/xfrm4_mode_tunnel.c
+--- a/net/ipv4/xfrm4_mode_tunnel.c	2018-09-03 10:15:19.000000000 +0800
++++ b/net/ipv4/xfrm4_mode_tunnel.c	2020-07-21 16:35:02.000000000 +0800
+@@ -108,8 +108,14 @@
+ 				offset = 8;
+ 			else
+ 				offset = 0;
+-		}		
+-		skb_set_network_header(skb, -offset);
++		}	
++        
++#ifdef CONFIG_NETWORK_SECMARK
++        if(skb->secmark == RA_SOFT_CRYPTO_SEC_MARK)
++            skb_set_network_header(skb, -x->props.header_len);
++        else
++#endif
++		    skb_set_network_header(skb, -offset);
+ 	}
+ #else
+ 	skb_set_network_header(skb, -x->props.header_len);
+diff -Nuar a/net/xfrm/xfrm_input.c b/net/xfrm/xfrm_input.c
+--- a/net/xfrm/xfrm_input.c	2018-09-03 10:15:23.000000000 +0800
++++ b/net/xfrm/xfrm_input.c	2020-07-22 08:29:21.597454546 +0800
+@@ -16,6 +16,10 @@
+ 
+ static struct kmem_cache *secpath_cachep __read_mostly;
+ 
++#if defined (CONFIG_RALINK_HWCRYPTO) || defined (CONFIG_RALINK_HWCRYPTO_MODULE)
++extern int ipsec_hw_cap(struct xfrm_state *x, unsigned int direction);
++#endif
++
+ void __secpath_destroy(struct sec_path *sp)
+ {
+ 	int i;
+@@ -193,6 +197,26 @@
+ 		skb_dst_force(skb);
+ 
+ #if defined (CONFIG_RALINK_HWCRYPTO) || defined (CONFIG_RALINK_HWCRYPTO_MODULE)
++#ifdef CONFIG_NETWORK_SECMARK
++        if(!ipsec_hw_cap(x, 1)){
++            skb->secmark = RA_SOFT_CRYPTO_SEC_MARK;
++        } else {
++            skb->secmark = 0;
++        }
++
++        if (skb->secmark != RA_SOFT_CRYPTO_SEC_MARK)
++        {
++            if (family == AF_INET)
++            {
++                if (x->type->input(x, skb) == 1)
++                {
++                    return 0;
++                }
++                else
++                    goto drop;
++            }
++        }
++#else
+ 		if (family == AF_INET)
+ 		{
+ 			if (x->type->input(x, skb) == 1)
+@@ -204,6 +228,9 @@
+ 		}
+ 		else	
+ #endif
++
++#endif
++
+ 		nexthdr = x->type->input(x, skb);
+ 
+ 		if (nexthdr == -EINPROGRESS)
+diff -Nuar a/net/xfrm/xfrm_output.c b/net/xfrm/xfrm_output.c
+--- a/net/xfrm/xfrm_output.c	2018-09-03 10:15:23.000000000 +0800
++++ b/net/xfrm/xfrm_output.c	2020-07-22 08:30:10.079544634 +0800
+@@ -22,6 +22,10 @@
+ #include "../nat/hw_nat/ra_nat.h"
+ #endif
+ 
++#if defined (CONFIG_RALINK_HWCRYPTO) || defined (CONFIG_RALINK_HWCRYPTO_MODULE)
++extern int ipsec_hw_cap(struct xfrm_state *x, unsigned int direction);
++#endif
++
+ static int xfrm_output2(struct sk_buff *skb);
+ #if defined (CONFIG_RALINK_HWCRYPTO) || defined (CONFIG_RALINK_HWCRYPTO_MODULE)
+ int xfrm_skb_check_space(struct sk_buff *skb)
+@@ -53,6 +57,16 @@
+ 	if (err <= 0)
+ 		goto resume;
+ 
++#if defined (CONFIG_RALINK_HWCRYPTO) || defined (CONFIG_RALINK_HWCRYPTO_MODULE)
++#ifdef CONFIG_NETWORK_SECMARK
++    if(!ipsec_hw_cap(x, 0)){
++        skb->secmark = RA_SOFT_CRYPTO_SEC_MARK;
++    } else {
++        skb->secmark = 0;
++    }
++#endif
++#endif
++
+ 	do {
+ 		err = xfrm_skb_check_space(skb);
+ 		if (err) {
+@@ -104,18 +118,46 @@
+ 
+ 		err = x->type->output(x, skb);
+ #if defined (CONFIG_RALINK_HWCRYPTO) || defined (CONFIG_RALINK_HWCRYPTO_MODULE)
++
++#ifdef CONFIG_NETWORK_SECMARK
++        if(skb->secmark != RA_SOFT_CRYPTO_SEC_MARK)
++        {
++            if (skb->protocol == htons(ETH_P_IP))
++            {   
++                if (err == 1)
++                    return err;
++            } 
++        }
++#else
+ 		if (skb->protocol == htons(ETH_P_IP))
+ 		{	
+ 			if (err == 1)
+ 				return err;
+ 		}		
++#endif
++
+ #endif	
+ 		if (err == -EINPROGRESS)
+ 			goto out_exit;
+ 
+ resume:
+ #if defined (CONFIG_RALINK_HWCRYPTO) || defined (CONFIG_RALINK_HWCRYPTO_MODULE)
+-		if (skb->protocol == htons(ETH_P_IPV6))
++
++#ifdef CONFIG_NETWORK_SECMARK
++        if (skb->secmark == RA_SOFT_CRYPTO_SEC_MARK){
++            if (err) {
++                XFRM_INC_STATS(net, LINUX_MIB_XFRMOUTSTATEPROTOERROR);
++                goto error_nolock;
++            }
++            
++            dst = skb_dst_pop(skb);
++        }
++        else 
++#endif
++        if(skb->protocol == htons(ETH_P_IPV6)) {
++            dst = skb_dst_pop(skb);
++        }
++
+ #else	
+ 		{
+ 		if (err) {
+@@ -123,8 +165,9 @@
+ 			goto error_nolock;
+ 		}
+ 		}
+-#endif
+ 		dst = skb_dst_pop(skb);
++
++#endif
+ 		if (!dst) {
+ 			XFRM_INC_STATS(net, LINUX_MIB_XFRMOUTERROR);
+ 			err = -EHOSTUNREACH;
+@@ -167,8 +210,17 @@
+ 	if (err == -EINPROGRESS)
+ 		err = 0;
+ #if defined (CONFIG_RALINK_HWCRYPTO) || defined (CONFIG_RALINK_HWCRYPTO_MODULE)
++
++#ifdef CONFIG_NETWORK_SECMARK
++    if(skb->secmark != RA_SOFT_CRYPTO_SEC_MARK)
++    {
++    	if (skb->protocol = htons(ETH_P_IP))
++    		return 0;
++    }
++#else
+ 	if (skb->protocol = htons(ETH_P_IP))
+ 		return 0;
++#endif
+ #endif	
+ out:
+ 	return err;

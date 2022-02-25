@@ -1,0 +1,134 @@
+#!/bin/sh
+
+. /lib/zone/zone_api.sh
+
+OP=$1
+INTERVAL=$2
+
+echo "ipstat-mini OP=${OP},INTERVAL=${INTERVAL}"
+
+STAT_DIR=/tmp/ifstat-mini
+STAT_CUR=${STAT_DIR}/stat_current
+STAT_CUR_BUILD=${STAT_DIR}/stat_current_build
+STAT_CUR_BUILD_DEV=${STAT_DIR}/stat_current_build_dev
+STAT_PREV=${STAT_DIR}/stat_prev
+STAT_PREV_BUILD=${STAT_DIR}/stat_prev_build
+STAT_INTERVAL=${STAT_DIR}/stat_interval
+ZONE_LIST="LAN"
+
+get_ifstat()
+{ 
+    anete cat /proc/net/dev > ${STAT_CUR_BUILD_DEV} 2>/dev/null
+}
+
+get_wanmode()
+{
+    ZONE_LIST="LAN"
+    local wanmode=`uci get network.@interface_mode[0].wanmode`
+    local wan_numbers=`uci get network.@interface_mode[0].wan_numbers`
+    local singlewan=`uci get network.@interface_mode[0].singlewan`
+    [ $singlewan = "0" ] && {
+    # singlewan = 0, return ZONE_LIST="LAN WAN1 WAN2 ..."
+        local WAN_LIST=""
+        [ -z "${wan_numbers}" ] && wan_numbers="$(seq 1 $wanmode)"
+        for i in ${wan_numbers}; do
+            WAN_LIST="WAN$i $WAN_LIST"
+        done
+        ZONE_LIST="$ZONE_LIST $WAN_LIST"
+
+        ZONE_LIST="$(zone_get_zonelist)"
+
+        return
+    }
+    # singlewan = 1, return ZONE_LIST="LAN WAN"
+    ZONE_LIST="$ZONE_LIST WAN"
+
+    ZONE_LIST="$(zone_get_zonelist)"
+
+    return
+}
+
+if [ "${OP}" == "clean" ];then
+
+    rm -f ${STAT_CUR}
+    rm -f ${STAT_PREV}
+
+    exit 0
+fi
+
+if [ "${OP}" == "start" ];then
+
+
+    if [ -z ${INTERVAL} ];then
+        INTERVAL=10
+    fi;
+
+    mkdir -p ${STAT_DIR}
+    local start_time=0
+    local end_time=0
+
+    while true
+    do
+        get_wanmode
+        touch ${STAT_CUR_BUILD}
+        touch ${STAT_PREV_BUILD}
+        get_ifstat
+        end_time=$start_time
+        start_time=`date +%s`
+
+        for zone_name in $ZONE_LIST; do
+            [ "$zone_name" == "VPN" ] && continue
+            dev_name=`zone_get_effect_devices $zone_name`
+
+            iface_pre=${zone_name:0:3}
+            iface_num=${zone_name:3:1}
+            [ $iface_pre = "WAN" ] && {
+                dev_type=`uci get network.wan${iface_num}_eth.type 2>/dev/null`
+                [ "$dev_type" == "bridge" ] && {
+                    dev_name="br-wan${iface_num}_eth"
+                } || {
+                    dev_name=`uci get network.wan${iface_num}_eth.ifname`
+                }
+                #echo "$dev_name" > /dev/console
+            }
+        
+            data_init="$zone_name: 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"
+            data_old=`cat ${STAT_CUR} 2>/dev/null | grep -w "$zone_name:"`
+            data_new=`cat ${STAT_CUR_BUILD_DEV} 2>/dev/null | grep -w "$dev_name:"`
+            if [ -z "$data_new" ]; then
+                data_new="$data_init"
+                data_old="$data_init"
+            else
+                data_new=${data_new/$dev_name:/$zone_name:}
+                [ -z $data_old ] && data_old="$data_new"
+            fi
+
+            echo $data_new >> ${STAT_CUR_BUILD}
+            echo $data_old >> ${STAT_PREV_BUILD}
+        done
+        mv -f ${STAT_PREV_BUILD} ${STAT_PREV} 2>/dev/null
+        mv -f ${STAT_CUR_BUILD} ${STAT_CUR} 2>/dev/null
+        echo "$((start_time-end_time))" > ${STAT_INTERVAL}
+
+        sleep ${INTERVAL}
+    done
+fi
+
+
+# old implementation, backup
+# if [ "${OP}" == "start" ];then
+
+
+#	if [ -z ${INTERVAL} ];then 
+#		INTERVAL=10 
+#	fi;
+
+#	mkdir -p ${STAT_DIR} 
+
+#	while true
+#	do
+#		sleep ${INTERVAL}
+#		mv -f ${STAT_CUR} ${STAT_PREV}
+#		cat /proc/net/dev 2>/dev/null | sed '1,2d' > ${STAT_CUR}
+#	done
+# fi

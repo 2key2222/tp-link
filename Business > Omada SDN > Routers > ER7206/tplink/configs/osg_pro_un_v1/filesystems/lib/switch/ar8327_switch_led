@@ -1,0 +1,15 @@
+#!/bin/sh
+
+set_led_by_wan_number(){
+	local wan_num=$1
+	swconfig_reg_write 0x58 0x08018801
+	if [ ${wan_num} -eq 1 ] ;then
+		swconfig_reg_write 0x5c 0xF3CF00
+	elif [ ${wan_num} -eq 2 ] ;then
+		swconfig_reg_write 0x5c 0xF3EF00
+	elif [ ${wan_num} -eq 3 ] ;then
+		swconfig_reg_write 0x5c 0xFBEF00
+	elif [ ${wan_num} -eq 4 ] ;then
+		swconfig_reg_write 0x5c 0x2FBEF00
+	fi	
+}

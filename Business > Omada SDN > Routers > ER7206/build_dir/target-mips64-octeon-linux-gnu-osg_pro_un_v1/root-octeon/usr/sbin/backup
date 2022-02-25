@@ -1,0 +1,16 @@
+# Copyight(c) 2008-2015 Shenzhen TP-LINK Technologies Co.Ltd.
+# file     backup.sh
+# bief     
+# author   Yuan Fengjia
+# vesion   1.0.0
+# history  1.0.0, 13May15, Yuanfengjia, Ceate the file
+
+. /lib/functions.sh
+
+cd /etc/
+tar -cf user_config.tar config/
+mv user_config.tar /tmp/
+
+#tftp server ip:192.168.1.100,GE5 ip:192.168.1.1
+cd /tmp/
+tftp -pl user_config.tar 192.168.1.100

@@ -1,0 +1,23 @@
+diff -urN a/drivers/mtd/ralink/ralink_bbu_spi.c b/drivers/mtd/ralink/ralink_bbu_spi.c
+--- a/drivers/mtd/ralink/ralink_bbu_spi.c	2018-09-03 10:14:04.000000000 +0800
++++ b/drivers/mtd/ralink/ralink_bbu_spi.c	2019-06-27 19:06:37.444802594 +0800
+@@ -465,7 +465,7 @@ static struct chip_info chips_data [] = 
+ 	{ "GD25Q32B",           0xC8, 0x40160000, 64 * 1024, 64,  0 },
+ 	{ "GD25Q64B",           0xC8, 0x40170000, 64 * 1024, 128, 0 },
+ 	{ "GD25Q128C",          0xC8, 0x40180000, 64 * 1024, 256, 0 },
+-
++	{ "XM25QH128",          0x20, 0x70180000, 64 * 1024, 256,  0 },
+ };
+ 
+ 
+diff -uNr a/drivers/mtd/devices/slp_flash.h b/drivers/mtd/devices/slp_flash.h
+--- a/drivers/mtd/devices/slp_flash.h	2018-01-15 16:18:53.213268400 +0800
++++ b/drivers/mtd/devices/slp_flash.h	2018-01-16 09:20:31.245958206 +0800
+@@ -137,6 +137,7 @@
+ 	{ "gd25q128C",  {.jedec_id=0xc84018, .opcode=0x4b, .addr=0,     .read_delay=1, .uid_len=FLASH_UID_LEN_128_BIT} },
+ 	{ "W25Q128BV",  {.jedec_id=0xef4018, .opcode=0x4b, .addr=0,     .read_delay=1, .uid_len=FLASH_UID_LEN_128_BIT} },
+ 	{ "mx25l12805d",{.jedec_id=0xc22018, .opcode=0x5a, .addr=0x8c,  .read_delay=6, .uid_len=FLASH_UID_LEN_128_BIT} },
++	{ "xm25qh128",  {.jedec_id=0x207018, .opcode=0x5a, .addr=0x80,  .read_delay=1, .uid_len=FLASH_UID_LEN_128_BIT} },
+ };
+ 
+ extern int ramtd_read(struct mtd_info *mtd, loff_t from, size_t len, size_t *retlen, u_char *buf);

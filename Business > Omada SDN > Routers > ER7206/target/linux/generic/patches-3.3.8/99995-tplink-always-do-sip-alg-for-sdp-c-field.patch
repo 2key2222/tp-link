@@ -1,0 +1,13 @@
+--- a/net/netfilter/nf_conntrack_sip.c	2014-07-18 06:58:15.000000000 +0800
++++ b/net/netfilter/nf_conntrack_sip.c	2017-02-06 10:42:37.674119500 +0800
+@@ -851,8 +851,8 @@
+ 
+ 	saddr = NULL;
+ 	if (sip_direct_media) {
+-		if (!nf_inet_addr_cmp(daddr, &ct->tuplehash[dir].tuple.src.u3))
+-			return NF_ACCEPT;
++		/*if (!nf_inet_addr_cmp(daddr, &ct->tuplehash[dir].tuple.src.u3))
++			return NF_ACCEPT;*/
+ 		saddr = &ct->tuplehash[!dir].tuple.src.u3;
+ 	}
+ 

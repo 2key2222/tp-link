@@ -1,0 +1,59 @@
+Index: a/drivers/net/Makefile
+===================================================================
+--- a/drivers/net/Makefile	2014-09-02 16:41:52.000000000 +0800
++++ b/drivers/net/Makefile	2014-10-11 13:40:35.154341893 +0800
+@@ -47,7 +47,7 @@
+ obj-$(CONFIG_PPP_SYNC_TTY) += ppp/
+ obj-$(CONFIG_PPPOE) += ppp/
+ obj-$(CONFIG_PPPOL2TP) += ppp/
+-obj-$(CONFIG_PPPOPPTP) += ppp/
++# obj-$(CONFIG_PPPOPPTP) += ppp/
+ obj-$(CONFIG_PPTP) += ppp/
+ obj-$(CONFIG_SLIP) += slip/
+ obj-$(CONFIG_SLHC) += slip/
+@@ -83,4 +83,4 @@
+ endif
+ 
+ #obj-m += eip93_drivers/cryptoEngine/V-Driver_93/build/
+-#obj-m += eip93_drivers/slad_test_k/
+\ No newline at end of file
++#obj-m += eip93_drivers/slad_test_k/
+Index: a/drivers/net/ppp/Kconfig
+===================================================================
+--- a/drivers/net/ppp/Kconfig	2014-09-02 16:42:01.000000000 +0800
++++ b/drivers/net/ppp/Kconfig	2014-10-11 13:39:22.678337387 +0800
+@@ -129,8 +129,9 @@
+ 	  which contains instruction on how to use this driver (under
+ 	  the heading "Kernel mode PPPoE").
+ 
+-#config PPTP
+-config PPPOPPTP
++#unify with standard kernel and buildroot netsupport.mk, by wuyin
++#config PPPOPPTP
++config PPTP
+ 	tristate "PPP over IPv4 (PPTP)"
+ 	depends on PPP && NET_IPGRE_DEMUX
+ 	---help---
+Index: a/drivers/net/ppp/Makefile
+===================================================================
+--- a/drivers/net/ppp/Makefile	2014-09-02 16:42:01.000000000 +0800
++++ b/drivers/net/ppp/Makefile	2014-10-11 13:39:59.162341998 +0800
+@@ -10,5 +10,5 @@
+ obj-$(CONFIG_PPP_SYNC_TTY) += ppp_synctty.o
+ obj-$(CONFIG_PPPOE) += pppox.o pppoe.o
+ obj-$(CONFIG_PPPOL2TP) += pppox.o
+-obj-$(CONFIG_PPPOPPTP) += pppox.o pptp.o
++# obj-$(CONFIG_PPPOPPTP) += pppox.o pptp.o
+ obj-$(CONFIG_PPTP) += pppox.o pptp.o
+diff -urN a/include/linux/skbuff.h b/include/linux/skbuff.h
+--- a/include/linux/skbuff.h	2019-06-29 11:25:53.560164800 +0800
++++ b/include/linux/skbuff.h	2019-06-29 11:31:21.324164634 +0800
+@@ -1877,7 +1877,7 @@ static inline int pskb_network_may_pull(
+  * NET_IP_ALIGN(2) + ethernet_header(14) + IP_header(20/40) + ports(8)
+  */
+ #ifndef NET_SKB_PAD
+-#if defined (CONFIG_PPPOPPTP) || defined (CONFIG_PPPOL2TP)
++#if defined (CONFIG_PPTP) || defined (CONFIG_PPPOL2TP)
+ #define NET_SKB_PAD             128
+ #define NET_SKB_PAD_ORIG        max(32, L1_CACHE_BYTES)
+ #else

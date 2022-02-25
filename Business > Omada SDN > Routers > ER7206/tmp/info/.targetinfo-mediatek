@@ -1,0 +1,73 @@
+Source-Makefile: target/linux/mediatek/Makefile
+Target: mediatek
+Target-Board: mediatek
+Target-Name: MTK APSoC (ARM)
+Target-Path: /home/ubuntu/tp-link/ER7206_trunk
+Target-Arch: arm
+Target-Arch-Packages: mediatek
+Target-Features: gpio squashfs
+Target-Depends: 
+Target-Optimization: -Os -pipe -march=armv5te -mtune=xscale
+CPU-Type: xscale
+Linux-Version: 3.10.20
+Linux-Release: 1
+Linux-Kernel-Arch: arm
+Target-Description:
+	Build firmware images for MTK/Ralink APSoC based boards.
+@@
+Default-Packages: base-files libc libgcc busybox dropbear mtd uci opkg netifd fstools dnsmasq iptables ip6tables ppp ppp-mod-pppoe kmod-ipt-nathelper firewall odhcpd odhcp6c  
+Target: mediatek/mt7623_emmc
+Target-Board: mediatek
+Target-Name: MT7623 based boards (eMMC)
+Target-Path: target/linux/mediatek
+Target-Arch: arm
+Target-Arch-Packages: arm
+Target-Features: fpu gpio squashfs usb
+Target-Depends: 
+Target-Optimization: -Os -pipe -march=armv7-a -mtune=cortex-a7 -mfpu=vfp
+CPU-Type: cortex-a7+vfp
+Linux-Version: 3.10.20
+Linux-Release: 1
+Linux-Kernel-Arch: arm
+Target-Description:
+	Build firmware images for MTK/Ralink APSoC based boards.
+@@
+Default-Packages: base-files libc libgcc busybox dropbear mtd uci opkg netifd fstools  dnsmasq iptables ip6tables ppp ppp-mod-pppoe kmod-ipt-nathelper firewall odhcpd odhcp6c  
+Target-Profile: MT7623_EMMC
+Target-Profile-Name: Default Profile
+Target-Profile-Packages: e2fsprogs block-mount fstools kmod-usb-core kmod-usb-storage kmod-fs-vfat kmod-fs-ext4 kmod-fs-ntfs 
+Target-Profile-Config: 
+
+@@
+Target-Profile-Description:
+	Basic MT7623 SoC support
+@@
+
+Target: mediatek/mt7623_mtd
+Target-Board: mediatek
+Target-Name: MT7623 based boards (Nand/Nor Flash)
+Target-Path: target/linux/mediatek
+Target-Arch: arm
+Target-Arch-Packages: arm
+Target-Features: fpu gpio pci rtc squashfs usb
+Target-Depends: 
+Target-Optimization: -Os -pipe -march=armv7-a -mtune=cortex-a7 -mfpu=vfp
+CPU-Type: cortex-a7+vfp
+Linux-Version: 3.10.20
+Linux-Release: 1
+Linux-Kernel-Arch: arm
+Target-Description:
+	Build firmware images for MTK/Ralink APSoC based boards.
+@@
+Default-Packages: base-files libc libgcc busybox dropbear mtd uci opkg netifd fstools  dnsmasq iptables ip6tables ppp ppp-mod-pppoe kmod-ipt-nathelper firewall odhcpd odhcp6c  
+Target-Profile: MT7623_MTD
+Target-Profile-Name: Default Profile
+Target-Profile-Packages: -swconfig -rt2x00 ated hwnat switch uci2dat mii_mgr 8021xd e2fsprogs luci mpstat reg wireless-tools block-mount fstools kmod-scsi-generic kmod-nf-sc kmod-usb-core kmod-usb-storage kmod-fs-vfat kmod-fs-ext4 kmod-fs-ntfs kmod-nls-base kmod-nls-utf8 kmod-nls-cp936 kmod-nls-cp437 kmod-nls-cp850 kmod-nls-iso8859-1 kmod-nls-iso8859-15 kmod-nls-cp950 
+Target-Profile-Config: 
+
+@@
+Target-Profile-Description:
+	Basic MT7623 SoC support
+@@
+
+

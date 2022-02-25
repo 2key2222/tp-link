@@ -1,0 +1,370 @@
+#!/bin/sh
+
+# portid
+# mode
+    # all = multi + broad + unicast + ...
+    # multicast = multi + broad
+    # broadcast = broad
+# enable
+# rate
+set_port_ingress_storm_filter()
+{
+	local portid=$1
+	local mode=$2
+	local enable=$3
+	local rateNum=$4
+
+	[ "$mode" = "multicast" ] && {
+		mode="broadcast"
+
+		#Enable
+		reg=`echo $(($RTL8367C_STORM_FILTER_MULTI_PORTMASK)) |awk '{printf("%x"),$0}'`
+		value=`swconfig_reg_read $reg`
+		[ "$enable" = "on" ] && value=`set_bit_value $value $portid 1`
+		[ "$enable" = "on" ] || value=`set_bit_value $value $portid 0`
+		swconfig_reg_write $reg $value
+
+		#Index
+		reg=`echo $(($RTL8367C_STORM_FILTER_MULTI_IDX_BASE+$(($portid>>1)))) |awk '{printf("%x"),$0}'`
+		value=`swconfig_reg_read $reg`
+		value=$(($value&~(0x1f<<(($portid&0x1)<<3))))
+		[ "$enable" = "on" ] && value=$(($value|(($portid+5)<<(($portid&0x1)<<3))))
+		swconfig_reg_write $reg $value
+
+		#Rate
+		#Low 15bits
+		reg=`echo $(($RTL8367C_SHARE_METER_CTRL_BASE+($portid+5)*2)) |awk '{printf("%x"),$0}'`
+		[ "$enable" = "on" ] && value=$(($rateNum&0xffff))
+		[ "$enable" = "on" ] || value=0
+		swconfig_reg_write $reg $value
+		#High 3bits
+		reg=`echo $(($RTL8367C_SHARE_METER_CTRL_BASE+($portid+5)*2+1)) |awk '{printf("%x"),$0}'`
+		[ "$enable" = "on" ] && value=$(($(($rateNum&0x70000))>>16))
+		[ "$enable" = "on" ] || value=0
+		swconfig_reg_write $reg $value
+
+		#exclude IFG
+		reg=`echo $(($RTL8367C_SHARE_METER_IFG_CTRL)) |awk '{printf("%x"),$0}'`
+		value=`swconfig_reg_read $reg`
+		[ "$enable" = "on" ] && value=`set_bit_value $value $(($portid+5)) 0`
+		[ "$enable" = "on" ] || value=`set_bit_value $value $(($portid+5)) 0`
+		swconfig_reg_write $reg $value
+	}
+
+	[ "$mode" = "broadcast" ] && {
+		#Enable
+		reg=`echo $(($RTL8367C_STORM_FILTER_BROAD_PORTMASK)) |awk '{printf("%x"),$0}'`
+		value=`swconfig_reg_read $reg`
+		[ "$enable" = "on" ] && value=`set_bit_value $value $portid 1`
+		[ "$enable" = "on" ] || value=`set_bit_value $value $portid 0`
+		swconfig_reg_write $reg $value
+
+		#Index
+		reg=`echo $(($RTL8367C_STORM_FILTER_BROAD_IDX_BASE+$(($portid>>1)))) |awk '{printf("%x"),$0}'`
+		value=`swconfig_reg_read $reg`
+		value=$(($value&~(0x1f<<(($portid&0x1)<<3))))
+		[ "$enable" = "on" ] && value=$(($value|($portid<<(($portid&0x1)<<3))))
+		swconfig_reg_write $reg $value
+
+		#Rate
+		#Low 15bits
+		reg=`echo $(($RTL8367C_SHARE_METER_CTRL_BASE+$portid*2)) |awk '{printf("%x"),$0}'`
+		[ "$enable" = "on" ] && value=$(($rateNum&0xffff))
+		[ "$enable" = "on" ] || value=0
+		swconfig_reg_write $reg $value
+		#High 3bits
+		reg=`echo $(($RTL8367C_SHARE_METER_CTRL_BASE+$portid*2+1)) |awk '{printf("%x"),$0}'`
+		[ "$enable" = "on" ] && value=$(($(($rateNum&0x70000))>>16))
+		[ "$enable" = "on" ] || value=0
+		swconfig_reg_write $reg $value
+
+		#exclude IFG
+		reg=`echo $(($RTL8367C_SHARE_METER_IFG_CTRL)) |awk '{printf("%x"),$0}'`
+		value=`swconfig_reg_read $reg`
+		[ "$enable" = "on" ] && value=`set_bit_value $value $portid 0`
+		[ "$enable" = "on" ] || value=`set_bit_value $value $portid 0`
+		swconfig_reg_write $reg $value
+	}
+}
+
+# set port ingress limit
+# $1: portid
+# $2: ingress_state (on | off)
+# $3: ingress_mode (broadcast | multicast | all)
+# $4: ingress_rate (Mbps)
+# The rate unit is 1 kbps and the range is from 8k to 1048568k. The granularity of rate is 8 kbps.
+set_port_ingress()
+{
+	local portid=$(($1-1))
+	local state=$2
+	local mode=$3
+	local reg=0
+	local rateNum=$4
+	local value=0
+
+	if [ "$state" == "on" ]; then
+		#Mbps->kbps
+		if [ $rateNum -gt 1000 ];then
+			$rateNum=1000
+		fi
+
+		rateNum=$(($rateNum<<10))
+
+		#rate base of 8kbps
+		rateNum=$(($rateNum>>3))
+			
+		[ "$mode" = "all" ] && {
+			reg=`echo $(($RTL8367C_INGRESSBW_PORT_RATE_LSB_BASE+$(($portid<<5)))) |awk '{printf("%x"),$0}'`
+			value=$(($rateNum&0xffff))
+			swconfig_reg_write $reg $value
+
+			reg=`echo $(($(($RTL8367C_INGRESSBW_PORT_RATE_LSB_BASE+$(($portid<<5))))+1)) |awk '{printf("%x"),$0}'`
+			value=$(($(($rateNum&0x10000))>>16))
+			swconfig_reg_write $reg $value
+
+			reg=`echo $(($RTL8367C_PORT_MISC_CFG_BASE+$(($portid<<5)))) |awk '{printf("%x"),$0}'`
+			value=`swconfig_reg_read $reg`	
+			#bandwidth control exclude preamble & IFG(20bytes)
+			value=`set_bit_value $value 10 0`
+			#flow control setting while input rate is over input bandwidth
+			#0:drop packet
+			#1:flow control
+			value=`set_bit_value $value 11 1`
+			swconfig_reg_write $reg $value
+
+			set_port_ingress_storm_filter "$portid" "broadcast" "off" "0"
+			set_port_ingress_storm_filter "$portid" "multicast" "off" "0"
+		}
+		[ "$mode" = "all" ] || {
+			reg=`echo $(($RTL8367C_INGRESSBW_PORT_RATE_LSB_BASE+$(($portid<<5)))) |awk '{printf("%x"),$0}'`	
+			swconfig_reg_write $reg 0xffff
+
+			#set MSB bit0=1
+			reg=`echo $(($(($RTL8367C_INGRESSBW_PORT_RATE_LSB_BASE+$(($portid<<5))))+1)) |awk '{printf("%x"),$0}'`
+			swconfig_reg_write $reg 0x1
+
+			set_port_ingress_storm_filter "$portid" "broadcast" "off" "0"
+			set_port_ingress_storm_filter "$portid" "multicast" "off" "0"
+			set_port_ingress_storm_filter "$portid" "$mode" "on" "$rateNum"
+		}
+	else
+		reg=`echo $(($RTL8367C_INGRESSBW_PORT_RATE_LSB_BASE+$(($portid<<5)))) |awk '{printf("%x"),$0}'`	
+		swconfig_reg_write $reg 0xffff
+
+		#set MSB bit0=1
+		reg=`echo $(($(($RTL8367C_INGRESSBW_PORT_RATE_LSB_BASE+$(($portid<<5))))+1)) |awk '{printf("%x"),$0}'`
+		swconfig_reg_write $reg 0x1
+
+		set_port_ingress_storm_filter "$portid" "broadcast" "off" "0"
+		set_port_ingress_storm_filter "$portid" "multicast" "off" "0"
+	fi
+}
+
+# set port egress limit
+# $1: portid
+# $2: egress_state (on | off)
+# $3: egress_rate (Mbps)
+set_port_egress()
+{
+	local portid=$(($1-1))
+	local state=$2
+	local value=0
+	local rateNum=$3
+
+	if [ $state == "on" ]; then
+		#Mbps->kbps
+		if [ $rateNum -gt 1000 ];then
+			$rateNum=1000
+		fi
+
+		rateNum=$(($rateNum<<10))
+		
+		#rate base of 8kbps
+		rateNum=$(($rateNum>>3))	
+
+		reg=`echo $(($RTL8367C_PORT_EGRESSBW_LSB_BASE+$(($portid<<1)))) |awk '{printf("%x"),$0}'`
+		value=$(($rateNum&0xffff))
+		swconfig_reg_write $reg $value
+
+		reg=`echo $(($RTL8367C_PORT_EGRESSBW_MSB_BASE+$(($portid<<1)))) |awk '{printf("%x"),$0}'`
+
+		value=$(($(($rateNum&0x10000))>>16))
+		swconfig_reg_write $reg $value
+
+		#Set per-port egress rate calculate include/exclude IFG
+		#1:include IFG 0:exclude IFG
+		value=`swconfig_reg_read $RTL8367C_REG_SCHEDULE_WFQ_CTRL`
+		value=`set_bit_value $value 0 1`
+		swconfig_reg_write $RTL8367C_REG_SCHEDULE_WFQ_CTRL $value
+	else
+		reg=`echo $(($RTL8367C_PORT_EGRESSBW_LSB_BASE+$(($portid<<1)))) |awk '{printf("%x"),$0}'`	
+		swconfig_reg_write $reg 0xffff
+
+		#set MSB bit0=1
+		reg=`echo $(($RTL8367C_PORT_EGRESSBW_MSB_BASE+$(($portid<<1)))) |awk '{printf("%x"),$0}'`	
+		swconfig_reg_write $reg 0x1
+	fi
+}
+
+# print rateControl info
+print_rateControl_info()
+{
+	for i in `seq 1 $MAX_PORT_NUM`; do		
+		config_get ingress_state "port"$i "ingress_state"
+		config_get ingress_mode "port"$i "ingress_mode"
+		config_get ingress_rate "port"$i "ingress_rate"
+		config_get egress_state "port"$i "egress_state"
+		config_get egress_rate "port"$i "egress_rate"
+
+		echo "Port $i:"
+		echo "   ingress_state : $ingress_state"
+		echo "   ingress_mode  : $ingress_mode"
+		echo "   ingress_rate  : $ingress_rate"				
+		echo "   egress_state  : $egress_state"
+		echo "   egress_rate   : $egress_rate"
+	done
+
+}
+
+rateControl_usage()
+{
+	echo ""
+	echo "Usage: switch -t control -o <get|set> [p portsid] [-i i_state] [-M i_mode] [-r i_rate] [-O e_state] [-R e_rate]"
+	echo ""
+	echo "Example:"
+	echo "       switch -t control -o get"
+	echo "       switch -t control -o set -p 2 -i on -M broadcast -r 100 -O on -R 30 "
+	echo ""
+}
+
+#check rate 
+# $1: rate
+rateControl_rate_check()
+{
+	if [ -z "$1" ];then
+		echo "[control] rate is null. (1~1000)"
+        rateControl_usage
+        exit 0
+    fi
+    if [ `expr match $1 "[0-9]"` = 0 ] || [ $1 -lt 1 ] || [ $1 -gt 1000 ];then
+        echo "[control] rate is error. (1~1000)"
+        rateControl_usage
+        exit
+    fi 
+}
+
+#ingress mode check
+# $1:ingress_mode
+rateControl_ingress_mode_check()
+{
+    if [ -z "$1" ];then
+    	echo "[control] ingress mode is null.(broadcast | multicast | all)"
+        rateControl_usage
+        exit 0
+    fi
+
+    if [ "$1" != "broadcast" ] && [ "$1" != "multicast" ] && [ "$1" != "all" ]; then
+        echo "[control] ingress mode is invalid. (broadcast | multicast | all)"
+        rateControl_usage
+        exit 0
+    fi
+}
+
+#state check
+# $1:state
+rateControl_state_check()
+{
+    if [ -z "$1" ];then
+    	echo "[control] state is null.(on | off)"
+        rateControl_usage
+        exit 0
+    fi
+
+    if [ "$1" != "on" ] && [ "$1" != "off" ]; then
+        echo "[control] state is invalid. (on | off)"
+        rateControl_usage
+        exit 0
+    fi
+}
+
+
+#check arg of rateControl
+# $1: portsid
+# $2: ingress_state
+# $3: ingress_mode
+# $4: ingress_rate
+# $5: egress_state
+# $6: egress_rate
+rateControl_arg_check()
+{
+	local portsid=$1
+	local ingress_state=$2
+	local ingress_mode=$3
+	local ingress_rate=$4
+	local egress_state=$5
+	local egress_rate=$6
+
+
+	if [ -z "$portsid" ]; then
+		echo "[control] the ports is null.(1~5)"
+		rateControl_usage
+		exit 0
+	fi
+
+	for i in $portsid; do
+		if [ `expr match $i "[0-9]"` = 0 ] || [ $i -lt 1 ] || [ $i -gt 5 ] ;then
+		echo "[control] port is invalid.(1~5)"
+		rateControl_usage
+		exit 0
+		fi
+	done
+
+	rateControl_state_check $ingress_state
+	rateControl_ingress_mode_check $ingress_mode
+	rateControl_rate_check $ingress_rate
+	rateControl_state_check $egress_state
+	rateControl_rate_check $egress_rate
+}
+# init rtl8367s switch port rateControl
+# $1: portid
+# $2: ingress_state
+# $3: ingress_mode
+# $4: ingress_rate
+# $5: egress_state
+# $6: egress_rate
+rtl8367s_switch_port_rateControl_init()
+{
+	set_port_ingress $1 $2 $3 $4
+	set_port_egress $1 $5 $6
+}
+
+# rtl8367s switch port rateControl
+# $1: op (get|set)
+# $2: portsid (1.2.3.4.5)
+# $3: ingress_state (on | off)
+# $4: ingress_mode (broadcast | multicast | all)
+# $5: ingress_rate (Mbps)
+# $6: egress_state (on | off)
+# $7: egress_rate (Mbps)
+rtl8367s_switch_port_rateControl()
+{
+	local op=$1
+	local portsid=$2
+	local ingress_state=$3
+	local ingress_mode=$4
+	local ingress_rate=$5
+	local egress_state=$6
+	local egress_rate=$7
+
+	if [ $op = "get" ]; then
+		print_rateControl_info
+	elif [ $op = "set" ]; then
+		rateControl_arg_check "$portsid" $ingress_state $ingress_mode $ingress_rate $egress_state $egress_rate
+		for i in $portsid; do			
+			set_port_ingress $i $ingress_state $ingress_mode $ingress_rate
+			set_port_egress $i $egress_state $egress_rate
+		done
+	else
+		echo "[control] error op.(set | get)"
+	fi
+}

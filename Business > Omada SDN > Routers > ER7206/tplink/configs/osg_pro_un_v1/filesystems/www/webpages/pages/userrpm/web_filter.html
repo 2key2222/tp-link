@@ -1,0 +1,415 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<title>Website Filter</title>
+	<style type="text/css">
+	</style>
+</head>
+
+<body>
+	<div class="func-container">
+		<div id="function_setting">
+			<form id="setting_form">
+				<input id="enable" name="enable"/>
+			</form>
+			
+		</div>
+		<div id="filter_setting"> 
+			<input id="rulename" name="rulename"/>
+			<input id="group" name="group" />
+			<input id="rule_type" name="rule_type" />
+			<input id="website" name="website" />
+			<input id="action" name="action" />
+			<input id="redirect" name="redirect"/>
+			<input id="time" name="time" />
+			<input id="comment" name="comment" />
+			<input id="position" name="position" /> 
+			<input id="state" name="state" />
+
+		</div>
+		<div id="website_filter">
+			<div id="website_filter_grid">
+	        </div>
+		 </div>
+		<div id="help"></div>
+	</div>
+<script type="text/javascript">
+try{
+    $
+}catch(e){
+    location.href = "/";
+};
+
+$(document).ready(function(e){ 
+	var webfilter_list_proxy = new $.su.Proxy({
+		url:$.su.url('/admin/webfilter?form=webfilter_list')
+	});
+
+	var webfilter_global_proxy = new $.su.Proxy({
+		url:$.su.url('/admin/webfilter?form=webfilter_global')
+	});
+
+
+	$("div#function_setting").panel({
+		title: $.su.CHAR.WEB_FILTER.FUNC_SET,//"功能设置",
+		collapsible: false
+	});
+
+	$("div#website_filter").panel({
+		title: $.su.CHAR.WEB_FILTER.RULE_LIST,//"规则列表",
+		collapsible: false
+	});
+	var enable = $("#enable").checkbox({
+        items: [
+            {boxlabel: $.su.CHAR.WEB_FILTER.ENABLE_FILTER, inputValue: "on", uncheckedValue: "off"}//"启用网站过滤功能"
+        ]
+	});
+	$("#setting_form").form({
+		proxy: webfilter_global_proxy,
+		submitBtn:"default",
+		fields:[
+			{name:"enable"}
+		]
+	});
+
+	$("#rulename").textbox({
+		fieldLabel:$.su.CHAR.WEB_FILTER.RULE_NAME,//"规则名称",
+		allowBlank:false,
+		value:"new",
+		vtype:"name"
+	});
+
+	$("#rulename").textbox("hide");
+
+
+	var group = $("#group").combobox({
+		fieldLabel: $.su.CHAR.WEB_FILTER.ADDR_GROUP,//"受控地址组",
+		cls: "l",
+		allowBlank: false,
+		vtype: "name",
+		items: [
+			{name:"---", value:"---", selected:true}
+		]
+	});
+	//发送form请求,获取ip地址组对象，提供给规则group下拉框*/
+	var ipgroupItem=[];
+    var ipgroupProxy = new $.su.Proxy({
+        url: $.su.url('/admin/ipgroup?form=ipgroup_list'),
+        async: false
+    });
+    ipgroupProxy.read({}, function(data){
+        var flag=0;
+        for (i=0; i<data.length; i++){
+            ipgroupItem.push({name: data[i].name,value: data[i].name});
+        }
+    });
+    if (ipgroupItem.length != 0){
+        group.combobox("loadData", ipgroupItem);
+    }
+
+	var rule_type = $("#rule_type").radio({
+		fieldLabel: $.su.CHAR.WEB_FILTER.RULE_TYPE,//"规则类型",
+		columns: 2,
+        items:[
+            {boxlabel: $.su.CHAR.WEB_FILTER.ALLOW_ACCESS, name:'rule_type', inputValue:'on',checked:true},//"允许访问"
+            {boxlabel: $.su.CHAR.WEB_FILTER.FORBID_ACCESS, name:'rule_type', inputValue:'off'}//"禁止访问"
+        ]
+	});
+	var website = $("#website").combobox({
+		fieldLabel: $.su.CHAR.WEB_FILTER.SELECT_WEB,//"选择网站",
+		multiSelect: true,
+		allowBlank:false,
+        items:[
+        	{name: $.su.CHAR.WEB_FILTER.ALL_WEB, value: "ALL"}//"所有网站"
+        ]
+	}).on("ev_change", function(e, oldValue, newValue){
+		if(newValue.length > 15){
+			website.combobox("setError", $.su.CHAR.WEB_FILTER.WEB_ERR);//"最多只支持15个网站组");
+			website.combobox("setValue", oldValue);
+		}
+	});
+
+
+	//读取网站组
+	var webItemALL=[{name: $.su.CHAR.WEB_FILTER.ALL_WEB, value: "ALL"}];//"所有网站"
+	var webItemValueALL = ["ALL"];
+	var webItem = [];
+    var webItemValue = [];
+    var webProxy = new $.su.Proxy({
+        url: $.su.url('/admin/websort?form=websort_list'),
+        async: false
+    });
+    webProxy.read({}, function(data){
+        for (i=0; i<data.length; i++){
+            webItemValue.push(data[i].name);
+            webItemValueALL.push(data[i].name);
+            webItem.push({name: unescape(data[i].textname), value: data[i].name});
+            webItemALL.push({name: unescape(data[i].textname), value: data[i].name});
+
+        }
+    });
+
+    if (webItemALL.length != 0){
+        $("#website").combobox("loadData", webItemALL);
+    }
+
+	var redirect = $("#redirect").textbox({
+		fieldLabel: "",
+		allowBlank: false,
+		cls: "inline",
+		labelCls: "xxxxs"
+	}).textbox("disable");
+
+	redirect.textbox("hide");
+
+	var action = $("#action").checkbox({
+		fieldLabel: $.su.CHAR.WEB_FILTER.ACTION_PREFIX,//"访问上述网站时",
+		columns: 3,
+        items: [
+        	{boxlabel: $.su.CHAR.WEB_FILTER.ACTION_POSTFIX1, inputValue: "log", uncheckedValue: "log_off"},//"记录到系统日志"
+            {boxlabel: $.su.CHAR.WEB_FILTER.ACTION_POSTFIX2, inputValue: "warn", uncheckedValue: "warn_off"},//"弹出警告"
+            {boxlabel: $.su.CHAR.WEB_FILTER.ACTION_POSTFIX3, inputValue: "redirect", uncheckedValue: "redirect_off"}//"重定向至"
+        ],
+        cls: "inline"
+	}).on('ev_change', function(e, oldValue, newValue){
+		var value = action.checkbox("getValue1");
+		var flag = false;
+		for (var i = 0; i < value.length; i++){
+			if (value[i] == "redirect"){
+				$("#redirect").textbox("enable");
+				flag = true;
+				break;
+			}
+		}
+		if (flag == false){
+			$("#redirect").textbox("disable");
+		}
+    });
+
+    action.checkbox("hide");
+
+
+	var time = $("#time").combobox({
+		fieldLabel: $.su.CHAR.WEB_FILTER.WORKTIME,//"规则生效时间",
+		items: [
+			{name:"Any", value:"Any", selected:true}
+		]
+	});
+	//读取时间对象
+	var tmngtItem=[];
+    var tmngtProxy = new $.su.Proxy({
+        url: $.su.url('/admin/time_mngt?form=timeobj_list'),
+        async: false
+    });
+    tmngtProxy.read({}, function(data){
+        for (i=0; i<data.length; i++){
+            tmngtItem.push({name: data[i].entry_name, value: data[i].entry_name});
+        }
+    });
+
+    if (tmngtItem.length != 0){
+        $("#time").combobox("loadData", tmngtItem);
+    }
+
+	var comment = $("#comment").textbox({
+		fieldLabel: $.su.CHAR.WEB_FILTER.COMMENT,//"备注",
+		allowBlank: true,
+		tips: $.su.CHAR.WEB_FILTER.OPTIONAL//"（可选）"
+	});
+	var state = $("#state").checkbox({
+        fieldLabel: $.su.CHAR.WEB_FILTER.STATE,//"状态",
+        columns: 2,
+        items:[
+            {boxlabel: $.su.CHAR.WEB_FILTER.ENABLE, name:'state', inputValue:'on', uncheckedValue:"off", checked:true},
+        ]
+	});
+	var position = $("#position").textbox({
+		fieldLabel: $.su.CHAR.WEB_FILTER.POSITION,//"添加到指定位置(第几条)",
+		allowBlank: true,
+		vtype: "number",
+		tips: $.su.CHAR.WEB_FILTER.OPTIONAL//"（可选）"
+	});
+
+	var website_filter_grid = $("#website_filter_grid").grid({
+		editor:{
+			content:"#filter_setting",
+			fields:[
+				{name:"rulename"},
+				{name:"group"},
+				{name:"rule_type"},
+				{name:"website"},
+				{name:"action"},
+				{name:"redirect"},
+				{name:"time"},
+				{name:"comment"},
+				{name:"state"},
+				{name:"position"}
+			],
+			validator:function(e){
+				var data = website_filter_grid.grid("getStore").data;
+				var number = position.textbox("getValue");
+				if(number == ""){
+					return true;
+				}
+				number = parseInt(number);
+				if(number < 1 || number > data.length){
+					position.textbox("setError", $.su.CHAR.WEB_FILTER.POSITION_ERR);//"输入的位置超出了指定的范围");
+					return false;
+				}
+				return true;
+
+			}
+		},
+		store:{
+			proxy:webfilter_list_proxy,
+			fields:[
+				{name:"rulename"},
+				{name:"group"},
+				{name:"rule_type"},
+				{name:"website"},
+				{name:"action"},
+				{name:"redirect"},
+				{name:"time"},
+				{name:"comment"},
+				{name:"state"},
+				{name:"position"}
+			],
+			autoLoad:true
+		},
+		paging:[],
+		columns:[
+			 {
+                xtype: "checkcolumn",
+                width: $.su.CHAR.SETTING.LINE_BACKUP.CHECK_COLUMN_WIDTH
+            },
+            {
+                xtype: "rownumberer",
+                width: $.su.CHAR.SETTING.LINE_BACKUP.ROW_NUMBER_WIDTH
+            }, 
+            {
+				text: $.su.CHAR.WEB_FILTER.RULE_NAME,//"规则名称",
+				hidden:true,
+				dataIndex:"rulename"
+			},
+			{
+				text: $.su.CHAR.WEB_FILTER.USERGROUP,//"用户组",
+				width:60,
+				dataIndex:"group"
+			},
+			{
+				text: $.su.CHAR.WEB_FILTER.STRATEGY,//"策略",
+				width:60,
+				dataIndex:"rule_type",
+				renderer:function(dd,index,data){
+					if("on" == dd){
+						return $.su.CHAR.WEB_FILTER.ALLOW_ACCESS;//"允许访问";
+					}else if("off" == dd){
+						return $.su.CHAR.WEB_FILTER.FORBID_ACCESS;//"禁止访问";
+					}else{
+						return "---";
+					}
+				}
+			},
+			{
+				text: $.su.CHAR.WEB_FILTER.WEB_LIST,//"网站过滤列表",
+				width:60,
+				dataIndex:"website",
+				renderer:function(dd,index,data){
+					var website = [];
+					$(webItemALL).each(function(i, obj){
+						$(dd).each(function(j, qbj){
+							if(obj.value == qbj){
+								website.push(unescape(obj.name));
+							}
+						});
+					});
+					return website;
+				}
+			},
+			{
+				text: $.su.CHAR.WEB_FILTER.TIME,//"生效时间",
+				width:60,
+				dataIndex:"time"
+			},
+			{
+				xtype:"statuscolumn",
+				dataIndex:"state"
+			},
+			{
+				xtype:"comment"
+			},
+			{
+				xtype: "settings"
+			}
+		],
+		operation: 'prompt|add|delete'
+	}).on("ev_load", function(e){
+
+	}).on("ev_insert", function(){
+        website_filter_grid.grid("getStore").load();}
+    ).on("ev_remove", function(){
+        website_filter_grid.grid("getStore").load();}
+    ).on("ev_update", function(){
+        website_filter_grid.grid("getStore").load();});
+
+	var editor = $(website_filter_grid.grid("getEditor"));
+
+	editor.on("ev_startEdit", function(e){
+		var site = editor.find('.combobox-value[name=website]');
+		if("ALL" == site.combobox("getValue")){
+   			site.combobox("disableItem", webItemValue);
+   		}else{
+   			site.combobox("enableItem", webItemValue);
+   		}
+		$(site).on("ev_change", function(e, oldValue, newValue){
+			var isALL = false;
+			$(newValue).each(function(i, obj){
+				if(obj == "ALL"){
+					isALL = true;
+				}
+			});
+
+			if(isALL == true && oldValue[0] != "ALL"){
+				site.combobox("setValue", "ALL");
+				site.combobox("disableItem", webItemValue);	
+				return;
+			}else{
+				site.combobox("enableItem", webItemValue);
+			}
+			
+			if(newValue.length > 15){
+				editor.find("div.combobox-list-wrap").hide();
+				site.combobox("setError", $.su.CHAR.WEB_FILTER.WEB_ERR);//"最多只支持15个网站组");
+				site.combobox("setValue", oldValue);
+				//console.log(editor.find("div.combobox-list-wrap"))
+				
+			}
+		});
+
+		var value = action.checkbox("getValue1");
+		var flag = false;
+		for (var i = 0; i < value.length; i++){
+			if (value[i] == "redirect"){
+				$("#redirect").textbox("enable");
+				flag = true;
+				break;
+			}
+		}
+		if (flag == false){
+			$("#redirect").textbox("disable");
+		}
+	});
+
+	
+
+	var help = new $.su.Help({
+        container: "div#help",
+        content: ["WEB_FILTER_ENABLE","WEB_FILTER"]
+    });
+
+});
+</script>
+</body>
+
+</html>

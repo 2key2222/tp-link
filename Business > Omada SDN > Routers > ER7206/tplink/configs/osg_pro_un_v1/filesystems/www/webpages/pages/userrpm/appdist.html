@@ -1,0 +1,504 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<style type="text/css">
+    #app-list{
+        border: 1px solid #d9d9d9;
+        width: 576px;
+        max-height: 320px;
+        overflow-y: auto;
+    }
+    #app-list .widget-container{
+        margin: 3px 0;
+    }
+    #app-list-table td{
+        text-align: left;
+        overflow: hidden;
+    }
+    .app-category{
+        background-color: #FAFAFA;
+    }
+    #app-list-table input{
+    }
+    /*hide blacklist icon*/
+    div#own-editor div.radio-group-container label.radio-label.checked input.radio-radio + span.icon{
+        display: none;
+    }
+    /*move blacklist to left*/
+    div#own-editor div.widget-container.radio-group-container div.widget-fieldlabel-wrap.m{
+        width: 0px;
+    }
+    div#own-editor div.radio-group-container ul.radio-group-list-wrap li.radio-list label.radio-label{
+        padding-left: 0px;
+    }
+</style>
+<title>APP Dist</title>
+</head>
+
+<body>
+<div class="func-container">
+    <div id="func-setting">
+        <form id="global-setting">
+            <input id="global-enable" name="state" value=""/>
+        </form>
+    </div>
+
+    <div id="own-editor">
+        <input id="appdist-addr" name="addr"/>
+        <div style="display: none">
+            <input id="appdist-appName" name="app_name"/>
+            <input id="appdist-recordApp" name="record_app"/>
+        </div>
+        <input id="appdist-list-switch"/>
+        <div id="app-list">
+            <table id="app-list-table"></table>
+        </div>
+        <input id="appdist-timeObj" name="timeobj"/>
+        <input id="appdist-comment" name="comment"/>
+        <input id="appdist-state" name="state"/>
+    </div>
+
+    <div id="appdist-list">
+        <div id="appdist-grid">
+        </div>
+    </div>
+
+    <div id="appdist_help"></div>
+</div>
+
+<script type="text/javascript">
+
+//<![CDATA[
+try{
+    $
+}catch(e){
+    location.href = "/";
+};
+
+$(document).ready(function(e){
+    var URL_GLOBAL = $.su.url("/admin/appdist?form=global_appdist"),
+        URL_RULE = $.su.url("/admin/appdist?form=rule_appdist"),
+        URL_IPGROUP = $.su.url("/admin/ipgroup?form=ipgroup_list"),
+        URL_TIMEOBJ = $.su.url("/admin/appdist?form=timeobj"),
+        appListItems;
+    var appList = [{
+        category: 'im',
+        label: $.su.CHAR.APP_CONTROL.IM,
+        list: [{
+            name: 'MSN',
+            label: 'MSN'
+        }, {
+            name: 'Yahoo_messenger',
+            label: 'Yahoo messenger'
+        }, {
+            name: 'GTalk',
+            label: 'GTalk'
+        }, {
+            name: 'Skype',
+            label: 'Skype'
+        }, {
+            name: 'Tencent_QQ',
+            label: 'Tecent QQ'
+	}]
+    }, {
+        category: 'web_im',
+        label: $.su.CHAR.APP_CONTROL.WEB_IM,
+        list: [{
+            name: 'eBuddy',
+            label: 'eBuddy'
+        }, {
+            name: 'meebo',
+            label: 'meebo'
+        }, {
+            name: 'I_love_IM',
+            label: 'I love IM'
+        }, {
+            name: 'Web_QQ',
+            label: 'Web QQ'
+	}]
+    }, {
+        category: 'sns',
+        label: $.su.CHAR.APP_CONTROL.SNS,
+        list: [{
+            name: 'Twitter',
+            label: 'Twitter'
+        }, {
+            name: 'Facebook',
+            label: 'Facebook'
+        }, {
+            name: 'Myspace',
+            label: 'Myspace'
+        }]
+    }, {
+        category: 'p2p',
+        label: $.su.CHAR.APP_CONTROL.P2P,
+        list: [{
+            name: 'ThunderAndKanKan',
+            label: 'Thunder&KanKan'
+        }, {
+            name: 'BitTorrent',
+            label: 'BitTorrent'
+        }, {
+            name: 'eMule',
+            label: 'eMule'
+        }]
+    }, {
+        category: 'media',
+        label: $.su.CHAR.APP_CONTROL.MEDIA,
+        list: [{
+            name: 'YouTube',
+            label: 'YouTube'
+        }, {
+            name: 'Hulu',
+            label: 'Hulu'
+        }]
+    }, {
+        category: 'basicapp',
+        label: $.su.CHAR.APP_CONTROL.BASIC,
+        list: [{
+            name: 'HTTP-POST',
+            label: 'HTTP-POST'
+        }, {
+            name: 'HTTP',
+            label: 'HTTP'
+        }, {
+            name: 'HTTPS',
+            label: 'HTTPS'
+        }, {
+            name: 'MMS',
+            label: 'MMS'
+        },  {
+            name: 'RTSP',
+            label: 'RTSP'
+        }]
+    }];
+
+    appListItems = buildAppTable(appList, 4, $('#app-list-table'));
+
+    $("#func-setting").panel({
+        title: $.su.CHAR.APP_CONTROL.FUNC_SETTING//"功能设置"//$.su.CHAR.MAC_FILTERING.SETTINGS
+    });
+
+    $("#global-enable").checkbox({
+        items: [
+            {boxlabel: $.su.CHAR.APP_CONTROL.GLOBAL_ENABLE, inputValue: "on", uncheckedValue: "off"}//"启用应用控制功能"
+        ]
+    });
+
+    var globalProxy = new $.su.Proxy({
+        url: URL_GLOBAL
+    });
+    $("#global-setting").form({
+        proxy: globalProxy,
+        fields: [
+            {name: "state", mapping: "state"}
+        ],
+        submitBtn: "default"
+    });
+
+    $("#appdist-list").panel({
+        title: $.su.CHAR.APP_CONTROL.RULE_LIST//"应用控制规则列表"
+    });
+
+    $("#appdist-addr").combobox({
+        fieldLabel: $.su.CHAR.APP_CONTROL.ADDR_GROUP,//"受控地址组", 
+        allowBlank: false,
+        items:[
+            {value:"---", name: "---"}
+        ]
+    });
+    $("#appdist-appName").combobox({
+        fieldLabel: $.su.CHAR.APP_CONTROL.FORBIDDEN_LIST,//"禁用列表",
+        multiSelect: true,
+        items: appListItems
+    });
+    $("#appdist-recordApp").combobox({
+        fieldLabel: $.su.CHAR.APP_CONTROL.RECORD_LIST,//"记录列表",
+        multiSelect: true,
+        items: appListItems
+    });
+	$("#appdist-recordApp").combobox("hide");
+	
+    $("#appdist-timeObj").combobox({
+        fieldLabel: $.su.CHAR.APP_CONTROL.WORKTIME,//"生效时间",
+        allowBlank: false,
+        items:[
+            {value:"Any", name: "Any"}
+        ]
+    });
+    $("#appdist-comment").textbox({
+        fieldLabel: $.su.CHAR.APP_CONTROL.COMMENT,//"备注",
+		allowBlank: true,
+		maxLength: 32,
+		tips: $.su.CHAR.APP_CONTROL.OPTIONAL//"（可选）"
+    });
+    /*$("#appdist-state").radio({
+        fieldLabel: $.su.CHAR.APP_CONTROL.STATUS,//"状态",
+        columns: 2,
+        items:[
+            {boxlabel: $.su.CHAR.APP_CONTROL.ENABLE, name:'state', inputValue:'on',checked:true},
+            {boxlabel: $.su.CHAR.APP_CONTROL.DISABLE, name:'state', inputValue:'off'}
+        ]
+    });*/
+     $("#appdist-state").checkbox({
+        fieldLabel: $.su.CHAR.APP_CONTROL.STATUS,//"状态",
+        items:[
+            {boxlabel: $.su.CHAR.APP_CONTROL.ENABLE, name:'state', inputValue:'on',uncheckedValue:"off", checked:true}
+        ]
+    });
+
+    $("#appdist-list-switch").radio({
+        columns: 2,
+        items:[
+            {boxlabel: $.su.CHAR.APP_CONTROL.FORBIDDEN_LIST, inputValue:'ban-list', checked:true}//"禁用列表"
+        ]
+    }).on("ev_change", function(e, oldValue, newValue){
+        combobox2checkbox();
+    });
+
+
+	var appdistListProxy = new $.su.Proxy({
+		url: URL_RULE
+	});
+	var appdistGrid = $("#appdist-grid").grid({
+        editor: {
+            content:"#own-editor",
+            fields: [
+                {name: "addr"},
+                {name: "timeobj"},
+                {name: "state"},
+                {name: "comment"},
+                {name: "app_name"},
+                {name: "record_app"}
+            ]
+        },
+		store:{
+			proxy: appdistListProxy,
+			fields: [
+                {name: "addr"},
+                {name: "timeobj"},
+                {name: "state"},
+                {name: "comment"},
+                {name: "app_name"},
+                {name: "record_app"}
+			],
+			autoLoad: true
+		},
+        paging:[],
+		columns: [
+			{
+				xtype: "checkcolumn",
+				width: $.su.CHAR.SETTING.VPN_USER.CHECK_COLUMN_WIDTH
+			},
+			{
+				xtype: "rownumberer",
+				width: $.su.CHAR.SETTING.VPN_USER.ROW_NUMBER_WIDTH
+			},
+			{
+				text: $.su.CHAR.APP_CONTROL.USERGROUP,//"用户组",
+				width: 50,
+				dataIndex: "addr"
+			},
+            {
+                text: $.su.CHAR.APP_CONTROL.WORKTIME,//"生效时间",
+                width: 50,
+                dataIndex: "timeobj"
+            },
+            {
+                hidden: true,
+                dataIndex: "app_name"
+            },
+            {
+                hidden: true,
+                dataIndex: "record_app"
+            },
+            {
+                text: $.su.CHAR.APP_CONTROL.COMMENT,//"备注",
+                width: 50,
+                dataIndex: "comment",
+                xtype:"comment"
+            },
+            {
+                xtype: "statuscolumn",
+                width: 50,
+                dataIndex: "state"
+            },
+            {
+                xtype: "settings",
+                width: $.su.CHAR.SETTING.VPN_USER.SETTING_WIDTH
+            }
+		],
+		operation: "prompt|add|delete"
+	}).on("ev_load", function(e,data, others){
+        var groupItem = [];
+		var maxrules = 0;
+        var editor = appdistGrid.grid('getEditor');
+        var groupProxy = new $.su.Proxy({
+            url: URL_IPGROUP,
+            async: false
+        });
+		if ( others )
+		{
+			maxrules = others.max_rules
+		}
+		
+        groupProxy.read({}, function(data){
+            var i = 0;
+            for (i = 0; i < data.length; i++){
+                groupItem.push({name:data[i].name,value:data[i].name});
+            }
+            $(editor).find('#appdist-addr').combobox('loadData',groupItem);
+        });
+		
+		 /*发送form请求,获取时间对象列表 */
+        var timeItem=[];
+        var timeProxy = new $.su.Proxy({
+                url: $.su.url('/admin/time_mngt?form=timeobj_list'),
+                async: false
+        });  
+
+        timeProxy.read({}, function(data){                
+            for (i=0; i<data.length; i++){
+                timeItem.push({name:data[i].entry_name,value:data[i].entry_name});                    
+            } 
+            
+            var combobox = $(editor).find('.combobox-value[name=timeobj]');
+            combobox.combobox('loadData',timeItem);
+        });  
+    }).on("ev_startEdit", function(e, index, key){
+        $("#appdist-list-switch").radio('reset');
+        combobox2checkbox();
+    });
+
+    /*var helpVpnUser = new $.su.Help({
+        container: "div#appdist-help",
+        content: "NAPT"
+    });*//* TODO */
+    function buildAppTable(appList, columns, $table){
+        var html = '',
+            items = [];
+        if(!$.isArray(appList)){
+            return;
+        }
+        columns = columns || 4;
+        $.each(appList, function(i, category){
+            html += '<tr class="app-category"><td colspan="'+columns+'"><input id="app-cate-' + category.category + '"/></td></tr>';
+            if(!$.isArray(category.list)){
+                return true;
+            }else{
+                html += '<tr class="app-row">';
+                var last = category.list.length - 1;
+                $.each(category.list, function(j, app){
+                    html += '<td><input class="app-checkbox app-category-' + category.category + '" id="app-'+ app.name +'" data-name="'+ app.name +'"/></td>';
+                    if(j === last){
+                        html += '</tr>';
+                    }else if(j % columns === columns - 1){
+                        html += '</tr><tr class="app-row">';
+                    }
+                });
+            }
+        });
+        $table.html(html);
+        $.each(appList, function(i, category){
+            $('#app-cate-'+category.category).checkbox({
+                items: [{boxlabel: category.label, inputValue: category.category, uncheckedValue: "off"}]
+            });
+            if(!$.isArray(category.list)){
+                return true;
+            }else{
+                $.each(category.list, function(j, app){
+                    $('#app-'+app.name).checkbox({
+                        items: [{boxlabel: app.label, inputValue: "on", uncheckedValue: "off"}]
+                    });
+                    items.push({name: app.label, value: app.name});
+                });
+            }
+        });
+        $table.delegate('.app-row .checkbox-label', 'click', function(e){
+            checkbox2combobox();
+            categoryCheck();
+        }).delegate('.app-category .checkbox-label', 'click', function(e){
+            var $target = $(this),
+                category = $target.find('input').data('checked'),
+                $input = $('#app-cate-'+category);
+
+            if($input.checkbox('getValue').length > 0){
+                $('.app-category-'+category).each(function(i, o){
+                    $(o).checkbox('setValue', 'on');
+                });
+            }else{
+                $('.app-category-'+category).each(function(i, o){
+                    $(o).checkbox('setValue', 'off');
+                });
+            }
+            checkbox2combobox();
+        });
+        return items;
+    }
+
+    function checkbox2combobox(){
+        var value = [],
+            switcher = $('#appdist-list-switch').radio('getValue');
+        $('.app-checkbox').each(function(i, o){
+            var $o = $(o);
+            if($o.checkbox('getValue').length > 0){
+                value.push($o.data('name'));
+            }
+        });
+        if(switcher === 'ban-list'){
+            $('#appdist-appName').combobox('setValue', value);
+        }else if(switcher === 'log-list'){
+            $('#appdist-recordApp').combobox('setValue', value);
+        }
+    }
+
+    function combobox2checkbox(){
+        var switcher = $('#appdist-list-switch').radio('getValue'),
+            value;
+
+        if(switcher === 'ban-list'){
+            value = $('#appdist-appName').combobox('getValue');
+        }else if(switcher === 'log-list'){
+            value = $('#appdist-recordApp').combobox('getValue');
+        }
+        $('.app-checkbox').each(function(i, checkbox){
+            var $checkbox = $(checkbox);
+            var name = $checkbox.data('name');
+            if($.inArray(name, value) !== -1){
+                $checkbox.checkbox('setValue', 'on');
+            }else{
+                $checkbox.checkbox('setValue', 'off');
+            }
+        });
+        categoryCheck();
+    }
+
+    function categoryCheck(){
+        $.each(appList, function(i, appCategory){
+            var category = appCategory.category;
+            var isAllChecked = true;
+            $('#app-cate-'+category).checkbox('setValue', 'off');
+            $('.app-category-'+category).each(function(j, o){
+                if($(o).checkbox('getValue').length === 0){
+                    isAllChecked = false;
+                    return false;
+                }
+            });
+            if(isAllChecked){
+                $('#app-cate-'+category).checkbox('setValue', category);
+            }
+        });
+    }
+
+	 var helpIspRouting = new $.su.Help({
+        container: "div#appdist_help",
+        content: ["APPDIST_SETTING","APPDIST_LIST"]
+    });
+});
+
+//]]>
+</script>
+</body>
+
+</html>

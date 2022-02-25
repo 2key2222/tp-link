@@ -1,0 +1,304 @@
+#!/bin/sh
+
+mt7628_get_lan_vlan_id()
+{
+	local lan_vlan=1
+	local loop=0
+	local result=$(uci get vlan.@switch_vlan[$loop].users 2>/dev/null)
+	while [ x$result != 'x' ];do
+		[ $result == "lan" ] && {
+			lan_vlan=$(uci get vlan.@switch_vlan[$loop].vlan 2>/dev/null)
+			break
+		}
+		loop=$(($loop+1))
+		result=$(uci get vlan.@switch_vlan[$loop].users 2>/dev/null)
+	done
+
+	echo $lan_vlan
+}
+
+mt7628_get_vlan_index()
+{
+	local vlan=$1
+
+	#echo "vlan is $vlan" > /dev/console
+
+	local base_addr=80
+	for i in `seq 0 15`
+	do
+		local reg_addr=$((4*($i/2) + $base_addr))
+		reg_addr=$(echo $reg_addr | xargs printf %x)
+		local result=$(swconfig dev switch0 reg get 0x$reg_addr 2>/dev/null)
+		local val=${result#*\[}
+		val=${val%*\]}
+		val=$((($val >> (($i%2)*12)) & 0xFFF))
+		if [ $vlan = $val ] ; then
+			echo $i
+			break
+		fi
+	done
+}
+
+mt7628_set_lan_mac_static_atl()
+{
+	lanmac=$(uci get network.lan.macaddr)
+
+	lanmac_inchar=${lanmac//:/}
+	hight4byte=${lanmac_inchar:0:8}
+	low2byte=${lanmac_inchar:8:4}
+
+	local lan_vlan=$(mt7628_get_lan_vlan_id)
+	local lan_vlan_index=$(mt7628_get_vlan_index $lan_vlan)
+
+	local atlfun0=0x40071
+	atlfun0=$(($atlfun0 | ($lan_vlan_index << 7)))
+	local atlfun1=0x0000${low2byte}
+	local atlfun2=0x${hight4byte}
+
+	swconfig dev switch0 reg set 0x3C ${atlfun2}
+	swconfig dev switch0 reg set 0x38 ${atlfun1}
+	swconfig dev switch0 reg set 0x34 ${atlfun0}
+}
+
+mt7628_get_wan_vlan_index()
+{
+	local wan_index=$1
+	local wan_vlan=-1
+	local loop=0
+	local result=$(uci get vlan.@switch_vlan[$loop].users 2>/dev/null)
+	while [ x$result != 'x' ];do
+		[ $result == "wan" ] && {
+			local ports=$(uci get vlan.@switch_vlan[$loop].ports 2>/dev/null)
+			local port=${ports:0:1}
+			port=$(($port + 1))
+			[ $wan_index == $port ] && {
+				wan_vlan=$(uci get vlan.@switch_vlan[$loop].vlan 2>/dev/null)
+				break
+			}
+		}
+		loop=$(($loop+1))
+		result=$(uci get vlan.@switch_vlan[$loop].users 2>/dev/null)
+	done
+
+	#echo "wan vlan is $wan_vlan" > /dev/console
+
+	if [ $wan_vlan == "-1" ] ; then
+		echo "-1"
+	else
+		local wan_vlan_index=$(mt7628_get_vlan_index $wan_vlan)
+		echo $wan_vlan_index
+	fi
+}
+
+mt7628_set_wan_mac_static_atl()
+{
+	wanmode=$(uci get network.global.wanmode)	
+
+	for i in `seq 1 $wanmode`
+	do
+		local wanmac=$(uci get network.wan${i}_eth.macaddr)
+		local wanmac_inchar=${wanmac//:/}
+		hight4byte=${wanmac_inchar:0:8}
+		low2byte=${wanmac_inchar:8:4}
+
+		local wan_vlan_index=$(mt7628_get_wan_vlan_index $i)
+		[ $wan_vlan_index != "-1" ] && {
+			local atlfun0=0x40071
+			atlfun0=$(($atlfun0 | ($wan_vlan_index << 7)))
+			local atlfun1=0x0000${low2byte}
+			local atlfun2=0x${hight4byte}
+
+			swconfig dev switch0 reg set 0x3C ${atlfun2}
+			swconfig dev switch0 reg set 0x38 ${atlfun1}
+			swconfig dev switch0 reg set 0x34 ${atlfun0}
+		}
+	done
+}
+
+mt7628_set_mac_static_atl()
+{
+	# clear atl
+	if [ -f /usr/bin/ralink-switch ] ; then
+		/usr/bin/ralink-switch clear
+	fi
+
+	# if mirror on, do not add lan/wan mac to static mac table.
+	mirror_state=$(uci get switch.mirror.state)
+	if [ "$mirror_state" == "on" ];then
+		return
+	fi
+
+	# not consider iptv
+	mt7628_set_lan_mac_static_atl
+	mt7628_set_wan_mac_static_atl
+}
+
+mt7628_flowcontrol_init_config()
+{
+	local lan_start=0
+	local wan_start=0
+	local lan_end=0	
+	local wan_end=0
+
+	local product_type=`cat /etc/productinfo |grep product_name |cut -d ":" -f 2`
+	local wan_num=$(uci get network.@interface_mode[0].wanmode)	
+
+	#TL-WVR458L's LAN_PORT is port1
+	if [ $product_type == "TL-WVR458L" ];then
+		lan_start=1
+		lan_end=$(($MAX_PORT_NUM-$wan_num))
+		wan_start=$(($LAN_END+1))
+		wan_end=$MAX_PORT_NUM
+	elif [ $product_type == "TL-R4299G" ];then
+		lan_start=$(($wan_num+1))
+		lan_end=$MAX_PORT_NUM
+		wan_start=1
+		wan_end=$wan_num
+	else
+		wan_end=$MAX_PORT_NUM
+	fi	
+
+	#from s_port should open the flow control
+	#lan on
+	for i in `seq $lan_start $lan_end`; do
+		section="port"$i		
+		uci set switch.$section.flowcontrol='on'
+	done
+
+	#wan off
+	for i in `seq $wan_start $wan_end`;do
+		section="port"$i		
+		uci set switch.$section.flowcontrol='off'
+	done
+
+	uci commit 2>/dev/null
+}
+
+# mt7628 switch init
+mt7628_switch_init()
+{
+	#mt7628_flowcontrol_init_config
+
+	for i in `seq 1 $MAX_PORT_NUM`; do
+		# port para init
+		section="port"$i
+		port_state=`uci get switch.$section.port_state`
+		flowcontrol=`uci get switch.$section.flowcontrol`
+		ng_mode=`uci get switch.$section.negotiation_mode`
+		
+		mt7628_switch_port_para_init $i $port_state $flowcontrol $ng_mode
+
+		# port rateControl init
+		config_get ingress_state "port"$i "ingress_state"
+		config_get ingress_mode "port"$i "ingress_mode"
+		config_get ingress_rate "port"$i "ingress_rate"
+		config_get egress_state "port"$i "egress_state"
+		config_get egress_rate "port"$i "egress_rate"
+
+		#mt7628_switch_port_rateControl_init $i $ingress_state $ingress_mode $ingress_rate $egress_state $egress_rate
+	done
+
+	mt7628_switch_reload "vlan"
+
+	# init mirror config
+	config_get state "mirror" "state"
+	config_get mode "mirror" "mode"
+	config_get mirrorport "mirror" "mirrorport"
+	config_get mirroredports "mirror" "mirroredports"
+	mt7628_switch_port_mirror_init $state $mode $mirrorport "$mirroredports"
+
+	mt7628_set_mac_static_atl
+}
+
+
+# restart switch
+# restart port 
+mt7628_switch_restart()
+{
+	for i in `seq 1 $MAX_PORT_NUM`; do
+		#cpu port
+		[ $i -eq $CPU_PORT ] && continue
+
+		# port para init
+		config_get port_state "port"$i "port_state"
+		config_get flowcontrol "port"$i "flowcontrol"
+		config_get ng_mode "port"$i "negotiation_mode"	
+
+		mt7628_switch_port_para_init $i $port_state $flowcontrol $ng_mode
+	done
+}
+
+mt7628_switch_reload_mirror()
+{
+	config_get state "mirror" "state"
+	config_get mode "mirror" "mode"
+	config_get mirrorport "mirror" "mirrorport"
+	config_get mirroredports "mirror" "mirroredports"	
+
+	mt7628_switch_port_mirror_init $state $mode $mirrorport "$mirroredports"
+
+	mt7628_set_mac_static_atl
+}
+
+# reload para config
+# $1: ports id
+mt7628_switch_reload_para()
+{
+	for i in $1;do
+		config_get port_state "port"$i "port_state"
+		config_get flowcontrol "port"$i "flowcontrol"
+		config_get ng_mode "port"$i "negotiation_mode"	
+
+		mt7628_switch_port_para_init $i $port_state $flowcontrol $ng_mode
+	done
+
+}
+
+# reload rateControl config
+# $1: ports id
+mt7628_switch_reload_rateControl()
+{
+	for i in $1; do		
+		config_get ingress_state "port"$i "ingress_state"
+		config_get ingress_mode "port"$i "ingress_mode"
+		config_get ingress_rate "port"$i "ingress_rate"
+		config_get egress_state "port"$i "egress_state"
+		config_get egress_rate "port"$i "egress_rate"
+
+		#mt7628_switch_port_rateControl_init $i $ingress_state $ingress_mode $ingress_rate $egress_state $egress_rate
+	done
+}
+
+mt7628_switch_reload_pvlan()
+{
+	set_port_vlan
+}
+
+#mt7628 switch reload
+# $1: module type
+# $2: ports id
+mt7628_switch_reload()
+{
+	case $1 in
+		"mirror" )
+			mt7628_switch_reload_mirror
+			;;
+		"pvlan" )
+			mt7628_switch_reload_pvlan
+			;;
+		"para" )
+			mt7628_switch_reload_para "$2"
+			;;
+		"rateControl")
+			#mt7628_switch_reload_rateControl "$2"
+			;;
+		"vlan")
+			swconfig dev switch0 load vlan
+			mt7628_switch_reload_mirror
+			;;
+		*)
+			;;
+	esac
+}
+
+

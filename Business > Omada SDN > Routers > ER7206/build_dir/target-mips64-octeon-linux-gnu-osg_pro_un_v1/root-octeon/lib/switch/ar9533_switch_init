@@ -1,0 +1,251 @@
+#!/bin/sh
+
+#
+MAX_PORT_NUM=5
+
+system_check_rsa()
+{
+	local rsa
+	local trytimes=60
+	local time=0
+	while [ $time -lt $trytimes ];do
+		if [ -f /tmp/rsa_check/rsa_result ]; then {
+			rsa=`cat /tmp/rsa_check/rsa_result`
+			if [ $rsa == "PASS" ]; then
+			    break
+			elif [ $rsa == "FAIL" ]; then
+			    break
+			else 
+				time=$(($time+1))
+			    sleep 1
+			fi
+		}
+		else
+			time=$(($time+1))
+			sleep 1
+		fi
+		
+	done
+	
+	if [ $time -eq $trytimes ]; then
+		echo "check signature failed " > /dev/console
+		rsa="FAIL"
+	fi
+
+	echo "$rsa" > /tmp/rsa_switch_result
+}
+
+ar9533_mirror_config_init()
+{
+	lock /var/run/switch_set_lock
+	local cfg=0
+	config_get state "mirror" "state"
+	config_get mode "mirror" "mode"
+	config_get mirrorport "mirror" "mirrorport"
+	config_get mirroredports "mirror" "mirroredports"
+
+	if [ "$state" = "on" ]; then
+		cfg=`set_bit_value $cfg 0 1`
+	else 
+		cfg=`set_bit_value $cfg 0 0`
+	fi
+
+	if [ $mode = "ingress" ]; then
+		cfg=`set_bit_value $cfg 1 1`
+	elif [ $mode = "egress" ]; then
+		cfg=`set_bit_value $cfg 2 1`
+	elif [ $mode = "both" ]; then
+		cfg=`set_bit_value $cfg 1 1`
+		cfg=`set_bit_value $cfg 2 1`
+	fi
+
+	cfg=$((($cfg)|($mirrorport<<3)))
+	local miis=0
+
+	for i in $mirroredports;do
+		miis=`set_bit_value $miis $i 1`
+	done
+
+	cfg=$((($cfg)|($miis<<11)))
+
+	swconfig dev switch0 set mirror $cfg
+
+	lock  -u /var/run/switch_set_lock
+
+
+}
+
+ar9533_port_config_init()
+{
+	lock /var/run/switch_set_lock
+
+	local cfg=0
+	local ps,fl,ng,is,ir,es,er
+	local rsa="PASS"
+	local port=$1
+
+	config_get port_state "port"$port "port_state"
+	config_get flowcontrol "port"$port "flowcontrol"
+	config_get ng_mode "port"$port "negotiation_mode"	
+
+	config_get ingress_state "port"$port "ingress_state"
+	config_get ingress_rate "port"$port "ingress_rate"
+	config_get egress_state "port"$port "egress_state"
+	config_get egress_rate "port"$port "egress_rate"
+
+
+	if [ $port_state = "on" ]; then
+		ps=1
+	else
+		ps=0
+	fi
+
+	if [ -f /tmp/rsa_switch_result ]; then {
+		rsa=`cat /tmp/rsa_switch_result`
+		if [ $rsa == "FAIL" ]; then
+			if [ $port != 1 ]; then
+				ps=0
+			fi
+		fi
+	}
+	fi
+
+	if [ $flowcontrol = "on" ]; then
+		fl=1
+	else
+		fl=0
+	fi
+
+	ng=0
+	case $ng_mode in
+		"10MH")
+			ng=1
+			;;
+		"10MF")
+			ng=2
+			;;
+		"100MH")
+			ng=3
+			;;
+		"100MF")
+			ng=4
+			;;
+		"auto")
+			ng=0
+			;;
+	esac
+
+	if [ $ingress_state = "on" ];then
+		is=1
+	else
+		is=0
+	fi
+
+	if [ $egress_state = "on" ];then
+		es=1
+	else
+		es=0
+	fi
+
+	ir=$ingress_rate
+	er=$egress_rate
+
+	cfg=$((($ps)|($fl<<1)|($ng<<2)|($is<<5)|($ir<<6)|($es<<16)|($er<<17)))
+
+	swconfig dev switch0 port $port set port_config $cfg
+
+	lock  -u /var/run/switch_set_lock
+
+
+}
+
+ar9533_switch_init()
+{
+
+	system_check_rsa
+
+	swconfig dev switch0 load vlan	
+
+	ar9533_mirror_config_init
+
+	for i in `seq 1 5`; do
+		
+		ar9533_port_config_init $i
+	done
+
+}
+
+# restart switch
+# restart port 
+ar9533_switch_restart()
+{
+	for i in `seq 1 5`; do
+		
+		ar9533_port_config_init $i
+	done
+}
+
+ar9533_switch_reload_mirror()
+{
+	ar9533_mirror_config_init
+}
+
+# reload para config
+# $1: ports id
+ar9533_switch_reload_para()
+{
+	for i in $1;do	
+
+		ar9533_port_config_init $i 
+	done
+
+}
+
+# reload rateControl config
+# $1: ports id
+ar9533_switch_reload_rateControl()
+{
+	for i in $1; do		
+
+		ar9533_port_config_init $i 
+	done
+}
+
+ar9533_switch_reload_pvlan()
+{
+	ar9533_switch_init
+}
+
+ar9533_switch_reload_vlan()
+{
+	lock /var/run/reload_vlan_lock
+	echo "reload vlan" > /dev/console
+	swconfig dev switch0 load vlan
+	lock -u /var/run/reload_vlan_lock
+}
+
+#
+# $1: module type
+# $2: ports id
+ar9533_switch_reload()
+{
+	case $1 in
+		"mirror" )
+			ar9533_switch_reload_mirror
+			;;
+		"pvlan" )
+			ar9533_switch_reload_pvlan
+			;;
+		"para" )
+			ar9533_switch_reload_para "$2"
+			;;
+		"rateControl")
+			ar9533_switch_reload_rateControl "$2"
+			;;
+		"vlan")
+			(sleep 1;ar9533_switch_reload_vlan)&
+			;;
+		*)
+			;;
+	esac
+}

@@ -1,0 +1,74 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title></title>
+</head>
+
+<body>
+<div class="func-container">
+	<div id="print_server_cnt">
+	 	<div id="print_server_setting">
+	    	<form id="form-print-server" >
+					<input id="enable" name="enable"/>
+			</form>
+	  </div>
+	</div>
+
+	<div id="help_print_server"></div>
+</div>
+
+<script type="text/javascript">
+try{
+    $
+}catch(e){
+    location.href = "/";
+};
+
+$(document).ready(function(e){
+	var BACKUP_URL_NEW = $.su.url("/admin/print_server?form=print_server"); 
+
+	$("div.func-container").page({
+		title: $.su.CHAR.BACKUP.PRINT_SERVER,
+		help: ""
+	});
+
+	$("#print_server_cnt").panel({
+		title: $.su.CHAR.BACKUP.PRINT_SERVER_PANEL,
+		collapsible: false
+
+	});
+
+
+	var print_server_proxy = new $.su.Proxy({
+		url: BACKUP_URL_NEW
+	});
+
+	$('#enable').radio({
+		fieldLabel:"打印服务器状态",
+        columns: 2,
+        items: [{
+            boxlabel: '禁用', inputValue: "off", checked: true
+        },{
+            boxlabel: '启用', inputValue: "on"
+        }]
+    });
+  
+  $("#form-print-server").form({
+      proxy: print_server_proxy,
+      fields: [
+          {name: "enable", mapping: "enable"}
+      ],
+      submitBtn: "default"
+  });
+
+  var helpPrinterServer = new $.su.Help({
+		container: "div#help_print_server",
+		content: ["PRINTER_SERVER"]
+	});
+
+});
+</script>
+</body>
+
+</html>

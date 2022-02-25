@@ -1,0 +1,356 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<style type="text/css">
+    #ap-list .grid-content-container{
+        overflow-x: hidden;
+        overflow-y: auto;
+    }
+</style>
+<title>Wireless WDS</title>
+</head>
+
+<body>
+<div class="func-container">
+    <div id="func-setting">
+        <form id="wds-setting">
+            <input id="radio" name="radio_id" type="hidden" value="0"/>
+            <input id="wds-enable" name="wds" value=""/>
+            <input id="wds-ssid" name="ssid_bridge" value=""/>
+            <input id="wds-ssid-encoding" name="utf8" value=""/>
+            <input id="wds-bssid" name="bssid_bridge" value=""/>
+            <input id="wds-channel" name="channel_bridge" value=""/>
+            <input id="wds-scan" />
+            <input id="wds-encryption" name="encrypt" value=""/>
+            <input id="wds-index" name="encrypt_wep" value="" class="encrypt-option encrypt-option-wep"/>
+            <input id="wds-auth" name="encrypt_auth" value="" class="encrypt-option encrypt-option-wep"/>
+            <input id="wds-key" name="encrypt_val" value="" class="encrypt-option"/>
+            <input id="wds-submit"/>
+        </form>
+    </div>
+
+    <div id="ap-survey">
+        <div id="ap-list"></div>
+    </div>
+
+    <div id="confirm-msg">
+        <h4 class="title">
+            <span class="icon"></span>
+            <span class="text" id="confirm-msg-text"></span>
+        </h4>
+    </div>
+
+    <div id="wireless-wds-help"></div>
+</div>
+
+<script type="text/javascript">
+
+//<![CDATA[
+try{
+    $
+}catch(e){
+    location.href = "/";
+};
+$(document).ready(function(e){
+    var radio = 1; // 0: 2.4GHz, 1: 5GHz
+    var mssidEnable = false;
+    var savedData = {};
+    var URL_WDS = $.su.url("/admin/wds?form=wds_config");
+    var URL_APLIST = $.su.url("/admin/wds?form=scan_ap");
+    var $encryptOption = $('.encrypt-option');
+    var $encryptWep = $('.encrypt-option-wep');
+
+    $('#radio').val(radio);
+
+    var $confirmMsg = $("div#confirm-msg").msg({
+        type: "confirm",
+        cls: 'reboot-confirm-size',
+        closeBtn: false,
+        okHandler: function(e){
+            if($ssid.textbox('getValue') !== savedData.ssid || $bssid.textbox('getValue') !== savedData.bssid){
+                $channel.textbox('setValue', 'auto');
+            }
+            if($ssidEncode.textbox('getValue') !== 'true' || $ssidEncode.textbox('getValue') !== 'false'){
+                $channel.textbox('setValue', 'false');
+            }
+            $.su.loading.show();
+            $form.form('submit');
+        },
+        cancelHandler: function(){
+            $confirmMsg.msg('hide');
+        }
+    });
+    $('#confirm-msg-text').text('开启WDS后，Multi-SSID功能将失效');
+
+    $("#func-setting").panel({
+        title: "功能设置"
+    });
+
+    var $enable = $("#wds-enable").radio({
+        fieldLabel: 'WDS',
+        columns: 2,
+        items:[
+            {boxlabel: '启用', name:'wds', inputValue:'1', checked: true},
+            {boxlabel: '禁用', name:'wds', inputValue: '0'}
+        ]
+    });
+
+    var $ssid = $('#wds-ssid').textbox({
+        fieldLabel: '（桥接的）SSID',
+        allowBlank: true,
+        autoTrim: false
+    });
+    var $ssidEncode = $('#wds-ssid-encoding').textbox({
+        fieldLabel: '',
+        allowBlank: true
+    }).textbox('hide');
+
+    var $bssid = $('#wds-bssid').textbox({
+        fieldLabel: '（桥接的）BSSID',
+        vtype: 'mac',
+        allowBlank: true
+    });
+
+    var $channel = $('#wds-channel').textbox({
+        fieldLabel: '（桥接的）信道',
+        allowBlank: true,
+        value: 'auto'
+    }).textbox('hide');
+    var $scanButton = $('#wds-scan').button({
+        fieldLabel: '',
+        text: '扫描',
+        cls: 'submit',
+        handler: function(){
+            $apList.grid('removeAllData').find('.totalCount').val('0');
+            $msg.find('.msg-title-container').text('正在扫描，请稍候');
+            var store = $apList.grid('getStore');
+            store.load({radio_id: radio}, function(){
+                $msg.find('.msg-title-container').text('无线AP列表');
+            });
+            $msg.msg('show');
+        }
+    });
+    var $encrytion = $("#wds-encryption").combobox({
+        fieldLabel: '密钥类型',
+        items:[
+            {name:"无加密",value:"1", selected: true},
+            /*{name:"ASCII类型的WEP加密",value:"2"},
+            {name:"16进制的WEP加密",value:"3"},*/
+            {name:"WPA-PSK/WPA2-PSK",value:"4"}
+        ],
+        alwaysTrigger: true,
+        allowBlank: false
+    }).on('ev_change', function(e, oldValue, newValue){
+        var value = newValue[0];
+        switch (value){
+            case '1':
+                $.su.func.hideWidgets($encryptOption);
+                break;
+            /*case '2':
+                $.su.func.showWidgets($encryptOption);
+                break;
+            case '3':
+                $.su.func.showWidgets($encryptOption);
+                break;*/
+            case '4':
+                $.su.func.showWidgets($encryptOption);
+                $.su.func.hideWidgets($encryptWep);
+                break;
+            default :
+                $.su.func.showWidgets($encryptOption);
+                break;
+        }
+    });
+
+    $("#wds-index").combobox({
+        fieldLabel: 'WEP密钥序号',
+        items:[
+            {name:"1",value:"1", selected: true},
+            {name:"2",value:"2"},
+            {name:"3",value:"3"},
+            {name:"4",value:"4"}
+        ],
+        allowBlank: false
+    });
+
+    $("#wds-auth").combobox({
+        fieldLabel: '认证类型',
+        items:[
+            {name:"开放系统",value:"1", selected: true},
+            {name:"共享密钥",value:"2"}
+        ],
+        allowBlank: false
+    });
+
+    $('#wds-key').textbox({
+        fieldLabel: '密钥',
+        allowBlank: false,
+        maxLength: 64,
+        vtype: "strange_pwd",
+        tips: "(8-63个ASCII码字符或8-64个十六进制字符)"
+    });
+
+    $('#wds-submit').button({
+        text: '设置',
+        cls: 'form-submit',
+        handler: function(){
+            if($form.form('validate') !== true){
+                return;
+            }
+            var value = $enable.radio('getValue');
+            if(mssidEnable && value == '1'){
+                $confirmMsg.msg('show');
+            }else{
+                if($ssid.textbox('getValue') !== savedData.ssid || $bssid.textbox('getValue') !== savedData.bssid){
+                    $channel.textbox('setValue', 'auto');
+                }
+                $.su.loading.show();
+                $form.form('submit');
+            }
+        }
+    });
+    $.su.func.hideWidgets($encryptWep);
+
+    var wdsProxy = new $.su.Proxy({
+        url: URL_WDS
+    });
+    $form = $('#wds-setting').form({
+        proxy: wdsProxy,
+        fields: [
+            {name: "wds", mapping: "wds"},
+            {name: "ssid_bridge", mapping: "ssid_bridge"},
+            {name: "utf8", mapping: "utf8"},
+            {name: "bssid_bridge", mapping: "bssid_bridge"},
+            {name: "channel_bridge", mapping: "channel_bridge"},
+            {name: "encrypt", mapping: "encrypt"},
+            {name: "encrypt_wep", mapping: "encrypt_wep"},
+            {name: "encrypt_auth", mapping: "encrypt_auth"},
+            {name: "encrypt_val", mapping: "encrypt_val"}
+        ],
+        autoLoad: false,
+        submitBtn: false
+    }).on('ev_loadData', function(e, data){
+        $.su.loading.hide();
+        if(data && data.mssid_enable === 'on'){
+            mssidEnable = true;
+        }else{
+            mssidEnable = false;
+        }
+        if(data && data.wds === '1'){
+            $scanButton.button('enable');
+        }else{
+            $scanButton.button('disable');
+        }
+        if(data){
+            savedData.ssid = data.ssid_bridge;
+            savedData.bssid = data.bssid_bridge;
+            savedData.channel = data.channel_bridge;
+        }
+    });
+    wdsProxy.read({params: {radio_id: radio}}, function(data){
+        if(data){
+            savedData.ssid = data.ssid_bridge;
+            savedData.bssid = data.bssid_bridge;
+            savedData.channel = data.channel_bridge;
+        }
+    });
+
+    var $msg = $("#ap-survey").msg({
+        autoshow: false,
+        title: '无线AP列表',
+        type: "window"
+    });
+    var apProxy = new $.su.Proxy({
+        url: URL_APLIST
+    });
+
+    var apStore = new $.su.Store({
+        proxy: apProxy,
+        fields: [
+            {name: "bssid"},
+            {name: "ssid"},
+            {name: "utf8"},
+            {name: "signal"},
+            {name: "channel"},
+            {name: "security"}
+        ],
+        autoLoad: false
+    });
+    var $apList = $("#ap-list").grid({
+        store: apStore,
+        maxLines:5,
+        paging: {},
+        columns: [
+            {
+                xtype: "rownumberer",
+                width:40
+            },
+            {
+                text: 'BSSID',
+                width: 150,
+                dataIndex: "bssid"
+            },
+            {
+                text: 'SSID',
+                width: 150,
+                dataIndex: "ssid"
+            },
+            {
+                text: '信号强度',
+                width: 70,
+                dataIndex: "signal"
+            },
+            {
+                text: '信道',
+                width: 70,
+                dataIndex: "channel"
+            },
+            {
+                text: '是否加密',
+                width: 70,
+                dataIndex: "security",
+                renderer: function(data){
+                    return data === true?'是': '否';
+                }
+            },
+            {
+                text: '选择',
+                // width:100,
+                renderer:function(data, index){
+                    return "<a href=\"javascript:void(0);\" data-index=\""+index+"\" class=\"choose-ap choose\" >"+$.su.CHAR.OPERATION.CONNECT +"</a>"
+                }
+            }
+        ],
+        operation: [{
+            xtype: "totalCount",
+            cls: "left",
+            fieldLabel: '扫描到的AP数目'
+        }]
+    }).delegate('.choose', 'click', function(){
+        var store = $apList.grid('getStore');
+        var index = $(this).data('index');
+        savedData = store.data[index];
+        $ssid.textbox('setValue', savedData.ssid);
+        $ssidEncode.textbox('setValue', savedData.utf8);
+        $bssid.textbox('setValue', savedData.bssid);
+        $channel.textbox('setValue', savedData.channel);
+        if(savedData.security){
+            $encrytion.combobox('setValue', '4');
+        }else{
+            $encrytion.combobox('setValue', '1');
+        }
+        $msg.msg('close');
+    });
+
+    var helpInfo = new $.su.Help({
+        container: "#wireless-wds-help",
+        content: "WIRELESS_WDS"
+    });
+});
+
+//]]>
+</script>
+</body>
+
+</html>

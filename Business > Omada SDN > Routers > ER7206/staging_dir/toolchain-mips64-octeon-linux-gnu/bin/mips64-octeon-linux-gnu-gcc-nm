@@ -1,0 +1,7 @@
+#!/bin/sh
+for arg in "$@"; do
+ case "$arg" in -l*|-L*|-shared|-static)
+  exec "/home/ubuntu/tp-link/ER7206_trunk/staging_dir/toolchain-cavium-sdk-3.x/bin/mips64-octeon-linux-gnu-gcc-nm" -Os -pipe -mno-branch-likely -march=octeon -mabi=64 -mglibc -msoft-float -I/home/ubuntu/tp-link/ER7206_trunk/staging_dir/toolchain-cavium-sdk-3.x/usr/include -I/home/ubuntu/tp-link/ER7206_trunk/staging_dir/toolchain-cavium-sdk-3.x/include -L/home/ubuntu/tp-link/ER7206_trunk/staging_dir/toolchain-cavium-sdk-3.x/usr/lib -L/home/ubuntu/tp-link/ER7206_trunk/staging_dir/toolchain-cavium-sdk-3.x/lib ${STAGING_DIR:+-idirafter "$STAGING_DIR/usr/include" -L "$STAGING_DIR/usr/lib" -Wl,-rpath-link,"$STAGING_DIR/usr/lib"} "$@" ;;
+ esac
+done
+exec "/home/ubuntu/tp-link/ER7206_trunk/staging_dir/toolchain-cavium-sdk-3.x/bin/mips64-octeon-linux-gnu-gcc-nm" -Os -pipe -mno-branch-likely -march=octeon -mabi=64 -mglibc -msoft-float -I/home/ubuntu/tp-link/ER7206_trunk/staging_dir/toolchain-cavium-sdk-3.x/usr/include -I/home/ubuntu/tp-link/ER7206_trunk/staging_dir/toolchain-cavium-sdk-3.x/include -L/home/ubuntu/tp-link/ER7206_trunk/staging_dir/toolchain-cavium-sdk-3.x/usr/lib -L/home/ubuntu/tp-link/ER7206_trunk/staging_dir/toolchain-cavium-sdk-3.x/lib ${STAGING_DIR:+-idirafter "$STAGING_DIR/usr/include"} "$@"

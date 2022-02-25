@@ -1,0 +1,72 @@
+Index: a/net/ipv4/ip_output.c
+===================================================================
+--- a/net/ipv4/ip_output.c	2014-09-02 16:43:00.000000000 +0800
++++ b/net/ipv4/ip_output.c	2014-11-03 17:39:01.000000000 +0800
+@@ -313,6 +313,7 @@
+ 			    ip_finish_output,
+ 			    !(IPCB(skb)->flags & IPSKB_REROUTED));
+ }
++EXPORT_SYMBOL(ip_output);
+ 
+ /*
+  * copy saddr and daddr, possibly using 64bit load/stores
+Index: a/net/ipv4/route.c
+===================================================================
+--- a/net/ipv4/route.c	2014-09-02 16:43:01.000000000 +0800
++++ b/net/ipv4/route.c	2014-11-03 17:34:31.000000000 +0800
+@@ -116,6 +116,14 @@
+ 
+ #define RT_GC_TIMEOUT (300*HZ)
+ 
++/* indicate the tp_mroute module's state, load or unload */
++int tp_mroute_load_state = 0;
++EXPORT_SYMBOL(tp_mroute_load_state);
++
++/* the kernel function of tp_mroute */
++int (*tp_mroute_handle_func)(struct sk_buff *skb);
++EXPORT_SYMBOL(tp_mroute_handle_func);
++
+ static int ip_rt_max_size;
+ static int ip_rt_redirect_number __read_mostly	= 9;
+ static int ip_rt_redirect_load __read_mostly	= HZ / 50;
+@@ -442,6 +450,7 @@
+ {
+ 	rt_genid_bump(net);
+ }
++EXPORT_SYMBOL(rt_cache_flush);
+ 
+ static struct neighbour *ipv4_neigh_lookup(const struct dst_entry *dst,
+ 					   struct sk_buff *skb,
+@@ -1428,6 +1437,12 @@
+ 	if (!ipv4_is_local_multicast(daddr) && IN_DEV_MFORWARD(in_dev))
+ 		rth->dst.input = ip_mr_input;
+ #endif
++
++	if ((!our) && tp_mroute_load_state && tp_mroute_handle_func)
++	{
++		rth->dst.input = tp_mroute_handle_func;
++	}
++
+ 	RT_CACHE_STAT_INC(in_slow_mc);
+ 
+ 	skb_dst_set(skb, &rth->dst);
+@@ -1783,12 +1798,19 @@
+ 		if (in_dev) {
+ 			int our = ip_check_mc_rcu(in_dev, daddr, saddr,
+ 						  ip_hdr(skb)->protocol);
++
++			if(tp_mroute_load_state && ipv4_is_local_multicast(daddr))
++			{ 
++				our = 0;
++			}
++						  			
+ 			if (our
+ #ifdef CONFIG_IP_MROUTE
+ 				||
+ 			    (!ipv4_is_local_multicast(daddr) &&
+ 			     IN_DEV_MFORWARD(in_dev))
+ #endif
++				|| tp_mroute_load_state
+ 			   ) {
+ 				int res = ip_route_input_mc(skb, daddr, saddr,
+ 							    tos, dev, our);

@@ -1,0 +1,369 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<style type="text/css">
+</style>
+<title>WEB_SECURITY</title>
+</head>
+
+<body>
+<div class="func-container">
+    <div id="func-setting">
+        <form id="global-setting">
+            <input id="global-enable" name="state" value=""/>
+        </form>
+    </div>
+
+    <div id="own-editor">
+        <input id="addr" name="addr"/>
+		<input id="websubmit" name="websubmit" />
+		<textarea id="fileext" name="fileext" />
+        <input id="timeobj" name="timeobj" />
+        <input id="comment" name="comment" />
+        <input id="state" name="state" />
+    </div>
+
+    <div id="appdist-list">
+        <div id="appdist-grid">
+        </div>
+    </div>
+
+    <div id="link-detail-window">
+        <table class="link-detail-table detail">
+            <tr>
+                <td class="detail-value"></td>
+            </tr>
+        </table>
+    </div>
+
+    <div id="bwlist_help"></div>
+</div>
+
+<script type="text/javascript">
+
+//<![CDATA[
+try{
+    $
+}catch(e){
+    location.href = "/";
+};
+
+$(document).ready(function(e){
+    var URL_GLOBAL = $.su.url("/admin/web_security?form=global_enable"),
+        URL_RULE = $.su.url("/admin/web_security?form=rule_list"),
+        URL_IPGROUP = $.su.url("/admin/ipgroup?form=ipgroup_list");
+ 
+    $("#func-setting").panel({
+        title: $.su.CHAR.WEB_SECURITY.FUNC_SET//"功能设置"
+    });
+
+    $("#global-enable").checkbox({
+        items: [
+            {boxlabel: $.su.CHAR.WEB_SECURITY.ENABLE_WEBSEC, inputValue: "on", uncheckedValue: "off"}//"启用网页安全功能"
+        ]
+    });
+
+    var globalProxy = new $.su.Proxy({
+        url: URL_GLOBAL
+    });
+    $("#global-setting").form({
+        proxy: globalProxy,
+        fields: [
+            {name: "state", mapping: "state"}
+        ],
+        submitBtn: "default"
+    });
+	
+	$("#appdist-list").panel({
+        title: $.su.CHAR.WEB_SECURITY.RULE_LIST//"规则列表"
+    });
+
+    $("#addr").combobox({
+        fieldLabel: $.su.CHAR.WEB_SECURITY.ADDR_GROUP,//"受控地址组",
+        allowBlank: false,
+        items:[
+            {value:"IPGROUP_ANY", name: "IPGROUP_ANY"}
+        ]
+    });
+	
+	var fileext = $("#fileext").textarea({
+		fieldLabel: $.su.CHAR.WEB_SECURITY.FILE_TYPE,//"过滤文件扩展类型",
+        inputCls:"long",
+        tips:$.su.CHAR.WEB_SECURITY.TIPS1//"请使用换行或者分号来隔开文件名后缀"
+	});
+	
+	$("#websubmit").checkbox({
+        fieldLabel:$.su.CHAR.WEB_SECURITY.FORBID_SUBMIT,//"禁止网页提交",
+    	items: [
+            {boxlabel: $.su.CHAR.WEB_SECURITY.ENABLE, inputValue: "on", uncheckedValue: "off"}
+        ]
+    });
+
+    $("#timeobj").combobox({
+        fieldLabel: $.su.CHAR.WEB_SECURITY.WORKTIME,//"生效时间",
+        allowBlank: false,
+        items:[
+            {value:"Any", name: "Any", selected:true}
+        ]
+    });
+	
+    $("#comment").textbox({
+        fieldLabel: $.su.CHAR.WEB_SECURITY.COMMENT,//"备注", 
+		allowBlank: true,
+		maxLength:32,
+		tips:$.su.CHAR.WEB_SECURITY.OPTIONAL// "（可选）"
+    });
+	
+    $("#state").checkbox({
+        fieldLabel: $.su.CHAR.WEB_SECURITY.STATE,//"状态",
+        items:[
+            {boxlabel: $.su.CHAR.WEB_SECURITY.ENABLE, name:'state', inputValue:'on',uncheckedValue:"off", checked:true}
+        ]
+    });
+
+    var $linkDetail = $("#link-detail-window").msg({
+        closeBtn: true,
+        cls:"l",
+        title: $.su.CHAR.WEB_SECURITY.POSTFIX_LIST,//"文件后缀名列表",
+        type: "window"
+    }).msg("hide");
+
+
+    function textSelect(o, a, b){
+        var a = parseInt(a, 10), b = parseInt(b, 10);
+        if(o.createTextRange){//IE浏览器
+            var range = o.createTextRange();         
+            range.moveStart("character", a);
+            range.moveEnd("character",b);
+            range.select();
+        }else{
+            o.setSelectionRange(a, b);
+            o.focus();
+        }
+        
+    }
+
+    var MAX_WEB_PER_RULE = 30;
+ 
+	var appdistListProxy = new $.su.Proxy({
+		url: URL_RULE
+	});
+	var appdistGrid = $("#appdist-grid").grid({
+        editor: {
+            content:"#own-editor",
+            fields: [
+                {name: "addr"},
+				{name: "websubmit"},
+				{name: "fileext"},
+                {name: "timeobj"},
+				{name: "comment"},
+                {name: "state"}
+            ],
+            validator:function(e){
+                var extList = fileext.textarea("getValue");
+                if("" == extList){
+                    fileext.textarea("setError", $.su.CHAR.WEB_SECURITY.ERR1);//"请您输入文件后缀名");
+                    $("div.textarea-container").find("div.widget-error-tips").css("margin-top", "200px");
+                    return false;
+                }
+                extList = extList.match(/(.*[\n]){0,}.*[^\n]/);
+                extList = extList[0];
+                extList = extList.split(/[\s,;]+/);
+
+                var reg =  new RegExp("^[a-zA-Z0-9\_]{1,8}$"); 
+                var isValid = true;
+                var tmpExt = "";
+                var errBegin = -1;
+                var errEnd = -1;
+                $(extList).each(function(i, obj){
+                    if(obj == ""){
+                        extList.splice(i,1);
+                        return;
+                    }
+                    if(!reg.test(obj)){
+                        isValid = false;
+                        errBegin = tmpExt.length;
+                        errEnd = errBegin + obj.length + 1;
+                    }
+                    tmpExt = tmpExt + obj + "\n";
+                });
+                tmpExt = tmpExt.match(/(.*[\n]){0,}.*[^\n]/);
+
+                if(extList.length > MAX_WEB_PER_RULE){
+                    fileext.textarea("setError", $.su.CHAR.WEB_SECURITY.POSTFIX_ERR.replace("%N%",MAX_WEB_PER_RULE));// "输入的后缀名超过上限，最多支持"+MAX_WEB_PER_RULE+"个后缀名");
+                    $("div.textarea-container").find("div.widget-error-tips").css("margin-top", "210px");
+                    isValid = false;
+                    return false;
+                }
+                if(isValid){
+                    fileext.textarea("setValue",tmpExt[0]);
+                    return true;
+                }else{
+                    textSelect($("textarea").get(0), errBegin, errEnd);
+                    fileext.textarea("setError", $.su.CHAR.WEB_SECURITY.ERR2);//"文件名后缀格式不正确");
+                    $("div.textarea-container").find("div.widget-error-tips").css("margin-top", "200px");
+                    return false;
+                }
+            }
+        },
+		store:{
+			proxy: appdistListProxy,
+			fields: [
+                {name: "addr"},
+				{name: "websubmit"},
+				{name: "fileext"},
+                {name: "timeobj"},
+				{name: "comment"},
+                {name: "state"}
+			],
+			autoLoad: true
+		},
+        paging:[],
+		columns: [
+			{
+				xtype: "checkcolumn"
+			},
+			{
+				xtype: "rownumberer"
+			},
+			{
+				text: $.su.CHAR.WEB_SECURITY.USERGROUP,//"用户组",
+				width: 80,
+				dataIndex: "addr"
+			},
+			{
+				dataIndex:"websubmit",
+				hidden:true
+			},
+			{
+				dataIndex:"fileext",
+                text:$.su.CHAR.WEB_SECURITY.POSTFIX,//"文件名后缀",
+                width:120,
+                renderer:function(dd, index, data){
+                    //console.log(dd,index,data);
+                    if("" == dd || typeof dd == "undefined"){
+                        return "---";
+                    }
+                    var EXT = dd.split("\n");                  
+                    switch(EXT.length){
+                        case 0:
+                            return "---";
+                            break;
+                        case 1:
+                            return EXT[0];
+                            break;
+                        case 2:
+                            return EXT[0] + "</br>" + EXT[1];
+                            break;
+                        default:
+                            return EXT[0] + "&nbsp&nbsp" + "<a href='javascript:void(0);' class='btn-detail' data-index='"+ index +"'>"+$.su.CHAR.WEB_SECURITY.DETAIL+"</a>";
+                            break;
+                    }     
+
+                    return data;
+                }
+			},
+            {
+                text: $.su.CHAR.WEB_SECURITY.WORKTIME,//"生效时间",
+                width: 80,
+                dataIndex: "timeobj"
+            },
+            {
+                text: $.su.CHAR.WEB_SECURITY.COMMENT,//"备注",
+                xtype: "comment"
+            },
+            {
+                xtype: "statuscolumn",
+                dataIndex: "state"
+            },
+            {
+                xtype: "settings"
+            }
+		],
+		operation: "prompt|add|delete"
+	}).delegate('a.btn-detail', 'click', function(e){
+        var index = $(this).data('index');
+        showDetail(appdistGrid.grid("getStore").data[index].fileext);
+    }).on("ev_load", function(e,data, others){
+        if(others)
+		{
+			MAX_WEB_PER_RULE = others.max_num_per_rule;
+		}
+        
+		var groupItem = [];
+        var editor = appdistGrid.grid('getEditor');
+        var groupProxy = new $.su.Proxy({
+            url: URL_IPGROUP,
+            async: false
+        });
+ 
+        groupProxy.read({}, function(data){
+            var i = 0;
+            for (i = 0; i < data.length; i++){
+                groupItem.push({name:data[i].name,value:data[i].name});
+            }
+            $(editor).find('#addr').combobox('loadData',groupItem);
+        });
+		
+		 /*发送form请求,获取时间对象列表 */
+        var timeItem=[];
+        var timeProxy = new $.su.Proxy({
+                url: $.su.url('/admin/time_mngt?form=timeobj_list'),
+                async: false
+        });  
+
+        timeProxy.read({}, function(data){                
+            for (i=0; i<data.length; i++){
+                timeItem.push({name:data[i].entry_name,value:data[i].entry_name});                    
+            } 
+            
+            var combobox = $(editor).find('.combobox-value[name=timeobj]');
+            combobox.combobox('loadData',timeItem);
+        });  
+    }
+	);
+	
+	var editor = $("div#appdist-grid").grid("getEditor");
+		$(editor).on("ev_startEdit", function(e, index, key){
+	
+		if( (index != "add") && (index != "delete") )
+		{
+			var qq_value = $("textarea#fileext").textarea("getValue");
+			qq_value = qq_value.replace(/,/g,"\n");
+			$("textarea#fileext").textarea("setValue", qq_value);
+		}
+	});
+
+    function showDetail(ext){
+        var extString = "";  
+        var extArray = ext.split("\n");
+        
+        for(var i = 0; i < extArray.length; i++){
+            if(i == extArray.length - 1){
+                extString += extArray[i] + "</br>";
+            }else{
+                extString += extArray[i] + "&nbsp&nbsp&nbsp&nbsp" + extArray[i+1] + "</br>";
+                i++;
+            }
+            
+        }
+        $linkDetail.find(".detail-value").html(extString).css({
+            "lineHeight":"20px",
+            "textAlign":"center",
+            "wordBreak":"break-all"
+        });
+        $linkDetail.msg('show');
+    }
+	
+	 var helpIspRouting = new $.su.Help({
+        container: "div#bwlist_help",
+        content: ["WEBSEC_ENABLE","WEBSEC_SETTING"]
+    });
+});
+
+//]]>
+</script>
+</body>
+
+</html>

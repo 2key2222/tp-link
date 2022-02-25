@@ -1,0 +1,29 @@
+
+config default 'default'
+	option zones 'LAN WAN1 WAN2'
+	option prerouting 'http ftp vs pt dns dmz_fw'
+	option postrouting 'one_nat multi_nat'
+	list network 'LAN-LAN'
+	list network 'WAN1-WAN1'
+	list network 'WAN2-WAN2'
+
+config nat_global 'global'
+	option enable 'on'
+
+config nat_alg
+	option pptp 'on'
+	option l2tp 'off'
+	option tftp 'off'
+	option ftp 'on'
+	option h323 'on'
+	option ipsec 'on'
+	option sip 'off'
+
+config rule_napt
+	option name 'NAT_LAN_WAN1'
+	option enable 'on'
+	option mask '24'
+	option ipaddr '192.168.1.0'
+	option interface 'WAN1'
+	option sysrule '1'
+

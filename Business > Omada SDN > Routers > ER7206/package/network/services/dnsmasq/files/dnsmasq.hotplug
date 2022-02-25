@@ -1,0 +1,19 @@
+#!/bin/sh
+
+#echo "action=$ACTION,iface=$INTERFACE" >> /tmp/test.log
+
+if [[ "$INTERFACE" != "lan" ]]; then
+    #echo "ignore !lan interface event!" >> /tmp/test.log
+	exit 0
+fi
+
+. /lib/functions.sh
+
+case "$ACTION" in
+	ifup)
+		/etc/init.d/dnsmasq restart
+	;;
+	#ifdown)
+	#	/etc/init.d/dnsmasq stop
+	#;;
+esac

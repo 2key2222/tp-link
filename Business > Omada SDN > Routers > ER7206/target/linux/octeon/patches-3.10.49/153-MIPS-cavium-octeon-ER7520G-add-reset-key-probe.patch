@@ -1,0 +1,10 @@
+--- a/arch/mips/cavium-octeon/octeon-platform.c
++++ b/arch/mips/cavium-octeon/octeon-platform.c
+@@ -73,6 +73,7 @@ static struct of_device_id __initdata oc
+ 	{ .compatible = "cavium,octeon-3860-bootbus", },
+ 	{ .compatible = "cavium,mdio-mux", },
+ 	{ .compatible = "gpio-leds", },
++	{ .compatible = "gpio-keys-polled", },
+ 	{ .compatible = "cavium,octeon-7130-usb-uctl", },
+ 	{ .compatible = "cavium,octeon-7130-sata-uctl", },
+ 	{},

@@ -1,0 +1,20 @@
+
+config interface 'WAN1'
+        option mode 'auto'
+        option gateway '0.0.0.0'
+        option dns '0.0.0.0'
+
+config interface 'WAN2'
+        option mode 'auto'
+        option gateway '0.0.0.0'
+        option dns '0.0.0.0'
+	
+config global 'online_check'
+        list track_dns 'www.google.com'
+        list track_dns 'www.tp-link.com'
+        list track_dns 'www.ieee.org'
+        list track_dns 'www.w3.org'
+        
+config global 'settings'
+	option interval '120'
+    

@@ -1,0 +1,11 @@
+--- a/drivers/net/cryptoDriver/Makefile	2018-09-03 10:14:05.000000000 +0800
++++ b/drivers/net/cryptoDriver/Makefile	2020-07-18 09:39:45.592431639 +0800
+@@ -15,7 +15,7 @@
+ #ifeq ($(KERNELRELEASE),)
+ #   PWD:=$(shell pwd)
+ #endif
+-PWD :=drivers/net/cryptoDriver
++PWD :=$(srctree)/drivers/net/cryptoDriver
+ SRC_APP=./source
+ SRC_UTILS=./source/utils
+ 

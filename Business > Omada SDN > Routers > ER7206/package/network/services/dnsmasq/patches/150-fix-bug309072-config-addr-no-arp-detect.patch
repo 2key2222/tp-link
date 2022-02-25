@@ -1,0 +1,11 @@
+--- a/src/rfc2131.c	2019-09-21 13:59:46.584297800 +0800
++++ b/src/rfc2131.c	2019-09-21 14:03:54.520866635 +0800
+@@ -1003,7 +1003,7 @@ size_t dhcp_reply(struct dhcp_context *c
+ 		  else if (have_config(config, CONFIG_DECLINED) &&
+ 			   difftime(now, config->decline_time) < (float)DECLINE_BACKOFF)
+ 		    my_syslog(MS_DHCP | LOG_WARNING, _("not using configured address %s because it was previously declined"), addrs);
+-		  else
++		  else if(!icmp_ping(config->addr))
+ 		    conf = config->addr;
+ 		}
+ 	    }

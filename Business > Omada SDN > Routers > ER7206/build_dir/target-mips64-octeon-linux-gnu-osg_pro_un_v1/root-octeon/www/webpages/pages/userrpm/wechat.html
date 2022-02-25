@@ -1,0 +1,735 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<style type="text/css">
+    #auth-url{
+        width: 304px;
+        padding: 0;
+    }
+    div.widget-container.radio-group-container div.widget-fieldlabel-wrap.s {
+        width: 110px;
+    }
+    .auth-tips-container{
+        margin: 10px 0;
+    }
+    .auth-tips-container p{
+        height: 22px;
+    }
+    #preview-frame{
+        border: none;
+        width: 400px;
+        height: 600px;
+    }
+</style>
+<title>Wechat portal</title>
+</head>
+
+<body>
+<div class="func-container">
+    <div id="global-setting">
+        <div id="own-editor">
+	<input id="wechat-name" name="name" value=""/>
+            <input id="bind-interface" name="interface" value=""/>
+            <input id="free-interval" name="freeInterval" value=""/>
+            <input id="auth-url" />
+            <input id="auth-token" name="authToken" value=""/>
+            <div class="auth-tips-container">
+                <p id="auth-tips1"></p>
+                <p id="auth-tips2"></p>
+            </div>
+            <h3 class="panel-title"><span id="remind-setting"></span></h3>
+            <input id="media-platform" name="publicName" value=""/>
+            <textarea id="wechat-info" name="wechatInfo" value=""></textarea>
+            <!--<input id="ad-image" name="ad_image" value="" type="file" class=""/>-->
+            <input id="image-select"class=""/>
+            <input id="background-image" name="image" value="" class=""/>
+            <!--<input id="qrcode-image" name="qrcode_image" value="" type="file" class=""/>-->
+            <input id="bitmap-select"class=""/>
+            <input id="bitmap-image" name="bitmapimage" value="" class=""/>
+            <input id="copyright" name="copyright" value="">
+            <input id="remind-preview" />
+            <h3 class="panel-title"><span id="jump-setting"></span></h3>
+            <input id="page-type" name="jumpPageType" value=""/>
+            <input id="remote-url" name="remoteUrl" value="" class="external-page"/>
+            <input id="success-preview" class="internal-page"/>
+            <input id="pcfree" name="pcfree" value=""/>
+            <input id="wechat-enable" name="enable" value=""/>
+        </div>
+        <div id="portal-list"></div>
+        <div id="image-msg">
+            <form id="image-uploader">
+                <input id="image-file" name="wechat" type="file"/>
+                <input id="image-button"/>
+            </form>
+        </div>
+        <div id="frame-msg">
+            <iframe id="preview-frame"></iframe>
+        </div>
+    </div>
+
+    <div id="wechat-help"></div>
+</div>
+
+<script type="text/javascript">
+
+//<![CDATA[
+try{
+    $
+}catch(e){
+    location.href = "/";
+};
+
+$(document).ready(function(e){
+    var URL_GLOBAL = $.su.url("/admin/wportal?form=wechat");
+    var WECHAT_AUTH_URL = ' http://weixin.tplogin.cn:8080/weixin/?tplogin_token=';
+    var WECHAT_JUMP_HINT = '启用微信认证后，请在微信后台增加消息跳转链接：';
+    var IMG_TYPE_QRCODE = 1;
+    var IMG_TYPE_ADV = 2;
+    var imageType = IMG_TYPE_QRCODE;
+    var $internalPage = $('.internal-page');
+    var $externalPage = $('.external-page');
+    var uploadBmp = 0;
+    var uploadBgd = 0;
+
+    function stringToBytes ( str )
+    {
+        var ch, st, re = [];
+        for (var i = 0; i < str.length; i++ )
+        {
+            ch = str.charCodeAt(i);  // get char
+            st = [];    			// set up "stack"
+            if ( ch < 0x007F )
+            {
+                st.push( ch & 0xFF );
+            }
+            else if ( (0x0080 <= ch) && (ch <= 0x07ff) )
+            {
+
+                st.push((ch & 0x003F) + 128 );
+                st.push(((ch>>6)&0x001F) + 192)
+            }
+            else if ((0x0800 <= ch ) && (ch <= 0xffff))
+            {
+                st.push((ch & 0x003F)+128);
+                st.push(((ch>>6)&0x003F)+128);
+                st.push(((ch>>12)&0x000F)+224);
+            }
+            re = re.concat( st.reverse() );
+        }
+        return re;  // return an array of bytes
+    }
+
+    function  strASCencode(sourceId)
+    {
+        var  temp = [];
+        var  index = 0;
+        var  ptr = 0;
+        var  high, low,inthis;
+        var  tempEncode = '';
+        temp = stringToBytes(sourceId);
+
+        for ( index = 0; index < temp.length; index++ )
+        {
+
+            high = (temp[index]>>4)&(0x0F);
+            low  = (temp[index])&(0x0F);
+
+            if ( high >= 0 && high <= 9 )
+            {
+                high += 48;
+            }
+            if ( high >= 10 && high <= 15 )
+            {
+                high += 55;
+            }
+
+            if ( low >= 0 && low <= 9 )
+            {
+                low += 48;
+            }
+            if ( low >= 10 && low<= 15 )
+            {
+                low += 55;
+            }
+            ptr = index<<1;
+            tempEncode += String.fromCharCode(high);
+            tempEncode +=String.fromCharCode(low);
+        }
+        return tempEncode;
+    }
+
+    function asctochar(high, low)
+    {
+        var connect = 0;
+        if ( high >= '0' && high <= '9' )
+        {
+            high = high.charCodeAt() - 48;
+        }
+        if ( high >= 'A' && high <= 'F' )
+        {
+            high = high.charCodeAt() - 55;
+        }
+        if ( low >= '0' && low <= '9' )
+        {
+            low = low.charCodeAt() - 48;
+        }
+        if ( low >= 'A' && low <= 'F' )
+        {
+            low = low.charCodeAt() - 55;
+        }
+        connect = high*16+low;
+        return connect;
+    }
+
+    function strASCdecode(sourceId)
+    {
+        var tempstr = sourceId;/*document.getElementById(sourceId).value*/
+        var index = 0;
+        var ptr = 0;
+        var tempDecode = '';
+        var high, low, high1,low1,high2,low2,inter1, inter2, inter;
+        var charcode = 0;
+        for ( index = 0; index <  tempstr.length; )
+        {
+            high = tempstr.slice(index,index+1);
+            low  = tempstr.slice(index+1,index+2);
+            inter = asctochar(high,low);
+            if ( 0 <= inter && inter <= 0x007f )
+            {
+                tempDecode += String.fromCharCode(inter);
+                index += 2;
+                continue;
+            }
+            if ( 192 <= inter && inter <= 223 )
+            {
+                high1 = tempstr.slice(index+2,index+3);
+                low1 = tempstr.slice(index+3,index+4);
+                inter1 = asctochar(high1,low1);
+                charcode = ((inter-192)<<6) + (inter1-128);
+                tempDecode += String.fromCharCode(charcode);
+                index += 4;
+                continue;
+            }
+            if ( 224<= inter && inter <= 239 )
+            {
+                high1 = tempstr.slice(index+2,index+3);
+                low1 = tempstr.slice(index+3,index+4);
+                high2 = tempstr.slice(index+4,index+5);
+                low2 = tempstr.slice(index+5,index+6);
+                inter1 = asctochar(high1,low1);
+                inter2 = asctochar(high2,low2);
+                charcode = ((inter-224)<<12)+((inter1-128)<<6)+(inter2-128);
+                tempDecode += String.fromCharCode(charcode);
+                index += 6;
+                continue;
+            }
+            else
+            {
+                tempDecode = sourceId;
+                break;
+            }
+        }
+        return tempDecode;
+    }
+
+    $("#global-setting").panel({
+        title: "微信认证规则列表"
+    });
+    $("#remind-setting").text("微信认证提醒页面");
+    $("#jump-setting").text("微信认证跳转页面");
+    $('#wechat-name').textbox({
+        fieldLabel: '规则名称',
+        //labelCls: 'xs',
+        vtype: "name",
+        tips: '（1-50个字符）',
+        maxLength:50,
+        allowBlank: false
+    });
+    $("#wechat-enable").radio({
+        fieldLabel: "状态", //$.su.CHAR.MAC_FILTERING.TITLE,
+        columns: 2,
+        //labelCls: 's',
+        items: [
+            {boxlabel: '启用', inputValue: "on", checked: true},
+            {boxlabel: '禁用', inputValue: "off"}
+        ]
+    });
+    $("#pcfree").radio({
+        fieldLabel: "PC免认证", 
+        columns: 2,
+        //labelCls: 's',
+        items: [
+            {boxlabel: '启用', inputValue: "on", checked: true},
+            {boxlabel: '禁用', inputValue: "off"}
+        ]
+    });
+
+    $('#bind-interface').combobox({
+        fieldLabel: '生效接口',
+        //labelCls: 'xs',
+        //multiSelect:true,
+        allowBlank: false,
+        items:[
+            {value:"---", name: "---", selected: true}
+        ]
+    });
+    $('#free-interval').textbox({
+        fieldLabel: '免费上网时长',
+        //labelCls: 'xs',
+        inputCls: 's',
+        vtype: {
+        vtype: "number",
+        max: 1440,
+        min: 1
+        },
+        allowBlank:false,
+        tips: '分钟（1-1440）'
+    });
+    $('#auth-url').textbox({
+        fieldLabel: '认证链接',
+        //labelCls: 'xs',
+        readOnly: true,
+        cls: 'inline',
+        allowBlank:false,
+        value: WECHAT_AUTH_URL
+    });
+    $('#auth-token').textbox({
+        fieldLabel: null,
+        cls: 'inline',
+        inputCls: 's',
+        maxLength:20,
+        allowBlank:false,
+        vtype:"ascii_visible",
+        tips: '（1-20个数字或字母）' 
+    }).on('ev_change', function(e, v){
+        $gridEditor.find('#auth-tips2').html(WECHAT_AUTH_URL + v);
+    });
+    $('#auth-tips1').html(WECHAT_JUMP_HINT);
+    $('#auth-tips2').html(WECHAT_AUTH_URL);
+
+    $('#media-platform').textbox({
+        fieldLabel: '公众号名称',
+        //labelCls: 'xs',
+        maxLength:16,
+        allowBlank:false,
+        tips: '（1-16个字符）'
+    });
+    /*$('#qrcode-image').file({
+        fieldLabel: '二维码图片',
+        //labelCls: 'xs',
+        extension: "jpg",
+        tips: '（可选，图片大小不能超过200KB）'
+    });*/
+    $('#wechat-info').textarea({
+        fieldLabel: '提醒文字',
+        //labelCls: 'xs',
+        inputCls: 'xl',
+        maxLength:100,
+        allowBlank:false,     
+        tips: '（1-100个字符）',
+        tipsCls: 's'
+    });
+
+    $('#copyright').textbox({
+        fieldLabel: '版权声明',
+        //labelCls: 'xs',
+        maxLength:50,
+        inputCls: 'xl',
+        allowBlank:false,     
+        tips: '（1-50个字符）',
+        tipsCls: 's'
+    });
+
+    $('#remind-preview').button({
+        fieldLabel: '页面预览',
+        text: '预览认证提醒页面',
+        handler: function(){
+            var result1 = $('#media-platform').textbox('validate');
+            var result2 = $('#wechat-info').textarea('validate');
+            var result3 = $('#copyright').textbox('validate');
+            var result4 = $('#wechat-name').textbox('validate');
+            //var result3 = $('#bind-interface').combobox('validate');
+            var editingId = $gridEditor.editor('getEditingId');
+
+            if(!result1 || !result2 || !result3 || !result4){
+                return;
+            }
+            
+            if("---" == $('#bitmap-image').textbox('getValue')){
+                uploadBmp = 0;
+            }
+            
+            if("---" == $('#background-image').textbox('getValue')){
+                uploadBgd = 0;
+            }
+
+            var url = './pages/userrpm/preview_remind.html?account=';
+            url += strASCencode($('#media-platform').textbox('getValue'));
+            url += '&remindinfo=';
+            url += strASCencode($('#wechat-info').textbox('getValue'));
+            url += '&copyright=';
+            url += strASCencode($('#copyright').textbox('getValue'));
+            url += '&rulename=';
+            url += $('#wechat-name').textbox('getValue');
+            url += '&uploadBmp=';
+            url += uploadBmp;
+            url += '&uploadBgd=';
+            url += uploadBgd;
+            url += '&pagetype=remind';
+            url += '&edittype=';
+            url += editingId;
+            document.getElementById('preview-frame').contentDocument.location.href = url;
+            $frameMsg.msg("show");
+        }
+    });
+    $('#page-type').combobox({
+        fieldLabel: '内容来源',
+        //labelCls: 'xs',
+        allowBlank: false,
+        alwaysTrigger: true,
+        items:[
+            {value:"local", name: "本地页面", selected: true},
+            {value:"remote", name: "外部链接"}
+        ]
+    }).on("ev_change", function(e, oldValue, newValue){
+        var value = newValue[0];
+        if(value == 'local'){
+            $.su.func.hideWidgets($externalPage);
+            $.su.func.showWidgets($internalPage);
+        }else if(value == 'remote'){
+            $.su.func.showWidgets($externalPage);
+            $.su.func.hideWidgets($internalPage);
+        }
+    });
+    $('#remote-url').textbox({
+        fieldLabel: '链接地址',
+        //labelCls: 'xs',
+        inputCls: 'xxl',
+        maxLength:250,     
+        allowBlank:false,
+        tips: '（1-250个字符）',
+        tipsCls: 's'
+    });
+    $('#success-preview').button({
+        fieldLabel: '页面预览',
+        text: '预览认证成功页面',
+        handler: function(){
+            var result1 = $('#media-platform').textbox('validate');
+            var result2 = $('#wechat-info').textarea('validate');
+            //var result3 = $('#bind-interface').combobox('validate');
+            var result3 = $('#free-interval').textbox('validate');
+            var result4 = $('#copyright').textbox('validate');
+            var result5 = $('#wechat-name').textbox('validate');
+            var editingId = $gridEditor.editor('getEditingId');
+
+            if(!result1 || !result2 || !result3 || !result4 || !result5){
+                return;
+            }
+
+            var url = './pages/userrpm/preview_remind.html?account=';
+            url += strASCencode($('#media-platform').textbox('getValue'));
+            url += '&remindinfo=';
+            url += $('#free-interval').textbox('getValue');
+            url += '&copyright=';
+            url += strASCencode($('#copyright').textbox('getValue'));
+            url += '&rulename=';
+            url += $('#wechat-name').textbox('getValue');
+            url += '&uploadBmp=';
+            url += uploadBmp;
+            url += '&uploadBgd=';
+            url += uploadBgd;
+            url += '&pagetype=success';
+            url += '&edittype=';
+            url += editingId;
+            document.getElementById('preview-frame').contentDocument.location.href = url;
+            $frameMsg.msg("show");
+        }
+    });
+    var $imageMsg = $("#image-msg").msg({
+        closeBtn: true,
+        cls:"",
+        type: 'window'
+    }).msg("hide");
+    $('#image-file').file({
+        fieldLabel: '图片',
+        labelCls: 'xs',
+        extension: 'jpg, png, bmp, tiff,gif,jpeg,JPG,PNG,BMP,TIFF,GIF,JPEG'
+    });
+    $('#image-button').button({
+        text: '上传',
+        cls: 'submit',
+        handler: function(){
+            if(!$imageForm.length){
+                return;
+            }else{
+                var op = "";
+                if(IMG_TYPE_QRCODE == imageType){
+                    op = 'wechatbmp';
+                }else{
+                    op = 'wechatbgd';
+                }
+                $imageForm.form('submit', {operation:op}, function(){
+                    if(IMG_TYPE_QRCODE  == imageType){
+                        uploadBmp = 1;
+                        $gridEditor.find('#bitmap-image').textbox('setValue', "上传成功");
+                    }else{
+                        uploadBgd = 1;
+                        $gridEditor.find('#background-image').textbox('setValue', "上传成功");
+                    }
+                    $imageMsg.msg('close');
+                },function(error_code){
+                    if(IMG_TYPE_QRCODE  == imageType){
+                        $gridEditor.find('#bitmap-image').textbox('setValue', "上传失败");
+                    }else{
+                        $gridEditor.find('#background-image').textbox('setValue', "上传失败");
+                    }
+                    $imageMsg.msg('close');
+
+                },function(fail){
+                    if(IMG_TYPE_QRCODE  == imageType){
+                        $gridEditor.find('#bitmap-image').textbox('setValue', "上传失败");
+                    }else{
+                        $gridEditor.find('#background-image').textbox('setValue', "上传失败");
+                    }
+                    $imageMsg.msg('close');
+                });
+            }
+        }
+    });
+
+    var $frameMsg = $("#frame-msg").msg({
+        closeBtn: true,
+        cls:"",
+        type: 'window'
+    }).msg("hide");
+    var $imageForm = $('#image-uploader').form({
+        proxy: new $.su.Proxy({url: $.su.url("/admin/wportal?form=wechat")}),
+        formEnctype: "multipart/form-data",
+        traditional: true,
+        hiddenFrame: true,
+        fields: [
+            {name: "wechat"}
+        ],
+        submitBtn: null
+    });
+    $('#image-select').button({
+        fieldLabel: '背景图片',
+        text: '上传',
+        //labelCls: 'xs',
+        maxLength:48,
+        cls: 'inline-block',
+        handler: function(){
+            imageType = IMG_TYPE_ADV;
+            $('#image-file').file('reset');
+            $imageMsg.msg("show");
+        }
+    });
+    $('#bitmap-select').button({
+        fieldLabel: '二维码图片',
+        text: '上传',
+        //labelCls: 'xs',
+        maxLength:48,
+        cls: 'inline-block',
+        handler: function(){
+            imageType = IMG_TYPE_QRCODE;
+            $('#image-file').file('reset');
+            $imageMsg.msg("show");
+        }
+    });
+    $('#background-image').textbox({
+        fieldLabel: null,
+        readOnly: true,
+        value: '---',
+        tips: '（可选，图片大小不能超过200KB，上传图片分辨率建议使用1080*411）',
+        cls: 'inline-block'
+    });
+    $('#bitmap-image').textbox({
+        fieldLabel: null,
+        readOnly: true,
+        value: '---',
+         tips: '（可选，图片大小不能超过200KB，上传图片分辨率建议使用590*590）',
+        cls: 'inline-block'
+    });
+    var globalProxy = new $.su.Proxy({
+        url: URL_GLOBAL
+    });
+    var wechatGrid = $("#portal-list").grid({
+        store: {
+            proxy: globalProxy,
+            autoLoad: true,
+            fields: [
+                {name: "name"},
+                {name: "enable"},
+                {name: "pcfree"},
+                {name: "interface"},
+                {name: "freeInterval"},
+                {name: "authToken"},
+                {name: "publicName"},
+                {name: "wechatInfo"},
+                {name: "copyright"},
+                {name: "jumpPageType"},
+                {name: "remoteUrl"}
+            ]
+        },
+        editor: {
+             validator:function(){
+                var editor  = $(wechatGrid.grid("getEditor"));
+                var interfaceName    = editor.find(".combobox-checkbox[name=interface]").combobox("getValue");
+                var name    = editor.find(".text-text[name=name]").textbox("getValue");
+                var store   = wechatGrid.grid("getStore");
+                var keyProperty = store.keyProperty;
+                var grid_array  = store.data;
+                var editingId = editor.editor("getEditingId"); 
+                var i = 0;
+
+                if($.isArray(grid_array) && grid_array.length > 0)
+                {
+                    for(var k = 0; k < grid_array.length;k++)
+                    {
+                        var data = grid_array[k];
+                        if(data[keyProperty] == editingId)
+                        {
+                            continue;
+                        }
+                        else if(data["name"] == name)
+                        {
+                            editor.form('setError', "规则名称已被使用，请重新输入");
+                            //console.log('conflict name');
+                            return false;
+                        }
+
+                        for(i = 0;i < interfaceName.length;i ++)
+                        {
+                                //console.log(interfaceName[i])
+                                for(var j= 0;j < data["interface"].length;j++)
+                                {
+                                    //console.log( data["interface"][j])
+                                    if(interfaceName[i] == data['interface'][j])
+                                    {
+                                        //console.log('conflict interface');
+                                        editor.form('setError',"同一个接口不能设置多个微信认证规则");
+                                        return false;
+                                    }
+                                }
+                        }
+                    }
+                }
+                
+                var nameConflict = false;
+                var webProxy = new $.su.Proxy({
+                    url: $.su.url('/admin/wportal?form=wportal'),
+                    async: false
+                });
+                webProxy.read({}, function(data){
+                    var i = 0;
+                    for (i=0; i<data.length; i++){
+                        if(data[i].name == name)
+                        {
+                            nameConflict =  true;
+                            return;
+                        }
+                    }
+                });
+                
+                if(nameConflict)
+                {
+                    editor.form('setError',"规则名称已被Web认证规则使用");
+                    return false;
+                }
+                
+                return true;
+            },
+            content: '#own-editor',
+            fields: [
+                {name: "name"},
+                {name: "enable"},
+                {name: "pcfree"},
+                {name: "interface"},
+                {name: "freeInterval"},
+                {name: "authToken"},
+                {name: "publicName"},
+                {name: "wechatInfo"},
+                {name: "copyright"},
+                {name: "jumpPageType"},
+                {name: "remoteUrl"}
+            ]
+        },
+        paging:[],
+        columns: [
+            {
+                xtype: 'checkcolumn',
+                width: $.su.CHAR.SETTING.VPN_USER.CHECK_COLUMN_WIDTH
+            },
+            {
+                xtype: 'rownumberer',
+                width: $.su.CHAR.SETTING.VPN_USER.ROW_NUMBER_WIDTH
+            },
+           {
+                text: '规则名称',
+                width: 50,
+                dataIndex: 'name'
+            },
+            {
+                text: '生效接口',
+                width: 50,
+                dataIndex: 'interface'
+            },
+            {
+                text: '免费上网时长',
+                width: 50,
+                dataIndex: 'freeInterval'
+            },
+            /*{
+                text: '公众号名称',
+                width: 50,
+                dataIndex: 'publicName'
+            },*/
+            {
+                xtype: 'statuscolumn',
+                dataIndex: 'enable',
+                width: 35
+            },
+            {
+                xtype: "settings",
+                width: 60
+            }
+        ],
+        operation: 'prompt|add|delete'
+    }).on('ev_load',  function(e,data, others){
+
+        if(others)/* 閫氳繃json閲岀殑others鍙傛暟浼犻€掑姩鎬侀榾鍊?*/
+        {
+            /*淇濈暀涓嶇敤*/
+            //console.log(others.max_rules);
+            maxrules = others.max_rules;
+        }
+        
+        var interfaceItem=[];
+        var interfaceProxy = new $.su.Proxy({
+            url: $.su.url('/admin/interface?form=status'),
+            async: false
+        });
+        interfaceProxy.read({}, function(data){
+            var i = 0;
+            for (i=0; i<data.normal.length; i++){
+                interfaceItem.push({name:data.normal[i].t_label,value:data.normal[i].t_name});
+            }
+            var combobox = $gridEditor.find('#bind-interface');
+            combobox.combobox('loadData',interfaceItem);
+        });
+    });
+    var $gridEditor = $(wechatGrid.grid('getEditor'));
+    $gridEditor.on('ev_startEdit', function(e, index, key){
+        var token = $gridEditor.find('#auth-token').textbox('getValue');
+        $('#auth-tips2').html(WECHAT_AUTH_URL + token);
+        $('#background-image').textbox('setValue', '---');
+        $('#bitmap-image').textbox('setValue', '---');
+    });
+});
+
+//]]>
+</script>
+</body>
+
+</html>

@@ -1,0 +1,206 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>IPgroup group</title>
+<style type="text/css">
+</style>
+</head>
+
+<body>
+<div class="func-container">
+    <div id="ipgroup-group-list">
+        <div id="ipgroup-group-grid">
+        </div>
+    </div>
+	
+	<div id = "own_editor">
+		<input class = "hidden" type = "text" id = "flag" name = "flag" value = "user">
+		<div id = "group_name">
+			<input id = "name" name = "name" >
+		</div>
+		<div id = "group_view">
+			<input id = "rule_scope" name = "rule_scope" >
+		</div>
+		<div id = "group_comment" >
+			<input id = "comment" name = "comment" >
+		</div>
+	</div>
+
+    <div id="ipgroup-group-help"></div>
+</div>
+
+<script type="text/javascript">
+try{
+    $
+}catch(e){
+    location.href = "/";
+};
+
+$(document).ready(function(e){
+    var URL_IPGROUP_GROUP = $.su.url("/admin/ipgroup?form=ipgroup_reservation");
+	$("#ipgroup-group-list").panel({
+		title: $.su.CHAR.IPGROUP_GROUP.PANEL_LIST
+	});
+
+	var ipgroupListProxy = new $.su.Proxy({
+		url: URL_IPGROUP_GROUP
+	});
+
+    $("input#rule_scope").combobox({
+        fieldLabel: $.su.CHAR.IPGROUP_GROUP.ADDRESS_NAME,
+        multiSelect: true,
+        items:[
+        	{name:"---",value:"---", selected:true}
+        ]
+    })
+
+	$("input#name").textbox({
+		fieldLabel: $.su.CHAR.IPGROUP_GROUP.NAME,
+		tipsCls:"s",
+		allowBlank:false,
+		maxLength:28,
+		vtype: "name"
+	});
+	
+
+
+	$("input#comment").textbox({
+		fieldLabel: $.su.CHAR.IPGROUP_GROUP.COMMENT,
+		tipsCls:"s",
+		allowBlank:true,
+		tips: $.su.CHAR.IPGROUP_GROUP.CHOICE
+	});
+	
+	var ipGroupGrid = $("#ipgroup-group-grid").grid({
+		maxRulesProperty: "max_group",
+        editor: {
+			validator:function()
+			{
+				var editor  = $(ipGroupGrid.grid("getEditor"));
+				var ruleName = editor.find(".text-text[name=name]").textbox("getValue");
+
+				var store 	= ipGroupGrid.grid("getStore");
+				var keyProperty = store.keyProperty;
+				var grid_array  = store.data;
+				
+				var editingId = editor.editor("getEditingId"); 
+				
+				if($.isArray(grid_array) && grid_array.length > 0)
+				{
+					for(var k = 0; k < grid_array.length;k++)
+					{
+						var data = grid_array[k];
+						
+						if(data[keyProperty] == editingId)
+						{
+							continue;
+						}
+						else if(data["name"] == ruleName)
+						{
+							$($("div#ipgroup-group-grid").grid("getEditor")).form('setError', $.su.CHAR.IPGROUP_GROUP.NAME_CONFLICT);//"	地址组名称不能重复！");
+							return false;
+						}
+					}
+				}
+				return true;
+			},
+            content:"#own_editor",
+            fields: [
+				{name: "flag"},
+                {name: "name"},
+                {name: "rule_scope"},
+				{name: "comment"}
+            ]
+        },
+		store:{
+			proxy: ipgroupListProxy,
+			fields: [
+				{name: "flag"},
+                {name: "name"},
+                {name: "rule_scope"},
+				{name: "comment"}
+			],
+			autoLoad: true
+		},
+		paging:[],
+		columns: [
+			{
+				xtype: "checkcolumn"
+			},
+			{
+				xtype: "rownumberer"
+			},
+			{
+				text:"",
+				dataIndex: "flag",
+				hidden: true
+			},
+			{
+				text: $.su.CHAR.IPGROUP_GROUP.NAME,
+				width: 150,
+				dataIndex: "name"
+                /*editor: {
+                    xtype: "textbox",
+                    allowBlank: false
+                }*/
+			},
+            {
+                text: $.su.CHAR.IPGROUP_GROUP.ADDRESS_NAME,
+                width: 150,
+                dataIndex: "rule_scope"
+            },
+			{
+				xtype: "comment"			
+			},
+			{
+                xtype: "settings"
+            }
+		],
+		operation: 'prompt|add|delete'
+	}).on("ev_load", function(e, data, others){
+			if ( others )
+			{
+                maxrules = others.max_group;
+			}
+			for (var i=0; i<data.length; i++){
+				if ( data[i].flag === "system" )
+				{
+					$("div#ipgroup-group-grid").grid('disableRow',i);
+				}				
+			}
+			var ruleItem=[];
+	        var ruleProxy = new $.su.Proxy({
+	                url: $.su.url('/admin/ipgroup?form=ipscope_list'),
+	                async: false
+	        });     
+	        ruleProxy.read({}, function(data){                     
+	                    var i 
+	                     
+	                    for (i=0; i<data.length; i++){
+	                        ruleItem.push({name:data[i].name,value:data[i].name});                       
+	                    }
+	 
+						var editor = ipGroupGrid.grid('getEditor');
+						var combobox = $(editor).find('.combobox-value[name=rule_scope]');
+						combobox.combobox('loadData',ruleItem); 
+	        }); 
+    });
+    var editor = $(ipGroupGrid.grid("getEditor"));
+    editor.on("ev_startEdit", function(e, index, key){
+    	if (index == "add"){
+    		editor.find("#name").textbox("enableStyle");
+    	}
+    	else{
+    		editor.find("#name").textbox("disableStyle");
+    	}
+    })
+    var helpIpgroupGrid = new $.su.Help({
+        container: "div#ipgroup-group-help",
+        content: ["IPGROUP_GROUP_SETTING"]
+    });/* TODO */
+});
+</script>
+</body>
+
+</html>

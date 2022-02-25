@@ -1,0 +1,1 @@
+../mpn/mips64/addmul_1.asm

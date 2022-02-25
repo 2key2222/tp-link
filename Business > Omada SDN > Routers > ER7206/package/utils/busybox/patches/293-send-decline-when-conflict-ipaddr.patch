@@ -1,0 +1,27 @@
+--- a/networking/udhcp/dhcpc.c	2017-01-22 16:33:18.455200209 +0800
++++ b/networking/udhcp/dhcpc.c	2017-01-22 16:34:42.061200915 +0800
+@@ -1005,7 +1005,6 @@
+ 	return bcast_or_ucast(&packet, ciaddr, server);
+ }
+ 
+-#if ENABLE_FEATURE_UDHCPC_ARPING
+ /* Broadcast a DHCP decline message */
+ /* NOINLINE: limit stack usage in caller */
+ static NOINLINE int send_decline(/*uint32_t xid,*/ uint32_t server, uint32_t requested)
+@@ -1033,7 +1032,6 @@
+ 	bb_info_msg("Sending decline...");
+ 	return raw_bcast_from_client_config_ifindex(&packet, INADDR_ANY);
+ }
+-#endif
+ 
+ /* Unicast a DHCP release message */
+ static int send_release(uint32_t server, uint32_t ciaddr)
+@@ -1915,6 +1913,8 @@
+ 				
+ 				/* ip conflict, get ip again */
+ 				if (check_ip_available(ntohl(requested_ip)) != 0) {
++					send_decline(/*xid,*/ server_addr, packet.yiaddr);
++
+ 					state = INIT_SELECTING;
+ 					DHCP_CLIENT_LOGGER_REG(DHCP_CLIENT_IP_CONFLICT,LOGGER_PARAM_STRING,zone_namex/*client_config.interface*/,LOGGER_PARAM_IPV4,ntohl(requested_ip));
+ 					sleep(5);

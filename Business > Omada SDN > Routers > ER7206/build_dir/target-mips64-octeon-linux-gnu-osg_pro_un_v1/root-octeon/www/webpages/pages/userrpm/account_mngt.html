@@ -1,0 +1,318 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>account_mngt</title>
+</head>
+
+<body>
+<div class="func-container">
+	<div id="account">
+	 	<form id="account-setting">
+	    	<!-- <p  id="note" name="note"></p> -->
+	    	<input type="text"  id="old_acc" name="old_acc" value="" />
+	    	<input type="password"  id="old_pwd" name="old_pwd" value="" />
+
+			<input type="text"  id="new_acc" name="new_acc" value="" />
+	    	<input type="password"  id="new_pwd" name="new_pwd" value="" />
+			<input type="password"  id="cfm_pwd" name="cfm_pwd" value="" />
+			<input id="pwd_status"  value="" />
+		
+	    </form>
+	</div>
+	<div id="help_admin"></div>
+</div>
+
+<script type="text/javascript">
+try{
+    $
+}catch(e){
+    location.href = "/";
+};
+
+$(document).ready(function(e){
+	var ACC_PWD_URL_NEW = $.su.url("/admin/administration?form=account");
+	var ACC_RESULT_URL_NEW = $.su.url("/admin/administration?form=view");
+	var ACC_SET_URL_NEW = $.su.url("/admin/administration?form=mode");
+	
+	var URL_LOGOUT = $.su.url("/admin/system?form=logout");
+	var logoutProxy = new $.su.Proxy({
+		url: URL_LOGOUT,
+		autoLoad: false
+	});
+
+	$("div.func-container").page({
+		title: $.su.CHAR.ACCOUNT.TITLE,
+		help: ""	//可能是个调用的id 也可能是个url
+	});
+
+	$("div#account").panel({
+		title: $.su.CHAR.ACCOUNT.ACCOUNT_TITLE,
+		collapsible: false
+	});
+
+	$("div#recovery").panel({
+		title: $.su.CHAR.ACCOUNT.RECOVERYINFO,
+		collapsible: false
+	});
+
+	$("input#old_acc").textbox({
+		fieldLabel: $.su.CHAR.ACCOUNT.OLDUSER,
+		vtype:"ascii_visible",
+		tips: $.su.CHAR.ACCOUNT.ACCOUNT_TIPS,
+		minLength:1,
+		maxLength:64,
+		allowBlank: false,
+		tipsCls:"l"
+	});
+
+	$("input#old_pwd").password({
+		fieldLabel: $.su.CHAR.ACCOUNT.OLDPWD,
+		allowBlank: false,
+		vtype:"ascii_visible",
+		tips: $.su.CHAR.ACCOUNT.NEW_PWD_TIPS,
+		showLevel:false,
+		minLength:6,
+		maxLength:64,
+		tipsCls:"l",
+		validator:function(val){
+            if( val.length < 6 || val.length > 64 )
+            {                                
+                return $.su.CHAR.ERROR["00000073"];
+            }
+            return true;
+		}		
+	});
+
+	$("input#new_acc").textbox({
+		fieldLabel: $.su.CHAR.ACCOUNT.NEWUSER,
+		cls:"part-separate",
+		allowBlank: false,
+		vtype:"ascii_visible",
+		tips: $.su.CHAR.ACCOUNT.ACCOUNT_TIPS,
+		minLength:1,
+		maxLength:64,
+		tipsCls:"l"
+	});
+	
+	var passwordCheck = function(new_pwd, cfm_val){
+		
+		if(cfm_val == new_pwd){
+			$("#pwd_status").status("setSuccess");
+			return true;
+		}else{
+			$("#pwd_status").status("setFailed");
+			return false;
+		};
+	};
+
+	$("input#new_pwd").password({
+		fieldLabel: $.su.CHAR.ACCOUNT.NEWPWD,
+		allowBlank: false,
+		vtype:"ascii_visible",
+		tips: $.su.CHAR.ACCOUNT.NEW_PWD_TIPS,
+		minLength:6,
+		maxLength:64,
+		tipsCls:"l",
+		validator:function(val){
+            if( val.length < 6 || val.length > 64 )
+            {                                
+                return $.su.CHAR.ERROR["00000073"];
+            }
+            return true;
+		}
+	}).on("ev_change", function(item, data){
+		$("#pwd_status").status('setNormal');
+		$("input#cfm_pwd").password('setNormal');
+		
+		var new_pwd = $("input#new_pwd").password("getValue");
+		var cfm_val = $("input#cfm_pwd").password("getValue");
+		if ( cfm_val){
+			passwordCheck(new_pwd, cfm_val);
+		}
+	}).on("ev_validatechange", function(item, data){
+		var new_pwd = $("input#new_pwd").password("getValue");
+	    var cfm_val = $("input#cfm_pwd").password("getValue");
+
+		if( cfm_val=='' ){
+			$("#pwd_status").status('setNormal');
+			return true;
+		}else{
+			passwordCheck(new_pwd, cfm_val);
+		};
+	});
+	
+
+	$("input#cfm_pwd").password({
+		fieldLabel: $.su.CHAR.ACCOUNT.CONFIRM,
+		vtype:"ascii_visible",
+		tips: $.su.CHAR.ACCOUNT.NEW_PWD_TIPS,
+		minLength:6,
+		maxLength:64,
+		cls:"inline",
+		allowBlank: false,
+		tipsCls:"l",
+		validator:function(val){
+            if( val.length < 6 || val.length > 64 )
+            {                                
+                return $.su.CHAR.ERROR["00000073"];
+            }
+			return true;
+		},
+		showLevel:false
+	}).on("ev_change ev_validatechange", function(){
+		var new_pwd = $("input#new_pwd").password("getValue");
+	    var cfm_val = $("input#cfm_pwd").password("getValue");
+		
+		if (new_pwd == ""){
+			if ( cfm_val == "" ){
+				$("#pwd_status").status("setNormal");
+			}else{
+				if (!passwordCheck(new_pwd, cfm_val)){
+					$("input#cfm_pwd").password("setError");
+				};
+			}
+		}else{
+			if (!passwordCheck(new_pwd, cfm_val)){
+				$("input#cfm_pwd").password("setError");
+			}
+		}
+	});
+
+	$("#pwd_status").status({
+		cls:"inline"
+	});
+
+	$("#auth_cnt").fieldset({
+		fields: [
+			{name: "username"},
+			{name: "password"},
+			{name: "confirm"}
+		]
+	}).hide();
+	
+	/*$("#username").textbox({
+		fieldLabel: $.su.CHAR.ACCOUNT.USERNAME,
+		allowBlank:false,
+		minLength:2,
+		maxLength:32,
+		vtype:"string_visible"
+	});
+
+	$("#password").password({
+		fieldLabel: $.su.CHAR.ACCOUNT.PASSWORD,
+		allowBlank:false,
+		showLevel:false,
+		minLength:2,
+		maxLength:32,
+		vtype:"string_visible"
+	});*/
+
+	var pwdProxy = new $.su.Proxy({
+		// url: ACC_PWD_URL,
+		url: ACC_PWD_URL_NEW,
+		autoLoad:false
+	});
+
+	$("form#account-setting").form({
+		proxy: pwdProxy,
+		//showPromptSuccess:false,
+		fields: [
+			{name: "old_acc", mapping: "old_acc"},
+			{name: "old_pwd", mapping: "old_pwd"},
+			{name: "new_acc", mapping: "new_acc"},
+			{name: "new_pwd", mapping: "new_pwd"},
+			{name: "cfm_pwd", mapping: "cfm_pwd"}
+		],
+		autoLoad:true,
+		validator:function(){
+			var  val = $("input#cfm_pwd").password("getValue");
+			var new_pwd = $("input#new_pwd").password("getValue");
+			// //console.log(new_pwd, val);
+			if(new_pwd.length < 6 || new_pwd.length > 64){
+                $("input#new_pwd").password("setError", $.su.CHAR.ACCOUNT.PWD_TIPS);//"密码长度最少为6位,最多为15位");
+                return false;
+            }
+            if(val.length < 6 || val.length > 64){
+                $("input#cfm_pwd").password("setError", $.su.CHAR.ACCOUNT.PWD_TIPS);//"密码长度最少为6位,最多为15位");
+                return false;
+            }
+			if(val == new_pwd)
+			{
+				
+				$("#pwd_status").status("setSuccess");
+				return true;
+			}
+			else
+			{
+				
+				// $("#pwd_status").status("setFailed");
+				$("input#cfm_pwd").password("setError", $.su.CHAR.ERROR["00000148"]);
+				return false;
+			}
+
+		},
+		submitBtn: "default",
+		callback: function(){
+			$("form#account-setting").form("reset");
+			$("form#account-setting").form("load");
+			$("#pwd_status").status("setNormal");
+			
+			var h = function(){
+				if (localStorage){
+					localStorage.setItem("token", "");
+				};
+				location.href = "/";
+			};
+			logoutProxy.write({}, h, h);
+		}
+	}).on("ev_loadData", function(e, data){
+		
+	});
+
+	/*
+	$($("form#account-setting").find("button.button-button")).button({
+		handler:function(e){
+			$("form#account-setting").form("submit", {}, function(data, others, status, xhr){
+				if("success" === status){
+					if ($.su.app && $.su.app.errorOperation && $.su.app.errorOperation.denied){
+		    			$.su.app.errorOperation.denied(0);
+					}
+				}
+			});
+		}
+	});
+*/
+
+	/*$("#save_btn_cnt").bind("click",function(){
+		if($("#recovery-setting").form("validate"))
+		{
+			$("#save_btn").closest("#save_btn_cnt .button-button").addClass("disabled");
+			$("#save_btn").closest("#save_btn_cnt .button-button").prop("disabled", true);
+		}
+		else
+		{
+			return false;
+		}
+		$("#recovery-setting").form("doSubmit", {}, function(){
+			$("#save_btn").closest("#save_btn_cnt .button-button").removeClass("disabled");
+			$("#save_btn").closest("#save_btn_cnt .button-button").prop("disabled", false);
+		},function(){
+			$("#save_btn").closest("#save_btn_cnt .button-button").removeClass("disabled");
+			$("#save_btn").closest("#save_btn_cnt .button-button").prop("disabled", false);
+		},function(){
+			$("#save_btn").closest("#save_btn_cnt .button-button").removeClass("disabled");
+			$("#save_btn").closest("#save_btn_cnt .button-button").prop("disabled", false);
+		});
+	});*/
+
+	var helpAdmin = new $.su.Help({
+		container: "div#help_admin",
+		content: ["ADMIN_ACCOUNT"]
+	});
+
+});
+</script>
+</body>
+
+</html>

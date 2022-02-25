@@ -1,0 +1,256 @@
+--- a/kernel/net/netfilter/ipset/ip_set_core.c	2014-03-05 04:40:26.000000000 +0800
++++ b/kernel/net/netfilter/ipset/ip_set_core.c	2016-03-30 18:42:41.252337353 +0800
+@@ -38,11 +38,19 @@
+ 
+ static int ip_set_net_id __read_mostly;
+ 
++static struct ip_set *wlan_ipset;
++static char ssid_name[256];
++static int l_wired_auth;
++
++static int ip_set_extern_add_wlan_mac( const char *mac, const char *ssid);
++static int ip_set_extern_del_wlan_mac( const char *mac, const char *ssid);
++
+ static inline struct ip_set_net *ip_set_pernet(struct net *net)
+ {
+ 	return net_generic(net, ip_set_net_id);
+ }
+ 
++#define WLAN_IPSET_NAME "wlan_mac_list"
+ #define IP_SET_INC	64
+ #define STRNCMP(a, b)	(strncmp(a, b, IPSET_MAXNAMELEN) == 0)
+ 
+@@ -752,6 +760,201 @@
+ }
+ EXPORT_SYMBOL_GPL(ip_set_nfnl_put);
+ 
++/*
++ * ip_set_extern_add_wlan_mac used for wireless callback
++ *
++ */
++int
++ip_set_extern_add_wlan_mac( const char *mac, const char *ssid)
++{
++	struct nlattr *tb[IPSET_ATTR_ADT_MAX+1] = {};
++	const struct nlattr *nla;
++	u32 flags = 0;
++	bool use_lineno;
++	u32 lineno = 0;
++	bool retried = false;
++	int ret = 0;
++	struct ip_set *set = wlan_ipset;
++
++	if (NULL == mac || NULL == ssid || NULL == set)
++	{
++		return -ENOENT;
++	}
++
++		
++       /*
++       printk(KERN_ERR"[%s][%d]:---[ADD]---[%s]-[%02x-%02x-%02x-%02x-%02x-%02x]", 
++                        __FUNCTION__, __LINE__, ssid, mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
++        */
++
++       if (0 == strcmp(ssid_name, ""))
++       {
++            return -ENOENT;
++       }
++
++       if (0 != strcmp(ssid_name, ssid) || 0 != strcmp(ssid, ssid_name))
++       {
++            /* SSID is different */
++            if (0 != strcmp(ssid_name, "portal_web_auth_match_any_ssid"))
++            {
++                if (0 == l_wired_auth)
++                {
++                    /* wired auth is disable */
++                    return ip_set_extern_del_wlan_mac(mac, ssid);
++                }                
++            }
++            else
++            {
++                /* web auth */
++                if (1 == l_wired_auth)
++                {
++                    /* wired auth is enable */
++                    return ip_set_extern_del_wlan_mac(mac, ssid);
++                }                 
++            }
++       }
++       else
++       {
++            /* SSID is equal */       
++            if (1 == l_wired_auth)
++            {
++                /* wired auth is enable */
++                return ip_set_extern_del_wlan_mac(mac, ssid);
++            }
++       }
++
++       memset(tb, 0, sizeof(tb));
++       tb[IPSET_ATTR_ETHER] = (struct nlatrr *)kmalloc(sizeof(struct nlattr) + ETH_ALEN, GFP_KERNEL);
++       tb[IPSET_ATTR_ETHER]->nla_len = sizeof(struct nlattr) + ETH_ALEN;
++       tb[IPSET_ATTR_ETHER]->nla_type = 17;
++       memcpy(nla_data(tb[IPSET_ATTR_ETHER]), mac, ETH_ALEN);       
++
++	use_lineno = 0;
++    	do {
++    		write_lock_bh(&set->lock);
++    		ret = set->variant->uadt(set, tb, IPSET_ADD, &lineno, flags, retried);/* hash_mac4_uadt */
++    		write_unlock_bh(&set->lock);
++    		retried = true;
++    	} while (ret == -EAGAIN &&
++    		 set->variant->resize &&
++    		 (ret = set->variant->resize(set, retried)) == 0);			      
++
++	kfree(tb[IPSET_ATTR_ETHER]);
++	return ret;
++}
++EXPORT_SYMBOL_GPL(ip_set_extern_add_wlan_mac);
++
++/*
++ * ip_set_extern_del_wlan_mac used for wireless callback
++ *
++ */
++int
++ip_set_extern_del_wlan_mac( const char *mac, const char *ssid)
++{
++	struct nlattr *tb[IPSET_ATTR_ADT_MAX+1] = {};
++	const struct nlattr *nla;
++	u32 flags = 0;
++	bool use_lineno;
++	u32 lineno = 0;
++	bool retried = false;
++	int ret = 0;
++	struct ip_set *set = wlan_ipset;
++
++	if (NULL == mac || NULL == ssid || NULL == set)
++	{
++		return -ENOENT;
++	}
++		
++       memset(tb, 0, sizeof(tb));
++       tb[IPSET_ATTR_ETHER] = (struct nlatrr *)kmalloc(sizeof(struct nlattr) + ETH_ALEN, GFP_KERNEL);
++       tb[IPSET_ATTR_ETHER]->nla_len = sizeof(struct nlattr) + ETH_ALEN;
++       tb[IPSET_ATTR_ETHER]->nla_type = 17;
++       memcpy(nla_data(tb[IPSET_ATTR_ETHER]), mac, ETH_ALEN);       
++
++	use_lineno = 0;
++    	do {
++    		write_lock_bh(&set->lock);
++    		ret = set->variant->uadt(set, tb, IPSET_DEL, &lineno, flags, retried);/* hash_mac4_uadt */
++    		write_unlock_bh(&set->lock);
++    		retried = true;
++    	} while (ret == -EAGAIN &&
++    		 set->variant->resize &&
++    		 (ret = set->variant->resize(set, retried)) == 0);			      
++
++	kfree(tb[IPSET_ATTR_ETHER]);
++	return ret;
++}
++EXPORT_SYMBOL_GPL(ip_set_extern_del_wlan_mac);
++
++
++int
++ip_set_extern_ssid(char *ssid)
++{
++    if (NULL == ssid)
++    {
++        printk(KERN_ERR"[%s][%d]:Invalid ssid.\r\n", __FUNCTION__, __LINE__);
++        return ENOENT;
++    }
++
++    snprintf(ssid_name, sizeof(ssid_name), "%s", ssid);
++    ssid_name[sizeof(ssid_name) - 1] = '\0';
++
++    return 0;
++}
++EXPORT_SYMBOL_GPL(ip_set_extern_ssid);
++
++static void
++ip_set_flush_set(struct ip_set *set)
++{
++	pr_debug("set: %s\n",  set->name);
++
++	spin_lock_bh(&set->lock);
++	set->variant->flush(set);
++	spin_unlock_bh(&set->lock);
++}
++
++int
++ip_set_extern_flush_wlan_ipset(void)
++{
++    if (NULL == wlan_ipset)
++    {
++	return 0;
++    }
++    else
++    {
++	printk(KERN_DEBUG"[%s][%d]:callback-Flush wlan_ipset.\r\n", __FUNCTION__, __LINE__);
++	ip_set_flush_set(wlan_ipset);
++    }
++}
++EXPORT_SYMBOL_GPL(ip_set_extern_flush_wlan_ipset);
++
++int
++ip_set_extern_wired_auth(int status)
++{
++    if (0 != status && 1 != status)
++    {
++        printk(KERN_ERR"[%s][%d]:Invalid status.\r\n", __FUNCTION__, __LINE__);
++        return ENOENT;
++    }
++
++    if (NULL == wlan_ipset)
++    {
++        printk(KERN_ERR"[%s][%d]:wlan_ipset is not initial.\r\n", __FUNCTION__, __LINE__);
++        return ENOENT;        
++    }
++
++    if (l_wired_auth != status)
++    {
++        printk(KERN_ERR"[%s][%d]:Flush wlan_ipset.\r\n", __FUNCTION__, __LINE__);
++        ip_set_flush_set(wlan_ipset);
++    }
++    
++    l_wired_auth = status;
++
++    return 0;
++}
++EXPORT_SYMBOL_GPL(ip_set_extern_wired_auth);
++
+ /* Communication protocol with userspace over netlink.
+  *
+  * The commands are serialized by the nfnl mutex.
+@@ -973,6 +1176,12 @@
+ 	pr_debug("create: '%s' created with index %u!\n", set->name, index);
+ 	ip_set(inst, index) = set;
+ 
++	if (0 == strcmp(set->name, WLAN_IPSET_NAME))
++	{
++		wlan_ipset = set;
++		//printk("<1>[%s][%d]:wlan_ipset is %p name is %s\r\n", __FUNCTION__, __LINE__, wlan_ipset, wlan_ipset->name);
++	}
++
+ 	return ret;
+ 
+ cleanup:
+@@ -1071,18 +1280,6 @@
+ 	return ret;
+ }
+ 
+-/* Flush sets */
+-
+-static void
+-ip_set_flush_set(struct ip_set *set)
+-{
+-	pr_debug("set: %s\n",  set->name);
+-
+-	spin_lock_bh(&set->lock);
+-	set->variant->flush(set);
+-	spin_unlock_bh(&set->lock);
+-}
+-
+ static int
+ IPSET_CBFN(ip_set_flush, struct net *net, struct sock *ctnl,
+ 	   struct sk_buff *skb, const struct nlmsghdr *nlh,

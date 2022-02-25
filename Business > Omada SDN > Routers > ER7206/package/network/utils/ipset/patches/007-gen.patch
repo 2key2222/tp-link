@@ -1,0 +1,41 @@
+--- a/kernel/net/netfilter/ipset/ip_set_hash_gen.h	2014-03-05 04:40:26.000000000 +0800
++++ b/kernel/net/netfilter/ipset/ip_set_hash_gen.h	2016-06-01 09:18:06.932210000 +0800
+@@ -1346,4 +1346,38 @@
+ }
+ #endif /* IP_SET_EMIT_CREATE */
+
++#ifdef MY_SELF_GET_MAC
++unsigned int
++self_get_mac_by_ip(struct ip_set *set, unsigned int value,unsigned char *mac)
++{
++	struct htype *h = set->data;
++	struct htable *t;
++	struct hbucket *n;
++	struct hash_ipmac4_elem *data;
++	unsigned int i,j,flag=0;
++
++	rcu_read_lock_bh();
++	t = rcu_dereference_bh(h->table);
++	
++	for (i = 0; i < jhash_size(t->htable_bits); i++) {
++			n = hbucket(t,i);
++			for(j=0;j<n->pos;++j)
++			{
++				data = (struct hash_ipmac4_elem *)ahash_data(n,j,set->dsize);
++				if(value == data->ip)
++				{
++					flag = 1;
++					memcpy(mac,data->ether,6);
++					goto out;
++				}
++			}
++
++		}
++out:
++	rcu_read_unlock_bh();
++	return flag;
++}
++EXPORT_SYMBOL_GPL(self_get_mac_by_ip);
++#undef MY_SELF_GET_MAC
++#endif
+ #undef HKEY_DATALEN

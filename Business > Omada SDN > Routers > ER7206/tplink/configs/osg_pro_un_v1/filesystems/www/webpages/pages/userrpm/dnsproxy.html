@@ -1,0 +1,262 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>DNSPROXY</title>
+<style type="text/css">
+</style>
+</head>
+
+<body>
+<div class="func-container">
+    <div id="own-editor">
+        <input id="name" name="name"/>
+        <input id="service_if" name="service_if"/>
+		 <input id="out_if" name="out_if"/>
+    </div>
+    <div id="dnsproxy_list">
+        <div id="dnsproxy_grid">
+        </div>
+    </div>
+    
+    <div id="dnsproxy_help">    
+    </div>
+
+<script type="text/javascript">
+try{
+    $
+}catch(e){
+    location.href = "/";
+};
+
+
+$(document).ready(function(e){
+    var DNSPROXY_LIST = $.su.url("/admin/dnsproxy?form=rule");
+
+    var Dnsproxy_Proxy = new $.su.Proxy({
+        url: DNSPROXY_LIST
+    });
+
+    $("#dnsproxy_list").panel({
+        title: $.su.CHAR.DNSPROXY.DNSPROXY_LIST,
+        collapsible: false
+    });
+
+    $('#name').textbox({
+        fieldLabel: $.su.CHAR.DNSPROXY.NAME,
+        allowBlank: false,
+        maxLength:50,
+        vtype: "name"
+        
+    });
+
+    $("#service_if").combobox({ 
+        fieldLabel: $.su.CHAR.DNSPROXY.SERVICE_IF,  
+        allowBlank: false,  
+        items:[
+                /*{name:"---",value:"---"}*/
+            ]
+    });
+	
+	$("#out_if").combobox({ 
+        fieldLabel: $.su.CHAR.DNSPROXY.OUT_IF,  
+        allowBlank: false,  
+        items:[
+               /* {name:"auto",value:"auto"}*/
+            ]
+    });
+
+
+    var phyItem = {};
+    var Dnsproxy_Grid = $("#dnsproxy_grid").grid({
+        editor: {
+            validator: function()
+            {
+                var editor  = $(Dnsproxy_Grid.grid("getEditor"));
+                var store 	= Dnsproxy_Grid.grid("getStore");
+                var grid_array  = store.data;
+                var editingId = editor.editor("getEditingId");
+                var keyProperty = store.keyProperty;
+                var ruleName = editor.find(".text-text[name=name]").textbox("getValue");
+
+                /* get the vpn interface and the normal interface from the proxy */
+                var interfaceProxy = new $.su.Proxy({
+                    url: $.su.url('/admin/interface?form=status'),
+                    async: false
+                });
+
+                /* check the grid, the rulename can't be repeated */
+                if(($.isArray(grid_array)) && (grid_array.length > 0))
+                {
+                    for(var index = 0; index < grid_array.length; index ++)
+                    {
+                        var data = grid_array[index];
+                        if(data[keyProperty] == editingId)
+                        {
+                            continue;
+                        }
+                        else if(data["name"] == ruleName)
+                        {
+                            $($("div#dnsproxy_grid").grid("getEditor")).form('setError', "规则名称不能重复！");
+                            return false;
+                        }
+                    }
+                }
+
+                /* check the grid, the service interface and the out interface can't be repeated */
+                /*var serviceIf = editor.find("[name=service_if]").combobox("getValue");
+                var outIf = editor.find("[name=out_if]").combobox("getValue");
+                if( serviceIf.toString() == outIf.toString())
+                {
+                    $($("div#dnsproxy_grid").grid("getEditor")).form('setError', "服务接口和出接口不能重复！");
+                    return false;
+                }*/
+
+                return true;
+            },
+            content:"#own-editor",
+            fields: [
+                {name: "name"},
+                {name: "service_if"},
+                {name: "out_if"}
+            ]
+        },
+        store:{
+            proxy: Dnsproxy_Proxy,
+            extraProperty: "name",
+            fields: [
+                {name: "name"},
+                {name: "service_if"},
+                {name: "out_if"}
+            ],
+            autoLoad: true
+        },
+        columns: [
+            {
+                xtype: "checkcolumn",
+                width: 40
+            },
+            {
+                xtype: "rownumberer",
+                width: 40
+            },
+            {
+                text: $.su.CHAR.DNSPROXY.NAME,
+                width: 80,
+                dataIndex: "name"
+            },
+            {
+                text: $.su.CHAR.DNSPROXY.SERVICE_IF,
+                width: 50,
+                dataIndex: "service_if"
+            },
+			{
+                text: $.su.CHAR.DNSPROXY.OUT_IF,
+                width: 50,
+                dataIndex: "out_if"
+            },
+            {
+                xtype: "settings",
+				width: 40
+            }
+        ],
+        operation: 'prompt|add|delete'
+    }).on("ev_load", function(e,data, others){
+        if(others)/* 通过json里的others参数传递动态阀值 */
+        {
+            maxrules = others.max_rules;
+        }
+		
+        var interfaceProxy = new $.su.Proxy({
+                url: $.su.url('/admin/interface?form=status'),
+                async: false
+        });     
+        interfaceProxy.read({}, function(data){             
+                    var i;
+                    /*var interfaceItem=[];
+                    for (i=0; i<data.normal.length; i++){
+                        interfaceItem.push({name:data.normal[i].t_label,value:data.normal[i].t_name});
+                    }
+                    for (i=0; i<data.vpn.length; i++){                      
+                        interfaceItem.push({name:data.vpn[i].t_label,value:data.vpn[i].t_name});
+                    }               
+                    var editor = $("div#dnsproxy_grid").grid('getEditor');
+                    var combobox = $(editor).find('.combobox-value[name=service_if]');
+                        combobox.combobox('loadData',interfaceItem); */
+
+					var interfaceItem=[];
+					interfaceItem.push({name:"auto",value:"auto"});
+                    for (i=0; i<data.normal.length; i++){
+                        interfaceItem.push({name:data.normal[i].t_label,value:data.normal[i].t_name});
+                    }
+                    for (i=0; i<data.vpn.length; i++){                      
+                        interfaceItem.push({name:data.vpn[i].t_label,value:data.vpn[i].t_name});
+                    }
+                    var editor = $("div#dnsproxy_grid").grid('getEditor');
+                    var comboboxOut = $(editor).find('.combobox-value[name=out_if]');
+                    comboboxOut.combobox('loadData',interfaceItem);
+        }); 
+    }).on("ev_startEdit",function(e){
+
+                var editor  = $(Dnsproxy_Grid.grid("getEditor"));
+                var store 	= Dnsproxy_Grid.grid("getStore");
+                var grid_array  = store.data;
+                var editingId = editor.editor("getEditingId");
+                var keyProperty = store.keyProperty;
+                var usedInterface = [];
+                var editingValue = null;
+
+                /* get the interfaces which were used */
+                if(($.isArray(grid_array)) && (grid_array.length > 0))
+                {
+                    for(var index = 0; index < grid_array.length; index ++)
+                    {
+                        var data = grid_array[index];
+                        if(data[keyProperty] == editingId)
+                        {
+                            editingValue = data["service_if"];
+                            continue;
+                        }
+                        usedInterface.push(data["service_if"]);
+                    }
+                }
+
+                /* get the vpn interface and the normal interface from the proxy */
+                var interfaceProxy = new $.su.Proxy({
+                    url: $.su.url('/admin/interface?form=status'),
+                    async: false
+                });
+                interfaceProxy.read({}, function(data){
+                    var index = 0;
+                    var interfaceItem=[];
+                    var interfaceIndex = -1;
+
+                    /* add the interface which hasn't been used to the combobox */
+                    for (index=0; index < data.normal.length; index++)
+                    {
+                        interfaceIndex = usedInterface.indexOf(data.normal[index].t_name);
+                        if(interfaceIndex == -1)
+                        {
+                            interfaceItem.push({name:data.normal[index].t_label,value:data.normal[index].t_name});
+                        }
+                    }
+                    for (index = 0; index < data.vpn.length; index++)
+                    {
+                        interfaceIndex = usedInterface.indexOf(data.vpn[index].t_name);
+                        if(interfaceIndex == -1)
+                        {
+                            interfaceItem.push({name:data.vpn[index].t_label,value:data.vpn[index].t_name});
+                        }
+                    }
+                    var combobox = $(editor).find('.combobox-value[name=service_if]');
+                    combobox.combobox('loadData',interfaceItem);
+                    combobox.combobox('setValue', editingValue);
+                });
+            });
+    
+
+});
+</script>
+</body>
+
+</html>

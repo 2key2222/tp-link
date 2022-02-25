@@ -1,0 +1,298 @@
+#!/usr/bin/lua
+local uci   = require "luci.model.uci"
+local fs    = require "luci.fs"
+local dbg   = require "luci.tools.debug"
+local sys   = require "luci.sys"
+local uci_r = uci.cursor()
+
+local WEEKDAY_TBL  = {['1']="Mon", ['2']="Tues", ['3']="Wed", ['4']="Thur", ['5']="Fri", ['6']="Sat", ['0']="Sun"}
+local MON_TBL  = {['1']="Jan", ['2']="Feb", ['3']="Mar", ['4']="Apr", ['5']="May", ['6']="Jun", ['7']="Jul", ['8']="Aug", ['9']="Sep", ['10']="Oct", ['11']="Nov", ['12']="Dec"}
+local YEARDAY_TBL = {0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365}
+local LYEARDAY_TBL = {0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366}
+
+local zoneinfoTable = {
+    { 'GMT-12:00', 'GMT+12'},
+    { 'GMT-11:00', 'GMT+11'},
+    { 'GMT-10:00', 'GMT+10'},
+    { 'GMT-09:00', 'GMT+9'},
+    { 'GMT-08:00', 'GMT+8'},
+    { 'GMT-07:00', 'GMT+7'},
+    { 'GMT-06:00', 'GMT+6'},
+    { 'GMT-05:00', 'GMT+5'},
+    { 'GMT-04:30', 'Caracas'},
+    { 'GMT-04:00', 'GMT+4'},
+    { 'GMT-03:30', 'Canada/Newfoundland'},
+    { 'GMT-03:00', 'GMT+3'},
+    { 'GMT-02:00', 'GMT+2'},
+    { 'GMT-01:00', 'GMT+1'},
+    { 'GMT'      , 'GMT'},
+    { 'GMT+01:00', 'GMT-1'},
+    { 'GMT+02:00', 'GMT-2'},
+    { 'GMT+03:00', 'GMT-3'},
+    { 'GMT+03:30', 'MET'},
+    { 'GMT+04:00', 'GMT-4'},
+    { 'GMT+04:30', 'Asia/Kabul'},
+    { 'GMT+05:00', 'GMT-5'},
+    { 'GMT+05:30', 'Asia/Calcutta'},
+    { 'GMT+05:45', 'Asia/Kathmandu'},
+    { 'GMT+06:00', 'GMT-6'},
+    { 'GMT+06:30', 'Asia/Rangoon'},
+    { 'GMT+07:00', 'GMT-7'},
+    { 'GMT+08:00', 'GMT-8'},
+    { 'GMT+09:00', 'GMT-9'},
+    { 'GMT+09:30', 'Darwin'},
+    { 'GMT+10:00', 'GMT-10'},
+    { 'GMT+11:00', 'GMT-11'},
+    { 'GMT+12:00', 'GMT-12'},
+    { 'GMT+13:00', 'GMT-13'},
+}
+
+local function isleap(yr)
+    local y = tonumber(yr)
+    if y%100 ~= 0 and y%4 == 0 then
+        return true
+    elseif y%400 == 0 then
+        return true
+    else
+        return false
+    end
+end
+
+--- Load time settings
+-- @param N/A
+-- @return data return settings
+function ts_load_all_settings()
+    local dst_start = ""
+    local dst_end   = ""
+    local st_yr = ""
+    local ed_yr = ""
+    local st_on = ""
+    local ed_on = ""
+    local st_in = ""
+    local ed_in = ""
+    local st_at = ""
+    local ed_at = ""
+    local dst_off = ""
+    local st_max_yr = "max"
+    local ed_max_yr = "max"
+
+    -- get current system timezone
+    local sname = uci_r:get_first("system", "system", nil, nil)
+    local timezone = uci_r:get("system", sname, "timezone")
+
+    local gmtoff = timezone:match("GMT(%S+)") or "+0:00"
+    if nil ~= string.find(gmtoff, "+") then
+        gmtoff = string.sub(gmtoff, 2)
+    end
+    --dbg("gmtoff=",gmtoff)
+
+    local zoneinfo = "GMT"
+    for k, v in ipairs(zoneinfoTable) do
+        if v[1] == timezone then
+            zoneinfo=v[2]
+            break
+        end
+    end
+
+    -- get current dst
+    local dstStatus = uci_r:get("system", "dst", "dstStatus") or "false"
+    local dstMode   = uci_r:get("system", "dst", "dstMode") or "-1"
+    -- get tz cmd
+    local tz = timezone
+    tz = tz:find("+") and tz:gsub("+", "-") or tz:gsub("-", "+")
+    local dstoff = 60
+    if dstStatus == "true" then
+        if dstMode == "0" or dstMode == "1" then
+            local recurringTimeOffset = "60"
+            local startMonth   = "1"
+            local startCount   = "5"
+            local startWeekday = "0"
+            local startHour    = "0"
+            local startMin     = "0"
+            local endMonth     = "1"
+            local endCount     = "5"
+            local endWeekday   = "0"
+            local endHour      = "0"
+            local endMin       = "0"
+            local startYear    = nil
+            local endYear      = nil
+
+            if dstMode == "0" then
+                local modeCountry = uci_r:get("system", "dst", "modeCountry") or "0"
+                local TBL_recurringTimeOffset   = uci_r:get_profile("predf_dst", "recurringTimeOffset")
+                local TBL_startMonth   = uci_r:get_profile("predf_dst", "startMonth")
+                local TBL_startCount   = uci_r:get_profile("predf_dst", "startCount")
+                local TBL_startWeekday = uci_r:get_profile("predf_dst", "startWeekday")
+                local TBL_startHour    = uci_r:get_profile("predf_dst", "startHour")
+                local TBL_startMin     = uci_r:get_profile("predf_dst", "startMin")
+                local TBL_endMonth     = uci_r:get_profile("predf_dst", "endMonth")
+                local TBL_endCount     = uci_r:get_profile("predf_dst", "endCount")
+                local TBL_endWeekday   = uci_r:get_profile("predf_dst", "endWeekday")
+                local TBL_endHour      = uci_r:get_profile("predf_dst", "endHour")
+                local TBL_endMin       = uci_r:get_profile("predf_dst", "endMin")
+                --dbg("TBL_startMonth=",TBL_startMonth[3])
+                if TBL_recurringTimeOffset then
+                    local idx = tonumber(modeCountry) + 1
+                    recurringTimeOffset = TBL_recurringTimeOffset[idx]
+                    startMonth   = TBL_startMonth[idx]
+                    startCount   = TBL_startCount[idx]
+                    startWeekday = TBL_startWeekday[idx]
+                    startHour    = TBL_startHour[idx]
+                    startMin     = TBL_startMin[idx]
+                    endMonth     = TBL_endMonth[idx]
+                    endCount     = TBL_endCount[idx]
+                    endWeekday   = TBL_endWeekday[idx]
+                    endHour      = TBL_endHour[idx]
+                    endMin       = TBL_endMin[idx]
+                end
+            else
+                recurringTimeOffset   = uci_r:get("system", "dst", "recurringTimeOffset")
+                startMonth   = uci_r:get("system", "dst", "startMonth")
+                startCount   = uci_r:get("system", "dst", "startCount")
+                startWeekday = uci_r:get("system", "dst", "startWeekday")
+                startHour    = uci_r:get("system", "dst", "startHour")
+                startMin     = uci_r:get("system", "dst", "startMin")
+                endMonth     = uci_r:get("system", "dst", "endMonth")
+                endCount     = uci_r:get("system", "dst", "endCount")
+                endWeekday   = uci_r:get("system", "dst", "endWeekday")
+                endHour      = uci_r:get("system", "dst", "endHour")
+                endMin       = uci_r:get("system", "dst", "endMin")
+                startYear    = uci_r:get("system", "dst", "startYear")
+                endYear      = uci_r:get("system", "dst", "endYear")
+            end
+            
+            dst_start = "M" .. startMonth ..".".. startCount ..".".. startWeekday .."/".. startHour ..":".. startMin
+            dst_end   = "M" .. endMonth ..".".. endCount ..".".. endWeekday .."/".. endHour ..":".. endMin
+
+            st_in = MON_TBL[startMonth]
+            ed_in = MON_TBL[endMonth]
+            st_at = startHour ..":".. startMin
+            ed_at = endHour ..":".. endMin
+            st_yr = "1970"
+            ed_yr = "1970"
+            if startYear ~= endYear then
+                st_yr = startYear 
+                ed_yr = endYear
+                st_max_yr = startYear
+                ed_max_yr = endYear
+            end
+
+            if startCount == "5" then
+                st_on = "last"..WEEKDAY_TBL[startWeekday]
+            else
+                st_on = WEEKDAY_TBL[startWeekday].."<="..tostring(tonumber(startCount)*7)
+            end
+            if endCount == "5" then
+                ed_on = "last"..WEEKDAY_TBL[endWeekday]
+            else
+                ed_on = WEEKDAY_TBL[endWeekday].."<="..tostring(tonumber(endCount)*7)
+            end
+
+            dstoff = tonumber(recurringTimeOffset)
+            local min = tostring(dstoff%60)
+            local hr  = tostring((dstoff-(dstoff%60))/60)
+            dst_off = hr..":"..min
+        elseif dstMode == "2" then
+            local dateTimeOffset = uci_r:get("system", "dst", "dateTimeOffset") or "60"
+            local startDateYear  = uci_r:get("system", "dst", "startDateYear") or "2014"
+            local startDateDay   = uci_r:get("system", "dst", "startDateDay") or "1"
+            local startDateMonth = uci_r:get("system", "dst", "startDateMonth") or "1"
+            local startDateHour  = uci_r:get("system", "dst", "startDateHour") or "0"
+            local startDateMin   = uci_r:get("system", "dst", "startDateMin") or "0"
+            local endDateYear    = uci_r:get("system", "dst", "endDateYear") or "2037"
+            local endDateDay     = uci_r:get("system", "dst", "endDateDay")  or "1"
+            local endDateMonth   = uci_r:get("system", "dst", "endDateMonth")  or "1" 
+            local endDateHour    = uci_r:get("system", "dst", "endDateHour") or "0"
+            local endDateMin     = uci_r:get("system", "dst", "endDateMin") or "0"
+
+            local Jstartday = 0
+            local Jendday   = 0
+            if isleap(startDateYear) then
+                Jstartday = LYEARDAY_TBL[tonumber(startDateMonth)] + tonumber(startDateDay)
+            else
+                Jstartday = YEARDAY_TBL[tonumber(startDateMonth)] + tonumber(startDateDay)
+            end
+            if isleap(endDateYear) then
+                Jendday = LYEARDAY_TBL[tonumber(endDateMonth)] + tonumber(endDateDay)
+            else
+                Jendday = YEARDAY_TBL[tonumber(endDateMonth)] + tonumber(endDateDay)
+            end
+
+            dst_start = "J" .. Jstartday .."/".. startDateHour..":"..startDateMin
+            dst_end   = "J" .. Jendday .."/".. endDateHour..":"..endDateMin
+
+            st_on = startDateDay
+            ed_on = endDateDay
+            st_in = MON_TBL[startDateMonth]
+            ed_in   = MON_TBL[endDateMonth]
+            st_at = startDateHour..":"..startDateMin
+            ed_at   = endDateHour..":"..endDateMin
+            st_yr = startDateYear
+            ed_yr   = endDateYear
+            
+            dstoff = tonumber(dateTimeOffset)
+            local min = tostring(dstoff%60)
+            local hr  = tostring((dstoff-(dstoff%60))/60)
+            dst_off = hr..":"..min
+        else
+            local cmd = string.format("cp /usr/share/zoneinfo/%s /etc/localtime",zoneinfo)
+            sys.fork_call(cmd)    
+        end
+
+        if tonumber(dstMode) >= 0 then
+            local file = io.open("/tmp/dst", "w")
+            local rule = "# Rule  NAME  FROM     TO     TYPE  IN      ON      AT    SAVE  LETTER/S\n"..
+                         "  Rule  MYDST "..st_yr.."  "..st_max_yr.."  -   "..st_in.." "..st_on.." "..st_at.." "..dst_off.."   -\n"..
+                         "  Rule  MYDST "..ed_yr.."  "..ed_max_yr.."  -   "..ed_in.." "..ed_on.." "..ed_at.."  0      -\n\n"..
+                         "# Zone  NAME        GMTOFF RULES/SAVE  FORMAT UNTIL\n"..
+                         "  Zone "..zoneinfo.." "..gmtoff.."     -        GMT       "..st_yr.."\n"..
+                                "               "..gmtoff.."     MYDST    GMT/DST     \n\n"..
+                         "  Link "..zoneinfo.." mydst\n"
+            file:write(string.format(rule))
+            file:close()
+            local cmd = string.format("/usr/bin/zic -d /tmp/ /tmp/dst")
+            --dbg('cmd is ',cmd)
+            sys.fork_call(cmd)
+            cmd = string.format("cp /tmp/mydst /etc/localtime") -- dst work for glibc 
+            sys.fork_call(cmd)
+            sys.fork_call(string.format("rm -f /tmp/%s",zoneinfo))
+        end
+
+         -- if dst start time is equal to end time, then return error
+        if dst_start == dst_end then
+            return false, "start time cannot be the same as end time"
+        end
+	
+        local gmtoff_hr, gmtoff_min = gmtoff:match("(%S+):(%S+)")
+        local ch
+        if tonumber(gmtoff_hr) >= 0 then
+            dstoff = 60 * tonumber(gmtoff_hr) + tonumber(gmtoff_min) + dstoff
+        else
+            dstoff = -1 * (-60 * tonumber(gmtoff_hr) + tonumber(gmtoff_min)) + dstoff
+        end
+        if dstoff > 0 then
+            ch = "-"
+        else
+            dstoff = -1 * dstoff
+            ch = "+"
+        end
+        local min = tostring(dstoff%60)
+        local hr  = tostring((dstoff-(dstoff%60))/60)
+        dstoff = hr..":"..min
+        if tz == "GMT" then
+            tz = "GMT+0:00"
+        end
+	
+        tz  = tz .. "DST" .. ch .. dstoff .. "," .. dst_start .. "," .. dst_end
+    else
+        local cmd = string.format("cp /usr/share/zoneinfo/%s /etc/localtime",zoneinfo)
+        --dbg('cmd is ',cmd)
+        sys.fork_call(cmd)
+    end
+    
+    dbg.printf(tz)
+    fs.writefile("/etc/TZ", tz .. "\n") --dst work for uclibc
+    return true
+end
+
+ts_load_all_settings()

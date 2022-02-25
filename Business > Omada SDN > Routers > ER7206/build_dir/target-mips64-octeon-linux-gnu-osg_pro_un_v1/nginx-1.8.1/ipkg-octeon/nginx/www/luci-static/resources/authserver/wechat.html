@@ -1,0 +1,327 @@
+<!--
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="X-UA-Compatible" content="IE=8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=0.5, maximum-scale=2.0, user-scalable=yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="format-detection" content="telephone=yes" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta http-equiv="Cache-Control" content="no-cache" />
+<meta http-equiv="Expires" content="0" />
+-->
+<title>微信认证</title>
+<style>
+	html,body{
+		margin:0px;
+		height:100%;
+		border:none;
+		//font-family: Microsoft YaHei, monospace, sans-serif;
+	}
+
+    body{background-color: #EEEEEE}
+
+	#top-board{
+		position: relative;
+		width: 100%;
+		max-width: 500px;
+		margin: 0 auto;
+		min-width: 300px;
+		min-height: 180px;
+	}
+
+	#bottom-board{
+		position: relative;
+		width: 100%;
+        max-width: 500px;
+        margin: 0 auto;
+	}
+    #bottom-board div{
+        text-align: center;
+    }
+
+	#title{
+		margin: 0 auto;
+		left: 0;
+		right: 0;
+		text-align: center;
+		font-size: 20px;
+		padding: 20px 5px 0;
+        color: #333333;
+		overflow: hidden;
+		clear: both;
+        word-wrap:break-word;
+    }
+
+	#custom-text{
+		position: absolute;
+		bottom: 0;
+		margin: 0 auto;
+		left: 0;
+		right: 0;
+		font-size: 14px;
+		padding: 15px;
+		text-align: center;
+		background-color: RGBA(33,33,33,0.6);
+		color: #EEEEEE;
+		word-wrap:break-word;
+        display:none;
+	}
+	
+	#p-name{
+		word-wrap:break-word;
+	}
+	
+	#semacode-wrapper{
+		min-width: 130px;
+		//min-height: 130px;
+		margin: 50px auto 10px;
+		overflow: hidden;
+		text-align: center;
+	}
+
+	#header-background{
+		float: left;
+		height: 300px;
+		width: 100%;
+		overflow: hidden;
+		text-align:center;
+	}
+
+	#public{
+		text-align:center;
+		margin: 0 auto;
+		font-size: 14px;
+        padding-top: 10px;
+	}
+    
+    #copyright-widget{
+        margin: 15px auto 15px;
+        font-size: 75%;
+        color: #333333;
+        word-wrap:break-word;
+    }
+
+	.clearfix:after{
+		line-height: 0;
+		content : ".";
+		display: block;
+		height: 0;
+		visibility: hidden;
+		clear: both;
+	}
+</style>
+</head>
+<script type="text/javascript">
+	function asctochar(high, low)
+	{
+		var connect = 0;
+		if ( high >= '0' && high <= '9' )
+		{
+			high = high.charCodeAt() - 48; 
+		}
+		if ( high >= 'A' && high <= 'F' )
+		{
+			high = high.charCodeAt() - 55;
+		}
+		if ( low >= '0' && low <= '9' )
+		{
+			low = low.charCodeAt() - 48; 
+		}
+		if ( low >= 'A' && low <= 'F' )
+		{
+			low = low.charCodeAt() - 55;
+		}
+		connect = high*16+low;
+		return connect;
+	}
+	
+	function strASCdecode(sourceId)
+	{
+		var tempstr = sourceId;/*getVar(sourceId).value*/
+		var index = 0;
+		var ptr = 0;
+		var tempDecode = '';
+		var high, low, high1,low1,high2,low2,inter1, inter2, inter;
+		var charcode = 0;
+		for ( index = 0; index <  tempstr.length; )
+		{
+			high = tempstr.slice(index,index+1);
+			low  = tempstr.slice(index+1,index+2);
+			inter = asctochar(high,low);
+			if ( 0 <= inter && inter <= 0x007f )
+			{
+				tempDecode += String.fromCharCode(inter);
+				index += 2;
+				continue;
+			}
+			if ( 192 <= inter && inter <= 223 )
+			{
+				high1 = tempstr.slice(index+2,index+3);
+				low1 = tempstr.slice(index+3,index+4);
+				inter1 = asctochar(high1,low1);
+				charcode = ((inter-192)<<6) + (inter1-128);
+				tempDecode += String.fromCharCode(charcode);
+				index += 4;
+				continue;
+			}
+			if ( 224<= inter && inter <= 239 )
+			{
+				high1 = tempstr.slice(index+2,index+3);
+				low1 = tempstr.slice(index+3,index+4);
+				high2 = tempstr.slice(index+4,index+5);
+				low2 = tempstr.slice(index+5,index+6);
+				inter1 = asctochar(high1,low1);
+				inter2 = asctochar(high2,low2);
+				charcode = ((inter-224)<<12)+((inter1-128)<<6)+(inter2-128);
+				tempDecode += String.fromCharCode(charcode);
+				index += 6;
+				continue;
+			}
+			else
+			{
+				tempDecode = sourceId;
+				break;
+			}
+		}
+		return tempDecode;
+	}
+	function revertSecDataStr(str)
+	{
+		if ('' == str)
+		{
+			return '';
+		}
+		else
+		{
+			return str.slice(1,str.length-1);
+		}
+	}
+    
+    if ( typeof(cfgPara) == "undefined")
+    {
+        var cfgPara = {
+            "pagetype":"remind",           // remind or success
+            "background":"background.jpg",
+            "image":"nobody.jpg",
+            "account":"account",
+            "remindinfo":"关注微信号，即可上网。",
+            "welinfo":"欢迎使用免费WiFi",
+            "copyright":"版权声明版权声明版权声明版权声明",
+            "pcfree":"off"
+        }
+    }
+
+    var pagetype        = cfgPara.pagetype;
+    var bitmap          = cfgPara.image;
+    var background      = cfgPara.background;
+    var account         = cfgPara.account;
+    var welcomeInfo     = "欢迎使用免费WiFi";
+    var remindInfo      = "";
+    var authToken = cfgPara.authToken;
+    var notPreview = true;
+    var copyright = cfgPara.copyright;
+    var pcfree = cfgPara.pcfree;
+    
+    (function(){
+        
+        if("remind" == pagetype){
+            remindInfo = cfgPara.remindinfo;
+        }
+        else{
+            remindInfo = "认证成功，您可以免费上网"+ cfgPara.remindinfo +"分钟。到期后如需继续使用，请重新认证。";
+        }
+
+        //account   = strASCdecode(account);
+        account  = account.replace(/&/ig,'&amp;');
+        account  = account.replace(/</ig,'&lt;');
+        account  = account.replace(/>/ig,'&gt;');
+        
+        //remindInfo   = strASCdecode(remindInfo);
+        remindInfo  = remindInfo.replace(/&/ig,'&amp;');
+        remindInfo  = remindInfo.replace(/</ig,'&lt;');
+        remindInfo  = remindInfo.replace(/>/ig,'&gt;');
+        
+        //welcomeInfo   = strASCdecode(welcomeInfo);
+        welcomeInfo  = welcomeInfo.replace(/&/ig,'&amp;');
+        welcomeInfo  = welcomeInfo.replace(/</ig,'&lt;');
+        welcomeInfo  = welcomeInfo.replace(/>/ig,'&gt;');
+        
+        copyright  =  copyright.replace(/&/ig,'&amp;');
+        copyright  = copyright.replace(/</ig,'&lt;');
+        copyright  = copyright.replace(/>/ig,'&gt;');
+
+        authUrl = "http://weixin.tplogin.cn:8080/weixin/?"+authToken;
+        if((notPreview == true)
+            && "remind" == pagetype
+            && "on" == pcfree
+            &&(true != (/Phone|Android|webOS|iPhone|iPod|BlackBerry/i.test(navigator.userAgent))))
+        {
+            window.location.href = authUrl;
+        }
+    })(null);
+</script>
+<body>
+	<div id="top-board" class="clearfix">
+        <div id="header-background"><img id="custom-img"/></div>
+		<!--<div id="title"><strong><script type="text/javascript">document.write(welcomeInfo)</script></strong></div>-->
+        <div id="title"><span><script type="text/javascript">document.write(remindInfo)</script></span></div>
+		<div id="custom-text"><script type="text/javascript">document.write(remindInfo)</script></div>
+	</div>
+	<div id="bottom-board">
+		<div id="semacode-wrapper">
+			<img id="semacode" src=""/>
+		</div>
+		<div id="public">
+			<span id="p-title">公众号名称:</span>
+			<span id="p-name"><script type="text/javascript">document.write(account);</script></span>
+		</div>
+        <div id="copyright-widget">
+        <span><script>document.write(copyright)</script></span>
+        </div>
+	</div>
+<script type="text/javascript">
+	var devicePixelRatio = window.devicePixelRatio || 1,
+		$id=function(id){return document.getElementById(id)},
+        $css=function(id, type, vaule){var e=(typeof id == "string")?$id(id):id;if(typeof type == 'string')e.style[type]=vaule;else{for(var t in type){e.style[t]=type[t]}}},
+		semacodeImg = $id('semacode'),
+		semacodeImgWrapper = $id('semacode-wrapper'),
+		customImg = $id('custom-img'),
+		customImgWrapper =$id('header-background');
+
+	var semaWidth = customImgWrapper.clientWidth*0.5 + "px";
+	semacodeImgWrapper.style.width = semaWidth;
+	semacodeImgWrapper.style.height = semaWidth;
+/*	$id("semacode").src = imgUrl[1];
+	$id("custom-img").src = imgUrl[0];
+*/
+	$id("semacode").src = bitmap;
+	$id("custom-img").src = background;
+	adapotImg(semacodeImg, semacodeImgWrapper, false);
+	adapotImg(customImg, customImgWrapper, true);
+
+    function adapotImg(img, wrapper, clippable){
+        if(img.width === 0 || img.height === 0) {
+			var args = arguments;
+            setTimeout(function(){ args.callee.apply(this, args); }, 100);
+            return;
+        }
+        var iw = img.width,
+                ih = img.height,
+                ww = wrapper.clientWidth,
+                wh = wrapper.clientHeight,
+                ratio = isFinite(iw/ih) ? iw/ih : 1,
+                zoom = clippable ? Math.max(ww/iw, wh/ih) : Math.min(ww/iw, wh/ih);
+
+        img.width = iw*zoom;
+        img.height = ih*zoom;
+    }
+    
+    if("remind" != pagetype){
+        $css('semacode-wrapper', 'visibility', 'hidden'); 
+        $css('semacode-wrapper', 'height', '80px'); 
+        $css('public', 'display', 'none'); 
+    }
+</script>
+</body>

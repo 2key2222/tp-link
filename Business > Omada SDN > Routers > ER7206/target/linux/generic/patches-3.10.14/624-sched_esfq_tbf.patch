@@ -1,0 +1,763 @@
+--- a/include/uapi/linux/pkt_sched.h
++++ b/include/uapi/linux/pkt_sched.h
+@@ -247,6 +247,7 @@
+ 	unsigned	divisor;	/* Hash divisor  */
+ 	unsigned	flows;		/* Maximal number of flows  */
+ 	unsigned	hash_kind;	/* Hash function to use for flow identification */
++	unsigned	hash_table_size;
+ };
+ 
+ /* RED section */
+--- a/net/sched/sch_esfq.c
++++ b/net/sched/sch_esfq.c
+@@ -70,6 +70,146 @@
+ 
+ */
+ 
++typedef unsigned (*Ipcom_hash_obj_func)(u32 obj);
++typedef unsigned (*Ipcom_hash_key_func)(u32 key);
++typedef int (*Ipcom_hash_cmp_func)(u32 obj, u32 key);
++
++typedef struct Ipcom_hash_struct
++{
++    /* Function that creates a hash value from an object */
++    Ipcom_hash_obj_func   obj_hash_func;
++
++    /* Pointer to a function that creates a hash value from a search key */
++    Ipcom_hash_key_func   key_hash_func;
++
++    /* Function that compares an objects and a search key and return the result */
++    Ipcom_hash_cmp_func   obj_key_cmp;
++
++    unsigned  elem;     /* The number of elements currently in the table */
++    unsigned  size;     /* The size of the hash table */
++    u32    *table;    /* The hash table */
++} Ipcom_hash;
++
++int ipcom_hash_add
++(
++    Ipcom_hash *head,
++    u32 obj
++);
++
++Ipcom_hash *
++ipcom_hash_new_fixed(Ipcom_hash_obj_func obj_hash_func,
++                    Ipcom_hash_key_func key_hash_func,
++                    Ipcom_hash_cmp_func obj_key_cmp,
++                    unsigned table_size)
++{
++    Ipcom_hash *head;
++    if (obj_hash_func == 0) return 0;
++    if (key_hash_func == 0) return 0;
++    if (obj_key_cmp == 0) return 0;
++
++    head = kmalloc(sizeof(*head), GFP_KERNEL);
++    if (head == 0)
++        return 0;
++    memset(head, 0, sizeof(*head));
++    head->table = kmalloc(table_size*sizeof(*head->table), GFP_KERNEL);
++    if (head->table == 0)
++    {
++        kfree(head);
++        return 0;
++    }
++    memset(head->table, -1, table_size*sizeof(*head->table));
++    head->obj_hash_func = obj_hash_func;
++    head->key_hash_func = key_hash_func;
++    head->obj_key_cmp = obj_key_cmp;
++    head->size = table_size;
++    head->elem = 0;
++    return head;
++}
++
++void
++ipcom_hash_delete(Ipcom_hash *head)
++{
++    if (head == 0)
++        return;
++    head->size = 0;
++    kfree(head->table);
++    kfree(head);
++}
++
++int
++ipcom_hash_add(Ipcom_hash *head, u32 obj)
++{
++    int hash_index;
++
++    if (head->size <= 0) return 0;
++
++    if (head->size / 2 <= head->elem)
++        /* The size of the hash table is locked and it has reached
++           the capacity limit */
++        return -1;
++
++    hash_index = head->obj_hash_func(obj) % head->size;
++    /* Find an empty slot at the hash index or after it if another
++       object hash:ed to the same value */
++    while (head->table[hash_index % head->size] != -1)
++    {
++        if (head->table[hash_index % head->size] == obj)
++            return (hash_index % head->size);
++        hash_index++;
++    }
++    head->table[hash_index % head->size] = obj;
++    head->elem++;
++    return (hash_index % head->size);
++}
++
++int
++ipcom_hash_get_hash_index(Ipcom_hash *head, u32 key)
++{
++    int hash_index;
++    Ipcom_hash_cmp_func func_cmp;
++    unsigned size;
++    u32    *pobj;
++
++    size = head->size;
++    func_cmp = head->obj_key_cmp;
++    hash_index = head->key_hash_func(key) % size;
++    pobj = head->table + hash_index;
++    while (*pobj != -1)
++    {
++        if (func_cmp(*pobj, key))
++            return hash_index;
++        pobj++;
++        if (++hash_index == size)
++        {
++            hash_index = 0;
++            pobj = head->table;
++        }
++    }
++    return -1;
++}
++
++#define ESFQ_ADD_RATE_LIMIT_SUPPORT    1
++
++#if ESFQ_ADD_RATE_LIMIT_SUPPORT
++#define L2T(q, L)   qdisc_l2t((q)->R_tab, L)
++#define L2T_P(q, L)   qdisc_l2t((q)->P_tab, L)
++
++struct esfq_tbf_data {
++/* Parameters */
++	u32		limit;		/* Maximal length of backlog: bytes */
++	u32		buffer;		/* Token bucket depth/rate: MUST BE >= MTU/B */
++	u32		mtu;
++	u32		max_size;
++	struct qdisc_rate_table	*R_tab;
++	struct qdisc_rate_table	*P_tab;
++
++/* Variables */
++	long	tokens;			/* Current number of B tokens */
++	long	ptokens;		/* Current number of P tokens */
++	psched_time_t	t_c;		/* Time check-point */
++};
++#endif /* ESFQ_ADD_RATE_LIMIT_SUPPORT */
++
+ #define ESFQ_HEAD 0
+ #define ESFQ_TAIL 1
+ 
+@@ -90,6 +230,7 @@
+ 	int		limit;
+ 	unsigned	depth;
+ 	unsigned	hash_divisor;
++    unsigned    hash_table_size;
+ 	unsigned	hash_kind;
+ /* Variables */
+ 	struct timer_list perturb_timer;
+@@ -103,6 +244,12 @@
+ 	unsigned short	*hash;			/* Hash value indexed by slots */
+ 	struct sk_buff_head	*qs;		/* Slot queue */
+ 	struct esfq_head	*dep;		/* Linked list of slots, indexed by depth */
++#if ESFQ_ADD_RATE_LIMIT_SUPPORT
++    int rl_active;                  /* rate limit active flag */
++	struct qdisc_watchdog watchdog;	/* Watchdog timer */
++    struct esfq_tbf_data *rlq;      /* Rate Limit Queue */
++    Ipcom_hash *ipcom_ht;            /* ipcom hast table */
++#endif /* ESFQ_ADD_RATE_LIMIT_SUPPORT */
+ };
+ 
+ /* This contains the info we will hash. */
+@@ -133,6 +280,34 @@
+ 	return jhash_3words(a, b, c, q->perturbation) & (q->hash_divisor-1);
+ }
+ 
++static __inline__ unsigned esfq_ipcom_hash(struct esfq_sched_data *q, u32 a)
++{
++    int hash_index;
++    u32 ip_value = a;
++    hash_index = ipcom_hash_get_hash_index(q->ipcom_ht, ip_value);
++    if (hash_index < 0)
++    {
++        hash_index = ipcom_hash_add(q->ipcom_ht, ip_value);
++        if (hash_index < 0) return q->hash_table_size;
++    }
++    return (unsigned) hash_index;
++}
++
++static unsigned esfq_obj_hash(u32 ip)
++{
++    return (unsigned) ip;
++}
++
++static unsigned esfq_key_hash(u32 ip)
++{
++    return (unsigned) ip;
++}
++
++static int esfq_cmp_hash(u32 obj_ip, u32 key_ip)
++{
++    return (obj_ip == key_ip) ? 1 : 0;
++}
++
+ static unsigned esfq_hash(struct esfq_sched_data *q, struct sk_buff *skb)
+ {
+ 	struct esfq_packet_info info;
+@@ -214,14 +389,20 @@
+ 	case TCA_SFQ_HASH_DST:
+ 		return esfq_jhash_1word(q, info.dst);
+ 	case TCA_SFQ_HASH_SRC:
+-		return esfq_jhash_1word(q, info.src);
++        // SRC is used for qos-share_mode now
++        // return a static hash value
++        return q->hash_table_size;
++		//return esfq_jhash_1word(q, info.src);
+ 	case TCA_SFQ_HASH_FWMARK:
+ 		return esfq_jhash_1word(q, info.mark);
+ #ifdef CONFIG_NET_SCH_ESFQ_NFCT
+ 	case TCA_SFQ_HASH_CTORIGDST:
+ 		return esfq_jhash_1word(q, info.ctorigdst);
+ 	case TCA_SFQ_HASH_CTORIGSRC:
+-		return esfq_jhash_1word(q, info.ctorigsrc);
++        // CTORIGSRC is used for qos-priv_mode now
++        // return a ipcom_hash value
++        return esfq_ipcom_hash(q, info.ctorigsrc);
++		//return esfq_jhash_1word(q, info.ctorigsrc);
+ 	case TCA_SFQ_HASH_CTREPLDST:
+ 		return esfq_jhash_1word(q, info.ctrepldst);
+ 	case TCA_SFQ_HASH_CTREPLSRC:
+@@ -386,6 +567,197 @@
+ 	return skb_peek(&q->qs[a]);
+ }
+ 
++#if ESFQ_ADD_RATE_LIMIT_SUPPORT
++static int _tbf_check_dequeue(struct esfq_sched_data *q, esfq_index idx, unsigned int len)
++{
++    psched_time_t now;
++    long toks;
++    long ptoks = 0;
++    struct esfq_tbf_data* slotq = &q->rlq[idx];
++
++    now = psched_get_time();
++    toks = psched_tdiff_bounded(now, slotq->t_c, slotq->buffer);
++
++    if (slotq->P_tab) {
++        ptoks = toks + slotq->ptokens;
++        if (ptoks > (long)slotq->mtu){
++            ptoks = slotq->mtu;
++        }
++
++        ptoks -= L2T_P(slotq, len);
++    }
++
++    toks += slotq->tokens;
++    if (toks > (long)slotq->buffer) {
++        toks = slotq->buffer;
++    }
++
++    toks -= L2T(slotq, len);
++
++    if ((toks|ptoks) >= 0) {
++        slotq->t_c = now;
++        slotq->tokens = toks;
++        slotq->ptokens = ptoks;
++        return 1;
++    }
++
++    //qdisc_watchdog_schedule(&q->watchdog, now + max_t(long, -toks, -ptoks));
++    return 0;
++}
++
++static int _tbf_check(struct esfq_sched_data *q, esfq_index idx, unsigned int len)
++{
++    psched_time_t now;
++    long toks;
++    long ptoks = 0;
++    struct esfq_tbf_data* slotq = &q->rlq[idx];
++
++    now = psched_get_time();
++    toks = psched_tdiff_bounded(now, slotq->t_c, slotq->buffer);
++
++    if (slotq->P_tab) {
++        ptoks = toks + slotq->ptokens;
++        if (ptoks > (long)slotq->mtu){
++            ptoks = slotq->mtu;
++        }
++
++        ptoks -= L2T_P(slotq, len);
++    }
++
++    toks += slotq->tokens;
++    if (toks > (long)slotq->buffer) {
++        toks = slotq->buffer;
++    }
++
++    toks -= L2T(slotq, len);
++
++    qdisc_watchdog_schedule(&q->watchdog, now + max_t(long, -toks, -ptoks));
++    return 0;
++}
++
++static long _tbf_get_time(struct esfq_sched_data *q, esfq_index idx, unsigned int len)
++{
++    psched_time_t now;
++    long toks;
++    long ptoks = 0;
++    struct esfq_tbf_data* slotq = &q->rlq[idx];
++
++    now = psched_get_time();
++    toks = psched_tdiff_bounded(now, slotq->t_c, slotq->buffer);
++
++    if (slotq->P_tab) {
++        ptoks = toks + slotq->ptokens;
++        if (ptoks > (long)slotq->mtu){
++            ptoks = slotq->mtu;
++        }
++
++        ptoks -= L2T_P(slotq, len);
++    }
++
++    toks += slotq->tokens;
++    if (toks > (long)slotq->buffer) {
++        toks = slotq->buffer;
++    }
++
++    toks -= L2T(slotq, len);
++
++    return max_t(long, -toks, -ptoks);
++}
++
++static struct sk_buff *esfq_tbf_dequeue(struct esfq_sched_data *q)
++{
++	struct sk_buff *skb = NULL;
++	unsigned depth = q->depth;
++	esfq_index a, old_a;
++    unsigned int len;
++
++	/* No active slots */
++	if (q->tail == depth)
++		return NULL;
++
++	a = old_a = q->next[q->tail];
++
++   // do
++   // {
++        len = qdisc_pkt_len(skb_peek(&q->qs[a]));
++        if (1 == _tbf_check_dequeue(q, a, len))
++        {
++	        /* Grab packet */
++        	skb = __skb_dequeue(&q->qs[a]);
++        	esfq_dec(q, a);
++        	//break;
++        }
++
++    //     a = q->next[a];
++    //} while (a != old_a);
++
++    len = 0;
++    if (NULL != skb)
++    {
++    	len = skb->len;
++    }
++
++	/* Is the slot empty? */
++	if (q->qs[a].qlen == 0) {
++		q->ht[q->hash[a]] = depth;
++		a = q->next[a];
++		if (a == old_a) {
++			q->tail = depth;
++			return skb;
++		}
++		q->next[q->tail] = a;
++		q->allot[a] += q->quantum;
++	} else if ((q->allot[a] -= len) <= 0) {
++		q->tail = a;
++		a = q->next[a];
++		q->allot[a] += q->quantum;
++	}
++
++    if (q->tail != depth)
++    {
++		long min_time = 0, tmp_time = 0;
++		esfq_index min_a, prev_min_a, prev_a;
++
++		old_a = q->next[q->tail];
++		min_a = q->next[q->tail];
++		prev_min_a = q->tail;
++
++		len = qdisc_pkt_len(skb_peek(&q->qs[old_a]));
++		min_time = _tbf_get_time(q, old_a, len);
++		prev_a = old_a;
++		a = q->next[old_a];
++		while (a != old_a)
++		{
++			len = qdisc_pkt_len(skb_peek(&q->qs[a]));
++
++			tmp_time = _tbf_get_time(q, a, len);
++			if (tmp_time < min_time)
++			{
++				min_time = tmp_time;
++				min_a = a;
++				prev_min_a = prev_a;
++			}
++
++			prev_a = a;
++			a = q->next[a];
++		}
++
++		q->tail = prev_min_a;
++		q->allot[min_a] += q->quantum;
++		q->allot[min_a] = (q->allot[min_a] > q->quantum ? q->quantum : q->allot[min_a]);
++		len = qdisc_pkt_len(skb_peek(&q->qs[min_a]));
++		_tbf_check(q, min_a, len);
++#if 0
++	    a = q->next[q->tail];
++	    len = qdisc_pkt_len(skb_peek(&q->qs[a]));
++	    _tbf_check(q, a, len);
++#endif
++    }
++
++	return skb;
++}
++#endif /* ESFQ_ADD_RATE_LIMIT_SUPPORT */
++
+ static struct sk_buff *esfq_q_dequeue(struct esfq_sched_data *q)
+ {
+ 	struct sk_buff *skb;
+@@ -421,12 +793,38 @@
+ 	return skb;
+ }
+ 
++#if ESFQ_ADD_RATE_LIMIT_SUPPORT
++static struct sk_buff *esfq_dequeue_notbf(struct Qdisc* sch)
++{
++	struct esfq_sched_data *q = qdisc_priv(sch);
++	struct sk_buff *skb;
++
++	skb = esfq_q_dequeue(q);
++	if (skb == NULL)
++		return NULL;
++	sch->q.qlen--;
++	sch->qstats.backlog -= skb->len;
++	return skb;
++}
++#endif /* ESFQ_ADD_RATE_LIMIT_SUPPORT */
++
+ static struct sk_buff *esfq_dequeue(struct Qdisc* sch)
+ {
+ 	struct esfq_sched_data *q = qdisc_priv(sch);
+ 	struct sk_buff *skb;
+ 
++#if ESFQ_ADD_RATE_LIMIT_SUPPORT
++    if (q->rl_active)
++    {
++        skb = esfq_tbf_dequeue(q);
++    }
++    else
++    {
++        skb = esfq_q_dequeue(q);
++    }
++#else
+ 	skb = esfq_q_dequeue(q);
++#endif /* ESFQ_ADD_RATE_LIMIT_SUPPORT */
+ 	if (skb == NULL)
+ 		return NULL;
+ 	sch->q.qlen--;
+@@ -449,6 +847,13 @@
+ 		kfree(q->hash);
+ 	if(q->qs)
+ 		kfree(q->qs);
++#if ESFQ_ADD_RATE_LIMIT_SUPPORT
++    if (q->rlq)
++        kfree(q->rlq);
++    if (q->ipcom_ht)
++        ipcom_hash_delete(q->ipcom_ht);
++	qdisc_watchdog_cancel(&q->watchdog);
++#endif /* ESFQ_ADD_RATE_LIMIT_SUPPORT */
+ }
+ 
+ static void esfq_destroy(struct Qdisc *sch)
+@@ -460,10 +865,28 @@
+ 
+ static void esfq_reset(struct Qdisc* sch)
+ {
++#if ESFQ_ADD_RATE_LIMIT_SUPPORT
++    int idx = 0;
++    struct esfq_sched_data *q = qdisc_priv(sch);
++	struct sk_buff *skb;
++
++	while ((skb = esfq_dequeue_notbf(sch)) != NULL)
++		kfree_skb(skb);
++
++    for (idx = 0; idx < q->hash_divisor; idx ++)
++    {
++        q->rlq[idx].t_c = psched_get_time();
++        q->rlq[idx].tokens = q->rlq[idx].buffer;
++        q->rlq[idx].ptokens = q->rlq[idx].mtu;
++    }
++	qdisc_watchdog_cancel(&q->watchdog);
++#else
+ 	struct sk_buff *skb;
+ 
+ 	while ((skb = esfq_dequeue(sch)) != NULL)
+ 		kfree_skb(skb);
++
++#endif /* ESFQ_ADD_RATE_LIMIT_SUPPORT */
+ }
+ 
+ static void esfq_perturbation(unsigned long arg)
+@@ -471,7 +894,7 @@
+ 	struct Qdisc *sch = (struct Qdisc*)arg;
+ 	struct esfq_sched_data *q = qdisc_priv(sch);
+ 
+-	q->perturbation = net_random()&0x1F;
++	q->perturbation = prandom_u32()&0x1F;
+ 
+ 	if (q->perturb_period) {
+ 		q->perturb_timer.expires = jiffies + q->perturb_period;
+@@ -508,11 +931,104 @@
+ 	}
+ }
+ 
++#if ESFQ_ADD_RATE_LIMIT_SUPPORT
++static int esfq_tbf_init(struct esfq_tbf_data *q, void *arg)
++{
++    struct esfq_tbf_opt
++    {
++        struct tc_tbf_qopt qopt;
++        unsigned burst;
++        __u32 rtab[256];
++        unsigned mtu;
++        __u32 ptab[256];
++    } *opt = (struct esfq_tbf_opt *)arg;
++
++    struct
++    {
++        struct nlattr attr;
++        char paddings[2048];
++    } *tmp_attr = NULL;
++
++	int err;
++	struct qdisc_rate_table *rtab = NULL;
++	struct qdisc_rate_table *ptab = NULL;
++	int max_size, n;
++
++    tmp_attr = kmalloc(sizeof(*tmp_attr), GFP_KERNEL);
++    if (!tmp_attr)
++    {
++        err = -1;
++        goto done;
++    }
++
++    memset(tmp_attr, 0, sizeof(*tmp_attr));
++    tmp_attr->attr.nla_type = NLA_BINARY;
++    tmp_attr->attr.nla_len = TC_RTAB_SIZE + NLA_HDRLEN;
++    memcpy(nla_data(&tmp_attr->attr), opt->rtab, sizeof(opt->rtab));
++	rtab = qdisc_get_rtab(&opt->qopt.rate, &tmp_attr->attr);
++	if (rtab == NULL)
++		goto done;
++
++	if (opt->qopt.peakrate.rate) {
++		if (opt->qopt.peakrate.rate > opt->qopt.rate.rate)
++        {
++            memset(tmp_attr, 0, sizeof(*tmp_attr));
++            tmp_attr->attr.nla_type = NLA_BINARY;
++            tmp_attr->attr.nla_len = TC_RTAB_SIZE + NLA_HDRLEN;
++            memcpy(nla_data(&tmp_attr->attr), opt->ptab, sizeof(opt->ptab));
++			ptab = qdisc_get_rtab(&opt->qopt.peakrate, &tmp_attr->attr);
++        }
++		if (ptab == NULL)
++			goto done;
++	}
++
++	for (n = 0; n < 256; n++)
++		if (rtab->data[n] > opt->qopt.buffer)
++			break;
++	max_size = (n << opt->qopt.rate.cell_log) - 1;
++	if (ptab) {
++		int size;
++
++		for (n = 0; n < 256; n++)
++			if (ptab->data[n] > opt->qopt.mtu)
++				break;
++		size = (n << opt->qopt.peakrate.cell_log) - 1;
++		if (size < max_size)
++			max_size = size;
++	}
++	if (max_size < 0)
++		goto done;
++
++	q->limit = 4096;
++	q->mtu = opt->qopt.mtu;
++	q->max_size = max_size;
++	q->buffer = opt->qopt.buffer;
++	q->tokens = q->buffer;
++	q->ptokens = q->mtu;
++
++	swap(q->R_tab, rtab);
++	swap(q->P_tab, ptab);
++
++	err = 0;
++done:
++    if (tmp_attr)
++        kfree(tmp_attr);
++	if (rtab)
++		qdisc_put_rtab(rtab);
++	if (ptab)
++		qdisc_put_rtab(ptab);
++	return err;
++}
++#endif /* ESFQ_ADD_RATE_LIMIT_SUPPORT */
++
+ static int esfq_q_init(struct esfq_sched_data *q, struct nlattr *opt)
+ {
+ 	struct tc_esfq_qopt *ctl = nla_data(opt);
+ 	esfq_index p = ~0U/2;
+ 	int i;
++#if ESFQ_ADD_RATE_LIMIT_SUPPORT
++    struct esfq_tbf_data data = {0};
++#endif /* ESFQ_ADD_RATE_LIMIT_SUPPORT */
+ 
+ 	if (opt && opt->nla_len < nla_attr_size(sizeof(*ctl)))
+ 		return -EINVAL;
+@@ -520,9 +1036,14 @@
+ 	q->perturbation = 0;
+ 	q->hash_kind = TCA_SFQ_HASH_CLASSIC;
+ 	q->max_depth = 0;
++#if ESFQ_ADD_RATE_LIMIT_SUPPORT
++    q->rl_active = 0;
++#endif /* ESFQ_ADD_RATE_LIMIT_SUPPORT */
++
+ 	if (opt == NULL) {
+ 		q->perturb_period = 0;
+ 		q->hash_divisor = 1024;
++        q->hash_table_size = 1024;
+ 		q->tail = q->limit = q->depth = 128;
+ 
+ 	} else {
+@@ -531,7 +1052,10 @@
+ 			q->quantum = ctl->quantum;
+ 		q->perturb_period = ctl->perturb_period*HZ;
+ 		q->hash_divisor = ctl->divisor ? : 1024;
++        q->hash_table_size = ctl->hash_table_size ? : q->hash_divisor;
+ 		q->tail = q->limit = q->depth = ctl->flows ? : 128;
++        if (ctl->hash_table_size)
++            q->tail = q->limit = q->depth = q->hash_divisor = ctl->hash_table_size + 1;
+ 
+ 		if ( q->depth > p - 1 )
+ 			return -EINVAL;
+@@ -542,6 +1066,20 @@
+ 		if (ctl->hash_kind) {
+ 			q->hash_kind = esfq_check_hash(ctl->hash_kind);
+ 		}
++
++#if ESFQ_ADD_RATE_LIMIT_SUPPORT
++        /**
++         * to be add to parse and get esfq_tbf_data
++         */
++        if (opt->nla_len > nla_attr_size(sizeof(*ctl)))
++        {
++            memset(&data, 0, sizeof(data));
++            if (0 == esfq_tbf_init(&data, ctl+1))
++            {
++                q->rl_active = 1;
++            }
++        }
++#endif /* ESFQ_ADD_RATE_LIMIT_SUPPORT */
+ 	}
+ 
+ 	q->ht = kmalloc(q->hash_divisor*sizeof(esfq_index), GFP_KERNEL);
+@@ -559,10 +1097,30 @@
+ 	q->hash = kmalloc(q->depth*sizeof(unsigned short), GFP_KERNEL);
+ 	if (!q->hash)
+ 		goto err_case;
++    q->ipcom_ht = ipcom_hash_new_fixed((Ipcom_hash_obj_func)esfq_obj_hash,
++                                        (Ipcom_hash_key_func)esfq_key_hash,
++                                        (Ipcom_hash_cmp_func)esfq_cmp_hash,
++                                        q->hash_table_size);
++    if (!q->ipcom_ht)
++        goto err_case;
+ 	q->qs = kmalloc(q->depth*sizeof(struct sk_buff_head), GFP_KERNEL);
+ 	if (!q->qs)
+ 		goto err_case;
+ 
++#if ESFQ_ADD_RATE_LIMIT_SUPPORT
++    q->rlq = kmalloc(q->hash_divisor*sizeof(*q->rlq), GFP_KERNEL);
++    if (!q->rlq)
++        goto err_case;
++
++    data.t_c = psched_get_time();
++    data.tokens = data.buffer;
++    data.ptokens = data.mtu;
++    for (i = 0; i < q->hash_divisor; i ++)
++    {
++        memcpy(&q->rlq[i], &data, sizeof(data));
++    }
++#endif /* ESFQ_ADD_RATE_LIMIT_SUPPORT */
++
+ 	for (i=0; i< q->hash_divisor; i++)
+ 		q->ht[i] = q->depth;
+ 	for (i=0; i<q->depth; i++) {
+@@ -596,6 +1154,10 @@
+ 		add_timer(&q->perturb_timer);
+ 	}
+ 
++#if ESFQ_ADD_RATE_LIMIT_SUPPORT
++	qdisc_watchdog_init(&q->watchdog, sch);
++#endif /* ESFQ_ADD_RATE_LIMIT_SUPPORT */
++
+ 	return 0;
+ }
+ 
+@@ -627,6 +1189,7 @@
+ 	q->depth          = new.depth;
+ 	q->hash_divisor   = new.hash_divisor;
+ 	q->hash_kind      = new.hash_kind;
++    q->hash_table_size = new.hash_table_size;
+ 	q->tail           = new.tail;
+ 	q->max_depth      = new.max_depth;
+ 	q->ht    = new.ht;
+@@ -635,6 +1198,9 @@
+ 	q->allot = new.allot;
+ 	q->hash  = new.hash;
+ 	q->qs    = new.qs;
++#if ESFQ_ADD_RATE_LIMIT_SUPPORT
++    q->rlq   = new.rlq;
++#endif /* ESFQ_ADD_RATE_LIMIT_SUPPORT */
+ 
+ 	/* finish up */
+ 	if (q->perturb_period) {
+@@ -643,6 +1209,11 @@
+ 	} else {
+ 		q->perturbation = 0;
+ 	}
++
++#if ESFQ_ADD_RATE_LIMIT_SUPPORT
++	qdisc_watchdog_init(&q->watchdog, sch);
++#endif /* ESFQ_ADD_RATE_LIMIT_SUPPORT */
++
+ 	sch_tree_unlock(sch);
+ 	return 0;
+ }
+@@ -660,9 +1231,10 @@
+ 	opt.divisor = q->hash_divisor;
+ 	opt.flows = q->depth;
+ 	opt.hash_kind = q->hash_kind;
++    opt.hash_table_size = q->hash_table_size;
+ 
+ 	if (nla_put(skb, TCA_OPTIONS, sizeof(opt), &opt))
+-		goto nla_put_failure;
++	   goto nla_put_failure;
+ 
+ 	return skb->len;
+ 

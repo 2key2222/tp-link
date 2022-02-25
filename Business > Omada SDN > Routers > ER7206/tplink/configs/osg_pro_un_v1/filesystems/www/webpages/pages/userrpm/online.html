@@ -1,0 +1,251 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Online Check</title>
+<style type="text/css">
+</style>
+</head>
+
+<body>
+	<div class="func-container">
+		<div id="online_list">
+			<div id="online_grid">
+			</div>
+		</div>
+		<div id="own_editor">
+			<input id="interface" name="interface">
+			<input id="mode" name="mode">
+			<input id="gateway" name="gateway">
+			<input id="dns" name="dns">
+			<input id="enable" name="enable">
+		</div>
+		<div id="online_check_help">   </div>
+	</div>
+
+<script type="text/javascript">
+	try{
+		$
+	}catch(e){
+		location.href="/";
+	};
+
+$(document).ready(function(e){
+	var online_set_proxy = new $.su.Proxy({
+		url: $.su.url("/admin/online?form=online")
+	});
+	var online_state_proxy = new $.su.Proxy({
+		url: $.su.url("/admin/online?form=state")
+	})
+
+	var firstLoad = true;
+
+	$("#online_list").panel({
+		title: $.su.CHAR.ONLINE.TITLE,
+        collapsible: false
+	});
+
+	var _interface = $("#interface").textbox({
+		fieldLabel: $.su.CHAR.ONLINE.INTERFACE,
+		vtype: "name",
+		allowBlank: true
+	})
+
+	var mode = $("#mode").radio({
+		fieldLabel: $.su.CHAR.ONLINE.MODE,
+		columns: 3,
+		items: [
+			{inputValue:"auto", boxlabel: $.su.CHAR.ONLINE.AUTO, checked: true},
+			{inputValue:"manual", boxlabel: $.su.CHAR.ONLINE.MANUAL},
+			{inputValue:"always_on", boxlabel: $.su.CHAR.ONLINE.ALWAYS_ON}
+		]
+	}).on('ev_change', function(e, oldValue, newValue){
+		if (newValue == "auto" || newValue == "always_on")
+		{
+			$("#gateway").textbox("disableStyle");
+			$("#dns").textbox("disableStyle");
+		}
+		else
+		{
+			$("#gateway").textbox("enableStyle");
+			$("#dns").textbox("enableStyle");
+		}
+	});
+
+	var gateway = $("#gateway").textbox({
+		fieldLabel: $.su.CHAR.ONLINE.PING,
+		allowBlank: false,
+		vtype: {
+			vtype:"ip",
+			allowAllZeroFlag:true
+		}
+	})
+
+	var dns = $("#dns").textbox({
+		fieldLabel: $.su.CHAR.ONLINE.DNS,
+		allowBlank: false,
+		vtype: {
+			vtype:"ip",
+			allowAllZeroFlag:true
+		}
+	})
+
+	var enable = $("#enable").checkbox({
+		fieldLabel: $.su.CHAR.ONLINE.ENABLE_STATE,
+		items: [
+			{inputValue:"on", boxlabel: $.su.CHAR.OPERATION.ON, uncheckedValue:"off",checked: true}
+		]
+	}).checkbox("hide");
+
+	var online_grid = $("#online_grid").grid({
+		editor: {
+			content:"#own_editor",
+			fields: [
+				{name: "interface"},
+				{name: "mode"},
+				{name: "gateway"},
+				{name: "dns"},
+				{name: "enable"},
+				{name: "state"}
+			],
+			validator:function(e){
+				if(mode.radio("getValue") == "manual"){
+					if((gateway.textbox("getValue") == "0.0.0.0") && (dns.textbox("getValue") == "0.0.0.0")){
+						dns.textbox("setError", $.su.CHAR.ONLINE.ERR);//"PING检测和DNS检测的地址不能同时为0.0.0.0");
+						return false;
+					}
+				}
+				return true;
+			}
+		},
+		store: {
+			proxy: online_set_proxy,
+			fields: [
+				{name: "interface"},
+				{name: "mode"},
+				{name: "gateway"},
+				{name: "dns"},
+				{name: "enable"},
+				{name: "state"},
+				{name: "t_label"},
+			],
+			autoLoad: true
+		},
+		paging: [],
+		columns: [
+			
+			{
+				xtype: "rownumberer",
+				width: $.su.CHAR.SETTING.ONLINE.ROW_NUMBER_WIDTH
+			},
+			{
+				text: $.su.CHAR.ONLINE.INTERFACE,
+				width: $.su.CHAR.SETTING.ONLINE.NTERFACE_WIDTH,
+				dataIndex: "interface",
+				renderer: function(dd, jindex, data) {
+					return data.t_label ? data.t_label : dd;
+				}
+			},
+
+			{
+				text: $.su.CHAR.ONLINE.ONLINE_STATE,
+				width: $.su.CHAR.SETTING.ONLINE.STATE_WIDTH,
+				dataIndex: "state",
+				renderer: function(data)
+				{
+					if (data == "up")
+					{
+						return $.su.CHAR.ONLINE.ONLINE;
+					}
+					else
+					{
+						return $.su.CHAR.ONLINE.OFFLINE;
+					}
+				}
+			},
+			{
+				//text: "检测",
+				width: $.su.CHAR.SETTING.ONLINE.ENABLE_WIDTH,
+				xtype: "statuscolumn",
+				dataIndex: "enable",
+				hidden: true
+			},
+            {
+				xtype: "settings",
+				width: $.su.CHAR.SETTING.ONLINE.SETTING_WIDTH,
+				renderer:function(type){
+					if(type == "edit"){
+						return true;
+					}
+				}
+		    }
+		],
+		operation: 'prompt'
+	}).on("ev_load", function(e, data, others){
+		if (firstLoad == true)
+		{
+			refreshStatus(10000);
+			firstLoad = false;
+		}
+	});
+
+	var online_edit = online_grid.grid("getEditor");
+	var online_store = online_grid.grid("getStore");
+    function parseStatus(data){
+        var statusIndex = {},
+            gridData = online_store.data;
+        if(!data){
+            return;
+        }
+        statusData = data;
+        $.each(data, function(i, el){
+            statusIndex[el.interface] = el;
+        });
+        $.each(gridData, function(i, el){
+            var rowData = statusIndex[el.interface];
+           	el.state = rowData.state; 
+        });
+        online_store.loadData(gridData);
+    }
+    function refreshStatus(interval){
+        if(!$.contains(document, online_grid[0])){
+            return;
+        }
+        online_state_proxy.read({}, parseStatus);
+        if(interval){
+            setTimeout(function(){
+                if(!$.contains(document, online_grid[0])){
+                    return;
+                }
+                refreshStatus(interval);
+            }, interval);
+        }
+    }
+
+	$(online_edit).on("ev_startEdit", function(e, index, key){
+		if(index != "add")
+		{
+			var data = online_store.getData(key);
+			if (data.mode == "auto" || data.mode == "always_on")
+			{
+				$("#gateway").textbox("disableStyle");
+				$("#dns").textbox("disableStyle");
+			}
+			else
+			{
+				$("#gateway").textbox("enableStyle");
+				$("#dns").textbox("enableStyle");
+			}
+			$("#enable").checkbox("setValue", "on");
+		}
+	});
+
+    var helpOnline = new $.su.Help({
+        container: "div#online_check_help",
+        content: ["ONLINE_SETTING"]
+    });
+});
+
+</script>
+</body>
+</html>

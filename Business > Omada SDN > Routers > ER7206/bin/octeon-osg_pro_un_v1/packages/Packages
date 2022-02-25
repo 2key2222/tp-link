@@ -1,0 +1,3331 @@
+Package: 6rd
+Version: 7-1
+Depends: libc, kmod-ipv6, kmod-sit
+Source: package/network/ipv6/6rd
+Section: TP-LINK
+Maintainer: Stéphan Kochen <stephan@kochen.nl>
+Architecture: all
+Installed-Size: 3801
+Filename: 6rd_7-1_all.ipk
+Size: 4429
+MD5Sum: b5b8d7b06ccecab939734a1d612a5eac
+SHA256sum: e633c518e439322773c98c4404eb56a563de2811893dc13ba7acbcccf7375e97
+Description:  Provides support for 6rd tunnels in /etc/config/network.
+ Refer to http://wiki.openwrt.org/doc/uci/network for
+ configuration details.
+
+Package: 6to4
+Version: 12-1
+Depends: libc, kmod-ipv6, kmod-sit
+Source: package/network/ipv6/6to4
+Section: TP-LINK
+Maintainer: Jo-Philipp Wich <xm@subsignal.org>
+Architecture: all
+Installed-Size: 1777
+Filename: 6to4_12-1_all.ipk
+Size: 2433
+MD5Sum: 4582453c9e7ebd5769e2901c5d14a4d2
+SHA256sum: bedb334d99f7cf17948340b7a6df82bdf9475d3c09c74bbebaecfb850610a86a
+Description:  Provides support for 6to4 tunnels in /etc/config/network.
+ Refer to http://wiki.openwrt.org/doc/uci/network for
+ configuration details.
+
+Package: base-files
+Version: 156-unknown
+Depends: libc, netifd, procd, jsonfilter
+Source: package/base-files
+Section: base
+Architecture: octeon
+Installed-Size: 84238
+Filename: base-files_156-unknown_octeon.ipk
+Size: 84596
+MD5Sum: 740ab76298b94bacef772d99ba42c85a
+SHA256sum: a4f4ad8528a355f006019ad2db9633a4d2c7336786007e0e33acfedebd89796d
+Description:  This package contains a base filesystem and system scripts for OpenWrt.
+
+Package: bpalogin
+Version: 2.0.2-1
+Depends: libc, liblogger
+Source: package/network/services/bpalogin
+Section: net
+Architecture: octeon
+Installed-Size: 15258
+Filename: bpalogin_2.0.2-1_octeon.ipk
+Size: 15832
+MD5Sum: 64290e398e67de6075e5010a4513c3ca
+SHA256sum: 89ba86bd82a372a7778eaed81a146c9353817f092913627031d390c107c2760d
+Description:  The program is need by BigPond access type to handle authentication with server.
+
+Package: busybox
+Version: 1.22.1-3
+Depends: libc, liblogger
+Source: package/utils/busybox
+License: GPLv2 BSD-4c
+LicenseFiles: LICENSE archival/libarchive/bz/LICENSE
+Section: base
+Essential: yes
+Maintainer: Felix Fietkau <nbd@openwrt.org>
+Architecture: octeon
+Installed-Size: 290832
+Filename: busybox_1.22.1-3_octeon.ipk
+Size: 291024
+MD5Sum: 60f7bf93553815e318eccbf4ea70d2b7
+SHA256sum: 280daf79322f02bff83dfef16f763e438af69d3b804136a3206221b69dcb3778
+Description:  The Swiss Army Knife of embedded Linux.
+ It slices, it dices, it makes Julian Fries.
+
+Package: conntrack-tools
+Version: 1.0.0-1
+Depends: libc, libnetfilter-conntrack
+Source: package/network/utils/conntrack-tools
+Section: net
+Maintainer: Jo-Philipp Wich <jow@openwrt.org>
+Architecture: octeon
+Installed-Size: 17273
+Filename: conntrack-tools_1.0.0-1_octeon.ipk
+Size: 17991
+MD5Sum: bf40e7b7c2a39c924fe1f72b0d8b7e6f
+SHA256sum: 2072ea823e97b185c7b6028632533095444f7477c83cb46cc5e816292270f161
+Description:  The conntrack-tools are a set of free software userspace tools for Linux
+ that allow system administrators interact with the Connection Tracking
+ System, which is the module that provides stateful packet inspection for
+ iptables. The conntrack-tools are the userspace daemon conntrackd and the
+ command line interface conntrack.
+
+Package: curl
+Version: 7.38.0-1
+Depends: libc, libcurl
+Source: package/network/utils/curl
+License: MIT
+LicenseFiles: COPYING
+Section: net
+Maintainer: Imre Kaloz <kaloz@openwrt.org>
+Architecture: octeon
+Installed-Size: 44948
+Filename: curl_7.38.0-1_octeon.ipk
+Size: 45498
+MD5Sum: 2e17e3884c29827c2c26db7721290e2c
+SHA256sum: 5977c7d6ae3ed98524c82eb327e8f683982f131cc0ab7458d16a068f4343b881
+Description:  A client-side URL transfer utility
+
+Package: dnsmasq
+Version: 2.71-4
+Depends: libc, libuci, liblogger
+Source: package/network/services/dnsmasq
+License: GPLv2
+LicenseFiles: COPYING
+Section: net
+Architecture: octeon
+Installed-Size: 122477
+Filename: dnsmasq_2.71-4_octeon.ipk
+Size: 123128
+MD5Sum: 8a77fe6781ccc154d53ac70227c834e9
+SHA256sum: aaddf51ebfe3af82e807aa0843a84eb919dfa49b76c476eb54990672e45f8fc2
+Description:  It is intended to provide coupled DNS and DHCP service to a LAN.
+
+Package: dropbear
+Version: 2014.63-2
+Depends: libc
+Source: package/network/services/dropbear
+License: MIT
+LicenseFiles: LICENSE libtomcrypt/LICENSE libtommath/LICENSE
+Section: net
+Architecture: octeon
+Installed-Size: 119495
+Filename: dropbear_2014.63-2_octeon.ipk
+Size: 119870
+MD5Sum: b954d9000f080ac6a24824f91cca4b33
+SHA256sum: de85065dff3971ce58009665054c25dae0e8ae75efd912ca0a290568ab2e48cd
+Description:  A small SSH2 server/client designed for small memory environments.
+
+Package: ds-lite
+Version: 4-1
+Depends: libc, kmod-ipv6, kmod-ip6-tunnel
+Source: package/network/ipv6/ds-lite
+Section: TP-LINK
+Maintainer: Steven Barth <steven@midlink.org>
+Architecture: all
+Installed-Size: 1151
+Filename: ds-lite_4-1_all.ipk
+Size: 1804
+MD5Sum: 9a19918f156f864ffbef0ca8b53249c1
+SHA256sum: ebc451e68c68876d6f42b6c6c32086de81ef96a25602afd4e9c20af8dc23751e
+Description:  Provides support for Dual-Stack Lite in /etc/config/network.
+ Refer to http://wiki.openwrt.org/doc/uci/network for
+ configuration details.
+
+Package: firewall
+Version: 2-55.1
+Depends: libc, iptables, kmod-ipt-conntrack, kmod-ipt-nat, ipset-tplink
+Source: package/network/config/firewall
+Section: net
+Maintainer: Jo-Philipp Wich <xm@subsignal.org>
+Architecture: all
+Installed-Size: 16115
+Filename: firewall_2-55.1_all.ipk
+Size: 16727
+MD5Sum: 6386d5c31bd24f4c001959718339de52
+SHA256sum: 84de00eb3adf032c558898d14ba178f799ab585c43e1bb9fefa69c11526cf35e
+Description:  UCI based firewall for OpenWrt
+
+Package: flock
+Version: 2.24.1-1
+Depends: libc
+Source: package/utils/util-linux
+License: GPLv2 LGPLv2.1 BSD-3c
+LicenseFiles: COPYING getopt/COPYING libblkid/COPYING libmount/COPYING Documentation/licenses/COPYING.GPLv2 Documentation/licenses/COPYING.LGPLv2.1 libuuid/COPYING Documentation/licenses/COPYING.BSD-3
+Section: utils
+Architecture: octeon
+Installed-Size: 11119
+Filename: flock_2.24.1-1_octeon.ipk
+Size: 11779
+MD5Sum: beb78818c1d9f36375dbe9096cfa5c46
+SHA256sum: 2ea832f6762e49439960e2edb886b28ca17e5bf58a8a1077e06799c01e57f85c
+Description:  manages flock locks from within shell scripts or the command line
+
+Package: fstools
+Version: 2014-06-22-e0430f5c62f367e5a8e02755412977b02c3fc45e
+Depends: libc, ubox
+Source: package/system/fstools
+License: GPLv2
+Section: base
+Maintainer: John Crispin <blogic@openwrt.org>
+Architecture: octeon
+Installed-Size: 19590
+Filename: fstools_2014-06-22-e0430f5c62f367e5a8e02755412977b02c3fc45e_octeon.ipk
+Size: 20193
+MD5Sum: 04772d167e9d7258d4e9182ce9621267
+SHA256sum: 0783e626c5ba8d121408afe6304e6c647903f28e484770bbafe0937eb8f88d22
+Description:  OpenWrt filesystem tools
+
+Package: gdb
+Version: 7.5-1
+Depends: libc, libthread-db, zlib, libreadline, libncurses, zlib
+Source: package/devel/gdb
+Section: devel
+Architecture: octeon
+Installed-Size: 1990079
+Filename: gdb_7.5-1_octeon.ipk
+Size: 1979337
+MD5Sum: 47f07920d17fe7ddf978e2c1d1ea5a92
+SHA256sum: 6c9096df91cb85f3fff5742c5378a2d0e2e9fa241df3b0b4a2a26e55b4cf742c
+Description:  GDB, the GNU Project debugger, allows you to see what is going on `inside'
+ another program while it executes -- or what another program was doing at the
+ moment it crashed.
+
+Package: gdbserver
+Version: 7.5-1
+Depends: libc, libthread-db, zlib
+Source: package/devel/gdb
+Section: devel
+Architecture: octeon
+Installed-Size: 122343
+Filename: gdbserver_7.5-1_octeon.ipk
+Size: 122108
+MD5Sum: 0acc92e3e31b608c21b2ad8fe9aecbf7
+SHA256sum: fb199ce7bc5458e6082e7f0800e63a44335cd411bff2b01a4daa614a97e072fc
+Description:  GDBSERVER is a program that allows you to run GDB on a different machine than the
+ one which is running the program being debugged.
+
+Package: iconv
+Version: 1.11.1-1
+Depends: libc, libiconv-full, libcharset
+Source: package/libs/libiconv-full
+Section: utils
+Maintainer: Jo-Philipp Wich <jow@openwrt.org>
+Architecture: octeon
+Installed-Size: 11396
+Filename: iconv_1.11.1-1_octeon.ipk
+Size: 11990
+MD5Sum: 0324a4a080f959c09c2baf22c85bbbdf
+SHA256sum: 34e0452331a6219807f93b8fda8b53839e026cc8752e1210c355d256943ead4d
+Description:  Character set conversion utility
+
+Package: improxy
+Version: 1.0-1
+Depends: libc
+Source: package/network/services/improxy
+Section: net
+Architecture: octeon
+Installed-Size: 29287
+Filename: improxy_1.0-1_octeon.ipk
+Size: 29901
+MD5Sum: 8aba792d7fb7833ef3c8d08b3f12670c
+SHA256sum: a0613ca44f27a9f417db0905429be51a081090ae5eed35f75ac655c7235a1545
+Description:  Improxy is an IGMP/MLD Proxy daemon written in c for Linux. It is lightweight and do not depend on any thirdparty library.
+
+Package: improxyvnet
+Version: 1.0-1
+Depends: libc
+Source: package/network/services/improxy
+Section: net
+Architecture: octeon
+Installed-Size: 378
+Filename: improxyvnet_1.0-1_octeon.ipk
+Size: 944
+MD5Sum: 646a7ceba0218ad8c88ef6dfdad6fd9f
+SHA256sum: 88459e259851009f25a502ffc09d4c3c382c0a28358c3b184952db0a9690eb8b
+Description:  Improxy is an IGMP/MLD Proxy daemon written in c for Linux. It is lightweight and do not depend on any thirdparty library.
+
+Package: ip6tables
+Version: 1.4.21-1
+Depends: libc, kmod-ip6tables, iptables
+Source: package/network/utils/iptables
+Section: net
+Architecture: octeon
+Installed-Size: 212
+Filename: ip6tables_1.4.21-1_octeon.ipk
+Size: 733
+MD5Sum: 3c440f30bcfa0f3bbc6ebc50f3dd1319
+SHA256sum: 1a8c880a5332aad4ac3cd125c63c53b1ff8011c7913819c1f6100bb5dd54bb33
+Description:  IPv6 firewall administration tool
+
+Package: ip
+Version: 3.15.0-1
+Depends: libc, libnl-tiny
+Source: package/network/utils/iproute2
+Section: net
+Maintainer: Russell Senior <russell@personaltelco.net>
+Architecture: octeon
+Installed-Size: 104372
+Filename: ip_3.15.0-1_octeon.ipk
+Size: 104915
+MD5Sum: 85c66fb685cd76fbf0c0ec14eb2c2f5e
+SHA256sum: 04395c0c16f63d95965c491fb40e2aa398a520fe6fe057f99b959ca33b9de04b
+Description:  Routing control utility (Minimal)
+
+Package: iptables-mod-account
+Version: 2.3-1
+Depends: libc, iptables, kmod-ipt-account
+Source: package/network/utils/xtables-addons
+Section: net
+Maintainer: Jo-Philipp Wich <jow@openwrt.org>
+Architecture: octeon
+Installed-Size: 2530
+Filename: iptables-mod-account_2.3-1_octeon.ipk
+Size: 3133
+MD5Sum: 8ee5060a1db3c0ff7d3c1ad040c532e6
+SHA256sum: 7b619be21e0fb117a082a139d2b63c339c9e357804ebd9bbe67a5702193ce9d3
+Description:  ACCOUNT iptables extension
+
+Package: iptables-mod-conntrack-extra
+Version: 1.4.21-1
+Depends: libc, iptables, kmod-ipt-conntrack-extra
+Source: package/network/utils/iptables
+Section: net
+Architecture: octeon
+Installed-Size: 8158
+Filename: iptables-mod-conntrack-extra_1.4.21-1_octeon.ipk
+Size: 8772
+MD5Sum: 729600fe4ea28fabf10c4fa73f5ae59d
+SHA256sum: 128d425289356bf3fc8d2531f97d3fcabdaa1b8827c18d5fe6e0806562d730be
+Description:  Extra iptables extensions for connection tracking.
+ 
+ Matches:
+ - connbytes
+ - connlimit
+ - connmark
+ - recent
+ - helper
+ 
+ Targets:
+ - CONNMARK
+ 
+
+Package: iptables-mod-extra
+Version: 1.4.21-1
+Depends: libc, iptables, kmod-ipt-extra
+Source: package/network/utils/iptables
+Section: net
+Architecture: octeon
+Installed-Size: 8959
+Filename: iptables-mod-extra_1.4.21-1_octeon.ipk
+Size: 9583
+MD5Sum: 6898f2c4af6187a4273a938f21c799fd
+SHA256sum: 73e7958ecad8b1f2ca5a1be7d2ddf42114a07c6a1dd57875e8c7e1bfefded447
+Description:  Other extra iptables extensions.
+ 
+ Matches:
+ - addrtype
+ - condition
+ - owner
+ - physdev (if ebtables is enabled)
+ - pkttype
+ - quota
+ 
+
+Package: iptables-mod-filter
+Version: 1.4.21-1
+Depends: libc, iptables, kmod-ipt-filter
+Source: package/network/utils/iptables
+Section: net
+Architecture: octeon
+Installed-Size: 12150
+Filename: iptables-mod-filter_1.4.21-1_octeon.ipk
+Size: 12754
+MD5Sum: 091a19f4aea6785432c23b149be6eb7e
+SHA256sum: 1d78024abd372ddb38f21560137c89cc77d7e66ada48ecf9f6d454d621c0a1f6
+Description:  iptables extensions for packet content inspection.
+ Includes support for:
+ 
+ Matches:
+ - layer7
+ - string
+ 
+
+Package: iptables-mod-ipopt
+Version: 1.4.21-1
+Depends: libc, iptables, kmod-ipt-ipopt
+Source: package/network/utils/iptables
+Section: net
+Architecture: octeon
+Installed-Size: 18823
+Filename: iptables-mod-ipopt_1.4.21-1_octeon.ipk
+Size: 19365
+MD5Sum: df37ba06baf824a98c1959ebd7545d80
+SHA256sum: eb685c4bc76474ac68dd6a8dd14292ae0e2bc23a19821dfc3f482516e1cc815c
+Description:  iptables extensions for matching/changing IP packet options.
+ 
+ Matches:
+ - dscp
+ - ecn
+ - length
+ - statistic
+ - tcpmss
+ - unclean
+ - hl
+ 
+ Targets:
+ - DSCP
+ - CLASSIFY
+ - ECN
+ - HL
+ 
+
+Package: iptables-mod-iprange
+Version: 1.4.21-1
+Depends: libc, iptables, kmod-ipt-iprange
+Source: package/network/utils/iptables
+Section: net
+Architecture: octeon
+Installed-Size: 3550
+Filename: iptables-mod-iprange_1.4.21-1_octeon.ipk
+Size: 4096
+MD5Sum: 3af597f4b60f5b4ce57a3df699e13cfc
+SHA256sum: 7caf31fb7d839fc550f69229219d60d4353b136c2d630c842113f48d56c6184b
+Description:  iptables extensions for matching ip ranges.
+ 
+ Matches:
+ - iprange
+ 
+
+Package: iptables-mod-ipsec
+Version: 1.4.21-1
+Depends: libc, iptables, kmod-ipt-ipsec
+Source: package/network/utils/iptables
+Section: net
+Architecture: octeon
+Installed-Size: 6377
+Filename: iptables-mod-ipsec_1.4.21-1_octeon.ipk
+Size: 6942
+MD5Sum: ead032c6496568f7aa95f99a9503c277
+SHA256sum: da67b2e8d985f7f5b47e420cb229042fecd8c0a7d31d11544eb9bdcf5a4c9317
+Description:  iptables extensions for matching ipsec traffic.
+ 
+ Matches:
+ - ah
+ - esp
+ - policy
+ 
+
+Package: iptables-mod-ipv4options
+Version: 2.3-1
+Depends: libc, iptables, kmod-ipt-ipv4options
+Source: package/network/utils/xtables-addons
+Section: net
+Maintainer: Jo-Philipp Wich <jow@openwrt.org>
+Architecture: octeon
+Installed-Size: 2745
+Filename: iptables-mod-ipv4options_2.3-1_octeon.ipk
+Size: 3335
+MD5Sum: c399fc2f56b50891b0957996c71a2823
+SHA256sum: a0cd90c4ea710498792ef183493c646168d66ceea0c1413a4c17d81555901625
+Description:  ipv4options iptables extension
+
+Package: iptables-mod-nat-extra
+Version: 1.4.21-1
+Depends: libc, iptables, kmod-ipt-nat-extra
+Source: package/network/utils/iptables
+Section: net
+Architecture: octeon
+Installed-Size: 3003
+Filename: iptables-mod-nat-extra_1.4.21-1_octeon.ipk
+Size: 3571
+MD5Sum: 67a893e096b7621b3f1c166ec6645f17
+SHA256sum: 90c820b27e183956444f54dc37ab55a83c8b295eb0f8703f6ea75feb679d9b2b
+Description:  iptables extensions for extra NAT targets.
+ 
+ Targets:
+ - MIRROR
+ - NETMAP
+
+Package: iptables-mod-nfqueue
+Version: 1.4.21-1
+Depends: libc, iptables, kmod-nfnetlink-queue, kmod-ipt-nfqueue
+Source: package/network/utils/iptables
+Section: net
+Architecture: octeon
+Installed-Size: 2860
+Filename: iptables-mod-nfqueue_1.4.21-1_octeon.ipk
+Size: 3444
+MD5Sum: d55fba76ba57c1413474c95bc3b42e29
+SHA256sum: 37f4bba67a5a92723deb64254922981a671965e1b12ad50f07e9b97e6d540cba
+Description:  iptables extension for user-space queuing via NFNETLINK.
+ 
+ Includes:
+ - libxt_NFQUEUE
+ 
+
+Package: iptables-mod-tproxy
+Version: 1.4.21-1
+Depends: libc, iptables, kmod-ipt-tproxy
+Source: package/network/utils/iptables
+Section: net
+Architecture: octeon
+Installed-Size: 3558
+Filename: iptables-mod-tproxy_1.4.21-1_octeon.ipk
+Size: 4137
+MD5Sum: 069555ec45813d3169a7f5fe4e516849
+SHA256sum: ba5149d8928f6528c719abac0318364f8c966aa2c76280714df72c9c10687ae7
+Description:  Transparent proxy iptables extensions.
+ 
+ Matches:
+ - socket
+ 
+ Targets:
+ - TPROXY
+ 
+
+Package: iptables
+Version: 1.4.21-1
+Depends: libc, kmod-ipt-core, libip4tc, libip6tc, libxtables
+Source: package/network/utils/iptables
+Section: net
+Architecture: octeon
+Installed-Size: 65287
+Filename: iptables_1.4.21-1_octeon.ipk
+Size: 65783
+MD5Sum: 71c7f9ae8a77ea27f45af07513c562b8
+SHA256sum: 03cf795109e7e58718d378663bd248925668fea7f4a895d70ae9e21bc7bd3b63
+Description:  IP firewall administration tool.
+ 
+ Matches:
+ - icmp
+ - tcp
+ - udp
+ - comment
+ - conntrack
+ - limit
+ - mac
+ - mark
+ - multiport
+ - set
+ - state
+ - time
+ 
+ Targets:
+ - ACCEPT
+ - CT
+ - DNAT
+ - DROP
+ - REJECT
+ - LOG
+ - MARK
+ - MASQUERADE
+ - REDIRECT
+ - SET
+ - SNAT
+ - TCPMSS
+ 
+ Tables:
+ - filter
+ - mangle
+ - nat
+ - raw
+ 
+
+Package: iptaccount
+Version: 2.3-1
+Depends: libc, iptables, iptables-mod-account
+Source: package/network/utils/xtables-addons
+Section: net
+Maintainer: Jo-Philipp Wich <jow@openwrt.org>
+Architecture: octeon
+Installed-Size: 5972
+Filename: iptaccount_2.3-1_octeon.ipk
+Size: 6550
+MD5Sum: d664c910a113f3747733460cb08891b6
+SHA256sum: b717bf0cb1770308390bd1033ef34561bdfec4f50b85ef0c78fa15e3fa49dd43
+Description:  iptables-mod-account control utility
+
+Package: jshn
+Version: 2014-08-04-dffbc09baf71b294185a36048166d00066d433b5
+Depends: libc, libjson-c, libubox, libblobmsg-json
+Source: package/libs/libubox
+License: ISC BSD-3c
+Section: utils
+Maintainer: Felix Fietkau <nbd@openwrt.org>
+Architecture: octeon
+Installed-Size: 6356
+Filename: jshn_2014-08-04-dffbc09baf71b294185a36048166d00066d433b5_octeon.ipk
+Size: 6982
+MD5Sum: 4d7ff5df596807a6bab6afd6c576906e
+SHA256sum: 09ad88503cb8c2700c0f426cb65e1671de312216b078afdb44e1486d336a1a21
+Description:  Library for parsing and generating JSON from shell scripts
+
+Package: jsonfilter
+Version: 2014-06-19-cdc760c58077f44fc40adbbe41e1556a67c1b9a9
+Depends: libc, libubox, libjson-c
+Source: package/utils/jsonfilter
+Section: base
+Maintainer: Jo-Philipp Wich <jow@openwrt.org>
+Architecture: octeon
+Installed-Size: 10284
+Filename: jsonfilter_2014-06-19-cdc760c58077f44fc40adbbe41e1556a67c1b9a9_octeon.ipk
+Size: 10877
+MD5Sum: f3a90c2676534cbe3e7836b1baa402c3
+SHA256sum: 73f4b488671bbf7bae78ff9100cc7ee2f92db59eaa023d764f6dcc3072480579
+Description:  OpenWrt JSON filter utility
+
+Package: kmod-atm
+Version: 3.10.49-1
+Depends: kernel (=3.10.49-1-050f6efca73e5de1f972d512a9865dcb)
+Source: package/kernel/linux
+License: GPLv2
+Section: kernel
+Status: unknown hold not-installed
+Architecture: octeon
+Installed-Size: 38446
+Filename: kmod-atm_3.10.49-1_octeon.ipk
+Size: 39162
+MD5Sum: 4182a96f005e840781db448196703347
+SHA256sum: 4cf596318659ac79ec44f53384c02d455465851a51f7d7d677340c0731ea2968
+Description:  Kernel modules for ATM support
+
+Package: kmod-bonding
+Version: 3.10.49-1
+Depends: kernel (=3.10.49-1-050f6efca73e5de1f972d512a9865dcb)
+Source: package/kernel/linux
+License: GPLv2
+Section: kernel
+Status: unknown hold not-installed
+Architecture: octeon
+Installed-Size: 66078
+Filename: kmod-bonding_3.10.49-1_octeon.ipk
+Size: 66443
+MD5Sum: 361d1b02b213d62ade4e35680c72cf87
+SHA256sum: 28c1efa679819cd576a627dfd5afcfe9f945293e629826301a1b556963565bc9
+Description:  Kernel module for NIC bonding.
+
+Package: kmod-crypto-aes
+Version: 3.10.49-1
+Depends: kernel (=3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-crypto-core
+Source: package/kernel/linux
+License: GPLv2
+Section: kernel
+Status: unknown hold not-installed
+Architecture: octeon
+Installed-Size: 105
+Filename: kmod-crypto-aes_3.10.49-1_octeon.ipk
+Size: 677
+MD5Sum: c26930fd52ad9f0726957e8c9238bad9
+SHA256sum: 65661bd7a38248a8e8ffc3925da0567f483e6c36d19a23b813efde9ccfa36434
+Description:  AES cipher CryptoAPI module
+
+Package: kmod-crypto-arc4
+Version: 3.10.49-1
+Depends: kernel (=3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-crypto-core
+Source: package/kernel/linux
+License: GPLv2
+Section: kernel
+Status: unknown hold not-installed
+Architecture: octeon
+Installed-Size: 1713
+Filename: kmod-crypto-arc4_3.10.49-1_octeon.ipk
+Size: 2403
+MD5Sum: a2e4be1803951582c4d6679aec720eb7
+SHA256sum: a22a6fda981895499421bab21fefe48dfcf3d522d56c6d8fed949b1571327dfd
+Description:  ARC4 (RC4) cipher CryptoAPI module
+
+Package: kmod-crypto-authenc
+Version: 3.10.49-1
+Depends: kernel (=3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-crypto-manager, kmod-crypto-core
+Source: package/kernel/linux
+License: GPLv2
+Section: kernel
+Status: unknown hold not-installed
+Architecture: octeon
+Installed-Size: 105
+Filename: kmod-crypto-authenc_3.10.49-1_octeon.ipk
+Size: 696
+MD5Sum: b2be9de6b98369de1ba37940f10affcb
+SHA256sum: 6aeb16e3a92991a51956ac4e598964872dd197ecb8a1d5671df78e130a43381b
+Description:  Combined mode wrapper for IPsec
+
+Package: kmod-crypto-cbc
+Version: 3.10.49-1
+Depends: kernel (=3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-crypto-manager, kmod-crypto-core
+Source: package/kernel/linux
+License: GPLv2
+Section: kernel
+Status: unknown hold not-installed
+Architecture: octeon
+Installed-Size: 105
+Filename: kmod-crypto-cbc_3.10.49-1_octeon.ipk
+Size: 696
+MD5Sum: 01c460f6b851249478d8d8c1f12c8df4
+SHA256sum: e987a1a097ff3a260219d54792a5348f129609403fbbbeb82b3040345d4c281e
+Description:  Cipher Block Chaining CryptoAPI module
+
+Package: kmod-crypto-core
+Version: 3.10.49-1
+Depends: kernel (=3.10.49-1-050f6efca73e5de1f972d512a9865dcb)
+Source: package/kernel/linux
+License: GPLv2
+Section: kernel
+Status: unknown hold not-installed
+Architecture: octeon
+Installed-Size: 105
+Filename: kmod-crypto-core_3.10.49-1_octeon.ipk
+Size: 667
+MD5Sum: 0efef291b08d3c86c0101da7606f5433
+SHA256sum: 0178c00d4d94e2128c16fdc4eef908785e62b6b9794ff5ef8c09d862a18d18eb
+Description:  Core CryptoAPI modules
+
+Package: kmod-crypto-deflate
+Version: 3.10.49-1
+Depends: kernel (=3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-lib-zlib, kmod-crypto-core
+Source: package/kernel/linux
+License: GPLv2
+Section: kernel
+Status: unknown hold not-installed
+Architecture: octeon
+Installed-Size: 105
+Filename: kmod-crypto-deflate_3.10.49-1_octeon.ipk
+Size: 700
+MD5Sum: f757815705dcac2972f33a08681a1994
+SHA256sum: 3765a172e1826ee94d5076f9007ba9ac5242cdb2dbd01afe84442b2ca7b99510
+Description:  Deflate compression CryptoAPI module
+
+Package: kmod-crypto-des
+Version: 3.10.49-1
+Depends: kernel (=3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-crypto-core
+Source: package/kernel/linux
+License: GPLv2
+Section: kernel
+Status: unknown hold not-installed
+Architecture: octeon
+Installed-Size: 105
+Filename: kmod-crypto-des_3.10.49-1_octeon.ipk
+Size: 683
+MD5Sum: e814f20d8e1bea19350a675ff14420ab
+SHA256sum: f5918b66084cc956b3d40700b64f98da88f4db80e7cd1ff3a2cf817b045a7b22
+Description:  DES/3DES cipher CryptoAPI module
+
+Package: kmod-crypto-ecb
+Version: 3.10.49-1
+Depends: kernel (=3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-crypto-manager, kmod-crypto-core
+Source: package/kernel/linux
+License: GPLv2
+Section: kernel
+Status: unknown hold not-installed
+Architecture: octeon
+Installed-Size: 2210
+Filename: kmod-crypto-ecb_3.10.49-1_octeon.ipk
+Size: 2908
+MD5Sum: 67aeeadf25288c49831e9571b348fa7e
+SHA256sum: f665fda9e1518a1e6825f2cb3d63b7765c7a831b0ce684b8f3512cb447e64a67
+Description:  Electronic CodeBook CryptoAPI module
+
+Package: kmod-crypto-hash
+Version: 3.10.49-1
+Depends: kernel (=3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-crypto-core
+Source: package/kernel/linux
+License: GPLv2
+Section: kernel
+Status: unknown hold not-installed
+Architecture: octeon
+Installed-Size: 105
+Filename: kmod-crypto-hash_3.10.49-1_octeon.ipk
+Size: 675
+MD5Sum: 02c507d21810006d4ee49defc0fc3571
+SHA256sum: 133a61547cee30e0fa20670b1399dbdbe76f8f29d09ad210b1ba391cf7f3b072
+Description:  CryptoAPI hash support
+
+Package: kmod-crypto-hmac
+Version: 3.10.49-1
+Depends: kernel (=3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-crypto-manager, kmod-crypto-core
+Source: package/kernel/linux
+License: GPLv2
+Section: kernel
+Status: unknown hold not-installed
+Architecture: octeon
+Installed-Size: 105
+Filename: kmod-crypto-hmac_3.10.49-1_octeon.ipk
+Size: 693
+MD5Sum: 51d5823f34ae48dcd4e473fcab8248da
+SHA256sum: 1e99dd23330cff11e57c8a3725f4ecf5089f35f5105e51dfc3dc8c3b7e119fe7
+Description:  HMAC digest CryptoAPI module
+
+Package: kmod-crypto-iv
+Version: 3.10.49-1
+Depends: kernel (=3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-crypto-manager, kmod-crypto-rng, kmod-crypto-wq, kmod-crypto-core
+Source: package/kernel/linux
+License: GPLv2
+Section: kernel
+Status: unknown hold not-installed
+Architecture: octeon
+Installed-Size: 105
+Filename: kmod-crypto-iv_3.10.49-1_octeon.ipk
+Size: 700
+MD5Sum: 74b3c938730485baf09d1783498b09cb
+SHA256sum: e7e20b8c996edbe3ebbdb0a478e0252c6da31a107198116220620a7ba7185895
+Description:  CryptoAPI initialization vectors
+
+Package: kmod-crypto-manager
+Version: 3.10.49-1
+Depends: kernel (=3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-crypto-hash, kmod-crypto-pcompress, kmod-crypto-core
+Source: package/kernel/linux
+License: GPLv2
+Section: kernel
+Status: unknown hold not-installed
+Architecture: octeon
+Installed-Size: 105
+Filename: kmod-crypto-manager_3.10.49-1_octeon.ipk
+Size: 695
+MD5Sum: 0365bebf753916690c59e1e88f2ef7fd
+SHA256sum: b6700d5405a78cbda6bf22204dc82514e114628693483d36ea1c1c71cc5fb73a
+Description:  CryptoAPI algorithm manager
+
+Package: kmod-crypto-md5
+Version: 3.10.49-1
+Depends: kernel (=3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-crypto-hash, kmod-crypto-core
+Source: package/kernel/linux
+License: GPLv2
+Section: kernel
+Status: unknown hold not-installed
+Architecture: octeon
+Installed-Size: 105
+Filename: kmod-crypto-md5_3.10.49-1_octeon.ipk
+Size: 687
+MD5Sum: 6891fee34ff6ae3db3e69608c20c1187
+SHA256sum: 330ae60714780a5d6145fee4ff003244945b00284e3ac04443acfb95c4249958
+Description:  MD5 digest CryptoAPI module
+
+Package: kmod-crypto-pcompress
+Version: 3.10.49-1
+Depends: kernel (=3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-crypto-core
+Source: package/kernel/linux
+License: GPLv2
+Section: kernel
+Status: unknown hold not-installed
+Architecture: octeon
+Installed-Size: 105
+Filename: kmod-crypto-pcompress_3.10.49-1_octeon.ipk
+Size: 692
+MD5Sum: e5019b586ef7967e1d1182b35df68bc0
+SHA256sum: b646e3f0cd805eb1ed772dd6b272ca7a8df9348664b9faea4b09f925717fc26a
+Description:  CryptoAPI Partial (de)compression operations
+
+Package: kmod-crypto-rng
+Version: 3.10.49-1
+Depends: kernel (=3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-crypto-core
+Source: package/kernel/linux
+License: GPLv2
+Section: kernel
+Status: unknown hold not-installed
+Architecture: octeon
+Installed-Size: 105
+Filename: kmod-crypto-rng_3.10.49-1_octeon.ipk
+Size: 683
+MD5Sum: 1669faf348079bc9a8aba60b9b42b1a6
+SHA256sum: 8617d7cf83c287b4f513a90ed46bfe6e70a4e88482935ee09e83a1ff5bc78f21
+Description:  CryptoAPI random number generation
+
+Package: kmod-crypto-sha1
+Version: 3.10.49-1
+Depends: kernel (=3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-crypto-hash, kmod-crypto-core
+Source: package/kernel/linux
+License: GPLv2
+Section: kernel
+Status: unknown hold not-installed
+Architecture: octeon
+Installed-Size: 105
+Filename: kmod-crypto-sha1_3.10.49-1_octeon.ipk
+Size: 689
+MD5Sum: 785d0857bd807b6edc8844aceb1dc635
+SHA256sum: 818079afe4285941e399139e3b3cbf5f1e13859f84b42bbd281d8547a5d53a68
+Description:  SHA1 digest CryptoAPI module
+
+Package: kmod-crypto-wq
+Version: 3.10.49-1
+Depends: kernel (=3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-crypto-core
+Source: package/kernel/linux
+License: GPLv2
+Section: kernel
+Status: unknown hold not-installed
+Architecture: octeon
+Installed-Size: 105
+Filename: kmod-crypto-wq_3.10.49-1_octeon.ipk
+Size: 681
+MD5Sum: 33c70a18db8128e26f055d77a86964bc
+SHA256sum: 170e44cfc1505cde03eee101b05feed7a3001809506387b3ac39f698dc3068c5
+Description:  CryptoAPI work queue handling
+
+Package: kmod-gpio-button-hotplug
+Version: 3.10.49-1
+Depends: kernel (=3.10.49-1-050f6efca73e5de1f972d512a9865dcb)
+Source: package/kernel/gpio-button-hotplug
+Section: kernel
+Architecture: octeon
+Installed-Size: 6492
+Filename: kmod-gpio-button-hotplug_3.10.49-1_octeon.ipk
+Size: 7361
+MD5Sum: dc11796af7af6131a565aa5d8d4aa143
+SHA256sum: 45ca9966366b7b3635198587fbee771569030d75175ccf7d37fdd2b7e6df1887
+Description:  This is a replacement for the following in-kernel drivers:
+ 1) gpio_keys (KEYBOARD_GPIO)
+ 2) gpio_keys_polled (KEYBOARD_GPIO_POLLED)
+ 
+ Instead of generating input events (like in-kernel drivers do) it generates
+ uevent-s and broadcasts them. This allows disabling input subsystem which is
+ an overkill for OpenWrt simple needs.
+
+Package: kmod-gre
+Version: 3.10.49-1
+Depends: kernel (=3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ipv6, kmod-iptunnel
+Source: package/kernel/linux
+License: GPLv2
+Section: kernel
+Status: unknown hold not-installed
+Architecture: octeon
+Installed-Size: 10583
+Filename: kmod-gre_3.10.49-1_octeon.ipk
+Size: 11315
+MD5Sum: 5ff93b45909c90d5ebce0a46999c6081
+SHA256sum: c729889f485cdbea592670d057e59d515b832db6c509378437805d40a1dcac49
+Description:  Generic Routing Encapsulation support
+
+Package: kmod-ip6-tunnel
+Version: 3.10.49-1
+Depends: kernel (=3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ipv6, kmod-iptunnel6
+Source: package/kernel/linux
+License: GPLv2
+Section: kernel
+Status: unknown hold not-installed
+Architecture: octeon
+Installed-Size: 15969
+Filename: kmod-ip6-tunnel_3.10.49-1_octeon.ipk
+Size: 16669
+MD5Sum: efc38523980bc4235c705c2118217598
+SHA256sum: 70cb98c0bb422cfdf3b6b78b27a6f37b4b25ea2bad0a3051e9e4a4305f9a2508
+Description:  Kernel modules for IPv6-in-IPv6 and IPv4-in-IPv6 tunnelling
+
+Package: kmod-ip6tables
+Version: 3.10.49-1
+Depends: kernel (=3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ipv6, kmod-ipt-core, kmod-ipt-conntrack
+Source: package/kernel/linux
+License: GPLv2
+Section: kernel
+Status: unknown hold not-installed
+Architecture: octeon
+Installed-Size: 32138
+Filename: kmod-ip6tables_3.10.49-1_octeon.ipk
+Size: 32862
+MD5Sum: 68b91aa1b0f899b2ced9b97faf43c0c5
+SHA256sum: 6dc09fb7f579f189d13e2793b6784a9e485d2e46c8b2819c02ee37300b2c8291
+Description:  Netfilter IPv6 firewalling support
+
+Package: kmod-ipsec4
+Version: 3.10.49-1
+Depends: kernel (=3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ipsec, kmod-iptunnel4
+Source: package/kernel/linux
+License: GPLv2
+Section: kernel
+Status: unknown hold not-installed
+Architecture: octeon
+Installed-Size: 16682
+Filename: kmod-ipsec4_3.10.49-1_octeon.ipk
+Size: 17449
+MD5Sum: 4c9021c6b9b5a6fa423d5084f4492bc3
+SHA256sum: e83455e81c30ceef80c5b4dcfe8b67001abfdb3b4039ede0a2da8f41aef273af
+Description:  Kernel modules for IPsec support in IPv4.
+ Includes:
+ - ah4
+ - esp4
+ - ipcomp4
+ - xfrm4_mode_beet
+ - xfrm4_mode_transport
+ - xfrm4_mode_tunnel
+ - xfrm4_tunnel
+
+Package: kmod-ipsec6
+Version: 3.10.49-1
+Depends: kernel (=3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ipsec, kmod-iptunnel6
+Source: package/kernel/linux
+License: GPLv2
+Section: kernel
+Status: unknown hold not-installed
+Architecture: octeon
+Installed-Size: 18418
+Filename: kmod-ipsec6_3.10.49-1_octeon.ipk
+Size: 19163
+MD5Sum: 2470439da60adb90e914728e098da629
+SHA256sum: 7fab11882d32ea75d459970701f0f9fac17dec14b6efad7db2b920f4bc18ec1d
+Description:  Kernel modules for IPsec support in IPv6.
+ Includes:
+ - ah6
+ - esp6
+ - ipcomp6
+ - xfrm6_mode_beet
+ - xfrm6_mode_transport
+ - xfrm6_mode_tunnel
+ - xfrm6_tunnel
+
+Package: kmod-ipsec
+Version: 3.10.49-1
+Depends: kernel (=3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-crypto-authenc, kmod-crypto-iv, kmod-crypto-des, kmod-crypto-hmac, kmod-crypto-md5, kmod-crypto-sha1, kmod-crypto-deflate, kmod-crypto-cbc
+Source: package/kernel/linux
+License: GPLv2
+Section: kernel
+Status: unknown hold not-installed
+Architecture: octeon
+Installed-Size: 21597
+Filename: kmod-ipsec_3.10.49-1_octeon.ipk
+Size: 22362
+MD5Sum: 2ff320c881f48472bc8803ffd7be5edf
+SHA256sum: 4090036f17e2bbc9eebb794f3b93d02c9c8c05973c552a260f15a68d77586719
+Description:  Kernel modules for IPsec support in both IPv4 and IPv6.
+ Includes:
+ - af_key
+ - xfrm_ipcomp
+ - xfrm_user
+
+Package: kmod-ipt-account
+Version: 3.10.49+2.3-1
+Depends: kernel (=3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ipt-core, kmod-ipt-compat-xtables
+Source: package/network/utils/xtables-addons
+Section: kernel
+Maintainer: Jo-Philipp Wich <jow@openwrt.org>
+Architecture: octeon
+Installed-Size: 8946
+Filename: kmod-ipt-account_3.10.49+2.3-1_octeon.ipk
+Size: 9573
+MD5Sum: 374a003d781323557a492d873889ac48
+SHA256sum: 7806529ec097c003a46c4c39b4090f41f8c28775c3cf474f1847c7c48c8e3351
+Description:  ACCOUNT netfilter module
+
+Package: kmod-ipt-compat-xtables
+Version: 3.10.49+2.3-1
+Depends: kernel (=3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ipt-core, kmod-ip6tables
+Source: package/network/utils/xtables-addons
+Section: kernel
+Maintainer: Jo-Philipp Wich <jow@openwrt.org>
+Architecture: octeon
+Installed-Size: 2457
+Filename: kmod-ipt-compat-xtables_3.10.49+2.3-1_octeon.ipk
+Size: 3076
+MD5Sum: 56550d983138d567923e8957ae1c09a2
+SHA256sum: 2491074aeeabb8378108e913fb9c25b78ef7c878369957ceacc0374962d547de
+Description:  API compatibilty layer netfilter module
+
+Package: kmod-ipt-conntrack-extra
+Version: 3.10.49-1
+Depends: kernel (=3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ipt-core, kmod-ipt-conntrack
+Source: package/kernel/linux
+License: GPLv2
+Section: kernel
+Status: unknown hold not-installed
+Architecture: octeon
+Installed-Size: 14126
+Filename: kmod-ipt-conntrack-extra_3.10.49-1_octeon.ipk
+Size: 14778
+MD5Sum: 6025663a0d763524f1e930f7f4d3b2e3
+SHA256sum: 3c9167b91a3f88ae027134a04143454b8a13f366cc31f903021cc7164febf2a5
+Description:  Netfilter (IPv4) extra kernel modules for connection tracking
+ Includes:
+ - connbytes
+ - connmark/CONNMARK
+ - conntrack
+ - helper
+ - recent
+
+Package: kmod-ipt-conntrack
+Version: 3.10.49-1
+Depends: kernel (=3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ipt-core
+Source: package/kernel/linux
+License: GPLv2
+Section: kernel
+Status: unknown hold not-installed
+Architecture: octeon
+Installed-Size: 6494
+Filename: kmod-ipt-conntrack_3.10.49-1_octeon.ipk
+Size: 7124
+MD5Sum: 45a77e089d71fbcc7dddd7149df503bb
+SHA256sum: ec50cda8a9d872378c3e458dd35a5a280ddbc687576ba7dd7d6f5c242d487aa3
+Description:  Netfilter (IPv4) kernel modules for connection tracking
+ Includes:
+ - conntrack
+ - defrag
+ - iptables_raw
+ - NOTRACK
+ - state
+
+Package: kmod-ipt-core
+Version: 3.10.49-1
+Depends: kernel (=3.10.49-1-050f6efca73e5de1f972d512a9865dcb)
+Source: package/kernel/linux
+License: GPLv2
+Section: kernel
+Status: unknown hold not-installed
+Architecture: octeon
+Installed-Size: 21440
+Filename: kmod-ipt-core_3.10.49-1_octeon.ipk
+Size: 22042
+MD5Sum: 2aaf7cd46819dcfd00cc2fd28613e397
+SHA256sum: c6767ab71b38a33d6cb9e51620b3281754e78e99168a01d72bd5f14651a045c0
+Description:  Netfilter core kernel modules
+ Includes:
+ - comment
+ - limit
+ - LOG
+ - mac
+ - multiport
+ - REJECT
+ - TCPMSS
+
+Package: kmod-ipt-extra
+Version: 3.10.49-1
+Depends: kernel (=3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ipt-core
+Source: package/kernel/linux
+License: GPLv2
+Section: kernel
+Status: unknown hold not-installed
+Architecture: octeon
+Installed-Size: 4649
+Filename: kmod-ipt-extra_3.10.49-1_octeon.ipk
+Size: 5314
+MD5Sum: d37929798e97d426a9276a499eaaff68
+SHA256sum: 501f68e70335c594f98158aa462843bf70ccdc402c920e2a0bbcf57f4b68b056
+Description:  Other Netfilter (IPv4) kernel modules
+ Includes:
+ - addrtype
+ - owner
+ - physdev (if bridge support was enabled in kernel)
+ - pkttype
+ - quota
+
+Package: kmod-ipt-filter
+Version: 3.10.49-1
+Depends: kernel (=3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ipt-core, kmod-lib-textsearch, kmod-ipt-conntrack
+Source: package/kernel/linux
+License: GPLv2
+Section: kernel
+Status: unknown hold not-installed
+Architecture: octeon
+Installed-Size: 1459
+Filename: kmod-ipt-filter_3.10.49-1_octeon.ipk
+Size: 2137
+MD5Sum: e772fb5d7b8e3dff310e2482575cef76
+SHA256sum: dbf3dc7915a72e3c671c55ce1dc04e906d1e620e5d61a637039e30272f140f7d
+Description:  Netfilter (IPv4) kernel modules for packet content inspection
+ Includes:
+ - layer7
+ - string
+
+Package: kmod-ipt-ipopt
+Version: 3.10.49-1
+Depends: kernel (=3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ipt-core, kmod-ipt-conntrack
+Source: package/kernel/linux
+License: GPLv2
+Section: kernel
+Status: unknown hold not-installed
+Architecture: octeon
+Installed-Size: 8593
+Filename: kmod-ipt-ipopt_3.10.49-1_octeon.ipk
+Size: 9326
+MD5Sum: e7f0cab73d971de03107c35a8b4ae3fd
+SHA256sum: 97ce454c73ef79cc86a5f31add03c943161d0a5a56f506605a3eddad7b73a49f
+Description:  Netfilter (IPv4) modules for matching/changing IP packet options
+ Includes:
+ - CLASSIFY
+ - dscp/DSCP
+ - ecn/ECN
+ - hl/HL
+ - length
+ - mark/MARK
+ - statistic
+ - tcpmss
+ - time
+ - ttl/TTL
+ - unclean
+
+Package: kmod-ipt-iprange
+Version: 3.10.49-1
+Depends: kernel (=3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ipt-core
+Source: package/kernel/linux
+License: GPLv2
+Section: kernel
+Status: unknown hold not-installed
+Architecture: octeon
+Installed-Size: 1465
+Filename: kmod-ipt-iprange_3.10.49-1_octeon.ipk
+Size: 2106
+MD5Sum: 681b53108c78345af84abed72438ebd9
+SHA256sum: 8a35048ec66b18f9e0a66ca5395f5502f6afc780d1a90fdeb0d17424db15e5e3
+Description:  Netfilter (IPv4) module for matching ip ranges
+ Includes:
+ - iprange
+
+Package: kmod-ipt-ipsec
+Version: 3.10.49-1
+Depends: kernel (=3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ipt-core
+Source: package/kernel/linux
+License: GPLv2
+Section: kernel
+Status: unknown hold not-installed
+Architecture: octeon
+Installed-Size: 3449
+Filename: kmod-ipt-ipsec_3.10.49-1_octeon.ipk
+Size: 4054
+MD5Sum: 65e164cf506cbe0e8564dd2d8ed7be2a
+SHA256sum: d60bc8dcddb6992ebc2cf8c020354f5218648370d66d86387a79172d2d3ee783
+Description:  Netfilter (IPv4) modules for matching IPSec packets
+ Includes:
+ - ah
+ - esp
+ - policy
+
+Package: kmod-ipt-ipv4options
+Version: 3.10.49+2.3-1
+Depends: kernel (=3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ipt-core
+Source: package/network/utils/xtables-addons
+Section: kernel
+Maintainer: Jo-Philipp Wich <jow@openwrt.org>
+Architecture: octeon
+Installed-Size: 1231
+Filename: kmod-ipt-ipv4options_3.10.49+2.3-1_octeon.ipk
+Size: 1868
+MD5Sum: bc53a83d64a0754e1bdf9c38fa5ce654
+SHA256sum: 41d0072b1e167ef110469b1b7fb21384bf0d0e7038e2575419194448f824c97c
+Description:  ipv4options netfilter module
+
+Package: kmod-ipt-nat-extra
+Version: 3.10.49-1
+Depends: kernel (=3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ipt-core, kmod-ipt-nat
+Source: package/kernel/linux
+License: GPLv2
+Section: kernel
+Status: unknown hold not-installed
+Architecture: octeon
+Installed-Size: 1826
+Filename: kmod-ipt-nat-extra_3.10.49-1_octeon.ipk
+Size: 2457
+MD5Sum: 59a09a2cac5876bfeb550de53ae665fc
+SHA256sum: 48a2cab4bff39abcc4a7581cf53554652d8f5d3f3a36934ac22095a48ebd51e7
+Description:  Netfilter (IPv4) kernel modules for extra NAT targets
+ Includes:
+ - NETMAP
+ - REDIRECT
+
+Package: kmod-ipt-nat
+Version: 3.10.49-1
+Depends: kernel (=3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ipt-core, kmod-ipt-conntrack
+Source: package/kernel/linux
+License: GPLv2
+Section: kernel
+Status: unknown hold not-installed
+Architecture: octeon
+Installed-Size: 21003
+Filename: kmod-ipt-nat_3.10.49-1_octeon.ipk
+Size: 21640
+MD5Sum: 32e1d89fe393a6b90e275a4f7540c171
+SHA256sum: ef1bef8152c78707553926efc533ff417d787c09614492dcdb3902bc35ba615e
+Description:  Netfilter (IPv4) kernel modules for basic NAT targets
+ Includes:
+ - MASQUERADE
+
+Package: kmod-ipt-nathelper-extra
+Version: 3.10.49-1
+Depends: kernel (=3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ipt-core, kmod-ipt-nat, kmod-lib-textsearch
+Source: package/kernel/linux
+License: GPLv2
+Section: kernel
+Status: unknown hold not-installed
+Architecture: octeon
+Installed-Size: 68584
+Filename: kmod-ipt-nathelper-extra_3.10.49-1_octeon.ipk
+Size: 69286
+MD5Sum: 3f0e0c2f968603e0175fc47c99382afe
+SHA256sum: 1ca1685f4152b1211172be92ea44afc13ac7a0f61ab4dba2a87a8adb914541be
+Description:  Extra Netfilter (IPv4) Conntrack and NAT helpers
+ Includes:
+ - amanda
+ - h323
+ - mms
+ - pptp
+ - proto_gre
+ - sip
+ - snmp_basic
+ - broadcast
+
+Package: kmod-ipt-nathelper
+Version: 3.10.49-1
+Depends: kernel (=3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ipt-core, kmod-ipt-nat
+Source: package/kernel/linux
+License: GPLv2
+Section: kernel
+Status: unknown hold not-installed
+Architecture: octeon
+Installed-Size: 10219
+Filename: kmod-ipt-nathelper_3.10.49-1_octeon.ipk
+Size: 10853
+MD5Sum: 5e25ab8007943474bf8367842a12c341
+SHA256sum: 5b8b6433f05afdc83cd3a5d225613c284f0b6144f41bc7cd57be282f7f82f3c4
+Description:  Default Netfilter (IPv4) Conntrack and NAT helpers
+ Includes:
+ - ftp
+ - irc
+ - tftp
+
+Package: kmod-ipt-nfqueue
+Version: 3.10.49-1
+Depends: kernel (=3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ipt-core, kmod-nfnetlink-queue
+Source: package/kernel/linux
+License: GPLv2
+Section: kernel
+Status: unknown hold not-installed
+Architecture: octeon
+Installed-Size: 2296
+Filename: kmod-ipt-nfqueue_3.10.49-1_octeon.ipk
+Size: 2921
+MD5Sum: 631dd3f5f8740afc62aefe157ad930e8
+SHA256sum: 3f1b35095a1a1aa0fb0e6160885d8809ed294623d94a2b76d882a4668e6bb52c
+Description:  Netfilter module for user-space packet queuing
+ Includes:
+ - NFQUEUE
+
+Package: kmod-ipt-tproxy
+Version: 3.10.49-1
+Depends: kernel (=3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ipt-conntrack, kmod-ipv6, kmod-ip6tables, kmod-ipt-core
+Source: package/kernel/linux
+License: GPLv2
+Section: kernel
+Status: unknown hold not-installed
+Architecture: octeon
+Installed-Size: 7749
+Filename: kmod-ipt-tproxy_3.10.49-1_octeon.ipk
+Size: 8390
+MD5Sum: 2d364638bdfa833179f8e914e5765ada
+SHA256sum: f3c563eaed5c9a962ea07e7b47465d9ac012c4f81c4e08c7158ce0d8362b28ff
+Description:  Kernel modules for Transparent Proxying
+
+Package: kmod-iptunnel4
+Version: 3.10.49-1
+Depends: kernel (=3.10.49-1-050f6efca73e5de1f972d512a9865dcb)
+Source: package/kernel/linux
+License: GPLv2
+Section: kernel
+Status: unknown hold not-installed
+Architecture: octeon
+Installed-Size: 2482
+Filename: kmod-iptunnel4_3.10.49-1_octeon.ipk
+Size: 3176
+MD5Sum: a014354e4c85a2ea8836d6c319aa3c73
+SHA256sum: 634661b82e9ae74bc272fe3b127024276437b1420b1b2df3e4e13b44321ec690
+Description:  Kernel modules for IPv4 tunneling
+
+Package: kmod-iptunnel6
+Version: 3.10.49-1
+Depends: kernel (=3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ipv6
+Source: package/kernel/linux
+License: GPLv2
+Section: kernel
+Status: unknown hold not-installed
+Architecture: octeon
+Installed-Size: 2549
+Filename: kmod-iptunnel6_3.10.49-1_octeon.ipk
+Size: 3243
+MD5Sum: 3db87112eff36f941ba5abe826213bf1
+SHA256sum: 005476107d5d26beb1fea3636dc5713a3f34db4040640d61c107135915fe37e1
+Description:  Kernel modules for IPv6 tunneling
+
+Package: kmod-iptunnel
+Version: 3.10.49-1
+Depends: kernel (=3.10.49-1-050f6efca73e5de1f972d512a9865dcb)
+Source: package/kernel/linux
+License: GPLv2
+Section: kernel
+Status: unknown hold not-installed
+Architecture: octeon
+Installed-Size: 9991
+Filename: kmod-iptunnel_3.10.49-1_octeon.ipk
+Size: 10673
+MD5Sum: ab1d58194490d1264a7640bc41414de3
+SHA256sum: ec89dfc90793d7a2ab83b8ac79a423adac1371be901bbacdc3b030ce0fdb69ac
+Description:  Kernel module for generic IP tunnel support
+
+Package: kmod-ipv6
+Version: 3.10.49-1
+Depends: kernel (=3.10.49-1-050f6efca73e5de1f972d512a9865dcb)
+Source: package/kernel/linux
+License: GPLv2
+Section: kernel
+Status: unknown hold not-installed
+Architecture: octeon
+Installed-Size: 217372
+Filename: kmod-ipv6_3.10.49-1_octeon.ipk
+Size: 216548
+MD5Sum: 30a6c252be06a4383428f26266b9ad44
+SHA256sum: 5cd37aad0d8e073cbd0fd43b5fd901a0836e7d48d2e11b3286425169f4553f53
+Description:  Kernel modules for IPv6 support
+
+Package: kmod-l2tp
+Version: 3.10.49-1
+Depends: kernel (=3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ipv6
+Source: package/kernel/linux
+License: GPLv2
+Section: kernel
+Status: unknown hold not-installed
+Architecture: octeon
+Installed-Size: 18181
+Filename: kmod-l2tp_3.10.49-1_octeon.ipk
+Size: 18888
+MD5Sum: 08352cae7db5fd6ecceccc43f941bf66
+SHA256sum: 9125aecfd5d8b4ea5015befe9c0c67951689c278567dc90271773ceddd9afc1d
+Description:  Kernel modules for L2TP V3 Support
+
+Package: kmod-leds-gpio
+Version: 3.10.49-1
+Depends: kernel (=3.10.49-1-050f6efca73e5de1f972d512a9865dcb)
+Source: package/kernel/linux
+License: GPLv2
+Section: kernel
+Status: unknown hold not-installed
+Architecture: octeon
+Installed-Size: 3467
+Filename: kmod-leds-gpio_3.10.49-1_octeon.ipk
+Size: 4173
+MD5Sum: 5d0b6a34e934616146de6ddd00fbaff6
+SHA256sum: 2582ed5534e0d6d5e9e04c470ed2c56df7f6bef51bf1b6c149f1a1ef1b470755
+Description:  Kernel module for LEDs on GPIO lines
+
+Package: kmod-ledtrig-timer
+Version: 3.10.49-1
+Depends: kernel (=3.10.49-1-050f6efca73e5de1f972d512a9865dcb)
+Source: package/kernel/linux
+License: GPLv2
+Section: kernel
+Status: unknown hold not-installed
+Architecture: octeon
+Installed-Size: 105
+Filename: kmod-ledtrig-timer_3.10.49-1_octeon.ipk
+Size: 716
+MD5Sum: 5fc6618e8835bdc490224262d4b13c20
+SHA256sum: 2b566c02301643e2ddfd8ff62ac6f7c123dfd0b6fa27a599c90d3dccb5435e15
+Description:  Kernel module that allows LEDs to be controlled by a programmable timer
+ via sysfs
+
+Package: kmod-lib-crc-ccitt
+Version: 3.10.49-1
+Depends: kernel (=3.10.49-1-050f6efca73e5de1f972d512a9865dcb)
+Source: package/kernel/linux
+License: GPLv2
+Section: kernel
+Status: unknown hold not-installed
+Architecture: octeon
+Installed-Size: 1531
+Filename: kmod-lib-crc-ccitt_3.10.49-1_octeon.ipk
+Size: 2143
+MD5Sum: c556113afb5ce8e96e8099b769e2f288
+SHA256sum: 8a9c6e7790432b46c5173a9c15b849d5c629fb25b9546a5b621cce254426d06a
+Description:  Kernel module for CRC-CCITT support
+
+Package: kmod-lib-textsearch
+Version: 3.10.49-1
+Depends: kernel (=3.10.49-1-050f6efca73e5de1f972d512a9865dcb)
+Source: package/kernel/linux
+License: GPLv2
+Section: kernel
+Status: unknown hold not-installed
+Architecture: octeon
+Installed-Size: 4761
+Filename: kmod-lib-textsearch_3.10.49-1_octeon.ipk
+Size: 5310
+MD5Sum: 9d6e26d4b2b12904004101a74d04103a
+SHA256sum: a50b94fb3eb10f19ebbe06ca8866168dc0cb04a7770297da9e24f96adc90fb4d
+Description:  Textsearch support
+
+Package: kmod-lib-zlib
+Version: 3.10.49-1
+Depends: kernel (=3.10.49-1-050f6efca73e5de1f972d512a9865dcb)
+Source: package/kernel/linux
+License: GPLv2
+Section: kernel
+Status: unknown hold not-installed
+Architecture: octeon
+Installed-Size: 105
+Filename: kmod-lib-zlib_3.10.49-1_octeon.ipk
+Size: 665
+MD5Sum: d9b62514f30ba39b5b9df02b7994a1b3
+SHA256sum: 5ef8731ef545f20a23a4895110590507fbc9eadfe5d48683bff6c2beed069636
+Description:  Zlib support
+
+Package: kmod-libphy
+Version: 3.10.49-1
+Depends: kernel (=3.10.49-1-050f6efca73e5de1f972d512a9865dcb)
+Source: package/kernel/linux
+License: GPLv2
+Section: kernel
+Status: unknown hold not-installed
+Architecture: octeon
+Installed-Size: 105
+Filename: kmod-libphy_3.10.49-1_octeon.ipk
+Size: 662
+MD5Sum: 3069274244876ac127d6a234bd3551a7
+SHA256sum: d9ab2b1a348ea25efe3bfe1f4d06a90ae5d7ec2c2baa9ea669f944996e60fe7c
+Description:  PHY library
+
+Package: kmod-mppe
+Version: 3.10.49-1
+Depends: kernel (=3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ppp, kmod-crypto-core, kmod-crypto-arc4, kmod-crypto-sha1, kmod-crypto-ecb
+Source: package/kernel/linux
+License: GPLv2
+Section: kernel
+Status: unknown hold not-installed
+Architecture: octeon
+Installed-Size: 5538
+Filename: kmod-mppe_3.10.49-1_octeon.ipk
+Size: 6167
+MD5Sum: 8e6c550c042a65572dbd58e979b792ed
+SHA256sum: 1f52e0a734f87a44f4f8cc79db41bea8e367d0e02eea12db208823a54088c7a4
+Description:  Kernel modules for Microsoft PPP compression/encryption
+
+Package: kmod-mtd-oops
+Version: 3.10.49-1
+Depends: kernel (=3.10.49-1-050f6efca73e5de1f972d512a9865dcb)
+Source: package/kernel/linux
+License: GPLv2
+Section: kernel
+Status: unknown hold not-installed
+Architecture: octeon
+Installed-Size: 5787
+Filename: kmod-mtd-oops_3.10.49-1_octeon.ipk
+Size: 6366
+MD5Sum: 6fd8cdb33d66281a8aa3ca9fa87e0d58
+SHA256sum: aaebed8b9542114fa821ab933716cf63c62f2eb04c723f7b2766f4e9935270ab
+Description:  Kernel module for Panic Oops
+
+Package: kmod-mtd-ram
+Version: 3.10.49-1
+Depends: kernel (=3.10.49-1-050f6efca73e5de1f972d512a9865dcb)
+Source: package/kernel/linux
+License: GPLv2
+Section: kernel
+Status: unknown hold not-installed
+Architecture: octeon
+Installed-Size: 3854
+Filename: kmod-mtd-ram_3.10.49-1_octeon.ipk
+Size: 4435
+MD5Sum: 8af4f1869b47b2468374aa0ef7cf3664
+SHA256sum: e807bb8f3cec807a75684adab86a8c4e57afaa8c52cb8aab68c9a7d8b07d5532
+Description:  Kernel module for RAM MTD device
+
+Package: kmod-nf-conntrack-netlink
+Version: 3.10.49-1
+Depends: kernel (=3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-nfnetlink, kmod-ipt-conntrack
+Source: package/kernel/linux
+License: GPLv2
+Section: kernel
+Status: unknown hold not-installed
+Architecture: octeon
+Installed-Size: 18213
+Filename: kmod-nf-conntrack-netlink_3.10.49-1_octeon.ipk
+Size: 18802
+MD5Sum: 046df0d4211ce508f2fa417443de3c78
+SHA256sum: e998a79dba2ecf9c749c81bb0d7d37a02bcc0b715b75107037f300dca1e6279b
+Description:  Kernel modules support for a netlink-based connection tracking
+ userspace interface
+
+Package: kmod-nfnetlink-queue
+Version: 3.10.49-1
+Depends: kernel (=3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-nfnetlink
+Source: package/kernel/linux
+License: GPLv2
+Section: kernel
+Status: unknown hold not-installed
+Architecture: octeon
+Installed-Size: 9245
+Filename: kmod-nfnetlink-queue_3.10.49-1_octeon.ipk
+Size: 9879
+MD5Sum: ef71989d49935e137b63675bcd8d529c
+SHA256sum: 02d5e3b61e597eb40c0c91983f8c1b828471fac0bab19e37bd119c3fab6f55f5
+Description:  Kernel modules support for queueing packets via NFNETLINK
+ Includes:
+ - NFQUEUE
+
+Package: kmod-nfnetlink
+Version: 3.10.49-1
+Depends: kernel (=3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ipt-core
+Source: package/kernel/linux
+License: GPLv2
+Section: kernel
+Status: unknown hold not-installed
+Architecture: octeon
+Installed-Size: 3538
+Filename: kmod-nfnetlink_3.10.49-1_octeon.ipk
+Size: 4157
+MD5Sum: 80748bd4370ebb3edbf5b94f38ca0a79
+SHA256sum: e62a99594983ba1eb2611f0a636c89ca467c3098606b0f7bf09643394bb64452
+Description:  Kernel modules support for a netlink-based userspace interface
+
+Package: kmod-ppp
+Version: 3.10.49-1
+Depends: kernel (=3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-lib-crc-ccitt, kmod-slhc
+Source: package/kernel/linux
+License: GPLv2
+Section: kernel
+Status: unknown hold not-installed
+Architecture: octeon
+Installed-Size: 28713
+Filename: kmod-ppp_3.10.49-1_octeon.ipk
+Size: 29279
+MD5Sum: 841abf7dfbd14201e9dbdb2a274dcbe3
+SHA256sum: d039867d85b6035f5f2f6a90b29e89f95ccca4120e9c41c687aa427ed181d99f
+Description:  Kernel modules for PPP support
+
+Package: kmod-pppoa
+Version: 3.10.49-1
+Depends: kernel (=3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ppp, kmod-atm
+Source: package/kernel/linux
+License: GPLv2
+Section: kernel
+Status: unknown hold not-installed
+Architecture: octeon
+Installed-Size: 3961
+Filename: kmod-pppoa_3.10.49-1_octeon.ipk
+Size: 4670
+MD5Sum: 5b062444feafe4ee97d5fe93a11a4034
+SHA256sum: fa4ed3d968435abe44d0f181dcda4f5d74026a4e258b9bf2a1686fb093ca9488
+Description:  Kernel modules for PPPoA (PPP over ATM) support
+
+Package: kmod-pppoe
+Version: 3.10.49-1
+Depends: kernel (=3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ppp, kmod-pppox
+Source: package/kernel/linux
+License: GPLv2
+Section: kernel
+Status: unknown hold not-installed
+Architecture: octeon
+Installed-Size: 9392
+Filename: kmod-pppoe_3.10.49-1_octeon.ipk
+Size: 10003
+MD5Sum: c25cb50ab9a149b5fda14a58b0508592
+SHA256sum: 6633cba78fc26f9bc3e85ea747742b02b863e5c37501f5452ed133d4ece0f492
+Description:  Kernel module for PPPoE (PPP over Ethernet) support
+
+Package: kmod-pppol2tp
+Version: 3.10.49-1
+Depends: kernel (=3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ppp, kmod-pppox, kmod-l2tp
+Source: package/kernel/linux
+License: GPLv2
+Section: kernel
+Status: unknown hold not-installed
+Architecture: octeon
+Installed-Size: 12066
+Filename: kmod-pppol2tp_3.10.49-1_octeon.ipk
+Size: 12670
+MD5Sum: c099df11840ca77b4d23b1fc686c613d
+SHA256sum: 5aaebddea61e3711a26ab641c09c6d3c0332a30dd4a72155c58c009b4b16e413
+Description:  Kernel modules for PPPoL2TP (PPP over L2TP) support
+
+Package: kmod-pppox
+Version: 3.10.49-1
+Depends: kernel (=3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ppp
+Source: package/kernel/linux
+License: GPLv2
+Section: kernel
+Status: unknown hold not-installed
+Architecture: octeon
+Installed-Size: 2170
+Filename: kmod-pppox_3.10.49-1_octeon.ipk
+Size: 2751
+MD5Sum: 5349e982a7e7c2dc1f2d375470686c98
+SHA256sum: df3bd0758009f1506a40d29fb7feb83edce7dbbb909bf53788901f2b813a56b3
+Description:  Kernel helper module for PPPoE and PPTP support
+
+Package: kmod-pptp
+Version: 3.10.49-1
+Depends: kernel (=3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ppp, kmod-gre, kmod-pppox
+Source: package/kernel/linux
+License: GPLv2
+Section: kernel
+Status: unknown hold not-installed
+Architecture: octeon
+Installed-Size: 7309
+Filename: kmod-pptp_3.10.49-1_octeon.ipk
+Size: 7930
+MD5Sum: aec8cae80a67f8e7f5646f06d8d4fadb
+SHA256sum: a91dcb4e36f9d1f25cf02055d79e4d53e16f44aea844f238a28d2dee1204b6e7
+Description:  PPtP support
+
+Package: kmod-shortcut_fe
+Version: 3.10.49
+Depends: kernel (=3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ppp, kmod-ipv6
+Source: package/qca/shortcut_fe
+Section: kernel
+Maintainer: Lin Zhifeng
+Architecture: octeon
+Installed-Size: 47248
+Filename: kmod-shortcut_fe_3.10.49_octeon.ipk
+Size: 47823
+MD5Sum: 805577209765c44926f43a192617dc96
+SHA256sum: eb5dc3c0f7c31a2cb242c346deb257427ea885684f337762b5bf822ac758dd73
+Description:  Shortcut-FE is an in-Linux-Kernel IP packet forwarding engine.
+
+Package: kmod-sit
+Version: 3.10.49-1
+Depends: kernel (=3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-ipv6, kmod-iptunnel, kmod-iptunnel4
+Source: package/kernel/linux
+License: GPLv2
+Section: kernel
+Status: unknown hold not-installed
+Architecture: octeon
+Installed-Size: 12586
+Filename: kmod-sit_3.10.49-1_octeon.ipk
+Size: 13262
+MD5Sum: 49672275f86bc39b0fe76e7f7edfedfc
+SHA256sum: 582377b5ebd45c76f8cd97ffbe57d886db5ccb75473a002bdef352f3321098ed
+Description:  Kernel modules for IPv6-in-IPv4 tunnelling
+
+Package: kmod-slhc
+Version: 3.10.49-1
+Depends: kernel (=3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-lib-crc-ccitt
+Source: package/kernel/linux
+License: GPLv2
+Section: kernel
+Status: unknown hold not-installed
+Architecture: octeon
+Installed-Size: 4358
+Filename: kmod-slhc_3.10.49-1_octeon.ipk
+Size: 4935
+MD5Sum: 1355371bad17cfe02871cd587738cbdd
+SHA256sum: 9af7325d5bed07d319848935f9c1bac6f5bc56ad13e20463fed1292cc92fb6ce
+Description:  Serial Line Header Compression
+
+Package: kmod-swconfig
+Version: 3.10.49-1
+Depends: kernel (=3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-libphy
+Source: package/kernel/linux
+License: GPLv2
+Section: kernel
+Status: unknown hold not-installed
+Architecture: octeon
+Installed-Size: 9697
+Filename: kmod-swconfig_3.10.49-1_octeon.ipk
+Size: 10396
+MD5Sum: 4009edc88f49868e8b7951d83bbaa0d1
+SHA256sum: ac6d3470f6f78f981a7a0c14272a359f584b40ab3efe3b9f9cea92a95cc4bc22
+Description:  Switch configuration API module
+
+Package: kmod-switch-rtl8367s
+Version: 3.10.49-1
+Depends: kernel (=3.10.49-1-050f6efca73e5de1f972d512a9865dcb), kmod-swconfig
+Source: package/kernel/linux
+License: GPLv2
+Section: kernel
+Status: unknown hold not-installed
+Architecture: octeon
+Installed-Size: 46179
+Filename: kmod-switch-rtl8367s_3.10.49-1_octeon.ipk
+Size: 46727
+MD5Sum: 5c8b551ac739e66bc4e0a25f2549b639
+SHA256sum: 6a4087a6f29f19f9ec78b4b83759cf92056cd9dd73b8028bb7bbfb924403a9d5
+Description:  Realtek RTL8367S switch support
+
+Package: kmod-tun
+Version: 3.10.49-1
+Depends: kernel (=3.10.49-1-050f6efca73e5de1f972d512a9865dcb)
+Source: package/kernel/linux
+License: GPLv2
+Section: kernel
+Status: unknown hold not-installed
+Architecture: octeon
+Installed-Size: 16164
+Filename: kmod-tun_3.10.49-1_octeon.ipk
+Size: 16787
+MD5Sum: 3642260a938166f9531d652cd77fe416
+SHA256sum: a90714520e9498680f5095a7b8fa89c1b3681e6dca88f27db836b9ae6d02f23a
+Description:  Kernel support for the TUN/TAP tunneling device
+
+Package: kmod-veth
+Version: 3.10.49-1
+Depends: kernel (=3.10.49-1-050f6efca73e5de1f972d512a9865dcb)
+Source: package/kernel/linux
+License: GPLv2
+Section: kernel
+Status: unknown hold not-installed
+Architecture: octeon
+Installed-Size: 3932
+Filename: kmod-veth_3.10.49-1_octeon.ipk
+Size: 4687
+MD5Sum: 85c8dfa92290af3f9863307e55776883
+SHA256sum: b619ece32ba7d9e0b99d67e32b580d59ff484b61d3284152aa85ddd5e0db7efd
+Description:  This device is a local ethernet tunnel. Devices are created in pairs.
+ When one end receives the packet it appears on its pair and vice
+ versa.
+
+Package: libblobmsg-json
+Version: 2014-08-04-dffbc09baf71b294185a36048166d00066d433b5
+Depends: libc, libjson-c, libubox
+Source: package/libs/libubox
+License: ISC BSD-3c
+Section: libs
+Maintainer: Felix Fietkau <nbd@openwrt.org>
+Architecture: octeon
+Installed-Size: 4407
+Filename: libblobmsg-json_2014-08-04-dffbc09baf71b294185a36048166d00066d433b5_octeon.ipk
+Size: 5004
+MD5Sum: ab75da5733a7c148333314afdc2a403e
+SHA256sum: 3e19091da3bd83451c06238d59fb53cc87c01f3c3a4551bd02dc117b2e97f869
+Description:  blobmsg <-> json conversion library
+
+Package: libcharset
+Version: 1.11.1-1
+Depends: libc
+Source: package/libs/libiconv-full
+Section: libs
+Maintainer: Jo-Philipp Wich <jow@openwrt.org>
+Architecture: octeon
+Installed-Size: 3452
+Filename: libcharset_1.11.1-1_octeon.ipk
+Size: 3991
+MD5Sum: 78dd951d9af03194fd4199e68bd3b0a0
+SHA256sum: 88a4514619b34410b896c350b9d7fb2d00fd41c5de7e68414cce3a7b84b8f21d
+Description:  Character set conversion library
+
+Package: libcurl
+Version: 7.38.0-1
+Depends: libc, libpolarssl, librt
+Source: package/network/utils/curl
+License: MIT
+LicenseFiles: COPYING
+Section: libs
+Maintainer: Imre Kaloz <kaloz@openwrt.org>
+Architecture: octeon
+Installed-Size: 112923
+Filename: libcurl_7.38.0-1_octeon.ipk
+Size: 113326
+MD5Sum: cdc3685aea8fa6a26aad278dbb68e314
+SHA256sum: d08bcd719d21c5d4ae4911456c5b3c7607e151d76709ffe827fa2f0f0002d607
+Description:  A client-side URL transfer library using PolarSSL
+
+Package: libcyassl
+Version: 3.2.0-1
+Depends: libc
+Source: package/libs/cyassl
+Section: libs
+Architecture: octeon
+Installed-Size: 88053
+Filename: libcyassl_3.2.0-1_octeon.ipk
+Size: 87837
+MD5Sum: 422fc455c146382fc8f98f003b05fb42
+SHA256sum: 612320da9ad77861bdec095797e405791f67961b13e3c8ea9ca620f2d657efee
+Description:  CyaSSL is an SSL library optimized for small footprint, both on disk and for
+ memory use.
+
+Package: libevent2
+Version: 2.0.21-1
+Depends: libc, librt
+Source: package/libs/libevent2
+Section: libs
+Maintainer: Jo-Philipp Wich <jow@openwrt.org>
+Architecture: octeon
+Installed-Size: 114439
+Filename: libevent2_2.0.21-1_octeon.ipk
+Size: 115159
+MD5Sum: 1aa061f8068e844c7d0a74aa2b26b4a5
+SHA256sum: 12a4a5a49c4578643131b22fca0bf319093a9c22b67ca8d46bbf826a2adea06a
+Description:  The libevent API provides a mechanism to execute a callback function
+ when a specific event occurs on a file descriptor or after a timeout
+ has been reached. Furthermore, libevent also support callbacks due
+ to signals or regular timeouts.
+ 
+ libevent is meant to replace the event loop found in event driven
+ network servers. An application just needs to call event_dispatch()
+ and then add or remove events dynamically without having to change
+ the event loop.
+ 
+ This package contains the libevent shared library historically
+ containing both the core & extra libraries.
+
+Package: libgcc
+Version: -1
+Source: package/libs/toolchain
+Section: libs
+Status: unknown hold not-installed
+Essential: yes
+Maintainer: Felix Fietkau <nbd@openwrt.org>
+Architecture: octeon
+Installed-Size: 44028
+Filename: libgcc_-1_octeon.ipk
+Size: 44488
+MD5Sum: 4afe0de2842c540d5ee71c76a6623263
+SHA256sum: 544604991e58b635fc21e5712ede0a38e54529a93d0cac53277db3258956c6d9
+Description:  GCC support library
+
+Package: libgmp
+Version: 6.0.0-1
+Depends: libc
+Source: package/libs/gmp
+Section: libs
+Architecture: octeon
+Installed-Size: 240626
+Filename: libgmp_6.0.0-1_octeon.ipk
+Size: 241024
+MD5Sum: 2b76793a00c52719ef1ff1c87671e355
+SHA256sum: 018efddad17c2f403d458d89555caac92914d2f911f073474a663eb25122b1e2
+Description:  GMP is a free library for arbitrary precision arithmetic, operating on
+ signed integers, rational numbers, and floating point numbers.
+
+Package: libiconv-full
+Version: 1.11.1-1
+Depends: libc
+Source: package/libs/libiconv-full
+Section: libs
+Maintainer: Jo-Philipp Wich <jow@openwrt.org>
+Architecture: octeon
+Installed-Size: 680264
+Filename: libiconv-full_1.11.1-1_octeon.ipk
+Size: 680331
+MD5Sum: 1ce3d62551e9fccdd72c0180f79427a8
+SHA256sum: 727b3946b0df7a40b5c8a58f26d52b326536c8f1b684245dce05c34b4cf483bf
+Description:  Character set conversion library
+
+Package: libip4tc
+Version: 1.4.21-1
+Depends: libc
+Source: package/network/utils/iptables
+Section: libs
+Architecture: octeon
+Installed-Size: 12033
+Filename: libip4tc_1.4.21-1_octeon.ipk
+Size: 12534
+MD5Sum: a980f716b7b494918aea0193da32be2b
+SHA256sum: 21f6223b929a9a76107143262466675c7a7c544ff16ed2d593e85685b1ba4e6a
+Description:  IPv4 firewall - shared libiptc library
+
+Package: libip6tc
+Version: 1.4.21-1
+Depends: libc
+Source: package/network/utils/iptables
+Section: libs
+Architecture: octeon
+Installed-Size: 12325
+Filename: libip6tc_1.4.21-1_octeon.ipk
+Size: 12830
+MD5Sum: 46dcbf1d3bfeb1b8ac406d517a5ad21e
+SHA256sum: 99f9dcd043e06af8e76e2deaad56096e39c27cfac62d69822b8dbe96b0cbf2c8
+Description:  IPv6 firewall - shared libiptc library
+
+Package: libiwinfo-lua
+Version: 51
+Depends: libc, libiwinfo, liblua
+Source: package/network/utils/iwinfo
+Section: lang
+Maintainer: Jo-Philipp Wich <xm@subsignal.org>
+Architecture: octeon
+Installed-Size: 6484
+Filename: libiwinfo-lua_51_octeon.ipk
+Size: 7062
+MD5Sum: 01e4371b6a74460d32bfd5e448878dbc
+SHA256sum: 51bf69c592eb64d6c2a527298486e02c37a4bc54b6d83a0acd10734cd0ca6186
+Description:  This is the Lua binding for the iwinfo library. It provides access to all enabled
+ backends.
+
+Package: libiwinfo
+Version: 51
+Depends: libc
+Source: package/network/utils/iwinfo
+Section: libs
+Maintainer: Jo-Philipp Wich <xm@subsignal.org>
+Architecture: octeon
+Installed-Size: 14552
+Filename: libiwinfo_51_octeon.ipk
+Size: 15127
+MD5Sum: 9177bc30427548a028fc7b0988ddfd7e
+SHA256sum: 29406251a11b1f793788ccea1e6faaf886670a5c1da10a7fd2068988ea2764b4
+Description:  Wireless information library with consistent interface for proprietary Broadcom,
+ madwifi, nl80211 and wext driver interfaces.
+
+Package: libjson-c
+Version: 0.11-2
+Depends: libc
+Source: package/libs/libjson-c
+License: MIT
+LicenseFiles: COPYING
+Section: libs
+Maintainer: Felix Fietkau <nbd@openwrt.org>
+Architecture: octeon
+Installed-Size: 18085
+Filename: libjson-c_0.11-2_octeon.ipk
+Size: 18693
+MD5Sum: 824b956fe43e4c3a746d05b5167513a1
+SHA256sum: 020ff2245a515aa5be0d8f854fda54a0940a5bf0d4c632b1c61cf6389b521de5
+Description:  This package contains a library for javascript object notation backends.
+
+Package: libjson-script
+Version: 2014-08-04-dffbc09baf71b294185a36048166d00066d433b5
+Depends: libc, libubox
+Source: package/libs/libubox
+License: ISC BSD-3c
+Section: utils
+Maintainer: Felix Fietkau <nbd@openwrt.org>
+Architecture: octeon
+Installed-Size: 6320
+Filename: libjson-script_2014-08-04-dffbc09baf71b294185a36048166d00066d433b5_octeon.ipk
+Size: 6921
+MD5Sum: 3edd61927886c6cada71aa452e7af5c5
+SHA256sum: a720735ca140e02056049d58b5937e0c859c90bf262302102f6cc29294dc3a36
+Description:  Minimalistic JSON based scripting engine
+
+Package: libjson
+Version: 0.11-2
+Depends: libc, libjson-c
+Source: package/libs/libjson-c
+License: MIT
+LicenseFiles: COPYING
+Section: libs
+Maintainer: Felix Fietkau <nbd@openwrt.org>
+Architecture: octeon
+Installed-Size: 1369
+Filename: libjson_0.11-2_octeon.ipk
+Size: 2013
+MD5Sum: f8bd30189e7c75cc4f6bfa357be23942
+SHA256sum: bcd9c7532813b10f35200bd3a169e6ef166983fea02ab42f7478ec7c47b3661d
+Description:  This package contains a compatibility library for packages that have not
+ been adapted to the json-c library rename yet
+
+Package: liblogger
+Version: 1.0
+Depends: libc, libuci, libiconv-full
+Source: package/logger
+Section: TP-LINK
+Maintainer: TP-LINK
+Architecture: octeon
+Installed-Size: 2288
+Filename: liblogger_1.0_octeon.ipk
+Size: 2833
+MD5Sum: 1a81115f4559d8fed25e45b81f370c01
+SHA256sum: c9b6e6164536238907a4f44aa8046726028117374799f7c7f05e203d85380651
+Description:  Sytem Log libs
+
+Package: liblua
+Version: 5.1.5-1
+Depends: libc
+Source: package/utils/lua
+License: MIT
+LicenseFiles: COPYRIGHT
+Section: libs
+Maintainer: Jo-Philipp Wich <jow@openwrt.org>
+Architecture: octeon
+Installed-Size: 90528
+Filename: liblua_5.1.5-1_octeon.ipk
+Size: 91026
+MD5Sum: 6b98e89f0e7d9cac847bd2c1a578e629
+SHA256sum: 40c1d30f593394989f7e9805b81973259ab39cc4e7f932901374ca19be5cb7bd
+Description:  Lua is a powerful light-weight programming language designed for extending 
+ applications. Lua is also frequently used as a general-purpose, stand-alone 
+ language. Lua is free software.
+ This package contains the Lua shared libraries, needed by other programs.
+
+Package: liblzo
+Version: 2.08-1
+Depends: libc
+Source: package/libs/lzo
+Section: libs
+Architecture: octeon
+Installed-Size: 41032
+Filename: liblzo_2.08-1_octeon.ipk
+Size: 41598
+MD5Sum: 564d49783e822a473ed3308c205ac272
+SHA256sum: 6141cb60bacab932c1c7d8765929206d3dfbc8508260036c37f28d1f82bd9700
+Description:  LZO is a data compression library which is suitable for data de-/compression
+ in real-time. This means it favours speed over compression ratio.
+
+Package: libmnl
+Version: 1.0.3-1
+Depends: libc
+Source: package/libs/libmnl
+Section: libs
+Maintainer: Jo-Philipp Wich <jow@openwrt.org>
+Architecture: octeon
+Installed-Size: 7526
+Filename: libmnl_1.0.3-1_octeon.ipk
+Size: 8575
+MD5Sum: 05a4a85486303a1e3e8525a909befd8d
+SHA256sum: adc14b832a7123a97ac52ce8d49a40e2b5f27a5f4c7c5d46b04030c72a09d295
+Description:  libmnl is a minimalistic user-space library oriented to Netlink developers.
+ There are a lot of common tasks in parsing, validating, constructing of
+ both the Netlink header and TLVs that are repetitive and easy to get wrong.
+ This library aims to provide simple helpers that allows you to re-use code
+ and to avoid re-inventing the wheel. The main features of this library are:
+ .
+ * Small: the shared library requires around 30KB for an x86-based computer.
+ .
+ * Simple: this library avoids complexity and elaborated abstractions that
+ tend to hide Netlink details.
+ .
+ * Easy to use: the library simplifies the work for Netlink-wise developers.
+ It provides functions to make socket handling, message building, validating,
+ parsing and sequence tracking, easier.
+ .
+ * Easy to re-use: you can use the library to build your own abstraction layer
+ on top of this library.
+ .
+ * Decoupling: the interdependency of the main bricks that compose the library
+ is reduced, i.e. the library provides many helpers, but the programmer is not
+ forced to use them.
+
+Package: libncurses
+Version: 5.9-1
+Depends: libc, terminfo
+Source: package/libs/ncurses
+License: FREE
+LicenseFiles: README
+Section: libs
+Architecture: octeon
+Installed-Size: 151198
+Filename: libncurses_5.9-1_octeon.ipk
+Size: 148541
+MD5Sum: 68cc050d5462d01926d5c221630aa9d4
+SHA256sum: 96242bea07e1ba06859f72ce95b3dd6dd5fc79ac91c9421fb856880932b1647b
+Description:  Terminal handling library
+
+Package: libnet1
+Version: 1.1.2.1-2
+Depends: libc, libpcap
+Source: package/libs/libnet-1.1.x
+Section: libs
+Architecture: octeon
+Installed-Size: 31377
+Filename: libnet1_1.1.2.1-2_octeon.ipk
+Size: 31901
+MD5Sum: cb5ce2116e89538303903236bbb07040
+SHA256sum: 26ce6a1606ea16e658fbb82fa613a41c667d55661eeef9aafaa9d44cc136093d
+Description:  Low-level packet creation library (v1.1.x)
+
+Package: libnetfilter-conntrack
+Version: 1.0.3-1
+Depends: libc, libnfnetlink, kmod-nf-conntrack-netlink, libmnl
+Source: package/libs/libnetfilter-conntrack
+Section: libs
+Maintainer: Jo-Philipp Wich <jow@openwrt.org>
+Architecture: octeon
+Installed-Size: 38571
+Filename: libnetfilter-conntrack_1.0.3-1_octeon.ipk
+Size: 38813
+MD5Sum: b385160f8b7b4e5a8db9872350b54025
+SHA256sum: e7d0defc4480ab5fb15567d5e3f88a44e400402f305af5ec8eb071dfaad12358
+Description:  libnetfilter_conntrack is a userspace library providing a programming
+ interface (API) to the in-kernel connection tracking state table. The
+ library libnetfilter_conntrack has been previously known as
+ libnfnetlink_conntrack and libctnetlink. This library is currently
+ used by conntrack-tools among many other applications.
+
+Package: libnetfilter-queue
+Version: 1.0.0-1
+Depends: libc, libnfnetlink, kmod-nfnetlink-queue
+Source: feeds/oldpackages/libs/libnetfilter-queue
+Section: libs
+Architecture: octeon
+Installed-Size: 4839
+Filename: libnetfilter-queue_1.0.0-1_octeon.ipk
+Size: 5420
+MD5Sum: 77a4eb5a8e022c1a26c17c8d5a1c4386
+SHA256sum: d41afd391e6e4e251e1a75a89d852b8b20878d50d4b2a63651ac148578adbf94
+Description:  libnetfilter_queue is a userspace library providing an API to packets
+ that have been queued by the kernel packet filter.
+
+Package: libnetsnmp
+Version: 5.4.4-1
+Depends: libc
+Source: feeds/packages/net/net-snmp
+License: MIT BSD-3-Clause-Clear
+Section: libs
+Maintainer: Jo-Philipp Wich <jow@openwrt.org>
+Architecture: octeon
+Installed-Size: 392888
+Filename: libnetsnmp_5.4.4-1_octeon.ipk
+Size: 392365
+MD5Sum: d29a928ee01e1309901935ded5b4753e
+SHA256sum: 1a8cae2e63f613527d47245d08d0c9d0dc7126cafe70f9d09b61cc0202cafee1
+Description:  Simple Network Management Protocol (SNMP) is a widely used protocol for
+ monitoring the health and welfare of network equipment (eg. routers),
+ computer equipment and even devices like UPSs. Net-SNMP is a suite of
+ applications used to implement SNMP v1, SNMP v2c and SNMP v3 using both
+ IPv4 and IPv6.
+ .
+ This package contains shared libraries, needed by other programs.
+
+Package: libnfnetlink
+Version: 1.0.1-1
+Depends: libc
+Source: package/libs/libnfnetlink
+Section: libs
+Maintainer: Jo-Philipp Wich <jow@openwrt.org>
+Architecture: octeon
+Installed-Size: 10746
+Filename: libnfnetlink_1.0.1-1_octeon.ipk
+Size: 11466
+MD5Sum: eb135279db5b69d6198e3a53abae1af6
+SHA256sum: c2340f385dbd89db03fc4cb457bc7497ff268204c7032a36eeb21edccb3fa25f
+Description:  libnfnetlink is is the low-level library for netfilter related kernel/userspace communication.
+ It provides a generic messaging infrastructure for in-kernel netfilter subsystems
+ (such as nfnetlink_log, nfnetlink_queue, nfnetlink_conntrack) and their respective users
+ and/or management tools in userspace.
+
+Package: libnl-tiny
+Version: 0.1-3
+Depends: libc
+Source: package/libs/libnl-tiny
+License: GPLv2 LGPLv2.1
+Section: libs
+Maintainer: Felix Fietkau <nbd@openwrt.org>
+Architecture: octeon
+Installed-Size: 16467
+Filename: libnl-tiny_0.1-3_octeon.ipk
+Size: 16981
+MD5Sum: 16649f680d9da87300c6342e91508edd
+SHA256sum: a35593a405993d4fecfb6be6e47ddf99585edb2c123a5d6be484db1b8e0ffe8e
+Description:  This package contains a stripped down version of libnl
+
+Package: libopenssl
+Version: 1.0.2p-1
+Depends: libc, zlib
+Source: package/libs/openssl
+License: SSLEAY OPENSSL
+LicenseFiles: LICENSE
+Section: libs
+Architecture: octeon
+Installed-Size: 839040
+Filename: libopenssl_1.0.2p-1_octeon.ipk
+Size: 831101
+MD5Sum: 38077d19a4b3cee2e2e5001f8cf53517
+SHA256sum: 499920eb89ea53b28936ff5941d7390eebc20e7f3490b973ca6079f3740ca4d6
+Description:  The OpenSSL Project is a collaborative effort to develop a robust,
+ commercial-grade, full-featured, and Open Source toolkit implementing the Secure
+ Sockets Layer (SSL v2/v3) and Transport Layer Security (TLS v1) protocols as well
+ as a full-strength general purpose cryptography library.
+ This package contains the OpenSSL shared libraries, needed by other programs.
+
+Package: libpcap
+Version: 1.5.3-1
+Depends: libc
+Source: package/libs/libpcap
+Section: libs
+Maintainer: Felix Fietkau <nbd@openwrt.org>
+Architecture: octeon
+Installed-Size: 96645
+Filename: libpcap_1.5.3-1_octeon.ipk
+Size: 96973
+MD5Sum: e98a421130e08c1e7dbc5724d3afd7ec
+SHA256sum: b57c41652585d60f0093aadff6ec571f90487d21bdc56a0ffd29584b5a02f6a0
+Description:  This package contains a system-independent library for user-level network packet
+ capture.
+
+Package: libpcre
+Version: 8.35-2
+Depends: libc
+Source: feeds/packages/libs/pcre
+License: BSD-3c
+LicenseFiles: LICENCE
+Section: libs
+Maintainer: Thomas Heil <heil@terminal-consulting.de>
+Architecture: octeon
+Installed-Size: 89023
+Filename: libpcre_8.35-2_octeon.ipk
+Size: 89490
+MD5Sum: 338fcc7735a374b27b930490f54e81ff
+SHA256sum: 5902bb497b668e62079f22f6a4b54399ca2775b7156a566e03402d4b32fc9a51
+Description:  A Perl Compatible Regular Expression library
+
+Package: libpolarssl
+Version: 1.3.8-2
+Depends: libc
+Source: package/libs/polarssl
+Section: libs
+Architecture: octeon
+Installed-Size: 146590
+Filename: libpolarssl_1.3.8-2_octeon.ipk
+Size: 146667
+MD5Sum: 0cbfa6316f35f159a9f89ad18d8f818b
+SHA256sum: e0f3fa91734889afae3e6a68a8b068361b4dc911bc4c3e1df66f75d06bb841ae
+Description:  The aim of the PolarSSL project is to provide a quality, open-source
+ cryptographic library written in C and targeted at embedded systems.
+ This package contains the PolarSSL library.
+
+Package: libpthread
+Version: -1
+Depends: libgcc
+Source: package/libs/toolchain
+Section: libs
+Status: unknown hold not-installed
+Essential: yes
+Maintainer: Felix Fietkau <nbd@openwrt.org>
+Architecture: octeon
+Installed-Size: 42539
+Filename: libpthread_-1_octeon.ipk
+Size: 43071
+MD5Sum: 86f3f462979acafbe1597e243f6433ea
+SHA256sum: ad969263b4c5a983e7d95e1f6f1fb6f06f9c5a623fa369f0ce766fdf21a893a4
+Description:  POSIX thread library
+
+Package: libreadline
+Version: 6.2-1
+Depends: libc
+Source: package/libs/libreadline
+License: GPLv3
+LicenseFiles: COPYING
+Section: libs
+Architecture: octeon
+Installed-Size: 141350
+Filename: libreadline_6.2-1_octeon.ipk
+Size: 140913
+MD5Sum: f7951b8f2bb5d9eab1c870078a419b97
+SHA256sum: f4e043bc5737a228902595ea9c4bfccd9a3f45db0915aab6442e3f8050acd1bc
+Description:  The Readline library provides a set of functions for use by applications 
+ that allow users to edit command lines as they are typed in. Both Emacs 
+ and vi editing modes are available. The Readline library includes 
+ additional functions to maintain a list of previously-entered command 
+ lines, to recall and perhaps reedit those lines, and perform csh-like 
+ history expansion on previous commands.
+
+Package: librt
+Version: -1
+Depends: libpthread
+Source: package/libs/toolchain
+Section: libs
+Status: unknown hold not-installed
+Essential: yes
+Maintainer: Felix Fietkau <nbd@openwrt.org>
+Architecture: octeon
+Installed-Size: 14903
+Filename: librt_-1_octeon.ipk
+Size: 15312
+MD5Sum: 425a5c615a7dfd1e76af990ff53a899a
+SHA256sum: 084ac0cbd76ba70a5130256e6e7551d014cd926d228ddbdeda53497066b2940d
+Description:  POSIX.1b RealTime extension library
+
+Package: libsqlite3
+Version: 3080704-1
+Depends: libc, libpthread
+Source: feeds/packages/libs/sqlite3
+License: PUBLICDOMAIN
+Section: libs
+Maintainer: Etienne CHAMPETIER <champetier.etienne@gmail.com>
+Architecture: octeon
+Installed-Size: 399268
+Filename: libsqlite3_3080704-1_octeon.ipk
+Size: 399039
+MD5Sum: a6bf7c5f0954b6470a351325a66b9f10
+SHA256sum: 2344502e75001ada9a77e4673ad08c3b2353e388dd6df445bfd52221df0bbe30
+Description:  SQLite is a small C library that implements a self-contained, embeddable,
+ zero-configuration SQL database engine.
+ This package contains the SQLite (v3.x) shared library, used by other
+ programs.
+
+Package: libstdcpp
+Version: -1
+Source: package/libs/toolchain
+Section: libs
+Status: unknown hold not-installed
+Essential: yes
+Maintainer: Felix Fietkau <nbd@openwrt.org>
+Architecture: octeon
+Installed-Size: 304478
+Filename: libstdcpp_-1_octeon.ipk
+Size: 302446
+MD5Sum: d515076dac0f116de3817332aaebf6a2
+SHA256sum: 4afc209883478fca204bb62b5f442d3461d33b656e716f881e38799e9f5c730f
+Description:  GNU Standard C++ Library v3
+
+Package: libthread-db
+Version: -1
+Source: package/libs/toolchain
+Section: libs
+Status: unknown hold not-installed
+Essential: yes
+Maintainer: Felix Fietkau <nbd@openwrt.org>
+Architecture: octeon
+Installed-Size: 12660
+Filename: libthread-db_-1_octeon.ipk
+Size: 13195
+MD5Sum: a205b359f9d3124247973b046e269b00
+SHA256sum: 04592d0e06530f02bc415ac3cf60929fd4ddb5635b33a79da899d43fe1023317
+Description:  POSIX thread library debugging support
+
+Package: libubox
+Version: 2014-08-04-dffbc09baf71b294185a36048166d00066d433b5
+Depends: libc, librt
+Source: package/libs/libubox
+License: ISC BSD-3c
+Section: libs
+Maintainer: Felix Fietkau <nbd@openwrt.org>
+Architecture: octeon
+Installed-Size: 19558
+Filename: libubox_2014-08-04-dffbc09baf71b294185a36048166d00066d433b5_octeon.ipk
+Size: 20156
+MD5Sum: baa8fcbd274e8ff50c7a2bc59e0e6ec2
+SHA256sum: be26a3b21aec2839068347ee3a2eb74484c61025c456c370bfab219bbf98aa65
+Description:  Basic utility library
+
+Package: libubus-lua
+Version: 2014-09-17-4c4f35cf2230d70b9ddd87638ca911e8a563f2f3
+Depends: libc, libubus, liblua, libjson, libjson-c
+Source: package/system/ubus
+License: LGPLv2.1
+Section: libs
+Maintainer: Felix Fietkau <nbd@openwrt.org>
+Architecture: octeon
+Installed-Size: 8192
+Filename: libubus-lua_2014-09-17-4c4f35cf2230d70b9ddd87638ca911e8a563f2f3_octeon.ipk
+Size: 8829
+MD5Sum: b834621d7979272b7047f3902015553b
+SHA256sum: dec54c5b41f6dd54d709d878a3d9a41b0ea05c74ea33885e0136825c1a5374e1
+Description:  Lua binding for the OpenWrt RPC client
+
+Package: libubus
+Version: 2014-09-17-4c4f35cf2230d70b9ddd87638ca911e8a563f2f3
+Depends: libc, libubox, libjson, libjson-c
+Source: package/system/ubus
+License: LGPLv2.1
+Section: libs
+Maintainer: Felix Fietkau <nbd@openwrt.org>
+Architecture: octeon
+Installed-Size: 10855
+Filename: libubus_2014-09-17-4c4f35cf2230d70b9ddd87638ca911e8a563f2f3_octeon.ipk
+Size: 11476
+MD5Sum: 5b1b030f2a4196492d591d3508b40f1a
+SHA256sum: 50ad5cca2e57ed8525e34ca024804c8f268dd16999b376dd260aed729c24bb42
+Description:  OpenWrt RPC client library
+
+Package: libuci-lua
+Version: 2014-04-11.1-1
+Depends: libc, libuci, liblua
+Source: package/system/uci
+License: LGPLv2.1 GPLv2
+Section: libs
+Maintainer: Felix Fietkau <nbd@openwrt.org>
+Architecture: octeon
+Installed-Size: 7574
+Filename: libuci-lua_2014-04-11.1-1_octeon.ipk
+Size: 8158
+MD5Sum: 02cb0c2288b01d711c3d7ad4126e82f7
+SHA256sum: 810a50a6bf37a398ab0ecb6152359cca2c8a5aea180e793a358483b156a8a457
+Description:  Lua plugin for UCI
+
+Package: libuci
+Version: 2014-04-11.1-1
+Depends: libc, libubox
+Source: package/system/uci
+License: LGPLv2.1 GPLv2
+Section: libs
+Maintainer: Felix Fietkau <nbd@openwrt.org>
+Architecture: octeon
+Installed-Size: 19897
+Filename: libuci_2014-04-11.1-1_octeon.ipk
+Size: 20486
+MD5Sum: fbf5342f428e36a1cc5ffbddc34815b5
+SHA256sum: 0a90e08a545635346376beea32ebc916da843269cd79f7d8807f5da082ae5ea4
+Description:  C library for the Unified Configuration Interface (UCI)
+
+Package: libustream-openssl
+Version: 2014-03-25-fc0b5ec804ee43c532978dd04ab0509c34baefb0
+Depends: libc, libubox, libopenssl
+Source: package/libs/ustream-ssl
+License: ISC
+Section: libs
+Maintainer: Felix Fietkau <nbd@openwrt.org>
+Architecture: octeon
+Installed-Size: 5565
+Filename: libustream-openssl_2014-03-25-fc0b5ec804ee43c532978dd04ab0509c34baefb0_octeon.ipk
+Size: 6175
+MD5Sum: 1a7cf5e1f52d9030428e58b69bd7c094
+SHA256sum: 8ecb6ac40056f982ace09fa4cbf81ab99a289dffe659ce08db7f9eab007ee0ed
+Description:  ustream SSL Library (openssl)
+
+Package: libuuid
+Version: 2.24.1-1
+Depends: libc
+Source: package/utils/util-linux
+License: GPLv2 LGPLv2.1 BSD-3c
+LicenseFiles: COPYING getopt/COPYING libblkid/COPYING libmount/COPYING Documentation/licenses/COPYING.GPLv2 Documentation/licenses/COPYING.LGPLv2.1 libuuid/COPYING Documentation/licenses/COPYING.BSD-3
+Section: libs
+Architecture: octeon
+Installed-Size: 6429
+Filename: libuuid_2.24.1-1_octeon.ipk
+Size: 7226
+MD5Sum: 4c3d2859c424b7c9c61006866c565210
+SHA256sum: 6f464e94b25ab8ff0847103dc2c4d22fc707f88634ee203634d0f02f78319403
+Description:  The UUID library is used to generate unique identifiers for objects
+ that may be accessible beyond the local system. This library
+ generates UUIDs compatible with those created by the Open Software
+ Foundation (OSF) Distributed Computing Environment (DCE) utility.
+
+Package: libxml2
+Version: 2.9.2-2
+Depends: libc, libpthread, zlib
+Source: feeds/packages/libs/libxml2
+License: MIT
+LicenseFiles: COPYING
+Section: libs
+Maintainer: Michael Heimpold <mhei@heimpold.de>
+Architecture: octeon
+Installed-Size: 561059
+Filename: libxml2_2.9.2-2_octeon.ipk
+Size: 557863
+MD5Sum: 951ba03e471b899f245e98e4f3777947
+SHA256sum: 1562e36e6b3f035f19c13798aacb2bd2342a00c7cca9f5af08cf0878cf482448
+Description:  A library for manipulating XML and HTML resources.
+
+Package: libxtables
+Version: 1.4.21-1
+Depends: libc
+Source: package/network/utils/iptables
+Section: libs
+Architecture: octeon
+Installed-Size: 20193
+Filename: libxtables_1.4.21-1_octeon.ipk
+Size: 20703
+MD5Sum: be513394e7ee0264c58eff9a74895d17
+SHA256sum: cacb66f4415ef8a8906de66fdfc09e0f8b4530fe12c7e1a8fee7a1ed93eee5cf
+Description:  IPv4/IPv6 firewall - shared xtables library
+
+Package: linux-atm
+Version: 2.5.2-5
+Depends: libc
+Source: package/network/utils/linux-atm
+Section: libs
+Architecture: octeon
+Installed-Size: 19503
+Filename: linux-atm_2.5.2-5_octeon.ipk
+Size: 20044
+MD5Sum: 131b9aaff8e59e89ebd19e6ce230f7c0
+SHA256sum: 620eda882382e6c03a702fdcc218ea5ad5452373f680c8f7d10ef9e6672cef36
+Description:  This package contains a library for accessing the Linux ATM subsystem.
+
+Package: lldpd
+Version: 1.0.4-1
+Depends: libc, libevent2, libjson-c, libxml2, libssp
+Source: package/network/services/lldpd
+Section: net
+Architecture: octeon
+Installed-Size: 148360
+Filename: lldpd_1.0.4-1_octeon.ipk
+Size: 148611
+MD5Sum: 52fe052d3c62abc7498786797d7543ce
+SHA256sum: 4ec45c99c664c58d763d414c934fbeefacc527b2bed13799aec1fe325cf7f5d5
+Description:  LLDP (Link Layer Discovery Protocol) is an industry standard protocol designed
+ to supplant proprietary Link-Layer protocols such as
+ Extreme's EDP (Extreme Discovery Protocol) and
+ CDP (Cisco Discovery Protocol).
+ The goal of LLDP is to provide an inter-vendor compatible mechanism to deliver
+ Link-Layer notifications to adjacent network devices.
+
+Package: lua
+Version: 5.1.5-1
+Depends: libc, liblua
+Source: package/utils/lua
+License: MIT
+LicenseFiles: COPYRIGHT
+Section: lang
+Maintainer: Jo-Philipp Wich <jow@openwrt.org>
+Architecture: octeon
+Installed-Size: 5760
+Filename: lua_5.1.5-1_octeon.ipk
+Size: 6461
+MD5Sum: 5e59f69b25cb9fb0efff43441b95c085
+SHA256sum: 89829c16025548ab9d71e14f84b61c645fb5ade0e00e238ca53619ed380707a7
+Description:  Lua is a powerful light-weight programming language designed for extending 
+ applications. Lua is also frequently used as a general-purpose, stand-alone 
+ language. Lua is free software.
+ This package contains the Lua language interpreter.
+
+Package: luasec
+Version: 0.4-1
+Depends: libc, lua, libopenssl, luasocket
+Source: feeds/packages/lang/luasec
+Section: lang
+Maintainer: W. Michael Petullo <mike@flyn.org>
+Architecture: octeon
+Installed-Size: 16478
+Filename: luasec_0.4-1_octeon.ipk
+Size: 17060
+MD5Sum: 1ad2dc1cdd5d5fc1eff3c265cd24417d
+SHA256sum: 0ee8af1109e741598642c61495e892e615649fa2e0addb78bf7586d912e51526
+Description:  LuaSec is a binding for OpenSSL library to provide TLS/SSL communication.
+
+Package: luasocket
+Version: 3.0-rc1-20130909-2
+Depends: libc, lua
+Source: feeds/packages/lang/luasocket
+Section: lang
+Maintainer: W. Michael Petullo <mike@flyn.org>
+Architecture: octeon
+Installed-Size: 48251
+Filename: luasocket_3.0-rc1-20130909-2_octeon.ipk
+Size: 48901
+MD5Sum: 3610886e8b401963a12ee0da16c028b7
+SHA256sum: 644c56c1f9b9f3314994479c2c3d2007b8372dfc588239fb7989b44677729354
+Description:  LuaSocket is the most comprehensive networking support
+ library for the Lua language. It provides easy access to
+ TCP, UDP, DNS, SMTP, FTP, HTTP, MIME and much more.
+
+Package: luasql-sqlite3
+Version: 2.1.1-1
+Depends: libc, lua, libsqlite3
+Source: feeds/oldpackages/lang/luasql
+Section: lang
+Architecture: octeon
+Installed-Size: 7617
+Filename: luasql-sqlite3_2.1.1-1_octeon.ipk
+Size: 8215
+MD5Sum: 321d22073f46bca4919878726bb2fc0e
+SHA256sum: da69904d357a4efcd9b2ed232585267fdc180497cbee75a035e4ea95a66d9db9
+Description:  LuaSQL is a simple interface from Lua to a DBMS.
+ .
+ This package contains the SQLite 3 binding.
+
+Package: luci-base
+Version: 0.12+unknown-1
+Depends: libc, lua, libuci-lua, libubus-lua
+Source: feeds/luci/contrib/package/luci
+Section: luci
+Maintainer: LuCI Development Team <luci@lists.subsignal.org>
+Architecture: octeon
+Installed-Size: 118449
+Filename: luci-base_0.12+unknown-1_octeon.ipk
+Size: 119150
+MD5Sum: 15b95579e8d54d3fe18a20a9fe373feb
+SHA256sum: e8deb7af7de1f701b9ecb7fcaaa22e78b95e98af8b4d17afeb7554919e603934
+Description:  LuCI core libraries
+
+Package: luci-lib-nixio
+Version: 0.12+unknown-1
+Depends: libc, luci-base
+Source: feeds/luci/contrib/package/luci
+Section: luci
+Maintainer: LuCI Development Team <luci@lists.subsignal.org>
+Architecture: octeon
+Installed-Size: 35762
+Filename: luci-lib-nixio_0.12+unknown-1_octeon.ipk
+Size: 36250
+MD5Sum: 71895949015ea19d7c6f13d363d2ebb5
+SHA256sum: 14562ce3a90d6a956273b2549e11f98cf6ca16321e1d37d5a4d0a26b4d73b71b
+Description:  NIXIO POSIX library
+
+Package: mdio-utils
+Version: 1-unknown
+Depends: libc
+Source: package/cavium/mdio-utils
+Section: base
+Architecture: octeon
+Installed-Size: 70457
+Filename: mdio-utils_1-unknown_octeon.ipk
+Size: 70820
+MD5Sum: ed2cbbe952b937d5fab02748d918019c
+SHA256sum: a12e90a8e7be99a8d4216048497db610d90480f72279e24ce3c19c6495438667
+Description:  Cavium Octeon SDK debug utilities
+
+Package: mtd-utils-nanddump
+Version: 2.1.2-1
+Depends: libc, mtd-utils, librt
+Source: feeds/oldpackages/utils/mtd-utils
+Section: utils
+Architecture: octeon
+Installed-Size: 17167
+Filename: mtd-utils-nanddump_2.1.2-1_octeon.ipk
+Size: 17702
+MD5Sum: 005437d41a34b0c68d403389871e29e4
+SHA256sum: 34e8042d26ef8043296db56399fec7ca5a8f39946a378319d04ae59cddec4ad4
+Description:  nanddump package from mtd-utils
+
+Package: mtd-utils-nandwrite
+Version: 2.1.2-1
+Depends: libc, mtd-utils, librt
+Source: feeds/oldpackages/utils/mtd-utils
+Section: utils
+Architecture: octeon
+Installed-Size: 17469
+Filename: mtd-utils-nandwrite_2.1.2-1_octeon.ipk
+Size: 18007
+MD5Sum: 7b56537eaca81ab2d2d53a5fcbd0981b
+SHA256sum: affb3033e6434feaca3030d8f8131023b1dc933561f7a6a6b24d542148008c47
+Description:  nandwrite package from mtd-utils
+
+Package: mtd-utils-ubiattach
+Version: 2.1.2-1
+Depends: libc, mtd-utils, librt
+Source: feeds/oldpackages/utils/mtd-utils
+Section: utils
+Architecture: octeon
+Installed-Size: 12715
+Filename: mtd-utils-ubiattach_2.1.2-1_octeon.ipk
+Size: 13248
+MD5Sum: c5dc4435afd335ba44365a49b9c0cc46
+SHA256sum: 98348fc9811d8c2676bbea7666342db29979c2c3b7a85bc29e21466cc91056e5
+Description:  ubiattach package from mtd-utils
+
+Package: mtd-utils-ubicrc32
+Version: 2.1.2-1
+Depends: libc, mtd-utils, librt
+Source: feeds/oldpackages/utils/mtd-utils
+Section: utils
+Architecture: octeon
+Installed-Size: 4053
+Filename: mtd-utils-ubicrc32_2.1.2-1_octeon.ipk
+Size: 4560
+MD5Sum: fd6dc1b66dd98216f848bd7856a1a82f
+SHA256sum: 65a07e2cd44b8411ee8929f74a89d8aa4805a900e728f9e0860ea4566d8e7982
+Description:  ubicrc32 package from mtd-utils
+
+Package: mtd-utils-ubidetach
+Version: 2.1.2-1
+Depends: libc, mtd-utils, librt
+Source: feeds/oldpackages/utils/mtd-utils
+Section: utils
+Architecture: octeon
+Installed-Size: 11354
+Filename: mtd-utils-ubidetach_2.1.2-1_octeon.ipk
+Size: 11919
+MD5Sum: a3ad9423b4463869330af48d295eddd4
+SHA256sum: c1956c6a88b68f29e80ea793116f09e67c3418a851dce8dff89795e37ec2a264
+Description:  ubidetach package from mtd-utils
+
+Package: mtd-utils-ubiformat
+Version: 2.1.2-1
+Depends: libc, mtd-utils, librt
+Source: feeds/oldpackages/utils/mtd-utils
+Section: utils
+Architecture: octeon
+Installed-Size: 31026
+Filename: mtd-utils-ubiformat_2.1.2-1_octeon.ipk
+Size: 31566
+MD5Sum: 72eb2355601db5d75c19e29591837682
+SHA256sum: a7a2b780958272ded15e8fec38389db65711e2c6235e516719e59e63455c85be
+Description:  ubiformat package from mtd-utils
+
+Package: mtd-utils-ubimkvol
+Version: 2.1.2-1
+Depends: libc, mtd-utils, librt
+Source: feeds/oldpackages/utils/mtd-utils
+Section: utils
+Architecture: octeon
+Installed-Size: 13019
+Filename: mtd-utils-ubimkvol_2.1.2-1_octeon.ipk
+Size: 13536
+MD5Sum: a8dbad6f12620705b729946fabc5ed7e
+SHA256sum: 9a31d2633a1ddb6ff043b639bb4a22705c66b4bfb5b819693b09a12cf4d99362
+Description:  ubimkvol package from mtd-utils
+
+Package: mtd-utils-ubinfo
+Version: 2.1.2-1
+Depends: libc, mtd-utils, librt
+Source: feeds/oldpackages/utils/mtd-utils
+Section: utils
+Architecture: octeon
+Installed-Size: 13704
+Filename: mtd-utils-ubinfo_2.1.2-1_octeon.ipk
+Size: 14234
+MD5Sum: c4779e3bdcf279d646874637150ef7f8
+SHA256sum: 9db10e352ba1f357f0ea8e11d5f64fc579e089bd459d36397efeb55aaa4915b3
+Description:  ubinfo package from mtd-utils
+
+Package: mtd-utils-ubinize
+Version: 2.1.2-1
+Depends: libc, mtd-utils, librt
+Source: feeds/oldpackages/utils/mtd-utils
+Section: utils
+Architecture: octeon
+Installed-Size: 15365
+Filename: mtd-utils-ubinize_2.1.2-1_octeon.ipk
+Size: 15906
+MD5Sum: 701bde6c68503a33589bd301d94ecedc
+SHA256sum: c9a05f142a18dee79c176d03aa0f73a60f84269423ee9870512f74ac1e84a2d0
+Description:  ubinize package from mtd-utils
+
+Package: mtd-utils-ubirename
+Version: 2.1.2-1
+Depends: libc, mtd-utils, librt
+Source: feeds/oldpackages/utils/mtd-utils
+Section: utils
+Architecture: octeon
+Installed-Size: 11000
+Filename: mtd-utils-ubirename_2.1.2-1_octeon.ipk
+Size: 11546
+MD5Sum: d9d87a1f13a7156531eb53acfbdfbec8
+SHA256sum: 64ca5728ddcfd3b9aee75064d8010f31c74dd0ab3fec6856cb75035544c0b42d
+Description:  ubirename package from mtd-utils
+
+Package: mtd-utils-ubirmvol
+Version: 2.1.2-1
+Depends: libc, mtd-utils, librt
+Source: feeds/oldpackages/utils/mtd-utils
+Section: utils
+Architecture: octeon
+Installed-Size: 11191
+Filename: mtd-utils-ubirmvol_2.1.2-1_octeon.ipk
+Size: 11745
+MD5Sum: 406382b244f4b470b5fb88393b342c22
+SHA256sum: be6e4c0f0ae46af9cde2d1d34a77f0ea7598092b83b91dcbc0d421295b0b669d
+Description:  ubirmvol package from mtd-utils
+
+Package: mtd-utils-ubirsvol
+Version: 2.1.2-1
+Depends: libc, mtd-utils, librt
+Source: feeds/oldpackages/utils/mtd-utils
+Section: utils
+Architecture: octeon
+Installed-Size: 12271
+Filename: mtd-utils-ubirsvol_2.1.2-1_octeon.ipk
+Size: 12811
+MD5Sum: c4340f4c92f773bec02148656f105ce5
+SHA256sum: f5784ee1269638c4657811232b28eb0ea741805784cc7b7857af2ab15b06dba6
+Description:  ubirsvol package from mtd-utils
+
+Package: mtd-utils-ubiupdatevol
+Version: 2.1.2-1
+Depends: libc, mtd-utils, librt
+Source: feeds/oldpackages/utils/mtd-utils
+Section: utils
+Architecture: octeon
+Installed-Size: 12089
+Filename: mtd-utils-ubiupdatevol_2.1.2-1_octeon.ipk
+Size: 12637
+MD5Sum: 17f6e4e6130898e5088240f06600fcfb
+SHA256sum: d082ffad93ecae7a22defbfa40e01d2283129831757bf84e34b1b65315a1b37d
+Description:  ubiupdatevol package from mtd-utils
+
+Package: mtd-utils
+Version: 2.1.2-1
+Depends: libc
+Source: feeds/oldpackages/utils/mtd-utils
+Section: utils
+Architecture: octeon
+Installed-Size: 105
+Filename: mtd-utils_2.1.2-1_octeon.ipk
+Size: 623
+MD5Sum: a8f64f521611da77876113f1f40b3c82
+SHA256sum: 5e74b736e3afd0347aa44c3d3828d840fdcb5d121b9a5e6ee76b9b4d749ae8df
+Description:  Utilities for manipulating memory technology devices.
+
+Package: mtd
+Version: 20
+Depends: libc, libubox
+Source: package/system/mtd
+License: GPLv2 GPLv2+
+Section: utils
+Architecture: octeon
+Installed-Size: 13928
+Filename: mtd_20_octeon.ipk
+Size: 14520
+MD5Sum: b95887dbdc4b18c1b22b1a9c151d34e7
+SHA256sum: fde700f16c21a22a68eb19fff9b86ba891b242ff73d99c1d065cd38797f0288f
+Description:  This package contains an utility useful to upgrade from other firmware or 
+ older OpenWrt releases.
+
+Package: net-tools-arp
+Version: 1.60-3
+Depends: libc
+Source: feeds/oldpackages/net/net-tools
+Section: net
+Architecture: octeon
+Installed-Size: 16644
+Filename: net-tools-arp_1.60-3_octeon.ipk
+Size: 17145
+MD5Sum: e03977bb7db12c2d56c9436953e2cbdf
+SHA256sum: df096c4d56f9e2eb1d673bce8fb3973e82eca0cdfa27b3cea237c241d8d5df7f
+Description:  Program arp from net-tools. Manipulate kernel's ARP cache.
+ Add, delete an entry, or to dump the entire cache.
+
+Package: nginx
+Version: 1.8.1-1
+Depends: libc, libpcre, libopenssl, zlib, libpthread, liblua, librt
+Source: feeds/packages/net/nginx
+License: 2-clause BSD-like license
+Section: net
+Maintainer: Thomas Heil <heil@terminal-consulting.de>
+Architecture: octeon
+Installed-Size: 713291
+Filename: nginx_1.8.1-1_octeon.ipk
+Size: 712787
+MD5Sum: c5712b3717739078ab0c583d3b248e90
+SHA256sum: de1111a4f7b698653d94a34d972eba6447881fb5fb9a12cc0f82e5f4a56ed576
+Description:  nginx is an HTTP and reverse proxy server, as well as a mail proxy server,
+ written by Igor Sysoev.
+
+Package: openssl-util
+Version: 1.0.2p-1
+Depends: libc, libopenssl
+Source: package/libs/openssl
+License: SSLEAY OPENSSL
+LicenseFiles: LICENSE
+Section: utils
+Architecture: octeon
+Installed-Size: 210330
+Filename: openssl-util_1.0.2p-1_octeon.ipk
+Size: 208832
+MD5Sum: d645d141e7ff7adcac64c30718b6ad4b
+SHA256sum: 5088c876dddd59d9575aa71d78f7d2ad378881c7d72215543596d81bac7f9860
+Description:  The OpenSSL Project is a collaborative effort to develop a robust,
+ commercial-grade, full-featured, and Open Source toolkit implementing the Secure
+ Sockets Layer (SSL v2/v3) and Transport Layer Security (TLS v1) protocols as well
+ as a full-strength general purpose cryptography library.
+ This package contains the OpenSSL command-line utility.
+
+Package: openvpn-easy-rsa
+Version: 2013-01-30-2
+Depends: libc, openssl-util
+Source: package/network/services/openvpn-easy-rsa
+License: GPL-2.0
+Section: net
+Architecture: octeon
+Installed-Size: 9471
+Filename: openvpn-easy-rsa_2013-01-30-2_octeon.ipk
+Size: 10123
+MD5Sum: 807311ee55c7a3accef26fff9ee82d55
+SHA256sum: 8e95a729848db79e9074bb791c7e5b61194dd2742ce758287e0f877451430d38
+Description:  Simple shell scripts to manage a Certificate Authority
+
+Package: openvpn-openssl
+Version: 2.3.8-1
+Depends: libc, kmod-tun, liblzo, libopenssl
+Source: package/network/services/openvpn
+License: GPL-2.0
+Section: net
+Maintainer: Mirko Vogt <mirko@openwrt.org>
+Architecture: octeon
+Installed-Size: 271191
+Filename: openvpn-openssl_2.3.8-1_octeon.ipk
+Size: 271201
+MD5Sum: a47c41497493807b9413ecc68913cbd3
+SHA256sum: b6d65de9259a449147ea8c1a3a287c9cc26363eb2c895480f052f4cf4c0255b5
+Description:  Open source VPN solution using OpenSSL
+
+Package: opkg
+Version: 9c97d5ecd795709c8584e972bfdf3aee3a5b846d-7
+Depends: libc
+Source: package/system/opkg
+License: GPLv2
+LicenseFiles: COPYING
+Section: base
+Maintainer: Jo-Philipp Wich <xm@subsignal.org>
+Architecture: octeon
+Installed-Size: 77772
+Filename: opkg_9c97d5ecd795709c8584e972bfdf3aee3a5b846d-7_octeon.ipk
+Size: 78449
+MD5Sum: 33a487d36ecf5da70df3ddbf3cc7e858
+SHA256sum: 42b145f1c6d182a0813d5a153ea6a0ddbbd4499549dc94088f1988792415b904
+Description:  Lightweight package management system
+ opkg is the opkg Package Management System, for handling
+ installation and removal of packages on a system. It can
+ recursively follow dependencies and download all packages
+ necessary to install a particular package.
+ 
+ opkg knows how to install both .ipk and .deb packages.
+
+Package: procd
+Version: 2014-09-15-c1a558f7d0c1e6c1ffa5a47d557a7b45205eef1d
+Depends: libc, ubusd, ubus, libjson-script, ubox, libubox, libubus, librt
+Source: package/system/procd
+License: GPLv2
+Section: base
+Maintainer: John Crispin <blogic@openwrt.org>
+Architecture: octeon
+Installed-Size: 44371
+Filename: procd_2014-09-15-c1a558f7d0c1e6c1ffa5a47d557a7b45205eef1d_octeon.ipk
+Size: 44990
+MD5Sum: f022fd8d55e48a3a7fe7240efb5f9e4b
+SHA256sum: 1b1e279a6e8f82b5fb43240ec830955807014bbbbe4b96b5310ab1a9ac9ee3ab
+Description:  OpenWrt system process manager
+
+Package: px5g-standalone
+Version: 2
+Depends: libc
+Source: package/utils/px5g-standalone
+Section: utils
+Maintainer: Jo-Philipp Wich <xm@subsignal.org>
+Architecture: octeon
+Installed-Size: 37786
+Filename: px5g-standalone_2_octeon.ipk
+Size: 38527
+MD5Sum: d6949805fabf57bac7ecd1636dab24d2
+SHA256sum: 83757dfdcc002e6f595481434db0a2218ab511ce65961b95bc59d2c29f5837e5
+Description:  Px5g is a tiny standalone X.509 certificate generator.
+ It suitable to create key files and certificates in DER
+ and PEM format for use with stunnel, uhttpd and others.
+
+Package: resolveip
+Version: 2
+Depends: libc
+Source: package/network/utils/resolveip
+Section: utils
+Maintainer: Jo-Philipp Wich <jow@openwrt.org>
+Architecture: octeon
+Installed-Size: 2483
+Filename: resolveip_2_octeon.ipk
+Size: 3201
+MD5Sum: 082cde3e9a0178ac70debf7844f5c043
+SHA256sum: 88c6c19630511a6e050484c0e6b8d69c6932f24d3d7de65f24b4c97f5d8b44dd
+Description:  This package contains the small resolveip utility which
+ can be used by scripts to turn host names into numeric
+ IP addresses. It supports IPv4 and IPv6 resolving and
+ has a configurable timeout to guarantee a certain maximum
+ runtime in case of slow or defunct DNS servers.
+
+Package: sfe
+Version: 1.0-1
+Depends: libc
+Source: package/qca/shortcut_fe
+Section: TP-LINK
+Maintainer: TP-LINK
+Architecture: octeon
+Installed-Size: 1320
+Filename: sfe_1.0-1_octeon.ipk
+Size: 1842
+MD5Sum: 2a71b7377b097b774a5eebd4ed0cc471
+SHA256sum: e6649f1b42b85aa189bf7d7014eb8f5ed24d2456cdfcf87a27a1ea55979971c5
+Description:  sfe
+
+Package: snmpd-static
+Version: 5.4.4-1
+Depends: libc
+Source: feeds/packages/net/net-snmp
+License: MIT BSD-3-Clause-Clear
+Section: net
+Maintainer: Jo-Philipp Wich <jow@openwrt.org>
+Architecture: octeon
+Installed-Size: 367789
+Filename: snmpd-static_5.4.4-1_octeon.ipk
+Size: 367531
+MD5Sum: 7656f726023f5b492abb727854eff8ff
+SHA256sum: 62972918e6dad93484531bdcc6c2cbca1ae478534bf12f0b582846406bd5fe3c
+Description:  Simple Network Management Protocol (SNMP) is a widely used protocol for
+ monitoring the health and welfare of network equipment (eg. routers),
+ computer equipment and even devices like UPSs. Net-SNMP is a suite of
+ applications used to implement SNMP v1, SNMP v2c and SNMP v3 using both
+ IPv4 and IPv6.
+ .
+ This package contains the SNMP agent, statically linked.
+
+Package: snmpd
+Version: 5.4.4-1
+Depends: libc, libnetsnmp
+Source: feeds/packages/net/net-snmp
+License: MIT BSD-3-Clause-Clear
+Section: net
+Maintainer: Jo-Philipp Wich <jow@openwrt.org>
+Architecture: octeon
+Installed-Size: 10306
+Filename: snmpd_5.4.4-1_octeon.ipk
+Size: 11140
+MD5Sum: 40a620b0dce98ac9678351bc9f39d562
+SHA256sum: 9c37aab6250c88f8794a39f1ca72330213c6b8f92896282493f1e6687b555bd4
+Description:  Simple Network Management Protocol (SNMP) is a widely used protocol for
+ monitoring the health and welfare of network equipment (eg. routers),
+ computer equipment and even devices like UPSs. Net-SNMP is a suite of
+ applications used to implement SNMP v1, SNMP v2c and SNMP v3 using both
+ IPv4 and IPv6.
+ .
+ This package contains the SNMP agent, dynamically linked.
+
+Package: sqlite3-cli
+Version: 3080704-1
+Depends: libc, libsqlite3, libncurses, libreadline
+Source: feeds/packages/libs/sqlite3
+License: PUBLICDOMAIN
+Section: utils
+Maintainer: Etienne CHAMPETIER <champetier.etienne@gmail.com>
+Architecture: octeon
+Installed-Size: 31776
+Filename: sqlite3-cli_3080704-1_octeon.ipk
+Size: 32564
+MD5Sum: 098fc85173a0381931db70d05f4cd752
+SHA256sum: 354ce53e5810260a45671666549f451975e20edea0e1538a6722b105ea94eaf4
+Description:  SQLite is a small C library that implements a self-contained, embeddable,
+ zero-configuration SQL database engine.
+ This package contains a terminal-based front-end to the SQLite (v3.x) library
+ that can evaluate queries interactively and display the results in multiple
+ formats.
+
+Package: strace
+Version: 4.8-1
+Depends: libc
+Source: package/devel/strace
+License: BSD-3c
+LicenseFiles: COPYRIGHT
+Section: utils
+Maintainer: Felix Fietkau <nbd@openwrt.org>
+Architecture: octeon
+Installed-Size: 137237
+Filename: strace_4.8-1_octeon.ipk
+Size: 130902
+MD5Sum: e547c28d515b5d6d1ffdd6a21aaf018e
+SHA256sum: 7a8310cc914b89d3c3508b602eb1803b560813e44380870b5c7891b096087eba
+Description:  A useful diagnostic, instructional, and debugging tool. Allows you to track what
+ system calls a program makes while it is running.
+
+Package: sysstat
+Version: 9.0.6-1
+Depends: libc
+Source: feeds/oldpackages/utils/sysstat
+Section: utils
+Architecture: octeon
+Installed-Size: 223764
+Filename: sysstat_9.0.6-1_octeon.ipk
+Size: 223933
+MD5Sum: fd606baf16ac5ee456a7fc8e4c2a684e
+SHA256sum: 9c143acdf6fb6326cfabb348e9d9f665e6996c900310b4b766194a5364fe5125
+Description:  The sysstat utilities are a collection of performance monitoring tools for
+ Linux. These include sar, sadf, mpstat, iostat, pidstat and sa tools.
+
+Package: tcpdump
+Version: 4.5.1-4
+Depends: libc, libpcap
+Source: package/network/utils/tcpdump
+Section: net
+Maintainer: Felix Fietkau <nbd@openwrt.org>
+Architecture: octeon
+Installed-Size: 325787
+Filename: tcpdump_4.5.1-4_octeon.ipk
+Size: 324994
+MD5Sum: 3827c9c54faade9b6b8145e74e360a97
+SHA256sum: 00352587e7d73f686033b5295cd9ab241cf696ed7bf283eeadaebc3b5e10a2a6
+Description:  Network monitoring and data acquisition tool
+
+Package: terminfo
+Version: 5.9-1
+Depends: libc
+Source: package/libs/ncurses
+License: FREE
+LicenseFiles: README
+Section: libs
+Architecture: octeon
+Installed-Size: 5818
+Filename: terminfo_5.9-1_octeon.ipk
+Size: 6302
+MD5Sum: e9511e4e89520b07aebc385d6508abd7
+SHA256sum: 01c72ceca2ea69969762287241b01180d3a36fe4f9a4b7502e868892e635d053
+Description:  Terminal Info Database (ncurses)
+
+Package: ubox
+Version: 2014-09-16-5c45b560bc8c9e13682269ed963a8a4a65959518
+Depends: libc, libubox, ubusd, ubus, libubus, libuci, librt
+Source: package/system/ubox
+License: GPLv2
+Section: base
+Maintainer: John Crispin <blogic@openwrt.org>
+Architecture: octeon
+Installed-Size: 29116
+Filename: ubox_2014-09-16-5c45b560bc8c9e13682269ed963a8a4a65959518_octeon.ipk
+Size: 29676
+MD5Sum: ce028b500cbb12045cac081e5b4e9155
+SHA256sum: f152d749f097a9e91db8f2159a170758be9512fe85746bba205d400ce62284d1
+Description:  OpenWrt system helper toolbox
+
+Package: ubus
+Version: 2014-09-17-4c4f35cf2230d70b9ddd87638ca911e8a563f2f3
+Depends: libc, libubus, libblobmsg-json, ubusd, libjson, libjson-c
+Source: package/system/ubus
+License: LGPLv2.1
+Section: base
+Maintainer: Felix Fietkau <nbd@openwrt.org>
+Architecture: octeon
+Installed-Size: 5221
+Filename: ubus_2014-09-17-4c4f35cf2230d70b9ddd87638ca911e8a563f2f3_octeon.ipk
+Size: 5827
+MD5Sum: 3cf2f25e4488b48ed637eb2b18afd8b7
+SHA256sum: 44bfed87a56b6c281fb1bade7acaa4986507966ac091acfb293a470ba5123a4a
+Description:  OpenWrt RPC client utility
+
+Package: ubusd
+Version: 2014-09-17-4c4f35cf2230d70b9ddd87638ca911e8a563f2f3
+Depends: libc, libubox, libjson, libjson-c
+Source: package/system/ubus
+License: LGPLv2.1
+Section: base
+Maintainer: Felix Fietkau <nbd@openwrt.org>
+Architecture: octeon
+Installed-Size: 10977
+Filename: ubusd_2014-09-17-4c4f35cf2230d70b9ddd87638ca911e8a563f2f3_octeon.ipk
+Size: 11597
+MD5Sum: 87c3ae18d63070b075aa9a9a35d1f493
+SHA256sum: 28c8d64bfb8971f6ba8347de531572c5acf8ea91b052d56a92e5002e191ce499
+Description:  OpenWrt RPC daemon
+
+Package: uci
+Version: 2014-04-11.1-1
+Depends: libc, libuci
+Source: package/system/uci
+License: LGPLv2.1 GPLv2
+Section: base
+Maintainer: Felix Fietkau <nbd@openwrt.org>
+Architecture: octeon
+Installed-Size: 8056
+Filename: uci_2014-04-11.1-1_octeon.ipk
+Size: 8672
+MD5Sum: 607e08fead8b49088790da06e1bb336d
+SHA256sum: e160459e0de0369d1cb3f7c928d34902b13f092d067a22705acd67fa0a2310ab
+Description:  Utility for the Unified Configuration Interface (UCI)
+
+Package: uhttpd-mod-lua
+Version: 2014-10-27-fd8e5e379c23c5fbcec3e76894b839233df09067
+Depends: libc, uhttpd, liblua
+Source: package/network/services/uhttpd
+Section: net
+Maintainer: Felix Fietkau <nbd@openwrt.org>
+Architecture: octeon
+Installed-Size: 6359
+Filename: uhttpd-mod-lua_2014-10-27-fd8e5e379c23c5fbcec3e76894b839233df09067_octeon.ipk
+Size: 6986
+MD5Sum: fb91c21b56a0be0e5098028a727a03e7
+SHA256sum: c025adc98bc9542947a8b8308c77011d57f17c58054c5bd8ac929649a049cbfd
+Description:  The Lua plugin adds a CGI-like Lua runtime interface to uHTTPd.
+
+Package: uhttpd-mod-tls
+Version: 2014-10-27-fd8e5e379c23c5fbcec3e76894b839233df09067
+Depends: libc, uhttpd, libustream-openssl
+Source: package/network/services/uhttpd
+Section: net
+Maintainer: Felix Fietkau <nbd@openwrt.org>
+Architecture: octeon
+Installed-Size: 105
+Filename: uhttpd-mod-tls_2014-10-27-fd8e5e379c23c5fbcec3e76894b839233df09067_octeon.ipk
+Size: 711
+MD5Sum: 7f4d4817b5b35da2cb76cb49c8014bed
+SHA256sum: ecb804b9d14cdc538601b711265870a2a7da3b38527725bf017b4f4230436eb9
+Description:  The TLS plugin adds HTTPS support to uHTTPd.
+
+Package: uhttpd-mod-ubus
+Version: 2014-10-27-fd8e5e379c23c5fbcec3e76894b839233df09067
+Depends: libc, uhttpd, libubus, libblobmsg-json
+Source: package/network/services/uhttpd
+Section: net
+Maintainer: Felix Fietkau <nbd@openwrt.org>
+Architecture: octeon
+Installed-Size: 7307
+Filename: uhttpd-mod-ubus_2014-10-27-fd8e5e379c23c5fbcec3e76894b839233df09067_octeon.ipk
+Size: 7990
+MD5Sum: ad4b420cfb9fac603b077b7c0803cee7
+SHA256sum: bd6567589918c31a116a6fc998f3a5afb46b42f1f810d6d956840cdad96b26bc
+Description:  The ubus plugin adds a HTTP/JSON RPC proxy for ubus and publishes the
+ session.* namespace and procedures.
+
+Package: uhttpd
+Version: 2014-10-27-fd8e5e379c23c5fbcec3e76894b839233df09067
+Depends: libc, libubox
+Source: package/network/services/uhttpd
+Section: net
+Maintainer: Felix Fietkau <nbd@openwrt.org>
+Architecture: octeon
+Installed-Size: 29098
+Filename: uhttpd_2014-10-27-fd8e5e379c23c5fbcec3e76894b839233df09067_octeon.ipk
+Size: 29666
+MD5Sum: 01f20ac055caeda4998afb30fabcc46c
+SHA256sum: 2e1b47c8c6aa1eff68140fff8aec3c3ac378903d4700a38007f011b8ecc1d192
+Description:  uHTTPd is a tiny single threaded HTTP server with TLS, CGI and Lua
+ support. It is intended as a drop-in replacement for the Busybox
+ HTTP daemon.
+
+Package: veth
+Version: 1.0-1
+Depends: libc, kmod-tun
+Source: feeds/oldpackages/net/veth
+Section: net
+Architecture: octeon
+Installed-Size: 5154
+Filename: veth_1.0-1_octeon.ipk
+Size: 5725
+MD5Sum: 586130662f8e7e7c8ce8ab48e6c8aaaf
+SHA256sum: e7e41398ff8b69a259ff3a58a3d84caae2aea6b93ad6a881150d4850e78d6928
+Description:  VETH is a daemon that virtualizes a ethernet card in Linux.
+ The virtualization is done via Universal TUN/TAP Driver.
+
+Package: zlib
+Version: 1.2.8-1
+Depends: libc
+Source: package/libs/zlib
+License: ZLIB
+LicenseFiles: README
+Section: libs
+Architecture: octeon
+Installed-Size: 45361
+Filename: zlib_1.2.8-1_octeon.ipk
+Size: 45909
+MD5Sum: 5220553fe5e501485639c9cbd211b075
+SHA256sum: 2bfeed42e7f3e936eaab1d46c4b4960c95c177f22f8727d6dfea8dc3b94fda63
+Description:  Library implementing the deflate compression method
+
+Package: zoneinfo-asia
+Version: 2011n-1
+Depends: libc
+Source: feeds/oldpackages/utils/zoneinfo
+Section: utils
+Architecture: octeon
+Installed-Size: 40512
+Filename: zoneinfo-asia_2011n-1_octeon.ipk
+Size: 40963
+MD5Sum: 591a0bb270b9bbdbe49e243af338c9cc
+SHA256sum: a4065bfab423d7160a3d880ace5d84d890df1379c821019eafceeed8ff0884a3
+Description:  Zone Information (Asia)
+
+Package: zoneinfo-core
+Version: 2011n-1
+Depends: libc
+Source: feeds/oldpackages/utils/zoneinfo
+Section: utils
+Architecture: octeon
+Installed-Size: 53482
+Filename: zoneinfo-core_2011n-1_octeon.ipk
+Size: 53819
+MD5Sum: 91294682a34219f2f85a5620117b2648
+SHA256sum: 59da586ff3e8edcbb62822396bd59dff79e0a0c5c4db8e4aef1458a37855442d
+Description:  Zone Information (core)
+
+Package: zoneinfo-northamerica
+Version: 2011n-1
+Depends: libc
+Source: feeds/oldpackages/utils/zoneinfo
+Section: utils
+Architecture: octeon
+Installed-Size: 84643
+Filename: zoneinfo-northamerica_2011n-1_octeon.ipk
+Size: 84262
+MD5Sum: 6b7c0ee9769b4be93b08f4f56d1c8cf8
+SHA256sum: d1064461cf2fcf436cd8d3fd32823dfc71ddbb5e74975497cbbe386bb380bbd2
+Description:  Zone Information (NorthAmerica)
+
+Package: zoneinfo-simple
+Version: 2011n-1
+Depends: libc
+Source: feeds/oldpackages/utils/zoneinfo
+Section: utils
+Architecture: octeon
+Installed-Size: 17077
+Filename: zoneinfo-simple_2011n-1_octeon.ipk
+Size: 17523
+MD5Sum: a806b71224cf89fde7c6ee5f270250a4
+SHA256sum: 1b834cf8529c064846f1337682cb88b5c2b4c144f1f9320e3acc41a3379e0ac1
+Description:  Zone Information (simple)
+

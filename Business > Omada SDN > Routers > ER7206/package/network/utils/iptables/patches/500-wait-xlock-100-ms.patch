@@ -1,0 +1,14 @@
+--- a/iptables/xshared.c	2020-07-24 18:41:06.470440267 +0800
++++ b/iptables/xshared.c	2020-07-25 11:45:48.723434630 +0800
+@@ -263,9 +263,9 @@
+ 			return true;
+ 		else if (wait == false)
+ 			return false;
+-		if (++i % 2 == 0)
++		if (++i % 10 == 0)
+ 			fprintf(stderr, "Another app is currently holding the xtables lock; "
+ 				"waiting for it to exit...\n");
+-		sleep(1);
++		usleep(100000);
+ 	}
+ }

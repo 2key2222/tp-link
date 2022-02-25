@@ -1,0 +1,10 @@
+--- a/src/dnsmasq.c	2018-02-11 10:10:53.811200978 +0800
++++ b/src/dnsmasq.c	2018-02-11 10:15:38.602201021 +0800
+@@ -190,6 +190,7 @@
+     else
+       open("/dev/null", O_RDWR); 
+ 
++  log_reopen(daemon->log_file);
+ #ifndef HAVE_LINUX_NETWORK
+ #  if !(defined(IP_RECVDSTADDR) && defined(IP_RECVIF) && defined(IP_SENDSRCADDR))
+   if (!option_bool(OPT_NOWILD))

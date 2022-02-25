@@ -1,0 +1,1267 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <style type="text/css">
+        .wan_info_item, .wireless_status_item {
+            margin-top: 10px;
+        }
+        .wan_info_title {
+            padding: 5px 0;
+            display: inline-block;
+            *display:inline;
+            zoom: 1;
+            border: 1px #005564;
+            border-style: solid solid none;
+            width: 120px;
+            text-align: center;
+            border-radius: 6px 6px 0 0;
+            background-color: #F3F3F3;
+        }
+        table.wan_info_table, table.wireless_status_table {
+            border: 1px solid #D7D7D7;
+            border-collapse: collapse;
+            width: 100%;
+        }
+        .wan_info_table th, .wan_info_table td, .wireless_status_table th, .wireless_status_table td{
+            border: 1px solid #D7D7D7;
+            padding: 5px 0;
+        }
+        .wan_info_table th, .wireless_status_table th{
+            background-color: #F3F3F3;
+            color: #005564;
+        }
+        .wan_info_name{
+            width: 90px;
+        }
+        .wan_info_type{
+            width: 120px;
+        }
+        .wan_info_link{
+            width: 90px;
+        }
+        .wan_info_ip{
+            width: 120px;
+        }
+        .wan_info_mask{
+            width: 120px;
+        }
+        .wan_info_mac{
+            width: 150px;
+        }
+        .wan_info_gateway{
+            width: 120px;
+        }
+        .wan_info_dns{
+            width: 120px;
+        }
+        .wanv6_info_name{
+            width: 70px;
+        }
+        .wanv6_info_type{
+            width: 130px;
+        }
+        .wanv6_info_link{
+            width: 75px;
+        }
+        .wanv6_info_ip{
+            width: 300px;
+        }
+        .wanv6_info_gateway{
+            width: 180px;
+        }
+        .wanv6_info_dns{
+            width: 180px;
+        }
+        .wireless_status_interface{
+            width: 190px;
+        }
+        .wireless_status_enable{
+            width: 90px;
+        }
+        .wireless_status_channel{
+            width: 90px;
+        }
+        .wireless_status_mode{
+            width: 190px;
+        }
+        .wireless_status_ssid{
+            width: 270px;
+        }
+        .wireless_status_wds{
+            width: 105px;
+        }
+    </style>
+    <title>SystemState</title>
+</head>
+
+<body>
+<div class="func-container">
+
+    <div id="version">
+        <input type="text" id="version_hard"></input>
+        <input type="text" id="version_soft"></input>
+    </div>
+    <div id="system_time_new">
+        <input type="text" id="current_time_new"></input>
+        <input type="text" id="run_time_new"></input>
+    </div>
+    <div id="wan_info">
+        <div class="wan_info_item">
+            <!--<div class="wan_info_title">
+                <span></span>
+            </div>-->
+            <table class="wan_info_table" border="0" cellspacing="0" cellpadding="0">
+                <tr class="grid-header-tr">
+                    <th class="wan_info_name">
+                        <span id="wan_info_name" class="content"></span>
+                    </th>
+                    <th class="wan_info_type">
+                        <span id="wan_info_type" class="content"></span>
+                    </th>
+                    <th class="wan_info_link">
+                        <span id="wan_info_link" class="content"></span>
+                    </th>
+                    <th class="wan_info_ip">
+                        <span id="wan_info_ip" class="content"></span>
+                    </th>
+                    <th class="wan_info_mask">
+                        <span id="wan_info_mask" class="content"></span>
+                    </th>
+                    <th class="wan_info_mac">
+                        <span id="wan_info_mac" class="content"></span>
+                    </th>
+                    <th class="wan_info_gateway">
+                        <span id="wan_info_gateway" class="content"></span>
+                    </th>
+                    <th class="wan_info_dns">
+                        <span id="wan_info_dns" class="content"></span>
+                    </th>
+                </tr>
+            </table>
+        </div>
+        <div class="grid-content-container-outer">
+            <div class="grid-content-container" style="overflow:visible;">
+                <table border="0" cellspacing="0" cellpadding="0" id="table">
+                        
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="wanv6_info">
+        <div class="wan_info_item">
+            <table class="wan_info_table" border="0" cellspacing="0" cellpadding="0">
+                <tr class="grid-header-tr">
+                    <th class="wanv6_info_name">
+                        <span id="wanv6_info_name" class="content"></span>
+                    </th>
+                    <th class="wanv6_info_type">
+                        <span id="wanv6_info_type" class="content"></span>
+                    </th>
+                    <th class="wanv6_info_link">
+                        <span id="wanv6_info_link" class="content"></span>
+                    </th>
+                    <th class="wanv6_info_ip">
+                        <span id="wanv6_info_ip" class="content"></span>
+                    </th>
+                    <!-- <th class="wan_info_mac">
+                        <span id="wanv6_info_mac" class="content"></span>
+                    </th> -->
+                    <th class="wanv6_info_gateway">
+                        <span id="wanv6_info_gateway" class="content"></span>
+                    </th>
+                    <th class="wanv6_info_dns">
+                        <span id="wanv6_info_dns" class="content"></span>
+                    </th>
+                    <!-- <th class="wan_info_dns">
+                        <span id="wanv6_info_dns_snd" class="content"></span>
+                    </th> -->
+                </tr>
+            </table>
+        </div>
+        <div class="grid-content-container-outer">
+            <div class="grid-content-container" style="overflow:visible;">
+                <table border="0" cellspacing="0" cellpadding="0" id="tablev6">
+                        
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="wireless_status" class="hidden">
+        <div class="wireless_status_item">
+            <table class="wireless_status_table" border="0" cellspacing="0" cellpadding="0">
+                <tr class="grid-header-tr">
+                    <th class="wireless_status_interface">
+                        <span id="wireless_status_interface" class="content"></span>
+                    </th>
+                    <th class="wireless_status_enable">
+                        <span id="wireless_status_enable" class="content"></span>
+                    </th>
+                    <th class="wireless_status_channel">
+                        <span id="wireless_status_channel" class="content"></span>
+                    </th>
+                    <th class="wireless_status_mode">
+                        <span id="wireless_status_mode" class="content"></span>
+                    </th>
+                    <th class="wireless_status_ssid">
+                        <span id="wireless_status_ssid" class="content"></span>
+                    </th>
+                    <th class="wireless_status_wds">
+                        <span id="wireless_status_wds" class="content"></span>
+                    </th>
+                </tr>
+            </table>
+        </div>
+        <div class="grid-content-container-outer">
+            <div class="grid-content-container" style="overflow:visible;">
+                <table border="0" cellspacing="0" cellpadding="0" id="table_wireless">
+                        
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="CPU_usage">
+        <div class="system_cpu" id="memUsage">
+            <span class="usage_percent"></span>
+
+            <div class="outer">
+                <div class="inner"></div>
+            </div>
+            <span class="cpu_label"></span>
+        </div>
+
+        <div class="system_cpu" id="cpuUsage">
+            <span class="usage_percent"></span>
+
+            <div class="outer">
+                <div class="inner"></div>
+            </div>
+            <span class="cpu_label">CPU</span>
+        </div>
+        
+        <div style="margin-left:150px;display:inline;">
+            <div id="line_chart"></div>
+        </div>
+        
+    </div>
+</div>
+
+<script type="text/javascript">
+
+//<![CDATA[
+try {
+    $
+} catch (e) {
+    location.href = "/";
+}
+;
+$(document).ready(function (e) {
+    var version = "/admin/firmware?form=upgrade",
+		timeUrl = "/admin/time?form=settings",
+        wanUrl = "/admin/interface?form=status2",
+        wanv6Url = "/admin/ipv6?form=wanv6_status_info",
+        wirelessUrl = "/admin/wlan_state?form=status";
+
+    var $firmware_version = $("#version"),
+        $systemTimeNew = $("#system_time_new"),
+        $CPU = $("#CPU_usage");
+        $systemCPUs = $(".system_cpu"),
+        $chart = $("#line_chart");
+
+    var timeSystem = 0;
+    var cpu_use_data = ["core1", "core2", "core3", "core4"];
+    var weekDayObj = {
+        "Mon": $.su.CHAR.DATE.MONDAY,
+        "Tue": $.su.CHAR.DATE.TUESDAY,
+        "Wed": $.su.CHAR.DATE.WEDNESDAY,
+        "Thu": $.su.CHAR.DATE.THURSDAY,
+        "Fri": $.su.CHAR.DATE.FRIDAY,
+        "Sat": $.su.CHAR.DATE.SATURDAY,
+        "Sun": $.su.CHAR.DATE.SUNDAY
+    }
+    var weekDays = {
+        "0": $.su.CHAR.DATE.SUNDAY,
+        "1": $.su.CHAR.DATE.MONDAY,
+        "2": $.su.CHAR.DATE.TUESDAY,
+        "3": $.su.CHAR.DATE.WEDNESDAY,
+        "4": $.su.CHAR.DATE.THURSDAY,
+        "5": $.su.CHAR.DATE.FRIDAY,
+        "6": $.su.CHAR.DATE.SATURDAY
+    }
+
+    $firmware_version.panel({
+        title:$.su.CHAR.SYS_STATUS_STATUS.DEVICE_INFO//设备信息
+    });
+
+    $("#version_hard").textbox({
+        fieldLabel: $.su.CHAR.SYS_STATUS_STATUS.HARDWARE,
+        cls:"inline-block",
+        readOnly:true,
+        separator:"",
+        inputCls:"xxl"
+    });
+    $("#version_soft").textbox({
+        fieldLabel: $.su.CHAR.SYS_STATUS_STATUS.SOFTWARE,
+        cls:"inline-block",
+        readOnly:true,
+        separator:"",
+        inputCls:"xxl"
+    });
+
+	$systemTimeNew.panel({
+        title: $.su.CHAR.SYS_STATUS_STATUS.SYSTIME//"系统时间"
+    });
+
+    $("#current_time_new").textbox({
+        fieldLabel: $.su.CHAR.SYS_STATUS_STATUS.SYSTIME,
+        cls:"inline-block",
+        readOnly:true,
+        inputCls:"xxl"
+    });
+    $("#run_time_new").textbox({
+        fieldLabel: $.su.CHAR.SYS_STATUS_STATUS.RUNNING_TIME,
+        cls:"inline-block",
+        readOnly:true,
+        inputCls:"xxl"
+    });
+    $("div#memUsage span.cpu_label").html($.su.CHAR.SYS_STATUS_STATUS.MEMORY);
+
+    $CPU.panel({
+        title: $.su.CHAR.SYS_STATUS_STATUS.USAGE//"资源利用率"
+    });
+
+    var $wanInfo = $('#wan_info').panel({
+        title: $.su.CHAR.SYS_STATUS_STATUS.WAN_INFO //'WAN口信息'
+    });
+    $("span#wan_info_name").html($.su.CHAR.SYS_STATUS_STATUS.IFNAME);
+    $("span#wan_info_type").html($.su.CHAR.SYS_STATUS_STATUS.TYPE);
+    $("span#wan_info_link").html($.su.CHAR.SYS_STATUS_STATUS.LINKSTATUS);
+    $("span#wan_info_ip").html($.su.CHAR.SYS_STATUS_STATUS.IPADDR);
+    $("span#wan_info_mask").html($.su.CHAR.SYS_STATUS_STATUS.MASK);
+    $("span#wan_info_mac").html($.su.CHAR.SYS_STATUS_STATUS.MAC);
+    $("span#wan_info_gateway").html($.su.CHAR.SYS_STATUS_STATUS.GATEWAY);
+    $("span#wan_info_dns").html($.su.CHAR.SYS_STATUS_STATUS.PRIMARYDNS);
+
+    //var $wanItem = $wanInfo.find('.wan_info_item').remove();
+    // $wanItem.find("th.wan_info_name").text($.su.CHAR.SYS_STATUS_STATUS.IFNAME);//"接口名称");
+    // $wanItem.find("th.wan_info_type").text($.su.CHAR.SYS_STATUS_STATUS.TYPE);//"连接方式");
+    // $wanItem.find("th.wan_info_link").text($.su.CHAR.SYS_STATUS_STATUS.LINKSTATUS);//"连接状态");
+    // $wanItem.find("th.wan_info_ip").text($.su.CHAR.SYS_STATUS_STATUS.IPADDR);//"IP地址");
+    // $wanItem.find("th.wan_info_mask").text($.su.CHAR.SYS_STATUS_STATUS.MASK);//"子网掩码");
+    // $wanItem.find("th.wan_info_gateway").text($.su.CHAR.SYS_STATUS_STATUS.GATEWAY);//"网关地址");
+    // $wanItem.find("th.wan_info_dns").text($.su.CHAR.SYS_STATUS_STATUS.PRIMARYDNS);//"首选DNS服务器");
+
+    var $wanv6Info = $('#wanv6_info').panel({
+        title: $.su.CHAR.SYS_STATUS_STATUS.WANV6_INFO
+    });
+    $("span#wanv6_info_name").html($.su.CHAR.SYS_STATUS_STATUS.IFNAME);
+    $("span#wanv6_info_type").html($.su.CHAR.SYS_STATUS_STATUS.TYPE);
+    $("span#wanv6_info_link").html($.su.CHAR.SYS_STATUS_STATUS.LINKSTATUS);
+    $("span#wanv6_info_ip").html($.su.CHAR.SYS_STATUS_STATUS.IPADDR);
+    // $("span#wanv6_info_mac").html($.su.CHAR.SYS_STATUS_STATUS.MAC);
+    $("span#wanv6_info_gateway").html($.su.CHAR.SYS_STATUS_STATUS.GATEWAY);
+    $("span#wanv6_info_dns").html($.su.CHAR.SYS_STATUS_STATUS.PRIMARYDNS);
+    // $("span#wanv6_info_dns_snd").html($.su.CHAR.SYS_STATUS_STATUS.SECOND_DNS);
+
+    var $wirelessInfo = $('#wireless_status').panel({
+        title: $.su.CHAR.SYS_STATUS_STATUS.WIRELESS_STATUS
+    });
+    $("#wireless_status_interface").html($.su.CHAR.SYS_STATUS_STATUS.WIRELESS);
+    $("#wireless_status_enable").html($.su.CHAR.SYS_STATUS_STATUS.STATUS);
+    $("#wireless_status_channel").html($.su.CHAR.SYS_STATUS_STATUS.CHANNEL);
+    $("#wireless_status_mode").html($.su.CHAR.SYS_STATUS_STATUS.MODE);
+    $("#wireless_status_ssid").html($.su.CHAR.SYS_STATUS_STATUS.SSID);
+    $("#wireless_status_wds").html($.su.CHAR.SYS_STATUS_STATUS.WDS);
+
+    var wanProxy = new $.su.Proxy({
+        url: $.su.url(wanUrl)
+    });
+
+    wanProxy.read({}, function(data){
+        if(data.normal.length>=1){
+            var inHTML="";
+			var wanIndex = 1;
+            for(var k = 0; k < data.normal.length; k++){//data.normal中有一个是LAN
+                if ($.su.func.isLan(data.normal[k].t_name)) {
+                    continue;
+                }
+                inHTML += "<tr class=\"wan_info_table\">";
+                inHTML +=      "<td class=\"wan_info_name\" style=\"height: 15px\">";
+                inHTML +=      "<span input id=\"wan"+wanIndex+"_wan_info_name\"/></span>";
+                inHTML +=      "</td>";
+                inHTML +=      "<td class=\"wan_info_type\" style=\"height: 15px\">";
+                inHTML +=      "<span input id=\"wan"+wanIndex+"_wan_info_type\"/></span>";
+                inHTML +=      "</td>";
+                inHTML +=      "<td class=\"wan_info_link\" style=\"height: 15px\">";
+                inHTML +=      "<span input id=\"wan"+wanIndex+"_wan_info_link\"/></span>";
+                inHTML +=      "</td>";
+                inHTML +=      "<td class=\"wan_info_ip\" style=\"height: 15px\">";
+                inHTML +=      "<span input id=\"wan"+wanIndex+"_wan_info_ip\"/></span>";
+                inHTML +=      "</td>";
+                inHTML +=      "<td class=\"wan_info_mask\" style=\"height: 15px\">";
+                inHTML +=      "<span input id=\"wan"+wanIndex+"_wan_info_mask\"/></span>";
+                inHTML +=      "</td>";
+                inHTML +=      "<td class=\"wan_info_mac\" style=\"height: 15px\">";
+                inHTML +=      "<span input id=\"wan"+wanIndex+"_wan_info_mac\"/></span>";
+                inHTML +=      "</td>";
+                inHTML +=      "<td class=\"wan_info_gateway\" style=\"height: 15px\">";
+                inHTML +=      "<span input id=\"wan"+wanIndex+"_wan_info_gateway\"/></span>";
+                inHTML +=      "</td>";
+                inHTML +=      "<td class=\"wan_info_dns\" style=\"height: 15px\">";
+                inHTML +=      "<span input id=\"wan"+wanIndex+"_wan_info_dns\"/></span>";
+                inHTML +=      "</td>";
+                inHTML += "</tr>";
+				wanIndex++
+            }
+            $("#table").html(inHTML);
+        }
+        refreshWanInfoAction(data);
+    });
+    //refreshWanInfo();
+
+    var wanv6Proxy = new $.su.Proxy({
+        url: $.su.url(wanv6Url)
+    });
+
+    wanv6Proxy.read({}, function(data){
+        var wanv6_show = false;
+        if(data.length>=1){
+            var inHTML="";
+            for(var k = 1; k <= data.length; k++){
+                if ('off' == data[k-1].enable) {
+                    continue;
+                }
+                wanv6_show = true;
+
+                inHTML += "<tr class=\"wan_info_table\">";
+                inHTML +=      "<td class=\"wanv6_info_name\" style=\"height: 15px\">";
+                inHTML +=      "<span input id=\"wan"+k+"_wanv6_info_name\"/></span>";
+                inHTML +=      "</td>";
+                inHTML +=      "<td class=\"wanv6_info_type\" style=\"height: 15px\">";
+                inHTML +=      "<span input id=\"wan"+k+"_wanv6_info_type\"/></span>";
+                inHTML +=      "</td>";
+                inHTML +=      "<td class=\"wanv6_info_link\" style=\"height: 15px\">";
+                inHTML +=      "<span input id=\"wan"+k+"_wanv6_info_link\"/></span>";
+                inHTML +=      "</td>";
+                inHTML +=      "<td class=\"wanv6_info_ip\" style=\"height: 15px\">";
+                inHTML +=      "<span input id=\"wan"+k+"_wanv6_info_ip\"/></span>";
+                inHTML +=      "</td>";
+                // inHTML +=      "<td class=\"wan_info_mac\" style=\"height: 15px\">";
+                // inHTML +=      "<span input id=\"wan"+k+"_wanv6_info_mac\"/></span>";
+                // inHTML +=      "</td>";
+                inHTML +=      "<td class=\"wanv6_info_gateway\" style=\"height: 15px\">";
+                inHTML +=      "<span input id=\"wan"+k+"_wanv6_info_gateway\"/></span>";
+                inHTML +=      "</td>";
+                inHTML +=      "<td class=\"wanv6_info_dns\" style=\"height: 15px\">";
+                inHTML +=      "<span input id=\"wan"+k+"_wanv6_info_dns\"/></span>";
+                inHTML +=      "</td>";
+                // inHTML +=      "<td class=\"wan_info_dns\" style=\"height: 15px\">";
+                // inHTML +=      "<span input id=\"wan"+k+"_wanv6_info_dns_snd\"/></span>";
+                // inHTML +=      "</td>";
+                inHTML += "</tr>";
+            }
+            if (true == wanv6_show) {
+                $("#tablev6").html(inHTML);
+            }
+        }
+        refreshWanv6InfoAction(data);
+    });
+
+
+    var wirelessProxy = new $.su.Proxy({
+        url: $.su.url(wirelessUrl)
+    });
+
+    if ($.su.radioCount > 0) {
+        wirelessProxy.read({}, function(data){
+            if (data && typeof data == "object") {
+                var inHTML="";
+                for (var i in data) {
+                    var k = data[i].frequency;
+                    k = k.replace(/\./g, '_');
+                    inHTML += "<tr class=\"wireless_status_table\">";
+                    inHTML +=      "<td class=\"wireless_status_interface\" style=\"height: 15px\">";
+                    inHTML +=      "<span input id=\"wireless"+k+"_status_interface\"></span>";
+                    inHTML +=      "</td>";
+                    inHTML +=      "<td class=\"wireless_status_enable\" style=\"height: 15px\">";
+                    inHTML +=      "<span input id=\"wireless"+k+"_status_enable\"></span>";
+                    inHTML +=      "</td>";
+                    inHTML +=      "<td class=\"wireless_status_channel\" style=\"height: 15px\">";
+                    inHTML +=      "<span input id=\"wireless"+k+"_status_channel\"></span>";
+                    inHTML +=      "</td>";
+                    inHTML +=      "<td class=\"wireless_status_mode\" style=\"height: 15px\">";
+                    inHTML +=      "<span input id=\"wireless"+k+"_status_mode\"></span>";
+                    inHTML +=      "</td>";
+                    inHTML +=      "<td class=\"wireless_status_ssid\" style=\"height: 15px; padding: 3px 0;\">";
+                    inHTML +=      "<table id=\"wireless"+k+"_status_ssid\" width=\"260px\" align=\"center\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\"></table>";
+                    inHTML +=      "</td>";
+                    inHTML +=      "<td class=\"wireless_status_wds\" style=\"height: 15px\">";
+                    inHTML +=      "<span input id=\"wireless"+k+"_status_wds\"></span>";
+                    inHTML +=      "</td>";
+                    inHTML += "</tr>";
+                }
+                $("#table_wireless").html(inHTML);
+            }
+            refreshWirelessStatusAction(data);
+        });
+    }
+
+    (function setVersion() {
+        var statusProxy = new $.su.Proxy({
+            url: $.su.url(version),
+            async: true
+        });
+        statusProxy.read({}, function(data){
+            var $hard = $("#version_hard"),
+                $soft = $("#version_soft");
+            $hard.textbox("setValue",$soft.text()+data["hardware_version"]);
+            $soft.textbox("setValue",$soft.text() + data["firmware_version"]);
+        });
+    })();
+
+    // (new Date()).Format("yyyy-MM-dd hh:mm:ss.S") ==> 2006-07-02 08:09:04.423   
+    // (new Date()).Format("yyyy-M-d h:m:s.S")      ==> 2006-7-2 8:9:4.18   
+    Date.prototype.Format = function(fmt)   
+    { //author: meizz   
+        var o = {   
+            "M+" : this.getMonth()+1,                 //月份   
+            "d+" : this.getDate(),                    //日   
+            "h+" : this.getHours(),                   //小时   
+            "m+" : this.getMinutes(),                 //分   
+            "s+" : this.getSeconds(),                 //秒   
+            "q+" : Math.floor((this.getMonth()+3)/3), //季度   
+            "S"  : this.getMilliseconds()             //毫秒   
+        };   
+        if(/(y+)/.test(fmt))   
+            fmt=fmt.replace(RegExp.$1, (this.getFullYear()+"").substr(4 - RegExp.$1.length));   
+        for(var k in o)   
+            if(new RegExp("("+ k +")").test(fmt))   
+                fmt = fmt.replace(RegExp.$1, (RegExp.$1.length==1) ? (o[k]) : (("00"+ o[k]).substr((""+ o[k]).length)));   
+        return fmt;
+    }
+    var curDate = new Date();
+    var runTime = 0;
+    var timeProxy = new $.su.Proxy({
+        url: $.su.url("/admin/time?form=settings"),
+        async: false
+    })
+
+    function refreshTimeData() {
+    	//每隔1s做一次+1s，每隔10s从后台刷新一次时间
+    	curDate.setSeconds(curDate.getSeconds() + 1);
+        runTime = runTime + 1;
+		$("#current_time_new").textbox("setValue", curDate.Format("MM/dd/yyyy hh:mm:ss")+" "+weekDays[curDate.getDay()]);
+        showRuntime(runTime);
+        
+    	if(runTime%10 == 1){
+    		timeProxy.read({}, function(data){
+        		curDate = new Date(data.date + " " + data.time);
+        		runTime = data.run;
+				$("#current_time_new").textbox("setValue", curDate.Format("MM/dd/yyyy hh:mm:ss")+" "+weekDays[curDate.getDay()]);
+        		showRuntime(runTime);
+    		});
+    	}
+    }
+
+    /*首次加载立刻执行*/
+    refreshTimeData();
+
+    /*设置获取数据的时间间隔*/
+    if(window.timeInter){
+        clearInterval(window.timeInter);
+    }
+    window.timeInter = setInterval(function(){
+        if ($("#func-advanced title").text() != "SystemState"){
+            clearInterval(window.timeInter);
+            return;
+        }
+        refreshTimeData();
+    }, 1000);
+
+
+/*    var cpuProxy = new $.su.Proxy({
+        url: $.su.url("/admin/sys_status?form=cpu_log"),
+        async: true
+    });
+    
+    var usageProxy = new $.su.Proxy({
+        url: $.su.url("/admin/sys_status?form=cpu_usage"),
+        async: true
+    });
+    
+    var memProxy = new $.su.Proxy({
+        url: $.su.url("/admin/sys_status?form=mem_usage"),
+        async: true
+    });
+
+    // 首次加载立刻执行
+    cpuProxy.read({}, function(data){
+        drawChart(data);
+        var cpuAvg = 0;
+        var cpuCount = parseInt($.su.cpuNum);
+
+        usageProxy.read({}, function(useData){
+
+            if(cpuCount == 1)
+            {
+                var cpuIndex = data.core1.length - 1;
+                cpuAvg = parseInt(useData.core1) * 0.4 + parseInt(data.core1[cpuIndex][1]) * 0.3 + parseInt(data.core1[cpuIndex - 1][1]) * 0.3;
+                if(cpuAvg > 100){
+                    cpuAvg = 100;
+                }else if(cpuAvg < 0){
+                    cpuAvg = 0;
+                }
+            }
+            else
+            {
+                var cpuSum = 0;
+                for(var i  = 0; i < cpuCount; i++){
+                    cpuSum += useData[cpu_use_data[i]];
+                }
+                cpuAvg = parseInt(cpuSum  / cpuCount);
+            }
+
+            $("#cpuUsage").find(".usage_percent").html(parseInt(cpuAvg).toString() + "%");
+            $("#cpuUsage").find(".inner:eq(0)").height(cpuAvg);
+            changeCPUColor(cpuAvg, "#cpuUsage");
+        });
+        
+        
+    });
+
+
+    // //旧的计算方式
+    // usageProxy.read({}, function(data){
+    //     var cpuSum = 0;
+    //     var cpuCount = 0;
+    //     for(var i in data){
+    //         cpuSum += data[i];
+    //         cpuCount++;
+    //     }
+
+    //     var cpuAvg = parseInt(cpuSum);//单核计算方法
+    //     if(cpuAvg > 100){
+    //         cpuAvg = 100;
+    //     }
+    //     $("#cpuUsage").find(".usage_percent").html(cpuAvg.toString() + "%");
+    //     $("#cpuUsage").find(".inner:eq(0)").height(cpuAvg);
+    //     changeCPUColor(cpuAvg, "#cpuUsage");
+
+    // });
+    
+
+    memProxy.read({}, function(data){
+        $("#memUsage").find(".usage_percent").html(data.mem.toString() + "%");
+        $("#memUsage").find(".inner:eq(0)").height(data.mem);
+        changeMEMColor(data.mem, "#memUsage");
+    });
+  
+
+    // 设置获取数据的时间间隔
+    if(window.lineChartInterval){
+        clearInterval(window.lineChartInterval);
+    }
+    window.lineChartInterval = setInterval(function(){
+        if ($("#func-advanced title").text() != "SystemState"){
+            
+            clearInterval(window.lineChartInterval);
+            return;
+        }
+        cpuProxy.read({}, function(data){
+            drawChart(data);
+
+            var cpuAvg = 0;
+            var cpuCount = parseInt($.su.cpuNum);
+
+            usageProxy.read({}, function(useData){
+                if(cpuCount == 1)
+                {
+                    var cpuIndex = data.core1.length - 1;
+                    cpuAvg = parseInt(useData.core1) * 0.6 + parseInt(data.core1[cpuIndex][1]) * 0.2 + parseInt(data.core1[cpuIndex - 1][1]) * 0.2;
+                    if(cpuAvg > 100){
+                        cpuAvg = 100;
+                    }else if(cpuAvg < 0){
+                        cpuAvg = 0;
+                    }
+                }
+                else
+                {
+                    var cpuSum = 0;
+                    for(var i  = 0; i < cpuCount; i++){
+                        cpuSum += useData[cpu_use_data[i]];
+                    }
+                    cpuAvg = parseInt(cpuSum  / cpuCount);
+                }
+
+                $("#cpuUsage").find(".usage_percent").html(parseInt(cpuAvg).toString() + "%");
+                $("#cpuUsage").find(".inner:eq(0)").height(cpuAvg);
+                changeCPUColor(cpuAvg, "#cpuUsage");
+            });
+            
+            
+        });
+        
+        // usageProxy.read({}, function(data){
+        //     var cpuSum = 0;
+        //     var cpuCount = 0;
+        //     for(var i in data){
+        //             cpuSum += data[i];
+        //             cpuCount++;
+        //     }
+
+        //     var cpuAvg = parseInt(cpuSum);//单核计算方法
+        //     if(cpuAvg > 100){
+        //         cpuAvg = 100;
+        //     }
+        //     $("#cpuUsage").find(".usage_percent").html(cpuAvg.toString() + "%");
+        //     $("#cpuUsage").find(".inner:eq(0)").height(cpuAvg);
+        //     changeCPUColor(cpuAvg, "#cpuUsage");
+        // });
+        
+        memProxy.read({}, function(data){
+            $("#memUsage").find(".usage_percent").html(data.mem.toString() + "%");
+            $("#memUsage").find(".inner:eq(0)").height(data.mem);
+            changeMEMColor(data.mem, "#memUsage");
+        });
+        
+
+        
+    }, 3000);*/
+
+    var allUsageProxy = new $.su.Proxy({
+        url: $.su.url("/admin/sys_status?form=all_usage"),
+        async: true
+    });
+
+    function refreshUsageData() {
+        allUsageProxy.read({}, function(data) {
+            var cpu_log   = data.cpu_log;
+            var cpu_usage = data.cpu_usage;
+            var mem_usage = data.mem_usage;
+
+            drawChart(cpu_log);
+
+            var cpuAvg = 0;
+            var cpuCount = parseInt($.su.cpuNum);
+
+            if (cpuCount == 1)
+            {
+                var cpuIndex = cpu_log.core1.length - 1;
+                cpuAvg = parseInt(cpu_usage.core1) * 0.6 + parseInt(cpu_log.core1[cpuIndex][1]) * 0.2 + parseInt(cpu_log.core1[cpuIndex - 1][1]) * 0.2;
+                if(cpuAvg > 100) {
+                    cpuAvg = 100;
+                } else if (cpuAvg < 0) {
+                    cpuAvg = 0;
+                }
+            }
+            else
+            {
+                var cpuSum = 0;
+                for(var i  = 0; i < cpuCount; i++) {
+                    cpuSum += cpu_usage[cpu_use_data[i]];
+                }
+                cpuAvg = parseInt(cpuSum  / cpuCount);
+            }
+
+            $("#cpuUsage").find(".usage_percent").html(parseInt(cpuAvg).toString() + "%");
+            $("#cpuUsage").find(".inner:eq(0)").height(cpuAvg);
+            changeCPUColor(cpuAvg, "#cpuUsage");
+
+            $("#memUsage").find(".usage_percent").html(mem_usage.mem.toString() + "%");
+            $("#memUsage").find(".inner:eq(0)").height(mem_usage.mem);
+            changeMEMColor(mem_usage.mem, "#memUsage");
+        });
+    }
+
+    /*首次加载立刻执行*/
+    refreshUsageData();
+
+    /*设置获取数据的时间间隔*/
+    if(window.lineChartInterval){
+        clearInterval(window.lineChartInterval);
+    }
+    window.lineChartInterval = setInterval(function() {
+        if ($("#func-advanced title").text() != "SystemState") {
+            clearInterval(window.lineChartInterval);
+            return;
+        }
+        refreshUsageData();
+    }, 3000);
+
+
+
+    if(window.wanInfoInterval){
+        clearInterval(window.wanInfoInterval);
+    }
+    window.wanInfoInterval = setInterval(function(){
+        if ($("#func-advanced title").text() != "SystemState"){
+            clearInterval(window.wanInfoInterval);
+            return;
+        }
+        refreshWanInfo();
+        refreshWanv6Info();
+        refreshWirelessStatus();
+    }, 10000);
+
+
+
+    function format(num, places) {
+        if (!places) places = 2;
+
+        var strNum = num.toString(),
+                zeroNum = places - strNum.length;
+
+        while (zeroNum--) {
+            strNum = "0" + strNum;
+        }
+        return strNum;
+    }
+
+    function showTime(time) {
+        var timePattern = /^([0-9]*)\:([0-9]*)\:([0-9]*)$/,
+                timeResult = time.match(timePattern),
+                currentTime = new Date();
+        currentTime.setHours(timeResult[1]);
+        currentTime.setMinutes(timeResult[2]);
+        currentTime.setSeconds(timeResult[3]);
+        var str = format(currentTime.getHours()) + ":" +
+                  format(currentTime.getMinutes());
+                   
+        //$time.html(str); 
+    }
+
+    function showRuntime(second){
+        clearInterval(timeSystem);
+        /*时间的进位计算*/
+        var min  = 0,
+            hour = 0,
+            day  = 0;
+
+        if(second > 60){
+            min = parseInt(second / 60);
+            second = second % 60;   
+        }
+        if(min && min > 60){
+            hour = parseInt(min / 60);
+            min = min % 60;
+        }
+        if(hour && hour > 24){
+            day = parseInt(hour / 24);
+            hour = hour % 24;
+        }
+
+        /*首次执行*/
+        if(59 == second){
+            second = 0;
+            min++;
+        }else{
+            second++;
+        }
+        if(60 == min){
+            min = 0;
+            hour++;
+        }
+        if(24 == hour){
+            hour = 0;
+            day++;
+        }
+        var str = day + " "+ $.su.CHAR.SYS_STATUS_STATUS.DAY +", "+ hour + " "+ $.su.CHAR.SYS_STATUS_STATUS.HOUR +", "+ min + " "+ $.su.CHAR.SYS_STATUS_STATUS.MIN +", "+ second + " "+ $.su.CHAR.SYS_STATUS_STATUS.SEC;      
+        //$runTime.html(str);
+        $("#run_time_new").textbox("setValue",str);
+        /*循环执行*/
+        // timeSystem = setInterval(function(){
+        //     /*秒数进位*/
+        //     if(59 == second){
+        //         second = 0;
+        //         min++;
+        //     }else{
+        //         second++;
+        //     }
+        //     if(60 == min){
+        //         min = 0;
+        //         hour++;
+        //     }
+        //     if(24 == hour){
+        //         hour = 0;
+        //         day++;
+        //     }
+        //     var str = day + " "+ $.su.CHAR.SYS_STATUS_STATUS.DAY +", "+ hour + " "+ $.su.CHAR.SYS_STATUS_STATUS.HOUR +", "+ min + " "+ $.su.CHAR.SYS_STATUS_STATUS.MIN +", "+ second + " "+ $.su.CHAR.SYS_STATUS_STATUS.SEC;      
+        //     $runTime.html(str);
+        //      $("#run_time_new").textbox("setValue",str);
+        // }, 1*1000);
+    }
+
+    
+    function showDate(date, weekDay) {
+
+        // var datePattern = /^([0-9]*)\/([0-9]*)\/([0-9]*)$/,
+        //         dateArray = date.match(datePattern),
+        //         year = format(dateArray[3], 4),
+        //         month = format(dateArray[1]),
+        //         day = format(dateArray[2]);
+
+        // var html = "今天是" + year + "年" +
+        //         month + "月" +
+        //         day + "日" +
+        //         " " + weekDayObj[weekDay];
+
+        // $date.html(html);
+    }
+
+    
+    /*修改柱形图颜色*/
+    function changeCPUColor(num , id){
+        if(num <= 60){
+            $(id).find(".inner:eq(0)").css("background","#005564");
+        }else if(num > 60 && num <= 80){
+            $(id).find(".inner:eq(0)").css("background","#005564");
+        }else if(num > 80){
+            $(id).find(".inner:eq(0)").css("background","#005564");
+        }
+    }
+    function changeMEMColor(num , id){
+        if(num <= 60){
+            $(id).find(".inner:eq(0)").css("background","#36444b");
+        }else if(num > 60 && num <= 80){
+            $(id).find(".inner:eq(0)").css("background","#36444b");
+        }else if(num > 80){
+            $(id).find(".inner:eq(0)").css("background","#36444b");
+        }
+    }
+    
+
+    function drawChart(data){
+        var timeInterval = 60, //两条数据间隔60s
+                totalTime = 3600;
+
+        (function dataTransform(d){
+            function transform(array){
+                var temp = [],
+                        num = totalTime / timeInterval;
+                for(var i=0; i < num - array.length; i++){
+                    temp.push([i, 0]);
+                }
+
+                for(var i=0; i< array.length; i++){
+                    temp.push([i + num - array.length, array[i]]);
+                }
+                return temp;
+            }
+            for(var cpuIndex in d){
+                d[cpuIndex] = transform(d[cpuIndex]);
+            }
+        })(data);
+
+        if($.su.cpuNum == 1) {
+        $.plot($chart,[
+            {
+                label: "CPU",
+                data: data.core1
+            }
+        ], {
+            legend :{
+                position: "nw"
+            },
+            xaxis:{
+                min: 0,
+                max: 60,
+                show:false
+            },
+            yaxis:{
+                min: 0,
+                max: 100
+            },
+            grid:{
+                color:"#cccccc"
+            }
+        });
+        }else if($.su.cpuNum == 2){
+        $.plot($chart,[
+            {
+                label: "Core1",
+                data: data.core1
+            },
+            {
+                label: "Core2",
+                data: data.core2
+            }
+        ], {
+            legend :{
+                position: "nw"
+            },
+            xaxis:{
+                min: 0,
+                max: 60,
+                show:false
+            },
+            yaxis:{
+                min: 0,
+                max: 100
+            },
+            grid:{
+                color:"#cccccc"
+            }
+        });
+        }else if($.su.cpuNum == 3){
+        $.plot($chart,[
+            {
+                label: "Core1",
+                data: data.core1
+            },
+            {
+                label: "Core2",
+                data: data.core2
+            },
+            {
+                label: "Core3",
+                data: data.core3
+            }
+        ], {
+            legend :{
+                position: "nw"
+            },
+            xaxis:{
+                min: 0,
+                max: 60,
+                show:false
+            },
+            yaxis:{
+                min: 0,
+                max: 100
+            },
+            grid:{
+                color:"#cccccc"
+            }
+        });
+        }else if($.su.cpuNum == 4){
+        $.plot($chart,[
+            {
+                label: "Core1",
+                data: data.core1
+            },
+            {
+                label: "Core2",
+                data: data.core2
+            },
+            {
+                label: "Core3",
+                data: data.core3
+            },
+            {
+                label: "Core4",
+                data: data.core4
+            }
+        ], {
+            legend :{
+                position: "nw"
+            },
+            xaxis:{
+                min: 0,
+                max: 60,
+                show:false
+            },
+            yaxis:{
+                min: 0,
+                max: 100
+            },
+            grid:{
+                color:"#cccccc"
+            }
+        });
+       }
+    }
+    
+    var wan_info = {
+		"static" : $.su.CHAR.SYS_STATUS_STATUS.STATIC_IP,
+		"dhcp"   : $.su.CHAR.SYS_STATUS_STATUS.DYNAMIC_IP,
+		"pppoe"  : $.su.CHAR.SYS_STATUS_STATUS.PPPOE,
+		"pptp"   : $.su.CHAR.INTERFACE.PPTP,
+		"l2tp"   : $.su.CHAR.INTERFACE.L2TP,
+		"bpa"    : $.su.CHAR.INTERFACE.BPA
+	}
+    function refreshWanInfo(){
+        wanProxy.read({}, function(data){
+            refreshWanInfoAction(data);
+        });
+    }
+
+    function refreshWanInfoAction(data){
+        var wanIndex = 1, l, issinglewan = false;
+        if(data && data.normal && data.normal.length){
+            //$wanInfo.find(".panel-content-container").empty();
+            for(var k = 0, l = data.normal.length; k < l; k++){
+                    w = data.normal[k];
+                    if(((w.t_name.length > 3) && (w.t_name.slice(0,3) == 'WAN')) || w.t_name == 'WAN'){
+						if (w.t_name == 'WAN')
+							issinglewan = true;
+							
+                        //$wanItem.find(".wan_info_title>span").text(w.t_name + " "+$.su.CHAR.SYS_STATUS_STATUS.INFO);
+                        $("span#wan"+wanIndex+"_wan_info_name").html(w.t_label);
+                        $("span#wan"+wanIndex+"_wan_info_type").html(wan_info[w.t_proto] || $.su.CHAR.INTERFACE.CONN_NONE);
+                        $("span#wan"+wanIndex+"_wan_info_link").html(w.t_isup?$.su.CHAR.SYS_STATUS_STATUS.LINKUP:$.su.CHAR.SYS_STATUS_STATUS.LINKDOWN);
+                        $("span#wan"+wanIndex+"_wan_info_ip").html(w.ipaddr?w.ipaddr:"0.0.0.0");
+                        $("span#wan"+wanIndex+"_wan_info_mask").html(w.netmask?w.netmask:"0.0.0.0");
+                        $("span#wan"+wanIndex+"_wan_info_mac").html(w.macaddr?w.macaddr:"00-00-00-00-00-00");
+                        $("span#wan"+wanIndex+"_wan_info_gateway").html(w.gateway?w.gateway:"0.0.0.0");
+                        $("span#wan"+wanIndex+"_wan_info_dns").html(w.dns1?w.dns1:"0.0.0.0");
+                        //$(".panel-content-container").append($wanItem.clone());
+						wanIndex++;
+                    }
+				
+				if (issinglewan)
+					break;
+            }
+        }
+    }
+
+    var wanv6_info = {
+        "static" : $.su.CHAR.IPV6.STATIC_IP,
+        "dhcp6c"   : $.su.CHAR.IPV6.DYNAMIC_IP,
+        "pppoev6"  : $.su.CHAR.IPV6.PPPOE,
+        "6to4"   : $.su.CHAR.IPV6.TUNNEL_6TO4,
+        "6rd"   : $.su.CHAR.IPV6.RD6,
+        "dslite"    : $.su.CHAR.IPV6.DS_LITE,
+        "passthrough" : $.su.CHAR.IPV6.PASS_THROUGH
+    }
+
+    function refreshWanv6Info(){
+        wanv6Proxy.read({}, function(data){
+            refreshWanv6InfoAction(data);
+        });
+    }
+
+    function refreshWanv6InfoAction(data){
+        var wanIndex = 1, l, issinglewan = false, wanv6_show = false;
+        if(data && data.length){
+            for(wanIndex = 1, l = data.length; wanIndex <= l; wanIndex++){
+                if ('off' == data[wanIndex-1].enable) {
+                    continue;
+                }
+                    w = data[wanIndex-1];
+                    if(((w.ifname.length > 3) && (w.ifname.slice(0,3) == 'WAN')) || w.ifname == 'WAN'){
+                        if (w.ifname == 'WAN')
+                            issinglewan = true;
+                            
+                        wanv6_show = true;
+                        $("span#wan"+wanIndex+"_wanv6_info_name").html(w.t_label);
+                        if ('on' == data[wanIndex-1].enable) {
+                            $("span#wan"+wanIndex+"_wanv6_info_type").html(wanv6_info[w.conntype] || $.su.CHAR.INTERFACE.CONN_NONE);
+                            $("span#wan"+wanIndex+"_wanv6_info_link").html(w.isup?$.su.CHAR.SYS_STATUS_STATUS.LINKUP:$.su.CHAR.SYS_STATUS_STATUS.LINKDOWN);
+                            $("span#wan"+wanIndex+"_wanv6_info_ip").html(w.ip6addr?w.ip6addr:"::");
+                            // $("span#wan"+wanIndex+"_wanv6_info_mac").html(w.macaddr?w.macaddr:"00-00-00-00-00-00");
+                            $("span#wan"+wanIndex+"_wanv6_info_gateway").html(w.ip6gw?w.ip6gw:"::");
+                            $("span#wan"+wanIndex+"_wanv6_info_dns").html(w.pri_dns?w.pri_dns:"::");
+                            // $("span#wan"+wanIndex+"_wanv6_info_dns_snd").html(w.snd_dns?w.snd_dns:"::");
+                        } else {
+                            $("span#wan"+wanIndex+"_wanv6_info_type").html("---");
+                            $("span#wan"+wanIndex+"_wanv6_info_link").html("---");
+                            $("span#wan"+wanIndex+"_wanv6_info_ip").html("---");
+                            // $("span#wan"+wanIndex+"_wanv6_info_mac").html("---");
+                            $("span#wan"+wanIndex+"_wanv6_info_gateway").html("---");
+                            $("span#wan"+wanIndex+"_wanv6_info_dns").html("---");
+                            // $("span#wan"+wanIndex+"_wanv6_info_dns_snd").html("---");
+                        }  
+                    }
+                
+                if (issinglewan)
+                    break;
+            }
+        }
+        if (false == wanv6_show) {
+            $('div#wanv6_info').hide();
+        } else {
+            $('div#wanv6_info').show();
+        }
+    }
+    
+    var wireless_interface = {
+        "2.4G" : $.su.CHAR.SYS_STATUS_STATUS.WIRELESS_2G,
+        "5G_L" : $.su.CHAR.SYS_STATUS_STATUS.WIRELESS_5G_LOW,
+        "5G_H" : $.su.CHAR.SYS_STATUS_STATUS.WIRELESS_5G_HIGH,
+        "5G"   : $.su.CHAR.SYS_STATUS_STATUS.WIRELESS_5G,
+        "visitor" : $.su.CHAR.SYS_STATUS_STATUS.WIRELESS_VISITOR
+    }
+
+    var wireless_hwmode = {
+        "11b only" : $.su.CHAR.WIRELESS_ADVANCED.HWMODE_11B_ONLY,
+        "11g only" : $.su.CHAR.WIRELESS_ADVANCED.HWMODE_11G_ONLY,
+        "11n only" : $.su.CHAR.WIRELESS_ADVANCED.HWMODE_11N_ONLY,
+        "11bg mixed"  : $.su.CHAR.WIRELESS_ADVANCED.HWMODE_11BG_MIXED,
+        "11bgn mixed" : $.su.CHAR.WIRELESS_ADVANCED.HWMODE_11BGN_MIXED,
+        "11a only"    : $.su.CHAR.WIRELESS_ADVANCED.HWMODE_11A_ONLY,
+        "11an mixed"  : $.su.CHAR.WIRELESS_ADVANCED.HWMODE_11AN_MIXED,
+        "11anac mixed" : $.su.CHAR.WIRELESS_ADVANCED.HWMODE_11ANAC_MIXED
+    }
+
+    function refreshWirelessStatus(){
+        if ($.su.radioCount > 0) {
+            wirelessProxy.read({}, function(data){
+                refreshWirelessStatusAction(data);
+            });
+        }
+    }
+
+    function refreshWirelessStatusAction(data){
+        if ($.su.radioCount > 0 && data) {
+            $.each(data, function(key, iface){
+                var inHTML = "";
+                var name = iface.frequency;
+                name = name.replace(/\./g, '_');
+
+                $("span#wireless"+name+"_status_interface").html(wireless_interface[iface.frequency]);
+
+                if (iface.radio_enable == "on") {
+                    $("span#wireless"+name+"_status_enable").html($.su.CHAR.SYS_STATUS_STATUS.ENABLED);
+                    $("span#wireless"+name+"_status_channel").html((iface.channel == "auto" || iface.channel == "0" || iface.channel === 0) ? 
+                                                                    $.su.CHAR.SYS_STATUS_STATUS.AUTO : parseInt(iface.channel));
+                    $("span#wireless"+name+"_status_mode").html(iface.mode ? wireless_hwmode[iface.mode] : "");
+
+                    if (iface.mssid && iface.mssid.length) {
+                        $.each(iface.mssid, function(i, ssid) {
+                            inHTML += "<tr>";
+                            if (i == iface.mssid.length - 1)
+                                inHTML +=      "<td style=\"height: 15px; border: 0px; padding:3px; \">";
+                            else
+                                inHTML +=      "<td style=\"height: 15px; border: 0px; padding:3px; border-bottom: 1px dashed #D7D7D7;\">";
+                            inHTML +=          "<span>"+ssid+"</span>";
+                            inHTML +=      "</td>";
+                            inHTML += "</tr>";
+                        });
+                        $("#wireless"+name+"_status_ssid").html(inHTML);
+                    } else {
+                        $("#wireless"+name+"_status_ssid").html("---");
+                    }
+
+                    if (iface.wds == "on" || iface.wds == "online") {
+                        $("span#wireless"+name+"_status_wds").html($.su.CHAR.SYS_STATUS_STATUS.WDS_ONLINE);
+                    } else if (iface.wds == "offline") {
+                        $("span#wireless"+name+"_status_wds").html($.su.CHAR.SYS_STATUS_STATUS.WDS_OFFLINE);
+                    } else if (iface.wds == "off") {
+                        $("span#wireless"+name+"_status_wds").html($.su.CHAR.SYS_STATUS_STATUS.DISABLED);
+                    } else {
+                        $("span#wireless"+name+"_status_wds").html("---");
+                    }
+                } else {
+                    $("span#wireless"+name+"_status_enable").html($.su.CHAR.SYS_STATUS_STATUS.DISABLED);
+                    $("span#wireless"+name+"_status_channel").html("---");
+                    $("span#wireless"+name+"_status_mode").html("---");
+                    $("#wireless"+name+"_status_ssid").html("---");
+                    $("span#wireless"+name+"_status_wds").html("---");
+                }
+            });
+            $('div#wireless_status').show();
+        } else {
+            $('div#wireless_status').hide();
+        }
+    }
+});
+
+//]]>
+</script>
+</body>
+
+</html>

@@ -1,0 +1,28 @@
+{
+	"comments": "----实际使用中，请删除所有comments字段----",	
+	"comments": "说明：Security Access Control页面中block获取数据",
+	
+	"timeout": false,
+	"error_code":"0",
+	"result": {
+        "physical": ["GE1",
+        "GE2",
+            "GE3",
+        "GE4",
+            "GE5"],
+         
+        "bridge": [{
+                "t_name": "br1",
+                "t_bindif": ["GE3",
+                    "GE4"]
+                },{
+                "t_name": "br2",
+                "t_bindif": ["GE3",
+                    "GE2", "GE1"]
+                }]
+        },
+    "others": {
+        "max_rules": "55"
+    }
+			
+}

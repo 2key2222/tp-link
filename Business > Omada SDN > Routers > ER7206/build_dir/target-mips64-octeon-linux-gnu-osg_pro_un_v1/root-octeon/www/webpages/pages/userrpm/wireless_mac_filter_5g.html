@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <style type="text/css">
+        #func_settings_f,#wiress_param_f{
+            padding-left:15px;
+        }
+
+        .key-wrapper{
+            margin: 0px 5px 5px 0;
+        }
+    </style>
+</head>
+<body>
+<div id="func_settings">
+    <form id="func_settings_f">
+        <input id="radio_id" name="radio_id" type="hidden" value="1"/>
+        <input id="scope" name="ssid_slt"/>
+        <input id="mac_filter_enable" name="enable"/>
+        <input id="mac_filter_mode" name="mode"/>
+    </form>
+    <input id="func_settings_submit"/>
+</div>
+
+<div id="rule_list">
+    <div id="rule_list_g"></div>
+</div>
+
+<div id="add_rule">
+    <input id="radio_id_editor" name="radio_id" type="hidden" value="1"/>
+    <input id="scope_editor" name="ssid_slt" type="hidden" value="0"/>
+    <input id="key_index" name="key_index" type="hidden" value="0"/>
+    <input id="add_rule_mac" name="txt_mac_addr"/>
+    <input id="add_rule_describe" name="txt_macf_info"/>
+</div>
+
+<div id="wireless-mac-filter"></div>
+
+<script type="application/javascript">
+//<![CDATA[
+try {
+    $
+} catch (e) {
+    location.href = "/";
+}
+;
+$(document).ready(function (e) {
+    var radio_id = "1";
+    var macFilterUrl = "/admin/wireMacFilter?form=config";
+    var macFilterProxy = new $.su.Proxy({url: $.su.url(macFilterUrl)});
+    var ruleUrl = "/admin/wireMacFilter?form=rules";
+    var ruleProxy = new $.su.Proxy({url: $.su.url(ruleUrl)});
+
+    $("#radio_id").val(radio_id);
+    $("#radio_id_editor").val(radio_id);
+
+    function refreshGlobal(method){
+        var data = {params: {}};
+        if(method == "get"){
+            $.extend(data.params, {radio_id: radio_id});
+            macFilterProxy.read(data, function(data){
+                funcSetting.refresh(data);
+            });
+        }else if(method == "set"){
+            $.extend(data.params, funcSetting.getData(), {radio_id: radio_id});
+            macFilterProxy.write(data, function(data){
+                funcSetting.refresh(data);
+            });
+        }
+    };
+
+    var funcSetting = (function(){
+        var $scope = $("#scope"),
+                $enable = $("#mac_filter_enable"),
+                $mode = $("#mac_filter_mode"),
+                $submit = $("#func_settings_submit"),
+                $form = $("#func_settings_f"),
+                $panel = $("#func_settings");
+
+        $scope.combobox({
+            fieldLabel:"作用域",
+            multiSelect:false,
+            allowBlank: false,
+            alwaysTrigger: true,
+            value: "1"
+        }).on('ev_change', function(e, oldValue, newValue){
+            if(!newValue[0]) return;
+            ruleList.reloadGrid({ssid_slt: newValue[0], radio_id: "1"}, function(){
+                var items = $scope.combobox("getItem");
+                for(var i in items){
+                    if(items[i].value == newValue[0]){
+                        $enable.checkbox("setValue", items[i].enable);
+                        $mode.radio("setValue", items[i].mode);
+                    }
+                }
+            });
+        });
+
+        $enable.checkbox({
+            items: [
+                {boxlabel: "启用无线MAC地址过滤", inputValue: "1", uncheckedValue: "0"}
+            ],
+            value: "1"
+        });
+
+        $mode.radio({
+            fieldLabel:"启用/禁用此SSID",
+            columns: 2,
+            items:[
+                {boxlabel: "允许规则列表中的MAC地址访问本无线网络", name:'mode', inputValue:'1'},
+                {boxlabel: "禁止规则列表中的MAC地址访问本无线网络", name:'mode', inputValue: '2'}
+            ],
+            value: "1"
+        });
+
+        $form.form({
+            fields: [
+                {name: "ssid_slt", mapping: "ssid_slt"},
+                {name: "enable", mapping: "enable"},
+                {name: "mode", mapping: "mode"}
+            ]
+        });
+
+        $submit.button({
+            fieldLabel: null,
+            text: '设置',
+            cls: 'inline',
+            handler: function(data){
+                refreshGlobal("set");
+                $form.form("prompt", true, $.su.CHAR.OPERATION.FORM_SAVED);
+            }
+        });
+
+        $panel.panel({
+            title: "功能设置"
+        });
+
+        return {
+            refresh: function(jsonData){
+                //$form.form("loadData", jsonData);
+                var items = jsonData.items;
+                $scope.combobox("loadData", items);
+                $scope.combobox("setValue", jsonData.ssid_slt);
+                for(var i in items){
+                    if(items[i].value == jsonData.ssid_slt){
+                        $enable.checkbox("setValue", items[i].enable);
+                        $mode.radio("setValue", items[i].mode);
+                    }
+                }
+            },
+            getData: function(){
+                return $form.form("serialize");
+            }
+        }
+    })();
+
+
+    var ruleAdder = (function(){
+        var $mac = $("#add_rule_mac"),
+                $desc = $("#add_rule_describe");
+
+        $mac.textbox({
+            fieldLabel: "MAC地址",
+            allowBlank:false,
+            vtype: "mac",
+            validator: function(v){
+                var data = ruleList.$elements.$grid.grid("getStore").data;
+
+                for(var i in data){
+                    if(data[i].txt_mac_addr.toUpperCase() == v.toUpperCase() && $mac.data("oldData").toUpperCase() != v.toUpperCase()){
+                        return "mac地址已存在";
+                    }
+                }
+                return true;
+            }
+        });
+
+        $desc.textbox({
+            fieldLabel: "备注",
+            allowBlank:true,
+            tips: "（可选）"
+        });
+
+
+    })();
+
+    var ruleList = (function(){
+        var $panel = $("#rule_list"),
+                $grid = $("#rule_list_g");
+
+        $grid.grid({
+            editor: {
+                content:"#add_rule",
+                fields: [
+                    {name: "txt_mac_addr"},
+                    {name: "txt_macf_info"},
+                    {name: "radio_id"},
+                    {name: "ssid_slt"}
+                ]
+            },
+            store:{
+                proxy: ruleProxy,
+                extraProperty: ["key_index", "ssid_slt", "radio_id"],
+                fields: [
+                    {name: "txt_mac_addr", mapping:"txt_mac_addr"},
+                    {name: "txt_macf_info", mapping:"txt_macf_info"},
+                    {name: "ssid_slt", mapping:"ssid_slt"},
+                    {name: "radio_id", mapping:"radio_id"},
+                    {name: "key_index", mapping:"key_index"}
+                ],
+                autoLoad: false
+            },
+            columns: [
+                {
+                    xtype: "checkcolumn",
+                    width: $.su.CHAR.SETTING.IPGROUP_ADDRESS.CHECK_COLUMN_WIDTH
+                },
+                {
+                    xtype: "rownumberer",
+                    width: $.su.CHAR.SETTING.IPGROUP_ADDRESS.ROW_NUMBER_WIDTH
+                },
+                {
+                    text: "MAC地址",
+                    width: $.su.CHAR.SETTING.IPGROUP_ADDRESS.NAME_WIDTH,
+                    dataIndex: "txt_mac_addr"
+                },
+                {
+                    text: "备注",
+                    width: $.su.CHAR.SETTING.IPGROUP_ADDRESS.NAME_WIDTH,
+                    dataIndex: "txt_macf_info"
+                },
+                {
+                    xtype: "settings",
+                    width: $.su.CHAR.SETTING.IPGROUP_ADDRESS.SETTING_WIDTH
+                }
+            ],
+            operation: 'prompt|add|delete'
+        });
+
+        var $editor = $($grid.grid('getEditor'));
+        $editor.on('ev_startEdit', function(e, index, key){
+            var gridData = $grid.grid("getStore").data;
+
+            if(index != "add"){
+                $("#key_index").val(gridData[index].key_index);
+            }
+            $("#scope_editor").val(funcSetting.getData().ssid_slt);
+
+            var $mac = $("#add_rule_mac");
+            $mac.data("oldData", $mac.textbox("getValue"));
+        });
+
+        return {
+            reloadGrid: function(data, callback){
+                var interfaceStore = $grid.grid('getStore');
+                var $interfaceEditor = $($grid.grid('getEditor'));
+
+                if($interfaceEditor.editor('isEditing')){
+                    $interfaceEditor.editor('cancelEdit');
+                }
+                interfaceStore.keyLength = 0;
+                interfaceStore.load(data, callback);
+            },
+            $elements: {
+                $grid: $grid
+            }
+        }
+    })();
+
+    refreshGlobal("get");
+
+    var helpInfo = new $.su.Help({
+        container: "#wireless-mac-filter",
+        content: ["WIRELESS_MAC_FILTERING", "WIRELESS_MAC_FILTERING_LIST"]
+    });
+});
+</script>
+</body>
+</html>

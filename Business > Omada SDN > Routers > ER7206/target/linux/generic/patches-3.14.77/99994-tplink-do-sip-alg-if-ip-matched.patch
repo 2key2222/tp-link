@@ -1,0 +1,24 @@
+--- a/net/netfilter/nf_nat_sip.c	2017-02-06 15:52:10.494809391 +0800
++++ b/net/netfilter/nf_nat_sip.c	2017-02-06 10:44:25.956349600 +0800
+@@ -102,8 +102,8 @@
+ 	union nf_inet_addr newaddr;
+ 	__be16 newport;
+ 
+-	if (nf_inet_addr_cmp(&ct->tuplehash[dir].tuple.src.u3, addr) &&
+-	    ct->tuplehash[dir].tuple.src.u.udp.port == port) {
++	if (nf_inet_addr_cmp(&ct->tuplehash[dir].tuple.src.u3, addr) /*&&
++	    ct->tuplehash[dir].tuple.src.u.udp.port == port*/) {   // Ingnore ports mismatching and do ALG. By zhangzhongwei. 2017.2.6
+ 		newaddr = ct->tuplehash[!dir].tuple.dst.u3;
+ 		newport = ct->tuplehash[!dir].tuple.dst.u.udp.port;
+ 	} else if (nf_inet_addr_cmp(&ct->tuplehash[dir].tuple.dst.u3, addr) &&
+@@ -184,8 +184,8 @@
+ 		 * connection */
+ 		if (request) {
+ 			if (!nf_inet_addr_cmp(&addr,
+-					&ct->tuplehash[dir].tuple.src.u3) ||
+-			    port != ct->tuplehash[dir].tuple.src.u.udp.port)
++					&ct->tuplehash[dir].tuple.src.u3) /*||
++			    port != ct->tuplehash[dir].tuple.src.u.udp.port*/) // Ingnore ports mismatching and do ALG. By zhangzhongwei. 2017.2.6
+ 				goto next;
+ 		} else {
+ 			if (!nf_inet_addr_cmp(&addr,

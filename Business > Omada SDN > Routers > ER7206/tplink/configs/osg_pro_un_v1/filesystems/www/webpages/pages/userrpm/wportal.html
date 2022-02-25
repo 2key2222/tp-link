@@ -1,0 +1,855 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<style type="text/css">
+    #preview-frame{
+        border: none;
+        width: 400px;
+        height: 600px;
+    }
+</style>
+<title>Wportal</title>
+</head>
+
+<body>
+<div class="func-container">
+    <div id="func-setting-wportal">
+        <div id="wportal-form">
+            <div id="global-setting">
+                <input id="web-enable" name="enable" value=""/>
+                <input id="wired_auth" name="wired_auth" value=""/>
+                <input id="web-name" name="name" value="dft_wportal"/>
+                <input id="bind-interface" name="interface" value=""/>
+                <input id="auto_disconnect" name="auto_disconnect" />
+                <input id="auth_port" type="text" name="auth_port" value="" />
+            </div>
+            <div id="portal-setting">
+                <input id="wportal-page" name="wportal_page_type" value="local"/>
+                <input id="image-select" class="self-page"/>
+                <input id="background-image" name="image" value="" class="self-page"/>
+                <input id="page-title" name="page_title" value="" />
+                <input id="welcome-info" name="wel_info" value="" class="self-page"/>
+                <input id="copyright" name="copyright" value="" class="self-page"/>
+                <input id="page-preview" class="self-page"/>
+                <input id="external-url" name="external_url" value="" class="extern-page"/>
+                <input id="external-success-url" name="external_url_succ" value="" class="extern-page"/>
+                <input id="external-fail-url" name="external_url_fail" value="" class="extern-page"/>
+                <input id="wportal-type" name="wportal_type" value=""/>
+                <input id="remind-enable" name="remind_enable" value="off" class="local-portal"/>
+                <input id="remind-time" name="remind_time" value="3" class="local-portal remind-on"/>
+                <input id="remind-type" name="remind_type" value="" class="local-portal remind-on"/>
+                <input id="remind-interval" name="remind_interval" value="" class="local-portal remind-on cycle-remind"/>
+                <input id="remind-page-title" name="remind_page_title" value="" />
+                <input id="remind-page-content" name="remind_page_content" value="" class="local-portal remind-on"/>
+                <input id="remind-preview" class="local-portal remind-on"/>
+                <input id="first-server-ip" name="first_server_ip" value="" class="radius-portal"/>
+                <input id="second-server-ip" name="second_server_ip" value="" class="radius-portal"/>
+                <input id="portal-port" name="portal_port" value="1812" class="radius-portal"/>
+                <input id="share-key" name="share_key" value="" class="radius-portal"/>
+                <input id="send-count" name="send_count" value="3" class="radius-portal"/>
+                <input id="expire-time" name="expire_time" value="3" class="radius-portal"/>
+                <input id="auth-type" name="auth_type" value="" class="radius-portal"/>
+                <input id="free-interval" name="free_interval" value="60" class="free-portal"/>
+            </div>
+            <button id="formSubmit" type="button"></button>
+        </div>
+        <div id="wportal-list"></div>
+        <div id="image-msg">
+            <form id="image-uploader">
+                <input id="image-file" name="imageFile" type="file"/>
+                <input id="image-button"/>
+            </form>
+        </div>
+        <div id="frame-msg">
+            <iframe id="preview-frame"></iframe>
+        </div>
+    </div>
+
+    <div id="wportal-help"></div>
+</div>
+
+<script type="text/javascript">
+
+//<![CDATA[
+try{
+    $
+}catch(e){
+    location.href = "/";
+};
+$(document).ready(function(e){
+    var URL_GLOBAL = $.su.url("/admin/wportal?form=wportal");
+    var $selfPage = $('.self-page'),
+        $externPage = $('.extern-page'),
+        $localPortal = $('.local-portal'),
+        $radiusPortal = $('.radius-portal'),
+        $freePortal = $('.free-portal'),
+        $remindOn = $('.remind-on'),
+        $cycleRemind = $('.cycle-remind');
+    var firstLoad = true;
+    var uploadBgd = 0;
+    var editingId = "add";
+
+    var origin_http_port = "80";
+    var origin_https_port = "443";
+    var origin_auth_port = "8080";
+    var SYS_PORTS = [];
+    
+    function stringToBytes ( str )
+    {
+        var ch, st, re = [];
+        for (var i = 0; i < str.length; i++ )
+        {
+            ch = str.charCodeAt(i);  // get char
+            st = [];    			// set up "stack"
+            if ( ch < 0x007F )
+            {
+                st.push( ch & 0xFF );
+            }
+            else if ( (0x0080 <= ch) && (ch <= 0x07ff) )
+            {
+
+                st.push((ch & 0x003F) + 128 );
+                st.push(((ch>>6)&0x001F) + 192)
+            }
+            else if ((0x0800 <= ch ) && (ch <= 0xffff))
+            {
+                st.push((ch & 0x003F)+128);
+                st.push(((ch>>6)&0x003F)+128);
+                st.push(((ch>>12)&0x000F)+224);
+            }
+            re = re.concat( st.reverse() );
+        }
+        return re;  // return an array of bytes
+    }
+
+    function  strASCencode(sourceId)
+    {
+        var  temp = [];
+        var  index = 0;
+        var  ptr = 0;
+        var  high, low,inthis;
+        var  tempEncode = '';
+        temp = stringToBytes(sourceId);
+
+        for ( index = 0; index < temp.length; index++ )
+        {
+
+            high = (temp[index]>>4)&(0x0F);
+            low  = (temp[index])&(0x0F);
+
+            if ( high >= 0 && high <= 9 )
+            {
+                high += 48;
+            }
+            if ( high >= 10 && high <= 15 )
+            {
+                high += 55;
+            }
+
+            if ( low >= 0 && low <= 9 )
+            {
+                low += 48;
+            }
+            if ( low >= 10 && low<= 15 )
+            {
+                low += 55;
+            }
+            ptr = index<<1;
+            tempEncode += String.fromCharCode(high);
+            tempEncode +=String.fromCharCode(low);
+        }
+        return tempEncode;
+    }
+
+    function asctochar(high, low)
+    {
+        var connect = 0;
+        if ( high >= '0' && high <= '9' )
+        {
+            high = high.charCodeAt() - 48;
+        }
+        if ( high >= 'A' && high <= 'F' )
+        {
+            high = high.charCodeAt() - 55;
+        }
+        if ( low >= '0' && low <= '9' )
+        {
+            low = low.charCodeAt() - 48;
+        }
+        if ( low >= 'A' && low <= 'F' )
+        {
+            low = low.charCodeAt() - 55;
+        }
+        connect = high*16+low;
+        return connect;
+    }
+
+    function strASCdecode(sourceId)
+    {
+        var tempstr = sourceId;/*document.getElementById(sourceId).value*/
+        var index = 0;
+        var ptr = 0;
+        var tempDecode = '';
+        var high, low, high1,low1,high2,low2,inter1, inter2, inter;
+        var charcode = 0;
+        for ( index = 0; index <  tempstr.length; )
+        {
+            high = tempstr.slice(index,index+1);
+            low  = tempstr.slice(index+1,index+2);
+            inter = asctochar(high,low);
+            if ( 0 <= inter && inter <= 0x007f )
+            {
+                tempDecode += String.fromCharCode(inter);
+                index += 2;
+                continue;
+            }
+            if ( 192 <= inter && inter <= 223 )
+            {
+                high1 = tempstr.slice(index+2,index+3);
+                low1 = tempstr.slice(index+3,index+4);
+                inter1 = asctochar(high1,low1);
+                charcode = ((inter-192)<<6) + (inter1-128);
+                tempDecode += String.fromCharCode(charcode);
+                index += 4;
+                continue;
+            }
+            if ( 224<= inter && inter <= 239 )
+            {
+                high1 = tempstr.slice(index+2,index+3);
+                low1 = tempstr.slice(index+3,index+4);
+                high2 = tempstr.slice(index+4,index+5);
+                low2 = tempstr.slice(index+5,index+6);
+                inter1 = asctochar(high1,low1);
+                inter2 = asctochar(high2,low2);
+                charcode = ((inter-224)<<12)+((inter1-128)<<6)+(inter2-128);
+                tempDecode += String.fromCharCode(charcode);
+                index += 6;
+                continue;
+            }
+            else
+            {
+                tempDecode = sourceId;
+                break;
+            }
+        }
+        return tempDecode;
+    }
+
+    var portInfo = new $.su.Proxy({
+        url: $.su.url("/admin/administration?form=management")
+    });
+    portInfo.read({}, function(data){
+        origin_http_port = data.http_port;
+        origin_https_port = data.https_port;
+        origin_auth_port =data.auth_port;
+        SYS_PORTS = data.port_list;
+    });
+
+    $("#global-setting").panel({
+        title: $.su.CHAR.AC_WPORTAL.FUNC_SET//"功能设置"
+    });
+    $("#portal-setting").panel({
+        title: $.su.CHAR.AC_WPORTAL.PARA_SET//"认证参数设置"//$.su.CHAR.MAC_FILTERING.SETTINGS
+    });
+
+    $("#web-enable").checkbox({
+        fieldLabel:$.su.CHAR.USERMNGR.ENABLE,
+        defaultValue:["on"],
+        items: [
+            {boxlabel: $.su.CHAR.VIRTUAL_SERVERS.ENABLE_THIS_ENTRY, uncheckedValue:"off", inputValue: "on", id: "chk_enable"}
+        ]
+    });
+    
+    $("#auto_disconnect").textbox({
+        fieldLabel: $.su.CHAR.PORTAL.AUTO_DISCONN,
+        tips: $.su.CHAR.PORTAL.AUTO_DISCONN_TIPS,
+        allowBlank: false,
+        vtype:"number",
+        value:"30",
+        validator: function(v){
+            if(v == 0 || (v >= 5 && v <= 1440)){
+                return true;
+            }else{
+                return $.su.CHAR.PORTAL.AUTO_DISCONN_ERR;
+            }
+        }
+    });
+
+    $("input#auth_port").textbox({
+        fieldLabel: $.su.CHAR.ACCOUNT_CONFIG.AUTH_PORT,
+        allowBlank: false,
+        tips: "(8080, 1024-65535)",
+        validator: function(v){
+            var  val_auth = $("input#auth_port").textbox("getValue");
+            for(var i = 0; i < SYS_PORTS.length; i++){
+                if(val_auth == SYS_PORTS[i]){
+                    return $.su.CHAR.ACCOUNT_CONFIG.ERR2;
+                }
+            }
+            if (origin_https_port == val_auth && val_auth != origin_auth_port)
+            {
+                return $.su.CHAR.ACCOUNT_CONFIG.ERR4;
+            }
+
+            if (origin_http_port == val_auth && val_auth != origin_auth_port)
+            {
+                return $.su.CHAR.ACCOUNT_CONFIG.ERR3;
+            }
+            else if (val_auth == 8080)
+            {
+                return true;
+            }
+            else
+            {
+                return (new $.su.vtype({
+                    vtype: "number", 
+                    min: 1024, 
+                    max: 65535,
+                    validator:function(value){
+                        if(value < this.min || value > this.max){
+                            return $.su.CHAR.ACCOUNT_CONFIG.AUTH_ERR;
+                        }else{
+                            return true;
+                        }
+                    }
+                }).validate(v));
+            }
+
+        }
+    });
+
+    $("#wired_auth").checkbox({
+        fieldLabel:$.su.CHAR.AC_WPORTAL.WIRED_AUTH,//"有线端口免认证",
+        items: [
+            {boxlabel:$.su.CHAR.VIRTUAL_SERVERS.ENABLE_THIS_ENTRY , uncheckedValue:"on", inputValue: "off", id: "chk_enable",checked:true}
+        ]
+    });
+    
+    if($.su.radioCount == 0 || typeof $.su.radioCount == "undefined"){
+        $("#wired_auth").checkbox("hide");
+    }
+    
+    $('#web-name').textbox({
+        fieldLabel: $.su.CHAR.AC_WPORTAL.RULE_NAME,//'规则名称',
+        inputCls: 'xl',
+        //labelCls: 'xs',
+        vtype: "name",
+        tips: $.su.CHAR.AC_WPORTAL.WEB_NAME_TIP,//'（1-50个字符）',
+        maxLength:50,
+        allowBlank: false
+    });
+
+    $('#bind-interface').combobox({
+        fieldLabel: $.su.CHAR.MAC_FILTERING.APPLY_ZONE,//'生效接口',
+        inputCls: 'xl',
+        //labelCls: 'xs',
+        multiSelect:true,
+        allowBlank: false,
+        vtype:"string_visible_allow_blank",
+        items:[
+            {name:"---",value:"---"}
+        ]
+    });
+    
+    var interface_status;
+    var interface_lan = [];
+    var interfaceIpProxy = new $.su.Proxy({
+        url: $.su.url('/admin/interface?form=status2'),
+        async: false
+    });
+    interfaceIpProxy.read({}, function(data){
+        interface_status = data;
+        for (var i = 0; i < data["normal"].length; i++) {
+            if ($.su.func.isLan(data["normal"][i].t_name)) {
+                if (interface_lan.length == 0)
+                    interface_lan.push({value:data["normal"][i].t_name, name:data["normal"][i].t_label, selected:true});
+                else
+                    interface_lan.push({value:data["normal"][i].t_name, name:data["normal"][i].t_label});
+            }
+        }
+       $('#bind-interface').combobox('loadData',interface_lan);
+    });
+    
+    var wportal_page = $('#wportal-page').combobox({
+        fieldLabel: $.su.CHAR.AC_WPORTAL.AUTH_WEB,// '认证页面',
+        allowBlank: false,
+        alwaysTrigger: true,
+        items:[
+            {value:"local", name: $.su.CHAR.AC_WPORTAL.DEF_WEB, selected: true},
+            {value:"remote", name: $.su.CHAR.AC_WPORTAL.OUT_LINK}
+        ]
+    }).on("ev_change", function(e, oldValue, newValue){
+        var value = newValue[0];
+        if(value == 'local'){
+            $.su.func.showWidgets($selfPage);
+            $.su.func.hideWidgets($externPage);
+            $('#wportal-type').combobox('loadData', [
+                {value:"local", name: $.su.CHAR.AC_WPORTAL.SESSMNGR_AUTH_TYPE_LOCAL},//"本地认证"},
+                {value:"radius", name: $.su.CHAR.AC_WPORTAL.SESSMNGR_AUTH_TYPE_RADIUS},//"radius认证"},
+                {value:"onekey", name: $.su.CHAR.AC_WPORTAL.SESSMNGR_AUTH_TYPE_ONEKEY}//"一键上网"}
+            ]).combobox('setValue', 'local');
+        }else if(value == 'remote'){
+            $.su.func.showWidgets($externPage);
+            $.su.func.hideWidgets($selfPage);
+            $('#wportal-type').combobox('loadData', [
+                {value:"local", name: $.su.CHAR.AC_WPORTAL.SESSMNGR_AUTH_TYPE_LOCAL},//"本地认证"},
+                {value:"radius", name: $.su.CHAR.AC_WPORTAL.SESSMNGR_AUTH_TYPE_RADIUS}//"radius认证"}
+            ]).combobox('setValue', 'local');
+        }
+    });
+    $('#page-title').textbox({
+        fieldLabel: '', //$.su.CHAR.INTERFACE.GATEWAY,
+        inputCls: 'l',
+        tipsCls: 's',
+        maxLength:50,
+        allowBlank:true,
+    });
+    $('#welcome-info').textbox({
+        fieldLabel: $.su.CHAR.AC_WPORTAL.TEMPLATE_WELCOMEINFO,//'欢迎信息', //$.su.CHAR.INTERFACE.GATEWAY,
+        inputCls: 'l',
+        tipsCls: 's',
+        maxLength:50,
+        allowBlank:false,
+        tips: $.su.CHAR.AC_WPORTAL.TEMPLATE_COPYRIGHT_TIP//'（1-50个字符）' //$.su.CHAR.INTERFACE.OPTIONAL
+    });
+    $('#copyright').textbox({
+        fieldLabel: $.su.CHAR.AC_WPORTAL.TEMPLATE_COPYRIGHT,//'版权声明', //$.su.CHAR.INTERFACE.GATEWAY,
+        inputCls: 'l',
+        tipsCls: 's',
+        maxLength:50,
+        allowBlank:false,
+        tips: $.su.CHAR.AC_WPORTAL.TEMPLATE_COPYRIGHT_TIP//'（1-50个字符）' //$.su.CHAR.INTERFACE.OPTIONAL
+    });
+    $('#external-url').textbox({
+        fieldLabel: $.su.CHAR.AC_WPORTAL.AUTH_URL,//'认证URL', //$.su.CHAR.INTERFACE.GATEWAY,
+        maxLength:250,
+        allowBlank:false,
+        tips: $.su.CHAR.AC_WPORTAL.TEMPLATE_PAGE_TITLE_TIP1//'（1-250个字符）' //$.su.CHAR.INTERFACE.OPTIONAL
+    });
+    $('#external-success-url').textbox({
+        fieldLabel: $.su.CHAR.AC_WPORTAL.AUTH_SUCCESS_URL,//'认证成功跳转链接', //$.su.CHAR.INTERFACE.GATEWAY,        
+        maxLength:250,
+        tips: $.su.CHAR.AC_WPORTAL.TEMPLATE_PAGE_TITLE_TIP1//'（1-250个字符）' //$.su.CHAR.INTERFACE.OPTIONAL
+    });
+    $('#external-fail-url').textbox({
+        fieldLabel: $.su.CHAR.AC_WPORTAL.AUTH_FAIL_URL,//'认证失败跳转链接', //$.su.CHAR.INTERFACE.GATEWAY,
+        maxLength:250,
+        tips: $.su.CHAR.AC_WPORTAL.TEMPLATE_PAGE_TITLE_TIP1//'（1-250个字符）' //$.su.CHAR.INTERFACE.OPTIONAL
+    });
+    var $imageMsg = $("#image-msg").msg({
+        closeBtn: true,
+        cls:"",
+        type: 'window'
+    }).msg("hide");
+    $('#image-file').file({
+        fieldLabel: $.su.CHAR.AC_WPORTAL.TEMPLATE_BACKGROUND_PIC,//'背景图片',
+        labelCls: 'xxxxs',
+        extension: 'jpg, png, bmp, tiff,gif,jpeg,JPG,PNG,BMP,TIFF,GIF,JPEG'
+    });
+    $('#image-button').button({
+        text: $.su.CHAR.AC_WPORTAL.UPLOAD,//'上传',
+        cls: 'submit',
+        handler: function(){
+            if(!$imageForm.length){
+                return;
+            }else{
+            
+                $imageForm.form('submit', {operation: 'upload'}, function(data){
+                    uploadBgd = 1;
+                    $('#background-image').textbox('setValue', $.su.CHAR.AC_WPORTAL.UPLOAD_SUCCESS);//"上传成功");
+                    $imageMsg.msg('close');
+                },function(error_code){
+                    $('#background-image').textbox('setValue', $.su.CHAR.AC_WPORTAL.UPLOAD_FAIL);//"上传失败");
+                    $imageMsg.msg('close');
+
+                },function(fail){
+                    $('#background-image').textbox('setValue', $.su.CHAR.AC_WPORTAL.UPLOAD_FAIL);//"上传失败");
+                    $imageMsg.msg('close');
+                });
+            }
+        }
+    });
+    var $imageForm = $('#image-uploader').form({
+        proxy: new $.su.Proxy({url: $.su.url("/admin/wportal?form=wportal")}),
+        formEnctype: "multipart/form-data",
+        traditional: true,
+        hiddenFrame: true,
+        fields: [
+            {name: "imageFile"}
+        ],
+        submitBtn: null
+    });
+    $('#image-select').button({
+        fieldLabel: $.su.CHAR.AC_WPORTAL.TEMPLATE_BACKGROUND_PIC,//'背景图片',
+        text: $.su.CHAR.AC_WPORTAL.UPLOAD,//'上传',
+        cls: 'inline-block',
+        handler: function(){
+            $('#image-file').file('reset');
+            $imageMsg.msg("show");
+        }
+    });
+    $('#background-image').textbox({
+        fieldLabel: null,
+        readOnly: true,
+        tips:$.su.CHAR.AC_WPORTAL.PICTURE_TIPS,//'（图片大小不能超过200KB）',
+        value: '---',
+        cls: 'inline-block',
+        inputCls:"s",
+        tipsCls:"l"
+    });
+    var wportal_type = $('#wportal-type').combobox({
+        fieldLabel: $.su.CHAR.AC_WPORTAL.AUTH_METHOD,//'认证方式', //$.su.CHAR.INTERFACE.TIMEOBJ,
+        allowBlank: false,
+        alwaysTrigger: true,
+        items:[
+            {value:"local", name: $.su.CHAR.AC_WPORTAL.SESSMNGR_AUTH_TYPE_LOCAL, selected: true},
+            {value:"radius", name: $.su.CHAR.AC_WPORTAL.SESSMNGR_AUTH_TYPE_RADIUS},
+            {value:"onekey", name: $.su.CHAR.AC_WPORTAL.SESSMNGR_AUTH_TYPE_ONEKEY}
+        ]
+    }).on("ev_change", function(e, oldValue, newValue){
+        var value = newValue[0];
+        if(value == 'local'){
+            $.su.func.showWidgets($localPortal);
+            $.su.func.hideWidgets($radiusPortal);
+            $.su.func.hideWidgets($freePortal);
+            if($('#remind-enable').checkbox('getValue').length !== 1){
+                $.su.func.hideWidgets($remindOn);
+            }else{
+                $.su.func.showWidgets($remindOn);
+                var remindTypeValue = $("#remind-type").combobox('getValue')[0];
+                if(typeof remindTypeValue === 'undefined'){
+                    remindTypeValue = '0';
+                }
+                $("#remind-type").combobox('setValue', remindTypeValue);
+            }
+        }else if(value == 'radius'){
+            $.su.func.showWidgets($radiusPortal);
+            $.su.func.hideWidgets($localPortal);
+            $.su.func.hideWidgets($freePortal);
+        }else if(value == 'onekey'){
+            $.su.func.showWidgets($freePortal);
+            $.su.func.hideWidgets($localPortal);
+            $.su.func.hideWidgets($radiusPortal);
+        }
+    });
+    
+    $('#page-preview').button({
+        fieldLabel: $.su.CHAR.AC_WPORTAL.TEMPLATE_PAGE_PREVIEW,//'页面预览',
+        text: $.su.CHAR.AC_WPORTAL.PREVIEW_LOGIN_WEB,//'预览登录页面',
+        handler: function(){
+            var result2 = $('#welcome-info').textbox('validate');
+            var result3 = $('#copyright').textbox('validate');
+            
+            if(!result2 || !result3){
+                return false;
+            }
+            
+            if("---" == $('#background-image').textbox('getValue')){
+                uploadBgd = 0;
+            }
+            var url = './pages/userrpm/preview_wportal.html?remindFlag=0';
+            url += '&page_title='
+            url += strASCencode($('#page-title').textbox('getValue'));
+            url += '&wel_info=';
+            url += strASCencode($('#welcome-info').textbox('getValue'));
+            url += '&copyright=';
+            url += strASCencode($('#copyright').textbox('getValue'));
+            url += '&status=0';
+            url += '&authtype=';
+            url += $('#wportal-type').textbox('getValue');
+            url += '&uploadBgd=';
+            url += uploadBgd;
+            url += '&rulename=';
+            url += $('#web-name').textbox('getValue');
+            url += '&edittype=';
+            url += editingId;
+
+            
+            document.getElementById('preview-frame').contentDocument.location.href = url;
+            $frameMsg.msg("show");
+        }
+    });
+
+    $("#remind-enable").checkbox({
+        fieldLabel:$.su.CHAR.AC_WPORTAL.REMINDER,//"到期提醒",
+        alwaysTrigger: true,
+        items: [
+            {boxlabel: $.su.CHAR.AC_WPORTAL.ENABLE, inputValue: "on", uncheckedValue: "off"}
+        ]
+    }).on('ev_change', function(e, oldValue, newValue){
+        if(newValue.length > 0  && newValue[0] !== 'off'){
+            $.su.func.showWidgets($remindOn);
+            var remindTypeValue = $("#remind-type").combobox('getValue')[0];
+            if(typeof remindTypeValue === 'undefined'){
+                remindTypeValue = '0';
+            }
+            $("#remind-type").combobox('setValue', remindTypeValue);
+        }else{
+            $.su.func.hideWidgets($remindOn);
+        }
+    });
+    $('#remind-time').textbox({
+        fieldLabel: $.su.CHAR.AC_WPORTAL.TIME_REMINDER,//'开始提醒时间', //$.su.CHAR.INTERFACE.GATEWAY,
+        vtype: {
+                vtype: "number",
+                max: 10,
+                min: 1
+                },
+        allowBlank:false,
+        tips: $.su.CHAR.AC_WPORTAL.TIME_REMINDER_TIPS//'（1-10天）' //$.su.CHAR.INTERFACE.OPTIONAL
+    });
+    $('#remind-type').combobox({
+        fieldLabel: $.su.CHAR.AC_WPORTAL.REMINDER_STYLE,//'提醒方式', //$.su.CHAR.INTERFACE.TIMEOBJ,
+        alwaysTrigger: true,
+        items:[
+            {value:"0", name: $.su.CHAR.AC_WPORTAL.REMIND_WHEN_AUTH, selected: true},
+            {value:"1", name: $.su.CHAR.AC_WPORTAL.REMIND_CYCLE}//"周期提醒"}
+        ]
+    }).on("ev_change", function(e, oldValue, newValue){
+        var value = newValue[0];
+        if(value == '0'){
+            $.su.func.hideWidgets($cycleRemind);
+        }else if(value == '1'){
+            $.su.func.showWidgets($cycleRemind);
+        }
+    });
+    $('#remind-interval').textbox({
+        fieldLabel: $.su.CHAR.AC_WPORTAL.REMIND_CYCLE_PRD,//'周期提醒间隔', //$.su.CHAR.INTERFACE.GATEWAY,
+                vtype: {
+                vtype: "number",
+                max: 120,
+                min: 1
+                },
+        allowBlank:false,
+        tips: $.su.CHAR.AC_WPORTAL.REMIND_CYCLE_TIPS//'（1-120分钟）' //$.su.CHAR.INTERFACE.OPTIONAL
+    });
+    $('#remind-page-title').textbox({
+        fieldLabel: '', //$.su.CHAR.INTERFACE.GATEWAY,
+        maxLength:50,
+        allowBlank:true,
+        tips: '' //$.su.CHAR.INTERFACE.OPTIONAL
+    });
+    $('#remind-page-content').textbox({
+        fieldLabel: $.su.CHAR.AC_WPORTAL.REMIND_CONTENT,//'提醒页面内容', //$.su.CHAR.INTERFACE.GATEWAY,
+        maxLength:50,
+        allowBlank:false,
+        tips: $.su.CHAR.AC_WPORTAL.TEMPLATE_COPYRIGHT_TIP//'（1-50个字符）' //$.su.CHAR.INTERFACE.OPTIONAL
+    });
+    
+    $('#remind-preview').button({
+        fieldLabel: $.su.CHAR.AC_WPORTAL.TEMPLATE_PAGE_PREVIEW,//'页面预览',
+        text: $.su.CHAR.AC_WPORTAL.PREVIEW_REMIND_WEB,//'预览到期提醒页面',
+        handler: function(){
+            var result1 = $('#remind-page-title').textbox('validate');
+            var result2 = $('#remind-page-content').textbox('validate');
+
+            if(!result1 || !result2){
+                return false;
+            }
+            if("---" == $('#background-image').textbox('getValue')){
+                uploadBgd = 0;
+            }
+
+            var url = './pages/userrpm/preview_wportal.html?remindFlag=1';
+            url += '&remind_page_title='
+            url += strASCencode($('#remind-page-title').textbox('getValue'));
+            url += '&remind_page_content=';
+            url += strASCencode($('#remind-page-content').textbox('getValue'));
+            url += '&copyright=';
+            url += strASCencode($('#copyright').textbox('getValue'));
+            url += '&wportal_page_type=';
+            url += $('#wportal-page').combobox('getValue');
+            url += '&status=9';
+            url += '&uploadBgd=';
+            url += uploadBgd;
+            url += '&rulename=';
+            url += $('#web-name').textbox('getValue');
+            url += '&edittype=';
+            url += editingId;
+            
+            document.getElementById('preview-frame').contentDocument.location.href = url;
+            $frameMsg.msg("show");
+        }
+    });
+    
+    $('#first-server-ip').textbox({
+        fieldLabel: $.su.CHAR.AC_WPORTAL.MAINSER_ADDR,//'主服务器地址', //$.su.CHAR.INTERFACE.GATEWAY,
+        maxLength:50,
+        allowBlank:false,
+        tips: $.su.CHAR.AC_WPORTAL.MUST,//'（必选）', //$.su.CHAR.INTERFACE.OPTIONAL
+        validator: function(v) {
+            if(v == "0.0.0.0" || (new $.su.vtype('ip').validate(v) === true)){
+                return true;
+            }
+            return $.su.CHAR.AC_WPORTAL.IP_ERR;//"IP格式错误";
+        }
+    });
+    $('#second-server-ip').textbox({
+        fieldLabel: $.su.CHAR.AC_WPORTAL.BACKUPSER_ADDR,//'备用服务器地址', //$.su.CHAR.INTERFACE.GATEWAY,
+        maxLength:50,
+        allowBlank:true,
+        tips: $.su.CHAR.AC_WPORTAL.OPTIONAL,//'（可选）' ,//$.su.CHAR.INTERFACE.OPTIONAL
+        validator: function(v) {
+            if(v == "0.0.0.0" || (new $.su.vtype('ip').validate(v) === true)){
+                return true;
+            }
+            return $.su.CHAR.AC_WPORTAL.IP_ERR;//"IP格式错误";
+        }
+    });
+    $('#portal-port').textbox({
+        fieldLabel: $.su.CHAR.AC_WPORTAL.AUTH_PORT,//'认证端口', //$.su.CHAR.INTERFACE.GATEWAY,
+        vtype: {
+            vtype: "number",
+            max: 65535,
+            min: 1024
+        },
+        allowBlank:false,
+        tips: '(1024-65535)' //$.su.CHAR.INTERFACE.OPTIONAL
+    });
+    $('#share-key').textbox({
+        fieldLabel: $.su.CHAR.AC_WPORTAL.AUTH_SHARE_KEY,//'授权共享密钥', //$.su.CHAR.INTERFACE.GATEWAY,
+        maxLength:48,
+        allowBlank:false,
+        tips: $.su.CHAR.AC_WPORTAL.SHAREKEY_TIP//'（1-48个字符）' //$.su.CHAR.INTERFACE.OPTIONAL
+    });
+    $('#send-count').textbox({
+        fieldLabel: $.su.CHAR.AC_WPORTAL.FAILED_SEND_TIME,//'失败发送次数', //$.su.CHAR.INTERFACE.GATEWAY,
+        vtype: {
+            vtype: "number",
+            max: 10,
+            min: 1
+        },
+        allowBlank:false,
+        tips: $.su.CHAR.AC_WPORTAL.SEND_COUNT_TIP//'（1-10次）' //$.su.CHAR.INTERFACE.OPTIONAL
+    });
+    $('#expire-time').textbox({
+        fieldLabel: $.su.CHAR.AC_WPORTAL.RADIUS_INTERVAL,//'超时时间', //$.su.CHAR.INTERFACE.GATEWAY,
+        vtype: {
+            vtype: "number",
+            max: 60,
+            min: 1
+        },
+        allowBlank:false,
+        tips: $.su.CHAR.AC_WPORTAL.RADIUS_INTERVAL_TIP//'（1-60秒）' //$.su.CHAR.INTERFACE.OPTIONAL
+    });
+ $('#auth-type').combobox({
+        fieldLabel: $.su.CHAR.AC_WPORTAL.RADIUS_TYPE,//'认证方式', //$.su.CHAR.INTERFACE.TIMEOBJ,
+        allowBlank: false,
+        alwaysTrigger: true,
+        items:[
+            {value:"pap", name: "PAP", selected: true},
+            {value:"chap", name: "CHAP"}
+        ]
+    });
+    $('#free-interval').textbox({
+        fieldLabel: $.su.CHAR.AC_WPORTAL.FREETIME,//'免费上网时长', //$.su.CHAR.INTERFACE.GATEWAY,
+        vtype: {
+            vtype: "number",
+            max: 1440,
+            min: 1
+        },
+        allowBlank:false,
+        tips: $.su.CHAR.AC_WPORTAL.FREETIME_TIP1//'（1-1440分钟）' //$.su.CHAR.INTERFACE.OPTIONAL
+    });
+    var globalProxy = new $.su.Proxy({
+        url: URL_GLOBAL
+    });
+    
+    var $frameMsg = $("#frame-msg").msg({
+        closeBtn: true,
+        cls:"",
+        type: 'window'
+    }).msg("hide");
+
+    var wportalForm = $('#wportal-form').form({
+        proxy: globalProxy,
+        autoLoad: true,
+        fields: [
+            {name: "enable", mapping: "enable"},
+            {name: "wired_auth", mapping: "wired_auth"},
+            {name: "auto_disconnect", mapping: "auto_disconnect"},
+            {name: "auth_port", mapping: "auth_port"},
+            {name: "wportal_page_type", mapping: "wportal_page_type"},
+            {name: "page_title", mapping:"page_title" },
+            {name: "wel_info", mapping:"wel_info"},
+            {name: "copyright", mapping:"copyright"},
+            {name: "external_url", mapping:"external_url"},
+            {name: "external_url_succ", mapping:"external_url_succ"},
+            {name: "external_url_fail", mapping:"external_url_fail"},
+            //{name: "image"},
+            {name: "wportal_type", mapping:"wportal_type"},
+            {name: "remind_enable", mapping:"remind_enable"},
+            {name: "remind_time", mapping:"remind_time"},
+            {name: "remind_type", mapping:"remind_type"},
+            {name: "remind_interval", mapping:"remind_interval"},
+            {name: "remind_page_title", mapping:"remind_page_title"},
+            {name: "remind_page_content", mapping:"remind_page_content"},
+            {name: "first_server_ip", mapping:"first_server_ip"},
+            {name: "second_server_ip", mapping:"second_server_ip"},
+            {name: "portal_port", mapping:"portal_port"},
+            {name: "share_key", mapping:"share_key"},
+            {name: "send_count", mapping:"send_count"},
+            {name: "expire_time", mapping:"expire_time"},
+            {name: "auth_type", mapping:"auth_type"},
+            {name: "free_interval", mapping:"free_interval"},
+            {name: "interface", mapping:"interface"}
+        ],
+        submitBtn: "#formSubmit"
+    }).on("ev_loadData",function(e,data){
+        var value = wportal_page.combobox("getValue");
+        if(value == 'local'){
+            $.su.func.showWidgets($selfPage);
+            $.su.func.hideWidgets($externPage);
+        }else if(value == 'remote'){
+            $.su.func.showWidgets($externPage);
+            $.su.func.hideWidgets($selfPage);
+        }
+        
+        if(typeof(data) != "undefined" && typeof(data.name) == "undefined"){
+            editingId = "add";
+            $('#remind-enable').checkbox("show");
+            $('#remind-enable').checkbox("enable");
+        }else{
+            editingId = "editing";
+        }
+    });
+    
+    $("#formSubmit").button({
+        text:$.su.CHAR.OPERATION.SAVE,//"设置",
+        handler:function(e){
+            if( wportalForm.form("validate")){
+                $.su.loading.show();
+                wportalForm.form("submit",{},function(data){
+                    $.su.loading.hide();
+                },function(error_code){
+                    $.su.loading.hide();
+                },function(){
+                    $.su.loading.hide();
+                });
+            }
+            
+        }
+    });
+
+    $.su.func.showWidgets($selfPage);
+    $.su.func.hideWidgets($externPage);
+    $.su.func.hideWidgets($remindOn);
+    $.su.func.hideWidgets($localPortal);
+    $.su.func.hideWidgets($radiusPortal);
+    $.su.func.hideWidgets($freePortal);
+    
+    $('#web-name').textbox("getContainer").hide();
+    $('#page-title').textbox("getContainer").hide();
+    $('#remind-page-title').textbox("getContainer").hide();
+    var wphelp = new $.su.Help({
+        container: "div#wportal-help",
+        content: ["WPORTAL_FUNCTION", "WPORTAL_PARAMETER"]
+    });
+});
+
+//]]>
+</script>
+</body>
+
+</html>

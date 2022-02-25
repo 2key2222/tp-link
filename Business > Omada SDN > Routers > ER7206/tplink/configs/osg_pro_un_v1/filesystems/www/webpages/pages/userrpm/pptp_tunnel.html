@@ -1,0 +1,137 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>PPTP Tunnel</title>
+<style type="text/css">
+</style>
+</head>
+
+<body>
+<div class="func-container">
+    <div id="pptp-tunnel-list">
+        <div id="pptp-tunnel-grid">
+        </div>
+    </div>
+
+    <div id="pptp-tunnel-help"></div>
+</div>
+
+<script type="text/javascript">
+try{
+    $
+}catch(e){
+    location.href = "/";
+};
+
+$(document).ready(function(e){
+    var URL_PPTP_TUNNEL = $.su.url("/admin/pptp_tunnel?form=pptp_tunnel");
+	$("#pptp-tunnel-list").panel({
+		title: $.su.CHAR.PPTP_TUNNEL.PANEL_LIST
+	});
+
+	var pptpListProxy = new $.su.Proxy({
+		url: URL_PPTP_TUNNEL
+	});
+
+
+	var pptpTunnelGrid = $("#pptp-tunnel-grid").grid({
+        editor: {
+            content:"default",
+            fields: [
+                {name: "isserver"},
+                {name: "username"},
+				{name: "ifname"},
+				{name: "localpppip"},
+				{name: "remoteip"},
+				{name: "remotepppip"},
+				{name: "dns"}
+            ]
+        },
+		store:{
+			proxy: pptpListProxy,
+			fields: [
+                {name: "isserver"},
+                {name: "username"},
+				{name: "ifname"},
+				{name: "localpppip"},
+				{name: "remoteip"},
+				{name: "remotepppip"},
+				{name: "dns"}
+			],
+			autoLoad: true
+		},
+        paging:[],
+		columns: [
+			{
+				xtype: "rownumberer"
+			},
+			{
+				text: $.su.CHAR.PPTP_TUNNEL.USERNAME,
+				width: 100,
+				dataIndex: "username"
+			},
+            {
+                text: $.su.CHAR.PPTP_TUNNEL.ISSERVER,
+                width: 100,
+                dataIndex: "isserver",
+                renderer: function(v){
+                    if(v == "1"){
+                        return $.su.CHAR.PPTP_TUNNEL.ISSERVER_SERVER;
+                    }else if(v == "0"){
+                        return $.su.CHAR.PPTP_TUNNEL.ISSERVER_CLIENT;
+                    }else{
+                        return "--";
+                    }
+                }
+            },
+			{
+				text: $.su.CHAR.PPTP_TUNNEL.IFNAME,
+				width: 100,
+				dataIndex: "ifname"
+			},
+			{
+                text: $.su.CHAR.PPTP_TUNNEL.LOCAL_PPP_IP,
+                width: 120,
+                dataIndex: "localpppip"
+            },
+			{
+                text: $.su.CHAR.PPTP_TUNNEL.REMOTEIP,
+                width:120,
+                dataIndex: "remoteip"
+            },
+            {
+                text: $.su.CHAR.PPTP_TUNNEL.REMOTE_PPP_IP,
+                width: 120,
+                dataIndex: "remotepppip"
+            },
+			{
+                text: $.su.CHAR.PPTP_TUNNEL.DNS,
+                width: 120,
+                dataIndex: "dns",
+                renderer: function(dd, index, data){
+                    if (!$.isArray(dd))
+                        return dd
+                    if (dd.length == 0)
+                        return "---";
+                    else {
+                        var disc = dd[0];
+                        if (dd[1] && dd[1] !== dd[0])
+                            disc = disc + ", " + dd[1];
+                        return disc;
+                    }
+                }
+            }
+		],
+		operation: 'prompt|refresh'
+	});
+
+    var helpPPtpTunnelGrid = new $.su.Help({
+        container: "div#pptp-tunnel-help",
+        content: "PPTP_TUNNEL"
+    });/* TODO */
+});
+</script>
+</body>
+
+</html>

@@ -1,0 +1,76 @@
+diff -urN a/interface.c b/interface.c
+--- a/interface.c	2015-09-17 17:24:24.078239600 +0800
++++ b/interface.c	2015-09-17 17:35:48.844108956 +0800
+@@ -234,6 +234,12 @@
+ __interface_set_down(struct interface *iface, bool force)
+ {
+ 	enum interface_state state = iface->state;
++	char *oname = NULL;
++	struct interface *oiface;
++	
++	if (iface->name)
++		oname = strdup(iface->name);
++		
+ 	switch (state) {
+ 	case IFS_UP:
+ 	case IFS_SETUP:
+@@ -245,6 +251,13 @@
+ 		if (force)
+ 			interface_flush_state(iface);
+ 
++		if (oname) {
++			/* if the interface has been deleted, then break */
++			oiface = vlist_find(&interfaces, oname, oiface, node);
++			if (!oiface)
++				break;
++        }
++		
+ 		if (iface->dynamic)
+ 			vlist_delete(&interfaces, &iface->node);
+ 		break;
+@@ -256,6 +269,9 @@
+ 	default:
+ 		break;
+ 	}
++	
++	if (oname)
++		free(oname);
+ }
+ 
+ static int
+diff -urN a/interface-event.c b/interface-event.c
+--- a/interface-event.c	2015-09-17 18:49:03.211411600 +0800
++++ b/interface-event.c	2015-09-17 18:51:05.135396537 +0800
+@@ -26,6 +26,7 @@
+ static struct interface *current;
+ static enum interface_event current_ev;
+ static struct list_head pending = LIST_HEAD_INIT(pending);
++static int queue_event_flag = 0;
+ static struct interface *backuphotplugs[1024] = {NULL};
+ 
+ static void task_complete(struct uloop_process *proc, int ret);
+@@ -123,10 +124,13 @@
+ {
+ 	D(SYSTEM, "Queue hotplug handler for interface '%s', event '%s'\n",
+ 			iface->name, eventnames[ev]);
+-	if (ev == IFEV_UP || ev == IFEV_DOWN)
+-		netifd_ubus_interface_event(iface, ev == IFEV_UP);
++	if (!queue_event_flag) {
++		if (ev == IFEV_UP || ev == IFEV_DOWN)
++			netifd_ubus_interface_event(iface, ev == IFEV_UP);
+ 
+-	netifd_ubus_interface_notify(iface, ev != IFEV_DOWN);
++		netifd_ubus_interface_notify(iface, ev != IFEV_DOWN);
++	}
++	queue_event_flag = 0;
+ 
+ 	if (current == iface) {
+ 		/* an event for iface is being processed */
+@@ -220,6 +224,7 @@
+ 			if (iface->hotplug_ev == IFEV_DOWN)
+ 				backuphotplugs[i]->hotplug_ev = IFEV_UP;
+ 
++			queue_event_flag = 1;
+ 			interface_queue_event(backuphotplugs[i], iface->hotplug_ev);
+ 		}
+ 	}

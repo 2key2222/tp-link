@@ -1,0 +1,24 @@
+--- a/drivers/mtd/Kconfig
++++ b/drivers/mtd/Kconfig
+@@ -228,6 +228,11 @@ config MTD_MYLOADER_PARTS
+ 	  You will still need the parsing functions to be called by the driver
+ 	  for your particular device. It won't happen automatically.
+ 
++config MTD_TPLINK_PARTS
++	tristate "TP-Link MTK partitioning support"
++config UBOOT_CMDLINE
++	tristate "Use uboot cmdline"
++	  
+
+ comment "User Modules And Translation Layers"
+ 
+--- a/drivers/mtd/Makefile	2019-06-30 14:23:28.989115500 +0800
++++ b/drivers/mtd/Makefile	2019-06-30 14:27:35.925737634 +0800
+@@ -20,6 +20,7 @@ obj-$(CONFIG_MTD_AR7_PARTS)	+= ar7part.o
+ obj-$(CONFIG_MTD_BCM63XX_PARTS)	+= bcm63xxpart.o
+ obj-$(CONFIG_MTD_BCM47XX_PARTS)	+= bcm47xxpart.o
+ obj-$(CONFIG_MTD_MYLOADER_PARTS) += myloader.o
++obj-$(CONFIG_MTD_TPLINK_PARTS)	+= tplinkpart.o
+ 
+ # 'Users' - code which presents functionality to userspace.
+ obj-$(CONFIG_MTD_BLKDEVS)	+= mtd_blkdevs.o

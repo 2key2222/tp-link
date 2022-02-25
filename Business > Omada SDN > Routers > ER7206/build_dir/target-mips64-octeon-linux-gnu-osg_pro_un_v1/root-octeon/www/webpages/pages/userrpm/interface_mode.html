@@ -1,0 +1,412 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<style type="text/css">
+    #slide-lights{
+        border: 1px solid #d5d6d5;
+        padding: 10px 20px;
+        width: 420px;
+        margin-bottom: 15px;
+        margin-left: 160px;
+    }
+    #slide-lights table{
+        width: 100%;
+    }
+    #slide-lights td{
+        vertical-align: middle;
+        width: 16%;
+    }
+    .light-icon, .light-description{
+        display: inline-block;
+    }
+</style>
+<title>Interface Mode</title>
+</head>
+
+<body>
+<div class="func-container">
+    <div id="ifmode-setting">
+        <form id="mode-form-wan">
+			<input id="mode-wan-count" name="wanmode" type=hidden />
+            <input id="mode-wan-numbers" name="wan_numbers"/>
+            <div id="slide-lights">
+                <table>
+                    <tbody>
+                    <tr>
+                        <td>
+                            <div id="lights-description-1" class="light-description"></div>
+                        </td>
+                        <td>
+                            <div id="lights-description-2" class="light-description"></div>
+                        </td>
+                        <td>
+                            <div id="lights-description-3" class="light-description"></div>
+                        </td>
+                        <td>
+                            <div id="lights-description-4" class="light-description"></div>
+                        </td>
+                        <td>
+                            <div id="lights-description-5" class="light-description"></div>
+                        </td>
+                        <td>
+                            <div id="lights-description-6" class="light-description"></div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div id="lights-icon-1" class="light-icon"></div>
+                        </td>
+                        <td>
+                            <div id="lights-icon-2" class="light-icon"></div>
+                        </td>
+                        <td>
+                            <div id="lights-icon-3" class="light-icon"></div>
+                        </td>
+                        <td>
+                            <div id="lights-icon-4" class="light-icon"></div>
+                        </td>
+                        <td>
+                            <div id="lights-icon-5" class="light-icon"></div>
+                        </td>
+                        <td>
+                            <div id="lights-icon-6" class="light-icon"></div>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+            <input id="interface-mode-submit"/>
+        </form>
+    </div>
+    <hr/>
+    <div class="notice">
+        <h6 id="notice"></h6>
+        <ul>
+            <li id="caution"></li>
+        </ul>
+    </div>
+
+    <div id="confirm-msg">
+        <h4 class="title">
+            <span class="icon"></span>
+            <span class="text" id="confirm-msg-text"></span>
+        </h4>
+    </div>
+
+    <div id="mode-reboot-msg" class="reboot-loading-msg">
+        <input id="mode-progress-bar" type="text" />
+    </div>
+
+    <div id="wan-mode-help"></div>
+</div>
+
+<script type="text/javascript">
+
+//<![CDATA[
+try{
+    $
+}catch(e){
+    location.href = "/";
+};
+$(document).ready(function(e){
+	var gdata = {
+		"wan_names": [
+			{"index":"1", "type":"0", "name":"WAN"},
+			{"index":"2", "type":"1", "name":"WAN/LAN"},
+			{"index":"3", "type":"2", "name":"LAN"},
+			{"index":"4", "type":"2", "name":"LAN"},
+			{"index":"5", "type":"2", "name":"LAN"},
+		],
+		"wan_numbers": ["1"],
+		"wanmode": 1,
+		"wanmax": 2
+	};
+    var URL_FORM = $.su.url('/admin/interface_wan?form=wanmode');
+
+    function refreshLight(wan_numbers){
+        var $icons = $('#ifmode-setting .light-icon');
+        var $descriptions = $('#ifmode-setting .light-description');
+        var i = 0, j = 0;
+        var total = 6;
+		var r_wan_numbers = [];
+		var disable_start_index = -1;
+        $('#ifmode-setting #slide-lights').show();
+        $icons.removeClass().addClass('light-icon');
+        $("h6#notice").html($.su.CHAR.INTERFACE_MODE.NOTE);
+        $("li#caution").html($.su.CHAR.INTERFACE_MODE.CAUTION);
+
+        for(i = 0; i < total; i++){
+			if (i >= gdata.wan_names.length) {
+				$icons.eq(i).hide();
+				continue;
+			}
+			is_wan = false;
+			for (j = 0; j < wan_numbers.length; j++) {
+				if (wan_numbers[j] == gdata.wan_names[i].index) {
+					is_wan = true
+				}
+			}
+			switch (gdata.wan_names[i].type) {
+				case '0':
+				case '3':
+					name = is_wan ? "WAN" : "";
+					light = is_wan ? 0 : 2;
+					break;
+				case '1':
+					name = is_wan ? "WAN" : "LAN";
+					light = is_wan ? 0 : 1;
+					break;
+				case '2':
+					name = "LAN";
+					light = 1;
+					break;
+				default:
+					name = "";
+					light = 2;
+					break;
+			}
+
+			switch (light){
+				case 0:
+					$icons.eq(i).addClass('light-wan');
+					$descriptions.eq(i).text(name);
+					break;
+				case 1:
+					$icons.eq(i).addClass('light-lan');
+					$descriptions.eq(i).text(name);
+					break;
+				default:
+					$icons.eq(i).addClass('light-disable');
+					$descriptions.eq(i).text(name);
+					break;
+			}
+
+			if ((light > 0) && (disable_start_index < 0)
+				&& (gdata.wan_names[i].type == '1')){
+				disable_start_index = i + 1;
+			}
+
+			if (disable_start_index >= 0 && i >= disable_start_index){
+				$wanCount.checkbox('disableItem', [gdata.wan_names[i].index]);
+			} else {
+				$wanCount.checkbox('enableItem', [gdata.wan_names[i].index]);
+				if (is_wan) {
+					r_wan_numbers.push(gdata.wan_names[i].index);
+				}
+			}
+		}
+
+		if (r_wan_numbers.sort().toString() != wan_numbers.sort().toString()) {
+			$wanCount.checkbox('setValue', r_wan_numbers);
+		}
+    }
+
+
+    $("#ifmode-setting").panel({
+        title: $.su.CHAR.INTERFACE_MODE.INTERFACE_SETTING,//'接口模式设置',
+        collapsible: false
+    });
+	
+	var wanCountItems;
+	var $wanCount;
+
+    var proxy = new $.su.Proxy({
+        url: URL_FORM
+    });
+
+    $form = $("#mode-form-wan").form({
+        proxy: proxy,
+        showPrompt:false,
+        fields: [
+        ],
+        submitBtn: false
+    }).on("ev_loadData", function(e, data){
+		gdata = data;
+        if(data && data.wan_names && !$wanCount){
+            var sfp = false;
+            wanCountItems = []
+            for (i = 0; i < data.wan_names.length; i++) {
+                if (data.wan_names[i].type != "2") {
+                    wanCountItems.push({
+                        boxlabel: data.wan_names[i].name, inputValue: data.wan_names[i].index
+                    })
+                }
+                if (data.wan_names[i].name.indexOf('SFP')>=0) {
+                    sfp = true;
+                }
+			}
+
+			$wanCount = $('#mode-wan-numbers').checkbox({
+				fieldLabel: $.su.CHAR.INTERFACE_MODE.WAN_MODE,//'WAN模式',
+				columns: 4,
+				items: wanCountItems
+			}).on('ev_change', function(e, oldValue, newValue){
+				var wan_nums = $wanCount.checkbox('getValue1');
+				if(wan_nums){
+					refreshLight(wan_nums);
+				}
+			});
+    		var helper = new $.su.Help({
+                container: "div#wan-mode-help",
+                content: ["INTERFACE_MODE"+(sfp?"_SFP":"_NOSFP")]
+            });
+	    }
+        if(data && data.wan_numbers){
+            $.su.wanCount = data.wanmode;
+            $wanCount.checkbox('setValue', data.wan_numbers)
+        }
+    });
+    var timeout = 0;
+    var rebootInterval = 0;
+    var isRebootFinish = false;
+
+    var $confirmMsg = $("div#confirm-msg").msg({
+        type: "confirm",
+        cls: 'reboot-confirm-size',
+        closeBtn: false,
+        okHandler: function(e){
+            $rebootMsg.msg('show');
+            $waitingBar.waitingbar('run');
+			proxy.write({"params":{"wanmode":document.getElementById('mode-wan-count').value, "wan_numbers":$wanCount.checkbox('getValue1')}},function(data){
+                $("label.processbar-fieldlabel").text($.su.CHAR.INTERFACE_MODE.REBOOT);//"系统正在重启，请稍候");
+                timeout = setTimeout(function() {
+                    rebootInterval = setInterval(function(){
+                        $.ajax({
+                            url: "./login.html",
+                            async: true,
+                            dataType: "html",
+
+                            success: function(data){
+                                isRebootFinish = true;
+                            },
+                            error: function(){
+                                isRebootFinish = false;
+                            }
+                        });
+                                    
+                        if(isRebootFinish){
+                            clearInterval(rebootInterval);
+                            location.href= "./login.html";
+                        }
+                    }, 1000);
+                }, 70*1000);
+            },function(error){
+                $confirmMsg.msg('hide');
+                $("label.processbar-fieldlabel").text($.su.CHAR.INTERFACE_MODE.CONFIG);//"正在进行配置，请不要进行任何其他操作");
+            },function(fail){
+                $confirmMsg.msg('hide');
+                $("label.processbar-fieldlabel").text($.su.CHAR.INTERFACE_MODE.CONFIG);//"正在进行配置，请不要进行任何其他操作");
+            });
+        },
+        cancelHandler: function(){
+            $confirmMsg.msg('hide');
+        }
+    });
+    $('#confirm-msg-text').text($.su.CHAR.INTERFACE_MODE.WARN);//'切换WAN模式会自动删除引用WAN接口的相关条目，是否继续？');
+
+    $('#interface-mode-submit').button({
+        text: $.su.CHAR.OPERATION.SAVE,//'设置',
+        cls: 'form-submit',
+        handler: function(){
+            var value = $wanCount.checkbox('getValue1');
+
+            if (value.length <=0) {
+                return;
+	        }
+            if(value.sort().toString() == gdata.wan_numbers.sort().toString()) {
+                return;
+            }
+			
+            document.getElementById('mode-wan-count').value = value.sort()[value.length-1];
+			
+            wdelete = false;
+            wadd = false;
+            for (i = 0; i < gdata.wan_names.length; i++) {
+                ofind = false;
+                nfind = false;
+                for (j = 0; j < gdata.wan_numbers.length; j++) {
+                    if (gdata.wan_names[i].index == gdata.wan_numbers[j]) {
+                        ofind = true;
+                        break;
+                    }
+                }
+                for (j = 0; j < value.length; j++) {
+                    if (gdata.wan_names[i].index == value[j]) {
+                        nfind = true;
+                        break;
+                    }
+                }
+                if (ofind && !nfind) {
+                    wdelete = true;
+                }
+                if (!ofind && nfind) {
+                    wadd = true;
+                }
+            }
+			
+			if (wdelete){
+                $confirmMsg.msg('show');
+            }else if(wadd){
+                $rebootMsg.msg('show');
+                $waitingBar.waitingbar('run');
+                proxy.write({"params":{"wanmode":document.getElementById('mode-wan-count').value, "wan_numbers":$wanCount.checkbox('getValue1')}},function(data){
+                    $("label.processbar-fieldlabel").text($.su.CHAR.INTERFACE_MODE.REBOOT);//"系统正在重启，请稍候");
+                    timeout = setTimeout(function() {
+                        rebootInterval = setInterval(function(){
+                            $.ajax({
+                                url: "./login.html",
+                                async: true,
+                                dataType: "html",
+
+                                success: function(data){
+                                    isRebootFinish = true;
+                                },
+                                error: function(){
+                                    isRebootFinish = false;
+                                }
+                            });
+                                        
+                            if(isRebootFinish){
+                                clearInterval(rebootInterval);
+                                location.href= "./login.html";
+                            }
+                        }, 1000);
+                    }, 70*1000);
+                },function(error){
+                    $rebootMsg.msg('close');
+                    $("label.processbar-fieldlabel").text($.su.CHAR.INTERFACE_MODE.CONFIG);//"正在进行配置，请不要进行任何其他操作");
+                    $waitingBar.waitingbar('stop');
+                },function(fail){
+                    $rebootMsg.msg('close');
+                    $waitingBar.waitingbar('stop');
+                    $("label.processbar-fieldlabel").text($.su.CHAR.INTERFACE_MODE.CONFIG);//"正在进行配置，请不要进行任何其他操作");
+                });
+            }
+        }
+    });
+
+
+    var $rebootMsg = $('#mode-reboot-msg').msg({
+        closeBtn: false,
+        cls:"l",
+        type: 'window'
+    }).msg('hide');
+    var $waitingBar  = $('#mode-progress-bar').waitingbar({
+        labelCls:"xxl",
+        fieldLabel: $.su.CHAR.INTERFACE_MODE.CONFIG,//"正在进行配置，请不要进行任何其他操作",
+        separator: "",
+        barWidth:450
+    });
+
+    var helper = new $.su.Help({
+        container: "div#wan-mode-help",
+        content: ["INTERFACE_MODE"]
+    });
+});
+
+//]]>
+</script>
+</body>
+
+</html>

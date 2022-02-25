@@ -1,0 +1,160 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>ipsec sa</title>
+<style type="text/css">
+</style>
+</head>
+
+<body>
+<div class="func-container">
+    <div id="ipsec_sa_list">
+        <div id="ipsec_sa_grid">
+        </div>
+    </div>
+
+    <div id="ipsec_sa_list_help"></div>
+</div>
+
+<script type="text/javascript">
+try{
+    $
+}catch(e){
+    location.href = "/";
+};
+
+$(document).ready(function(e){
+  
+    var URL_IPSEC_SA_LIST = $.su.url("/admin/ipsec?form=ipsec_sa");
+
+
+	$("#ipsec_sa_list").panel({
+		title: $.su.CHAR.IPSEC_SETTING.SA_LISTS_TITLE,
+		collapsible: false
+	});
+
+	var ipsecSaListsProxy = new $.su.Proxy({
+		url: URL_IPSEC_SA_LIST
+	});
+
+	
+
+	var ipsecSaGrid = $("#ipsec_sa_grid").grid({
+        editor: {
+            content:	"default",
+            fields: [
+					{name:"name"},
+					{name:"spi"},
+					{name:"direction"},
+					{name:"tunnel"},
+					{name:"flows"},
+					{name:"encapsule"},
+					{name:"ah_auth_alg"},
+					{name:"esp_auth_alg"},
+					{name:"encapsule_alg"}
+            ]
+        },
+		store:{
+			proxy: ipsecSaListsProxy,
+			fields: [
+					{name:"name"},
+					{name:"spi"},
+					{name:"direction"},
+					{name:"tunnel"},
+					{name:"flows"},
+					{name:"encapsule"},
+					{name:"ah_auth_alg"},
+					{name:"esp_auth_alg"},
+					{name:"encapsule_alg"}
+			],
+			autoLoad: true
+		},
+        paging:[],
+		columns: [
+			{
+				xtype: "checkcolumn",
+				width: $.su.CHAR.SETTING.IPSEC_SETTING.CHECK_COLUMN_WIDTH
+			},
+			{
+				xtype: "rownumberer",
+				width: $.su.CHAR.SETTING.IPSEC_SETTING.ROW_NUMBER_WIDTH
+			},
+			{
+				text: $.su.CHAR.IPSEC_SETTING.SA_LISTS_NAME,
+				width: $.su.CHAR.SETTING.IPSEC_SETTING.NAME_WIDTH,
+				dataIndex: "name",
+                editor: {
+                    xtype: "textbox",
+                    allowBlank: false,
+                    vtype:"string_visible_allow_blank",
+                    maxLength:32
+                }
+			},
+			{
+				text: $.su.CHAR.IPSEC_SETTING.SA_LISTS_SPI,
+				width: $.su.CHAR.SETTING.IPSEC_SETTING.SPI_WIDTH,
+				dataIndex: "spi"
+			},
+            {
+                text:$.su.CHAR.IPSEC_SETTING.SA_LISTS_DIRECTION,
+                width:$.su.CHAR.SETTING.IPSEC_SETTING.DIRECTION_WIDTH,
+                dataIndex:"direction"
+			},
+            {
+                text: $.su.CHAR.IPSEC_SETTING.SA_LISTS_TUNNEL,
+                width: $.su.CHAR.SETTING.IPSEC_SETTING.TUNNEL_WIDTH,
+                dataIndex: "tunnel"
+            },
+            {
+                text: $.su.CHAR.IPSEC_SETTING.SA_LISTS_FLOWS,
+                width: $.su.CHAR.SETTING.IPSEC_SETTING.FLOWS_WIDTH,
+                xtype: "textbox",
+                dataIndex: "flows"
+            },
+            {
+                text: $.su.CHAR.IPSEC_SETTING.SA_LISTS_ENC,
+                width: $.su.CHAR.SETTING.IPSEC_SETTING.ENCAPSUL_WIDTH,
+                dataIndex: "encapsule"
+            },
+            {
+                text: $.su.CHAR.IPSEC_SETTING.SA_LISTS_AH_AUTH,
+                width: $.su.CHAR.SETTING.IPSEC_SETTING.AH_AUTH_WIDTH,
+                dataIndex: "ah_auth_alg"
+            },
+            {
+                text: $.su.CHAR.IPSEC_SETTING.SA_LISTS_ESP_AUTH,
+                width: $.su.CHAR.SETTING.IPSEC_SETTING.ESP_AUTH_WIDTH,
+                dataIndex: "esp_auth_alg"
+            },
+            {
+                text: $.su.CHAR.IPSEC_SETTING.SA_LISTS_ESP_ENC,
+                width: $.su.CHAR.SETTING.IPSEC_SETTING.ESP_ENC_WIDTH,
+                dataIndex: "encapsule_alg"
+            }			
+		],
+		operation: [{
+			xtype: "totalCount",
+			cls: "left",
+			fieldLabel: $.su.CHAR.IPSEC_SETTING.SA_LISTS_REFLESH_TIPS
+		},"refresh"]
+	}).on("ev_load", function(e,data, others){
+        if(others)// 通过json里的others参数传递动态阀值 
+        {
+            
+        }
+		//console.log("#################")
+		//console.log(data)
+    });
+
+
+    var helpIpsecSaGrid = new $.su.Help({
+        container: "#ipsec_sa_list_help",
+        content: "IPSEC_SA"
+    });
+
+});
+</script>
+</body>
+
+</html>

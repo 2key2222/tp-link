@@ -1,0 +1,116 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>session_monitor</title>
+<style type="text/css">
+</style>
+</head>
+
+<body>
+<div class="func-container">
+    <div id="session_limits_list">
+        <div id="session_limits_grid">
+        </div>
+    </div>
+
+    <div id="session_limits_list_help"></div>
+</div>
+
+<script type="text/javascript">
+try{
+    $
+}catch(e){
+    location.href = "/";
+};
+
+$(document).ready(function(e){
+
+    var URL_SESSION_LIMITS_MONITOR = $.su.url("/admin/session_limits?form=monitor");
+
+
+	$("#session_limits_list").panel({
+		title: $.su.CHAR.SESSIONLIMIT.MONITOR_TITLE,
+		collapsible: false
+	});
+
+	var sessionLimitsProxy = new $.su.Proxy({
+		url: URL_SESSION_LIMITS_MONITOR
+	});
+
+
+	var sessionLimitsGrid = $("#session_limits_grid").grid({
+        editor: {
+            content:"default",
+            fields: [                
+                {name: "ipgroup"},
+                {name: "ipaddr"},
+                {name: "max_connects"},
+                {name: "current_connects"}
+            ]
+        },
+		store:{
+			proxy: sessionLimitsProxy,
+			fields: [
+                {name: "ipgroup"},
+                {name: "ipaddr"},
+                {name: "max_connects"},
+                {name: "current_connects"}
+			],
+			autoLoad: true
+		},
+		paging:[],
+		columns: [
+			{
+				xtype: "checkcolumn",
+				width: $.su.CHAR.SETTING.SESSIONLIMIT.CHECK_COLUMN_WIDTH
+			},
+			{
+				xtype: "rownumberer",
+				width: $.su.CHAR.SETTING.SESSIONLIMIT.ROW_NUMBER_WIDTH
+			},
+			{
+				text: $.su.CHAR.SESSIONLIMIT.MONITOR_GROUP,
+				width: $.su.CHAR.SETTING.SESSIONLIMIT.IPGROUP_WIDTH,
+				dataIndex: "ipgroup",
+				hidden:true
+				
+			},
+			{
+				text: $.su.CHAR.SESSIONLIMIT.MONITOR_ADDRESS,
+				width: $.su.CHAR.SETTING.SESSIONLIMIT.IP_ADDRESS_WIDTH,
+				dataIndex: "ipaddr"   
+			},
+            {
+                text:$.su.CHAR.SESSIONLIMIT.MONITOR_MAX_CONNS,
+                width:$.su.CHAR.SETTING.SESSIONLIMIT.MAX_CONN_WIDTH,
+                dataIndex:"max_connects"                
+			},
+            {
+                text: $.su.CHAR.SESSIONLIMIT.MONITOR_CURRENT_CONNS,
+                width: $.su.CHAR.SETTING.SESSIONLIMIT.CURRENT_CONN_WIDTH,
+                dataIndex: "current_connects"
+			}	
+		],
+		operation: [{
+			xtype: "totalCount",
+			cls: "left",
+			fieldLabel: $.su.CHAR.SESSIONLIMIT.MONITOR_REFRESH_TIPS,
+		},"refresh"]
+	}).on("ev_load", function(e,data, others){
+        if(others)/* 通过json里的others参数传递动态阀值 */
+        {
+			//console.log(data)	          
+        }
+    });
+
+    var helpSessionLimitsGrid = new $.su.Help({
+        container: "#session_limits_list_help",
+        content: "SESSION_LIMITS"
+    });
+
+});
+</script>
+</body>
+
+</html>

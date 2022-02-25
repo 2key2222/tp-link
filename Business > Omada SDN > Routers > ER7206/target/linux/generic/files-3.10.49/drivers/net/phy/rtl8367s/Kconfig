@@ -1,0 +1,14 @@
+config RTL8367S_PHY
+	tristate "Driver for the Realtek RTL8367S switch"
+	select SWCONFIG
+	select ETHERNET_PACKET_MANGLE
+
+config RTL8367S_PHY_LED_10010ACT
+        default n
+        bool "rtl8367s phy led 10M activity"
+        depends on RTL8367S_PHY
+
+config RTL8367S_PHY_LED_OSG_MODE_1
+        default n
+        bool "rtl8367s phy led split mode, group0 is 1000M speed, group1 is link/act."
+        depends on RTL8367S_PHY

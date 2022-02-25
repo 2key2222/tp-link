@@ -1,0 +1,24 @@
+--- a/src/option.c	2015-11-19 18:32:36.000000000 +0800
++++ b/src/option.c	2015-11-22 14:46:46.000000000 +0800
+@@ -2697,8 +2697,8 @@
+ 		    new->lease_time = atoi(a[leasepos]) * fac;
+ 		    /* Leases of a minute or less confuse
+ 		       some clients, notably Apple's */
+-		    if (new->lease_time < 120)
+-		      new->lease_time = 120;
++                    if (new->lease_time < 60)
++                      new->lease_time = 60;
+ 		  }
+ 	      }
+ 	  }
+@@ -3075,8 +3075,8 @@
+ 		  new->lease_time = atoi(a[j]) * fac; 
+ 		  /* Leases of a minute or less confuse
+ 		     some clients, notably Apple's */
+-		  if (new->lease_time < 120)
+-		    new->lease_time = 120;
++                  if (new->lease_time < 60)
++                    new->lease_time = 60;
+ 		  new->flags |= CONFIG_TIME;
+ 		}
+ 	    }

@@ -1,0 +1,49 @@
+diff -Nuar a/arch/mips/kernel/setup.c b/arch/mips/kernel/setup.c
+--- a/arch/mips/kernel/setup.c	2014-09-02 16:41:04.000000000 +0800
++++ b/arch/mips/kernel/setup.c	2017-03-10 14:53:58.400383694 +0800
+@@ -636,6 +636,19 @@
+ #endif
+ 	strlcpy(command_line, boot_command_line, COMMAND_LINE_SIZE);
+ 
++
++#ifdef CONFIG_MTK_MACH_TL_R470_V6
++	strlcpy(command_line, " board=TL-R470V6 console=ttyS1,115200 root=31:02 init=/sbin/init mtdparts=raspi:256k(u-boot)ro,3072k(kernel),12288k(rootfs)", COMMAND_LINE_SIZE);
++
++	pr_info("@@----debug cmdline=[ %s ]\n", command_line);
++#endif
++
++#ifdef CONFIG_MTK_MACH_TL_R480_V9
++	strlcpy(command_line, " board=TL-R480V9 console=ttyS1,115200 root=31:02 init=/sbin/init mtdparts=raspi:256k(u-boot)ro,3072k(kernel),12288k(rootfs)", COMMAND_LINE_SIZE);
++
++	pr_info("@@----debug cmdline=[ %s ]\n", command_line);
++#endif
++
+ 	*cmdline_p = command_line;
+ 
+ 	parse_early_param();
+diff -Nuar a/arch/mips/ralink/Kconfig b/arch/mips/ralink/Kconfig
+--- a/arch/mips/ralink/Kconfig	2014-09-12 10:47:57.000000000 +0800
++++ b/arch/mips/ralink/Kconfig	2017-03-10 14:55:15.316389652 +0800
+@@ -427,3 +427,10 @@
+ 	select GENERIC_CLOCKEVENTS_BROADCAST if RALINK_MT7621
+ 	default n
+ 
++config MTK_MACH_TL_R470_V6
++	bool "TP-LINK TL-R470 V6 support"
++
++config MTK_MACH_TL_R480_V9
++	bool "TP-LINK TL-R480 V9 support"
++
++
+diff -Nuar a/arch/mips/ralink/Makefile b/arch/mips/ralink/Makefile
+--- a/arch/mips/ralink/Makefile	2017-03-10 14:45:23.000000000 +0800
++++ b/arch/mips/ralink/Makefile	2017-03-10 14:56:30.872383893 +0800
+@@ -41,4 +41,7 @@
+ obj-$(CONFIG_RALINK_RT5350) +=  ehci_ohci.o udc.o
+ obj-$(CONFIG_RALINK_RT6855) +=  ehci_ohci.o udc.o
+ obj-$(CONFIG_RALINK_MT7620) +=  ehci_ohci.o udc.o
+-obj-$(CONFIG_RALINK_MT7628) +=  ehci_ohci.o udc.o
++obj-$(CONFIG_RALINK_MT7628) +=  ehci_ohci.o udc.o dev-gpio-buttons.o dev-leds-gpio.o
++obj-$(CONFIG_MTK_MACH_TL_R470_V6) += mach-tl-r470-v6.o
++obj-$(CONFIG_MTK_MACH_TL_R480_V9) += mach-tl-r480-v9.o
++

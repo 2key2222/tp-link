@@ -1,0 +1,44 @@
+--- a/net/netfilter/xt_connlimit.c	2017-02-09 19:15:08.874909635 +0800
++++ b/net/netfilter/xt_connlimit.c	2017-02-09 18:13:51.380273100 +0800
+@@ -132,7 +132,8 @@
+ 		      const struct nf_conntrack_tuple *tuple,
+ 		      const union nf_inet_addr *addr,
+ 		      const union nf_inet_addr *mask,
+-		      u_int8_t family)
++		      u_int8_t family,
++		      unsigned int limit)
+ {
+ 	const struct nf_conntrack_tuple_hash *found;
+ 	struct xt_connlimit_conn *conn;
+@@ -195,13 +196,15 @@
+ 	rcu_read_unlock();
+ 
+ 	if (addit) {
+-		/* save the new connection in our list */
+-		conn = kmalloc(sizeof(*conn), GFP_ATOMIC);
+-		if (conn == NULL)
+-			return -ENOMEM;
+-		conn->tuple = *tuple;
+-		conn->addr = *addr;
+-		hlist_add_head(&conn->node, hash);
++		if (matches < limit) {
++			/* save the new connection in our list */
++			conn = kmalloc(sizeof(*conn), GFP_ATOMIC);
++			if (conn == NULL)
++				return -ENOMEM;
++			conn->tuple = *tuple;
++			conn->addr = *addr;
++			hlist_add_head(&conn->node, hash);
++		}
+ 		++matches;
+ 	}
+ 
+@@ -239,7 +242,7 @@
+ 
+ 	spin_lock_bh(&info->data->lock);
+ 	connections = count_them(net, info->data, tuple_ptr, &addr,
+-	                         &info->mask, par->family);
++	                         &info->mask, par->family, info->limit);
+ 	spin_unlock_bh(&info->data->lock);
+ 
+ 	if (connections < 0)

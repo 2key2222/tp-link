@@ -1,0 +1,28 @@
+--- a/drivers/net/phy/phy_device.c	2016-03-31 09:44:07.000000000 +0800
++++ b/drivers/net/phy/phy_device.c	2016-03-31 09:44:25.000000000 +0800
+@@ -227,6 +227,11 @@
+ 		return -EIO;
+ 
+ 	*phy_id |= (phy_reg & 0xffff);
++    //printk("\r\n##############address = %d, phy_id = 0x%08x##################\r\n", addr, *phy_id);
++    if (0x1d == addr)
++    {
++        *phy_id = 0x001cc942;
++    }
+ 
+ 	return 0;
+ }
+@@ -866,6 +871,13 @@
+ 
+ 	return 0;
+ }
++
++int genphy_config_init_global(struct phy_device *phydev)
++{
++    return genphy_config_init(phydev);
++}
++EXPORT_SYMBOL(genphy_config_init_global);
++
+ int genphy_suspend(struct phy_device *phydev)
+ {
+ 	int value;

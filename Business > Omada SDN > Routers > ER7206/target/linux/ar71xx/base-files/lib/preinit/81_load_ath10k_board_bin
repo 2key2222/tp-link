@@ -1,0 +1,18 @@
+#!/bin/sh
+
+. /lib/functions/system.sh
+. /lib/ar71xx.sh
+
+do_load_ath10k_board_bin() {
+		local mtd_name=$(grep -i "art" /proc/mtd | cut -f1 -d:)
+		[ "x$mtd_name" == "x" ] && return
+		local mtdblock=/dev/${mtd_name//mtd/mtdblock}
+		local dir="/lib/firmware/ath10k/QCA988X/hw2.0"
+
+		mkdir -p ${dir}
+		dd if=${mtdblock} of=${dir}/board.bin bs=1 skip=20480 count=2116
+		dd if=${mtdblock} of=/tmp/wifi0.caldata bs=32 count=377 skip=128
+		dd if=${mtdblock} of=/tmp/wifi1.caldata bs=32 count=377 skip=640
+}
+
+boot_hook_add preinit_main do_load_ath10k_board_bin

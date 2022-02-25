@@ -1,0 +1,899 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<style type="text/css">
+    #ap-list .grid-content-container{
+        overflow-x: hidden;
+        overflow-y: auto;
+        width: 940px;
+    }
+    #td {
+        margin: 50px;
+        padding: 50px;
+    }
+    #wds-status, #dut-status{
+        margin-left: 10px;
+    }
+    .detail{
+        width: 100%;
+    }
+    .detail td{
+        text-align: left;
+        height: 30px;
+        padding: 0 10px 3px 0;
+        min-width: 80px;
+    }
+    .detail .detail-key{
+        width: 130px;
+    }
+    .detail .detail-value{
+        width: 140px;
+    }
+    .wds-func-container .panel-container{
+        /*display: inline-block;*/
+        /*overflow: hidden;*/
+        float: left;
+    }
+    .input-width{
+        width: 255px;
+    }
+    .combobox-width{
+        width: 229px;
+    }
+</style>
+<title>Wireless WDS</title>
+</head>
+
+<body>
+<div class="wds-func-container">
+    <div id="func-setting" style="width: 622px;">
+        <form id="wds-form">
+        </form>
+        <input id="wds-enable" name="wds" value=""/>
+        <div id="wds-enable-msg">
+            <div class="msg-content">
+                <div class="warn-text" id="wds-enable-confirm-1"></div>
+                <div class="warn-text" id="wds-enable-confirm-2"></div>
+            </div>
+        </div>
+        <div id="wds-enable-check">
+            <div class="msg-content">
+                <div class="warn-text" id="wds-enable-check-1"></div>
+            </div>
+        </div>
+        <div id="wds_setting">
+            <input id="wds-scan" value=""/>
+            <div id="wds-scan-msg">
+                <div class="msg-content">
+                    <div class="warn-text" id="warn-text1"></div>
+                    <div id="wds-scan-pro"></div>
+                </div>
+            </div>
+            <form id="manual-type">
+                <input id="manual-radio" name="radio_id" type="hidden" value="0"/>
+                <input id="manual-enable" name="wds" value="" type="hidden"/>
+                <input id="manual-ssid" name="ssid_bridge" value=""/>
+                <input id="manual-ssid-encoding" name="utf8" value=""/>
+                <input id="manual-bssid" name="bssid_bridge" value=""/>
+                <input id="manual-channel" name="channel_bridge" value=""/>
+                <input id="manual-encryption" name="encrypt" value=""/>
+                <input id="manual-wep" name="encrypt_wep" value="" class="manual-wep-encrypt-option"/>
+                <input id="manual-auth" name="encrypt_auth" value="" class="manual-wep-encrypt-option"/>
+                <input id="manual-key" name="encrypt_val" value="" class="manual-encrypt-option"/>
+                <button id="manual-submit-btn" type="button"></button>
+            </form>
+            <div id="ap-slt-msg">
+                <div class="ap-slt">
+                    <form id="scan-type">
+                        <input id="scan-radio" name="radio_id" type="hidden" value="0"/>
+                        <input id="scan-enable" name="wds" value="" type="hidden"/>
+                        <input id="scan-ssid" name="ssid_bridge" value=""/>
+                        <input id="scan-ssid-encoding" name="utf8" value=""/>
+                        <input id="scan-bssid" name="bssid_bridge" value=""/>
+                        <input id="scan-channel" name="channel_bridge" value=""/>
+                        <input id="scan-encryption" name="encrypt" value=""/>
+                        <input id="scan-wep" name="encrypt_wep" value="" class="scan-wep-encrypt-option"/>
+                        <input id="scan-auth" name="encrypt_auth" value="" class="scan-wep-encrypt-option"/>
+                        <input id="scan-key" name="encrypt_val" value="" class="scan-encrypt-option"/>
+                        <br /><br />
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <form id="wds-form-2">
+    </form>
+    <div id="wds-status" style="width: 323px;">
+        <table class="wds-status-table detail">
+            <tr>
+                <td class="detail-key" id="key-status"></td>
+                <td class="detail-value" id="value-status"></td>
+            </tr>
+            <tr>
+                <td class="detail-key" id="key-master-ssid"></td>
+                <td class="detail-value" id="value-master-ssid"></td>
+            </tr>
+            <tr>
+                <td class="detail-key" id="key-master-encrypt"></td>
+                <td class="detail-value" id="value-master-encrypt"></td>
+            </tr>
+        </table>
+    </div>
+    <div id="dut-status" style="width: 323px;">
+        <table class="wds-status-table detail">
+            <tr>
+                <td class="detail-key" id="key-host-ssid"></td>
+                <td class="detail-value" id="value-host-ssid"></td>
+            </tr>
+            <tr>
+                <td class="detail-key" id="key-host-encrypt"></td>
+                <td class="detail-value" id="value-host-encrypt"></td>
+            </tr>
+            <tr>
+                <td class="detail-key" id="key-host-dhcp-status"></td>
+                <td class="detail-value" id="value-host-dhcp-status"></td>
+            </tr>
+            <tr>
+                <td class="detail-key" id="key-host-lan-ip"></td>
+                <td class="detail-value" id="value-host-lan-ip"></td>
+            </tr>
+        </table>
+    </div>
+    <div id="scan-list">
+        <div id="ap-list" style="margin-bottom: 50px"></div>
+    </div>
+    <div id="notice_msg">
+        &nbsp;
+        <hr style="display:grid; width:955px;"/>
+        <h6 id="notice"></h6>
+        <ul>
+            <li style="margin:10px 0px;" id="notice_1"></li>
+            <li style="margin:10px 0px;" id="notice_2"></li>
+        </ul>
+    </div>
+    <div id="confirm-msg">
+        <h4 class="title">
+            <span class="icon"></span>
+            <span class="text" id="confirm-msg-text"></span>
+        </h4>
+    </div>
+    <div id="wireless-wds-help"></div>
+</div>
+<script type="text/javascript">
+//<![CDATA[
+try{
+    $
+}catch(e){
+    location.href = "/";
+};
+$(document).ready(function(e){
+    var radio = 0; // 0: 2.4GHz, 1: 5GHz
+    var savedData = {};
+    var URL_CONFIG = $.su.url("/admin/wlan_wds?form=wds_config");
+    var URL_GLOBAL = $.su.url("/admin/wlan_wds?form=wds_global");
+    var URL_STATUS = $.su.url("/admin/wlan_wds?form=status");
+    var URL_APLIST = $.su.url("/admin/wlan_wds?form=scan_ap");
+    var URL_ALL_WDS = $.su.url("/admin/wlan_wds?form=all_wds");
+    var manualEncryptOption = $('.manual-encrypt-option');
+    var manualWEPEncryptOption = $('.manual-wep-encrypt-option');
+    var mssid_enable = null;
+    var inputCls = "input-width";
+    var comboboxCls = "combobox-width";
+    var another_wds_enable = false;
+    var wds_config_proxy = new $.su.Proxy({
+        url: URL_CONFIG
+    });
+    var TIMEOUT_INFO_TMP_2 = null;
+
+    var wds_global_proxy = new $.su.Proxy({
+        url: URL_GLOBAL
+    });
+
+    var wds_all_wds = new $.su.Proxy({
+        url: URL_ALL_WDS
+    });
+
+    wds_all_wds.read({}, function(data){
+        for (i in data) {
+            if (i != radio.toString() && data[i] == "on") {
+                another_wds_enable = true;
+            }
+        }
+    });
+
+    var wds_form = $("#wds-form").form({});
+    var wds_form_2 = $("#wds-form-2").form({});
+
+    // status
+    $('#key-status').text($.su.CHAR.WIRELESS_WDS.CONN_STATE);
+    $('#key-master-ssid').text($.su.CHAR.WIRELESS_WDS.WIRELESS_NAME_REMOTE);
+    $('#key-master-encrypt').text($.su.CHAR.WIRELESS_WDS.WIRELESS_PASSWD);
+    $('#key-host-ssid').text($.su.CHAR.WIRELESS_WDS.WIRELESS_NAME_LOCAL);
+    $('#key-host-encrypt').text($.su.CHAR.WIRELESS_WDS.WIRELESS_PASSWD);
+    $('#key-host-dhcp-status').text($.su.CHAR.WIRELESS_WDS.DHCP_SERVER_STATUS);
+    $('#key-host-lan-ip').text($.su.CHAR.WIRELESS_WDS.LAN_IP);
+    var status = $('#value-status').text($.su.CHAR.WIRELESS_WDS.WDS_OFF);
+    var master_ssid = $('#value-master-ssid').text('---');
+    var master_encrypt = $('#value-master-encrypt').text('---');
+    var host_ssid = $('#value-host-ssid').text('---');
+    var host_encrypt = $('#value-host-encrypt').text('---');
+    var host_dhcp_state = $('#value-host-dhcp-status').text('---');
+    var host_lan_ip = $('#value-host-lan-ip').text('---');
+
+    // manual type
+    $('#manual-radio').val(radio);
+    $('#scan-radio').val(radio);
+
+    // notice
+    $('#notice').text($.su.CHAR.WIRELESS_WDS.NOTICE);
+    $('#notice_1').text($.su.CHAR.WIRELESS_WDS.NOTICE_1);
+    $('#notice_2').text($.su.CHAR.WIRELESS_WDS.NOTICE_2);
+
+    // panel
+    $("#func-setting").panel({
+        title: $.su.CHAR.WIRELESS_WDS.WDS,
+        help: $("#wireless-wds-help")
+    });
+
+    $("#wds-status").panel({
+        title: $.su.CHAR.WIRELESS_WDS.CONN_STATE //"连接状态"
+    });
+
+    $("#dut-status").panel({
+        title: $.su.CHAR.WIRELESS_WDS.HOST_ROUTER_STATUS //"连接状态"
+    });
+
+    $("#scan-list").panel({
+        title: $.su.CHAR.WIRELESS_WDS.SCAN_LIST
+    });
+
+    // message/alert
+    var enable_check = $("#wds-enable-check").msg({
+        title:$.su.CHAR.WIRELESS_WDS.DISABLE_TITLE,
+        showHead:false,
+        type:"alert",
+        closeBtn: false,
+        cls: "l"
+    });
+
+    var wds_scan_msg = $("#wds-scan-msg").msg({
+        // title: $.su.CHAR.WIRELESS_WDS.SCAN_RESULT,
+        closeBtn:true,
+        showHead:true,
+        cls: "l",
+        yesText:$.su.CHAR.ARPSCAN.INPUT_BUTTON,
+        noText:$.su.CHAR.IMB.CLOSE
+    });
+
+    var wds_scan_pro = $("#wds-scan-pro").waitingbar({
+        fieldLabel:"",
+        labelCls: "hidden",
+        barWidth: 445
+    });
+
+    var ap_slt_msg = $("#ap-slt-msg").msg({
+        type: "confirm",
+        cls: "xl",
+        global: true,
+        closeBtn:true,
+        title: $.su.CHAR.WIRELESS_WDS.WDS,
+        showHead:true,
+        yesText: $.su.CHAR.WIRELESS_WDS.CONNECT,
+        okHandler: function() {
+            if (!scan_ssid.textbox("validate") || !scan_bssid.textbox("validate")) {
+                return false;
+            }
+            if (scan_encrypt.combobox("getValue") == "4" && !scan_key.textbox("validate")) {
+                return false;
+            }
+            if (another_wds_enable) {
+                enable_check.msg("show");
+            }
+            else {
+                $.su.loading.show();
+                set_scan_wds();
+                $.su.loading.hide();
+            }
+        }
+    });
+
+    // hidden values, for form data exchanging
+    var manual_enable = $("#manual-enable").radio({
+        fieldLabel: $.su.CHAR.WIRELESS_WDS.WDS,
+        columns: 2,
+        items:[
+            {boxlabel: $.su.CHAR.OPERATION.ENABLE, name:'wds', inputValue:'on', checked: true},
+            {boxlabel: $.su.CHAR.OPERATION.DISABLE, name:'wds', inputValue: 'off'}
+        ]
+    }).radio("hide");
+
+    var scan_enable = $("#scan-enable").radio({
+        fieldLabel: $.su.CHAR.WIRELESS_WDS.WDS,
+        columns: 2,
+        items:[
+            {boxlabel: $.su.CHAR.OPERATION.ENABLE, name:'wds', inputValue:'on', checked: true},
+            {boxlabel: $.su.CHAR.OPERATION.DISABLE, name:'wds', inputValue: 'off'}
+        ]
+    }).radio("hide");
+
+    var manual_ssidEncode = $('#manual-ssid-encoding').textbox({
+        fieldLabel: '',
+        allowBlank: true
+    }).textbox('hide');
+
+    var scan_ssidEncode = $('#scan-ssid-encoding').textbox({
+        fieldLabel: '',
+        allowBlank: true
+    }).textbox('hide');
+
+    var manual_channel = $("#manual-channel").textbox({
+        fieldLabel: '',
+    }).textbox("setValue", "auto").textbox("hide");
+
+    // setting elements
+    var enable = $("#wds-enable").checkbox({
+        fieldLabel: $.su.CHAR.WIRELESS_WDS.WDS,
+        items: [
+            {boxlabel: $.su.CHAR.OPERATION.ENABLE, inputValue: "on", uncheckedValue: "off"}
+        ]
+    }).on("ev_change", function(e, oldValue, newValue){
+        var val = (newValue[0] == "wds" || newValue[0] == "on") ? "on" : "off";
+        manual_enable.radio("setValue", val);
+        scan_enable.radio("setValue", val);
+    });
+
+    var scanButton = $("#wds-scan").button({
+        fieldLabel: $.su.CHAR.WIRELESS_WDS.SCAN_WIRELESS,
+        text: $.su.CHAR.WIRELESS_WDS.SCAN,
+        cls: 'submit',
+        handler: function(){
+            var store = apList.grid('getStore');
+            store.loadData({});
+            $("#scan-list").show();
+            wds_scan_msg.msg("show");
+            wds_scan_msg.msg("hideClose");
+            wds_scan_msg.msg("hideButtons");
+            wds_scan_pro.waitingbar("show");
+            wds_scan_pro.waitingbar("run");
+            warn_text1.show();
+            clearTimeout(TIMEOUT_INFO_TMP_2);
+            TIMEOUT_INFO_TMP_2 = setTimeout(function() {
+                close_msg();
+            }, 10000);
+            store.load({radio_id: radio}, function() {
+                clearTimeout(TIMEOUT_INFO_TMP_2);
+                close_msg();
+            }, function(error) {
+                clearTimeout(TIMEOUT_INFO_TMP_2);
+                close_msg();
+            }, function(fail) {
+                clearTimeout(TIMEOUT_INFO_TMP_2);
+                close_msg();
+            });
+        }
+    });
+
+    var manual_ssid = $("#manual-ssid").textbox({
+        fieldLabel: $.su.CHAR.WIRELESS_WDS.WIRELESS_NAME,
+        inputCls: inputCls,
+        allowBlank: false,
+        vtype:"string_wireless_name",
+        autoTrim: false
+    });
+
+    var manual_bssid = $("#manual-bssid").textbox({
+        fieldLabel: $.su.CHAR.WIRELESS_WDS.MAC_ADDRESS, 
+        inputCls: inputCls,
+        vtype: 'mac',
+        allowBlank: true
+    });
+
+    var manual_encrypt = $("#manual-encryption").combobox({
+        fieldLabel: $.su.CHAR.ENCRYPTION.ENCRYPT,
+        inputCls: comboboxCls,
+        items:[
+            {name:$.su.CHAR.ENCRYPTION.NO_ENCRYPT,value:"1", selected: true},
+            {name:$.su.CHAR.ENCRYPTION.WEP_ASCII_ENCRYPT,value:"2"},
+            {name:$.su.CHAR.ENCRYPTION.WEP_HEX_ENCRYPT,value:"3"},
+            {name:$.su.CHAR.ENCRYPTION.WPA_PSK_ENCRYPT,value:"4"}
+        ],
+        alwaysTrigger: true,
+        allowBlank: false
+    }).on('ev_change', function(e, oldValue, newValue){
+        var value = newValue[0];
+        switch (value){
+            case '1':
+                $.su.func.hideWidgets(manualWEPEncryptOption);
+                $.su.func.hideWidgets(manualEncryptOption);
+                break;
+            case '2':
+                $.su.func.showWidgets(manualWEPEncryptOption);
+                $.su.func.showWidgets(manualEncryptOption);
+                break;
+            case '3':
+                $.su.func.showWidgets(manualWEPEncryptOption);
+                $.su.func.showWidgets(manualEncryptOption);
+                break;
+            case '4':
+                $.su.func.hideWidgets(manualWEPEncryptOption);
+                $.su.func.showWidgets(manualEncryptOption);
+                break;
+            default :
+                $.su.func.hideWidgets(manualWEPEncryptOption);
+                $.su.func.showWidgets(manualEncryptOption);
+                break;
+        }
+    });
+
+    var manual_wep_slt = $("#manual-wep").radio({
+        fieldLabel: $.su.CHAR.ENCRYPTION.ENCRYPT_WEP_KEY_SLT,
+        columns: 4,
+        items: [
+            {boxlabel: $.su.CHAR.ENCRYPTION.ENCRYPT_WEP_KEY_1, inputValue: "0", checked:true},
+            {boxlabel: $.su.CHAR.ENCRYPTION.ENCRYPT_WEP_KEY_2, inputValue: "1"},
+            {boxlabel: $.su.CHAR.ENCRYPTION.ENCRYPT_WEP_KEY_3, inputValue: "2"},
+            {boxlabel: $.su.CHAR.ENCRYPTION.ENCRYPT_WEP_KEY_4, inputValue: "3"}
+        ]
+    });
+
+    var manual_auth = $("#manual-auth").combobox({
+        fieldLabel:$.su.CHAR.ENCRYPTION.ENCRYPT_WEP_TYPE,
+        inputCls: comboboxCls,
+        multiSelect:false,
+        allowBlank: false,
+        items:[
+            {name:$.su.CHAR.ENCRYPTION.ENCRYPT_WEP_AUTO,value:"0" , selected: true},
+            {name:$.su.CHAR.ENCRYPTION.ENCRYPT_WEP_OPEN,value:"1"},
+            {name:$.su.CHAR.ENCRYPTION.ENCRYPT_WEP_SHARE,value:"2"}
+        ]
+    });
+
+    var manual_key = $("#manual-key").textbox({
+        fieldLabel: $.su.CHAR.ENCRYPTION.ENCRYPT_KEY,
+        inputCls: inputCls,
+        autoTrim: false,
+        allowBlank: false,
+        maxLength: 64,
+        // vtype: "strange_pwd",
+        tips: $.su.CHAR.ENCRYPTION.ENCRYPT_KEY_TIPS
+    });
+
+    var manual_conn_form = $("#manual-type").form({
+        proxy: wds_config_proxy,
+        fields: [
+            {name: "radio_id", mapping: "radio_id"},
+            {name: "wds", mapping: "wds"},
+            {name: "ssid_bridge", mapping: "ssid_bridge"},
+            {name: "channel_bridge", mapping: "channel_bridge"},
+            {name: "utf8", mapping: "utf8"},
+            {name: "bssid_bridge", mapping: "bssid_bridge"},
+            {name: "encrypt", mapping: "encrypt"},
+            {name: "encrypt_wep", mapping: "encrypt_wep"},
+            {name: "encrypt_auth", mapping: "encrypt_auth"},
+            {name: "encrypt_val", mapping: "encrypt_val"}
+        ],
+        autoLoad: false,
+        submitBtn: "#manual-submit-btn"
+    });
+
+    var manual_submit = $("#manual-submit-btn").button({
+        fieldLabel: null,
+        text: $.su.CHAR.OPERATION.SAVE,
+        cls: 'submit',
+        handler: function(){
+            if (!manual_ssid.textbox("validate") || !manual_bssid.textbox("validate")) {
+                return false;
+            }
+            if (manual_encrypt.combobox("getValue") == "4" && !manual_key.textbox("validate")) {
+                return false;
+            }
+            if (another_wds_enable) {
+                enable_check.msg("show");
+            }
+            else {
+                $.su.loading.show();
+                var wds_enable = enable.checkbox("getValue1");
+                if (wds_enable[0] == "on") {
+                    set_manual_wds();
+                }
+                else {
+                    wds_enable_msg.msg("show");
+                }
+                $.su.loading.hide();
+            }
+        }
+    });
+
+    $.su.func.hideWidgets(manualEncryptOption);
+    $.su.func.hideWidgets(manualWEPEncryptOption);
+
+    //scan type
+    var scan_ssid = $("#scan-ssid").textbox({
+        fieldLabel: $.su.CHAR.WIRELESS_WDS.WIRELESS_NAME,
+        inputCls: inputCls,
+        allowBlank: false,
+        vtype:"string_wireless_name",
+        autoTrim: false
+    });
+
+    var scan_bssid = $("#scan-bssid").textbox({
+        fieldLabel: $.su.CHAR.WIRELESS_WDS.MAC_ADDRESS, 
+        inputCls: inputCls,
+        vtype: 'mac',
+        allowBlank: true
+    });
+
+    var scan_encrypt = $("#scan-encryption").combobox({
+        fieldLabel: $.su.CHAR.ENCRYPTION.ENCRYPT,
+        inputCls: comboboxCls,
+        items:[
+            {name:$.su.CHAR.ENCRYPTION.NO_ENCRYPT,value:"1", selected: true},
+            {name:$.su.CHAR.ENCRYPTION.WEP_ASCII_ENCRYPT,value:"2"},
+            {name:$.su.CHAR.ENCRYPTION.WEP_HEX_ENCRYPT,value:"3"},
+            {name:$.su.CHAR.ENCRYPTION.WPA_PSK_ENCRYPT,value:"4"}
+        ],
+        alwaysTrigger: true,
+        allowBlank: false
+    }).on('ev_change', function(e, oldValue, newValue){
+        var value = newValue[0];
+        switch (value){
+            case '1':
+                scan_wep_slt.radio("hide");
+                scan_auth.combobox("hide");
+                scan_key.textbox("hide");
+                break;
+            case '2':
+                scan_wep_slt.radio("show");
+                scan_auth.combobox("show");
+                scan_key.textbox("show");
+                break;
+            case '3':
+                scan_wep_slt.radio("show");
+                scan_auth.combobox("show");
+                scan_key.textbox("show");
+                break;
+            case '4':
+                scan_wep_slt.radio("hide");
+                scan_auth.combobox("hide");
+                scan_key.textbox("show");
+                break;
+            default :
+                scan_wep_slt.radio("hide");
+                scan_auth.combobox("hide");
+                scan_key.textbox("show");
+                break;
+        }
+    });
+
+    var scan_wep_slt = $("#scan-wep").radio({
+        fieldLabel: $.su.CHAR.ENCRYPTION.ENCRYPT_WEP_KEY_SLT,
+        columns: 4,
+        items: [
+            {boxlabel: $.su.CHAR.ENCRYPTION.ENCRYPT_WEP_KEY_1, inputValue: "0", checked:true},
+            {boxlabel: $.su.CHAR.ENCRYPTION.ENCRYPT_WEP_KEY_2, inputValue: "1"},
+            {boxlabel: $.su.CHAR.ENCRYPTION.ENCRYPT_WEP_KEY_3, inputValue: "2"},
+            {boxlabel: $.su.CHAR.ENCRYPTION.ENCRYPT_WEP_KEY_4, inputValue: "3"}
+        ]
+    });
+
+    var scan_auth = $("#scan-auth").combobox({
+        fieldLabel:$.su.CHAR.ENCRYPTION.ENCRYPT_WEP_TYPE,
+        inputCls: comboboxCls,
+        multiSelect:false,
+        allowBlank: false,
+        items:[
+            {name:$.su.CHAR.ENCRYPTION.ENCRYPT_WEP_AUTO,value:"0" , selected: true},
+            {name:$.su.CHAR.ENCRYPTION.ENCRYPT_WEP_OPEN,value:"1"},
+            {name:$.su.CHAR.ENCRYPTION.ENCRYPT_WEP_SHARE,value:"2"}
+        ]
+    });
+
+    var scan_key = $("#scan-key").textbox({
+        fieldLabel: $.su.CHAR.ENCRYPTION.ENCRYPT_KEY,
+        inputCls: inputCls,
+        autoTrim: false,
+        allowBlank: false,
+        maxLength: 64,
+        // vtype: "strange_pwd",
+        tips: $.su.CHAR.ENCRYPTION.ENCRYPT_KEY_TIPS
+    });
+
+    var scan_channel = $("#scan-channel").textbox({
+        fieldLabel: ""
+    }).textbox("hide");
+
+    var warn_text1 = $("#warn-text1").text($.su.CHAR.WIRELESS_WDS.SCAN_TIPS).css("margin", "100px auto 75px").css("text-align", "center");
+
+    var scan_conn_form = $("#scan-type").form({
+        proxy: wds_config_proxy,
+        fields: [
+            {name: "wds", mapping: "wds" },
+            {name: "ssid_bridge", mapping: "ssid_bridge"},
+            {name: "utf8", mapping: "utf8"},
+            {name: "bssid_bridge", mapping: "bssid_bridge"},
+            {name: "encrypt", mapping: "encrypt"},
+            {name: "encrypt_wep", mapping: "encrypt_wep"},
+            {name: "encrypt_auth", mapping: "encrypt_auth"},
+            {name: "encrypt_val", mapping: "encrypt_val"}
+        ],
+        autoLoad: false,
+        submitBtn: false
+    }).on('ev_loadData', function(e, data){
+        $.su.loading.hide();
+        if(data){
+            savedData.ssid = data.ssid_bridge;
+            savedData.bssid = data.bssid_bridge;
+            savedData.channel = data.channel_bridge;
+        }
+    });
+
+    var apProxy = new $.su.Proxy({
+        url: URL_APLIST
+    });
+
+    var apStore = new $.su.Store({
+        proxy: apProxy,
+        fields: [
+            {name: "wds" },
+            {name: "bssid"},
+            {name: "utf8"},
+            {name: "ssid"},
+            {name: "signal"},
+            {name: "channel"},
+            {name: "security"}
+        ],
+        autoLoad: false
+    });
+
+    var apList = $("#ap-list").grid({
+        store: apStore,
+        paging: {},
+        columns: [
+            {
+                xtype: "rownumberer",
+                width:40
+            },
+            {
+                text: $.su.CHAR.WIRELESS_WDS.MAC_ADDRESS,
+                width: 150,
+                dataIndex: "bssid"
+            },
+            {
+                text: $.su.CHAR.WIRELESS_WDS.WIRELESS_NAME,
+                width: 150,
+                dataIndex: "ssid"
+            },
+            {
+                text: $.su.CHAR.WIRELESS_WDS.SIGNAL_STRENGTH,
+                width: 70,
+                dataIndex: "signal"
+            },
+            {
+                text: $.su.CHAR.WIRELESS_WDS.CHANNEL,
+                width: 70,
+                dataIndex: "channel"
+            },
+            {
+                text: $.su.CHAR.WIRELESS_WDS.IS_ENCRYPTION,
+                width: 70,
+                dataIndex: "security",
+                renderer: function(data){
+                    return data === true? $.su.CHAR.OPERATION.YES : $.su.CHAR.OPERATION.NO;
+                }
+            },
+            {
+                text: $.su.CHAR.WIRELESS_WDS.DO_WDS,
+                width:100,
+                renderer:function(data, index){
+                    return "<a href=\"javascript:void(0);\" data-index=\""+index+"\" class=\"choose-ap choose\" >"+$.su.CHAR.OPERATION.CONNECT +"</a>"
+                }
+            }
+        ]
+    }).delegate('.choose', 'click', function(){
+        var store = apList.grid('getStore');
+        var index = $(this).data('index');
+        savedData = store.data[index];
+        ap_slt_msg.msg('show');
+        scan_conn_form.form('show');
+        scan_ssid.textbox('setValue', savedData.ssid).textbox("setNormal");
+        scan_ssidEncode.textbox('setValue', savedData.utf8);
+        scan_bssid.textbox('setValue', savedData.bssid);
+        scan_channel.textbox('setValue', savedData.channel);
+        if(savedData.security){
+            scan_encrypt.combobox('setValue', '4');
+        }else{
+            scan_encrypt.combobox('setValue', '1');
+        }
+    });
+
+    scan_conn_form.form("hide");
+    $("#scan-list").hide();
+
+    $("#conn_state").textbox({
+        fieldLabel: "",
+        readOnly: true
+    }).textbox("setValue", $.su.CHAR.WIRELESS_WDS.CONN_STATE);
+
+    var wds_state_proxy = new $.su.Proxy({
+        url: URL_STATUS
+    });
+
+    function get_wds_state() {
+        var wds_enable = enable.checkbox("getValue1");
+        wds_state_proxy.read({params: {radio_id: radio}}, function (data){
+            if (wds_enable[0] != "on") {
+                status.text($.su.CHAR.WIRELESS_WDS.WDS_OFF);
+            }
+            else if (data.wds_link == 0 || data.wds_link == "0") {
+                status.text($.su.CHAR.WIRELESS_WDS.CONN_FAIL);
+            }
+            else {
+                status.text($.su.CHAR.WIRELESS_WDS.CONN_SUCCESS);
+            }
+        });
+        clearTimeout($.su.TIMEOUT_INFO_WIRELESS_WDS);
+        $.su.TIMEOUT_INFO_WIRELESS_WDS = setTimeout(function() {
+            if($("#func-advanced title").text() == "Wireless WDS" && wds_enable[0] == "on"){
+                if(host_lan_ip.text()) {
+                    get_wds_state();
+                }
+                else {
+                    get_wds_config();
+                }
+            }else{
+                clearTimeout($.su.TIMEOUT_INFO_WIRELESS_WDS);
+            }
+        }, 10000);
+    };
+
+    var firstLoad = true;
+    function get_wds_config(new_enable, new_ssid_bridge, new_encrypt, new_password) {
+        if (new_enable) {
+            master_ssid.text(new_ssid_bridge);
+            if (new_encrypt == "1") {
+                master_encrypt.text($.su.CHAR.WIRELESS_WDS.WIRELESS_NO_PASSWD);
+            }
+            else {
+                master_encrypt.text(new_password);
+            }
+        }
+        wds_config_proxy.read({params: {radio_id: radio}}, function (data) {
+            if (new_enable) {
+                old_wds_state = new_enable;
+            } 
+            else {
+                old_wds_state = data.wds;
+            }
+            if ((new_enable && new_enable == "on") ||   // 用户设置并开启了 WDS
+                (!new_enable && (data.wds == "on" || data.wds == "1"))) {  // 刷新页面后获取数据，知道用户开启了 WDS
+                if (firstLoad) {
+                    enable.checkbox("setValue", "on");
+                    firstLoad = false;
+                }
+                wds_state_proxy.read({params: {radio_id: radio}}, function (data){
+                    if (data.wds_link == 0 || data.wds_link == "0") {
+                        status.text($.su.CHAR.WIRELESS_WDS.CONN_FAIL);
+                    }
+                    else {
+                        status.text($.su.CHAR.WIRELESS_WDS.CONN_SUCCESS);
+                    }
+                });
+
+                if (!new_ssid_bridge) {
+                    master_ssid.text(data.ssid_bridge);
+                    if (data.encrypt == "1") {
+                        master_encrypt.text($.su.CHAR.WIRELESS_WDS.WIRELESS_NO_PASSWD);
+                    }
+                    else {
+                        master_encrypt.text(data.encrypt_val);
+                    }
+                }
+                host_ssid.text(data.host_ssid);
+                if (data.host_encrypt == "1") {
+                    host_encrypt.text($.su.CHAR.WIRELESS_WDS.WIRELESS_NO_PASSWD);
+                }
+                else if (data.host_encrypt == "2" || data.host_encrypt == "3") {
+                    host_encrypt.text($.su.CHAR.ENCRYPTION.WEP_ENCRYPT);
+                }
+                else if (data.host_encrypt == "5") {
+                    host_encrypt.text($.su.CHAR.ENCRYPTION.WPA_ENCRYPT);
+                }
+                else {
+                    host_encrypt.text(data.host_passwd);
+                }
+                if (data.host_dhcp_state == "on") {
+                    host_dhcp_state.text($.su.CHAR.WIRELESS_WDS.DHCP_SERVER_ON); 
+                }
+                else {
+                    host_dhcp_state.text($.su.CHAR.WIRELESS_WDS.DHCP_SERVER_OFF); 
+                }
+                host_lan_ip.text(data.host_lan_ip);
+                get_wds_state();
+            }
+        });
+    }
+
+    get_wds_config();
+
+    // confirm to disable wds
+    var wds_enable_msg = $("#wds-enable-msg").msg({
+        title:$.su.CHAR.WIRELESS_WDS.DISABLE_TITLE,
+        showHead:true,
+        type:"confirm",
+        cls:"l",
+        closeBtn: false,
+        noText:$.su.CHAR.WIRELESS_WDS.NOTEXT,
+        yesText:$.su.CHAR.WIRELESS_WDS.YESTEXT,
+        okHandler:function(){
+            old_wds_state = "off";
+            $("#scan-list").hide();
+            wds_global_proxy.write({method:"set", params:{radio_id:radio, wds:"off"}}, function(data){
+                wds_form.form("prompt", true, $.su.CHAR.OPERATION.FORM_SAVED);
+            });
+            enable.checkbox("setValue", "off");
+            status.text($.su.CHAR.WIRELESS_WDS.WDS_OFF);
+            master_ssid.text('---');
+            master_encrypt.text('---');
+            host_ssid.text('---');
+            host_encrypt.text('---');
+            host_dhcp_state.text('---');
+            host_lan_ip.text('---');
+        },
+        noHandler:function(){
+            enable.checkbox("setValue", "on");
+        }
+    });
+    $("#wds-enable-confirm-1").text($.su.CHAR.WIRELESS_WDS.DISABLE_CONFIRM_TEXT_1).hide();
+    $("#wds-enable-confirm-2").text($.su.CHAR.WIRELESS_WDS.DISABLE_CONFIRM_TEXT_2);
+    $("#wds-enable-check-1").text($.su.CHAR.WIRELESS_WDS.ENABLE_WDS_CHECK);
+
+    function close_msg() {
+        wds_scan_msg.msg("close");
+        wds_scan_pro.waitingbar("hide");
+        wds_scan_pro.waitingbar("reset");
+        warn_text1.hide();
+    }
+
+    function set_scan_wds() {
+        $("#scan-list").hide();
+        var data = scan_conn_form.form("serialize");
+        enable.checkbox("setValue", "on");
+        data.wds = "on";
+        status.text($.su.CHAR.WIRELESS_WDS.CONN_ING);
+        master_ssid.text(data.ssid_bridge);
+        wds_config_proxy.write({method:"set", params:data}, function(){
+            wds_form_2.form("prompt", true, $.su.CHAR.OPERATION.FORM_SAVED);
+            get_wds_config(data.wds, data.ssid_bridge, data.encrypt, data.encrypt_val);
+        });
+    }
+
+    function set_manual_wds() {
+        var data = manual_conn_form.form("serialize");
+        var wds_enable = enable.checkbox("getValue1");
+        if (wds_enable[0] == "on") {
+            data.wds = "on";
+            manual_channel.textbox("setValue", "auto");
+            manual_ssidEncode.textbox("setValue", 1);
+            data.channel_bridge = "auto";
+            data.utf8 = 1;
+            status.text($.su.CHAR.WIRELESS_WDS.CONN_ING);
+            master_ssid.text(data.ssid_bridge);
+        } 
+        wds_config_proxy.write({method: 'set', params:data}, function(){
+            wds_form_2.form("prompt", true, $.su.CHAR.OPERATION.FORM_SAVED);
+            get_wds_config(data.wds, data.ssid_bridge, data.encrypt, data.encrypt_val);
+        });       
+    }
+
+    var helper = new $.su.Help({
+        container: "div#wireless-wds-help",
+        content: ["WIRELESS_WDS"/*, "WIRELESS_WDS_STATUS"*/]
+    });
+});
+
+//]]>
+</script>
+</body>
+
+</html>

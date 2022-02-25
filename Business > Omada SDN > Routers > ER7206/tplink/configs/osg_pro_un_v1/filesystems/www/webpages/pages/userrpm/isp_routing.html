@@ -1,0 +1,720 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>ISP_ROUTING</title>
+<style type="text/css">
+</style>
+</head>
+
+<body>
+<div class="func-container">
+    <div id="function_setting">
+        <form id="isp_route_settings">
+            <input id="isp_route_enable" name="state" value=""/>            
+        </form>
+    </div>
+
+    <div id="isp_addr_settings">
+        <form id="isp_addr_database">
+            <input type="text"  id="isp_datebase_version" name="isp_datebase_version" value="" />
+            <input id="file" name="isp_database" type="file" /> 
+            <button type="button" id="input" name="input"></button>        
+        </form>
+    </div>
+
+    <div id="isp_alert_cnt">
+        <h4 class="title" id="confirm_cnt">
+            <span class="icon"></span>
+            <span class="text" id="confirm_content"></span>
+        </h4>
+
+        <div id="isp_pro_cnt" class="reboot-loading-msg hidden">
+            <p id="isp_note"  class="reboot-progressbar-text"></p>
+            <input id="isp_pro_bar" type="text" />
+        </div>
+
+    </div>
+
+    <div id="isp_failed_cnt">
+        <h4 class="title">
+            <span class="icon" ></span>
+            <span class="text" id="error_str"></span>
+        </h4>
+    </div>
+
+    <div id="user_define_settings">
+        <form id="user_define_database">
+            <input id="user_file" name="user_database" type="file" /> 
+            <button type="button" id="user_input" name="user_input"></button>        
+        </form>
+    </div>
+
+    <div id="isp_user_alert_cnt">
+        <h4 class="title" id="uesr_confirm_cnt">
+            <span class="icon"></span>
+            <span class="text" id="user_confirm_content"></span>
+        </h4>
+
+        <div id="isp_user_pro_cnt" class="reboot-loading-msg hidden">
+            <p id="isp_user_note"  class="reboot-progressbar-text"></p>
+            <input id="isp_user_pro_bar" type="text" />
+        </div>
+
+    </div>
+
+    <div id="isp_user_failed_cnt">
+        <h4 class="title">
+            <span class="icon" ></span>
+            <span class="text" id="error_str"></span>
+        </h4>
+    </div>
+
+    <div id="isp_rule_list">
+        <div id="isp_rule_grid">
+        </div>
+    </div>
+    <div id="isp_routing_hlep">    </div>
+</div>
+
+<script type="text/javascript">
+try{
+    $
+}catch(e){
+    location.href = "/";
+};
+
+
+$(document).ready(function(e){ 
+//debugger;   
+    var existInterface=[];   
+    var URL_ISP_GLOBAL_LIST = $.su.url("/admin/balance?form=isp_global");
+    var URL_ISP_RULE_LIST = $.su.url("/admin/balance?form=isp_route");
+    var URL_ISP_DATABASE_LIST = $.su.url("/admin/isp_database?form=input_database");
+
+    var isp_query_interval = false;
+    var isp_pro_id = false;
+    var isp_total_time = 2*1000;
+
+    /*-----------------------------------------------------------------*/
+    var URL_ISP_USER_DEFINE_LISET = $.su.url("/admin/isp_user_database?form=user_database");
+
+
+    var isp_uesr_pro_id = false;
+    var isp_user_total_time = 2*1000;
+    var isp_user_query_interval = false;
+
+    var user_define_Proxy = new $.su.Proxy({
+        url:URL_ISP_USER_DEFINE_LISET,
+    });
+    /*-----------------------------------------------------------------*/
+
+    var isp_global_Proxy = new $.su.Proxy({
+        url: URL_ISP_GLOBAL_LIST,
+    })
+    
+    var isp_rule_Proxy = new $.su.Proxy({
+        url: URL_ISP_RULE_LIST,
+    });
+
+    var isp_databse_Proxy = new $.su.Proxy({
+        url: URL_ISP_DATABASE_LIST,
+    });
+
+    $("#function_setting").panel({
+        title: $.su.CHAR.ISP_ROUTING.SETTINGS,
+        collapsible: false
+    });
+
+    $("#isp_route_enable").checkbox({        
+        items: [
+            {boxlabel: $.su.CHAR.ISP_ROUTING.ENABLE_ISP_ROUTING, inputValue: "on", uncheckedValue: "off"}
+        ]
+   });
+
+    $("#isp_route_settings").form({
+        proxy: isp_global_Proxy,
+        fields: [
+            {name: "state", mapping: "state"}
+        ],
+        submitBtn: "default"
+    });
+
+    $("#isp_addr_settings").panel({
+        title: $.su.CHAR.ISP_ROUTING.INPUT_ISP_DATABASE,
+        collapsible: false
+    });
+
+    $("input#isp_datebase_version").textbox({
+        fieldLabel: $.su.CHAR.ISP_ROUTING.DATABASE_VERSION,
+        inputCls:'xxl',
+        readOnly:true
+    });
+
+    $("#isp_note").html($.su.CHAR.ISP_ROUTING.ISP_DATABASE_WARN);
+
+    $("#file").file({
+        fieldLabel: $.su.CHAR.ISP_ROUTING.DATABASE_DIR,
+        allowBlank:false,
+        extension: "bin"
+    });
+
+    function isp_getResult()
+    {
+        isp_databse_Proxy.write({method:'check'}, function(data){            
+        }, function(errcode){
+
+            function showAlertMag()
+            {
+                $("#isp_failed_cnt").msg("show", function(){
+                });
+            }
+
+            if(isp_pro_id){
+                clearTimeout(isp_pro_id);
+                isp_pro_id = false;
+            }
+
+            function hideProMsg()
+            {
+                clearTimeout(isp_query_interval);
+                isp_pro_bar.progressbar("stop");
+                isp_pro_bar.progressbar("reset");
+                isp_query_interval = false;
+
+                $("#isp_alert_cnt").hide();
+                $("#isp_alert_cnt").msg("close", function(){                 
+                    $("#isp_alert_cnt").msg('showButtons');
+                    $('#confirm_cnt').show();
+                    $("#isp_pro_cnt").hide();                    
+                });
+            }
+ 
+            if(errcode == "err_format")
+            {
+                $("#error_str").html($.su.CHAR.ERROR["00000148"]);
+                hideProMsg();
+                //showAlertMag();
+            }
+            else
+            {
+                //正常
+                hideProMsg();
+            }       
+        });
+    }
+
+    function isp_write()
+    {
+     
+        $("#isp_addr_database").form('submit',{operation:"update"}, function(){
+                
+            clearTimeout(isp_query_interval);
+                
+            isp_query_interval = setTimeout(isp_getResult,1000);
+            if(isp_pro_id){
+                clearTimeout(isp_pro_id);
+                isp_pro_id = false;
+            }
+
+            isp_pro_id = setTimeout(function(){
+                isp_pro_bar.progressbar("animate", 0, 1, isp_total_time, function(){
+                    if (localStorage){
+                        localStorage.setItem("token", "");
+                    };
+
+                    clearTimeout(isp_query_interval);
+                    isp_pro_bar.progressbar("stop");
+                    isp_pro_bar.progressbar("reset");
+                    isp_query_interval = false;
+
+                    $("#isp_alert_cnt").hide();
+                    $("#isp_alert_cnt").msg("close", function(){
+                        $("#isp_alert_cnt").msg('showButtons');
+                        $('#confirm_cnt').show();
+                        $("#isp_pro_cnt").hide();
+                        isp_databse_Proxy.read({}, function(data){
+                        });
+                    });  
+                });
+            },1200);
+
+        },function(){
+            clearTimeout(isp_query_interval);
+            isp_getResult();
+        });
+    }
+
+    $("#isp_failed_cnt").msg({
+        cls: 'warning reboot-confirm-size',
+        type: "alert"
+    });
+
+    $("#isp_alert_cnt").msg({
+        okHandler:function(){
+            $("#isp_alert_cnt").msg('hideButtons');
+            $('#confirm_cnt').hide();    
+            $("#isp_pro_cnt").show();
+
+            isp_write();    
+            return false;
+        },
+        cancelHandler:function(){
+            return true;
+        },
+        cls: 'warning reboot-confirm-size',
+        closeBtn: false,
+        type: "confirm"
+    });
+
+    $("button#input").button({
+        text: $.su.CHAR.ISP_ROUTING.INPUT_BUTTON,
+        handler: function(){
+            
+            if($("#isp_addr_database").form('validate'))
+            {
+                $("#isp_alert_cnt").msg("show");
+            }
+            else
+            {
+                return false;
+            }   
+        },
+        cls: "submit"
+    });
+
+    var isp_pro_bar  = $('input#isp_pro_bar').progressbar({
+        fieldLabel: null,
+        cls: 'inline',
+        width: 326,
+        height: 6,
+        value: 0
+    }); 
+
+    $("#confirm_content").html($.su.CHAR.ISP_ROUTING.INPUT_CONFIRM);
+
+    $("#isp_addr_database").form({
+        proxy: isp_databse_Proxy,
+        formEnctype: "multipart/form-data",
+        traditional: true,
+        hiddenFrame: true,
+        fields: [
+            {name: "isp_datebase_version", mapping: "isp_datebase_version"},
+            {name: "isp_database", mapping: "isp_database"}            
+        ],
+        autoLoad: true
+    });
+
+    $.su.app.runningModule.addUnloadHandler(function(){
+        if(isp_query_interval)
+        {
+            clearInterval(isp_query_interval);
+            isp_query_interval = false;
+        }
+        isp_pro_bar.progressbar("stop");
+        isp_pro_bar.progressbar("reset");
+
+    });
+
+    /*-----------------------------------------------------------------*/
+       $("#user_define_settings").panel({
+        title: $.su.CHAR.ISP_ROUTING.USER_DEFINE_DATABASE,
+        collapsible: false
+    });
+
+    $("#isp_user_note").html($.su.CHAR.ISP_ROUTING.ISP_USER_DB_WARN);
+
+    $("#user_file").file({
+        fieldLabel: $.su.CHAR.ISP_ROUTING.DATABASE_DIR,
+        allowBlank:false
+    });
+
+    function isp_getResult()
+    {
+        user_define_Proxy.write({method:'check'}, function(data){            
+        }, function(errcode){
+
+            function showAlertMag()
+            {
+                $("#isp_user_failed_cnt").msg("show", function(){
+                });
+            }
+
+            if(isp_uesr_pro_id){
+                clearTimeout(isp_uesr_pro_id);
+                isp_uesr_pro_id = false;
+            }
+
+            function hideProMsg()
+            {
+                clearTimeout(isp_user_query_interval);
+                isp_user_pro_bar.progressbar("stop");
+                isp_user_pro_bar.progressbar("reset");
+                isp_user_query_interval = false;
+
+                $("#isp_user_alert_cnt").hide();
+                $("#isp_user_alert_cnt").msg("close", function(){                 
+                    $("#isp_user_alert_cnt").msg('showButtons');
+                    $('#uesr_confirm_cnt').show();
+                    $("#isp_user_pro_cnt").hide();                    
+                });
+            }
+ 
+            if(errcode == "err_format")
+            {
+                $("#error_str").html($.su.CHAR.ERROR["00000148"]);
+                hideProMsg();
+                //showAlertMag();
+            }
+            else
+            {
+                //正常
+                hideProMsg();
+            }       
+        });
+    }
+
+    function isp_user_write()
+    {
+     
+        $("#user_define_database").form('submit',{operation:"update"}, function(){
+                
+            clearTimeout(isp_user_query_interval);
+                
+            isp_user_query_interval = setTimeout(isp_getResult,1000);
+            if(isp_uesr_pro_id){
+                clearTimeout(isp_uesr_pro_id);
+                isp_uesr_pro_id = false;
+            }
+
+            isp_uesr_pro_id = setTimeout(function(){
+                isp_user_pro_bar.progressbar("animate", 0, 1, isp_user_total_time, function(){
+                    if (localStorage){
+                        localStorage.setItem("token", "");
+                    };
+
+                    clearTimeout(isp_user_query_interval);
+                    isp_user_pro_bar.progressbar("stop");
+                    isp_user_pro_bar.progressbar("reset");
+                    isp_user_query_interval = false;
+
+                    $("#isp_user_alert_cnt").hide();
+                    $("#isp_user_alert_cnt").msg("close", function(){
+                        $("#isp_user_alert_cnt").msg('showButtons');
+                        $('#uesr_confirm_cnt').show();
+                        $("#isp_user_pro_cnt").hide();
+                        user_define_Proxy.read({}, function(data){
+                        });
+                    });  
+                });
+            },1200);
+
+        },function(){
+            clearTimeout(isp_user_query_interval);
+            isp_getResult();
+        });
+    }
+
+    $("#isp_user_failed_cnt").msg({
+        cls: 'warning reboot-confirm-size',
+        type: "alert"
+    });
+
+    $("#isp_user_alert_cnt").msg({
+        okHandler:function(){
+            $("#isp_user_alert_cnt").msg('hideButtons');
+            $('#uesr_confirm_cnt').hide();    
+            $("#isp_user_pro_cnt").show();
+
+            isp_user_write();    
+            return false;
+        },
+        cancelHandler:function(){
+            return true;
+        },
+        cls: 'warning reboot-confirm-size',
+        closeBtn: false,
+        type: "confirm"
+    });
+
+    $("button#user_input").button({
+        text: $.su.CHAR.ISP_ROUTING.INPUT_BUTTON,
+        handler: function(){
+            
+            if($("#user_define_database").form('validate'))
+            {
+                $("#isp_user_alert_cnt").msg("show");
+            }
+            else
+            {
+                return false;
+            }   
+        },
+        cls: "submit"
+    });
+
+    var isp_user_pro_bar  = $('input#isp_user_pro_bar').progressbar({
+        fieldLabel: null,
+        cls: 'inline',
+        width: 326,
+        height: 6,
+        value: 0
+    }); 
+
+    $("#user_confirm_content").html($.su.CHAR.ISP_ROUTING.INPUT_USER_CONFIRM);
+
+    $("#user_define_database").form({
+        proxy: user_define_Proxy,
+        formEnctype: "multipart/form-data",
+        traditional: true,
+        hiddenFrame: true,
+        fields: [
+            {name: "user_database", mapping: "user_database"}            
+        ],
+        autoLoad: true
+    });
+
+    $.su.app.runningModule.addUnloadHandler(function(){
+        if(isp_user_query_interval)
+        {
+            clearInterval(isp_user_query_interval);
+            isp_user_query_interval = false;
+        }
+        isp_user_pro_bar.progressbar("stop");
+        isp_user_pro_bar.progressbar("reset");
+
+    });
+
+    /*-----------------------------------------------------------------*/
+
+    $("#isp_rule_list").panel({
+        title: $.su.CHAR.ISP_ROUTING.RULE_LIST,
+        collapsible: false
+    });
+
+    var ruleGrid = $("#isp_rule_grid").grid({
+        editor: {
+            content:"default",
+            fields: [
+                {name: "interface"},
+                {name: "isp_name"}   
+            ],
+            validator: function(){
+                    var $editor = $(ruleGrid.grid('getEditor')),
+                        editingId = $editor.editor('getEditingId'),
+                        $inface = $editor.find('.combobox-value[name=interface]'),      
+                        value = [],
+                        isOccupied = false;
+
+                    if(editingId == "add"){
+                        value = $inface.combobox("getValue");
+                        $.each(value, function(i, o){
+                            if(-1 != $.inArray(o, existInterface)){
+                                isOccupied = true;
+                                $inface.combobox("setError", $.su.CHAR.ISP_ROUTING.RULE_EXIST);//"接口已被别的选路规则占用");
+                                return false;
+                            }
+                        });
+                        return !isOccupied;
+                    }else{
+                        return true;
+                    }
+                }            
+        },
+        store:{
+            proxy: isp_rule_Proxy,
+            fields: [
+                {name: "interface"},
+                {name: "isp_name"}   
+            ],
+            autoLoad: true
+        },
+        paging:[],
+        columns: [
+            {
+                xtype: "checkcolumn"
+            },
+            {
+                xtype: "rownumberer"
+            },  
+            {
+                text: $.su.CHAR.ISP_ROUTING.INTERFACE,
+                width: 130,
+                dataIndex: "interface",
+                editor: {
+                    xtype: "combobox",
+                    allowBlank: false,
+                    vtype:"string_visible_allow_blank",
+                    items:[
+                        {name:"---",value:"---"}
+                    ]
+                }
+            },
+            {
+                text: $.su.CHAR.ISP_ROUTING.ISP_NAME,
+                width: 150,
+                dataIndex: "isp_name",
+                renderer: function(v)
+                {   
+                    var tmp = "";
+                    var name = "";         
+
+                    if( typeof v === "string" )
+                    {
+                        if(v == "dianxin")
+                        {
+                            return $.su.CHAR.ISP_ROUTING.ISP_DIANXIN;
+                        }
+                        else if(v == "liantong")
+                        {
+                            return $.su.CHAR.ISP_ROUTING.ISP_LIANTONG;
+                        }
+                        else if(v == "jiaoyu")
+                        {
+                            return $.su.CHAR.ISP_ROUTING.ISP_JIAOYU;
+                        }
+                        else if(v == "yidong_tietong")
+                        {
+                            return $.su.CHAR.ISP_ROUTING.ISP_YIDONG;
+                        }
+                        else if(v == "guonei_qita")
+                        {
+                            return $.su.CHAR.ISP_ROUTING.ISP_GUONEIQITA;
+                        }
+                        else if(v == "qita")
+                        {
+                            return $.su.CHAR.ISP_ROUTING.ISP_QITA;
+                        }
+                        else if(v == "user_define")
+                        {
+                            return $.su.CHAR.ISP_ROUTING.ISP_USER_DEFINE;
+                        }
+                        else
+                        {
+                            return "--"
+                        }
+                    }
+
+                    for (var i = 0; i < v.length; i++) {                        
+                        if(v[i] == "dianxin")
+                        {
+                            tmp = $.su.CHAR.ISP_ROUTING.ISP_DIANXIN;
+                        }
+                        else if(v[i] == "liantong")
+                        {
+                            tmp = $.su.CHAR.ISP_ROUTING.ISP_LIANTONG;
+                        }
+                        else if(v[i] == "jiaoyu")
+                        {
+                            tmp = $.su.CHAR.ISP_ROUTING.ISP_JIAOYU;
+                        }
+                        else if(v[i] == "yidong_tietong")
+                        {
+                            tmp = $.su.CHAR.ISP_ROUTING.ISP_YIDONG;
+                        }
+                        else if(v[i] == "guonei_qita")
+                        {
+                            tmp = $.su.CHAR.ISP_ROUTING.ISP_GUONEIQITA;
+                        }
+                        else if(v[i] == "qita")
+                        {
+                            tmp = $.su.CHAR.ISP_ROUTING.ISP_QITA;
+                        }
+                        else if(v[i] == "user_define")
+                        {
+                            tmp = $.su.CHAR.ISP_ROUTING.ISP_USER_DEFINE;
+                        }
+                        else
+                        {
+                            tmp = "";
+                        }                        
+                        if(i == 0)
+                        {
+                            name = name+tmp;
+                        }
+                        else
+                        {
+                            name = name+","+tmp;
+                        }
+                    };  
+                    return name;                 
+                },
+                editor: {
+                    xtype: "combobox",
+                    allowBlank: false,
+                    multiSelect: true,
+                    vtype:"string_visible_allow_blank",
+                    items:[
+                        {name:$.su.CHAR.ISP_ROUTING.ISP_DIANXIN,value:"dianxin"},
+                        {name:$.su.CHAR.ISP_ROUTING.ISP_LIANTONG,value:"liantong"},
+                        {name:$.su.CHAR.ISP_ROUTING.ISP_JIAOYU,value:"jiaoyu"},
+                        {name:$.su.CHAR.ISP_ROUTING.ISP_YIDONG,value:"yidong_tietong"},
+                        {name:$.su.CHAR.ISP_ROUTING.ISP_GUONEIQITA,value:"guonei_qita"},
+                        {name:$.su.CHAR.ISP_ROUTING.ISP_QITA,value:"qita"},
+                        {name:$.su.CHAR.ISP_ROUTING.ISP_USER_DEFINE,value:"user_define"}
+                    ]
+                }
+            },            
+            {
+                xtype: "settings"
+            }    
+        ],
+        operation: 'prompt|add|delete'
+   }).on("ev_load", function(e, data, others){
+        if(others)
+        {
+            //console.log(others.max_rules)
+            maxrules = others.max_rules;
+        }
+        var $editor = $(ruleGrid.grid('getEditor')),
+            store = ruleGrid.grid('getStore');
+  
+        /*发送form请求,获取interface列表.用于显示于接口下拉框*/
+        var interfaceItem=[];
+        var interfaceProxy = new $.su.Proxy({
+                url: $.su.url('/admin/balance?form=interface'),
+                async: false
+        }); 
+
+        existInterface.length = 0;/* 清空数组 */
+        $.each(store.data, function(i, o){
+            if(o.interface){
+                existInterface.push(o.interface);
+            }         
+        });
+        $.unique(existInterface);            
+            
+        interfaceProxy.read({}, function(data){                      
+            var i  
+            for (var i=0; i< data.length; i++)
+            {               
+                if ("1" == data[i].balance)
+                {        
+                    interfaceItem.push({name:data[i].interface,value:data[i].interface});    
+                }  
+            } 
+
+            var editor = ruleGrid.grid('getEditor');
+            var combobox = $(editor).find('.combobox-value[name=interface]');
+            combobox.combobox('loadData',interfaceItem);
+        });      
+
+    }).on("ev_insert", function(){
+        ruleGrid.grid("getStore").load();
+    }).on("ev_update", function(){
+        ruleGrid.grid("getStore").load();
+    }).on("ev_remove", function(){
+        ruleGrid.grid("getStore").load();
+    });
+
+    $("#isp_rule_grid").css("marginBottom","240px");
+
+    var helpIspRouting = new $.su.Help({
+        container: "div#isp_routing_hlep",
+        content: ["ISP_ROUTING_SETTING", "ISP_IMPORT","ISP_USER_DEFINE_HELP","ISP_ROUTING_LIST"]
+    });
+});
+</script>
+</body>
+
+</html>

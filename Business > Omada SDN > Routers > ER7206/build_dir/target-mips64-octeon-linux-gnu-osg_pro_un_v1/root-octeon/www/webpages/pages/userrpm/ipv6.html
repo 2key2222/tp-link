@@ -1,0 +1,2603 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title></title>
+</head>
+
+<body>
+<div class="func-container">
+
+	<div id="setting">
+		<div id="ipv6-enable">
+			<input class="" id="enable_ipv6" name="enable" />
+			<button id="submitBtn" type="button"></button>
+		</div>
+	</div>
+
+    <div id="internet">
+
+	    <div id="internet_ipv6">
+
+	        <div id="ip-setting-ipv6">
+		        <input class="connection-type" id="ipv6_connection_type" name="conntype" />
+	        </div>
+
+			<div id="ipv6-dynamic-config" class="ipv6-conn-part hidden">
+				<input id="ipv6-dynamic-wan-id" name="wan_id" type="hidden" value="1"/>
+				<input id="ipv6-dynamic-ip" name="ip6addr" class=""/>
+
+				<input id="ipv6-dynamic-primary-dns" name="pri_dns" class=""/>
+				<input id="ipv6-dynamic-sec-dns" name="snd_dns" class=""/>
+
+				<div class="part-seperate button-context">
+					<button class="renew" id="ipv6_dynamic_renew" name="dynamic-renew-btn" type="button"></button>
+					<button class="release" id="ipv6_dynamic_release" name="dynamic-release-btn" type="button"></button>
+				</div>
+
+				<div id="ipv6_dynamic_adv_btn" class="advanced-block part-seperate" type="button">
+					<span class="advanced-icon"></span>
+					<span class="advanced-text"></span>
+				</div>
+				<div id="ipv6_dynamic_basic_btn" class="basic-block part-seperate hidden" type="button">
+					<span class="basic-icon"></span>
+					<span class="basic-text"></span>
+				</div>
+
+				<div id="ipv6_dynamic_adv" class="hidden">
+					<input id="ipv6_dynamic_get_ip"  name="ip_config" class=""/>
+					<input id="ipv6_dynamic_get_way" name="ip_mode" class=""/>
+					<div id="ipv6_dynamic_pd_size_part">
+						<input id="ipv6_dynamic_pd_size" name="pd_size"/>
+					</div>
+					<input id="ipv6_dynamic_dns_mode" name="dns_mode" class=""/>
+					<div id="ipv6_dynamic_dns_dyn_part">
+						<input id="ipv6_dynamic_adv_dyn_pridns" name="dyn_pridns" class=""/>
+						<input id="ipv6_dynamic_adv_dyn_snddns" name="dyn_snddns" class=""/>
+					</div>
+					<div id="ipv6_dynamic_dns_static_part">
+						<input id="ipv6_dynamic_adv_static_pridns" name="static_pridns" class=""/>
+						<input id="ipv6_dynamic_adv_static_snddns" name="static_snddns" class=""/>
+					</div>
+
+
+				</div>
+			</div>
+
+			<div id="ipv6-static-config" class="ipv6-conn-part hidden">
+				<input id="ipv6-static-wan-id" name="wan_id" type="hidden" value="1"/>
+				<input id="ipv6-static-ip" name="ip6addr" class=""/>
+				<input id="ipv6-static-prefix-len" name="ip6mask" class=""/>
+				<input id="ipv6-static-gateway" name="ip6gw" class=""/>
+				<input id="ipv6-static-pri-dns" name="pri_dns" class=""/>
+				<input id="ipv6-static-sec-dns" name="snd_dns" class=""/>
+
+				<!-- <input id="ipv6-static-mtu" name="mtu" class=""/> -->
+
+				<!-- <input id="ipv6-dslite-name-static" name="AFTR_name" class=""/> -->
+			</div>
+
+			<div id="ipv6-pppoe-config" class="ipv6-conn-part hidden">
+				<input id="ipv6-pppoe-wan-id" name="wan_id" type="hidden" value="1"/>
+				<input type="hidden"  id="pppshare" name="pppshare" value="0" />
+				<input id="ipv6-pppoe-username" name="username" class=""/>
+				<input id="ipv6-pppoe-password" name="password" class=""/>
+				<input id="ipv6-pppoe-ip" name="ip6addr" class=""/>
+				<input type="hidden"  id="" name="pppflag" value="v6" />
+				<div id="ipv6_pppoe_adv_btn" class="advanced-block part-seperate" type="button">
+					<span class="advanced-icon"></span>
+					<span class="advanced-text"></span>
+				</div>
+				<div id="ipv6_pppoe_basic_btn" class="basic-block part-seperate hidden" type="button">
+					<span class="basic-icon"></span>
+					<span class="basic-text"></span>
+				</div>
+
+				<div id="ipv6_pppoe_adv" class="hidden">
+
+					<input id="ipv6_pppoe_get_ip"  name="ip_config" class=""/>
+					<input id="ipv6-pppoe-ip-edit" name="specific_ip" class=""/>
+
+					<input id="ipv6_pppoe_ip_way"  name="ip_mode" class=""/>
+					<div id="ipv6_pppoe_pd_size_part">
+						<input id="ipv6_pppoe_pd_size" name="pd_size"/>
+					</div>
+
+					<!-- <input id="ipv6-dslite-name-pppoe" name="AFTR_name" class=""/> -->
+
+					<input id="ipv6_pppoe_snd_conn" name="dns_mode"/>
+
+					<div id="ipv6_pppoe_dns_dyn_part">
+						<input id="ipv6_pppoe_dyn_pridns" name="dyn_pridns" class=""/>
+						<input id="ipv6_pppoe_dyn_snddns" name="dyn_snddns" class=""/>
+					</div>
+					<div id="pppoe_static" class="pppoe-static hidden">
+						<input id="ipv6_pppoe_pri_dns" name="static_pridns"/>
+						<input id="ipv6_pppoe_snd_dns" name="static_snddns"/>
+					</div>
+				</div>
+
+				<div class="button-context part-seperate">
+					<button id="ipv6_pppoe_conn_btn" class="" type="button"></button>
+					<button id="ipv6_pppoe_disconn_btn" class="" type="button"></button>
+					<input id="ipv6_pppoe_status"/>
+				</div>
+
+			</div>
+
+			<div id="ipv6-tunnel-config" class="ipv6-conn-part hidden">
+				<input id="ipv6-tunnel-wan-id" name="wan_id" type="hidden" value="1"/>
+				<input id="ipv6-tunnel-ip" name="ipaddr" class=""/>
+				<input id="ipv6-tunnel-mask" name="netmask" class=""/>
+				<input id="ipv6-tunnel-gateway" name="gateway" class=""/>
+				<input id="ipv6-tunnel-address" name="tunnel_addr" class=""/>
+
+				<div id="ipv6_tunnel_adv_btn" class="advanced-block part-seperate" type="button">
+					<span class="advanced-icon"></span>
+					<span class="advanced-text"></span>
+				</div>
+				<div id="ipv6_tunnel_basic_btn" class="basic-block part-seperate hidden" type="button">
+					<span class="basic-icon"></span>
+					<span class="basic-text"></span>
+				</div>
+
+				<div id="ipv6_tunnel_adv" class="hidden">
+					<input id="ipv6_tunnel_dns_mode" name="dns_mode" class=""/>
+					<input id="ipv6-tunnel-adv-pri-dns" name="pri_dns" class=""/>
+					<input id="ipv6-tunnel-adv-sec-dns" name="snd_dns" class=""/>
+
+				</div>
+
+				<div class="part-seperate button-context">
+					<button id="ipv6-tunnel-conn-btn" class="" type="button"></button>
+					<button id="ipv6-tunnel-disconn-btn" class="" type="button"></button>
+					<input id="ipv6_tunnel_status"/>
+				</div>
+
+			</div>
+
+
+			<div id="ipv6-6rd-config" class="ipv6-conn-part hidden">
+				<input id="ipv6-6rd-wan-id" name="wan_id" type="hidden" value="1"/>
+				<input id="ipv6-6rd-type" name="ip_mode" class=""/>
+
+				<div  id="ipv6-6rd-cnt">
+					<input id="ipv6-6rd-ipv4-mask-len" name="ipv4_mask_len" class=""/>
+
+					<input id="ipv6-6rd-prefix" name="6rd_prefix" class=""/>
+					<input id="ipv6-6rd-prefix-len" name="6rd_prefix_len" class=""/>
+					<input id="ipv6-6rd-ipv4-addr" name="relay_ipv4_addr" class=""/>
+				</div>
+			</div>
+
+
+			<div id="ipv6-dslite-config" class="ipv6-conn-part hidden">
+				<input id="ipv6-dslite-wan-id" name="wan_id" type="hidden" value="1"/>
+				<!-- <input id="ipv6-dslite-type" name="configuration_type" class=""/> -->
+				<div id="ipv6-dslite-cnt">
+
+					<input id="ipv6-dslite-name" name="AFTR_name" class=""/>
+
+					<input class="sec-conn" id="ipv6_dslite_snd_conn" name="snd_conn"/>
+
+					<div id="dslite-ipv6-dynamic-config" class="l2tp-dynamic">
+						<input id="dslite-ipv6-dynamic-ip" name="dynamic_ip6addr" class=""/>
+
+						<input id="dslite-ipv6-dynamic-primary-dns" name="dynamic_pri_dns" class=""/>
+						<input id="dslite-ipv6-dynamic-sec-dns" name="dynamic_snd_dns" class=""/>
+
+						<div class="part-seperate button-context">
+							<button class="renew" id="dslite_ipv6_dynamic_renew" name="dynamic-renew-btn" type="button"></button>
+							<button class="release" id="dslite_ipv6_dynamic_release" name="dynamic-release-btn" type="button"></button>
+						</div>
+
+						<div id="dslite_ipv6_dynamic_adv_btn" class="advanced-block part-seperate" type="button">
+							<span class="advanced-icon"></span>
+							<span class="advanced-text"></span>
+						</div>
+						<div id="dslite_ipv6_dynamic_basic_btn" class="basic-block part-seperate hidden" type="button">
+							<span class="basic-icon"></span>
+							<span class="basic-text"></span>
+						</div>
+
+						<div id="dslite_ipv6_dynamic_adv" class="hidden">
+							<input id="dslite_ipv6_dynamic_ip_config" name="dynamic_ip_config" class=""/>
+							<input id="dslite_ipv6_dynamic_get_way" name="dynamic_ip_mode" class=""/>
+							<input id="dslite_ipv6_dynamic_dns_mode" name="dynamic_dns_mode" class=""/>
+							<div id="dslite_ipv6_dynamic_dns_dyn_part">
+								<input id="dslite_ipv6_dynamic_adv_dyn_pridns" name="dynamic_dyn_pridns" class=""/>
+								<input id="dslite_ipv6_dynamic_adv_dyn_snddns" name="dynamic_dyn_snddns" class=""/>
+							</div>
+							<div id="dslite_ipv6_dynamic_dns_static_part">
+								<input id="dslite_ipv6_dynamic_adv_static_pridns" name="dynamic_static_pridns" class=""/>
+								<input id="dslite_ipv6_dynamic_adv_static_snddns" name="dynamic_static_snddns" class=""/>
+							</div>
+
+
+						</div>
+					</div>
+
+					<div id="dslite-ipv6-static-config" class="l2tp-static hidden">
+						<input id="dslite-ipv6-static-ip" name="static_ip6addr" class=""/>
+						<input id="dslite-ipv6-static-gateway" name="static_ip6gw" class=""/>
+						<input id="dslite-ipv6-static-pri-dns" name="static_pri_dns" class=""/>
+						<input id="dslite-ipv6-static-sec-dns" name="static_snd_dns" class=""/>
+
+						<input id="dslite-ipv6-static-mtu" name="static_mtu" class=""/>
+					</div>
+
+
+					<div id="dslite-ipv6-pppoe-config" class="l2tp-static hidden">
+						<input id="dslite-ipv6-pppoe-username" name="pppoe_username" class=""/>
+						<input id="dslite-ipv6-pppoe-password" name="pppoe_password" class=""/>
+						<input id="dslite-ipv6-pppoe-ip" name="pppoe_ip6addr" class=""/>
+
+						<div id="dslite_ipv6_pppoe_adv_btn" class="advanced-block part-seperate" type="button">
+							<span class="advanced-icon"></span>
+							<span class="advanced-text"></span>
+						</div>
+						<div id="dslite_ipv6_pppoe_basic_btn" class="basic-block part-seperate hidden" type="button">
+							<span class="basic-icon"></span>
+							<span class="basic-text"></span>
+						</div>
+
+						<div id="dslite_ipv6_pppoe_adv" class="hidden">
+
+							<input id="dslite_ipv6_pppoe_ip_config" name="pppoe_ip_config" class=""/>
+							<input id="dslite_ipv6_pppoe_ip_way" name="pppoe_ip_mode" class=""/>
+							<input id="dslite-ipv6-pppoe-ip-edit" name="pppoe_specific_ip" class=""/>
+							<!-- <input id="ipv6-dslite-name-pppoe" name="AFTR_name" class=""/> -->
+
+							<input id="dslite_ipv6_pppoe_snd_conn" name="pppoe_dns_mode"/>
+
+							<div id="dslite_pppoe_static" class="pppoe-static">
+								<input id="ipv6_pppoe_pri_dns" name="pppoe_static_pridns"/>
+								<input id="ipv6_pppoe_snd_dns" name="pppoe_static_snddns"/>
+							</div>
+						</div>
+
+						<div class="part-seperate button-context">
+							<button id="dslite_ipv6_pppoe_conn_btn" class="" type="button"></button>
+							<button id="dslite_ipv6_pppoe_disconn_btn" class="" type="button"></button>
+							<!-- <input id="dslite_ipv6_pppoe_status"/> -->
+						</div>
+					</div>
+				</div>
+
+			</div>
+
+
+			<div id="ipv6-pass-config" class="ipv6-conn-part hidden">
+				<input id="ipv6-pass-wan-id" name="wan_id" type="hidden" value="1"/>
+				<input id="ipv6-pass-type" name="type" value="pass" type="hidden" class=""/>
+			</div>
+
+		</div>
+
+    </div>
+
+	<div id="internet_help"></div>
+
+
+</div>
+
+<script type="text/javascript">
+//<![CDATA[
+try{
+    $
+}catch(e){
+    location.href = "/";
+};
+
+$(document).ready(function(e){
+	$("div.func-container").page({
+		title: $.su.CHAR.IPV6.TITLE,
+		help: ""	//可能是个调用的id 也可能是个url
+	});
+
+
+	$("span.advanced-text").html($.su.CHAR.IPV6.ADVANCED);
+	$("span.basic-text").html($.su.CHAR.IPV6.ADVANCED);
+
+
+	var shareflag = 0;
+	var currentWan = 1;
+
+	var intervalModeIpv6;
+	var presentMode;
+	var realEnable;
+	var curEnable;
+
+///////////////////////////////////////////////////////////////////////////
+	$("div#setting").panel({
+		title: $.su.CHAR.IPV6.GENERAL,
+		collapsible: false
+	});
+	$("div#internet").panel({
+		title: $.su.CHAR.IPV6.TITLE,
+		collapsible: false
+	});
+
+////////////////////////////////////////////////////  Wan ID
+	var $lis = $('.tab-menu-ul:visible>li');
+	$.each($lis, function(i, li){
+		var wanid = li.wanid;
+		var $li = $(li);
+		if($li.hasClass('selected')){
+			currentWan = wanid;
+			return false;
+		}
+	});
+	$('#ipv6-dynamic-wan-id').val(currentWan);
+	$('#ipv6-static-wan-id').val(currentWan);
+	$('#ipv6-pppoe-wan-id').val(currentWan);
+	$('#ipv6-tunnel-wan-id').val(currentWan);
+	$('#ipv6-6rd-wan-id').val(currentWan);
+	$('#ipv6-dslite-wan-id').val(currentWan);
+	$('#ipv6-pass-wan-id').val(currentWan);
+	console.log(currentWan);
+
+//////////////////////////////////  IPV6 表单加载
+	var ipv6FirstLoad = true;
+	var ipv6OldConn = 0;
+
+	var ipv6Proxy = new $.su.Proxy({
+		url: $.su.url('/admin/ipv6?form=wan_ipv6_status')
+	});
+	$("div#ipv6-enable").form({
+		proxy: ipv6Proxy,
+		fields: [
+			{name: "enable", mapping: "enable"}
+		],
+		submitBtn: "#submitBtn",
+		autoLoad: false
+	});
+	$("div#ip-setting-ipv6").form({
+		proxy: ipv6Proxy,
+		fields: [
+			{name: "conntype", mapping: "conntype"}
+		],
+		submitBtn: false,
+		autoLoad: false
+	});
+
+
+	$("div#ip-setting-ipv6").on('ev_loadData', function(e, data){
+		if((data.enable == 'on') && (data.conntype == 'staticv6')){
+			ipv6ProxyStatic.read({wan_id: currentWan});
+			$('div#ipv6-static-config').fadeIn(200);
+		}
+
+		if( ipv6FirstLoad || data.conntype != ipv6OldConn){
+			ipv6FirstLoad = false;
+			ipv6OldConn = data.conntype;
+			return true;
+		}
+
+		$('.ipv6-conn-part').css("display", "none");
+		clearInterval(refreshIpv6Action);
+
+		if (realEnable == false) {
+			return;
+		}
+
+		$('div.advanced-block').show();
+		$('div.basic-block').hide();
+		switch($("input#ipv6_connection_type").combobox('getValue')[0])
+		{
+			case 'dhcpv6':
+			case 'dhcp6c':
+				ipv6ProxyDynamic.read({wan_id: currentWan}, function(){
+					var o = setTimeout( function(){
+						$("#ipv6_dynamic_adv").fieldset('hide');
+					}, 200);
+				});
+				$('div#ipv6-dynamic-config').fadeIn(200);
+				break;
+			case 'staticv6':
+				ipv6ProxyStatic.read({wan_id: currentWan});
+				$('div#ipv6-static-config').fadeIn(200);
+				break;
+			case 'pppoev6':
+				ipv6ProxyPppoe.read({wan_id: currentWan, pppflag:'v6', share:shareflag}, function(){
+					var o = setTimeout( function(){
+						$("#ipv6_pppoe_adv").fieldset('hide');
+					}, 200);
+				});
+				$('div#ipv6-pppoe-config').fadeIn(200);
+				break;
+			case '6to4':
+				ipv6ProxyTunnel.read({wan_id: currentWan}, function(){
+					var o = setTimeout( function(){
+						$("#ipv6_tunnel_adv").fieldset('hide');
+					}, 200);
+				});
+				$('div#ipv6-tunnel-config').fadeIn(200);
+				break;
+			case '6rd':
+				ipv6Proxy6rd.read({wan_id: currentWan}, function(){
+
+				});
+				$('div#ipv6-6rd-config').fadeIn(200);
+				break;
+			case 'dslite':
+				ipv6ProxyDslite.read({wan_id: currentWan}, function(){
+					var o = setTimeout( function(){
+						$("#dslite_ipv6_dynamic_adv").fieldset('hide');
+						$("#dslite_ipv6_pppoe_adv").fieldset('hide');
+					}, 200);
+				});
+				$('div#ipv6-dslite-config').fadeIn(200);
+				break;
+			case 'passthrough':
+				ipv6ProxyPass.read({wan_id: currentWan}, function(){
+
+				});
+				$('div#ipv6-pass-config').fadeIn(200);
+
+				break;
+		}
+	});
+
+	var ipv6ProxyDynamic = new $.su.Proxy({
+		url: $.su.url('/admin/ipv6?form=wan_ipv6_dynamic')
+	});
+	$("div#ipv6-dynamic-config").form({
+		proxy: ipv6ProxyDynamic,
+		fields:[
+			{name: "ip6addr", mapping: "ip6addr"},
+		 	{name: "prefix", mapping: "prefix"},
+		 	{name: "pri_dns", mapping: "pri_dns"},
+		 	{name: "snd_dns", mapping: "snd_dns"},
+		 	{name: "ip_config", mapping: "ip_config"},
+		 	{name: "ip_mode", mapping: "ip_mode"},
+		 	{name: "pd_size", mapping: "pd_size"},
+		 	{name: "dns_mode", mapping: "dns_mode"},
+		 	{name: "dyn_pridns", mapping: "dyn_pridns"},
+		 	{name: "dyn_snddns", mapping: "dyn_snddns"},
+		 	{name: "static_pridns", mapping: "static_pridns"},
+		 	{name: "static_snddns", mapping: "static_snddns"}
+		],
+		submitBtn: 'default',
+		autoLoad: false
+	});
+
+
+
+	var ipv6ProxyStatic = new $.su.Proxy({
+		url: $.su.url('/admin/ipv6?form=wan_ipv6_static')
+	});
+	$("div#ipv6-static-config").form({
+		proxy: ipv6ProxyStatic,
+		fields:[
+			{name: "ip6addr", mapping: "ip6addr"},
+			{name: "ip6mask", mapping: "ip6mask"},
+		 	{name: "ip6gw", mapping: "ip6gw"},
+		 	{name: "pri_dns", mapping: "pri_dns"},
+		 	{name: "snd_dns", mapping: "snd_dns"},
+		 	{name: "mtu", mapping: "mtu"}
+		],
+		submitBtn: 'default',
+		autoLoad: false
+	});
+
+	var ipv6ProxyPppoe = new $.su.Proxy({
+		url: $.su.url('/admin/ipv6?form=wan_ipv6_pppoe')
+	});
+	var pppoeform = $("div#ipv6-pppoe-config").form({
+		proxy: ipv6ProxyPppoe,
+		fields:[
+			{name: "username", mapping: "username"},
+		 	{name: "password", mapping: "password"},
+		 	{name: "dns_mode", mapping: "dns_mode"},
+		 	{name: "dyn_pridns", mapping: "dyn_pridns"},
+		 	{name: "dyn_snddns", mapping: "dyn_snddns"},
+		 	{name: "static_pridns", mapping: "static_pridns"},
+		 	{name: "static_snddns", mapping: "static_snddns"},
+		 	{name: "ip6addr", mapping: "ip6addr"},
+			{name: "pppflag", mapping: "pppflag"},
+			{name: "pppshare", mapping: "pppshare"},
+		 	{name: "ip_config", mapping: "ip_config"},
+		 	{name: "ip_mode", mapping: "ip_mode"},
+		 	{name: "pd_size", mapping: "pd_size"},
+		 	// {name: "AFTR_name", mapping: "AFTR_name"},
+		 	{name: "specific_ip", mapping: "specific_ip"}
+		],
+		submitBtn: 'default',
+		autoLoad: false
+	});
+
+
+	var ipv6ProxyTunnel = new $.su.Proxy({
+		url: $.su.url('/admin/ipv6?form=wan_ipv6_tunnel')
+	});
+	$("div#ipv6-tunnel-config").form({
+		proxy: ipv6ProxyTunnel,
+		fields:[
+			{name: "ipaddr", mapping: "ipaddr"},
+		 	{name: "netmask", mapping: "netmask"},
+		 	{name: "gateway", mapping: "gateway"},
+		 	{name: "tunnel_addr", mapping: "tunnel_addr"},
+		 	{name: "dns_mode", mapping: "dns_mode"},
+		 	{name: "pri_dns", mapping: "pri_dns"},
+		 	{name: "snd_dns", mapping: "snd_dns"}
+		],
+		submitBtn: 'default',
+		autoLoad: false
+	});
+
+
+	var ipv6Proxy6rd = new $.su.Proxy({
+		url: $.su.url('/admin/ipv6?form=wan_ipv6_6rd')
+	});
+	$("div#ipv6-6rd-config").form({
+		proxy: ipv6Proxy6rd,
+		fields:[
+
+			{name: "ip_mode", mapping: "ip_mode"},
+
+			{name: "ipv4_mask_len", mapping: "ipv4_mask_len"},
+		 	{name: "6rd_prefix", mapping: "6rd_prefix"},
+		 	{name: "6rd_prefix_len", mapping: "6rd_prefix_len"},
+		 	{name: "relay_ipv4_addr", mapping: "relay_ipv4_addr"}
+		],
+		submitBtn: 'default',
+		autoLoad: false
+	});
+
+
+	var ipv6ProxyDslite = new $.su.Proxy({
+		url: $.su.url('/admin/ipv6?form=wan_ipv6_dslite')
+	});
+	$("div#ipv6-dslite-config").form({
+		proxy: ipv6ProxyDslite,
+		fields:[
+			{name: "snd_conn", mapping: "snd_conn"},
+
+
+			{name: "dynamic_ip6addr", mapping: "dynamic_ip6addr"},
+		 	{name: "dynamic_prefix", mapping: "dynamic_prefix"},
+		 	{name: "dynamic_pri_dns", mapping: "dynamic_pri_dns"},
+		 	{name: "dynamic_snd_dns", mapping: "dynamic_snd_dns"},
+		 	{name: "dynamic_ip_config", mapping: "dynamic_ip_config"},
+		 	{name: "dynamic_ip_mode", mapping: "dynamic_ip_mode"},
+		 	{name: "dynamic_dns_mode", mapping: "dynamic_dns_mode"},
+		 	{name: "dynamic_dyn_pridns", mapping: "dynamic_dyn_pridns"},
+		 	{name: "dynamic_dyn_snddns", mapping: "dynamic_dyn_snddns"},
+		 	{name: "dynamic_static_pridns", mapping: "dynamic_static_pridns"},
+		 	{name: "dynamic_static_snddns", mapping: "dynamic_static_snddns"},
+
+
+		 	{name: "static_ip6addr", mapping: "static_ip6addr"},
+		 	{name: "static_ip6gw", mapping: "static_ip6gw"},
+		 	{name: "static_pri_dns", mapping: "static_pri_dns"},
+		 	{name: "static_snd_dns", mapping: "static_snd_dns"},
+		 	{name: "static_mtu", mapping: "static_mtu"},
+
+
+		 	{name: "pppoe_username", mapping: "pppoe_username"},
+		 	{name: "pppoe_password", mapping: "pppoe_password"},
+		 	{name: "pppoe_dns_mode", mapping: "pppoe_dns_mode"},
+		 	{name: "pppoe_static_pridns", mapping: "pppoe_static_pridns"},
+		 	{name: "pppoe_static_snddns", mapping: "pppoe_static_snddns"},
+		 	{name: "pppoe_ip6addr", mapping: "pppoe_ip6addr"},
+		 	{name: "pppoe_ip_mode", mapping: "pppoe_ip_mode"},
+		 	{name: "pppoe_ip_config", mapping: "pppoe_ip_config"},
+		 	// {name: "AFTR_name", mapping: "AFTR_name"},
+		 	{name: "pppoe_specific_ip", mapping: "pppoe_specific_ip"}
+
+		],
+		submitBtn: 'default',
+		autoLoad: false
+	});
+
+
+	var ipv6ProxyPass = new $.su.Proxy({
+		url: $.su.url('/admin/ipv6?form=wan_ipv6_pass')
+	});
+	$("div#ipv6-pass-config").form({
+		proxy: ipv6ProxyPass,
+		fields:[
+			{name: "pass", mapping: "pass"}
+		],
+		submitBtn: 'default',
+		autoLoad: false
+	});
+
+
+	$('input#enable_ipv6').checkbox({
+		fieldLabel: $.su.CHAR.IPV6.ENABLE_IPV6,
+		cls: '',
+		columns: 2,
+		allowBlank: false,
+		items: [
+			{boxlabel: $.su.CHAR.IPV6.ENABLE, name: 'enable', inputValue: 'on', uncheckedValue: 'off'}
+		]
+	}).on("ev_change", function(e, oldValue, newValue){
+		if(newValue[0] == 'off' || newValue[0] == undefined || typeof newValue[0] == "undefined")
+		{
+			curEnable = 'off';
+			//$("div#internet").panel("hide");
+			$("input#ipv6_connection_type").combobox("setValue", "");
+			$("input#ipv6_connection_type").combobox("disable");
+		}
+		else
+		{
+			curEnable = 'on';
+			if (realEnable == true) {
+				//$("div#internet").panel("show");
+				$("input#ipv6_connection_type").combobox("setValue", presentMode);
+				$("input#ipv6_connection_type").combobox("enable");
+				switch( presentMode )
+				{
+					case 'dhcpv6':
+					case 'dhcp6c':
+						$('div#ipv6-dynamic-config').fadeIn(200);
+
+						break;
+					case 'staticv6':
+						$('div#ipv6-static-config').fadeIn(200);
+
+						break;
+					case 'pppoev6':
+						$('div#ipv6-pppoe-config').fadeIn(200);
+
+						break;
+					case '6to4':
+						$('div#ipv6-tunnel-config').fadeIn(200);
+
+						break;
+					case '6rd':
+						$('div#ipv6-6rd-config').fadeIn(200);
+
+						break;
+					case 'dslite':
+						$('div#ipv6-dslite-config').fadeIn(200);
+
+						break;
+					case 'passthrough':
+						$('div#ipv6-pass-config').fadeIn(200);
+
+						break;
+				}
+			}
+		}
+	});
+
+	$("#submitBtn").button({
+        text: $.su.CHAR.OPERATION.SAVE,
+        cls: "submit",
+        handler: function(e){
+            
+            $.su.loading.show();
+			ipv6Proxy.write({wan_id: currentWan, enable: curEnable}, function(data){
+				if (data.enable == 'on') {
+					realEnable = true;
+					presentMode = data.conntype;
+					//$("div#internet").panel("show");
+					$("input#ipv6_connection_type").combobox("enable");
+				} else {
+					realEnable = false;
+					clearInterval(refreshIpv6Action);
+					//$("div#internet").panel("hide");
+					$("input#ipv6_connection_type").combobox("setValue", "");
+					$("input#ipv6_connection_type").combobox("disable");
+				}
+				$.su.loading.hide();
+			}, function(data) {
+				$.su.loading.hide();
+			});
+        }
+    });
+
+
+	/*
+	$("input#ipv6_connection_type").combobox({
+		fieldLabel: $.su.CHAR.IPV6.CONNECTION_TYPE,
+		cls: 'part-seperate',
+		items:[
+			{name: $.su.CHAR.IPV6.DYNAMIC_IP, cls: 'l', value:'dhcpv6'},
+			{name: $.su.CHAR.IPV6.STATIC_IP, cls: 'l', value: 'staticv6'},
+			{name: $.su.CHAR.IPV6.PPPOE, cls: 'm', value: 'pppoev6'},
+			{name: $.su.CHAR.IPV6.TUNNEL_6TO4, cls: 'l', value: '6to4'},
+			{name: $.su.CHAR.IPV6.RD6, cls: 'l', value: '6rd'},
+			{name: $.su.CHAR.IPV6.DS_LITE, cls: 'l', value: 'dslite'},
+			{name: $.su.CHAR.IPV6.PASS_THROUGH, cls: 'l', value: 'passthrough'}
+		]
+	}).on("ev_change", function(e, oldValue, newValue){
+		ipv6OldConn = newValue[0];
+		$('.ipv6-conn-part').css("display", "none");
+		presentMode = newValue[0];
+
+		$('div.advanced-block').show();
+		$('div.basic-block').hide();
+		switch(newValue[0])
+		{
+			case 'dhcpv6':
+				ipv6ProxyDynamic.read({}, function(){
+					var o = setTimeout( function(){
+						$("#ipv6_dynamic_adv").fieldset('hide');
+					}, 200);
+				});
+				$('div#ipv6-dynamic-config').fadeIn(200);
+				$("div#lan_panel").panel("show");
+				break;
+			case 'staticv6':
+				$('div#ipv6-static-config').fadeIn(200);
+				ipv6ProxyStatic.read();
+				$("div#lan_panel").panel("show");
+				break;
+			case 'pppoev6':
+				ipv6ProxyPppoe.read({pppflag:'v6', share:shareflag}, function(){
+					var o = setTimeout( function(){
+						$("#ipv6_pppoe_adv").fieldset('hide');
+					}, 200);
+				});
+				$('div#ipv6-pppoe-config').fadeIn(200);
+				$("div#lan_panel").panel("show");
+				break;
+			case '6to4':
+				ipv6ProxyTunnel.read({}, function(){
+					var o = setTimeout( function(){
+						$("#ipv6_tunnel_adv").fieldset('hide');
+					}, 200);
+				});
+				$('div#ipv6-tunnel-config').fadeIn(200);
+				$("div#lan_panel").panel("show");
+				break;
+			case '6rd':
+				ipv6Proxy6rd.read({}, function(){
+
+				});
+				$('div#ipv6-6rd-config').fadeIn(200);
+				$("div#lan_panel").panel("show");
+				break;
+			case 'dslite':
+				ipv6ProxyDslite.read({}, function(){
+
+				});
+				$('div#ipv6-dslite-config').fadeIn(200);
+				$("div#lan_panel").panel("show");
+				break;
+			case 'passthrough':
+				ipv6ProxyPass.read({}, function(){
+
+				});
+				$('div#ipv6-pass-config').fadeIn(200);
+				$("div#lan_panel").panel("hide");
+				break;
+		}
+	});
+*/
+
+
+	var connectionCombo = $("input#ipv6_connection_type").combobox({
+		fieldLabel: $.su.CHAR.IPV6.CONNECTION_TYPE,
+		cls: 'part-seperate',
+		inputCls:"xl",
+		items:[
+		]
+	}).on("ev_change", function(e, oldValue, newValue){
+
+		if (typeof newValue[0] == "undefined"){
+			$('.ipv6-conn-part').css("display", "none");
+		}
+	});
+
+	var connectionItem = [];
+	connectionItem = $.su.loadComboData($.su.url("/admin/ipv6?form=wan_ipv6_protos"), {advanced:true, wan_id:currentWan}, [
+		{
+			srcKey:"name",
+			dstKey:"name",
+			func:function(src, para){
+				return para[src];
+			},
+			para:$.su.CHAR.IPV6
+		},
+		{srcKey:"value", dstKey:"value"}
+	]);
+	$("#ipv6_connection_type").combobox("loadData",connectionItem);
+
+	connectionCombo.combobox('getContainer').delegate('label', 'click', function(){
+
+		clearInterval(refreshIpv6Action);
+		ipv6OldConn = $(this).find('input').val() ;
+		$('.ipv6-conn-part').css("display", "none");
+		presentMode = $(this).find('input').val() ;
+
+		$('div.advanced-block').show();
+		$('div.basic-block').hide();
+		switch( $(this).find('input').val() )
+		{
+			case 'dhcpv6':
+			case 'dhcp6c':
+				ipv6ProxyDynamic.read({wan_id: currentWan}, function(){
+					var o = setTimeout( function(){
+						$("#ipv6_dynamic_adv").fieldset('hide');
+					}, 200);
+				});
+				$('div#ipv6-dynamic-config').fadeIn(200);
+
+				break;
+			case 'staticv6':
+				$('div#ipv6-static-config').fadeIn(200);
+				ipv6ProxyStatic.read({wan_id: currentWan});
+
+				break;
+			case 'pppoev6':
+				ipv6ProxyPppoe.read({wan_id: currentWan, pppflag:'v6',share:shareflag}, function(){
+					var o = setTimeout( function(){
+						$("#ipv6_pppoe_adv").fieldset('hide');
+					}, 200);
+				});
+				$('div#ipv6-pppoe-config').fadeIn(200);
+
+				break;
+			case '6to4':
+				ipv6ProxyTunnel.read({wan_id: currentWan}, function(){
+					var o = setTimeout( function(){
+						$("#ipv6_tunnel_adv").fieldset('hide');
+					}, 200);
+				});
+				$('div#ipv6-tunnel-config').fadeIn(200);
+
+				break;
+			case '6rd':
+				ipv6Proxy6rd.read({wan_id: currentWan}, function(data){
+					if (data.ip_mode=="auto"){
+						$("#ipv6-6rd-cnt").fieldset("disable");
+					}
+				});
+				$('div#ipv6-6rd-config').fadeIn(200);
+
+				break;
+			case 'dslite':
+				ipv6ProxyDslite.read({wan_id: currentWan}, function(){
+					var o = setTimeout( function(){
+						$("#dslite_ipv6_dynamic_adv").fieldset('hide');
+						$("#dslite_ipv6_pppoe_adv").fieldset('hide');
+					}, 200);
+				});
+				$('div#ipv6-dslite-config').fadeIn(200);
+
+				break;
+			case 'passthrough':
+				ipv6ProxyPass.read({wan_id: currentWan}, function(){
+
+				});
+				$('div#ipv6-pass-config').fadeIn(200);
+
+				break;
+		}
+
+	});
+
+
+	ipv6Proxy.read({wan_id: currentWan}, function(data, others){
+		ipv6OldConn =  data.conntype ;
+		$('.ipv6-conn-part').css("display", "none");
+		presentMode =  data.conntype ;
+
+		wan_infos  = others.wan_infos;
+		lan_infos  = others.lan_infos;
+
+		clearInterval(refreshIpv6Action);
+
+		if (data.enable == 'off') {
+			realEnable = false;
+			//$("div#internet").panel("hide");
+			$("input#ipv6_connection_type").combobox("setValue", "");
+			$("input#ipv6_connection_type").combobox("disable");
+			return;
+		}
+		else {
+			realEnable = true;
+			//$("div#internet").panel("show");
+			$("input#ipv6_connection_type").combobox("enable");
+		}
+
+		$('div.advanced-block').show();
+		$('div.basic-block').hide();
+		switch( data.conntype )
+		{
+			case 'dhcpv6':
+			case 'dhcp6c':
+				ipv6ProxyDynamic.read({wan_id: currentWan}, function(){
+					var o = setTimeout( function(){
+						$("#ipv6_dynamic_adv").fieldset('hide');
+					}, 200);
+				});
+				$('div#ipv6-dynamic-config').fadeIn(200);
+
+				break;
+			case 'staticv6':
+				$('div#ipv6-static-config').fadeIn(200);
+				ipv6ProxyStatic.read({wan_id: currentWan});
+
+				break;
+			case 'pppoev6':
+				ipv6ProxyPppoe.read({wan_id: currentWan, pppflag:'v6', share:shareflag}, function(){
+					var o = setTimeout( function(){
+						$("#ipv6_pppoe_adv").fieldset('hide');
+					}, 200);
+				});
+				$('div#ipv6-pppoe-config').fadeIn(200);
+
+				break;
+			case '6to4':
+				ipv6ProxyTunnel.read({wan_id: currentWan}, function(){
+					var o = setTimeout( function(){
+						$("#ipv6_tunnel_adv").fieldset('hide');
+					}, 200);
+				});
+				$('div#ipv6-tunnel-config').fadeIn(200);
+
+				break;
+			case '6rd':
+				ipv6Proxy6rd.read({wan_id: currentWan}, function(data){
+					if (data.ip_mode=="auto"){
+						$("#ipv6-6rd-cnt").fieldset("disable");
+					}
+				});
+				$('div#ipv6-6rd-config').fadeIn(200);
+
+				break;
+			case 'dslite':
+				ipv6ProxyDslite.read({wan_id: currentWan}, function(){
+					var o = setTimeout( function(){
+						$("#dslite_ipv6_dynamic_adv").fieldset('hide');
+						$("#dslite_ipv6_pppoe_adv").fieldset('hide');
+					}, 200);
+				});
+				$('div#ipv6-dslite-config').fadeIn(200);
+
+				break;
+			case 'passthrough':
+				ipv6ProxyPass.read({wan_id: currentWan}, function(){
+
+				});
+				$('div#ipv6-pass-config').fadeIn(200);
+
+				break;
+		}
+
+	});
+
+/////////////////////////////////////  dynamic  IPV6
+	$("input#ipv6-dynamic-ip").textbox({
+		fieldLabel: $.su.CHAR.IPV6.IPV6_ADDR,
+		readOnly: true,
+		inputCls: 'xxxl',
+		cls: 'part-seperate'
+	});
+
+	$("input#ipv6-dynamic-primary-dns").textbox({
+		fieldLabel: $.su.CHAR.IPV6.PRIMARY_DNS,
+		inputCls: 'xxxl',
+		readOnly: true
+	});
+
+	$("input#ipv6-dynamic-sec-dns").textbox({
+		fieldLabel: $.su.CHAR.IPV6.SECOND_DNS,
+		inputCls: 'xxxl',
+		readOnly: true
+	});
+
+
+	$("button#ipv6_dynamic_renew").button({
+		fieldLabel: null,
+		text: $.su.CHAR.IPV6.RENEW,
+		cls: 'inline-block part-seperate gap',
+		handler: function(){
+			ipv6ProxyDynamic.write({operation: 'renew', wan_id: currentWan});
+		}
+	});
+
+	$("button#ipv6_dynamic_release").button({
+		text: $.su.CHAR.IPV6.RELEASE,
+		cls: 'inline-block part-seperate',
+		handler: function(){
+			var cnt = $("button#ipv6_dynamic_release").button("getContainer");
+			if(cnt.hasClass("disabled"))
+			{
+				return;
+			}
+			ipv6ProxyDynamic.write({operation: 'release', wan_id: currentWan});
+		}
+	});
+
+	$("#ipv6_dynamic_adv").fieldset({
+		fields: [
+			{name: "ip_config"},
+			{name: "ip_mode"},
+			{name: "pd_size"},
+			{name: "dns_mode"},
+			{name: "dyn_pridns"},
+			{name: "dyn_snddns"},
+			{name: "static_pridns"},
+			{name: "static_snddns"}
+		]
+	});
+
+	$("div#ipv6_dynamic_adv_btn").on('click',function(){
+		$('#ipv6_dynamic_adv').fieldset('show');
+		$(this).hide();
+		$('#ipv6_dynamic_basic_btn').css('display', 'inline-block');
+
+
+		if($("input#ipv6_dynamic_dns_mode").radio('getValue')=='dynamic'){
+			$("#ipv6_dynamic_dns_dyn_part").fieldset('show');
+			$("#ipv6_dynamic_dns_static_part").fieldset('hide');
+		}
+		else if($("input#ipv6_dynamic_dns_mode").radio('getValue')=='static'){
+			$("#ipv6_dynamic_dns_static_part").fieldset('show');
+			$("#ipv6_dynamic_dns_dyn_part").fieldset('hide');
+		}
+
+		if($("input#ipv6_dynamic_get_way").radio('getValue')=='prefix'){
+			$("#ipv6_dynamic_pd_size_part").fieldset('show');
+			$("#ipv6_dynamic_pd_size_part").fieldset('enable');
+		}
+		else if($("input#ipv6_dynamic_get_way").radio('getValue')=='non_temp'){
+			$("#ipv6_dynamic_pd_size_part").fieldset('hide');
+			$("#ipv6_dynamic_pd_size_part").fieldset('disable');
+		}
+	});
+	$("div#ipv6_dynamic_basic_btn").on('click',function(){
+		$('#ipv6_dynamic_adv').fieldset('hide');
+		$(this).hide();
+		$('#ipv6_dynamic_adv_btn').css('display', 'inline-block');
+	});
+
+
+	$("input#ipv6_dynamic_get_ip").radio({
+		fieldLabel: $.su.CHAR.IPV6.GET_IPV6_WAY,
+		columns: 3,
+		cls: '',
+		items:[
+			{boxlabel: $.su.CHAR.IPV6.AUTO, name:'ip_config', inputValue:'auto'},
+			{boxlabel: $.su.CHAR.IPV6.DHCPV6, name:'ip_config', inputValue:'dhcpv6'},
+			{boxlabel: $.su.CHAR.IPV6.SLAAC, name:'ip_config', inputValue: 'slaac'}
+		]
+	})
+
+	$("#ipv6_dynamic_pd_size_part").fieldset({
+		fields: [
+			{name: "pd_size"}
+		]
+	});
+
+	$("input#ipv6_dynamic_pd_size").textbox({
+        fieldLabel: $.su.CHAR.IPV6.PDSIZE,
+        inputCls: 'l',
+		cls: '',
+        maxLength: 2,
+        allowBlank: false,
+        vtype: {
+            vtype: "number",
+            max: 64,
+            min: 48
+        },
+        tips: "(48-64)"
+    });
+
+	$("input#ipv6_dynamic_get_way").radio({
+		fieldLabel: $.su.CHAR.IPV6.PREFIX_DELEGATION,
+		columns: 2,
+		cls: '',
+		items:[
+			{boxlabel: $.su.CHAR.IPV6.ENABLE, name:'ip_mode', inputValue:'prefix'},
+			{boxlabel: $.su.CHAR.IPV6.DISABLE, name:'ip_mode', inputValue:'non_temp'}
+		]
+	}).on('ev_change', function(e, oldValue, newValue){
+		if(newValue=='prefix'){
+			$("#ipv6_dynamic_pd_size_part").fieldset('show');
+			$("#ipv6_dynamic_pd_size_part").fieldset('enable');
+		}
+		else if(newValue=='non_temp'){
+			$("#ipv6_dynamic_pd_size_part").fieldset('hide');
+			$("#ipv6_dynamic_pd_size_part").fieldset('disable');
+		}
+	});
+
+	$("#ipv6_dynamic_dns_dyn_part").fieldset({
+		fields: [
+			{name: "dyn_pridns"},
+			{name: "dyn_snddns"}
+		]
+	});
+
+	$("#ipv6_dynamic_dns_static_part").fieldset({
+		fields: [
+			{name: "static_pridns"},
+			{name: "static_snddns"}
+		]
+	});
+
+
+
+	$("input#ipv6_dynamic_dns_mode").radio({
+		fieldLabel: $.su.CHAR.IPV6.DNS_ADDR_MODE,
+		columns: 2,
+		cls: '',
+		items:[
+			{boxlabel: $.su.CHAR.IPV6.GET_DYNAMICALLY_FROM_ISP, name:'dns_mode', inputValue:'dynamic'},
+			{boxlabel: $.su.CHAR.IPV6.USE_FOLLOW_DNS_ADDR, name:'dns_mode', inputValue: 'static'}
+		]
+	}).on('ev_change', function(e, oldValue, newValue){
+		if(newValue=='dynamic'){
+			$("#ipv6_dynamic_dns_dyn_part").fieldset('show');
+			$("#ipv6_dynamic_dns_static_part").fieldset('hide');
+		}
+		else if(newValue=='static'){
+			$("#ipv6_dynamic_dns_static_part").fieldset('show');
+			$("#ipv6_dynamic_dns_dyn_part").fieldset('hide');
+		}
+
+	});
+
+
+	$("input#ipv6_dynamic_adv_dyn_pridns").textbox({
+		fieldLabel: $.su.CHAR.IPV6.PRIMARY_DNS,
+		inputCls: 'xxxl',
+		cls: '',
+		readOnly: true
+	});
+
+	$("input#ipv6_dynamic_adv_dyn_snddns").textbox({
+		fieldLabel: $.su.CHAR.IPV6.SECOND_DNS,
+		inputCls: 'xxxl',
+		cls: '',
+		readOnly: true
+	});
+
+
+	$("input#ipv6_dynamic_adv_static_pridns").textbox({
+		fieldLabel: $.su.CHAR.IPV6.PRIMARY_DNS,
+		inputCls: 'xxxl',
+		cls: '',
+		allowBlank: false,
+		vtype: 'ipv6'
+	});
+
+	$("input#ipv6_dynamic_adv_static_snddns").textbox({
+		fieldLabel: $.su.CHAR.IPV6.SECOND_DNS,
+		inputCls: 'xxxl',
+		cls: '',
+		vtype: 'ipv6'
+	});
+///////////////////////////////////   static ip  IPV6
+
+	$("input#ipv6-static-ip").textbox({
+		fieldLabel: $.su.CHAR.IPV6.IPV6_ADDR,
+		inputCls: 'xxxl',
+		allowBlank: false,
+		vtype:"ipv6",
+		cls: 'part-seperate',
+		validator: function (addr) {
+			var len = $("#ipv6-static-prefix-len").val();
+			if (len && (len != "")) {
+				conflict_if = prefix_conflict(addr, len, currentWan);
+				return conflict_if ? ($.su.CHAR.VTYPETEXT.PREFIX_CONFLICT + conflict_if) : true;
+			} else {
+				return true;
+			}
+		}
+	});
+
+	$('input#ipv6-static-prefix-len').textbox({
+        fieldLabel: $.su.CHAR.IPV6.PREFIX_LEN,
+        inputCls: 'l',
+        minLength: 1,
+        maxLength: 3,
+        allowBlank: false,
+        vtype: {
+            vtype: "number",
+            max: 128,
+            min: 1
+        },
+        tips: "(1-128)",
+		validator: function (len) {
+			var addr  = $("#ipv6-static-ip").val();
+			if (addr && (addr != "")) {
+				conflict_if = prefix_conflict(addr, len, currentWan);
+				return conflict_if ? ($.su.CHAR.VTYPETEXT.PREFIX_CONFLICT + conflict_if) : true;
+			} else {
+				return true;
+			}
+		}
+    });
+
+	$("input#ipv6-static-gateway").textbox({
+		fieldLabel: $.su.CHAR.IPV6.DEFAULT_GATEWAY,
+		inputCls: 'xxxl',
+		tipsCls: 'l',
+		allowBlank: false,
+		vtype: {
+			vtype:'ipv6',
+			canbeLinkLocalAddr: true
+		}
+	});
+
+	$("input#ipv6-static-pri-dns").textbox({
+		fieldLabel: $.su.CHAR.IPV6.PRIMARY_DNS,
+		inputCls: 'xxxl',
+		cls: 'part-seperate',
+		allowBlank: false,
+		vtype: 'ipv6'
+	});
+
+	$("input#ipv6-static-sec-dns").textbox({
+		fieldLabel: $.su.CHAR.IPV6.SECOND_DNS,
+		inputCls: 'xxxl',
+		vtype: 'ipv6'
+	});
+
+/*
+	$("input#ipv6-static-mtu").textbox({
+		fieldLabel: $.su.CHAR.IPV6.MTU_SIZE,
+		tips: $.su.CHAR.IPV6.MTU_1500,
+		tipsCls: "xl",
+		inputCls: "s",
+		cls: 'part-seperate',
+	//	readOnly: true,
+		allowBlank: false,
+		textFormat: $.su.format.number,
+        vtype: {
+            vtype: "number",
+            max: 1500,
+            min: 1280
+        }
+	});
+*/
+
+///////////////////////////////////   pppoe  IPV6
+
+	$("input#ipv6-pppoe-username").textbox({
+		fieldLabel: $.su.CHAR.IPV6.USER_NAME,
+		cls: 'part-seperate',
+		maxLength: 118,
+		minLength: 0,
+		vtype: "ascii_visible"
+	});
+
+	$("input#ipv6-pppoe-password").password({
+		fieldLabel: $.su.CHAR.IPV6.PASSWORD,
+		showLevel: false,
+		maxLength: 118,
+		minLength: 0,
+		vtype: 'ascii_visible'
+	});
+
+	$("input#ipv6-pppoe-ip").textbox({
+		fieldLabel: $.su.CHAR.IPV6.IPV6_ADDR,
+		inputCls: 'xxxl',
+		readOnly: true
+	});
+
+	$("#ipv6_pppoe_adv").fieldset({
+		fields: [
+			{name: "ip_config"},
+			{name: "ip_mode"},
+			{name: "pd_size"},
+			{name: "specific_ip"}
+		]
+	});
+
+	$("input#pppshare").checkbox({
+		fieldLabel: '',
+		items: [
+			{boxlabel:  $.su.CHAR.IPV6.PPP_SHARE_V4, inputValue:"1", uncheckedValue:"0", checked:false}
+		]
+	}).on('ev_change',function(e, oldValue, newValue){
+		if( (newValue.length==0 || newValue[0]==0)){
+			$("input#ipv6-pppoe-username").textbox('show');
+			$("input#ipv6-pppoe-password").password('show');
+		}else{
+			$("input#ipv6-pppoe-username").textbox('hide');
+			$("input#ipv6-pppoe-password").password('hide');
+		}
+	}).hide();
+	$("input#pppshare").checkbox('hide');
+
+	$("div#ipv6_pppoe_adv_btn").on('click',function(){
+		$('#ipv6_pppoe_adv').fieldset('show');
+		$(this).hide();
+		$('#ipv6_pppoe_basic_btn').css('display', 'inline-block');
+
+
+		if($("input#ipv6_pppoe_get_ip").radio('getValue')!='specified'){
+			$("input#ipv6-pppoe-ip-edit").textbox('disable');
+		}
+
+		if($("input#ipv6_pppoe_ip_way").radio('getValue')=='prefix'){
+			$("#ipv6_pppoe_pd_size_part").fieldset('show');
+			$("#ipv6_pppoe_pd_size_part").fieldset('enable');
+		}
+		else{
+			$("#ipv6_pppoe_pd_size_part").fieldset('hide');
+			$("#ipv6_pppoe_pd_size_part").fieldset('disable');
+		}
+	});
+	$("div#ipv6_pppoe_basic_btn").on('click',function(){
+		$('#ipv6_pppoe_adv').fieldset('hide');
+		$(this).hide();
+		$('#ipv6_pppoe_adv_btn').css('display', 'inline-block');
+	});
+
+
+	$("input#ipv6-pppoe-ip-edit").textbox({
+		fieldLabel: $.su.CHAR.IPV6.IPV6_ADDR,
+		inputCls: 'xxxl',
+		allowBlank: false,
+		vtype: 'ipv6'
+	});
+
+	$("#ipv6_pppoe_dns_dyn_part").fieldset({
+		fields: [
+			{name: "dyn_pridns"},
+			{name: "dyn_snddns"}
+		]
+	});
+
+	$("#pppoe_static").fieldset({
+		fields: [
+			{name: "static_pridns"},
+			{name: "static_snddns"}
+		]
+	});
+
+	$("input#ipv6_pppoe_snd_conn").radio({
+		fieldLabel: $.su.CHAR.IPV6.DNS_ADDR_MODE,
+		columns: 2,
+		cls: 'part-seperate',
+		items:[
+			{boxlabel: $.su.CHAR.IPV6.GET_DYNAMICALLY_FROM_ISP, name:'dns_mode', inputValue:'dynamic'},
+			{boxlabel: $.su.CHAR.IPV6.USE_FOLLOW_DNS_ADDR, name:'dns_mode', inputValue: 'static'}
+		]
+	}).on('ev_change', function(e, oldValue, newValue){
+		if(newValue=='dynamic'){
+			$("#ipv6_pppoe_dns_dyn_part").fieldset('show');
+			$("#pppoe_static").fieldset('hide');
+		}
+		else if(newValue=='static'){
+			$("#pppoe_static").fieldset('show');
+			$("#ipv6_pppoe_dns_dyn_part").fieldset('hide');
+		}
+	});
+
+	$("input#ipv6_pppoe_dyn_pridns").textbox({
+		fieldLabel: $.su.CHAR.IPV6.PRIMARY_DNS,
+		inputCls: 'xxxl',
+		cls: '',
+		readOnly: true
+	});
+
+	$("input#ipv6_pppoe_dyn_snddns").textbox({
+		fieldLabel: $.su.CHAR.IPV6.SECOND_DNS,
+		inputCls: 'xxxl',
+		cls: '',
+		readOnly: true
+	});
+
+	$("input#ipv6_pppoe_pri_dns").textbox({
+		fieldLabel: $.su.CHAR.IPV6.PRIMARY_DNS,
+		cls: '',
+		inputCls: 'xxxl',
+		allowBlank:false,
+		// textFormat: $.su.format.ip,
+		vtype: 'ipv6'
+	});
+
+	$("input#ipv6_pppoe_snd_dns").textbox({
+		fieldLabel: $.su.CHAR.IPV6.SECOND_DNS,
+		// textFormat: $.su.format.ip,
+		inputCls: 'xxxl',
+		vtype: 'ipv6'
+	});
+
+	$("#ipv6_pppoe_pd_size_part").fieldset({
+		fields: [
+			{name: "pd_size"}
+		]
+	});
+
+	$("input#ipv6_pppoe_pd_size").textbox({
+        fieldLabel: $.su.CHAR.IPV6.PDSIZE,
+        inputCls: 'l',
+		cls: '',
+        maxLength: 2,
+        allowBlank: false,
+        vtype: {
+            vtype: "number",
+            max: 64,
+            min: 48
+        },
+        tips: "(48-64)"
+    });
+
+	$("input#ipv6_pppoe_get_ip").radio({
+		fieldLabel: $.su.CHAR.IPV6.GET_IPV6_WAY,
+		columns: 4,
+		cls: '',
+		items:[
+			{boxlabel: $.su.CHAR.IPV6.AUTO, name:'ip_config', inputValue:'auto'},
+			{boxlabel: $.su.CHAR.IPV6.DHCPV6, name:'ip_config', inputValue:'dhcpv6'},
+			{boxlabel: $.su.CHAR.IPV6.SLAAC, name:'ip_config', inputValue:'slaac'},
+			{boxlabel: $.su.CHAR.IPV6.SPECIFIED_BY_ISP, name:'ip_config', inputValue: 'specified'}
+		]
+	}).on('ev_change', function(e, oldValue, newValue){
+		if (newValue=='dhcpv6' || newValue=='slaac' || newValue=='auto'){
+			$("input#ipv6-pppoe-ip-edit").textbox('hide');
+			$("input#ipv6-pppoe-ip-edit").textbox('disable');
+			$("input#ipv6_pppoe_ip_way").radio('show');
+
+			if($("input#ipv6_pppoe_ip_way").radio('getValue')=='prefix'){
+				$("#ipv6_pppoe_pd_size_part").fieldset('show');
+				$("#ipv6_pppoe_pd_size_part").fieldset('enable');
+			}
+			else{
+				$("#ipv6_pppoe_pd_size_part").fieldset('hide');
+				$("#ipv6_pppoe_pd_size_part").fieldset('disable');
+			}
+		}
+		else if (newValue=='specified'){
+			$("input#ipv6-pppoe-ip-edit").textbox('show');
+			$("input#ipv6-pppoe-ip-edit").textbox('enable');
+			// $("input#ipv6_pppoe_ip_way").radio('hide');
+			// $("#ipv6_pppoe_pd_size_part").fieldset('hide');
+			// $("#ipv6_pppoe_pd_size_part").fieldset('disable');
+		}
+
+	});
+
+	$("input#ipv6_pppoe_ip_way").radio({
+		fieldLabel: $.su.CHAR.IPV6.PREFIX_DELEGATION,
+		columns: 2,
+		cls: '',
+		items:[
+			{boxlabel: $.su.CHAR.IPV6.ENABLE, name:'ip_mode', inputValue:'prefix'},
+			{boxlabel: $.su.CHAR.IPV6.DISABLE, name:'ip_mode', inputValue:'non_temp'}
+		]
+	}).on('ev_change', function(e, oldValue, newValue){
+		if(newValue=='prefix'){
+			$("#ipv6_pppoe_pd_size_part").fieldset('show');
+			$("#ipv6_pppoe_pd_size_part").fieldset('enable');
+		}
+		else if(newValue=='non_temp'){
+			$("#ipv6_pppoe_pd_size_part").fieldset('hide');
+			$("#ipv6_pppoe_pd_size_part").fieldset('disable');
+		}
+	});
+
+	var pppoeInet6Status = $("#ipv6_pppoe_status").status({
+		proxy: {
+			url: $.su.url('/admin/ipv6?form=wan_ipv6_pppoe')
+		},
+		cls: 'inline-block'
+	});
+
+	$("button#ipv6_pppoe_conn_btn").button({
+		fieldLabel: null,
+		cls: 'inline-block gap',
+		text: $.su.CHAR.IPV6.CONNECT,
+		handler: function(){
+			$("div#ipv6-pppoe-config").form('submit', {operation:'connect', wan_id: currentWan}, null, null, null, false);
+		}
+	});
+
+	$("button#ipv6_pppoe_disconn_btn").button({
+		fieldLabel: null,
+		cls: 'inline-block',
+		text: $.su.CHAR.IPV6.DISCONNECT,
+		handler: function(){
+			$("div#ipv6-pppoe-config").form('submit', {operation:'disconnect', wan_id: currentWan}, null, null, null, false);
+		}
+	});
+/////////////////////////////////////////   tunnel  IPV6
+
+	$("input#ipv6-tunnel-ip").textbox({
+		fieldLabel: $.su.CHAR.IPV6.IPV4_ADDR,
+		inputCls: 'xxxl',
+		readOnly: true,
+		cls: 'part-seperate'
+	});
+
+	$("input#ipv6-tunnel-mask").textbox({
+		fieldLabel: $.su.CHAR.IPV6.IPV4_MASK,
+		readOnly: true
+	});
+
+	$("input#ipv6-tunnel-gateway").textbox({
+		fieldLabel: $.su.CHAR.IPV6.IPV4_GATEWAY,
+		readOnly: true
+	});
+
+	$("input#ipv6-tunnel-address").textbox({
+		fieldLabel: $.su.CHAR.IPV6.TUNNEL_ADDR,
+		readOnly: true,
+		inputCls: 'xxxl',
+		cls: 'part-seperate'
+	});
+
+	$("#ipv6_tunnel_adv").fieldset({
+		fields: [
+			{name: "dns_mode"},
+			{name: "pri_dns"},
+			{name: "snd_dns"}
+		]
+	});
+
+	$("div#ipv6_tunnel_adv_btn").on('click',function(){
+		$('#ipv6_tunnel_adv').fieldset('show');
+		$(this).hide();
+		$('#ipv6_tunnel_basic_btn').css('display', 'inline-block');
+
+		if($("input#ipv6_tunnel_dns_mode").checkbox('getValue')[0]==undefined){
+			$('input#ipv6-tunnel-adv-pri-dns').textbox('disable');
+			$('input#ipv6-tunnel-adv-sec-dns').textbox('disable');
+		}
+	});
+	$("div#ipv6_tunnel_basic_btn").on('click',function(){
+		$('#ipv6_tunnel_adv').fieldset('hide');
+		$(this).hide();
+		$('#ipv6_tunnel_adv_btn').css('display', 'inline-block');
+	});
+
+	$("input#ipv6_tunnel_dns_mode").checkbox({
+		fieldLabel: '',
+		columns: 2,
+		cls: '',
+		items:[
+			{boxlabel: $.su.CHAR.IPV6.USE_FOLLOW_DNS_SERVER, name:'dns_mode', inputValue: 'static', uncheckedValue:'dynamic' }
+		]
+	}).on('ev_change', function(e, oldValue, newValue){
+
+		if( ((oldValue.length == 0) || (typeof oldValue == "undefined")) && (newValue[0] == "dynamic"))
+		{
+			return;
+		}
+		if(newValue[0]!=undefined){
+			if(!$("#ipv6_tunnel_adv_btn").is(":visible"))
+			{
+				$('input#ipv6-tunnel-adv-pri-dns').textbox('enable');
+				$('input#ipv6-tunnel-adv-sec-dns').textbox('enable');
+			}
+		}
+		else{
+			$('input#ipv6-tunnel-adv-pri-dns').textbox('disable');
+			$('input#ipv6-tunnel-adv-sec-dns').textbox('disable');
+		}
+	});
+
+
+	$("input#ipv6-tunnel-adv-pri-dns").textbox({
+		fieldLabel: $.su.CHAR.IPV6.PRIMARY_DNS,
+		allowBlank: false,
+		vtype: 'ipv6'
+	});
+
+	$("input#ipv6-tunnel-adv-sec-dns").textbox({
+		fieldLabel: $.su.CHAR.IPV6.SECOND_DNS,
+		vtype: 'ipv6'
+	});
+
+
+	var tunnelInet6Status = $("#ipv6_tunnel_status").status({
+		proxy: {
+			url: $.su.url('/admin/ipv6?form=wan_ipv6_tunnel')
+		},
+		cls: 'inline-block'
+	});
+
+	$("button#ipv6-tunnel-conn-btn").button({
+		fieldLabel: null,
+		cls: 'inline-block part-seperate',
+		text: $.su.CHAR.IPV6.CONNECT,
+		handler: function(){
+			$("div#ipv6-tunnel-config").form('submit', {operation:'connect', wan_id: currentWan}, null, null, null, false);
+		}
+	});
+
+	$("button#ipv6-tunnel-disconn-btn").button({
+		fieldLabel: null,
+		cls: 'inline-block part-seperate',
+		text: $.su.CHAR.IPV6.DISCONNECT,
+		handler: function(){
+			$("div#ipv6-tunnel-config").form('submit', {operation:'disconnect', wan_id: currentWan}, null, null, null, false);
+		}
+	});
+
+
+
+
+/////////////////////////////////////////  IPV6 6RD
+
+	$("#ipv6-6rd-cnt").fieldset({
+		fields: [
+			{name: "ipv4_mask_len"},
+			{name: "6rd_prefix"},
+			{name: "6rd_prefix_len"},
+			{name: "relay_ipv4_addr"}
+		]
+	});
+
+
+
+	$("#ipv6-6rd-ipv4-mask-len").textbox({
+		fieldLabel: $.su.CHAR.IPV6.IPV4_MASK_LEN,
+		// defaultVal:24,
+		vtype: {
+			vtype:"number",
+			min:0,
+			max:32
+		}
+	});
+
+
+	$("#ipv6-6rd-prefix").textbox({
+		fieldLabel: $.su.CHAR.IPV6.RD6_PREFIX,
+		// defaultVal:24,
+		inputCls: 'xxxl',
+		allowBlank: false,
+		vtype:{
+			vtype:"ipv6",
+			isPrefixFlag:true
+		}
+	});
+
+
+	$("#ipv6-6rd-prefix-len").textbox({
+		fieldLabel: $.su.CHAR.IPV6.RD6_PREFIX_LENGTH,
+		// defaultVal:24,
+		vtype: {
+			vtype:"number",
+			min:0,
+			max:32
+		}
+	});
+
+
+	$("#ipv6-6rd-ipv4-addr").textbox({
+		fieldLabel: $.su.CHAR.IPV6.REPLY_IPV4_ADDR,
+		// defaultVal:24,
+		vtype: {
+			vtype:"ip"
+		}
+	});
+
+
+
+	$("#ipv6-6rd-type").radio({
+		fieldLabel: $.su.CHAR.IPV6.CONFIG_TYPE,
+		columns: 2,
+		// cls: 'part-seperate',
+		items:[
+			{boxlabel: $.su.CHAR.IPV6.AUTO, name:'ip_mode', inputValue:'auto', checked:true},
+			{boxlabel: $.su.CHAR.IPV6.MANUAL, name:'ip_mode', inputValue:'manual'}
+		]
+	}).on('ev_change', function(e, oldValue, newValue){
+		if(newValue=='auto'){
+			$("#ipv6-6rd-cnt").fieldset("disable");
+		}
+		else if(newValue=='manual'){
+			$("#ipv6-6rd-cnt").fieldset("enable");
+		}
+	});
+
+
+/////////////////////////////////////////  IPV6 DS-LITE
+
+	$("#ipv6-dslite-name").textbox({
+		fieldLabel: $.su.CHAR.IPV6.AFTR_NAME,
+		allowBlank: false,
+		cls: 'hidden',
+		validator:function(val){
+
+			if($.su.vtype.types.ipv6.regex.test(val))
+			{
+				return true;
+			}
+			if($.su.vtype.types.domain.regex.test(val))
+			{
+				return true;
+			}
+			return $.su.CHAR.VTYPETEXT.IPV6_DOMAIN;
+		}
+
+	});
+
+	$("#dslite-ipv6-dynamic-config").fieldset({
+		fields: [
+			{name: "dynamic_ip6addr", mapping: "dynamic_ip6addr"},
+		 	{name: "dynamic_prefix", mapping: "dynamic_prefix"},
+		 	{name: "dynamic_pri_dns", mapping: "dynamic_pri_dns"},
+		 	{name: "dynamic_snd_dns", mapping: "dynamic_snd_dns"},
+		 	{name: "dynamic_ip_config", mapping: "dynamic_ip_config"},
+		 	{name: "dynamic_ip_mode", mapping: "dynamic_ip_mode"},
+		 	{name: "dynamic_dns_mode", mapping: "dynamic_dns_mode"},
+		 	{name: "dynamic_dyn_pridns", mapping: "dynamic_dyn_pridns"},
+		 	{name: "dynamic_dyn_snddns", mapping: "dynamic_dyn_snddns"},
+		 	{name: "dynamic_static_pridns", mapping: "dynamic_static_pridns"},
+		 	{name: "dynamic_static_snddns", mapping: "dynamic_static_snddns"}
+		]
+	});
+
+	$("#dslite-ipv6-static-config").fieldset({
+		fields: [
+			{name: "static_ip6addr", mapping: "static_ip6addr"},
+			{name: "static_ip6gw", mapping: "static_ip6gw"},
+		 	{name: "static_pri_dns", mapping: "static_pri_dns"},
+		 	{name: "static_snd_dns", mapping: "static_snd_dns"},
+		 	{name: "static_mtu", mapping: "static_mtu"}
+		]
+	});
+
+	$("#dslite-ipv6-pppoe-config").fieldset({
+		fields: [
+			{name: "pppoe_username", mapping: "pppoe_username"},
+		 	{name: "pppoe_password", mapping: "pppoe_password"},
+		 	{name: "pppoe_dns_mode", mapping: "pppoe_dns_mode"},
+		 	{name: "pppoe_static_pridns", mapping: "pppoe_static_pridns"},
+		 	{name: "pppoe_static_snddns", mapping: "pppoe_static_snddns"},
+		 	{name: "pppoe_ip6addr", mapping: "pppoe_ip6addr"},
+		 	{name: "pppoe_ip_mode", mapping: "pppoe_ip_mode"},
+		 	{name: "pppoe_ip_config", mapping: "pppoe_ip_config"},
+		 	{name: "pppoe_specific_ip", mapping: "pppoe_specific_ip"}
+		]
+	});
+
+
+
+
+	$("#ipv6_dslite_snd_conn").radio({
+		fieldLabel: $.su.CHAR.IPV6.SECONDARY_CONN,
+		// labelCls: 'l',
+		columns: 3,
+		items:[
+			{boxlabel: $.su.CHAR.IPV6.DYNAMIC_IP, name:'snd_conn', inputValue:'dynamic'},
+			{boxlabel: $.su.CHAR.IPV6.STATIC_IP, name:'snd_conn', inputValue: 'static'},
+			{boxlabel: $.su.CHAR.IPV6.PPPOE, name:'snd_conn', inputValue:'pppoev6'}
+		]
+	}).on('ev_change', function(e, oldValue, newValue){
+		if(newValue=='pppoev6'){
+			$("#dslite-ipv6-static-config").fieldset('hide');
+			$("#dslite-ipv6-dynamic-config").fieldset('hide');
+			$("#dslite-ipv6-pppoe-config").fieldset('show');
+
+			if($("#dslite_ipv6_pppoe_adv_btn").is(":visible"))
+			{
+				$("#dslite_ipv6_pppoe_adv").fieldset('hide');
+			}
+			else
+			{
+				if( $("#dslite_ipv6_pppoe_snd_conn").radio("getValue") != "static" )
+				{
+					$("#dslite_pppoe_static").fieldset('hide');
+				}
+				else
+				{
+					$("#dslite_pppoe_static").fieldset('show');
+				}
+			}
+		}
+		else if(newValue=='dynamic'){
+			$("#dslite-ipv6-static-config").fieldset('hide');
+			$("#dslite-ipv6-dynamic-config").fieldset('show');
+			$("#dslite-ipv6-pppoe-config").fieldset('hide');
+
+
+			if($("#dslite_ipv6_dynamic_adv_btn").is(":visible"))
+			{
+				$("#dslite_ipv6_dynamic_adv").fieldset('hide');
+			}
+			else
+			{
+				if($("input#dslite_ipv6_dynamic_dns_mode").radio('getValue')=='dynamic'){
+					$("#dslite_ipv6_dynamic_dns_dyn_part").fieldset('show');
+					$("#dslite_ipv6_dynamic_dns_static_part").fieldset('hide');
+				}
+				else if($("input#dslite_ipv6_dynamic_dns_mode").radio('getValue')=='static'){
+					$("#dslite_ipv6_dynamic_dns_static_part").fieldset('show');
+					$("#dslite_ipv6_dynamic_dns_dyn_part").fieldset('hide');
+				}
+			}
+		}
+		else if(newValue=='static'){
+			$("#dslite-ipv6-static-config").fieldset('show');
+			$("#dslite-ipv6-dynamic-config").fieldset('hide');
+			$("#dslite-ipv6-pppoe-config").fieldset('hide');
+		}
+
+	});
+
+
+	/////////DSLITE CONN CONFIG
+	$("input#dslite-ipv6-dynamic-ip").textbox({
+		fieldLabel: $.su.CHAR.IPV6.IPV6_ADDR,
+		readOnly: true,
+		inputCls: 'xxxl',
+		cls: 'part-seperate'
+	});
+
+	$("input#dslite-ipv6-dynamic-primary-dns").textbox({
+		fieldLabel: $.su.CHAR.IPV6.PRIMARY_DNS,
+		inputCls: 'xxxl',
+		readOnly: true
+	});
+
+	$("input#dslite-ipv6-dynamic-sec-dns").textbox({
+		fieldLabel: $.su.CHAR.IPV6.SECOND_DNS,
+		inputCls: 'xxxl',
+		readOnly: true
+	});
+
+
+	$("button#dslite_ipv6_dynamic_renew").button({
+		fieldLabel: null,
+		text: $.su.CHAR.IPV6.RENEW,
+		cls: 'inline-block part-seperate gap',
+		handler: function(){
+			ipv6ProxyDslite.write({operation: 'renew', wan_id: currentWan});
+		}
+	});
+
+	$("button#dslite_ipv6_dynamic_release").button({
+		text: $.su.CHAR.IPV6.RELEASE,
+		cls: 'inline-block part-seperate',
+		handler: function(){
+			var cnt = $("button#dslite_ipv6_dynamic_release").button("getContainer");
+			if(cnt.hasClass("disabled"))
+			{
+				return;
+			}
+			ipv6ProxyDslite.write({operation: 'release', wan_id: currentWan});
+		}
+	});
+
+	$("#dslite_ipv6_dynamic_adv").fieldset({
+		fields: [
+			{name: "dynamic_ip_config"},
+			{name: "dynamic_ip_mode"},
+			{name: "dynamic_dns_mode"},
+			{name: "dynamic_dyn_pridns"},
+			{name: "dynamic_dyn_snddns"},
+			{name: "dynamic_static_pridns"},
+			{name: "dynamic_static_snddns"}
+		]
+	});
+
+	// $("#dslite_ipv6_dynamic_adv").fieldset("hide");
+
+	$("div#dslite_ipv6_dynamic_adv_btn").on('click',function(){
+
+		$('#dslite_ipv6_dynamic_adv').fieldset('show');
+
+		$(this).hide();
+		$('#dslite_ipv6_dynamic_basic_btn').css('display', 'inline-block');
+
+
+		if($("input#dslite_ipv6_dynamic_dns_mode").radio('getValue')=='dynamic'){
+			$("#dslite_ipv6_dynamic_dns_dyn_part").fieldset('show');
+			$("#dslite_ipv6_dynamic_dns_static_part").fieldset('hide');
+		}
+		else if($("input#dslite_ipv6_dynamic_dns_mode").radio('getValue')=='static'){
+			$("#dslite_ipv6_dynamic_dns_static_part").fieldset('show');
+			$("#dslite_ipv6_dynamic_dns_dyn_part").fieldset('hide');
+		}
+
+	});
+	$("div#dslite_ipv6_dynamic_basic_btn").on('click',function(){
+		$('#dslite_ipv6_dynamic_adv').fieldset('hide');
+		$(this).hide();
+		$('#dslite_ipv6_dynamic_adv_btn').css('display', 'inline-block');
+	});
+
+
+	$("input#dslite_ipv6_dynamic_ip_config").radio({
+		fieldLabel: $.su.CHAR.IPV6.GET_IPV6_WAY,
+		columns: 2,
+		cls: '',
+		items:[
+			{boxlabel: $.su.CHAR.IPV6.DHCPV6, name:'dynamic_ip_config', inputValue:'dhcpv6'},
+			{boxlabel: $.su.CHAR.IPV6.SLAAC, name:'dynamic_ip_config', inputValue:'slaac'}
+		]
+	});
+
+	$("input#dslite_ipv6_dynamic_get_way").radio({
+		fieldLabel: $.su.CHAR.IPV6.PREFIX_DELEGATION,
+		columns: 2,
+		cls: '',
+		items:[
+			{boxlabel: $.su.CHAR.IPV6.ENABLE, name:'dynamic_ip_mode', inputValue: 'prefix'},
+			{boxlabel: $.su.CHAR.IPV6.DISABLE, name:'dynamic_ip_mode', inputValue:'non_temp'}
+		]
+	});
+
+	$("#dslite_ipv6_dynamic_dns_dyn_part").fieldset({
+		fields: [
+			{name: "dynamic_dyn_pridns"},
+			{name: "dynamic_dyn_snddns"}
+		]
+	});
+
+	$("#dslite_ipv6_dynamic_dns_static_part").fieldset({
+		fields: [
+			{name: "dynamic_static_pridns"},
+			{name: "dynamic_static_snddns"}
+		]
+	});
+
+
+
+	$("input#dslite_ipv6_dynamic_dns_mode").radio({
+		fieldLabel: $.su.CHAR.IPV6.DNS_ADDR_MODE,
+		columns: 2,
+		cls: '',
+		items:[
+			{boxlabel: $.su.CHAR.IPV6.GET_DYNAMICALLY_FROM_ISP, name:'dynamic_dns_mode', inputValue:'dynamic'},
+			{boxlabel: $.su.CHAR.IPV6.USE_FOLLOW_DNS_ADDR, name:'dynamic_dns_mode', inputValue: 'static'}
+		]
+	}).on('ev_change', function(e, oldValue, newValue){
+		if(newValue=='dynamic'){
+			$("#dslite_ipv6_dynamic_dns_dyn_part").fieldset('show');
+			$("#dslite_ipv6_dynamic_dns_static_part").fieldset('hide');
+		}
+		else if(newValue=='static'){
+			$("#dslite_ipv6_dynamic_dns_static_part").fieldset('show');
+			$("#dslite_ipv6_dynamic_dns_dyn_part").fieldset('hide');
+		}
+
+	});
+
+
+	$("input#dslite_ipv6_dynamic_adv_dyn_pridns").textbox({
+		fieldLabel: $.su.CHAR.IPV6.PRIMARY_DNS,
+		inputCls: 'xxxl',
+		cls: '',
+		readOnly: true
+	});
+
+	$("input#dslite_ipv6_dynamic_adv_dyn_snddns").textbox({
+		fieldLabel: $.su.CHAR.IPV6.SECOND_DNS,
+		inputCls: 'xxxl',
+		cls: '',
+		readOnly: true
+	});
+
+
+	$("input#dslite_ipv6_dynamic_adv_static_pridns").textbox({
+		fieldLabel: $.su.CHAR.IPV6.PRIMARY_DNS,
+		inputCls: 'xxxl',
+		cls: '',
+		allowBlank: false,
+		vtype: 'ipv6'
+	});
+
+	$("input#dslite_ipv6_dynamic_adv_static_snddns").textbox({
+		fieldLabel: $.su.CHAR.IPV6.SECOND_DNS,
+		inputCls: 'xxxl',
+		cls: '',
+		vtype: 'ipv6'
+	});
+
+
+	/////////////////////////////////// DSLITE  static ip  IPV6
+
+	$("input#dslite-ipv6-static-ip").textbox({
+		fieldLabel: $.su.CHAR.IPV6.IPV6_ADDR,
+		inputCls: 'xxxl',
+		allowBlank: false,
+		vtype:"ipv6",
+		cls: 'part-seperate'
+	});
+
+	$("input#dslite-ipv6-static-gateway").textbox({
+		fieldLabel: $.su.CHAR.IPV6.DEFAULT_GATEWAY,
+		inputCls: 'xxxl',
+		tipsCls: 'l',
+		allowBlank: false,
+		vtype: 'ipv6'
+	});
+
+	$("input#dslite-ipv6-static-pri-dns").textbox({
+		fieldLabel: $.su.CHAR.IPV6.PRIMARY_DNS,
+		inputCls: 'xxxl',
+		cls: 'part-seperate',
+		allowBlank: false,
+		vtype: 'ipv6'
+	});
+
+	$("input#dslite-ipv6-static-sec-dns").textbox({
+		fieldLabel: $.su.CHAR.IPV6.SECOND_DNS,
+		inputCls: 'xxxl',
+		vtype: 'ipv6'
+	});
+
+	$("input#dslite-ipv6-static-mtu").textbox({
+		fieldLabel: $.su.CHAR.IPV6.MTU_SIZE,
+		tips: $.su.CHAR.IPV6.MTU_1500,
+		tipsCls: "xl",
+		inputCls: "s",
+		cls: 'part-seperate',
+	//	readOnly: true,
+		allowBlank: false,
+		textFormat: $.su.format.number,
+        vtype: {
+            vtype: "number",
+            max: 1500,
+            min: 1280
+        }
+	});
+
+///////////////////////////////////   pppoe  IPV6
+
+	$("input#dslite-ipv6-pppoe-username").textbox({
+		fieldLabel: $.su.CHAR.IPV6.USER_NAME,
+		cls: 'part-seperate',
+		maxLength: 118,
+		minLength: 0,
+		vtype: "string_visible"
+	});
+
+	$("input#dslite-ipv6-pppoe-password").password({
+		fieldLabel: $.su.CHAR.IPV6.PASSWORD,
+		showLevel: false,
+		maxLength: 118,
+		minLength: 0,
+		vtype: 'password'
+	});
+
+	$("input#dslite-ipv6-pppoe-ip").textbox({
+		fieldLabel: $.su.CHAR.IPV6.IPV6_ADDR,
+		inputCls: 'xxxl',
+		readOnly: true
+	});
+
+	$("#dslite_ipv6_pppoe_adv").fieldset({
+		fields: [
+			{name: "pppoe_ip_mode"},
+			{name: "pppoe_ip_config"},
+			{name: "pppoe_specific_ip"},
+			{name: "pppoe_static_pridns"},
+			{name: "pppoe_static_snddns"}
+		]
+	});
+
+	$("div#dslite_ipv6_pppoe_adv_btn").on('click',function(){
+		$('#dslite_ipv6_pppoe_adv').fieldset('show');
+		$(this).hide();
+		$('#dslite_ipv6_pppoe_basic_btn').css('display', 'inline-block');
+
+		if($("input#dslite_ipv6_pppoe_snd_conn").radio('getValue')!='static'){
+			$("#dslite_pppoe_static").fieldset('hide');
+		}
+        else
+        {
+			$("#dslite_pppoe_static").fieldset('show');
+		}
+
+		if($("input#dslite_ipv6_pppoe_ip_config").radio('getValue')!='specified'){
+			$("input#dslite-ipv6-pppoe-ip-edit").textbox('disable');
+		}
+		else
+		{
+			$("input#dslite-ipv6-pppoe-ip-edit").textbox('enable');
+		}
+	});
+	$("div#dslite_ipv6_pppoe_basic_btn").on('click',function(){
+		$('#dslite_ipv6_pppoe_adv').fieldset('hide');
+		$(this).hide();
+		$('#dslite_ipv6_pppoe_adv_btn').css('display', 'inline-block');
+	});
+
+
+	$("input#dslite-ipv6-pppoe-ip-edit").textbox({
+		fieldLabel: $.su.CHAR.IPV6.IPV6_ADDR,
+		inputCls: 'xxxl',
+		allowBlank: false,
+		vtype: 'ipv6'
+	});
+
+
+
+	$("input#dslite_ipv6_pppoe_snd_conn").radio({
+		fieldLabel: $.su.CHAR.IPV6.DNS_ADDR_MODE,
+		columns: 2,
+		cls: 'part-seperate',
+		items:[
+			{boxlabel: $.su.CHAR.IPV6.GET_DYNAMICALLY_FROM_ISP, name:'pppoe_dns_mode', inputValue:'dynamic'},
+			{boxlabel: $.su.CHAR.IPV6.USE_FOLLOW_DNS_ADDR, name:'pppoe_dns_mode', inputValue: 'static'}
+		]
+	}).on('ev_change', function(e, oldValue, newValue){
+		if(newValue=='dynamic'){
+			$("#dslite_pppoe_static").fieldset('hide');
+		}
+		else if(newValue=='static'){
+			if(!$("#dslite_ipv6_pppoe_adv_btn").is(":visible"))
+			{
+				$("#dslite_pppoe_static").fieldset('show');
+			}
+
+		}
+
+	});
+
+
+	$("#dslite_pppoe_static").fieldset({
+		fields: [
+			{name: "pppoe_static_pridns"},
+			{name: "pppoe_static_snddns"}
+		]
+	});
+
+
+	$("#dslite_pppoe_static").fieldset('hide');
+
+
+
+
+	$("input#dslite_ipv6_pppoe_pri_dns").textbox({
+		fieldLabel: $.su.CHAR.IPV6.PRIMARY_DNS,
+		cls: 'part-seperate',
+		inputCls: 'xxxl',
+		allowBlank:false,
+		// textFormat: $.su.format.ip,
+		vtype: 'ipv6'
+	});
+
+	$("input#dslite_ipv6_pppoe_snd_dns").textbox({
+		fieldLabel: $.su.CHAR.IPV6.SECOND_DNS,
+		// textFormat: $.su.format.ip,
+		inputCls: 'xxxl',
+		vtype: 'ipv6'
+	});
+
+	$("input#dslite_ipv6_pppoe_ip_config").radio({
+		fieldLabel: $.su.CHAR.IPV6.GET_IPV6_WAY,
+		columns: 3,
+		cls: '',
+		items:[
+			{boxlabel: $.su.CHAR.IPV6.DHCPV6, name:'pppoe_ip_config', inputValue:'dhcpv6'},
+			{boxlabel: $.su.CHAR.IPV6.SLAAC, name:'pppoe_ip_config', inputValue:'slaac'},
+			{boxlabel: $.su.CHAR.IPV6.SPECIFIED_BY_ISP, name:'pppoe_ip_config', inputValue: 'specified'}
+		]
+	}).on('ev_change', function(e, oldValue, newValue){
+		if (newValue=='dhcpv6' || newValue=='slaac'){
+			$("input#dslite-ipv6-pppoe-ip-edit").textbox('hide');
+			$("input#dslite-ipv6-pppoe-ip-edit").textbox('disable');
+			$("input#dslite_ipv6_pppoe_ip_way").radio('show');
+		}
+		else if(newValue=='specified'){
+			$("input#dslite-ipv6-pppoe-ip-edit").textbox('show');
+			$("input#dslite-ipv6-pppoe-ip-edit").textbox('enable');
+			$("input#dslite_ipv6_pppoe_ip_way").radio('hide');
+		}
+	});
+
+	$("input#dslite_ipv6_pppoe_ip_way").radio({
+		fieldLabel: $.su.CHAR.IPV6.PREFIX_DELEGATION,
+		columns: 2,
+		cls: '',
+		items:[
+			{boxlabel: $.su.CHAR.IPV6.ENABLE, name:'pppoe_ip_mode', inputValue:'prefix'},
+			{boxlabel: $.su.CHAR.IPV6.DISABLE, name:'pppoe_ip_mode', inputValue:'non_temp'}
+		]
+	})
+
+
+	$("button#dslite_ipv6_pppoe_conn_btn").button({
+		fieldLabel: null,
+		cls: 'inline-block part-seperate gap',
+		text: $.su.CHAR.IPV6.CONNECT,
+		handler: function(){
+			$("div#ipv6-dslite-config").form('submit', {operation:'connect', wan_id: currentWan}, null, null, null, false);
+		}
+	});
+
+	$("button#dslite_ipv6_pppoe_disconn_btn").button({
+		fieldLabel: null,
+		cls: 'inline-block',
+		text: $.su.CHAR.IPV6.DISCONNECT,
+		handler: function(){
+			var cnt = $("button#dslite_ipv6_pppoe_disconn_btn").button("getContainer");
+			if(cnt.hasClass("disabled"))
+			{
+				return;
+			}
+			$("div#ipv6-dslite-config").form('submit', {operation:'disconnect', wan_id: currentWan}, null, null, null, false);
+		}
+	});
+
+//////////////////////////////// ipv6 subnet conflict check
+
+	function full_IPv6(ip_string, prefixlen)
+	{
+		if (!ip_string)
+		{
+			return false;
+		}
+		// replace ipv4 address if any
+		var ipv4 = ip_string.match(/(.*:)([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$)/);
+		if (ipv4)
+		{
+			var ip_string = ipv4[1];
+			ipv4 = ipv4[2].match(/[0-9]+/g);
+			for (var i = 0;i < 4;i ++)
+			{
+				var byte = parseInt(ipv4[i],10);
+				ipv4[i] = ("0" + byte.toString(16)).substr(-2);
+			}
+			ip_string += ipv4[0] + ipv4[1] + ':' + ipv4[2] + ipv4[3];
+		}
+
+		// take care of leading and trailing ::
+		ip_string = ip_string.replace(/^:|:$/g, '');
+
+		var ipv6 = ip_string.split(':');
+
+		for (var i = 0; i < ipv6.length; i ++)
+		{
+			var hex = ipv6[i];
+			if (hex != "")
+			{
+				// normalize leading zeros
+				ipv6[i] = ("0000" + hex).substr(-4);
+			}
+			else
+			{
+				// normalize grouped zeros ::
+				hex = [];
+				for (var j = ipv6.length; j <= 8; j ++)
+				{
+					hex.push('0000');
+				}
+				ipv6[i] = hex.join(':');
+			}
+		}
+		
+		if (prefixlen && (prefixlen >=1 && prefixlen <=128))
+		{
+			var i = 8;
+			ipv6 = ipv6.join(':').split(':')
+			while (i--)
+			{
+				if (prefixlen <= (i * 16))
+				{
+					ipv6[i] = "0000"
+				}
+				else
+				{
+					var hex = ipv6[i]
+					var len = prefixlen - (i * 16);
+					hex = (parseInt(hex, 16) & (0xFFFF << (16 - len))).toString(16);
+					ipv6[i] = ("0000" + hex).substr(-4);
+					break;
+				}
+			}
+		}
+
+		/* replace 0000 with :: */
+		var s;
+		var e;
+		for (var i = 7; i >= 0; i--)
+		{
+			if (ipv6[i] == "0000")
+			{
+				if (!s)
+				{
+					s = i;
+				}
+				e = i;
+			}
+			else if (s)
+			{
+				break
+			}
+		}
+		if ((e == 0) && (s == 7))
+		{
+			ipv6.splice(e, s - e + 1, "::")
+		}
+		else if ((e == 0) || (s == 7))
+		{
+			ipv6.splice(e, s - e + 1, ":")
+		}
+		else
+		{
+			ipv6.splice(e, s - e + 1, "")
+		}
+		
+		return ipv6.join(':');
+	}
+
+	function prefix_conflict(prefix, len, skip)
+	{
+		var prefix1;
+		var prefix2;
+		var plen;
+
+		for (var i=0; i < lan_infos.length; i++)
+		{
+			prefix1 = undefined;
+			if (lan_infos[i]["dhcpv6_addr"] && (lan_infos[i]["dhcpv6_addr"] != ""))
+			{
+				plen = (len < lan_infos[i]["dhcpv6_prefixlen"]) ? len : lan_infos[i]["dhcpv6_prefixlen"];
+				prefix1 = full_IPv6(lan_infos[i]["dhcpv6_addr"], plen);
+				prefix2 = full_IPv6(prefix, plen);
+			}
+			else if (lan_infos[i]["slaac_prefix"] && (lan_infos[i]["slaac_prefix"] != ""))
+			{
+				plen = (len < lan_infos[i]["slaac_prefixlen"]) ? len : lan_infos[i]["slaac_prefixlen"];
+				prefix1 = full_IPv6(lan_infos[i]["slaac_prefix"], plen);
+				prefix2 = full_IPv6(prefix, plen);
+			}
+			else if (lan_infos[i]["rdnss_prefix"] && (lan_infos[i]["rdnss_prefix"] != ""))
+			{
+				plen = (len < lan_infos[i]["rdnss_prefixlen"]) ? len : lan_infos[i]["rdnss_prefixlen"];
+				prefix1 = full_IPv6(lan_infos[i]["rdnss_prefix"], plen);
+				prefix2 = full_IPv6(prefix, plen);
+			}
+			if (prefix1 && (prefix1 == prefix2))
+			{
+				return (lan_infos[i]["name"] + "(" + lan_infos[i]["vlanid"] + ")");
+			}
+		}
+		
+		for (var i=0; i < wan_infos.length; i++)
+		{
+			if (skip == parseInt(wan_infos[i]["wnumber"]))
+			{
+				continue;
+			}
+			
+			prefix1 = undefined;
+			if (wan_infos[i]["ip6addr"] && (wan_infos[i]["ip6addr"] != ""))
+			{
+				var addr = wan_infos[i]["ip6addr"].split('/')[0];
+				var alen = wan_infos[i]["ip6addr"].split('/')[1];
+				alen = alen ? alen : 64;
+				plen = (len < alen) ? len : alen;
+				prefix1 = full_IPv6(addr, plen);
+				prefix2 = full_IPv6(prefix, plen);
+			}
+			if (prefix1 && (prefix1 == prefix2))
+			{
+				return wan_infos[i].t_label;
+			}
+		}
+		
+		return undefined;
+	}
+
+//////////////////////////////// interval refresh
+
+	function changeBtnStatus(status, reArray, connArray, formId){
+		if( status.toUpperCase() == 'CONNECTED'){
+			reArray.length>0?$('button#'+reArray[0]).button('disable'):1;
+			reArray.length>0?$('button#'+reArray[1]).button('enable'):1;
+			connArray.length>0?$('button#'+connArray[0]).button('disable'):1;
+			connArray.length>0?$('button#'+connArray[1]).button('enable'):1;
+			$('#'+formId).find('.form-submit').removeClass("disabled");
+			$('#'+formId).find("button.button-button").prop("disabled", false);
+
+		}else if( status.toUpperCase() == 'DISCONNECTED'){
+			reArray.length>0?$('button#'+reArray[0]).button('enable'):1;
+			reArray.length>0?$('button#'+reArray[1]).button('disable'):1;
+			connArray.length>0?$('button#'+connArray[0]).button('enable'):1;
+			connArray.length>0?$('button#'+connArray[1]).button('disable'):1;
+			$('#'+formId).find('.form-submit').removeClass("disabled");
+			$('#'+formId).find("button.button-button").attr("disabled", false);
+
+		}else if( status.toUpperCase() == 'CONNECTING'){
+			reArray.length>0?$('button#'+reArray[0]).button('enable'):1;
+			reArray.length>0?$('button#'+reArray[1]).button('enable'):1;
+			connArray.length>0?$('button#'+connArray[0]).button('enable'):1;
+			connArray.length>0?$('button#'+connArray[1]).button('enable'):1;
+
+			$('#'+formId).find('.form-submit').removeClass("disabled");
+			$('#'+formId).find("button.button-button").attr("disabled", false);
+		}
+	}
+
+	var refreshIpv6Action;
+
+	$("div#ipv6-dynamic-config, div#ipv6-static-config, div#ipv6-pppoe-config, div#ipv6-dslite-config, div#ipv6-tunnel-config").on('ev_beforeLoadData', function(e,data){
+		if (typeof data.pppshare_supp != "undefined"){
+			if (data.pppshare == 1){
+				shareflag = 1;
+			}
+			else {
+				shareflag = 0;
+			}
+			$("input#pppshare").checkbox('show');
+			if (data.pppshare_supp == 0) {
+				$("input#pppshare").checkbox('disable');
+			} else {
+				$("input#pppshare").checkbox('enable');
+			}
+		}else{
+			shareflag = 0;
+			$("input#pppshare").checkbox('hide');
+		}
+		if(data.conn_status == "connected"){
+			switch(data.conntype)
+			{
+				case 'dhcpv6':
+				case 'dhcp6c':
+					data.ip6addr = data.ip6addr.toUpperCase();
+					data.dyn_pridns = data.dyn_pridns.toUpperCase();
+					data.dyn_snddns = data.dyn_snddns.toUpperCase();
+					data.pri_dns = data.pri_dns.toUpperCase();
+					data.snd_dns = data.snd_dns.toUpperCase();
+					break;
+			case 'pppoev6':
+				data.ip6addr = data.ip6addr.toUpperCase();
+				break;
+			case 'dslite':
+				if (data.snd_conn == 'dynamic'){
+					data.dynamic_ip6addr = data.dynamic_ip6addr.toUpperCase();
+					data.dynamic_pri_dns = data.dynamic_pri_dns.toUpperCase();
+					data.dynamic_snd_dns = data.dynamic_snd_dns.toUpperCase();
+					data.dynamic_dyn_pridns = data.dynamic_dyn_pridns.toUpperCase();
+					data.dynamic_dyn_snddns = data.dynamic_dyn_snddns.toUpperCase();
+				}else if(data.snd_conn == 'pppoev6'){
+					data.pppoe_ip6addr = data.pppoe_ip6addr.toUpperCase();
+				}
+				break;
+			}
+		}
+	});
+
+	$("div#ipv6-dynamic-config, div#ipv6-static-config, div#ipv6-pppoe-config, div#ipv6-dslite-config, div#ipv6-tunnel-config").on('ev_loadData', function(e, data){
+		var refreshProxy;
+		intervalModeIpv6 = data.conntype;
+		
+		//change conn and disconn button accord with return data
+		switch($("input#ipv6_connection_type").combobox('getValue')[0])
+		{
+			case 'dhcpv6':
+			case 'dhcp6c':
+
+				changeBtnStatus(data.conn_status, ['ipv6_dynamic_renew','ipv6_dynamic_release'], [], 'ipv6-dynamic-config');
+				break;
+
+			case 'staticv6':
+
+				break;
+
+			case 'pppoev6':
+
+				changeBtnStatus(data.conn_status, [], ['ipv6_pppoe_conn_btn', 'ipv6_pppoe_disconn_btn'], 'ipv6-pppoe-config');
+				break;
+
+			case '6to4':
+
+				changeBtnStatus(data.conn_status, [], ['ipv6-tunnel-conn-btn', 'ipv6-tunnel-disconn-btn'], 'ipv6-tunnel-config');
+				break;
+			case 'dslite':
+				if(data.snd_conn == 'dynamic')
+				{
+					changeBtnStatus(data.conn_status, ['dslite_ipv6_dynamic_renew','dslite_ipv6_dynamic_release'], [], 'dslite-ipv6-dynamic-config');
+				}
+				else if(data.snd_conn == 'pppoev6')
+				{
+					changeBtnStatus(data.conn_status, [], ['dslite_ipv6_pppoe_conn_btn', 'dslite_ipv6_pppoe_disconn_btn'], 'dslite-ipv6-pppoe-config');
+				}
+				break;
+		}
+
+		//loop get config when conn_type is connecting
+		if(intervalModeIpv6==presentMode){
+			switch(intervalModeIpv6)
+			{
+				case 'dhcpv6':
+				case 'dhcp6c':
+					refreshProxy = ipv6ProxyDynamic;
+					break;
+
+				case 'staticv6':
+					refreshProxy = 'none';
+					break;
+
+				case 'pppoev6':
+					refreshProxy = ipv6ProxyPppoe;
+					break;
+
+				case '6to4':
+					refreshProxy = ipv6ProxyTunnel;
+					break;
+				case 'dslite':
+					refreshProxy = ipv6ProxyDslite;
+					break;
+			}
+		}else{
+			refreshProxy = 'none';
+		}
+
+		if( refreshProxy == 'none' ){
+			clearInterval(refreshIpv6Action);
+		}else{
+			clearInterval(refreshIpv6Action);
+			refreshIpv6Action = setInterval(function(){
+
+				refreshProxy.read({wan_id: currentWan, pppflag:'v6',share:shareflag}, function(data){
+					switch(data.conntype)
+					{
+						case 'dhcpv6':
+						case 'dhcp6c':
+							$('input#ipv6-dynamic-ip').textbox('setValue',data.ip6addr.toUpperCase());
+							$('input#ipv6-dynamic-primary-dns').textbox('setValue',data.pri_dns.toUpperCase());
+							$('input#ipv6-dynamic-sec-dns').textbox('setValue',data.snd_dns.toUpperCase());
+							$('input#ipv6_dynamic_adv_dyn_pridns').textbox('setValue',data.dyn_pridns.toUpperCase());
+							$('input#ipv6_dynamic_adv_dyn_snddns').textbox('setValue',data.dyn_snddns.toUpperCase());
+							changeBtnStatus(data.conn_status, ['ipv6_dynamic_renew','ipv6_dynamic_release'], [], 'ipv6-dynamic-config');
+							break;
+
+						case 'pppoev6':
+							$('input#ipv6-pppoe-ip').textbox('setValue',data.ip6addr.toUpperCase());
+							$('input#ipv6_pppoe_dyn_pridns').textbox('setValue',data.dyn_pridns.toUpperCase());
+							$('input#ipv6_pppoe_dyn_snddns').textbox('setValue',data.dyn_snddns.toUpperCase());
+							changeBtnStatus(data.conn_status, [], ['ipv6_pppoe_conn_btn', 'ipv6_pppoe_disconn_btn'], 'ipv6-pppoe-config');
+							break;
+
+						case '6to4':
+							$('input#ipv6-tunnel-ip').textbox('setValue',data.ipaddr);
+							$('input#ipv6-tunnel-mask').textbox('setValue',data.netmask);
+							$('input#ipv6-tunnel-gateway').textbox('setValue',data.gateway);
+							$('input#ipv6-tunnel-address').textbox('setValue',data.tunnel_addr);
+							changeBtnStatus(data.conn_status, [], ['ipv6-tunnel-conn-btn', 'ipv6-tunnel-disconn-btn'], 'ipv6-tunnel-config');
+							break;
+						case 'dslite':
+							var second_conn = data.snd_conn;
+							if(second_conn == "static")
+							{
+								//$("#dslite-ipv6-static-ip").textbox("setValue",data.static_ip6addr);
+								//$("#dslite-ipv6-static-gateway").textbox("setValue",data.static_ip6gw);
+								//$("#dslite-ipv6-static-pri-dns").textbox("setValue",data.static_pri_dns);
+								//$("#dslite-ipv6-static-sec-dns").textbox("setValue",data.static_snd_dns);
+							}
+							else if(second_conn == "dynamic")
+							{
+								$("#dslite-ipv6-dynamic-ip").textbox("setValue",data.dynamic_ip6addr.toUpperCase());
+								$("#dslite-ipv6-dynamic-primary-dns").textbox("setValue",data.dynamic_pri_dns.toUpperCase());
+								$("#dslite-ipv6-dynamic-sec-dns").textbox("setValue",data.dynamic_snd_dns.toUpperCase());
+								$("#dslite_ipv6_dynamic_adv_dyn_pridns").textbox("setValue",data.dynamic_dyn_pridns.toUpperCase());
+								$("#dslite_ipv6_dynamic_adv_dyn_snddns").textbox("setValue",data.dynamic_dyn_snddns.toUpperCase());
+								changeBtnStatus(data.conn_status, ['dslite_ipv6_dynamic_renew','dslite_ipv6_dynamic_release'], [], 'dslite-ipv6-dynamic-config');
+							}
+							else if(second_conn == "pppoev6")
+							{
+								$("#dslite-ipv6-pppoe-ip").textbox("setValue",data.pppoe_ip6addr.toUpperCase());
+								changeBtnStatus(data.conn_status, [], ['dslite_ipv6_pppoe_conn_btn', 'dslite_ipv6_pppoe_disconn_btn'], 'dslite-ipv6-pppoe-config');
+							}
+
+							break;
+					}
+
+				}, null, null, false);
+
+			}, 1000);
+
+		}
+
+
+	});
+
+	$.su.app.runningModule.addUnloadHandler(function(){
+		clearInterval(refreshIpv6Action);
+	});
+
+	var helpInternet = new $.su.Help({
+		container: "div#internet_help",
+		content: ['IPV6_GENERAL', 'IPV6']
+	});
+
+
+
+});
+//]]>
+</script>
+
+</body>
+</html>

@@ -1,0 +1,145 @@
+--- a/drivers/mtd/ubi/gluebi.c	2021-06-12 08:19:58.950969542 -0400
++++ b/drivers/mtd/ubi/gluebi.c	2021-06-13 00:12:40.716536527 -0400
+@@ -39,6 +39,7 @@
+ #include <linux/mtd/ubi.h>
+ #include <linux/mtd/mtd.h>
+ #include "ubi-media.h"
++#include "ubi.h"
+ 
+ #define err_msg(fmt, ...)                                   \
+ 	pr_err("gluebi (pid %d): %s: " fmt "\n",            \
+@@ -66,6 +67,43 @@
+ static LIST_HEAD(gluebi_devices);
+ static DEFINE_MUTEX(devices_mutex);
+ 
++#define FAKE_NAME_LEN		32
++
++static int g_fakes __initdata;
++static char g_fake_names[UBI_MAX_DEVICES*2][FAKE_NAME_LEN] __initdata;
++
++/**
++ * replace volume name with a fake name.
++ */
++static void gluebi_fake_name(struct ubi_device_info *di,
++			 struct ubi_volume_info *vi)
++{
++	int i = 0;
++	struct ubi_volume_desc *desc = NULL;
++	struct ubi_volume *vol = NULL;
++	struct ubi_device *ubi = NULL;
++
++	desc = ubi_open_volume(vi->ubi_num, vi->vol_id, UBI_READONLY);
++	if (!desc) {
++		printk(KERN_ERR"gluebi: Faied to fake ubi volume name[%d,%d]\n", vi->ubi_num, vi->vol_id);
++		return;
++	}
++
++	vol = desc->vol;
++	ubi = vol->ubi;
++	for (i = 0; i < g_fakes; i++) {
++		if (!strcmp(g_fake_names[2*i], vol->name)) {
++			spin_lock(&ubi->volumes_lock);
++			vol->name_len = snprintf(vol->name, sizeof(vol->name), "%s", g_fake_names[2*i+1]);
++			vi->name = vol->name;
++			vi->name_len = vol->name_len;
++			spin_unlock(&ubi->volumes_lock);
++			break;
++		}
++	}
++	ubi_close_volume(desc);
++}
++
+ /**
+  * find_gluebi_nolock - find a gluebi device.
+  * @ubi_num: UBI device number
+@@ -112,8 +150,8 @@
+ 		 * The MTD device is already referenced and this is just one
+ 		 * more reference. MTD allows many users to open the same
+ 		 * volume simultaneously and do not distinguish between
+-		 * readers/writers/exclusive openers as UBI does. So we do not
+-		 * open the UBI volume again - just increase the reference
++		 * readers/writers/exclusive/meta openers as UBI does. So we do
++		 * not open the UBI volume again - just increase the reference
+ 		 * counter and return.
+ 		 */
+ 		gluebi->refcnt += 1;
+@@ -301,6 +339,7 @@
+ 		return -ENOMEM;
+ 
+ 	mtd = &gluebi->mtd;
++	gluebi_fake_name(di, vi);
+ 	mtd->name = kmemdup(vi->name, vi->name_len + 1, GFP_KERNEL);
+ 	if (!mtd->name) {
+ 		kfree(gluebi);
+@@ -516,6 +555,71 @@
+ 
+ module_init(ubi_gluebi_init);
+ module_exit(ubi_gluebi_exit);
++
++/* Maximum length of the 'name=' parameter */
++#define GLUEBI_PARAM_LEN 63
++
++/* Maximum number of comma-separated items in the 'name=' parameter */
++#define GLUEBI_PARAM_COUNT 2
++
++static int __init gluebi_set_param(const char *val,
++				     const struct kernel_param *kp)
++{
++	int i;
++	size_t len;
++	char buf[GLUEBI_PARAM_LEN];
++	char *pbuf = &buf[0];
++	char *tokens[GLUEBI_PARAM_COUNT];
++
++	if (!val)
++		return -EINVAL;
++
++	len = strnlen(val, GLUEBI_PARAM_LEN);
++	if (len == 0) {
++		pr_warn("UBI: gluebi: empty 'name=' parameter - ignored\n");
++		return 0;
++	}
++
++	if (len == GLUEBI_PARAM_LEN) {
++		pr_err("UBI: gluebi: parameter \"%s\" is too long, max. is %d\n",
++		       val, GLUEBI_PARAM_LEN);
++		return -EINVAL;
++	}
++
++	strcpy(buf, val);
++
++	/* Get rid of the final newline */
++	if (buf[len - 1] == '\n')
++		buf[len - 1] = '\0';
++
++	for (i = 0; i < GLUEBI_PARAM_COUNT; i++) {
++		tokens[i] = strsep(&pbuf, ",");
++		if (strlen(tokens[i]) >= FAKE_NAME_LEN) {
++			pr_err("UBI: gluebi: parameter token \"%s\" is too long, max. is %d\n",
++				   tokens[i], FAKE_NAME_LEN);
++			return -EINVAL;
++		}
++		if (!tokens[i]) {
++			pr_err("UBI: gluebi: parameter token %d is empty\n", i);
++			return -EINVAL;
++		}
++	}
++
++	if (g_fakes < UBI_MAX_DEVICES) {
++		strcpy(g_fake_names[2*g_fakes], tokens[0]);
++		strcpy(g_fake_names[2*g_fakes+1], tokens[1]);
++		g_fakes++;
++	}
++
++	return 0;
++}
++
++static const struct kernel_param_ops gluebi_param_ops = {
++	.set    = gluebi_set_param,
++};
++module_param_cb(name, &gluebi_param_ops, NULL, 0);
++MODULE_PARM_DESC(name, "Fake mtd name. Parameter format: name=volname,fakename.\n");
++
+ MODULE_DESCRIPTION("MTD emulation layer over UBI volumes");
+ MODULE_AUTHOR("Artem Bityutskiy, Joern Engel");
+ MODULE_LICENSE("GPL");

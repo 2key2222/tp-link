@@ -1,0 +1,20 @@
+--- a/arch/mips/ath79/mach-ap152.c
++++ b/arch/mips/ath79/mach-ap152.c
+@@ -75,7 +75,8 @@ static struct gpio_led ap152_leds_gpio[]
+ };
+ 
+ static struct gpio_keys_button ap152_gpio_keys[] __initdata = {
+-        {
++        #ifdef __TPLINK_SUPPORT_WPS
++		{
+                 .desc           = "WPS button",
+                 .type           = EV_KEY,
+                 .code           = KEY_WPS_BUTTON,
+@@ -83,6 +84,7 @@ static struct gpio_keys_button ap152_gpi
+                 .gpio           = AP152_GPIO_BTN_WPS,
+                 .active_low     = 1,
+         },
++		#endif
+         {
+                 .desc           = "Reset button",
+                 .type           = EV_KEY,

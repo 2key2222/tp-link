@@ -1,0 +1,514 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>phddns</title>
+<style type="text/css">
+</style>
+</head>
+
+<body>
+	<div class="func-container" >
+		<div id="div_phddns">
+				<div id="phddnsGrid" class="ddnsSeries">
+				</div>
+		</div>
+
+		<div id="own_editor">
+			<input id="interface" name="interface">
+			<input id="name" name="name">
+			<input id="passwd" name="passwd">
+			<input id="interval" name="interval">
+			<input id="enable" name="enable">
+		</div>
+
+	 	<div id="phddns_alert_cnt">
+			<h4 class="title">
+		    	<span class="icon"></span>
+		 		<span class="text" id="phddns_confirm_content"></span>
+		 	</h4>
+		</div> 
+
+		<div id="link-detail-window">
+	        <table class="link-detail-table detail">
+	            <tr>
+	                <td class="detail-value"></td>
+	            </tr>
+	        </table>
+	    </div>
+
+		<span id="ddns_notice" class="hidden"></span>
+		
+	 	<div id="phddns_help"></div>
+
+	</div>
+	
+<script type="text/javascript">
+//<![CDATA[
+	try{
+	    $
+	}catch(e){
+	    location.href = "/";
+	};
+
+	$(document).ready(function(e){
+	var URL_phddns = $.su.url("/admin/phddns?form=phddns"); //data/virtualServers.json
+
+	//$("span#ddns_notice").html($.su.CHAR.VIRTUAL_SERVERS.ddns_ENABLE_NOTICE);
+
+	$("div.func-container").page({
+		title: $.su.CHAR.MENU.PHDDNS,//"花生壳动态域名",
+		help: ""
+	});
+
+	$("div#div_phddns").panel({
+		title: $.su.CHAR.MENU.PHDDNS,//"花生壳动态域名",
+		collapsible: false
+	});
+	
+	$("input#interface").combobox({
+		fieldLabel: $.su.CHAR.PHDDNS.SERVICE_INTERFACE,//"服务接口",
+		allowBlank: false,					
+		vtype:"string_visible_allow_blank",
+		items:[
+			{name:"---",value:'---'}
+		]
+	});
+	
+	$("input#name").textbox({
+		fieldLabel: $.su.CHAR.PHDDNS.USERNAME_DOMAIN,//"用户名/域名",
+		maxLength:32,
+		vtype:"ascii_visible",
+		tips:"<a target=\"_blank\" href=\"http://www.oray.net\">"+$.su.CHAR.PHDDNS.USERNAME_REGISTER+"</a>"
+	});
+
+	$("input#passwd").password({
+		fieldLabel: $.su.CHAR.PHDDNS.PASSWORD,//"密码",
+		maxLength:32,
+		showLevel: false,
+        		vtype: "password",
+		allowBlank:"false"
+	});
+
+	$("#interval").combobox({
+		fieldLabel: $.su.CHAR.PHDDNS.UPDATE_INTERVAL,
+		//labelCls: "l",
+		cls: "inline-block",
+		allowBlank: false,
+		items: [
+			{"value": "1h", "name": $.su.CHAR.PHDDNS.ONE_HOUR},
+			{"value": "6h", "name": $.su.CHAR.PHDDNS.SIX_HOUR},
+			{"value": "12h", "name": $.su.CHAR.PHDDNS.TWETEEN_HOUR},
+			{"value": "1d", "name": $.su.CHAR.PHDDNS.ONE_DAY},
+			{"value": "2d", "name": $.su.CHAR.PHDDNS.TWO_DAY},
+			{"value": "3d", "name": $.su.CHAR.PHDDNS.THREE_DAY},
+			{"value": "never", "name": $.su.CHAR.PHDDNS.NEVER}
+		]
+	});
+
+	$("input#enable").checkbox({
+		fieldLabel:$.su.CHAR.USERMNGR.ENABLE,
+		defaultValue:["on"],
+		items: [
+			{boxlabel: $.su.CHAR.VIRTUAL_SERVERS.ENABLE_THIS_ENTRY, uncheckedValue:"off", inputValue: "on", id: "chk_enable",  checked:true}
+		]
+	});
+
+	var $linkDetail = $("#link-detail-window").msg({
+        closeBtn: true,
+        cls:"m",
+        title: $.su.CHAR.PHDDNS.DOMAIN_NAME,//"域名",
+        type: "window"
+    }).msg("hide");
+
+	function showDetail(domain){
+ 		var domainString = "";  
+		var domainArray = domain.split(';');
+		
+		for(var i = 0; i < domainArray.length; i++){
+			domainString += domainArray[i] + "</br></br>";
+		}
+		$linkDetail.find(".detail-value").html(domainString).css({
+			"lineHeight":"20px",
+			"textAlign":"center",
+			"wordBreak":"break-all"
+		});
+        $linkDetail.msg('show');
+    }
+
+	var virtualProxy = new $.su.Proxy({
+		url: URL_phddns
+	});
+	
+    window.refresh_interval = window.refresh_interval || 0;
+    function ddns_interval(){
+    	if(window.refresh_interval){
+    	    clearInterval(window.refresh_interval);
+    	    window.refresh_interval = 0;
+    	}
+		window.refresh_interval = setInterval(function(){
+			if($("#func-advanced title").text() != "phddns"){
+				clearInterval(window.refresh_interval);
+    	    	window.refresh_interval = 0;
+    	    	return;
+			}
+			/*
+			var clear_flag = true;
+			var data = $("div#phddnsGrid").grid("getStore").data;
+			for (i = 0; i < data.length; i++) {
+				var status = Number(data[i].connState);
+				if(status == 1 || status >3){
+					clear_flag = false;
+					break;
+				}
+			}
+			if(clear_flag){
+				clearInterval(window.refresh_interval);
+    	    	window.refresh_interval = 0;
+    	    	return;
+			}*/
+			$("div#phddnsGrid").grid("getStore").load();
+			
+		}, 10000);
+    }
+    ddns_interval();
+
+    function ddns_timeout(){
+    	var timeout = setTimeout(function(){//使用timeout因为后台不会立即修改connState
+        	$("div#phddnsGrid").grid("getStore").load();
+        	ddns_interval();
+        }, 1000);
+    }
+
+	var phddnsGrid = $("div#phddnsGrid").grid({
+		store:{
+			proxy: virtualProxy,
+			fields: [
+			{name: "interface"},
+			{name: "name"},
+	 		{name: "passwd"},
+	 		{name: "interval"},
+	 		{name: "enable"},
+	 		{name: "connState"},
+	 		{name: "userType"},
+	 		{name: "domain"},
+	 		{name: "t_label"},
+			],
+			autoLoad: true
+		},
+		editor: {
+			validator:function(){
+				var editor  = $(phddnsGrid.grid("getEditor"));
+				var interfaceName    = editor.find("#interface").combobox("getValue");
+				//console.log(interfaceName);
+				var store 	= phddnsGrid.grid("getStore");
+				var keyProperty = store.keyProperty;
+				var grid_array  = store.data;
+				
+				var editingId = editor.editor("getEditingId"); 
+				if($.isArray(grid_array) && grid_array.length > 0)
+				{
+					for(var k = 0; k < grid_array.length;k++)
+					{
+						var data = grid_array[k];
+						
+						if(data[keyProperty] == editingId)
+						{
+							continue;
+						}
+						//interface conflict
+						else if(data["interface"] == interfaceName)
+						{
+							//console.log('conflict interface');
+							return false;
+						}
+					}
+				}
+				return true;
+			},
+			content: "#own_editor",
+			fields: [
+			{name: "interface"},
+			{name: "name"},
+			{name: "passwd"},
+			{name: "interval"},
+			{name: "enable"}
+			]
+
+		},
+		paging: {
+		},
+		columns: [
+			{
+				xtype: "checkcolumn",
+				width: 30
+			},
+			{
+				text: $.su.CHAR.PHDDNS.ID,//"序号", 
+				xtype: "rownumberer",
+				width:40
+			},
+			{
+				text: $.su.CHAR.PHDDNS.SERVICE_INTERFACE,//"服务接口", 
+				width:60,
+				dataIndex: "interface",
+				renderer: function(dd, jindex, data) {
+					return data.t_label ? data.t_label : dd;
+				}
+			},
+			{
+				text: $.su.CHAR.PHDDNS.USERNAME,//"用户名", 
+				width:100,
+				dataIndex: "name"
+				
+			},
+			// {
+			// 	text: "密码", 
+			// 	width:120,
+			// 	dataIndex: "passwd"
+				
+			// },
+			{
+				text: $.su.CHAR.PHDDNS.UPDATE_INTERVAL, 
+				width:50,
+				dataIndex: "interval",
+				renderer: function(v)
+				{
+					switch(v)
+					{
+						case '1h' :
+							return $.su.CHAR.PHDDNS.ONE_HOUR;
+						case '6h' :
+							return $.su.CHAR.PHDDNS.SIX_HOUR;
+						case '12h' :
+							return $.su.CHAR.PHDDNS.TWETEEN_HOUR;
+						case '1d' :
+							return $.su.CHAR.PHDDNS.ONE_DAY;
+						case '2d' :
+							return $.su.CHAR.PHDDNS.TWO_DAY;
+						case '3d' :
+							return $.su.CHAR.PHDDNS.THREE_DAY;
+						case 'never' :
+							return 	$.su.CHAR.PHDDNS.NEVER;
+						default :
+							return $.su.CHAR.PHDDNS.NEVER;
+					}
+				}
+				
+			},
+			{
+				text: $.su.CHAR.PHDDNS.START_STOP,//"启用/禁用", 
+				width:120,
+				dataIndex: "enable",
+				xtype: "statuscolumn"
+			},
+			{
+				text: $.su.CHAR.PHDDNS.STATUS,//"状态", 
+				width:120,
+				dataIndex: "connState",
+				renderer: function(v)
+				{
+					switch(v)
+					{
+						case '0' :
+							return $.su.CHAR.PHDDNS.WARNING1;//'服务没有运行';
+						case '1' :
+							return $.su.CHAR.PHDDNS.WARNING2;//'服务正在连接，请稍候';
+						case '2' :
+							return $.su.CHAR.PHDDNS.WARNING3;//'服务已运行';
+						case '3' :
+							return $.su.CHAR.PHDDNS.WARNING4;//'用户名或密码错误';
+						default :
+							return $.su.CHAR.PHDDNS.WARNING2;//'服务正在连接，请稍候';
+					}
+				}
+			},
+			{
+				text: $.su.CHAR.PHDDNS.DOMAIN_NAME,//"域名", 
+				width:150,
+				dataIndex: "domain",
+				renderer: function(dd, index, data){
+					var domainArray= new Array(); 
+					var domainString = "";
+					if("" == data.domain || typeof data.domain == "undefined"){
+						return "---";
+					}
+					domainArray = data.domain.split(';');
+					switch(domainArray.length){
+						case 0:
+							return "---";
+							break;
+						case 1:
+							return domainArray[0];
+							break;
+						case 2:
+							return domainArray[0] + "</br>" + domainArray[1];
+							break;
+						default:
+							return domainArray[0] + "&nbsp&nbsp" + "<a href='javascript:void(0);' class='btn-detail' data-index='"+ index +"'>"+$.su.CHAR.PHDDNS.DETAIL+"</a>";
+							break;
+					}        
+                }
+				/*
+				renderer:function(v)
+				{
+					var domainArray= new Array();   
+					domainArray = v.split(';');
+
+					if(domainArray.length > 0)
+					{
+						return domainArray[0];
+					}
+					else
+					{
+						return v;
+					}
+				}
+				*/
+			},
+			{
+				text: $.su.CHAR.PHDDNS.SERVICESTYLE,//"服务类型", 
+				width:100,
+				dataIndex: "userType",
+				renderer: function(dd, index, data){
+					// 服务已运行
+					//console.log(data.connState)
+					if(data.connState == '2')
+					{
+						return  data.userType == '1' ? $.su.CHAR.PHDDNS.SERVICESTYLE1 : $.su.CHAR.PHDDNS.SERVICESTYLE2;//"专业服务"  : "标准服务";
+					}
+					else
+					{
+
+						return '---';
+					}
+				}
+			},
+			{
+				xtype: "settings"
+			}
+		],
+		operation: "prompt|add|delete"
+	}).on("ev_load", function(e,data, others){
+			/*if(others)
+			{
+				maxrules = others.max_rules;
+			}
+			var interfaceItem=[];
+			var interfaceProxy = new $.su.Proxy({
+					url: $.su.url('/admin/interface?form=status'),
+					async: false
+			});		
+			interfaceProxy.read({}, function(data){
+				//	console.log("length: "+data.vpn.length);						
+				var i
+				for (i=0; i<data.normal.length; i++){
+					interfaceItem.push({name:data.normal[i].t_label,value:data.normal[i].t_name});						
+				}
+				//for (i=0; i<data.vpn.length; i++){						
+				//	interfaceItem.push({name:data.vpn[i].t_label,value:data.vpn[i].t_name});	
+				//}
+			});	
+			var editor = $("div#phddnsGrid").grid("getEditor");
+			var combobox = $(editor).find('.combobox-value[name=interface]');
+				combobox.combobox('loadData',interfaceItem);*/
+		}).delegate('a.btn-detail', 'click', function(e){
+	        var index = $(this).data('index');
+	        showDetail(phddnsGrid.grid("getStore").data[index].domain);
+	        //console.log(o.grid("getStore").data[index].domain);
+    }).on('ev_update',function(){
+    	ddns_interval();  
+    }).on('ev_insert',function(){
+        ddns_interval();
+    }).on('ev_remove',function(){
+        ddns_interval();
+    });
+
+
+	var editor = $("div#phddnsGrid").grid("getEditor");
+	$(editor).on("ev_startEdit", function(e, index, key){
+		//console.log("index",index)
+		if(typeof(index) == "undefined"){
+			$(editor).editor("cancelEdit");
+            if ($.su.app && $.su.app.errorOperation && $.su.app.errorOperation.denied){
+                $.su.app.errorOperation.denied(90000);
+            }
+            ddns_timeout();
+            return;       
+        }
+        if(window.refresh_interval){
+    	    clearInterval(window.refresh_interval);
+    	    window.refresh_interval = 0;
+    	}
+
+		var ifSelected = {};
+		var interfaceItem=[];
+		var interfaceProxy = new $.su.Proxy({
+				url: $.su.url('/admin/interface?form=status'),
+				async: false
+		});		
+		var data = $("div#phddnsGrid").grid("getStore").data;
+		for (i = 0; i < data.length; i++) {
+			ifSelected[data[i]["interface"]] = data[i]["interface"];
+		}	
+		// delete the selected interfaces from all interfaces
+		interfaceProxy.read({}, function(data){				
+			for (i=0; i<data.normal.length; i++){
+				if (ifSelected[data.normal[i].t_name]) {
+					continue;
+				}
+				if ($.su.func.isLan(data.normal[i].t_name) && data.normal[i].t_name != "LAN") {
+					continue
+				}
+				interfaceItem.push({name:data.normal[i].t_label,value:""+data.normal[i].t_name});						
+			}
+			/*for (i=0; i<data.vpn.length; i++){						
+				if (ifSelected[data.vpn[i].t_name]) {
+					continue;
+				}
+				interfaceItem.push({name:data.vpn[i].t_label,value:""+data.vpn[i].t_name});	
+			}*/			
+		});	
+		if (index != 'add'){
+			var phddnsData = phddnsGrid.grid("getStore").getData(key)
+			var ifnameItem = phddnsData['interface'];
+			var ifnameLabel = phddnsData['t_label'];
+			var ifname = [];
+			ifname.push({name:""+ifnameLabel, value:""+ifnameItem, selected:true});
+			$(editor).find("#interface").combobox("reset");
+			$(editor).find("#interface").combobox("loadData", ifname);
+			//$(editor).find("#interface").combobox("disable");
+			var ifbox = $(editor).find('.combobox-container');
+			//console.log(ifbox[0]);
+			$(ifbox[0]).addClass('disabled');
+		}
+		else {
+			$(editor).find("#interface").combobox("enable");
+			$(editor).find("#interface").combobox("loadData", interfaceItem);
+			$(editor).find("#passwd").password("setValue", "");
+		}
+	});
+
+	
+	$("#phddns_alert_cnt").msg({
+		okHandler:function(){
+			$($("div#phddnsGrid").grid("getEditor")).editor("completeEdit");
+		},
+		cls:"m warning",
+		cancelHandler:function(){
+			return true;
+		},
+		type: "prompt"
+	});
+
+	$("#phddns_confirm_content").html();
+
+	var helpPhddns = new $.su.Help({
+		container: "div#phddns_help",
+		content: "PHDDNS"
+	});
+
+});
+</script>
+</body>
+</html>

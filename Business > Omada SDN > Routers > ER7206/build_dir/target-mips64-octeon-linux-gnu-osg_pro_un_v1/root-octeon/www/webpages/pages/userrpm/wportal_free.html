@@ -1,0 +1,483 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <style type="text/css">
+    </style>
+    <title>Wportal</title>
+</head>
+
+<body>
+<div class="func-container">
+    <div id="func-setting" style="margin-bottom: 0px;">
+        <div id="auth_freeOf_settings">
+            <input id="afs_strategy_name" class="tb" name="name" value=""/>
+            <input id="afs_strategy_type" name="strategy_type" value=""/>
+            <textarea id="afs_url_addr" class="tb" name="url" value=""/>
+            <input id="afs_src_ipset" name="src_ipset" value=""/>
+            <input id="afs_dst_ipset" name="dst_ipset" value=""/>
+            <input id="afs_mac" class="tb" name="mac" value=""/>
+            <input id="afs_sport" name="sport" value=""/>
+            <input id="afs_dport" name="dport" value=""/>
+            <input id="afs_service_type" name="service_type"/>
+            <input id="afs_zone" name="zone" value=""/>
+            <input id="afs_comment" class="tb" name="comment"/>
+            <input id="afs_enable" name="enable"/>
+        </div>
+    </div>
+    <div id="auth_freeOf_list" style="padding-left: 15px;"></div>
+
+    <div id="wportal-help"></div>
+</div>
+
+<script type="text/javascript">
+
+//<![CDATA[
+try{
+    $
+}catch(e){
+    location.href = "/";
+};
+$(document).ready(function(e){
+    var URL_GLOBAL = $.su.url("/admin/freeStrategy?form=strategy_list");
+
+    function urlValidator(value)
+    {
+        var codeStr = /^([A-Za-z0-9\_\+\/\?\%\#\&\=\\\.\:\-]){1,250}$/;
+        if (!codeStr.test(value))
+        {
+            return $.su.CHAR.AC_WPORTAL.URL_CHAR_ERR;
+        }
+        else
+        {
+            return true;
+        }
+    }
+
+    var $settings = $("#auth_freeOf_settings"),
+            $straName = $("#afs_strategy_name"),
+            $straType = $("#afs_strategy_type"),
+            $urlAddr = $("#afs_url_addr"),
+            $srcIpSet = $("#afs_src_ipset"),
+            $dstIpSet = $("#afs_dst_ipset"),
+            $mac = $("#afs_mac"),
+            $sPort = $("#afs_sport"),
+            $dPort = $("#afs_dport"),
+            $serviceType = $("#afs_service_type"),
+            $zone = $("#afs_zone"),
+            $comment = $("#afs_comment"),
+            $enable = $("#afs_enable");
+
+
+    $settings.parent().panel({
+        title:$.su.CHAR.AC_WPORTAL.FREE_STRATEGY_SETTING// "免认证策略设置"//$.su.CHAR.MAC_FILTERING.SETTINGS
+    });
+
+    $straName.textbox({
+        fieldLabel: $.su.CHAR.AC_WPORTAL.FREE_STRATEGY_NAME,//'策略名称', //$.su.CHAR.INTERFACE.GATEWAY,
+        inputCls: 'xl',
+        tipsCls: 's',
+        vtype:"name",
+        allowBlank:false,
+        tips: $.su.CHAR.AC_WPORTAL.WEB_NAME_TIP,//'（1-50个字符）', //$.su.CHAR.INTERFACE.OPTIONAL
+        validator: function(v){
+            return (new $.su.vtype({vtype: "string_visible_allow_blank", maxLength:50}).validate(v));
+        }
+    });
+
+
+    $straType.combobox({
+        fieldLabel: $.su.CHAR.AC_WPORTAL.FREE_STRATEGY_TYPE,//'免认证方式', //$.su.CHAR.INTERFACE.TIMEOBJ,
+        allowBlank: false,
+        items:[
+            {value:"five_tuple", name: $.su.CHAR.AC_WPORTAL.FREE_STRATEGY_FIVE_TUPLE, selected: true},
+            {value:"url", name: $.su.CHAR.AC_WPORTAL.FREE_STRATEGY_URL, selected: false}
+        ]
+    }).on("ev_change", function(ev, vOld, vNew){
+                if(vNew && vNew[0] == "url"){
+                    $urlAddr.textarea("show");
+                    $urlAddr.textarea("enable");
+                    $dstIpSet.subnet("hide");
+                    $dstIpSet.subnet("disable");
+                    $dPort.portrange("hide");
+                    $dPort.portrange("disable");
+                    $serviceType.combobox("hide");
+                    $serviceType.combobox("disable");
+                    $zone.combobox("enable");
+                }else{
+                    $urlAddr.textarea("hide");
+                    $urlAddr.textarea("disable");
+                    $dstIpSet.subnet("show");
+                    $dstIpSet.subnet("enable");
+                    $dPort.portrange("show");
+                    $dPort.portrange("enable");
+                    $serviceType.combobox("show");
+                    $serviceType.combobox("enable");
+                    $zone.combobox("enable");
+                }
+            });
+
+    $urlAddr.textarea({
+        fieldLabel: $.su.CHAR.AC_WPORTAL.FREE_STRATEGY_URL_ADDR,//'URL地址', //$.su.CHAR.INTERFACE.GATEWAY,
+        inputCls: 'xl',
+        tipsCls: 's',
+        maxLength: 128,
+        vtype: 'ascii_visible',
+        allowBlank: false,
+        tips: $.su.CHAR.AC_WPORTAL.FREE_STRATEGY_URL_ADDR_TIP,//'（1-128个字符）', //$.su.CHAR.INTERFACE.OPTIONAL
+        validator: function(value){
+            return urlValidator(value);
+        }
+    }).textarea("hide");
+
+
+    $srcIpSet.subnet({
+        fieldLabel: $.su.CHAR.AC_WPORTAL.FREE_STRATEGY_SRC_IP_RANGE,//'源IP地址范围',
+        allowBlank:true,
+        tipsCls: 's',
+        tips: $.su.CHAR.AC_WPORTAL.OPTIONAL//'（可选）' //$.su.CHAR.INTERFACE.OPTIONAL
+    });
+
+    $dstIpSet.subnet({
+        fieldLabel: $.su.CHAR.AC_WPORTAL.FREE_STRATEGY_DST_IP_RANGE,//'目的IP地址范围',
+        allowBlank:true,
+        tipsCls: 's',
+        tips: $.su.CHAR.AC_WPORTAL.OPTIONAL//'（可选）' //$.su.CHAR.INTERFACE.OPTIONAL
+    });
+
+    $mac.textbox({
+        fieldLabel: $.su.CHAR.AC_WPORTAL.FREE_STRATEGY_SRC_MAC,//'源MAC地址', //$.su.CHAR.INTERFACE.GATEWAY,
+        allowBlank: true,
+        inputCls: 'xl',
+        tipsCls: 'inline-block',
+        tips: $.su.CHAR.AC_WPORTAL.FREE_STRATEGY_SRC_MAC_TIP,//'（XX-XX-XX-XX-XX-XX，可选）', //$.su.CHAR.INTERFACE.OPTIONAL
+        vtype: "mac"
+    });
+
+
+    $sPort.portrange({
+        fieldLabel: $.su.CHAR.SERVICE_TYPE.SRC_PORT_RANGE,
+        allowBlank: true,
+        validator: function(v){
+            var range = v.split("-");
+            var begin = range[0];
+            var end = range[1];
+            var begin_t = parseInt(begin);
+            var end_t = parseInt(end);
+            if(begin.match(/[^0-9]/) || end.match(/[^0-9]/) || begin_t < 1 || end_t > 65535){
+                return $.su.CHAR.AC_WPORTAL.PORT_ERR1;//"请输入1-65535之间的端口号";
+            }else if(begin_t > end_t){
+                return $.su.CHAR.AC_WPORTAL.PORT_ERR2;//"结束端口号必须大于开始端口号";
+            }
+            $sPort.portrange("setValue", begin_t+"-"+end_t);
+            return true;
+        },
+        tips: $.su.CHAR.AC_WPORTAL.FREE_STRATEGY_SRC_PORT_TIP//'（1-65535，可选）' //$.su.CHAR.INTERFACE.OPTIONAL
+    });
+
+    $dPort.portrange({
+        fieldLabel: $.su.CHAR.SERVICE_TYPE.DST_PORT_RANGE,
+        allowBlank: true,
+        validator: function(v){
+            var range = v.split("-");
+            var begin = range[0];
+            var end = range[1];
+            var begin_t = parseInt(begin);
+            var end_t = parseInt(end);
+            if(begin.match(/[^0-9]/) || end.match(/[^0-9]/) || begin_t < 1 || end_t > 65535){
+                return $.su.CHAR.AC_WPORTAL.PORT_ERR1;//"请输入1-65535之间的端口号";
+            }else if(begin_t > end_t){
+                return $.su.CHAR.AC_WPORTAL.PORT_ERR2;//"结束端口号必须大于开始端口号";
+            }
+            $dPort.portrange("setValue", begin_t+"-"+end_t);
+            return true;
+        },
+        tips: $.su.CHAR.AC_WPORTAL.FREE_STRATEGY_SRC_PORT_TIP//'（1-65535，可选）' //$.su.CHAR.INTERFACE.OPTIONAL
+    });
+
+    $serviceType.combobox({
+        fieldLabel: $.su.CHAR.AC_WPORTAL.FREE_STRATEGY_PROTOCOL,//'服务协议', //$.su.CHAR.INTERFACE.TIMEOBJ,
+        allowBlank: false,
+        items:[
+            // {value:"ALL", name: "ALL", selected: true},
+            {value:"UDP", name: "UDP"},
+            {value:"TCP", name: "TCP", selected: true}
+        ]
+    });
+
+    $zone.combobox({
+        fieldLabel:$.su.CHAR.ACCESS_CONTROL.ZONE,
+        allowBlank: false,          
+        multiSelect:true,
+        vtype:"string_visible_allow_blank",
+        items:[
+            {name:"---",value:"---"}
+        ]
+    });
+
+    var interface_status;
+    var interface_lan = [];
+    var interfaceProxy = new $.su.Proxy({
+            url: $.su.url('/admin/interface?form=status'),
+            async: false
+    });     
+    interfaceProxy.read({}, function(data){                     
+        var i
+        interface_status = data;
+        for (i = 0; i < data["normal"].length; i++) {
+            if ($.su.func.isLan(data["normal"][i].t_name)) {
+                if (interface_lan.length == 0)
+                    interface_lan.push({value:data["normal"][i].t_name, name:data["normal"][i].t_label, selected:true});
+                else
+                    interface_lan.push({value:data["normal"][i].t_name, name:data["normal"][i].t_label});
+            }
+        }
+        var combobox = $zone;
+        combobox.combobox('loadData',interface_lan);
+    });
+
+    $comment.textbox({
+        fieldLabel: $.su.CHAR.AC_WPORTAL.AUTH_GROUP_NOTE,//'备注', //$.su.CHAR.INTERFACE.GATEWAY,
+        inputCls: 'xl',
+        tipsCls: 's',
+        allowBlank: true,
+        tips: $.su.CHAR.AC_WPORTAL.RADIUS_NAME_TIP//'（1-50个字符）' //$.su.CHAR.INTERFACE.OPTIONAL
+    });
+
+    $enable.checkbox({
+        fieldLabel:$.su.CHAR.USERMNGR.ENABLE,
+        defaultValue:["on"],
+        items: [
+            {boxlabel: $.su.CHAR.VIRTUAL_SERVERS.ENABLE_THIS_ENTRY, uncheckedValue:"off", inputValue: "on", id: "chk_enable",  checked:true}
+        ]
+    });
+
+
+    var globalProxy = new $.su.Proxy({
+        url: URL_GLOBAL
+    });
+
+    var $afsGrid = $('#auth_freeOf_list').grid({
+        store: {
+            proxy: globalProxy,
+            autoLoad: true,
+            fields: [
+                {name: "name"},
+                {name: "strategy_type"},
+                {name: "url"},
+                {name: "src_ipset"},
+                {name: "dst_ipset"},
+                {name: "mac"},
+                {name: "sport"},
+                {name: "dport"},
+                {name: "service_type"},
+                {name: "zone"},
+                {name: "comment"},
+                {name: "enable"},
+                {name: "t_label"}
+            ]
+        },
+        editor: {
+            content: '#auth_freeOf_settings',
+            fields: [
+                {name: "name"},
+                {name: "strategy_type"},
+                {name: "url"},
+                {name: "src_ipset"},
+                {name: "dst_ipset"},
+                {name: "mac"},
+                {name: "sport"},
+                {name: "dport"},
+                {name: "service_type"},
+                {name: "zone"},
+                {name: "comment"},
+                {name: "enable"}
+            ],
+            validator:function(){
+                var name = $("#afs_strategy_name").textbox('getValue');
+                var nameList = $("#auth_freeOf_list").grid('getStore').data;
+                var editingId = $($("#auth_freeOf_list").grid('getEditor')).editor("getEditingId");
+                var isURL = $straType.combobox("getValue") == "url";
+
+                var src = $srcIpSet.subnet("getValue");
+                if(src && src != ""){
+                    src = src.split("/");
+                    var src_ip = src[0];
+                    var src_mask = src[1];
+                    if(src_ip != "" && src_mask == ""){
+                        $srcIpSet.subnet("setError", $.su.CHAR.AC_WPORTAL.IPRAN_ERR);//"请完整填写地址范围");
+                        return false;
+                    }
+                }
+                
+
+                var src_port = $sPort.portrange("getValue");
+                if(src_port && src_port != ""){
+                    src_port = src_port.split("-");
+                    if(src_port[0] != "" && src_port[1] == ""){
+                        $sPort.portrange("setError", $.su.CHAR.AC_WPORTAL.PORTRAN_ERR);//"请完整填写端口范围");
+                        return false;
+                    }
+                }
+
+                if(!isURL){
+                    var dst = $dstIpSet.subnet("getValue");
+                    if(dst && dst != ""){
+                        dst = dst.split("/");
+                        var dst_ip = dst[0];
+                        var dst_mask = dst[1];
+                        if(dst_ip != "" && dst_mask == ""){
+                            $dstIpSet.subnet("setError", $.su.CHAR.AC_WPORTAL.IPRAN_ERR);//"请完整填写地址范围");
+                            return false;
+                        }
+                    }
+
+                    var dst_port = $dPort.portrange("getValue");
+                    if(dst_port && dst_port != ""){
+                        dst_port = dst_port.split("-");
+                        if(dst_port[0] != "" && dst_port[1] == ""){
+                            $dPort.portrange("setError", $.su.CHAR.AC_WPORTAL.PORTRAN_ERR);//"请完整填写端口范围");
+                            return false;
+                        }
+                    }
+                }
+
+                
+
+
+                for(var i=0;i<nameList.length;i++){
+                    if(editingId == nameList[i].key){
+                        continue;
+                    }
+                    if(name == nameList[i].name){
+                        $($("#auth_freeOf_list").grid("getEditor")).form('setError',$.su.CHAR.AC_WPORTAL.NAME_CONFLICT);//"您输入的名称已经存在，请重新输入");
+                        return false;
+                    }
+                }
+                return true;
+            }
+        },
+        paging:[],
+        columns: [
+            {
+                xtype: 'checkcolumn',
+                width: $.su.CHAR.SETTING.VPN_USER.CHECK_COLUMN_WIDTH
+            },
+            {
+                xtype: 'rownumberer',
+                width: $.su.CHAR.SETTING.VPN_USER.ROW_NUMBER_WIDTH
+            },
+            {
+                text: $.su.CHAR.AC_WPORTAL.FREE_STRATEGY_NAME,// '策略名称',
+                width: 50,
+                dataIndex: 'name'
+            },
+            {
+                text: $.su.CHAR.AC_WPORTAL.FREE_STRATEGY_TYPE,//'免认证方式',
+                width: 60,
+                dataIndex: 'strategy_type',
+                renderer:function(data){
+                    if(data == "five_tuple")
+                    {
+                        return $.su.CHAR.AC_WPORTAL.FREE_STRATEGY_FIVE_TUPLE;//'五元组方式';
+                    }
+                    else
+                    {
+                        return $.su.CHAR.AC_WPORTAL.FREE_STRATEGY_URL;//'URL方式';
+                    }
+                }
+            },
+          /*  {
+                text: 'URL地址',
+                width: 50,
+                dataIndex: 'url'
+            },*/
+            {
+                text: $.su.CHAR.AC_WPORTAL.FREE_STRATEGY_SRC_IP_RANGE,//'源IP地址范围',
+                width: 50,
+                dataIndex: 'src_ipset'
+            },
+            {
+                text: $.su.CHAR.AC_WPORTAL.FREE_STRATEGY_DST_IP_RANGE,//'目的IP地址范围',
+                width: 50,
+                dataIndex: 'dst_ipset'
+            },
+            /*{
+                text: 'mac',
+                width: 80,
+                dataIndex:'mac'
+            },*/
+            {
+                text: $.su.CHAR.AC_WPORTAL.FREE_STRATEGY_SRC_PORT,//'源端口',
+                width: 50,
+                dataIndex: 'sport'
+            },
+            {
+                text: $.su.CHAR.AC_WPORTAL.FREE_STRATEGY_DST_PORT,//'目的端口',
+                width: 50,
+                dataIndex: 'dport'
+            },
+           /* {
+                text: '服务协议',
+                width: 50,
+                dataIndex: 'service_type'
+            },*/
+            {
+                text: $.su.CHAR.AC_WPORTAL.VALID_RANGE,//'生效区段',
+                width: 50,
+                dataIndex: 'zone',
+                renderer: function(dd, index, data) {
+                    return data.t_label;
+                }
+            },
+           /* {
+                text: '备注',
+                width: 50,
+                dataIndex: 'comment'
+            },*/
+            {
+                text: $.su.CHAR.AC_WPORTAL.STATUS,//'状态',
+                width: 50,
+                dataIndex: 'enable',
+                xtype:"statuscolumn"
+            },
+			{
+				xtype: "settings",
+                width: 50
+			}
+        ],
+        operation: 'prompt|add|delete'
+    }).on("ev_load", function(e,data, others){
+        if(others)/* 閫氳繃json閲岀殑others鍙傛暟浼犻€掑姩鎬侀榾鍊?*/
+            {
+                /*淇濈暀涓嶇敤*/
+                //console.log(others.max_rules);
+                //maxrules = others.max_rules;
+            }
+        }).on("ev_insert", function(){
+        $afsGrid.grid("getStore").load();}
+    ).on("ev_remove", function(){
+        $afsGrid.grid("getStore").load();}
+    ).on("ev_update", function(){
+        $afsGrid.grid("getStore").load();})
+    .on("ev_startEdit", function(e, index, key){
+		 if (index == "add"){
+	    		$("input#afs_strategy_name").textbox("enableStyle");
+	    	}
+	    	else{
+	    		$("input#afs_strategy_name").textbox("disableStyle");
+	    	}
+    });
+    
+
+    var helpPortalFree = new $.su.Help({
+        container: "div#wportal-help",
+        content: "PORTAL_FREE"
+    })
+});
+
+//]]>
+</script>
+</body>
+
+</html>

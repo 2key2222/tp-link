@@ -1,0 +1,14 @@
+--- a/include/net/netfilter/nf_conntrack.h	2019-11-22 11:23:31.539188590 +0800
++++ b/include/net/netfilter/nf_conntrack.h	2019-12-23 13:09:11.640426150 +0800
+@@ -125,6 +125,11 @@
+ 	} layer7;
+ #endif
+ 
++	struct {
++		void *tplimit_data[IP_CT_DIR_MAX];
++		u_int32_t connection_need_update[IP_CT_DIR_MAX];
++	} ext_fastpath;
++
+ 	/* Storage reserved for other modules, must be the last member */
+ 	union nf_conntrack_proto proto;
+ };

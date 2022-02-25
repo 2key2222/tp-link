@@ -1,0 +1,151 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+<title>Snmp</title>
+</head>
+
+<body>
+<div class="func-container">
+    <div id="snmp-setting">
+        <form id="snmp-form">
+            <input id="snmp_enable" name="snmp_enable" value=""/>
+            <input id="sys_contact" name="sys_contact" value=""/>
+            <input id="sys_name" name="sys_name" value=""/>
+            <input id="sys_location" name="sys_location" value=""/>
+            <input id="get_community" name="get_community" value=""/>
+            <input id="get_source" name="get_source" value=""/>
+        </form>
+    </div>
+
+    <div id="snmp-help"></div>
+</div>
+
+<script type="text/javascript">
+
+//<![CDATA[
+try{
+    $
+}catch(e){
+    location.href = "/";
+};
+$(document).ready(function(e){
+
+    function setEn(value)
+    {
+        $("input#sys_contact").textbox(value);
+        $("input#sys_contact").textbox(value);
+        $("input#sys_name").textbox(value);
+        $("input#sys_location").textbox(value);
+        $("input#get_community").textbox(value);
+        $("input#get_source").textbox(value);
+    }
+
+    $("#snmp-setting").panel({
+        title: $.su.CHAR.SNMP.SNMP
+    });
+
+    $("#snmp_enable").checkbox({
+    fieldLabel:$.su.CHAR.SNMP.SNMP,
+        items: [
+            {boxlabel: $.su.CHAR.SNMP.ENABLE, uncheckedValue: "off", inputValue: "on", id: "chk_enable"}
+        ]
+    }).on("ev_change", function(e, oldValue, newValue){
+        var val = (newValue[0] == "snmp_enable" || newValue[0] == "on") ? "on" : "off";
+        switch(val)
+        {
+            case "on":
+                setEn("enable");
+                break;
+            case "off":
+                setEn("disable");
+                break;
+        }
+    });
+    
+    $("#sys_contact").textbox({
+        fieldLabel: $.su.CHAR.SNMP.SYS_CONTACT,
+        tips: "",
+        vtype: "string",
+        maxLength: 64,
+        minLength: 0
+    });
+
+    $("#sys_name").textbox({
+        fieldLabel: $.su.CHAR.SNMP.SYS_NAME,
+        tips: "",
+        vtype: "string",
+        maxLength: 64,
+        minLength: 0
+    });
+
+    $("#sys_location").textbox({
+        fieldLabel: $.su.CHAR.SNMP.SYS_LOCATION,
+        tips: "",
+        vtype: "string",
+        maxLength: 64,
+        minLength: 0
+    });
+
+    $("#get_community").textbox({
+        fieldLabel: $.su.CHAR.SNMP.GET_COMMUNITY,
+        tips: "",
+        vtype: "string",
+        maxLength: 64,
+        minLength: 1,
+    allowBlank:false
+    });
+
+    $("#get_source").textbox({
+        allowBlank:false,
+        fieldLabel: $.su.CHAR.SNMP.GET_SOURCE,
+        tips: "",
+        vtype: {
+            vtype: 'ip',
+            disallowFirstZeroFlag:false,
+            allowAllZeroFlag:true
+        }
+    });
+
+    var snmpProxy = new $.su.Proxy({
+        url: $.su.url("/admin/snmp?form=snmp")
+    });
+
+
+    $("form#snmp-form").form({
+        proxy: snmpProxy,
+        fields: [
+                    {name: "snmp_enable", mapping: "snmp_enable"},
+                    {name: "sys_contact", mapping: "sys_contact"},
+                    {name: "sys_name", mapping: "sys_name"},
+                    {name: "sys_location", mapping: "sys_location"},
+                    {name: "get_community", mapping: "get_community"},
+                    {name: "get_source", mapping: "get_source"},
+                ],
+
+
+        autoLoad: true,
+        submitBtn: "default"
+        }).on("ev_loadData", function(e, data){
+            if(data.snmp_enable == "on")
+            {
+                setEn("enable");
+            }
+            else
+            {
+                setEn("disable");
+            }
+    });
+
+    var snmpHelp = new $.su.Help({
+        container: "div#snmp-help",
+        content: ["SNMP_FUNCTION"]
+    });
+});
+
+//]]>
+</script>
+</body>
+
+</html>

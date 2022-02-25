@@ -1,0 +1,154 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Relation Table</title>
+</head>
+
+<body>
+<div class="func-container">
+
+<form id="vlan_relationtbl">
+    <div id="vlan_relationtbl_panel">
+        <div class="container grid-container">
+            
+            <div class="container grid-header-container">
+                <table border="0" cellspacing="0" cellpadding="0">
+                    <tr class="grid-header-tr">
+                        <th class="grid-header grid-header-0 port">
+                            <span class="content">Port</span>
+                        </th>
+                        <th class="grid-header grid-header-1 type" style="display:none">
+                            <span id="link-type" class="content"></span>
+                        </th>
+                        <th class="grid-header grid-header-2 vlans">
+                            <span id="port-vlans" class="content"></span>
+                        </th>                       
+                        
+                    </tr>
+                </table>
+            </div>
+            <div id="forform"></div>
+            <div class="grid-content-container-outer">
+
+                <div class="grid-content-container" style="overflow:visible;">
+                    <table border="0" cellspacing="0" cellpadding="0" id="table">
+                        
+                    </table>
+                    
+                </div>
+
+            </div>
+        </div>
+        
+    </div>
+
+</form>
+            
+
+     <div id="relationtbl_help"></div>
+</div>
+
+<script type="text/javascript">
+try{
+    $
+}catch(e){
+    location.href = "/";
+};
+
+$(document).ready(function(e){
+    var URL_PARA = $.su.url("/admin/vlansetting?form=portsettinglist");
+    var paraProxy = new $.su.Proxy({
+        url: URL_PARA 
+    });
+
+    $("span#link-type").html($.su.CHAR.VLAN.LINKTYPE);
+    $("span#port-vlans").html($.su.CHAR.VLAN.PORT_VLANS);
+
+    $("#vlan_relationtbl_panel").panel({
+        title: $.su.CHAR.VLAN.RELATION,//"关联表",
+        collapsible: false
+    }); 
+
+    var forform = $("#forform").form({
+        showPrompt:true
+    });
+
+    var params = [];
+
+    function loadData(){
+        paraProxy.read({
+            'method':'get',
+            'params': {},
+            'id':1
+        },function(data){
+			for(var i = 0; i < data.length; i++){
+				var port = data[i].port
+				var inHTML = "";
+				inHTML += "<tr class=\"grid-content-tr grid-content-tr-key-"+port+"\">";
+				inHTML +=      "<td class=\"grid-content-td grid-content-td-0 grid-content-td-port fst\">";
+				inHTML +=           "<span>Port"+port+"</span>";
+				inHTML +=      "</td>";
+				inHTML +=      "<td class=\"grid-content-td grid-content-td-1 grid-content-td-type\" style=\"display:none\">";
+				inHTML +=           "<span input id=\"port"+port+"_type\" name=\"port"+port+"_type\"></span>";
+				inHTML +=      "</td>";
+				inHTML +=      "<td class=\"grid-content-td grid-content-td-2 grid-content-td-port-vlans\">";
+				inHTML +=           "<span input id=\"port"+port+"_vlans\" name=\"port"+port+"_vlans\"></span>";    
+				inHTML +=      "</td>";
+				inHTML += "</tr>";
+				$("#table").append($(inHTML));
+
+                var ltype = "";
+                if("access"==data[i].type){
+                    ltype = $.su.CHAR.VLAN.ACCESS;
+                }else if("trunk"==data[i].type){
+                    ltype = $.su.CHAR.VLAN.TRUNK;
+                }else if("general"==data[i].type){
+                    ltype = $.su.CHAR.VLAN.GENERAL;
+                }
+                $("span#port"+port+"_type").html(ltype);
+
+				var result = "";
+				var vlans = data[i].vlans;
+				if (vlans){
+					var vlanhtml = []
+					for (var j = 0; j < vlans.length; j++){
+						var vlantag = vlans[j].match(/([0-9]+|t)/g)
+						var vlan = parseInt(vlantag[0])
+						var tag = vlantag[1]
+						if (!isNaN(vlan) && vlan >= 0) {
+							switch (tag) {
+								case "t":
+									vlanhtml[vlan] = vlan + "(" + $.su.CHAR.VLAN.TAG + ") "
+									break;
+								default:
+									vlanhtml[vlan] = vlan + "(" + $.su.CHAR.VLAN.UNTAG + ") "
+									break;
+							}
+						}
+					}
+					for (var k = 0; k < vlanhtml.length; k++) {
+						if (vlanhtml[k])
+							result += vlanhtml[k]
+					}
+				}
+                
+                //$("#port"+j+"_vlans").textbox("setValue", tag);
+                $("span#port"+port+"_vlans").html(result);   
+            }
+        },function(errcode){});
+    }
+    
+    loadData();
+
+    var relationtbl_help = new $.su.Help({
+        container: "div#relationtbl_help",
+        content: ["VLAN_RELATION_TABLE"]
+    });
+});
+</script>
+</body>
+
+</html>
+
+            

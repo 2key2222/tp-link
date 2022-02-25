@@ -1,0 +1,14 @@
+--- a/file.c	2020-02-29 12:44:22.961419249 +0800
++++ b/file.c	2020-02-29 12:54:32.048591320 +0800
+@@ -821,7 +821,10 @@
+ 	
+ 	if(strlen(host_start) != referer_end - referer_start)
+ 	{
+-		return false;
++		char *port_start = strchr(host_start, ':');
++		if (!port_start || (port_start - host_start != referer_end - referer_start)) {
++			return false;
++		}
+ 	}
+ 
+ 	if(strncmp(host_start, referer_start, referer_end - referer_start))

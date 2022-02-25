@@ -1,0 +1,29 @@
+
+config interface 'LAN'
+	option t_name 'LAN'
+	option uplink '1000000'
+	option downlink '1000000'
+
+config interface 'WAN1'
+	option t_name 'WAN1'
+	option uplink '1000000'
+	option downlink '1000000'
+
+config interface 'WAN2'
+	option downlink '1000000'
+	option t_name 'WAN2'
+	option uplink '1000000'
+	
+config global 'setting'
+	option qos_threshold '0'
+	list interface 'WAN1'
+	list interface 'LAN'
+	list interface 'WAN2'
+	option qos_enable 'off'
+	option threshold_enable 'off'
+
+config global 'polling'
+	option time_unit '10'
+	option enable_time '1'
+	option disable_time '24'
+	option trust_threshold '0.8'

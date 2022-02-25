@@ -1,0 +1,13 @@
+
+	使用说明：
+	（1）不指定机型，仅仅用于查看页面效果，不能用做emulator
+		终端命令： . web2static start 
+		说明： 生成文件夹位于 tplink/webpages下
+
+	（2）指定机型，用于制作emulator
+		终端命令： . web2static start ER6120
+		说明：Model字段只能使用 ER6120、ER5120、R470T+、R480T+、R600VPN 或 ER604W 等lan.js中PRODUCTINFO中提到的机型。
+
+	（3）如果要制作emulator，在使用完该工具后，还需更新webpages/static/data下的menu.advanced.json和firmware.set.json以更新菜单和版本信息。由于该部分内容较多且需要从后台获取数据，目前只能手动添加。
+
+	（4）目前可以在工程的任意子路径下使用该工具，但是命令中的脚本路径名称需要相应调整。

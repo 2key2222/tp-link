@@ -1,0 +1,59 @@
+# contents below built automatically by configure; do not edit by hand
+mibgroup_list_lo= \
+	mibgroup/host/hr_device.lo \
+	mibgroup/host/hr_disk.lo \
+	mibgroup/host/hr_filesys.lo \
+	mibgroup/host/hr_network.lo \
+	mibgroup/host/hr_partition.lo \
+	mibgroup/host/hr_proc.lo \
+	mibgroup/host/hr_storage.lo \
+	mibgroup/host/hr_system.lo \
+	mibgroup/ieee802dot11.lo \
+	mibgroup/mibII/at.lo \
+	mibgroup/mibII/icmp.lo \
+	mibgroup/mibII/ip.lo \
+	mibgroup/mibII/snmp_mib.lo \
+	mibgroup/mibII/sysORTable.lo \
+	mibgroup/mibII/system_mib.lo \
+	mibgroup/mibII/tcp.lo \
+	mibgroup/mibII/udp.lo \
+	mibgroup/mibII/vacm_context.lo \
+	mibgroup/mibII/vacm_vars.lo \
+	mibgroup/snmpv3/snmpEngine.lo \
+	mibgroup/snmpv3/snmpMPDStats.lo \
+	mibgroup/snmpv3/usmStats.lo \
+	mibgroup/snmpv3/usmUser.lo \
+	mibgroup/ucd-snmp/disk.lo \
+	mibgroup/ucd-snmp/dlmod.lo \
+	mibgroup/ucd-snmp/extensible.lo \
+	mibgroup/ucd-snmp/loadave.lo \
+	mibgroup/ucd-snmp/memory.lo \
+	mibgroup/ucd-snmp/pass.lo \
+	mibgroup/ucd-snmp/proc.lo \
+	mibgroup/ucd-snmp/vmstat.lo \
+	mibgroup/util_funcs.lo \
+	mibgroup/if-mib/ifXTable/ifXTable.lo \
+	mibgroup/mibII/kernel_linux.lo \
+	mibgroup/mibII/ipAddr.lo \
+	mibgroup/mibII/var_route.lo \
+	mibgroup/mibII/route_write.lo \
+	mibgroup/mibII/tcpTable.lo \
+	mibgroup/mibII/udpTable.lo \
+	mibgroup/tunnel/tunnel.lo \
+	mibgroup/hardware/cpu/cpu.lo \
+	mibgroup/hardware/cpu/cpu_linux.lo \
+	mibgroup/hardware/memory/hw_mem.lo \
+	mibgroup/hardware/memory/memory_linux.lo \
+	mibgroup/if-mib/data_access/interface.lo \
+	mibgroup/if-mib/ifTable/ifTable_interface.lo \
+	mibgroup/if-mib/ifTable/ifTable_data_access.lo \
+	mibgroup/if-mib/ifTable/ifTable.lo \
+	mibgroup/if-mib/ifXTable/ifXTable_interface.lo \
+	mibgroup/if-mib/ifXTable/ifXTable_data_access.lo \
+	mibgroup/if-mib/data_access/interface_linux.lo \
+	mibgroup/if-mib/data_access/interface_ioctl.lo \
+	mibgroup/ip-mib/data_access/ipaddress_common.lo \
+	mibgroup/ip-mib/data_access/ipaddress_linux.lo \
+	mibgroup/ip-mib/data_access/ipaddress_ioctl.lo
+
+# end configure generated code

@@ -1,0 +1,594 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>system log</title>
+<style type="text/css">
+	#log_list_fbar {
+		text-align: right;
+	}
+
+	a.page_num span.page_text {
+		color: #000000;
+		font-size: 12px;
+		margin-left: 14px;
+	}
+
+	a.page_num.current span.page_text,
+	a.page_num span.page_text:hover {
+		color: #115b96;
+	}
+
+	a.page_num span.icon_prep,
+	a.page_num span.icon_next {
+		background: url(themes/old/img/icons-06.png) no-repeat -410px -41px;
+		display: inline-block;
+		width: 20px;
+		height: 20px;
+		margin-left: 14px;
+	}
+
+	a.page_num span.icon_next {
+		background-position: -434px -41px;
+	}
+
+	a.page_num.disabled span.icon_prep {
+		background-position: -410px -89px;
+	}
+
+	a.page_num.disabled span.icon_next {
+		background-position: -434px -89px;
+	}
+
+	span.page_gap {
+		margin-left: 14px;
+	}
+
+</style>
+</head>
+
+<body>
+<div class="func-container">
+    <div id="function_setting">
+	    <form id="log_settings">
+            <input id="refresh" name="refresh"/>
+            <input id="level_switch" name="level_switch" />
+			<input id="level" name="level" />
+			<input id="module_switch" name="module_switch" />
+			<input id="module" name="module" />
+			<input id="log_send" name="log_send" />
+			<input id="send_server" name="send_server" />
+			<button id="log_submit" type="button"></button>
+		</form>
+    </div>
+
+
+	<div id="function_list">
+		<div id="log_list"></div>
+		<div id="log_list_fbar"></div>
+
+		<form id="save-setting" enctype="multipart/form-data">
+			<input type="hidden" />	
+		</form>
+
+		<div class="part-seperate button-context ">
+			
+			<button id="save_log" type="button"></button>
+			<input id="dyndns-status" name="status" />
+		</div>
+	</div>
+
+	<div id="help_system_log"></div>
+</div>
+
+<script type="text/javascript">
+try{
+    $
+}catch(e){
+    location.href = "/";
+};
+
+$(document).ready(function(e){
+    var LOG_LIST_URL_NEW = $.su.url("/admin/logger?form=loglist");
+	var LOG_FILTER_URL_NEW= $.su.url("/admin/logger?form=setting");
+	var LOG_TYPE_URL_NEW= $.su.url("/admin/logger?form=types");
+	
+
+	$("#function_setting").panel({
+        title: $.su.CHAR.SYSLOG.SETTINGS,
+        collapsible: false
+    });
+	
+    var settingProxy = new $.su.Proxy({
+        url: LOG_FILTER_URL_NEW
+        /* async: false*/
+    });
+
+    var logListProxy = new $.su.Proxy({
+        url: LOG_LIST_URL_NEW
+    });
+   	
+	var g_current_page = 1;
+	var g_page_size = 50;
+
+    $("#refresh").checkbox({
+        items: [
+            {boxlabel: $.su.CHAR.SYSLOG.AUTO_REFRESH, inputValue: "on", uncheckedValue: "off"}
+        ]
+    });
+   
+    $("#level_switch").checkbox({
+		items:[{
+			boxlabel:$.su.CHAR.SYSLOG.LOG_FILTER,inputValue:"on",uncheckedValue: "off"
+		}],
+		tips:"",
+		tipsCls:"xxxxl",
+		cls:"inline-block xxl"
+    }).on("ev_change", function(e, oldValue, newValue){
+        var val = (newValue[0]=="level_switch"||newValue[0]=="on") ? "on" : "off";
+        switch(val)
+        {
+            case "on":
+                $("#level").combobox("enable");
+                break;
+            case "off":
+                $("#level").combobox("disable");
+                //$("#level").combobox("setValue","1000");
+                break;
+        }
+    }); 
+   
+    $("#level").combobox({
+    	//cls:"inline",
+    	//fieldLabel:"",
+    	//labelCls:"xxxxs",
+        allowBlank:false,
+        multiSelect: false ,  
+        items:[
+		        {name:$.su.CHAR.SYSLOG.ALL_LEVEL,value:"ALL"},
+                {name:$.su.CHAR.SYSLOG.EMERGENCY,value:"EMERGENCY"},
+				{name:$.su.CHAR.SYSLOG.ALERT,value:"ALERT"},
+				{name:$.su.CHAR.SYSLOG.CRITICAL,value:"CRITICAL"},
+				{name:$.su.CHAR.SYSLOG.ERROR,value:"ERROR"},
+				{name:$.su.CHAR.SYSLOG.WARNING,value:"WARNING"},
+				{name:$.su.CHAR.SYSLOG.NOTICE,value:"NOTICE"},
+				{name:$.su.CHAR.SYSLOG.INFO,value:"INFO"},
+				{name:$.su.CHAR.SYSLOG.DEBUG,value:"DEBUG"}
+            ]
+    });
+	
+	$("#module_switch").checkbox({
+		items:[{
+			boxlabel:$.su.CHAR.SYSLOG.MODULE_FILTER,inputValue:"on",uncheckedValue: "off"
+		}]
+    }).on("ev_change", function(e, oldValue, newValue){
+        var val = (newValue[0]=="module_switch"||newValue[0]=="on") ? "on" : "off";
+        switch(val)
+        {
+            case "on":
+                $("#module").combobox("enable");
+                break;
+            case "off":
+                $("#module").combobox("disable");
+                break;
+        }
+    }); 
+   
+    $("#module").combobox({
+        allowBlank:false,
+        multiSelect: false ,  
+        items:[
+                {name:$.su.CHAR.SYSLOG.ALL_MODULE,value:"ALL"},
+				{name:$.su.CHAR.SYSLOG.ACCOUNT_MNGT,value:"account_mngt"},
+				{name:$.su.CHAR.SYSLOG.BALANCE,value:"balance"},
+				{name:$.su.CHAR.SYSLOG.BEHAVIOR_CTL,value:"behavior_ctl"},
+				{name:$.su.CHAR.SYSLOG.CMXDDNS,value:"cmxddns"},
+				{name:$.su.CHAR.SYSLOG.DHCP_CLIENT,value:"dhcp_client"},
+				{name:$.su.CHAR.SYSLOG.DHCP_SERVER,value:"dhcp_server"},
+				//{name:$.su.CHAR.SYSLOG.DYN3322DDNS,value:"dynddns"},
+				{name:$.su.CHAR.SYSLOG.FIREWALL,value:"firewall"},
+				{name:$.su.CHAR.SYSLOG.IPSEC,value:"ipsec"},
+				{name:$.su.CHAR.SYSLOG.PHDDNS,value:"phddns"},
+				{name:$.su.CHAR.SYSLOG.PORTAL,value:"portal"},
+				{name:$.su.CHAR.SYSLOG.PPP,value:"ppp"},
+				{name:$.su.CHAR.SYSLOG.REMOTE_MNGT,value:"remote_mngt"},
+				{name:$.su.CHAR.SYSLOG.TIME_MNGT,value:"time_mngt"},
+				{name:$.su.CHAR.SYSLOG.TIME_SETTING,value:"time_setting"},
+				{name:$.su.CHAR.SYSLOG.UPNP,value:"upnp"}
+            ]
+    });
+	
+	$("#log_send").checkbox({
+		items:[{
+			boxlabel:$.su.CHAR.SYSLOG.SEND_LOG,inputValue:"on",uncheckedValue: "off"
+		}]
+    }).on("ev_change", function(e, oldValue, newValue){
+        var val = (newValue[0]=="log_send"||newValue[0]=="on") ? "on" : "off";
+        switch(val)
+        {
+            case "on":
+                $("#send_server").textbox("enable");
+                break;
+            case "off":
+                $("#send_server").textbox("disable");
+                break;
+        }
+    }); 
+   
+    $("#send_server").textbox({
+		fieldLabel: /*"&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp" +*/ $.su.CHAR.SYSLOG.SERVER,
+        allowBlank:false,
+		vtype:"ip"
+    });
+	
+   
+
+	var autoRefresh = "on";   
+    var sysLogForm = $("#log_settings").form({
+        proxy: settingProxy,
+        autoLoad:true,
+        fields: [
+            {name:"refresh", mapping: "refresh"},
+			{name:"level_switch",mapping:"level_switch"},
+			{name:"level",mapping:"level"},
+			{name:"module_switch",mapping:"module_switch"},
+			{name:"module",mapping:"module"},
+			{name:"log_send",mapping:"log_send"},
+			{name:"send_server",mapping:"send_server"}
+        ],
+        submitBtn: "#log_submit"
+    }).on("ev_loadData", function(e){
+    	autoRefresh = $("#refresh").checkbox("getValue1");
+    	refreshLog();
+    });
+
+
+    $("#log_submit").button({
+    	text:$.su.CHAR.OPERATION.SAVE,//"设置",
+    	cls:"submit",
+    	handler:function(e){
+    		var send = $("#log_send").checkbox("getValue1");
+    		if(send == "on"){
+    			if(!$("input#send_server").textbox("validate")){
+					return false;
+				}
+    		}
+    		
+    		$.su.loading.show();
+    		sysLogForm.form("submit", {}, function(data){
+    			$.su.loading.hide();
+    		},function(error){
+    			$.su.loading.hide();
+    		},function(fail){
+    			$.su.loading.hide();
+    		});
+    	}
+    });
+
+    function refreshLog(){
+    	if(!$.contains(document, sysLogForm[0])){			
+			return;
+		}
+		if("on" != autoRefresh){			
+			return;
+		}
+		$("#btn-refresh").click();
+		setTimeout(function() {
+			refreshLog();
+		}, 10000);
+
+    }
+
+
+
+	$("#function_list").panel({
+        title: $.su.CHAR.SYSLOG.TITLE,
+        collapsible: false
+    });
+	
+	var storeTest = new $.su.Store({
+		proxy: {
+			url: LOG_LIST_URL_NEW
+		},
+		fields: [
+			{name: "key"},
+			{name: "time"},
+			{name: "type"},
+			{name: "level"},
+			{name: "content"}
+		],
+		updateMode:"complete",
+		autoLoad: true
+	});
+
+
+	$("div#log_list").grid({
+		store:storeTest,
+		minLines:0,
+		// paging:{
+		// 	numPerPage: 50
+		// },
+		columns: [
+			{
+				text: $.su.CHAR.SYSLOG.ID, 
+				width: 40,
+				dataIndex: "key"
+			},
+			{
+				text: $.su.CHAR.SYSLOG.TIME, 
+				width: 140,
+				dataIndex: "time"
+			},
+			{
+				text: $.su.CHAR.SYSLOG.MODULE, 
+				width: 120,
+				renderer:function(val, index){
+					var res = $.su.CHAR.SYSLOG[val];
+					if(!res)
+					{
+						res = val;
+					}
+					if (res == "LTOTP")
+						res = "L2TP"
+					if (res == "IPVSIX")
+						res = "IPV6"
+					return res;
+				},
+				dataIndex: "type"
+			},
+			{
+				text: $.su.CHAR.SYSLOG.LEVEL, 
+				width:100,
+				renderer:function(val, index){
+					var res = $.su.CHAR.SYSLOG[val];
+					var colorRed = "<span style=\"color:#ff0000;\">";
+					var colorOrange = "<span style=\"color:#ff9900;\">";
+					var spanEnd = "</span>";
+					if(!res)
+					{
+						res = val;
+					}else{
+						switch(val){
+							case "EMERGENCY":
+								res = colorRed + res + spanEnd;
+								break;
+							case "ALERT":
+								res = colorRed + res + spanEnd;
+								break;
+							case "CRITICAL":
+								res = colorRed + res + spanEnd;
+								break;
+							case "ERROR":
+								res = colorRed + res + spanEnd;
+								break;
+							case "WARNING":
+								res = colorOrange + res + spanEnd;
+								break;
+							default:
+								break;
+						}
+					}
+				
+					return res;
+				},
+				dataIndex: "level"
+			},
+			{
+				text: $.su.CHAR.SYSLOG.CONTENT, 
+				dataIndex: "content",
+				renderer:function(val, index, data){
+					//console.log(val,data)
+					var colorNormal = "<span>";
+					var colorRed = "<span style=\"color:#ff0000;\">";
+					var colorOrange = "<span style=\"color:#ff9900;\">";
+					var spanEnd = "</span>";
+					switch(data.level){
+						case "EMERGENCY":
+							val = colorRed + val + spanEnd;
+							break;
+						case "ALERT":
+							val = colorRed + val + spanEnd;
+							break;
+						case "CRITICAL":
+							val = colorRed + val + spanEnd;
+							break;
+						case "ERROR":
+							val = colorRed + val + spanEnd;
+							break;
+						case "WARNING":
+							val = colorOrange + val + spanEnd;
+							break;
+						default:
+							val = colorNormal + val + spanEnd;
+							break;
+					}
+					return val;
+				}
+			}
+		],
+		operation: [{
+			id: "btn-refresh",
+			xtype: "button",
+			iconCls: "btn-refresh",
+			// btnCls: "refresh",
+			text: $.su.CHAR.OPERATION.REFRESH,
+			handler: function(e){
+				e.preventDefault();
+				e.stopPropagation();
+				request_loglist(g_current_page, g_page_size);
+			}
+		},"deleteAll"]
+	}).on("ev_load",function(e, data, others){
+		$("td.grid-content-td-content").css({
+			"textAlign": "left",
+			"padding": "0 20px 0"
+		});
+
+		$("td.grid-content-td-content span span").css({
+			"margin": "0"
+		});
+
+		$("td.grid-content-td-content").css({
+			"textAlign": "left"
+		});
+
+		refresh_fbar(data, others);
+	});
+
+	$("div#log_list_fbar").delegate("a.page_num", "click", function(e){
+		var target = $(e.currentTarget);
+		if (target.hasClass("disabled")) return;
+		target.addClass("disabled");
+
+		var page_num = parseInt(target.attr("page-num"));
+		page_num = page_num ? page_num : 1;
+
+		request_loglist(page_num, g_page_size);
+	});
+
+	function request_loglist(page_num, page_size){
+		var logGrid = $("div#log_list");
+		var store   = logGrid.grid('getStore');
+		var params  = {params: {page_num: page_num, page_size: page_size}};
+
+		logGrid.grid("runProgress");
+		logListProxy.read(params, function(data, others){
+			logGrid.grid("prompt", true);
+			store.loadData(data, others);
+		}, function(){
+			logGrid.grid("prompt", false);
+		}, function(){
+			logGrid.grid("prompt", false);
+		});
+	}
+
+	function refresh_fbar(data, others){
+		var page_num  = (others && others.page_num)  ? others.page_num  : 1;
+		var total_log = (others && others.total_log) ? others.total_log : 0;
+		if (total_log <= g_page_size) {
+			$("div#log_list_fbar").html("");
+			return;
+		}
+		g_current_page = page_num;
+
+		var all_pages = parseInt(total_log / g_page_size);
+		all_pages = (total_log % g_page_size) ? (all_pages + 1) : all_pages;
+		var start_page = 1;
+		var end_page   = all_pages;
+
+		if (all_pages > 5) {
+			if (page_num < 3) {
+				start_page = 1;
+				end_page = 5;
+			}
+			else if (page_num > (all_pages - 2)) {
+				end_page = all_pages;
+				start_page = end_page - 4;
+			}
+			else {
+				start_page = page_num - 2;
+				end_page = page_num + 2;
+			}
+		}
+
+		// 上一页按钮
+		var inHTML =		"<div class=\"container widget-container\">";
+			if (page_num == 1)
+				inHTML +=		"<a href=\"javascript:void(0);\" class=\"page_num page_prep disabled\" page-num=1>";
+			else
+				inHTML +=		"<a href=\"javascript:void(0);\" class=\"page_num page_prep\" page-num="+(page_num-1)+">";
+			inHTML +=				"<span class=\"icon_prep\"></span>";
+			inHTML +=			"</a>";
+
+			// 返回第一页
+			if (start_page > 1) {
+				inHTML +=		"<a href=\"javascript:void(0);\" class=\"page_num\" page-num=1>";
+				inHTML +=			"<span class=\"page_text\">"+"1"+"</span>";
+				inHTML +=		"</a>";
+				if (start_page > 2)
+					inHTML +=	"<span class=\"page_gap\">"+"..."+"</span>";
+			}
+
+			// 中间各页
+			for (var i = start_page; i <= end_page; i++) {
+				if (i == page_num)
+					inHTML +=	"<a href=\"javascript:void(0);\" class=\"page_num current\" page-num="+i+">";
+				else
+					inHTML +=	"<a href=\"javascript:void(0);\" class=\"page_num\" page-num="+i+">";
+				inHTML +=			"<span class=\"page_text\">"+i+"</span>";
+				inHTML +=		"</a>";
+			}
+
+			// 跳到最后一页
+			if (end_page < all_pages) {
+				if (end_page <  all_pages - 1)
+					inHTML +=	"<span class=\"page_gap\">"+"..."+"</span>";
+				inHTML +=		"<a href=\"javascript:void(0);\" class=\"page_num\" page-num="+all_pages+">";
+				inHTML +=			"<span class=\"page_text\">"+all_pages+"</span>";
+				inHTML +=		"</a>";
+			}
+
+			// 下一页按钮
+			if (page_num == all_pages)
+				inHTML +=		"<a href=\"javascript:void(0);\" class=\"page_num page_next disabled\" page-num="+all_pages+">";
+			else
+				inHTML +=		"<a href=\"javascript:void(0);\" class=\"page_num page_next\" page-num="+(page_num+1)+">";
+			inHTML +=				"<span class=\"icon_next\"></span>";
+			inHTML +=			"</a>";
+			inHTML +=		"</div>";
+
+		$("div#log_list_fbar").html(inHTML);
+	}
+
+
+
+	var dyndnsStatus = $("input#dyndns-status").status({
+		cls: "inline-block",
+		proxy: {
+			url: LOG_LIST_URL_NEW
+		}
+	});
+
+
+	$("#log_prompt .text-successed").html($.su.CHAR.OPERATION.FORM_SAVED);
+	$("#log_prompt .text-failed").html($.su.CHAR.OPERATION.FORM_FAILED);
+
+	$("#save-setting").form({
+		proxy:{url: LOG_LIST_URL_NEW},
+		formEnctype: "multipart/form-data",
+		traditional: true,
+		hiddenFrame: true,
+		autoLoad: false
+	});
+
+	$("#save_log").button({
+		fieldLabel: null,
+		text: $.su.CHAR.SYSLOG.SAVE_LOG,
+		cls:"inline-block",
+		handler: function(e){		
+			$("#save-setting").form('submit', {operation:'save'}, function(data){
+				$("#save-setting").form('prompt', false, $.su.CHAR.SYSLOG.BACKUP_SUCCESS);//"导出成功");
+			},function(error){
+				$("#save-setting").form('prompt', false, $.su.CHAR.SYSLOG.BACKUP_FAIL);//"导出失败");
+			},function(fail){
+				$("#save-setting").form('prompt', false, $.su.CHAR.SYSLOG.BACKUP_FAIL);//"导出失败");
+			});
+		}
+	});
+
+
+	$("#module_switch").checkbox("hide");
+	$("#module").combobox("hide");
+	/*$("#log_send").checkbox("hide");
+	$("#send_server").textbox("hide");*/
+
+	var helpSystemLog = new $.su.Help({
+		container: "div#help_system_log",
+		content: ["SYSTEM_LOG", "SYSTEM_LOG_SETTING", "SYSTEM_LOG_LIST"]
+	});
+   
+});
+</script>
+</body>
+
+</html>

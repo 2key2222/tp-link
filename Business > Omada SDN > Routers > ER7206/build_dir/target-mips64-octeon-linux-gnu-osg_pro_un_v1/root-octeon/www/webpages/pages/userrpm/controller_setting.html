@@ -1,0 +1,181 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+<title>ControllerSettings</title>
+</head>
+
+<body>
+<div class="func-container">
+    <div id="cloud-setting">
+        <form id="cloud-form">
+         	<br><input type="text" id="connection_status"></input></br>
+            <br><input id="cloud_management" name="cloud_management" value=""/></br>
+        </form>
+    </div>
+
+    <div id="url-setting">
+        <form id="url-form">
+            <input id="inform_url" name="inform_url" value="" />
+            <input id="hidden_txt" name="hidden_txt" value="" class="hidden disabled"/>
+        </form>
+    </div>
+
+    <div id="controller-help"></div>
+</div>
+
+<script type="text/javascript">
+
+//<![CDATA[
+try{
+    $
+}catch(e){
+    location.href = "/";
+};
+$(document).ready(function(e){
+	var cloudBase = "/admin/controllerSettings?form=cloudBase",
+		informUrl = "/admin/controllerSettings?form=informUrl";
+
+	/* Page: Controller Settings */
+	$("div.func-container").page({
+		title: $.su.CHAR.CONTROLLER_SETTINGS.CONTROLLER_SETTINGS,
+		help: ""	//可能是个调用的id 也可能是个url
+	});
+
+	/* Division: Cloud-Based Controller Management */
+    $("#cloud-setting").panel({
+        title: $.su.CHAR.CONTROLLER_SETTINGS.CLOUD_MANAGEMENT
+    });
+
+	$("#connection_status").textbox({
+        fieldLabel: $.su.CHAR.CONTROLLER_SETTINGS.CONNECTION_STATUS,
+        cls:"inline-block",
+        readOnly:true,
+        inputCls:"xxl"
+    });
+
+	$("#cloud_management").checkbox({
+		fieldLabel:$.su.CHAR.CONTROLLER_SETTINGS.CLOUD_MANAGEMENT,
+        cls:"inline-block",
+        items: [
+            {boxlabel: $.su.CHAR.CONTROLLER_SETTINGS.ENABLE, uncheckedValue: "off", inputValue: "on", id: "cloud_enable"}
+        ]
+    });
+
+	var cloudProxy = new $.su.Proxy({
+        url: $.su.url(cloudBase),
+        async: true
+    });
+
+	function loadConnectionStatus() {
+		cloudProxy.read({}, function(data){
+			$("#connection_status").textbox("setValue", data["connection_status"]);
+			if (data["connection_status"] == "Disabled")
+			{
+				$("#connection_status").css("color", "grey");
+			}
+			else if (data["connection_status"] == "Online")
+			{
+				$("#connection_status").css("color", "green");
+			}
+			else if (data["connection_status"] == "Off-line")
+			{
+				$("#connection_status").css("color", "red");
+			}
+    	});
+	}
+    
+    function refreshConnectionStatus() {
+		/* 刷新前缓存Checkbox的勾选状态 */
+		var checkBoxState = document.getElementById("cloud_enable").checked;
+		cloudProxy.read({}, function(data){
+			$("#connection_status").textbox("setValue", data["connection_status"]);
+			if (data["connection_status"] == "Disabled")
+			{
+				$("#connection_status").css("color", "grey");
+			}
+			else if (data["connection_status"] == "Online")
+			{
+				$("#connection_status").css("color", "green");
+			}
+			else if (data["connection_status"] == "Off-line")
+			{
+				$("#connection_status").css("color", "red");
+			}
+			/* 刷新后恢复之前Checkbox的勾选状态 */
+			if (checkBoxState == true)
+			{
+				data["cloud_management"] = "on";
+			}
+			else
+			{
+				data["cloud_management"] = "off";
+			}
+    	});
+    }
+
+	/* 首次加载立刻执行 */
+	loadConnectionStatus();
+
+	/* 设置刷新Connection Status的时间间隔(10s) */
+    if(window.timeInter){
+        clearInterval(window.timeInter);
+        window.timeInter = 0;
+    }
+    window.timeInter = setInterval(function(){
+        if ($("#func-advanced title").text() != "ControllerSettings"){
+            clearInterval(window.timeInter);
+            window.timeInter = 0;
+            return;
+        }
+        refreshConnectionStatus();
+    }, 10*1000);
+    
+	$("form#cloud-form").form({
+        proxy: cloudProxy,
+		fields: [
+			{name: "connection_status", mapping: "connection_status"},
+			{name: "cloud_management", mapping: "cloud_management"}
+		],
+        autoLoad: true,
+        submitBtn: "default"
+    });
+
+	/* Division: Controller Inform URL */
+	$("#url-setting").panel({
+        title: $.su.CHAR.CONTROLLER_SETTINGS.INFORM_URL
+    });
+
+    $("#inform_url").textbox({
+        fieldLabel: $.su.CHAR.CONTROLLER_SETTINGS.URL_IP,
+        tips: "",
+		allowBlank: true,
+        vtype: "domain_port",
+        maxLength:261
+    });
+
+    var informUrlProxy = new $.su.Proxy({
+        url: $.su.url(informUrl)
+    });
+
+
+    $("form#url-form").form({
+        proxy: informUrlProxy,
+		fields: [ {name: "inform_url", mapping: "inform_url"} ],
+        autoLoad: true,
+        submitBtn: "default"
+    });
+
+    var controllerHelp = new $.su.Help({
+        container: "div#controller-help",
+        content: ["CONTROLLER_SETTINGS", "CLOUD_MANAGEMENT", "INFORM_URL"]
+    });
+});
+
+//]]>
+</script>
+</body>
+
+</html>
+

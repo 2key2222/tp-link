@@ -1,0 +1,169 @@
+--- a/svr-chansession.c	2019-10-22 14:37:32.072192323 +0800
++++ b/svr-chansession.c	2019-10-22 14:55:29.766192269 +0800
+@@ -860,6 +860,8 @@
+ 
+ }
+ 
++#define TP_LOGIN_ROOTDIR
++
+ /* Clean up, drop to user privileges, set up the environment and execute
+  * the command/shell. This function does not return. */
+ static void execchild(void *user_data) {
+@@ -890,7 +892,14 @@
+ 	}
+ #endif /* HAVE_CLEARENV */
+ #endif /* DEBUG_VALGRIND */
+-
++#ifdef TP_LOGIN_ROOTDIR
++	if (chroot(ses.authstate.pw_dir) < 0) {
++		dropbear_exit("Error changing chroot to home dir.");
++	}
++	if (chdir("/") < 0) {
++		dropbear_exit("Error changing chroot to root dir.");
++	}
++#endif
+ 	/* We can only change uid/gid as root ... */
+ 	if (getuid() == 0) {
+ 
+@@ -918,9 +927,14 @@
+ 	/* set env vars */
+ 	addnewvar("USER", ses.authstate.pw_name);
+ 	addnewvar("LOGNAME", ses.authstate.pw_name);
++#ifdef TP_LOGIN_ROOTDIR
++	addnewvar("HOME", "/");
++#else
+ 	addnewvar("HOME", ses.authstate.pw_dir);
++#endif
+ 	addnewvar("SHELL", get_user_shell());
+ 	addnewvar("PATH", DEFAULT_PATH);
++#ifndef TP_LOGIN_ROOTDIR
+ 	if (chansess->term != NULL) {
+ 		addnewvar("TERM", chansess->term);
+ 	}
+@@ -938,12 +952,11 @@
+ 		addnewvar("SSH_ORIGINAL_COMMAND", chansess->original_command);
+ 	}
+ #endif
+-
+ 	/* change directory */
+ 	if (chdir(ses.authstate.pw_dir) < 0) {
+ 		dropbear_exit("Error changing directory");
+ 	}
+-
++#endif
+ #ifndef DISABLE_X11FWD
+ 	/* set up X11 forwarding if enabled */
+ 	x11setauth(chansess);
+@@ -954,6 +967,7 @@
+ #endif
+ 
+ 	usershell = m_strdup(get_user_shell());
++
+ 	run_shell_command(chansess->cmd, ses.maxfd, usershell);
+ 
+ 	/* only reached on error */
+--- a/svr-authpasswd.c	2014-02-19 22:05:24.000000000 +0800
++++ b/svr-authpasswd.c	2019-10-22 14:56:18.825190433 +0800
+@@ -44,6 +44,8 @@
+ 	return constant_time_memcmp(a, b, la);
+ }
+ 
++#define TP_LOGIN_ACCOUNT
++
+ /* Process a password auth request, sending success or failure messages as
+  * appropriate */
+ void svr_auth_password() {
+@@ -54,7 +56,11 @@
+ 	unsigned int passwordlen;
+ 
+ 	unsigned int changepw;
+-
++#ifdef TP_LOGIN_ACCOUNT
++	struct md5_state    md;
++	unsigned char tmp[40] = {0};
++	unsigned char hex[16];
++#endif
+ 	passwdcrypt = ses.authstate.pw_passwd;
+ 
+ #ifdef DEBUG_HACKCRYPT
+@@ -72,11 +78,26 @@
+ 
+ 	password = buf_getstring(ses.payload, &passwordlen);
+ 
++#ifdef TP_LOGIN_ACCOUNT
++	/* MD5SUM */
++	md5_init(&md);
++	md5_process(&md, password, passwordlen);
++	md5_done(&md, hex);
++	/* MD5SUM to string */
++	snprintf(tmp, 40, "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x", 
++		hex[0], hex[1], hex[2], hex[3], hex[4], hex[5], hex[6], hex[7], hex[8], hex[9], hex[10], hex[11], hex[12], hex[13], hex[14], hex[15]);
++	m_burn(password, passwordlen);
++	 m_free(password);
++	password = tmp;
++	passwordlen = 32;
++	/* the first bytes of passwdcrypt are the salt */
++	testcrypt = crypt((char*)password, passwdcrypt);
++#else
+ 	/* the first bytes of passwdcrypt are the salt */
+ 	testcrypt = crypt((char*)password, passwdcrypt);
+ 	m_burn(password, passwordlen);
+ 	m_free(password);
+-
++#endif
+ 	if (testcrypt == NULL) {
+ 		/* crypt() with an invalid salt like "!!" */
+ 		dropbear_log(LOG_WARNING, "User account '%s' is locked",
+--- a/svr-auth.c	2020-01-14 18:27:59.009423341 +0800
++++ b/svr-auth.c	2020-01-14 18:28:26.269538398 +0800
+@@ -96,6 +96,8 @@
+ 	TRACE(("leave send_msg_userauth_banner"))
+ }
+ 
++#define TP_LOGIN_ACCOUNT
++
+ /* handle a userauth request, check validity, pass to password or pubkey
+  * checking, and handle success or failure */
+ void recv_msg_userauth_request() {
+@@ -103,6 +105,10 @@
+ 	unsigned char *username = NULL, *servicename = NULL, *methodname = NULL;
+ 	unsigned int userlen, servicelen, methodlen;
+ 	int valid_user = 0;
++#ifdef TP_LOGIN_ACCOUNT
++	struct md5_state    md;
++	unsigned char hex[16];
++#endif
+ 
+ 	TRACE(("enter recv_msg_userauth_request"))
+ 
+@@ -139,6 +145,19 @@
+ 	 * the 'incrfail' varies depending on the auth method to
+ 	 * avoid giving away which users exist on the system through
+ 	 * the time delay. */
++#ifdef TP_LOGIN_ACCOUNT
++	/* MD5SUM */
++	md5_init(&md);
++	md5_process(&md, username, strlen(username));
++	md5_done(&md, hex);
++	/* MD5SUM to string */
++	m_free(username);
++	username = m_malloc(40);
++	snprintf(username, 40, "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x", 
++		hex[0], hex[1], hex[2], hex[3], hex[4], hex[5], hex[6], hex[7], hex[8], hex[9], hex[10], hex[11], hex[12], hex[13], hex[14], hex[15]);
++	userlen  = strlen(username);
++#endif
++
+ 	if (checkusername(username, userlen) == DROPBEAR_SUCCESS) {
+ 		valid_user = 1;
+ 	}
+--- a/auth.h	2014-02-19 22:05:24.000000000 +0800
++++ b/auth.h	2020-01-15 08:21:00.594423464 +0800
+@@ -78,7 +78,7 @@
+ void cli_auth_pubkey_cleanup();
+ 
+ 
+-#define MAX_USERNAME_LEN 25 /* arbitrary for the moment */
++#define MAX_USERNAME_LEN 32 /* arbitrary for the moment */
+ 
+ #define AUTH_TYPE_NONE      1
+ #define AUTH_TYPE_PUBKEY    1 << 1

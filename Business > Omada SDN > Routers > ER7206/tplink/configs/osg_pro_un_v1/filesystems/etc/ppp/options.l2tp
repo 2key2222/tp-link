@@ -1,0 +1,19 @@
+lcp-echo-interval 30
+lcp-echo-failure 5
+noipdefault
+usepeerdns
+noauth
+persist
+maxfail 5
+plugin ppp4tplink.so
+path /tmp/l2tp
+ifname eth0.1
+wanconn
+noccp
+refuse-eap
+ip-up-script /lib/netifd/ppp-up
+ipv6-up-script /lib/netifd/ppp-up-ipv6
+ip-down-script /lib/netifd/ppp-down
+ipv6-down-script /lib/netifd/ppp-down-ipv6
+tunnel-proto l2tp
+ipcp-down-link

@@ -1,0 +1,79 @@
+#!/bin/sh
+
+
+statistic_usage()
+{
+	echo ""
+	echo "Usage: switch -t statistic -o <get |flush> [-p portsid]"
+	echo ""
+	echo "Example:"
+	echo "       switch -t statistic -o get"
+	echo "       switch -t statistic -o get -p \"1 2\" "
+	echo "       switch -t statistic -o flush -p \"1 2 4\" "
+	echo ""
+}
+
+statistic_arg_check()
+{
+	local portsid=$1
+
+	for i in $portsid; do
+		if [ `expr match $i "[0-9]"` = 0 ] || [ $i -lt 1 ] || [ $i -gt 5 ] ;then
+		echo "[statistic] the port is invalid. (1~5)"
+		statistic_usage
+		exit 0
+		fi
+	done
+}
+
+# flush switch port statistic
+# $1: portsid (1.2.3.4.5)
+flush_port_statistic()
+{
+	swconfig dev switch0 port 1 set reset_mib
+	
+}
+
+# convert statistic to standard format
+# $1: port
+get_port_standard_statistic()
+{
+	swconfig_get_port_mib $1
+		
+}
+
+# get switch port statistic
+# $1: portsid
+get_port_statistic()
+{
+	local ports=$1
+
+	# if input portsid = null, get all mibs
+	if [ -z "$ports" ]; then
+		ports="1 2 3 4 5"
+	else
+		statistic_arg_check "$ports"
+	fi	
+
+	for i in $ports; do
+		get_port_standard_statistic "$i"
+	done
+	
+}
+
+# rtl8367s switch port statistic
+# $1: op (get|flush)
+# $2: portsid (1.2.3.4.5)
+ar9533_switch_port_statistic()
+{
+	local op=$1
+	local portsid=$2
+
+	if [ $op = "get" ]; then	
+		get_port_statistic "$portsid"
+	elif [ $op = "flush" ]; then
+		flush_port_statistic "$portsid"
+	else
+		echo "[statistic] error op. (get | flush)"
+	fi
+}

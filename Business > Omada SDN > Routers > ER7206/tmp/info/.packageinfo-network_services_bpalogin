@@ -1,0 +1,17 @@
+Source-Makefile: package/network/services/bpalogin/Makefile
+Package: bpalogin
+Version: 2.0.2-1
+Depends: +libc +USE_EGLIBC:librt +USE_EGLIBC:libpthread +liblogger
+Menu-Depends: 
+Provides: 
+Section: net
+Category: Network
+Title: for BigPond access type which used in Australia
+Maintainer: 
+Source: 
+Type: ipkg
+Description: The program is need by BigPond access type to handle authentication with server.
+
+@@
+
+

@@ -1,0 +1,295 @@
+#!/bin/sh
+
+port_map_manual()
+{
+	local port_map
+
+	case $1 in
+		0)
+			port_map=10000000
+			;;
+		1)
+			port_map=01000000
+			;;
+		2)
+			port_map=00100000
+			;;
+		3)
+			port_map=00010000
+			;;
+		4)
+			port_map=00001000
+			;;
+		5)	
+			port_map=00000100
+			;;
+		6)
+			port_map=00000010		
+			;;
+		7)
+			port_map=00000001		
+			;;
+		*)		
+			;;
+	esac
+
+	echo "$port_map"
+}
+
+mt7621_set_lan_mac_static_atl()
+{
+	lanmac=$(uci get network.lan.macaddr)
+	lanmac_inchar=${lanmac//:/}
+	
+	lan_cpu_port=$(uci get network.switch.lan_cpu_port)
+	port_map=`port_map_manual $lan_cpu_port`
+	
+	local loop=0
+	local result=$(uci get vlan.@switch_vlan[$loop].users 2>/dev/null)
+	while [ x$result != 'x' ];do
+		[ $result == "lan" ] && {
+			lan_vlan=$(uci get vlan.@switch_vlan[$loop].vlan 2>/dev/null)
+			ralink-switch add $lanmac_inchar $port_map $lan_vlan
+			break
+		}
+		loop=$(($loop+1))
+		result=$(uci get vlan.@switch_vlan[$loop].users 2>/dev/null)
+	done
+}
+
+mt7621_get_wan_vlan_id()
+{
+	local wan_index=$1
+	local wan_vlan=-1
+	local loop=0
+	local result=$(uci get vlan.@switch_vlan[$loop].users 2>/dev/null)
+	while [ x$result != 'x' ];do
+		[ $result == "wan" ] && {
+			local ports=$(uci get vlan.@switch_vlan[$loop].ports 2>/dev/null)
+			local port=${ports:0:1}
+			port=$(($port + 1))
+			[ $wan_index == $port ] && {
+				wan_vlan=$(uci get vlan.@switch_vlan[$loop].vlan 2>/dev/null)
+				break
+			}
+		}
+		loop=$(($loop+1))
+		result=$(uci get vlan.@switch_vlan[$loop].users 2>/dev/null)
+	done
+
+	echo $wan_vlan
+
+}
+
+mt7621_set_wan_mac_static_atl()
+{
+	wanmode=$(uci get network.global.wanmode)
+	wan_cpu_port=$(uci get network.switch.wan_cpu_port)
+	port_map=`port_map_manual $wan_cpu_port`
+	for i in `seq 1 $wanmode`
+	do
+		local wanmac=$(uci get network.wan${i}_eth.macaddr)
+		local wanmac_inchar=${wanmac//:/}
+
+		local wan_vlan_id=$(mt7621_get_wan_vlan_id $i)
+		[ $wan_vlan_id != "-1" ] && {
+			ralink-switch add $wanmac_inchar $port_map $wan_vlan_id
+		}
+	done
+}
+
+mt7621_set_mac_static_atl()
+{
+	# not consider iptv
+	mt7621_set_lan_mac_static_atl
+	mt7621_set_wan_mac_static_atl
+}
+
+mt7621_flowcontrol_init_config()
+{
+	local lan_start=0
+	local wan_start=0
+	local lan_end=0	
+	local wan_end=0
+
+	local product_type=`cat /etc/productinfo |grep product_name |cut -d ":" -f 2`
+	local wan_num=$(uci get network.@interface_mode[0].wanmode)	
+
+	#TL-WVR458L's LAN_PORT is port1
+	if [ $product_type == "TL-WVR458L" ];then
+		lan_start=1
+		lan_end=$(($MAX_PORT_NUM-$wan_num))
+		wan_start=$(($LAN_END+1))
+		wan_end=$MAX_PORT_NUM
+	elif [ $product_type == "TL-R4299G" ];then
+		lan_start=$(($wan_num+1))
+		lan_end=$MAX_PORT_NUM
+		wan_start=1
+		wan_end=$wan_num
+	else
+		wan_end=$MAX_PORT_NUM
+	fi	
+
+	#from s_port should open the flow control
+	#lan on
+	for i in `seq $lan_start $lan_end`; do
+		section="port"$i		
+		uci set switch.$section.flowcontrol='on'
+	done
+
+	#wan off
+	for i in `seq $wan_start $wan_end`;do
+		section="port"$i		
+		uci set switch.$section.flowcontrol='off'
+	done
+
+	uci commit 2>/dev/null
+}
+
+# mt7621 switch init
+mt7621_switch_init()
+{
+	#mt7621_flowcontrol_init_config
+	mt7621_switch_reload "vlan"
+
+	for i in `seq 1 $MAX_PORT_NUM`; do
+		# port para init
+		section="port"$i
+		port_state=`uci get switch.$section.port_state`
+		flowcontrol=`uci get switch.$section.flowcontrol`
+		ng_mode=`uci get switch.$section.negotiation_mode`
+		
+		mt7621_switch_port_para_init $i $port_state $flowcontrol $ng_mode
+
+		# port rateControl init
+		config_get ingress_state "port"$i "ingress_state"
+		config_get ingress_mode "port"$i "ingress_mode"
+		config_get ingress_rate "port"$i "ingress_rate"
+		config_get egress_state "port"$i "egress_state"
+		config_get egress_rate "port"$i "egress_rate"
+
+		#mt7621_switch_port_rateControl_init $i $ingress_state $ingress_mode $ingress_rate $egress_state $egress_rate
+	done
+	
+
+	# init mirror config
+	config_get state "mirror" "state"
+	config_get mode "mirror" "mode"
+	config_get mirrorport "mirror" "mirrorport"
+	config_get mirroredports "mirror" "mirroredports"	
+
+	mt7621_switch_port_mirror_init $state $mode $mirrorport "$mirroredports"
+		
+	mt7621_set_mac_static_atl
+
+}
+
+
+# restart switch
+# restart port 
+mt7621_switch_restart()
+{
+	for i in `seq 1 $MAX_PORT_NUM`; do
+		#cpu port
+		[ $i -eq $CPU_PORT ] && continue
+
+		# port para init
+		config_get port_state "port"$i "port_state"
+		config_get flowcontrol "port"$i "flowcontrol"
+		config_get ng_mode "port"$i "negotiation_mode"	
+
+		mt7621_switch_port_para_init $i $port_state $flowcontrol $ng_mode
+	done
+}
+
+mt7621_switch_reload_mirror()
+{
+	config_get state "mirror" "state"
+	config_get mode "mirror" "mode"
+	config_get mirrorport "mirror" "mirrorport"
+	config_get mirroredports "mirror" "mirroredports"	
+
+	mt7621_switch_port_mirror_init $state $mode $mirrorport "$mirroredports"
+}
+
+# reload para config
+# $1: ports id
+mt7621_switch_reload_para()
+{
+	for i in $1;do
+		config_get port_state "port"$i "port_state"
+		config_get flowcontrol "port"$i "flowcontrol"
+		config_get ng_mode "port"$i "negotiation_mode"	
+
+		mt7621_switch_port_para_init $i $port_state $flowcontrol $ng_mode
+	done
+
+}
+
+# reload rateControl config
+# $1: ports id
+mt7621_switch_reload_rateControl()
+{
+	for i in $1; do		
+		config_get ingress_state "port"$i "ingress_state"
+		config_get ingress_mode "port"$i "ingress_mode"
+		config_get ingress_rate "port"$i "ingress_rate"
+		config_get egress_state "port"$i "egress_state"
+		config_get egress_rate "port"$i "egress_rate"
+
+		#mt7621_switch_port_rateControl_init $i $ingress_state $ingress_mode $ingress_rate $egress_state $egress_rate
+	done
+}
+
+mt7621_switch_reload_pvlan()
+{
+	set_port_vlan
+}
+
+mt7621_switch_reload_vlan()
+{
+	swconfig dev switch0 load vlan
+        swconfig dev switch0 reg set 0x2010 0x81000000                      # WAN   user mode
+        swconfig dev switch0 reg set 0x2110 0x81000000                      # LAN 1 user mode
+        swconfig dev switch0 reg set 0x2210 0x81000000                      # LAN 2 user mode
+        swconfig dev switch0 reg set 0x2310 0x81000000                      # LAN 3 user mode
+        swconfig dev switch0 reg set 0x2410 0x81000000                      # LAN 4 user mode
+        swconfig dev switch0 reg set 0x2510 0x81000000                      # CPU   user mode
+        swconfig dev switch0 reg set 0x2610 0x81000000                      # CPU   user mode
+
+	swconfig dev switch0 reg set 0x2004 0xff0003
+	swconfig dev switch0 reg set 0x2104 0xff0003
+	swconfig dev switch0 reg set 0x2204 0xff0003
+	swconfig dev switch0 reg set 0x2304 0xff0003
+	swconfig dev switch0 reg set 0x2404 0xff0003
+	swconfig dev switch0 reg set 0x2504 0xff0003
+	swconfig dev switch0 reg set 0x2604 0xff0003
+}
+
+#mt7621 switch reload
+# $1: module type
+# $2: ports id
+mt7621_switch_reload()
+{
+	case $1 in
+		"mirror" )
+			mt7621_switch_reload_mirror
+			;;
+		"pvlan" )
+			mt7621_switch_reload_pvlan
+			;;
+		"para" )
+			mt7621_switch_reload_para "$2"
+			;;
+		"rateControl")
+			#mt7621_switch_reload_rateControl "$2"
+			;;
+		"vlan")
+			mt7621_switch_reload_vlan
+			;;
+		*)
+			;;
+	esac
+}
+
+

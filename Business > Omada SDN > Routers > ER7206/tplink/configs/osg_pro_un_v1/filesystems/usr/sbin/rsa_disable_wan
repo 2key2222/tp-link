@@ -1,0 +1,19 @@
+#!/bin/sh 
+
+. /lib/functions/switch_port.sh
+
+if [ $# -eq 1 ]; then
+    if [ "$1" == "enable" ];then
+        enable_all_phy
+        exit
+    elif [ "$1" == "disable" ];then
+        enable_phy_GE5
+        exit
+    else
+         echo "Invalid func para."
+         exit
+    fi
+else
+    echo "Invalid para num."
+    exit
+fi

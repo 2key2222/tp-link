@@ -1,0 +1,291 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<style type="text/css">
+</style>
+<title>BWLIST QQ</title>
+</head>
+
+<body>
+<div class="func-container">
+    <div id="func-setting">
+        <form id="global-setting">
+            <input id="global-enable" name="state" value=""/>
+        </form>
+    </div>
+
+    <div id="own-editor">
+        <input id="addr" name="addr"/>
+	    <input id="rule_type" name="rule_type" />
+		<textarea id="qq_num" name="qq_num" />
+		<input id="record_log" name="record_log" />
+        <input id="timeobj" name="timeobj" />
+        <input id="comment" name="comment" />
+        <input id="state" name="state" />
+		<input id="index" name="index" />
+    </div>
+
+    <div id="appdist-list">
+        <div id="appdist-grid">
+        </div>
+    </div>
+
+    <div id="bwlist_help"></div>
+</div>
+
+<script type="text/javascript">
+
+//<![CDATA[
+try{
+    $
+}catch(e){
+    location.href = "/";
+};
+
+$(document).ready(function(e){
+    var URL_GLOBAL = $.su.url("/admin/bwlist_qq?form=global_qq"),
+        URL_RULE = $.su.url("/admin/bwlist_qq?form=rule_bwlist"),
+        URL_IPGROUP = $.su.url("/admin/ipgroup?form=ipgroup_list");
+ 
+    $("#func-setting").panel({
+        title: "功能设置"//$.su.CHAR.MAC_FILTERING.SETTINGS
+    });
+
+    $("#global-enable").checkbox({
+        items: [
+            {boxlabel: "启用QQ黑白名单", inputValue: "on", uncheckedValue: "off"}
+        ]
+    });
+
+    var globalProxy = new $.su.Proxy({
+        url: URL_GLOBAL
+    });
+    $("#global-setting").form({
+        proxy: globalProxy,
+        fields: [
+            {name: "state", mapping: "state"}
+        ],
+        submitBtn: "default"
+    });
+	
+	$("#appdist-list").panel({
+        title: "规则列表"//$.su.CHAR.MAC_FILTERING.SETTINGS
+    });
+
+    $("#addr").combobox({
+        fieldLabel: "受控地址组", //$.su.CHAR.INTERFACE.IFTYPE,
+        allowBlank: false,
+        items:[
+            {value:"IPGROUP_ANY", name: "IPGROUP_ANY"}
+        ]
+    });
+	
+	$("#rule_type").radio({
+        fieldLabel: "规则类型",
+        columns: 2,
+        items:[
+            {boxlabel: "白名单：允许下列QQ号码登录", name:'rule_type', inputValue:'on',checked:true},
+            {boxlabel: "黑名单：禁止下列QQ号码登录", name:'rule_type', inputValue:'off'}
+        ]
+    });
+	
+	$("#qq_num").textarea({
+		fieldLabel: "QQ号码",
+		allowBlank: false,
+        inputCls:"long"
+	});
+	
+	$("#record_log").checkbox({
+        fieldLabel: "当使用上述QQ号码时", //$.su.CHAR.MAC_FILTERING.TITLE,
+        items: [
+            {boxlabel: "记录到系统日志", inputValue: "on", uncheckedValue: "off"}
+        ]
+    });
+	$("#record_log").checkbox("hide");
+	
+    $("#timeobj").combobox({
+        fieldLabel: "生效时间", //$.su.CHAR.INTERFACE.IFTYPE,
+        allowBlank: false,
+        items:[
+            {value:"Any", name: "Any"}
+        ]
+    });
+	
+    $("#comment").textbox({
+        fieldLabel: "备注", 
+		allowBlank: true,
+		maxLength:32,
+		tips: "（可选）"
+    });
+	
+    $("#state").radio({
+        fieldLabel: "状态",
+        columns: 2,
+        items:[
+            {boxlabel: "启用", name:'state', inputValue:'on',checked:true},
+            {boxlabel: "禁用", name:'state', inputValue:'off'}
+        ]
+    });
+ 
+	$("#index").textbox({
+        fieldLabel: "添加到指定位置",
+		allowBlank: true,
+		tips: "（可选）"
+    });
+	var appdistListProxy = new $.su.Proxy({
+		url: URL_RULE
+	});
+	var appdistGrid = $("#appdist-grid").grid({
+        editor: {
+            content:"#own-editor",
+            fields: [
+                {name: "addr"},
+				{name: "rule_type"},
+				{name: "qq_num"},
+				{name: "record_log"},
+                {name: "timeobj"},
+				{name: "comment"},
+                {name: "state"},
+				{name: "index"}
+            ]
+        },
+		store:{
+			proxy: appdistListProxy,
+			fields: [
+                {name: "addr"},
+				{name: "rule_type"},
+				{name: "qq_num"},
+				{name: "record_log"},
+                {name: "timeobj"},
+				{name: "comment"},
+                {name: "state"},
+				{name: "index"}
+			],
+			autoLoad: true
+		},
+        paging:[],
+		columns: [
+			{
+				xtype: "checkcolumn",
+				width: $.su.CHAR.SETTING.VPN_USER.CHECK_COLUMN_WIDTH
+			},
+			{
+				xtype: "rownumberer",
+				width: $.su.CHAR.SETTING.VPN_USER.ROW_NUMBER_WIDTH
+			},
+			{
+				text: "用户组",//$.su.CHAR.APPDIST.ADDRESS,
+				width: 50,
+				dataIndex: "addr"
+			},
+			{
+				text: "规则类型",
+				width: 60,
+				dataIndex: "rule_type",
+			    renderer: function(v){
+                    if (v=="on"){
+                        return "白名单";
+                    }else if(v == "off"){
+                        return "黑名单";
+                    }else{
+                        return "--";
+                    }
+                }
+			},
+			{
+				dataIndex:"record_log",
+				hidden:true
+			},
+			{
+				dataIndex:"qq_num",
+				hidden:true
+			},
+            {
+                text: "生效时间",//$.su.CHAR.APPDIST.IFNAME,
+                width: 50,
+                dataIndex: "timeobj"
+            },
+            {
+                text: "备注",//$.su.CHAR.APPDIST.IFSTATUS,
+                width: 50,
+                dataIndex: "comment",
+                xtype:"comment"
+            },
+            {
+                xtype: "statuscolumn",
+                width: 50,
+                dataIndex: "state"
+            },
+			{
+				dataIndex:"index",
+				hidden:true
+			},
+            {
+                xtype: "settings",
+                width: $.su.CHAR.SETTING.VPN_USER.SETTING_WIDTH
+            }
+		],
+		operation: "prompt|add|delete"
+	}).on("ev_load", function(e,data, others){
+		var groupItem = [];
+		var maxrules = 0;
+        var editor = appdistGrid.grid('getEditor');
+        var groupProxy = new $.su.Proxy({
+            url: URL_IPGROUP,
+            async: false
+        });
+ 
+        groupProxy.read({}, function(data){
+            var i = 0;
+            for (i = 0; i < data.length; i++){
+                groupItem.push({name:data[i].name,value:data[i].name});
+            }
+            $(editor).find('#addr').combobox('loadData',groupItem);
+        });
+		
+		 /*发送form请求,获取时间对象列表 */
+        var timeItem=[];
+        var timeProxy = new $.su.Proxy({
+                url: $.su.url('/admin/time_mngt?form=timeobj_list'),
+                async: false
+        });  
+
+        timeProxy.read({}, function(data){                
+            for (i=0; i<data.length; i++){
+                timeItem.push({name:data[i].entry_name,value:data[i].entry_name});                    
+            } 
+            
+            var combobox = $(editor).find('.combobox-value[name=timeobj]');
+            combobox.combobox('loadData',timeItem);
+        });  
+    }
+	).on("ev_insert", function(){
+        appdistGrid.grid("getStore").load();}
+    ).on("ev_remove", function(){
+        appdistGrid.grid("getStore").load();}
+    ).on("ev_update", function(){
+        appdistGrid.grid("getStore").load();});
+	
+	var editor = $("div#appdist-grid").grid("getEditor");
+		$(editor).on("ev_startEdit", function(e, index, key){
+	
+		if( (index != "add") && (index != "delete") )
+		{
+			var qq_value = $("textarea#qq_num").textarea("getValue");
+			qq_value = qq_value.replace(/,/g,"\n");
+			$("textarea#qq_num").textarea("setValue", qq_value);
+		}
+	});
+	
+	 var helpIspRouting = new $.su.Help({
+        container: "div#bwlist_help",
+        content: ["BWLIST_SETTING","BWLIST"]
+    });
+});
+
+//]]>
+</script>
+</body>
+
+</html>

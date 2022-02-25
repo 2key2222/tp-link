@@ -1,0 +1,145 @@
+--- a/networking/traceroute.c	2014-01-10 02:15:44.000000000 +0800
++++ b/networking/traceroute.c	2018-01-17 08:58:39.728204006 +0800
+@@ -213,7 +213,7 @@
+ //usage:#define traceroute_trivial_usage
+ //usage:       "[-"IF_TRACEROUTE6("46")"FIldnrv] [-f 1ST_TTL] [-m MAXTTL] [-p PORT] [-q PROBES]\n"
+ //usage:       "	[-s SRC_IP] [-t TOS] [-w WAIT_SEC] [-g GATEWAY] [-i IFACE]\n"
+-//usage:       "	[-z PAUSE_MSEC] HOST [BYTES]"
++//usage:       "	[-z PAUSE_MSEC] [-N IP{,IP..}] HOST [BYTES]"
+ //usage:#define traceroute_full_usage "\n\n"
+ //usage:       "Trace the route to HOST\n"
+ //usage:	IF_TRACEROUTE6(
+@@ -234,6 +234,7 @@
+ //usage:     "\n	-t	Type-of-service in probe packets (default 0)"
+ //usage:     "\n	-w	Time in seconds to wait for a response (default 3)"
+ //usage:     "\n	-g	Loose source route gateway (8 max)"
++//usage:     "\n	-N	Server ips for name resolv."
+ //usage:
+ //usage:#define traceroute6_trivial_usage
+ //usage:       "[-dnrv] [-m MAXTTL] [-p PORT] [-q PROBES]\n"
+@@ -269,6 +270,7 @@
+ #include <arpa/inet.h>
+ #include <netinet/in.h>
+ #include <netinet/udp.h>
++#include <resolv.h>
+ #include <netinet/ip.h>
+ #include <netinet/ip_icmp.h>
+ #if ENABLE_FEATURE_IPV6
+@@ -291,7 +293,7 @@
+ 
+ 
+ #define OPT_STRING \
+-	"FIlnrdvxt:i:m:p:q:s:w:z:f:" \
++	"FIlnrdvxt:i:m:p:q:s:w:z:f:N:" \
+ 	IF_FEATURE_TRACEROUTE_SOURCE_ROUTE("g:") \
+ 	"4" IF_TRACEROUTE6("6")
+ enum {
+@@ -312,9 +314,10 @@
+ 	OPT_WAITTIME     = (1 << 14),   /* w */
+ 	OPT_PAUSE_MS     = (1 << 15),   /* z */
+ 	OPT_FIRST_TTL    = (1 << 16),   /* f */
+-	OPT_SOURCE_ROUTE = (1 << 17) * ENABLE_FEATURE_TRACEROUTE_SOURCE_ROUTE, /* g */
+-	OPT_IPV4         = (1 << (17+ENABLE_FEATURE_TRACEROUTE_SOURCE_ROUTE)),   /* 4 */
+-	OPT_IPV6         = (1 << (18+ENABLE_FEATURE_TRACEROUTE_SOURCE_ROUTE)) * ENABLE_TRACEROUTE6, /* 6 */
++	OPT_NSERVER      = (1 << 17),   /* N */
++	OPT_SOURCE_ROUTE = (1 << 18) * ENABLE_FEATURE_TRACEROUTE_SOURCE_ROUTE, /* g */
++	OPT_IPV4         = (1 << (18+ENABLE_FEATURE_TRACEROUTE_SOURCE_ROUTE)),   /* 4 */
++	OPT_IPV6         = (1 << (19+ENABLE_FEATURE_TRACEROUTE_SOURCE_ROUTE)) * ENABLE_TRACEROUTE6, /* 6 */
+ };
+ #define verbose (option_mask32 & OPT_VERBOSE)
+ 
+@@ -782,6 +785,68 @@
+ 	printf("  %u.%03u ms", tt / 1000, tt % 1000);
+ }
+ 
++/* alter the global _res nameserver structure to use
++   an explicit dns server instead of what is in /etc/resolv.conf */
++static void set_default_dns(const char *server)
++{
++	len_and_sockaddr *lsa;
++
++	if (!server)
++		return;
++
++	/* NB: this works even with, say, "[::1]:5353"! :) */
++	lsa = xhost2sockaddr(server, 53);
++	if (lsa->u.sa.sa_family == AF_INET) {
++		_res.nscount++;
++		/* struct copy */
++		_res.nsaddr_list[_res.nscount-1] = lsa->u.sin;
++#if defined(__UCLIBC__)
++#if ENABLE_FEATURE_IPV6
++		_res._u._ext.nscount++;
++		_res._u._ext.nsaddrs[0] = (void *)&_res.nsaddr_list[0];
++#endif
++#endif
++	}
++#if ENABLE_FEATURE_IPV6
++	/* Hoped libc can cope with IPv4 address there too.
++	 * No such luck, glibc 2.4 segfaults even with IPv6,
++	 * maybe I misunderstand how to make glibc use IPv6 addr?
++	 * (uclibc 0.9.31+ should work) */
++	if (lsa->u.sa.sa_family == AF_INET6) {
++		// glibc neither SEGVs nor sends any dgrams with this
++		// (strace shows no socket ops):
++		//_res.nscount = 0;
++		_res._u._ext.nscount++;
++		/* store a pointer to part of malloc'ed lsa */
++		_res._u._ext.nsaddrs[_res._u._ext.nscount-1] = &lsa->u.sin6;
++		/* must not free(lsa)! */
++	}
++#endif
++}
++
++static void specfic_resolv_servers(char *servers)
++{
++	char *s = servers;
++	char *t;
++
++	res_init();
++	_res.nscount = 0;
++#if ENABLE_FEATURE_IPV6
++	_res._u._ext.nscount = 0;
++#endif
++
++	while (s && *s) {
++		t = strchr(s, ',');
++		if (t)
++			*t = '\0';	
++		set_default_dns(s);
++		if (t)
++			s = t + 1;
++		else
++			s = NULL;
++	}
++}
++
+ /*
+  * Usage: [-dFIlnrvx] [-g gateway] [-i iface] [-f first_ttl]
+  * [-m max_ttl] [ -p port] [-q nqueries] [-s src_addr] [-t tos]
+@@ -808,6 +873,7 @@
+ 	char *pausemsecs_str;
+ 	char *first_ttl_str;
+ 	char *dest_str;
++	char *name_servers;
+ #if ENABLE_FEATURE_TRACEROUTE_SOURCE_ROUTE
+ 	llist_t *source_route_list = NULL;
+ 	int lsrr = 0;
+@@ -833,6 +899,7 @@
+ #if ENABLE_FEATURE_TRACEROUTE_SOURCE_ROUTE
+ 		, &source_route_list
+ #endif
++		, &name_servers
+ 	);
+ 	argv += optind;
+ 
+@@ -881,6 +948,9 @@
+ 	}
+ #endif
+ 
++	if (op & OPT_NSERVER)
++		specfic_resolv_servers(name_servers);
++
+ 	/* Process destination and optional packet size */
+ 	minpacket = sizeof(*outip) + SIZEOF_ICMP_HDR + sizeof(*outdata) + optlen;
+ 	if (!(op & OPT_USE_ICMP))

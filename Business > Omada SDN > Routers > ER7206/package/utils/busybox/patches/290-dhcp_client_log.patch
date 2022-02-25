@@ -1,0 +1,154 @@
+diff -urN a/Makefile b/Makefile
+--- a/Makefile	2014-01-19 18:39:28.000000000 -0800
++++ b/Makefile	2016-05-12 23:06:15.675758100 -0700
+@@ -323,6 +323,7 @@
+ AFLAGS		:= $(AFLAGS)
+ LDFLAGS		:= $(LDFLAGS)
+ LDLIBS		:=
++EXTRA_FLAGS := -llogger
+ 
+ # Read KERNELRELEASE from .kernelrelease (if it exists)
+ KERNELRELEASE = $(shell cat .kernelrelease 2> /dev/null)
+@@ -331,7 +332,7 @@
+ export	VERSION PATCHLEVEL SUBLEVEL KERNELRELEASE KERNELVERSION \
+ 	ARCH CONFIG_SHELL HOSTCC HOSTCFLAGS CROSS_COMPILE AS LD CC \
+ 	CPP AR NM STRIP OBJCOPY OBJDUMP MAKE AWK GENKSYMS PERL UTS_MACHINE \
+-	HOSTCXX HOSTCXXFLAGS LDFLAGS_MODULE CHECK CHECKFLAGS
++	HOSTCXX HOSTCXXFLAGS LDFLAGS_MODULE CHECK CHECKFLAGS EXTRA_FLAGS
+ 
+ export CPPFLAGS NOSTDINC_FLAGS LINUXINCLUDE OBJCOPYFLAGS LDFLAGS
+ export CFLAGS CFLAGS_KERNEL CFLAGS_MODULE
+@@ -607,7 +608,7 @@
+       "$@" \
+       "$(CC)" \
+       "$(CFLAGS) $(CFLAGS_busybox)" \
+-      "$(LDFLAGS) $(EXTRA_LDFLAGS)" \
++      "$(LDFLAGS) $(EXTRA_LDFLAGS) $(EXTRA_FLAGS)" \
+       "$(core-y)" \
+       "$(libs-y)" \
+       "$(LDLIBS)"
+diff -urN a/networking/udhcp/dhcpc.c b/networking/udhcp/dhcpc.c
+--- a/networking/udhcp/dhcpc.c	2016-05-12 23:02:09.915978900 -0700
++++ b/networking/udhcp/dhcpc.c	2016-05-22 03:14:57.786895070 -0700
+@@ -29,8 +29,21 @@
+ #include <linux/filter.h>
+ #include <linux/if_packet.h>
+ 
++#include "logger.h"
+ /* "struct client_config_t client_config" is in bb_common_bufsiz1 */
+ 
++//#define LOGGER_INFO_ID_DHCP_CLIENT	
++#define DHCP_CLIENT_GET_IP_SUC			12151
++#define DHCP_CLIENT_REBIND_SUC			12152
++#define DHCP_CLIENT_SET_FAIL			12153
++#define DHCP_CLIENT_RELASE				12154
++#define DHCP_CLIENT_START_REQUEST		12155
++#define DHCP_CLIENT_REBIND_FAIL			12156
++#define DHCP_CLIENT_DISCOVER_TIMEOUT	12157
++#define DHCP_CLIENT_REQUEST_TIMEOUT	12158
++
++#define DHCP_CLIENT_LOGGER_REG(info_id,...)			\
++	logger_reg(LOGGER_MODULE_ID_DHCP_CLIENT,info_id,##__VA_ARGS__)
+ 
+ #if ENABLE_LONG_OPTS
+ static const char udhcpc_longopts[] ALIGN1 =
+@@ -118,6 +131,34 @@
+ 	[OPTION_S32             ] = sizeof("-2147483684 "),
+ };
+ 
++static zone_namex[64] = {0};
++
++static int get_zone_by_dev(char *dev, char *store)
++{
++	char cmd[256] = {0};
++	
++	snprintf(cmd, 256, ". /lib/zone/zone_api.sh; ifacex=`zone_get_iface_bydev %s`; zonex=`zone_get_zone_byif ${ifacex}`; echo -n ${zonex};", dev);
++	snprintf(cmd + strlen(cmd), 256 - strlen(cmd), "[ -z ${zonex} ] && zone_get_zone_by_device %s", dev);
++	FILE *fp = popen(cmd, "r");
++	if (!fp)
++		return -1;
++	
++	char str[32] = {0};
++	if (fgets(str, 32, fp) == NULL) {
++		pclose(fp);
++		return -1;
++	}
++	pclose(fp);
++	
++	int len = strlen(str);
++	if (str[len - 1] == '\n')
++		str[len - 1] = 0;
++		
++	strncpy(store, str, 32);
++	
++	return 0;
++}
++
+ /* note: ip is a pointer to an IP in network order, possibly misaliged */
+ static int sprint_nip(char *dest, const char *pre, const uint8_t *ip)
+ {
+@@ -1388,6 +1429,9 @@
+ 	packet_num = 0;
+ 	timeout = 0;
+ 	already_waited_sec = 0;
++	
++	if (get_zone_by_dev(client_config.interface, zone_namex) != 0)
++		strcpy(zone_namex, "unknown");
+ 
+ 	/* Main event loop. select() waits on signal pipe and possibly
+ 	 * on sockfd.
+@@ -1468,6 +1512,7 @@
+ 					packet_num++;
+ 					continue;
+ 				}
++			DHCP_CLIENT_LOGGER_REG(DHCP_CLIENT_DISCOVER_TIMEOUT,LOGGER_PARAM_STRING,zone_namex/*client_config.interface*/);
+  leasefail:
+ 				udhcp_run_script(NULL, "leasefail");
+ #if BB_MMU /* -b is not supported on NOMMU */
+@@ -1495,6 +1540,7 @@
+ 					packet_num++;
+ 					continue;
+ 				}
++			DHCP_CLIENT_LOGGER_REG(DHCP_CLIENT_REQUEST_TIMEOUT,LOGGER_PARAM_STRING,zone_namex/*client_config.interface*/);
+ 				/* Timed out, go back to init state.
+ 				 * "discover...select...discover..." loops
+ 				 * were seen in the wild. Treat them similarly
+@@ -1522,6 +1568,7 @@
+ 			 * Anyway, it does recover by eventually failing through
+ 			 * into INIT_SELECTING state.
+ 			 */
++					DHCP_CLIENT_LOGGER_REG(DHCP_CLIENT_REBIND_FAIL,LOGGER_PARAM_STRING,zone_namex/*client_config.interface*/);
+ 					send_renew(xid, server_addr, requested_ip);
+ 					timeout >>= 1;
+ 					continue;
+@@ -1578,6 +1625,8 @@
+ 				 */
+ 				if (timeout > tryagain_timeout)
+ 					timeout = tryagain_timeout;
++
++				DHCP_CLIENT_LOGGER_REG(DHCP_CLIENT_REBIND_FAIL,LOGGER_PARAM_STRING,zone_namex/*client_config.interface*/);
+ 				goto case_RENEW_REQUESTED;
+ 			}
+ 			/* Start things over */
+@@ -1586,6 +1635,7 @@
+ 			timeout = 0;
+ 			continue;
+ 		case SIGUSR2:
++			DHCP_CLIENT_LOGGER_REG(DHCP_CLIENT_RELASE,LOGGER_PARAM_STRING,zone_namex/*client_config.interface*/,LOGGER_PARAM_IPV4,ntohl(requested_ip));
+ 			perform_release(server_addr, requested_ip);
+ 			timeout = INT_MAX;
+ 			continue;
+@@ -1750,6 +1800,13 @@
+ 					inet_ntoa(temp_addr), (unsigned)lease_seconds);
+ 				requested_ip = packet.yiaddr;
+ 				udhcp_run_script(&packet, state == REQUESTING ? "bound" : "renew");
++				if(state == REQUESTING){
++					/****/
++			DHCP_CLIENT_LOGGER_REG(DHCP_CLIENT_GET_IP_SUC,LOGGER_PARAM_STRING,zone_namex/*client_config.interface*/,LOGGER_PARAM_IPV4,requested_ip,LOGGER_PARAM_IPV4,packet.siaddr_nip);
++				}else{
++					/****/
++			DHCP_CLIENT_LOGGER_REG(DHCP_CLIENT_REBIND_SUC,LOGGER_PARAM_STRING,zone_namex/*client_config.interface*/,LOGGER_PARAM_IPV4,requested_ip,LOGGER_PARAM_IPV4,packet.siaddr_nip);
++				}
+ 
+ 				state = BOUND;
+ 				change_listen_mode(LISTEN_NONE);

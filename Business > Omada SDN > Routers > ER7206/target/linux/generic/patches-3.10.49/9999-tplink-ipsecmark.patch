@@ -1,0 +1,42 @@
+--- a/net/Kconfig	
++++ b/net/Kconfig	
+@@ -97,6 +97,11 @@
+ 	  to nfmark, but designated for security purposes.
+ 	  If you are unsure how to answer this question, answer N.
+ 
++config NETWORK_IPSECMARK
++	bool "Ipsec Marking"
++	help
++	  If you are unsure how to answer this question, answer N.
++
+ config NETWORK_PHY_TIMESTAMPING
+ 	bool "Timestamping in PHY devices"
+ 	help
+
+--- a/net/core/skbuff.c	
++++ b/net/core/skbuff.c	
+ 	new->l4_rxhash		= old->l4_rxhash;
+ 	new->no_fcs		= old->no_fcs;
+ 	new->encapsulation	= old->encapsulation;
++
++#ifdef	CONFIG_NETWORK_IPSECMARK
++	new->ipsecmark = old->ipsecmark;
++#endif
++
+ #ifdef CONFIG_XFRM
+ 	new->sp			= secpath_get(old->sp);
+ #endif
+
+
+--- a/include/linux/skbuff.h
++++ b/include/linux/skbuff.h
+@@ -486,6 +486,9 @@
+ 	 */
+ 	__u8			encapsulation:1;
+ 	/* 7/9 bit hole (depending on ndisc_nodetype presence) */
++#ifdef	CONFIG_NETWORK_IPSECMARK
++	__u8            ipsecmark:1;
++#endif 
+ 	kmemcheck_bitfield_end(flags2);
+ 
+ #ifdef CONFIG_NET_DMA

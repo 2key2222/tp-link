@@ -1,0 +1,58 @@
+--- a/include/stdlib.h	2012-05-15 15:20:09.000000000 +0800
++++ b/include/stdlib.h	2021-07-08 20:12:27.013402994 +0800
+@@ -592,6 +592,10 @@ libc_hidden_proto(setenv)
+ /* Remove the variable NAME from the environment.  */
+ extern int unsetenv (__const char *__name) __THROW;
+ libc_hidden_proto(unsetenv)
++
++extern int unsetenv_tp (__const char *__name) __THROW;
++libc_hidden_proto(unsetenv_tp)
++
+ #endif
+ 
+ /* The following is used by uClibc in atexit.c and sysconf.c */
+--- a/libc/stdlib/setenv.c	2012-05-15 15:20:09.000000000 +0800
++++ b/libc/stdlib/setenv.c	2021-07-08 20:13:39.854844425 +0800
+@@ -156,6 +156,42 @@ int unsetenv(const char *name)
+ }
+ libc_hidden_def(unsetenv)
+ 
++int unsetenv_tp(const char *name)
++{
++	const char *eq;
++	size_t len;
++	char **ep;
++
++	if (name == NULL || *name == '\0'
++	 || *(eq = strchrnul(name, '=')) == '='
++	) {
++		__set_errno(EINVAL);
++		return -1;
++	}
++	len = eq - name; /* avoiding strlen this way */
++
++	__UCLIBC_MUTEX_LOCK(mylock);
++	ep = __environ;
++	/* NB: clearenv(); unsetenv("foo"); should not segfault */
++	if (ep)	while (*ep != NULL) {
++		if (!strncmp(*ep, name, len) && (*ep)[len] == '=') {
++			/* Found it.  Remove this pointer by moving later ones back.  */
++			free(*ep);
++			char **dp = ep;
++			do {
++				dp[0] = dp[1];
++			} while (*dp++);
++			/* Continue the loop in case NAME appears again.  */
++		} else {
++			++ep;
++		}
++	}
++	__UCLIBC_MUTEX_UNLOCK(mylock);
++	return 0;
++}
++libc_hidden_def(unsetenv_tp)
++
++
+ /* The `clearenv' was planned to be added to POSIX.1 but probably
+    never made it.  Nevertheless the POSIX.9 standard (POSIX bindings
+    for Fortran 77) requires this function.  */

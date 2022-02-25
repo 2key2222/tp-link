@@ -1,0 +1,19 @@
+--- a/src/conntrack.c	2020-03-12 14:13:49.497418431 +0800
++++ b/src/conntrack.c	2020-03-12 14:40:36.460418034 +0800
+@@ -713,12 +713,12 @@
+ };
+ 
+ static struct parse_parameter {
+-	const char	*parameter[6];
++	const char	*parameter[7];
+ 	size_t  size;
+-	unsigned int value[6];
++	unsigned int value[7];
+ } parse_array[PARSE_MAX] = {
+-	{ {"ASSURED", "SEEN_REPLY", "UNSET", "FIXED_TIMEOUT", "EXPECTED"}, 5,
+-	  { IPS_ASSURED, IPS_SEEN_REPLY, 0, IPS_FIXED_TIMEOUT, IPS_EXPECTED} },
++	{ {"ASSURED", "SEEN_REPLY", "UNSET", "FIXED_TIMEOUT", "EXPECTED", "SRCNAT"}, 6,
++	  { IPS_ASSURED, IPS_SEEN_REPLY, 0, IPS_FIXED_TIMEOUT, IPS_EXPECTED, IPS_SRC_NAT} },
+ 	{ {"ALL", "NEW", "UPDATES", "DESTROY"}, 4,
+ 	  { CT_EVENT_F_ALL, CT_EVENT_F_NEW, CT_EVENT_F_UPD, CT_EVENT_F_DEL } },
+ 	{ {"xml", "extended", "timestamp", "id", "ktimestamp"}, 5, 

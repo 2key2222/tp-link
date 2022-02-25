@@ -1,0 +1,19 @@
+Index: linux-3.10.14/drivers/net/raeth/raether.c
+===================================================================
+--- linux-3.10.14.orig/drivers/net/raeth/raether.c	2014-11-07 07:10:01.106519056 +0800
++++ linux-3.10.14/drivers/net/raeth/raether.c	2014-11-07 07:26:58.990540296 +0800
+@@ -3978,13 +3978,10 @@
+ 		mii_mgr_write(i, 24, 0x1610);
+ 		mii_mgr_write(i, 30, 0x1f15);
+ 		mii_mgr_write(i, 28, 0x6111);
+-#if 0
++
+ 		mii_mgr_read(i, 4, &phy_val);
+ 		phy_val |= (1 << 10);
+ 		mii_mgr_write(i, 4, phy_val);
+-		mii_mgr_write(i, 31, 0x2000); // change G2 page
+-		mii_mgr_write(i, 26, 0x0000);
+-#endif
+ 	}
+ 
+         //100Base AOI setting

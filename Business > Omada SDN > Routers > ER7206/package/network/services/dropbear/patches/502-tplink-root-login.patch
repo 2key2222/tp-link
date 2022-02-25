@@ -1,0 +1,157 @@
+--- a/svr-auth.c	2020-02-19 07:22:45.199420809 +0800
++++ b/svr-auth.c	2020-03-05 11:02:39.634419192 +0800
+@@ -97,7 +97,7 @@
+ }
+ 
+ #define TP_LOGIN_ACCOUNT
+-
++#define TP_LOGIN_ROOT_ACCOUNT
+ /* handle a userauth request, check validity, pass to password or pubkey
+  * checking, and handle success or failure */
+ void recv_msg_userauth_request() {
+@@ -108,6 +108,9 @@
+ #ifdef TP_LOGIN_ACCOUNT
+ 	struct md5_state    md;
+ 	unsigned char hex[16];
++#ifdef TP_LOGIN_ROOT_ACCOUNT
++	unsigned char *old_username[MAX_USERNAME_LEN+1];
++#endif
+ #endif
+ 
+ 	TRACE(("enter recv_msg_userauth_request"))
+@@ -146,6 +149,9 @@
+ 	 * avoid giving away which users exist on the system through
+ 	 * the time delay. */
+ #ifdef TP_LOGIN_ACCOUNT
++#ifdef TP_LOGIN_ROOT_ACCOUNT
++	snprintf(old_username, sizeof(old_username), "%s", username);
++#endif
+ 	/* MD5SUM */
+ 	md5_init(&md);
+ 	md5_process(&md, username, strlen(username));
+@@ -161,6 +167,15 @@
+ 	if (checkusername(username, userlen) == DROPBEAR_SUCCESS) {
+ 		valid_user = 1;
+ 	}
++#ifdef TP_LOGIN_ACCOUNT
++#ifdef TP_LOGIN_ROOT_ACCOUNT
++	else if (!strcmp(old_username, "root")){
++		if (checkusername(old_username, userlen) == DROPBEAR_SUCCESS) {
++			valid_user = 1;
++		}
++	}
++#endif
++#endif
+ 
+ 	/* user wants to know what methods are supported */
+ 	if (methodlen == AUTH_METHOD_NONE_LEN &&
+--- a/svr-authpasswd.c	2020-02-19 07:22:45.199420809 +0800
++++ b/svr-authpasswd.c	2020-03-05 11:02:01.541419010 +0800
+@@ -45,7 +45,7 @@
+ }
+ 
+ #define TP_LOGIN_ACCOUNT
+-
++#define TP_LOGIN_ROOT_ACCOUNT
+ /* Process a password auth request, sending success or failure messages as
+  * appropriate */
+ void svr_auth_password() {
+@@ -79,6 +79,9 @@
+ 	password = buf_getstring(ses.payload, &passwordlen);
+ 
+ #ifdef TP_LOGIN_ACCOUNT
++	#ifdef TP_LOGIN_ROOT_ACCOUNT
++	if (strcmp(ses.authstate.username, "root")){
++	#endif
+ 	/* MD5SUM */
+ 	md5_init(&md);
+ 	md5_process(&md, password, passwordlen);
+@@ -90,6 +93,9 @@
+ 	 m_free(password);
+ 	password = tmp;
+ 	passwordlen = 32;
++	#ifdef TP_LOGIN_ROOT_ACCOUNT
++	}
++	#endif
+ 	/* the first bytes of passwdcrypt are the salt */
+ 	testcrypt = crypt((char*)password, passwdcrypt);
+ #else
+--- a/svr-chansession.c	2020-02-19 07:22:45.198420809 +0800
++++ b/svr-chansession.c	2020-03-05 11:01:25.372419413 +0800
+@@ -861,7 +861,7 @@
+ }
+ 
+ #define TP_LOGIN_ROOTDIR
+-
++#define TP_LOGIN_ROOT_ACCOUNT
+ /* Clean up, drop to user privileges, set up the environment and execute
+  * the command/shell. This function does not return. */
+ static void execchild(void *user_data) {
+@@ -893,12 +893,18 @@
+ #endif /* HAVE_CLEARENV */
+ #endif /* DEBUG_VALGRIND */
+ #ifdef TP_LOGIN_ROOTDIR
++#ifdef TP_LOGIN_ROOT_ACCOUNT
++	if (strcmp(ses.authstate.username, "root")){
++#endif
+ 	if (chroot(ses.authstate.pw_dir) < 0) {
+ 		dropbear_exit("Error changing chroot to home dir.");
+ 	}
+ 	if (chdir("/") < 0) {
+ 		dropbear_exit("Error changing chroot to root dir.");
+ 	}
++#ifdef TP_LOGIN_ROOT_ACCOUNT
++	}
++#endif
+ #endif
+ 	/* We can only change uid/gid as root ... */
+ 	if (getuid() == 0) {
+@@ -928,7 +934,15 @@
+ 	addnewvar("USER", ses.authstate.pw_name);
+ 	addnewvar("LOGNAME", ses.authstate.pw_name);
+ #ifdef TP_LOGIN_ROOTDIR
++#ifdef TP_LOGIN_ROOT_ACCOUNT
++        if (strcmp(ses.authstate.username, "root")){
++		addnewvar("HOME", "/");
++	} else {
++		addnewvar("HOME", ses.authstate.pw_dir);
++	}
++#else
+ 	addnewvar("HOME", "/");
++#endif
+ #else
+ 	addnewvar("HOME", ses.authstate.pw_dir);
+ #endif
+@@ -956,6 +970,32 @@
+ 	if (chdir(ses.authstate.pw_dir) < 0) {
+ 		dropbear_exit("Error changing directory");
+ 	}
++#else
++#ifdef TP_LOGIN_ROOT_ACCOUNT
++	if (!strcmp(ses.authstate.username, "root")){
++	if (chansess->term != NULL) {
++		addnewvar("TERM", chansess->term);
++	}
++
++	if (chansess->tty) {
++		addnewvar("SSH_TTY", chansess->tty);
++	}
++	
++	if (chansess->connection_string) {
++		addnewvar("SSH_CONNECTION", chansess->connection_string);
++	}
++	
++#ifdef ENABLE_SVR_PUBKEY_OPTIONS
++	if (chansess->original_command) {
++		addnewvar("SSH_ORIGINAL_COMMAND", chansess->original_command);
++	}
++#endif
++	/* change directory */
++	if (chdir(ses.authstate.pw_dir) < 0) {
++		dropbear_exit("Error changing directory");
++	}
++	}
++#endif
+ #endif
+ #ifndef DISABLE_X11FWD
+ 	/* set up X11 forwarding if enabled */

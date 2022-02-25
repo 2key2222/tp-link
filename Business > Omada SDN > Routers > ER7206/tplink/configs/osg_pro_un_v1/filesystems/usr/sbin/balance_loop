@@ -1,0 +1,174 @@
+#!/bin/sh
+
+state_dir="/tmp/balance/"
+pre_file="/tmp/balance/pre_state"
+cur_file="/tmp/balance/cur_state"
+
+online_file="/tmp/online/state"
+
+event_file="/tmp/balance/.iface_event"
+
+. /lib/zone/zone_api.sh
+. /lib/balance/api.sh
+
+INTERVAL=2
+get_cur_state()
+{
+	local key="$1"
+
+	[ -f $cur_file ] || return 0
+
+	grep "^${key}=.*" "$cur_file" 2>&1 >/dev/null || {
+		return 1
+	}
+
+	echo "`cat $cur_file |grep "\<${key}\>" |cut -d '=' -f 2`"
+}
+
+get_pre_state()
+{
+	local key="$1"
+
+	[ -f $pre_file ] || return 0
+
+	grep "^${key}=.*" "$pre_file" 2>&1 >/dev/null || {
+		return 1
+	}
+
+	echo "`cat $pre_file |grep "\<${key}\>" |cut -d '=' -f 2`"
+}
+
+#$1:device
+device_to_iface()
+{
+	iface=`zone_get_iface_bydev $1`
+	zone=`zone_get_zone_byif $iface`
+
+	if [ "$zone" == "VPN" ];then
+		zone=$iface
+	fi
+
+	echo "$zone"
+}
+
+if [ -e /var/run/balance_loop.pid ] ; then
+	kill $(cat /var/run/balance_loop.pid) &> /dev/null
+	rm /var/run/balance_loop.pid &> /dev/null
+fi
+
+echo "$$" > /var/run/balance_loop.pid
+
+#file format: device=state
+#like eth0=on
+while true; do
+	[ ! -e $state_dir ] && mkdir -p $state_dir
+
+	#fast check
+	if [ -f $online_file -a -f $cur_file -a -f $pre_file ]; then
+		if [ -z "$(diff -q $online_file $cur_file)" -a -z "$(diff -q $cur_file $pre_file)" ]; then
+			has_event=""
+			for dev in $(sed 's/=.*//g' $online_file)
+			do
+				if grep -q $dev $event_file ; then
+					has_event="yes"
+					break
+				fi
+			done
+			[ -z "${has_event}" ] && {
+				sleep $INTERVAL
+				continue
+			}
+		fi
+	fi
+
+	#slow check
+	if [ -f $online_file ];then
+		cp $online_file $cur_file -f
+
+		if [ -f $pre_file ];then
+			cat $pre_file | while read line
+			do
+				if [ -n "$line" ];then
+					device=`echo $line | cut -d '=' -f 1`
+					pre_state=`echo $line | cut -d '=' -f 2`
+
+					cur_state=`get_cur_state $device`
+
+					#modify the device state
+					if [ -n "$cur_state" ];then
+						if [ "$pre_state" != "$cur_state" ];then
+							iface=`device_to_iface $device`
+
+							if [ "$cur_state" == "on" ]; then
+								echo "modify iface=[$iface], dev=[$device], up" >> /tmp/balance/balance_loop
+								env -i ACTION=ifup INTERFACE=$iface DEVICE=$device /sbin/hotplug-call balance
+								
+							elif [ "$cur_state" == "off" ]; then
+								echo "modify iface=[$iface], dev=[$device], down" >> /tmp/balance/balance_loop
+								env -i ACTION=ifdown INTERFACE=$iface DEVICE=$device /sbin/hotplug-call balance							
+							fi
+						#when the up/down event happen between online check twice on
+						elif [ "$cur_state" == "on" ]; then
+							iface_event=`balance_iface_get_event $device`
+
+							if [ "$iface_event" == "down" -o "$iface_event" == "up" ];then
+								iface=`device_to_iface $device`
+								echo "iface=[$iface], dev=[$device], $iface_event twice just for test...." >> /tmp/balance/balance_loop
+								env -i ACTION=ifup INTERFACE=$iface DEVICE=$device /sbin/hotplug-call balance
+								balance_iface_del_event $device							
+							fi
+						#when the up/down event happen between offline, update
+						elif [ "$cur_state" == "off" ]; then
+							iface_event=`balance_iface_get_event $device`
+							if [ "$iface_event" == "up" -o "$iface_event" == "down" ]; then
+								iface=`device_to_iface $device`
+								echo "dev=[$device] offline $iface_event, update" >> /tmp/balance/balance_loop
+								env -i ACTION=ifdown INTERFACE=$iface DEVICE=$device /sbin/hotplug-call balance
+								balance_iface_del_event $device
+							fi
+						fi
+					else
+						#del old dev	
+
+						iface=`device_to_iface $device`
+						echo "del iface=[$iface], dev=[$device]" >> /tmp/balance/balance_loop
+						env -i ACTION=ifdown INTERFACE=$iface DEVICE=$device /sbin/hotplug-call balance		
+					fi
+				fi
+			done
+		fi
+
+		#add new dev
+		if [ -f $cur_file ];then
+			cat $cur_file | while read line
+			do
+				if [ -n "$line" ];then
+					device=`echo $line | cut -d '=' -f 1`
+					cur_state=`echo $line | cut -d '=' -f 2`
+
+					pre_state=`get_pre_state $device`
+
+					if [ -z "$pre_state" ];then
+
+						iface=`device_to_iface $device`
+
+						if [ "$cur_state" == "on" ]; then
+							echo "add iface=[$iface], dev=[$device], up" >> /tmp/balance/balance_loop
+							env -i ACTION=ifup INTERFACE=$iface DEVICE=$device /sbin/hotplug-call balance
+							
+						elif [ "$cur_state" == "off" ]; then
+							echo "add iface=[$iface], dev=[$device], down" >> /tmp/balance/balance_loop
+							env -i ACTION=ifdown INTERFACE=$iface DEVICE=$device /sbin/hotplug-call balance
+							
+						fi
+					fi
+				fi
+			done
+		fi
+	fi
+
+	cp $cur_file $pre_file -f
+
+	sleep $INTERVAL
+done
+

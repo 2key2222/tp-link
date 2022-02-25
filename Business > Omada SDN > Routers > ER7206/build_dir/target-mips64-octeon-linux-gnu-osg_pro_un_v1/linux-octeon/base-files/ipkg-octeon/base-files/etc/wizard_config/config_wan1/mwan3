@@ -1,0 +1,14 @@
+config balance 'global'
+        option state 'on'
+
+config policy_rule 'special_rule'    
+        option state 'on' 
+        option use_policy 'special_policy'
+
+config interface 'WAN1'   
+        option balance '1'
+        option ref '0'
+
+config policy 'special_policy'
+        list use_iface 'WAN1'
+

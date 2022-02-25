@@ -1,0 +1,666 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Virtual Server</title>
+<style type="text/css">
+</style>
+</head>
+
+<body>
+	<div class="func-container" >
+		<div id="virtual-servers">
+				<div id="virtualServersGrid" class="natSeries">
+				</div>
+		</div>
+
+		<div id="own_editor">
+			<input id="name" name="name">
+			<input id="virtual_interface" name="interface">
+
+			<!-- <button  type="button" id="virtual_view"></button> -->
+			<input id="external_port" name="external_port">
+			<input id="internal_port" name="internal_port">
+			<input id="virtual_ipaddr" name="ipaddr">
+			<input id="virtual_protocol" name="protocol">
+			<input id="virtual_enable" name="enable">
+		</div>
+
+	 	<div id="virtual_alert_cnt">
+			<h4 class="title">
+		    	<span class="icon"></span>
+		 		<span class="text" id="virtual_confirm_content"></span>
+		 	</h4>
+		</div> 
+
+		<span id="nat_notice" class="hidden"></span>
+		
+	 	<div id="virtual_server_help"></div>
+
+	</div>
+	
+<script type="text/javascript">
+//<![CDATA[
+	try{
+	    $
+	}catch(e){
+	    location.href = "/";
+	};
+
+	$(document).ready(function(e){
+	var remote_port = 0;
+	var remote_enable = "on";
+	var URL_VIRTUAL = $.su.url("/admin/nat?form=vs"); //data/virtualServers.json
+	var ACC_REMOTE_URL_NEW = $.su.url("/admin/administration?form=remote");
+
+	var remoteProxy = new $.su.Proxy({
+		url: ACC_REMOTE_URL_NEW
+	});
+
+	remoteProxy.read({"method": "read"}, function(data){
+		remote_port = data.port;
+		remote_enable = data.enable;
+	});
+
+	$("span#nat_notice").html($.su.CHAR.VIRTUAL_SERVERS.NAT_ENABLE_NOTICE);
+
+	function is_portcharacter(port_string,ch)
+	{
+		var c;
+		for (var i = 0; i < port_string.length; i++)
+		{
+			c = port_string.charAt(i);
+			if (ch.indexOf(c) == -1)
+				return false;
+		}
+		return true;
+	}
+
+	/*var lanIP = 0;
+	var lanMask = 0;
+
+	var lanProxy = new $.su.Proxy({
+		url: $.su.url('/admin/network?form=lan_ipv4')
+	});
+
+	lanProxy.read({}, function(data){
+		lanIP = data.ipaddr;
+		lanMask = data.mask_type.toUpperCase()=='CUSTOM'?data.custom_value:data.mask_type;
+	})*/
+
+	function portverify(port_string)
+	{
+
+		if(!is_portcharacter(port_string,"0123456789"))
+		{
+			return false;
+		}
+		if (parseInt(port_string,10) <= 0 || parseInt(port_string,10) > 65535)
+		{
+			return false;
+		}
+		return true;
+	}
+
+
+	function is_port(port_string)
+	{
+		if (!portverify(port_string))
+		{
+			return false;
+		}
+		return true;
+	}
+
+
+	function check_port(port_string)
+	{
+		var formatVal = "";
+		if (!is_portcharacter(port_string,"-0123456789"))
+		{
+			return false;
+		}
+		var sub_port_array;
+		sub_port_array = port_string.split("-");
+		if (sub_port_array.length > 2)
+		{
+			return false;
+		}
+		if(sub_port_array.length == 2)
+		{
+			for (var i = 0; i < 2; i++)
+			{
+				if (sub_port_array[i] == "" )
+				{
+					return false;
+				}
+				if (!is_port(sub_port_array[i]))
+				{
+					return false;
+				}
+			}
+			formatVal = parseInt(sub_port_array[0], 10) + "-" + parseInt(sub_port_array[1], 10);
+		}
+		if(sub_port_array.length == 1)
+		{
+			if (!is_port(sub_port_array[0]))
+			{
+				return false;
+			}
+		}
+		return true;
+	}
+
+
+	$("div.func-container").page({
+		title: $.su.CHAR.VIRTUAL_SERVERS.TITLE,
+		help: ""
+	});
+
+	$("div#virtual-servers").panel({
+		title: $.su.CHAR.VIRTUAL_SERVERS.TITLE,
+		collapsible: false
+	});
+	
+	$("input#name").textbox({
+		fieldLabel: $.su.CHAR.VIRTUAL_SERVERS.SERVICE_NAME,
+		maxLength:32,
+		vtype:"name",
+		allowBlank: false,	
+		cls: 'inline'
+	});
+	$("input#virtual_interface").combobox({
+		fieldLabel: $.su.CHAR.VIRTUAL_SERVERS.INTERFACE,
+		allowBlank: false,
+		multiSelect: true,
+		vtype:"string_visible_allow_blank",
+		items:[
+			{name:"---",value:'---'}
+		]
+	});
+	$("input#external_port").textbox({
+		fieldLabel: $.su.CHAR.VIRTUAL_SERVERS.EXTERNAL_PORT,
+		tips:$.su.CHAR.VIRTUAL_SERVERS.EXTERNAL_UNIT,
+		tipsCls:"inline-block",
+		maxLength:11,
+		allowBlank:false,
+		// textFormat:function(value){
+		// 	var formatVal = value;
+		// 	var arr = value.split("-");
+		// 	if(arr.length == 1)
+		// 	{
+				
+		// 		if(!isNaN(parseInt(arr[0],10)))
+		// 		{
+		// 			formatVal = parseInt(arr[0], 10);
+		// 		}
+		// 	}
+		// 	else if(arr.length == 2)
+		// 	{
+		// 		if( (!isNaN(parseInt(arr[0],10))) && (!isNaN(parseInt(arr[1],10))))
+		// 		{
+		// 			formatVal = parseInt(arr[0], 10) + "-" + parseInt(arr[1], 10);
+		// 		}
+		// 	}
+		// 	return formatVal;
+		// },
+		validator: function(value)
+		{
+			if (check_port(value) == false)
+			{
+				return $.su.CHAR.VIRTUAL_SERVERS.ERR1;//"错误的数值，请输入1到65535之间的数值";
+			}else
+			{
+				return true;
+			}
+		},
+		validateIcon: true
+	});
+	$("input#internal_port").textbox({
+		fieldLabel: $.su.CHAR.VIRTUAL_SERVERS.INTERNAL_PORT,
+		tips:$.su.CHAR.VIRTUAL_SERVERS.EXTERNAL_UNIT,
+		tipsCls:"inline-block",
+		maxLength:11,
+		allowBlank:false,
+		// textFormat:function(value){
+		// 	var formatVal = value;
+		// 	var arr = value.split("-");
+		// 	if(arr.length == 1)
+		// 	{
+				
+		// 		if(!isNaN(parseInt(arr[0],10)))
+		// 		{
+		// 			formatVal = parseInt(arr[0], 10);
+		// 		}
+		// 	}
+		// 	else if(arr.length == 2)
+		// 	{
+		// 		if( (!isNaN(parseInt(arr[0],10))) && (!isNaN(parseInt(arr[1],10))))
+		// 		{
+		// 			formatVal = parseInt(arr[0], 10) + "-" + parseInt(arr[1], 10);
+		// 		}
+		// 	}
+		// 	return formatVal;
+		// },
+		validator: function(value)
+		{
+			if (check_port(value) == false)
+			{
+				return $.su.CHAR.VIRTUAL_SERVERS.ERR1;//"错误的数值，请输入1到65535之间的数值";
+			}else
+			{
+				return true;
+			}
+		},
+
+		validateIcon: true
+	});
+	$("input#virtual_ipaddr").textbox({
+		fieldLabel: $.su.CHAR.VIRTUAL_SERVERS.INTERNAL_IP,
+		tipsCls:"m",
+		allowBlank:false,
+		textFormat:$.su.format.ip,
+		maxLength:15,
+		vtype:"ip"
+	});
+	$("input#virtual_protocol").combobox({
+		fieldLabel: $.su.CHAR.VIRTUAL_SERVERS.PROTOCAL,
+		inputCls: "l",
+		items: [
+			{"value": "ALL", "name": $.su.CHAR.VIRTUAL_SERVERS.PROTOCAL_ALL, selected:"selected"},
+			{"value": "TCP", "name": $.su.CHAR.VIRTUAL_SERVERS.PROTOCAL_TCP},
+			{"value": "UDP", "name": $.su.CHAR.VIRTUAL_SERVERS.PROTOCAL_UDP}
+		]
+	});
+
+	$("input#virtual_enable").checkbox({
+		fieldLabel:$.su.CHAR.VIRTUAL_SERVERS.STATUS,
+		defaultValue:["on"],
+		items: [
+			{boxlabel: $.su.CHAR.VIRTUAL_SERVERS.ENABLE_THIS_ENTRY, uncheckedValue:"off", inputValue: "on", id: "chk_enable",  checked:true}
+		]
+	});
+
+	var virtualProxy = new $.su.Proxy({
+		url: URL_VIRTUAL
+	});
+
+	function containProtocol(p1, p2)
+	{
+		if(p1 == "ALL")
+		{
+			return true;
+		}
+		if( (p1 == "TCP") && (p2 != "UDP"))
+		{
+			return true;
+		}
+		if( (p1 == "UDP") && (p2 != "TCP"))
+		{
+			return true;
+		}
+		return false;
+	}
+
+	var o = $("div#virtualServersGrid").grid({
+		store:{
+			proxy: virtualProxy,
+			fields: [
+			{name: "name"},
+			{name: "interface"},
+	 		{name: "external_port"},
+	 		{name: "internal_port"},
+			{name: "ipaddr"},
+	 		{name: "protocol"},
+	 		{name: "enable"},
+	 		{name: "t_label"}
+			],
+			autoLoad: true
+		},
+		editor: {
+			beforeSubmit:function()
+			{
+				var port = $("input#external_port").textbox("getValue");
+				var internal_port = $("input#internal_port").textbox("getValue");
+				var protocol = $("input#virtual_protocol").combobox("getValue")[0];
+				var enable = $("#virtual_enable").checkbox("getValue")[0];
+				var editor  = $(o.grid("getEditor"));
+
+				var sub_extport = port.split("-");
+				if (sub_extport.length == 2) {
+					sub_extport[0] = parseInt(sub_extport[0], 10);
+					sub_extport[1] = parseInt(sub_extport[1], 10);
+					if (parseInt(sub_extport[0], 10) > parseInt(sub_extport[1], 10)) {
+			 			var temp_port = sub_extport[0];
+			 			sub_extport[0] = sub_extport[1];
+			 			sub_extport[1] = temp_port;
+						
+						var adjusted_export = (sub_extport[0] + "") + '-' + (sub_extport[1] + ""); 
+						$("input#external_port").textbox("setValue",adjusted_export);
+					}
+				}
+				
+				var sub_intport = internal_port.split("-");
+				if (sub_intport.length == 2) {
+					sub_intport[0] = parseInt(sub_intport[0], 10);
+					sub_intport[1] = parseInt(sub_intport[1], 10);
+					if (parseInt(sub_intport[0], 10) > parseInt(sub_intport[1], 10)) {
+			 			var temp_inport = sub_intport[0];
+			 			sub_intport[0] = sub_intport[1];
+			 			sub_intport[1] = temp_inport;
+						
+						var adjusted_inport = (sub_intport[0] + "") + '-' + (sub_intport[1] + ""); 
+						$("input#internal_port").textbox("setValue",adjusted_inport);
+					}
+				}
+				
+				var sub_export = port.split("-");
+				var sub_inport = internal_port.split("-");
+				var sub_export_range = sub_export.length == 2 ? (parseInt(sub_export[1], 10) - parseInt(sub_export[0], 10)):1;
+				var sub_inport_range = sub_inport.length == 2 ? (parseInt(sub_inport[1], 10) - parseInt(sub_inport[0], 10)):1;
+				/*
+				if(sub_export_range != sub_inport_range)
+				{
+					//console.log('external_port range is not equal with internal_port range');
+					$($("div#virtualServersGrid").grid("getEditor")).form('setError', "外部端口数目必须和内部端口数目相等，请重新输入！");
+					$('input#internal_port').textbox('setError');
+					return false;
+				}*/
+
+				if(remote_enable == "off")
+				{
+					return true;
+				}
+
+				if( (protocol != "UDP") && (enable))
+				{
+					if(sub_extport.length == 1)
+					{
+						sub_extport[0] = parseInt(sub_extport[0], 10);
+						if(sub_extport[0] == remote_port)
+						{
+							$("#virtual_alert_cnt").msg("show");
+							return false;
+						}
+					}
+					if(sub_extport.length == 2)
+					{
+						if( (sub_extport[0] <= remote_port) && (sub_extport[1] >= remote_port))
+						{
+							$("#virtual_alert_cnt").msg("show");
+							return false;
+						}
+					}
+				}
+				return true;
+			},
+
+			validator:function(){
+				var port = $("input#external_port").textbox("getValue");
+				var protocol = $("input#virtual_protocol").combobox("getValue")[0];
+				var enable = $("#virtual_enable").checkbox("getValue")[0];
+				
+
+				var sub_extport = port.split("-");
+				if (sub_extport.length == 2) {
+					if (parseInt(sub_extport[0], 10) > parseInt(sub_extport[1], 10)) {
+			 			var temp_port = sub_extport[0];
+			 			sub_extport[0] = sub_extport[1];
+			 			sub_extport[1] = temp_port;
+					}
+				}
+
+				var store = $(o).grid("getStore");
+					keyProperty = store.keyProperty;
+					extport_data = store.data;
+
+				var editor = $(o.grid("getEditor"));
+					editingId = editor.editor("getEditingId");
+
+				/*if( !$.su.func.isSameNet( $("#virtual_ipaddr").textbox('getValue'), lanIP, lanMask) ){
+					$("#virtual_ipaddr").textbox("setError");
+					$($("div#virtualServersGrid").grid("getEditor")).form('setError',  $.su.CHAR.ERROR['00000110']);
+					return false;
+				}
+
+				if( $("#virtual_ipaddr").textbox('getValue') == $.su.func.getLimitIp(lanIP,lanMask,"min") ){
+					$("#virtual_ipaddr").textbox("setError");
+					$($("div#virtualServersGrid").grid("getEditor")).form('setError',  $.su.CHAR.ERROR['00000134']);
+					return false;
+				}
+				if( $("#virtual_ipaddr").textbox('getValue') == $.su.func.getLimitIp(lanIP,lanMask,"max") ){
+					$("#virtual_ipaddr").textbox("setError");
+					$($("div#virtualServersGrid").grid("getEditor")).form('setError',  $.su.CHAR.ERROR['00000134']);
+					return false;
+				}
+
+				if( $("#virtual_ipaddr").textbox('getValue') == lanIP){
+					$("#virtual_ipaddr").textbox("setError");
+					$($("div#virtualServersGrid").grid("getEditor")).form('setError',  $.su.CHAR.ERROR['00000077']);
+					return false;
+				}
+				
+				if ($.isArray(extport_data) && extport_data.length > 0) {
+					for (var n = 0; n < extport_data.length; n++) {
+						var extport_array = extport_data[n];
+						
+						var grid_protocal = extport_array.protocol;
+						
+						if (extport_array[keyProperty] == editingId) {
+							continue;
+						}
+						else{
+
+								var sub_extport_array = extport_array["external_port"].split("-");
+								if (sub_extport_array.length == 2) {
+									if(parseInt(sub_extport_array[0], 10) > parseInt(sub_extport_array[1], 10)){
+										var temp_grid = sub_extport_array[0];
+										sub_extport_array[0] = sub_extport_array[1];
+										sub_extport_array[1] = temp_grid;
+								}}
+								if (sub_extport.length == 1){
+
+									if (sub_extport_array.length == 1) {
+
+										if ( (parseInt(sub_extport[0], 10) == parseInt(sub_extport_array[0], 10)) && (containProtocol(grid_protocal, protocol))) 
+									    {
+									    	 $("input#external_port").textbox("setError");
+											 $($("div#virtualServersGrid").grid("getEditor")).form('setError',  $.su.CHAR.ERROR['00000065']);
+											 return false;
+										}
+									}
+									else{
+										if ((parseInt(sub_extport[0], 10) >= parseInt(sub_extport_array[0], 10) && parseInt(sub_extport[0], 10) <= parseInt(sub_extport_array[1], 10)) && (containProtocol(grid_protocal, protocol)) ){
+											$("input#external_port").textbox("setError");
+											 $($("div#virtualServersGrid").grid("getEditor")).form('setError',  $.su.CHAR.ERROR['00000065']);
+											 return false;
+										}
+									}
+								}
+
+								else{
+										if (sub_extport_array.length == 1) {
+											if ((parseInt(sub_extport[0], 10) <= parseInt(sub_extport_array[0], 10) && parseInt(sub_extport[1], 10) >= parseInt(sub_extport_array[0], 10)) && (containProtocol(grid_protocal, protocol)) ) {
+
+												$("input#external_port").textbox("setError");
+											 $($("div#virtualServersGrid").grid("getEditor")).form('setError',  $.su.CHAR.ERROR['00000065']);
+											 return false;
+											}
+										}
+										else{
+												if ((!(parseInt(sub_extport[0], 10) > parseInt(sub_extport_array[1], 10) || parseInt(sub_extport[1], 10) < parseInt(sub_extport_array[0], 10))) && (containProtocol(grid_protocal, protocol))){
+													$("input#external_port").textbox("setError");
+													 $($("div#virtualServersGrid").grid("getEditor")).form('setError',  $.su.CHAR.ERROR['00000065']);
+													 return false;
+											}
+										}
+								}
+						}
+					}
+				}
+				*/
+				var name   = $("input#name").textbox("getValue");
+				//console.log(name);
+				var store 	= o.grid("getStore");
+				var keyProperty = store.keyProperty;
+				var grid_array  = store.data;
+				
+				var editingId = editor.editor("getEditingId"); 
+				if($.isArray(grid_array) && grid_array.length > 0)
+				{
+					for(var k = 0; k < grid_array.length;k++)
+					{
+						var data = grid_array[k];
+						//console.log(data["name"]);
+						if(data[keyProperty] == editingId)
+						{
+							continue;
+						}
+						//name conflict
+						else if(data["name"] == name)
+						{
+							$($("div#virtualServersGrid").grid("getEditor")).form('setError', $.su.CHAR.NAPT.ERR1);//"规则名称与已有条目冲突！");
+							$('input#name').textbox('setError');
+							return false;
+						}
+					}
+				}
+				return true;
+			},
+			content: "#own_editor",
+			fields: [
+				{name: "name"},
+				{name: "interface"},
+		 		{name: "external_port"},
+		 		{name: "internal_port"},
+				{name: "ipaddr"},
+		 		{name: "protocol"},
+		 		{name: "enable"}
+			]
+		},
+		paging: {
+		},
+		columns: [
+			{
+				xtype: "checkcolumn",
+				width: $.su.CHAR.SETTING.VIRTUAL_SERVER.CHECK_COLUMN_WIDTH
+			},
+			{
+				text: $.su.CHAR.VIRTUAL_SERVERS.ID, 
+				xtype: "rownumberer",
+				width: $.su.CHAR.SETTING.VIRTUAL_SERVER.ROW_NUMBER_WIDTH
+			},
+			{
+				text: $.su.CHAR.VIRTUAL_SERVERS.SERVICE_NAME, 
+				width:150,
+				dataIndex: "name"
+				
+			},
+			{
+				text: $.su.CHAR.VIRTUAL_SERVERS.INTERFACE, 
+				width:$.su.CHAR.SETTING.VIRTUAL_SERVER.INTERFACE_WIDTH + 100,
+				dataIndex: "interface",
+				renderer: function(dd, jindex, data) {
+					return data.t_label ? data.t_label : dd;
+				}
+			},{
+				text: $.su.CHAR.VIRTUAL_SERVERS.EXTERNAL_PORT, 
+				width:$.su.CHAR.SETTING.VIRTUAL_SERVER.PORT_WIDTH,
+				dataIndex: "external_port"
+			},
+			{
+				text: $.su.CHAR.VIRTUAL_SERVERS.INTERNAL_PORT, 
+				width:$.su.CHAR.SETTING.VIRTUAL_SERVER.PORT_WIDTH,
+				dataIndex: "internal_port"
+			},
+			{
+				text: $.su.CHAR.VIRTUAL_SERVERS.INTERNAL_IP, 
+				width:120,
+				dataIndex: "ipaddr"
+			},
+			{
+				text: $.su.CHAR.VIRTUAL_SERVERS.PROTOCAL, 
+				width:$.su.CHAR.SETTING.VIRTUAL_SERVER.PROTOCOL_WIDTH,
+				dataIndex: "protocol"
+				
+			},
+			{
+				text: $.su.CHAR.VIRTUAL_SERVERS.STATUS, 
+				width:$.su.CHAR.SETTING.VIRTUAL_SERVER.STATUS_WIDTH,
+				dataIndex: "enable",
+				xtype: "statuscolumn"
+			},
+			{
+				xtype: "settings"
+			}
+		],
+		operation: "prompt|add|delete"
+	}).on("ev_load", function(e,data, others){
+			if(others)/* 通过json里的others参数传递动态阀值 */
+			{
+				/*保留不用*/
+				maxrules = others.max_rules;
+			}
+			/*发送form请求,获取interface列表.用于显示于local_binding下拉框*/
+			var interfaceItem=[];
+			var interfaceProxy = new $.su.Proxy({
+					url: $.su.url('/admin/interface?form=status'),
+					async: false
+			});		
+			interfaceProxy.read({}, function(data){
+					//	console.log("length: "+data.vpn.length);						
+						var i
+						for (i=0; i<data.normal.length; i++){
+							if(!$.su.func.isLan(data.normal[i].t_name)){
+								interfaceItem.push({name:data.normal[i].t_label,value:data.normal[i].t_name});
+							}
+													
+						}
+						for (i=0; i<data.vpn.length; i++){						
+							interfaceItem.push({name:data.vpn[i].t_label,value:data.vpn[i].t_name});	
+						}	
+			});	
+			var editor = $("div#virtualServersGrid").grid("getEditor");
+			var combobox = $(editor).find('.combobox-value[name=interface]');
+				combobox.combobox('loadData',interfaceItem);
+		});
+
+
+	var editor = $("div#virtualServersGrid").grid("getEditor");
+	$(editor).on("ev_startEdit", function(e, index, key){
+		if(index == "add")
+		{
+			$("#virtual_protocol").combobox("setValue", "ALL");
+		}
+		var internal_port = $("input#internal_port").textbox("getValue");
+		/*if (internal_port.indexOf("-") >= 0)
+		{
+			$("input#internal_port").textbox("setValue", "");
+		})*/
+	});
+
+	
+	
+	
+	$("#virtual_alert_cnt").msg({
+		okHandler:function(){
+			$($("div#virtualServersGrid").grid("getEditor")).editor("completeEdit");
+		},
+		cls:"m warning",
+		cancelHandler:function(){
+			return true;
+		},
+		type: "prompt"
+	});
+
+	$("#virtual_confirm_content").html($.su.CHAR.VIRTUAL_SERVERS.NOTICE);
+
+	var helpVirtualServer = new $.su.Help({
+		container: "div#virtual_server_help",
+		content: "VIRTUAL_SERVER"
+	});
+
+});
+</script>
+</body>
+</html>

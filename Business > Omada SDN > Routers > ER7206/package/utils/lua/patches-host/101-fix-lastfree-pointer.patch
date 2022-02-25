@@ -1,0 +1,12 @@
+--- a/src/ltable.c	2020-10-14 17:28:39.407433322 +0800
++++ b/src/ltable.c	2020-10-14 17:29:01.323431645 +0800
+@@ -394,7 +394,8 @@
+ 
+ 
+ static Node *getfreepos (Table *t) {
+-  while (t->lastfree-- > t->node) {
++  while (t->lastfree > t->node) {
++    t->lastfree--;
+     if (ttisnil(gkey(t->lastfree)))
+       return t->lastfree;
+   }

@@ -1,0 +1,12 @@
+
+config rule
+	option force_if 'off'
+	option service_if 'lan'
+	option name 'dnsproxy_lan'
+	option out_if 'auto'
+
+config rule
+	option force_if 'off'
+	option service_if 'lo'
+	option name 'dnsproxy_lo'
+	option out_if 'auto'

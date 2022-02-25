@@ -1,0 +1,63 @@
+--- a/src/rfc2131.c	2018-04-16 13:32:29.003205977 +0800
++++ b/src/rfc2131.c	2018-04-16 13:41:33.473205738 +0800
+@@ -924,7 +924,9 @@
+ 	return 0;
+       
+       log_packet("DHCPDECLINE", option_ptr(opt, 0), emac, emac_len, iface_name, NULL, daemon->dhcp_buff, mess->xid);
+-      
++      print_mac(daemon->namebuff, emac, emac_len);
++      DHCPS_LOGGER_REG(LOGGER_INFO_ID_DHCPS_RECV_DECLINE, LOGGER_PARAM_STRING, inet_ntoa(option_addr(opt)), LOGGER_PARAM_STRING, daemon->namebuff);
++
+       if (lease && lease->addr.s_addr == option_addr(opt).s_addr)
+ 	lease_prune(lease, now);
+       
+@@ -1223,7 +1225,9 @@
+       if (message)
+ 	{
+ 	  log_packet("DHCPNAK", &mess->yiaddr, emac, emac_len, iface_name, NULL, message, mess->xid);
+-	  
++	  print_mac(daemon->namebuff, emac, emac_len);
++         DHCPS_LOGGER_REG(LOGGER_INFO_ID_DHCPS_DENY_REQ, LOGGER_PARAM_STRING, daemon->namebuff, LOGGER_PARAM_STRING, inet_ntoa(mess->yiaddr));
++
+ 	  mess->yiaddr.s_addr = 0;
+ 	  clear_packet(mess, end);
+ 	  option_put(mess, end, OPTION_MESSAGE_TYPE, 1, DHCPNAK);
+@@ -1362,7 +1366,9 @@
+ 	    override = lease->override;
+ 
+ 	  log_packet("DHCPACK", &mess->yiaddr, emac, emac_len, iface_name, hostname, NULL, mess->xid);  
+-	  
++	  print_mac(daemon->namebuff, emac, emac_len);
++	  DHCPS_LOGGER_REG(LOGGER_INFO_ID_DHCPS_ALLOC_ADDR, LOGGER_PARAM_STRING, inet_ntoa(mess->yiaddr), LOGGER_PARAM_STRING, daemon->namebuff);
++ 
+ 	  clear_packet(mess, end);
+ 	  option_put(mess, end, OPTION_MESSAGE_TYPE, 1, DHCPACK);
+ 	  option_put(mess, end, OPTION_SERVER_IDENTIFIER, INADDRSZ, ntohl(server_id(context, override, fallback).s_addr));
+--- a/src/dnsmasq.h	2018-04-16 13:32:29.002205977 +0800
++++ b/src/dnsmasq.h	2018-04-16 13:44:31.300206025 +0800
+@@ -1475,3 +1475,12 @@
+ time_t periodic_slaac(time_t now, struct dhcp_lease *leases);
+ void slaac_ping_reply(struct in6_addr *sender, unsigned char *packet, char *interface, struct dhcp_lease *leases);
+ #endif
++#include "logger.h"
++
++#define LOGGER_INFO_ID_DHCPS_ALLOC_ADDR		12251
++#define LOGGER_INFO_ID_DHCPS_DENY_REQ		12252
++#define LOGGER_INFO_ID_DHCPS_RECV_DECLINE	12253
++#define LOGGER_INFO_ID_DHCPS_INIT_SUCC		12254
++
++#define DHCPS_LOGGER_REG(info_id, ...)                        \
++    logger_reg(LOGGER_MODULE_ID_DHCP_SERVER, info_id, ##__VA_ARGS__)
+--- a/src/dnsmasq.c	2018-02-11 10:05:38.602201021 +0800
++++ b/src/dnsmasq.c	2018-04-16 16:47:14.644205960 +0800
+@@ -857,7 +857,9 @@
+     check_servers();
+   
+   pid = getpid();
+-  
++
++  DHCPS_LOGGER_REG(LOGGER_INFO_ID_DHCPS_INIT_SUCC); 
++
+   while (1)
+     {
+       int maxfd = -1;

@@ -1,0 +1,17 @@
+noipdefault
+noauth
+lcp-echo-failure 3
+lcp-echo-interval 60
+nobsdcomp
+nodeflate
+refuse-eap
+idle 0
+noccp
+novj
+#mppe required,stateless
+plugin ppp4tplink.so
+maxfail 0
+path /tmp/pptp
+wanconn
+outif eth0.1
+ipcp-down-link

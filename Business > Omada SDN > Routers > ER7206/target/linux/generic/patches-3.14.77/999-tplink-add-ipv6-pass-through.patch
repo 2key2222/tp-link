@@ -1,0 +1,31 @@
+--- a/net/ipv6/ip6_input.c	2017-05-24 14:35:52.003332784 +0800
++++ b/net/ipv6/ip6_input.c	2017-05-24 14:36:53.242816567 +0800
+@@ -46,6 +46,8 @@
+ #include <net/xfrm.h>
+ #include <net/inet_ecn.h>
+ 
++int ipv6_pass_through_enable = 0;
++EXPORT_SYMBOL(ipv6_pass_through_enable);
+ 
+ int ip6_rcv_finish(struct sk_buff *skb)
+ {
+@@ -69,7 +71,7 @@
+ 	struct inet6_dev *idev;
+ 	struct net *net = dev_net(skb->dev);
+ 
+-	if (skb->pkt_type == PACKET_OTHERHOST) {
++	if (!ipv6_pass_through_enable && skb->pkt_type == PACKET_OTHERHOST) {
+ 		kfree_skb(skb);
+ 		return NET_RX_DROP;
+ 	}
+--- a/net/bridge/br_fdb.c	2017-05-24 15:52:11.948977359 +0800
++++ b/net/bridge/br_fdb.c	2017-05-24 15:52:38.855963087 +0800
+@@ -346,7 +346,7 @@
+ 
+ 	return NULL;
+ }
+-EXPORT_SYMBOL_GPL(__br_fdb_get);
++EXPORT_SYMBOL(__br_fdb_get);
+ 
+ #if IS_ENABLED(CONFIG_ATM_LANE)
+ /* Interface used by ATM LANE hook to test

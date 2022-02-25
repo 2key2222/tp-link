@@ -1,0 +1,431 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+<link rel="shortcut icon" href="favicon.ico"/>
+<!-- <link type="text/css" href="css/reset.css" rel="stylesheet" /> -->
+<link type="text/css" href="css/widget.css" rel="stylesheet" />
+
+<link type="text/css" href="themes/old/css/widget.css" rel="stylesheet" />
+<link type="text/css" href="themes/old/css/style.css" rel="stylesheet" />
+
+
+<script type="text/javascript" src="js/libs/jquery.min.js"></script>
+
+<script type="text/javascript" src="js/su/locale.js"></script>
+<script type="text/javascript">
+//<![CDATA[
+    try{
+        $.su.locale.URL_LAN_CHECK =  $.su.url("/locale?form=lang");//"./data/lan.json";
+        $.su.locale.get();
+    }catch(error){
+        location.href = "./error.html";
+    };
+//]]>
+</script>
+<!--<script type="text/javascript" src="http://192.168.1.101:1070/target/target-script-min.js#anonymous"></script>-->
+<script type="text/javascript" src="js/libs/encrypt.js"></script>
+<!--<script type="text/javascript" src="js/su/su.full.min.js"></script>-->
+<script type="text/javascript" src="js/su/su.js"></script>
+
+<script type="text/javascript" src="js/su/data/proxy.js"></script>
+<script type="text/javascript" src="js/su/widget/widget.js"></script>
+<script type="text/javascript" src="js/su/widget/window/msg.js"></script>
+
+<script type="text/javascript" src="js/su/widget/form/form.js"></script>
+<script type="text/javascript" src="js/su/widget/form/combobox.js"></script>
+<script type="text/javascript" src="js/su/widget/form/textbox.js"></script>
+<script type="text/javascript" src="js/su/widget/form/password.js"></script>
+<script type="text/javascript" src="js/su/widget/form/checkbox.js"></script>
+<script type="text/javascript" src="js/su/widget/form/button.js"></script>
+<script type="text/javascript" src="js/su/widget/form/status.js"></script>
+
+
+<title>Opening...</title>
+
+</head>
+
+<body id="login-body">
+
+<noscript>
+    <meta http-equiv="refresh" content="0; url=error.html"/>
+</noscript>
+
+<style>
+    #login-username, #form-login .password-text{
+        height: 18px;
+    }
+    .setting_form{
+        margin: 30px auto;
+        padding: 10px 40px;
+    }
+    .top-content-acc{
+        width: 490px;
+        margin: 0 auto;
+        border-radius: 3px;
+        border: 1px solid rgba(167,169,172,0.3);
+        background: #F7F8F9;
+    }
+    #warning{
+        color: #005564;
+        font-size: 14px;
+        margin-bottom: 30px;
+    }
+    #description{
+        color: #333;
+        font-size: 12px;
+        line-height: 20px;
+        margin-top: 20px;
+    }
+    #button_wrap{
+        margin: 30px auto 0;
+        text-align: center;
+    }
+    #comfirm{
+        width: 98px;
+        height: 30px;
+        background: #005564;
+        color:#fff;
+        font-size: 12px;
+        line-height: 30px;
+        border-radius: 3px;
+    }
+
+    div.logon_logo img{
+        padding-left: 30px;
+    }
+</style>
+
+<div class="top" >
+    
+    <div class="top-main">
+    	<div class="top-main-wrap" style="margin-top: 94px;">
+            <div class="top-content-acc">
+                <div class="logon_logo" style="height:60px;background: #36444b;">
+                    <img align="left" style="cursor:pointer;" onclick="javascript:window.open('http://www.tp-link.com/en/');" src="themes/old/img/LOGO-Small.png"/>
+                </div>
+            	<div class="top-content-wrap" id="top-content">
+                <form id="account-setting" class="setting_form">
+                    <div id="warning"></div>
+                    <!-- <p  id="note" name="note"></p> -->
+                    <input type="text"  id="old_acc" name="old_acc" value="" />
+                    <input type="password"  id="old_pwd" name="old_pwd" value="" />
+
+                    <input type="text"  id="new_acc" name="new_acc" value="" />
+                    <input type="password"  id="new_pwd" name="new_pwd" value="" />
+                    <input type="password"  id="cfm_pwd" name="cfm_pwd" value="" />
+
+                    <div id="description"></div>
+                    <div id="button_wrap">
+                        <button id="comfirm">Confirm</button>
+                    </div>
+                    
+                </form>
+
+                </div>
+            </div>
+
+            <p class="logon_footer">
+            <!--<span class="logon_cr">Copyright</span>
+                <span class="logon_copy">&copy;</span>
+                <span class="logon_c_year" id="span_date">2016</span>-->
+                <span id="tp_copyright" class="logon_tp"></span>
+            </p>
+            
+            <div class="top-footer">
+                <div class="top-footer-wrap">
+                    <span class="help-faq">
+                        <a id="btn-faq" class="btn-faq" target="_blank" href="http://www.tp-link.com/en/Support/"></a>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<!-- 无开cookie的操作提示 -->
+<div id="no-cookie-msg-container" class="hidden warning">
+    <h4 class="title">
+        <span class="icon"></span>
+        <span class="text" id="no-cookie-text"></span>
+    </h4>
+</div>
+
+
+
+
+<script type="text/javascript">
+//<![CDATA[
+$(document).ready(function(e){
+    /*加载产品信息*/
+    var MODEL_NAME = $.su.locale.model;
+    var MODEL_DESC = MODEL_NAME.match(/[^ ]*/);
+    if(typeof MODEL_DESC != "string"){
+        MODEL_DESC = MODEL_DESC[0];
+    }
+    document.title = MODEL_DESC;
+
+    try{
+        $.su.url.stok = localStorage.getItem("token") || (function(){
+            var stok = "12345",
+                href = top.location.href;
+            var stokPos = href.indexOf("stok=");
+            if (stokPos >= 0){
+                stok = href.substring(stokPos+5);
+            };
+            return stok;
+        })();
+    }catch(e){
+        var h = function(){
+            location.href = "/";
+        };
+        
+        if (logoutProxy){
+            logoutProxy.write({}, h, h, h)
+        };
+    };
+
+    var old_acc = $("input#old_acc").textbox({
+        fieldLabel: $.su.CHAR.ACCOUNT.OLDUSER,
+        vtype:"ascii_visible",
+        minLength:1,
+        maxLength:64,
+        allowBlank: false,
+        inputCls:"xl"
+    });
+    old_acc.textbox("hide");
+
+    var old_pass = $("input#old_pwd").password({
+        fieldLabel: $.su.CHAR.ACCOUNT.OLDPWD,
+        allowBlank: false,
+        vtype:"ascii_visible",
+        showLevel:false,
+        minLength:1,
+        maxLength:64,
+        inputCls:"xl"
+
+    });
+
+    old_pass.password("hide");
+
+    $("input#new_acc").textbox({
+        fieldLabel: $.su.CHAR.ACCOUNT.NEWUSER1,//"设置用户名",
+        cls:"part-separate",
+        allowBlank: false,
+        vtype:"ascii_visible",
+        minLength:1,
+        maxLength:64,
+        inputCls:"xl"
+    });
+    
+    var passwordCheck = function(new_pwd, cfm_val){
+        
+        if(cfm_val == new_pwd){
+            //$("#pwd_status").status("setSuccess");
+            return true;
+        }else{
+            //$("#pwd_status").status("setFailed");
+            return false;
+        };
+    };
+
+    var new_pwd = $("input#new_pwd").password({
+        fieldLabel: $.su.CHAR.ACCOUNT.NEWPWD1,//"设置密码",
+        allowBlank: false,
+        vtype:"ascii_visible",
+        minLength:6,
+        maxLength:64,
+        cls:"inline",        
+        inputCls:"xl",
+        validator:function(val){
+            if(val.length < 6 || val.length > 64){
+                return $.su.CHAR.ERROR["00000073"];
+            }
+            return true;
+        }
+    }).on("ev_change", function(item, data){
+        //$("#pwd_status").status('setNormal');
+        $("input#cfm_pwd").password('setNormal');
+        
+        var new_pwd = $("input#new_pwd").password("getValue");
+        var cfm_val = $("input#cfm_pwd").password("getValue");
+        if ( cfm_val){
+            passwordCheck(new_pwd, cfm_val);
+        }
+    }).on("ev_validatechange", function(item, data){
+        var new_pwd = $("input#new_pwd").password("getValue");
+        var cfm_val = $("input#cfm_pwd").password("getValue");
+
+        if( cfm_val=='' ){
+            //$("#pwd_status").status('setNormal');
+            return true;
+        }else{
+            passwordCheck(new_pwd, cfm_val);
+        };
+    });
+    
+
+    var cfm_pwd = $("input#cfm_pwd").password({
+        fieldLabel: $.su.CHAR.ACCOUNT.CONFIRM1,//"确认密码",
+        vtype:"ascii_visible",
+        minLength:6,
+        maxLength:64,
+        cls:"inline",
+        allowBlank: false,
+        inputCls:"xl",
+        showLevel:false,
+        validator: function(val){
+            if(val.length < 6 || val.length > 64){
+                return $.su.CHAR.ERROR["00000073"];
+            }
+            return true;
+        }        
+    }).on("ev_change ev_validatechange", function(){
+        var new_pwd = $("input#new_pwd").password("getValue");
+        var cfm_val = $("input#cfm_pwd").password("getValue");
+        
+        if (new_pwd == ""){
+            if ( cfm_val == "" ){
+                //$("#pwd_status").status("setNormal");
+            }else{
+                if (!passwordCheck(new_pwd, cfm_val)){
+                    $("input#cfm_pwd").password("setError");
+                };
+            }
+        }else{
+            if (!passwordCheck(new_pwd, cfm_val)){
+                $("input#cfm_pwd").password("setError");
+            }
+        }
+    });
+
+
+    $("span.level").css("width", "76px");
+    /*
+    $("#pwd_status").status({
+        cls:"inline"
+    });*/
+
+
+    /*设置用户密码*/
+    var ACC_PWD_URL_NEW = $.su.url("/admin/administration?form=accountfirstset");
+    var pwdProxy = new $.su.Proxy({
+        url: ACC_PWD_URL_NEW,
+        autoLoad:false
+    });
+
+    //$("#tp_copyright").html($.su.CHAR.LOGIN.TP_COPYRIGHT);
+    
+    $("#account-setting").form({
+        proxy: pwdProxy,
+        fields: [
+            {name: "old_acc", mapping: "old_acc"},
+            {name: "old_pwd", mapping: "old_pwd"},
+            {name: "new_acc", mapping: "new_acc"},
+            {name: "new_pwd", mapping: "new_pwd"},
+            {name: "cfm_pwd", mapping: "cfm_pwd"}
+        ],
+        validator:function(e){
+            var nPass = new_pwd.password("getValue");
+            var cPass = cfm_pwd.password("getValue");
+            if(nPass.length < 6 || nPass.length > 64){
+                new_pwd.password("setError", $.su.CHAR.ERROR["00000073"]);
+                return false;
+            }
+            if(cPass.length < 6 || cPass.length > 64){
+                cfm_pwd.password("setError", $.su.CHAR.ERROR["00000073"]);
+                return false;
+            }
+                
+            if(nPass == cPass){
+                return true;
+            }else{
+                cfm_pwd.password("setError", $.su.CHAR.ACCOUNT.PWD_DISMATCH);
+                return false;
+            }
+        }
+    });
+
+
+    $("#account-setting").delegate("#comfirm", "click", function(e){
+        e.stopPropagation();
+        e.preventDefault();
+        //console.log("test");
+        old_acc.textbox("setValue", "admin");
+        old_pass.password("setValue","admin");
+        old_pass.password("doEncrypt");
+        new_pwd.password("doEncrypt");
+        cfm_pwd.password("doEncrypt");
+        if($("#account-setting").form("validate")){
+            $("#account-setting").form("prompt", true, $.su.CHAR.ACCOUNT.WAITE, 1000);
+            $("#account-setting").form("submit", {}, function(data){
+                $.su.loading.hide();
+                $("#account-setting").form("prompt", true);
+                setTimeout(function() {
+                    location.href = "./login.html";
+                }, 1000);
+            },function(errorcode){
+                $.su.loading.hide();
+                if(errorcode == 704 || errorcode == "704"){
+                    errorcode = $.su.CHAR.ACCOUNT.TIMEOUT;//"此页面已过期，请重新设置";
+                }
+                errorcode = $.su.CHAR.ACCOUNT.ERR + errorcode;
+                $("#account-setting").form("prompt", false, errorcode);
+                setTimeout(function() {
+                    location.href = "./login.html";
+                }, 1000);
+            });
+        }
+
+    });
+
+    /*cookie check*/
+    $("span#no-cookie-text").html($.su.CHAR.LOGIN.NO_COOKIE);
+    var noCookieMsg = $("div#no-cookie-msg-container").msg({
+        type: "alert",
+        cls: "m",
+        closeBtn: false,
+        okHandler: function(){
+            $("button#login-btn").button("enable");
+        }
+    });
+
+    var checkCookie = function(){
+        try{
+            localStorage.setItem("private", 100);
+            if (!navigator.cookieEnabled){
+                noCookieMsg.msg("show");
+                return false;
+            };
+        }catch(e){
+            noCookieMsg.msg("show");
+            return false;
+        };
+        noCookieMsg.msg("close");
+        return true;
+
+    };
+
+    checkCookie();
+
+    //$.su.loading.show();
+    
+
+    /*调整登陆框高度*/
+    var actHeight = parseInt(document.documentElement.clientHeight);
+    var marginTop = actHeight * 0.30 - 306 / 2;
+    $($.find("div.top-main-wrap")).css("marginTop", marginTop.toString() + "px");
+
+    /*显示说明*/
+    $("#warning").text($.su.CHAR.ACCOUNT.WARNING1);//"为保证设备安全，请您务必设置管理员账号");
+    $("#description").text($.su.CHAR.ACCOUNT.WARNING2);//"注意：确认提交前请牢记您的管理员账户和密码，后续配置将必须使用该账户进行登录配置。如果您不慎遗忘该密码，只能在设备通电情况下按住Reset按钮并保持5秒以上来恢复出厂设置，以重新设置设备的所有参数。");
+
+    $("input#new_acc").focus();
+});
+//]]>
+</script>
+</body>
+</html>

@@ -1,0 +1,63 @@
+--- a/arch/mips/cavium-octeon/octeon-nand.c	2021-06-13 07:11:29.472743376 -0400
++++ b/arch/mips/cavium-octeon/octeon-nand.c	2021-06-13 07:58:56.112056709 -0400
+@@ -105,6 +105,15 @@
+ static int octeon_nand_bch_correct(struct mtd_info *mtd, u_char *dat,
+ 				   u_char *read_ecc, u_char *isnull);
+ 
++static int __initdata g_oct_soft_bch = 0;
++
++static int __init soft_bch(char *str)
++{
++	g_oct_soft_bch = 1;
++	return 1;
++}
++
++__setup("oct_soft_bch", soft_bch);
+ 
+ /*
+  * Read a single byte from the temporary buffer. Used after READID
+@@ -1342,20 +1351,24 @@
+ 		priv->nand.select_chip = octeon_nand_select_chip;
+ 		priv->nand.cmdfunc = octeon_nand_cmdfunc;
+ 		priv->nand.init_size = octeon_nand_init_size;
+-		priv->nand.ecc.mode = NAND_ECC_SOFT;
++		priv->nand.ecc.mode = g_oct_soft_bch ? NAND_ECC_SOFT_BCH : NAND_ECC_SOFT;
++
++		if (priv->nand.ecc.mode != NAND_ECC_SOFT_BCH && priv->nand.ecc.mode != NAND_ECC_SOFT)
++		{
++		  /* Don't use hardware ecc for Board CN70xx[ER7206], No need to scan hardware info. */
+ 
+ 		rv = octeon_nand_scan_onfi(priv);
+ 		if (rv) {
+ 			dev_err(&pdev->dev, "Failed to scan NAND device\n");
+ 			//return -1;
+ 		}
+-		
++
+ 		rv = octeon_nand_hw_bch_init(priv);
+ 		if (rv) {
+ 			dev_err(&pdev->dev, "Failed to initialize BCH for NAND\n");
+ 			//return -ENXIO;
+ 		}
+-
++		}
+ 		if (nand_scan(&priv->mtd, 1) != 0) {
+ 			dev_err(&pdev->dev, "NAND scan failed\n");
+ 			//return -ENXIO;
+--- a/drivers/mtd/nand/nand_base.c	2021-06-13 21:15:04.356987433 -0400
++++ b/drivers/mtd/nand/nand_base.c	2021-06-13 21:19:08.704380361 -0400
+@@ -3692,8 +3692,12 @@
+ 	 * scan_bbt() might invoke mtd_read(), thus bitflip_threshold must be
+ 	 * properly set.
+ 	 */
+-	if (!mtd->bitflip_threshold)
+-		mtd->bitflip_threshold = mtd->ecc_strength;
++	if (!mtd->bitflip_threshold) {
++		if (chip->ecc.mode == NAND_ECC_SOFT)
++			mtd->bitflip_threshold = mtd->ecc_strength + 1;
++		else
++			mtd->bitflip_threshold = mtd->ecc_strength;
++	}
+ 
+ 	/* Check, if we should skip the bad block table scan */
+ 	if (chip->options & NAND_SKIP_BBTSCAN)

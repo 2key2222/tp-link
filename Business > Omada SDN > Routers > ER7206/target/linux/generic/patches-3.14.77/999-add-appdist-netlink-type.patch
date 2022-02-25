@@ -1,0 +1,10 @@
+--- a/include/uapi/linux/netlink.h	2014-07-18 06:58:15.000000000 +0800
++++ b/include/uapi/linux/netlink.h	2015-11-03 18:32:49.949836449 +0800
+@@ -27,6 +27,7 @@
+ #define NETLINK_ECRYPTFS	19
+ #define NETLINK_RDMA		20
+ #define NETLINK_CRYPTO		21	/* Crypto layer */
++#define NETLINK_APPDIST         25
+ 
+ #define NETLINK_INET_DIAG	NETLINK_SOCK_DIAG
+ 

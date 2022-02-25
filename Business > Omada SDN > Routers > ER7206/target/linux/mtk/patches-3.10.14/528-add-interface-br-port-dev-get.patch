@@ -1,0 +1,66 @@
+Index: linux-3.10.14/include/linux/if_bridge.h
+===================================================================
+--- linux-3.10.14.orig/include/linux/if_bridge.h	2014-09-02 16:42:48.000000000 +0800
++++ linux-3.10.14/include/linux/if_bridge.h	2015-03-24 10:19:21.000000000 +0800
+@@ -17,6 +17,7 @@
+ #include <uapi/linux/if_bridge.h>
+ 
+ extern void brioctl_set(int (*ioctl_hook)(struct net *, unsigned int, void __user *));
++extern struct net_device *br_port_dev_get(struct net_device *dev, unsigned char *addr);
+ 
+ typedef int br_should_route_hook_t(struct sk_buff *skb);
+ extern br_should_route_hook_t __rcu *br_should_route_hook;
+Index: linux-3.10.14/net/bridge/br_if.c
+===================================================================
+--- linux-3.10.14.orig/net/bridge/br_if.c	2014-09-02 16:42:59.000000000 +0800
++++ linux-3.10.14/net/bridge/br_if.c	2015-03-24 10:19:46.000000000 +0800
+@@ -277,6 +277,49 @@
+ 	return ret;
+ }
+ 
++/*
++ * br_port_dev_get()
++ *	Using the given addr, identify the port to which it is reachable,
++ * 	returing a reference to the net device associated with that port.
++ *
++ * NOTE: Return NULL if given dev is not a bridge or the mac has no associated port
++ */
++struct net_device *br_port_dev_get(struct net_device *dev, unsigned char *addr)
++{
++	struct net_bridge_fdb_entry *fdbe;
++	struct net_bridge *br;
++	struct net_device *pdev;
++
++	/*
++	 * Is this a bridge?
++	 */
++	if (!(dev->priv_flags & IFF_EBRIDGE)) {
++		return NULL;
++	}
++
++	/*
++	 * Lookup the fdb entry
++	 */
++	br = netdev_priv(dev);
++	rcu_read_lock();
++	fdbe = __br_fdb_get(br, addr, 0);
++	if (!fdbe) {
++		rcu_read_unlock();
++		return NULL;
++	}
++
++	/*
++	 * Get reference to the port dev
++	 */
++	pdev = fdbe->dst->dev;
++	dev_hold(pdev);
++	rcu_read_unlock();
++
++	return pdev;
++}
++EXPORT_SYMBOL_GPL(br_port_dev_get);
++
++
+ /* MTU of the bridge pseudo-device: ETH_DATA_LEN or the minimum of the ports */
+ int br_min_mtu(const struct net_bridge *br)
+ {

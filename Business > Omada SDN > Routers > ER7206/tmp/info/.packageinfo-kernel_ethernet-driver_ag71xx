@@ -1,0 +1,21 @@
+Source-Makefile: package/kernel/ethernet-driver/ag71xx/Makefile
+Package: kmod-ethernet
+Submenu: kernel modules
+Version: <LINUX_VERSION>-1
+Depends: 
+Menu-Depends: 
+Provides: 
+Section: kernel
+Category: @@@@@ TPLINK Proprietary
+Title: Kernel modules for ethernet driver
+Maintainer: 
+Source: 
+Type: ipkg
+Description:  Kernel module for slp ethernet
+
+@@
+Config:
+  source "package/kernel/ethernet-driver/ag71xx/Config.in"
+@@
+
+

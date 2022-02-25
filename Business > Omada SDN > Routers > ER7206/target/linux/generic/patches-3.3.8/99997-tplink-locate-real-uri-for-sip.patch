@@ -1,0 +1,37 @@
+--- a/net/netfilter/nf_conntrack_sip.c	2017-02-09 15:00:46.438315340 +0800
++++ b/net/netfilter/nf_conntrack_sip.c	2017-02-09 14:17:13.461169000 +0800
+@@ -378,6 +378,24 @@
+ 	return dptr;
+ }
+ 
++/* Locate URI if '<' is present. In order to handle the following situation.
++ *	- Contact: "sip:100@192.168.1.33" <sip:100@192.168.1.33:2945>
++ */
++static const char *sip_locate_uri(const char *dptr, const char *limit)
++{
++	const char *pStart;
++
++	for (pStart = dptr; pStart < limit; pStart++) {
++		if (*pStart == '\r' || *pStart == '\n')
++			break;
++		if (*pStart == '<')
++			return pStart;
++	}
++
++	return dptr;
++}
++
++
+ /* Search within a SIP header value, dealing with continuation lines */
+ static const char *ct_sip_header_search(const char *dptr, const char *limit,
+ 					const char *needle, unsigned int len)
+@@ -439,6 +447,9 @@
+ 		if (*dptr != ':' || ++dptr >= limit)
+ 			break;
+ 
++		/* Locate URI  if  "<" is present */
++		dptr = sip_locate_uri(dptr, limit);
++
+ 		/* Skip whitespace after colon */
+ 		dptr = sip_skip_whitespace(dptr, limit);
+ 		if (dptr == NULL)

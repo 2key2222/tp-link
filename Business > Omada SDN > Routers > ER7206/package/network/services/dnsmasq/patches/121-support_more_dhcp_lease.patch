@@ -1,0 +1,11 @@
+--- a/src/config.h	2015-09-24 10:27:54.000000000 +0800
++++ b/src/config.h	2015-09-28 17:50:49.000000000 +0800
+@@ -26,7 +26,7 @@
+ #define RANDOM_SOCKS 64 /* max simultaneous random ports */
+ #define LEASE_RETRY 60 /* on error, retry writing leasefile after LEASE_RETRY seconds */
+ #define CACHESIZ 150 /* default cache size */
+-#define MAXLEASES 1000 /* maximum number of DHCP leases */
++#define MAXLEASES 1024 /* maximum number of DHCP leases */
+ #define PING_WAIT 3 /* wait for ping address-in-use test */
+ #define PING_CACHE_TIME 30 /* Ping test assumed to be valid this long. */
+ #define DECLINE_BACKOFF 600 /* disable DECLINEd static addresses for this long */

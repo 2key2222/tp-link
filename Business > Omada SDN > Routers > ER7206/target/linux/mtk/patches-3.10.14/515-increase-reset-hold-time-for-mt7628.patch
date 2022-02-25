@@ -1,0 +1,31 @@
+Index: linux-3.10.14/drivers/char/ralink_gpio.c
+===================================================================
+--- linux-3.10.14.orig/drivers/char/ralink_gpio.c	2014-11-25 17:24:25.061837858 +0800
++++ linux-3.10.14/drivers/char/ralink_gpio.c	2014-11-25 19:08:12.891079742 +0800
+@@ -2727,7 +2727,7 @@
+ 			}
+ 			else {
+ 				record[i].rising = now;
+-				if (time_before(now, record[i].falling + 200L)) {
++				if (time_before(now, record[i].falling + HZ * 5)) {
+ 					//one click
+ 					printk("one click\n");
+ 					schedule_work(&gpio_event_click);
+@@ -2754,7 +2754,7 @@
+ 			}
+ 			else {
+ 				record[i].rising = now;
+-				if (time_before(now, record[i].falling + 200L)) {
++				if (time_before(now, record[i].falling + HZ * 5)) {
+ 					schedule_work(&gpio_event_click);
+ 				}
+ 				else {
+@@ -2777,7 +2777,7 @@
+ 			}
+ 			else {
+ 				record[i].rising = now;
+-				if (time_before(now, record[i].falling + 200L)) {
++				if (time_before(now, record[i].falling + HZ * 5)) {
+ 					schedule_work(&gpio_event_click);
+ 				}
+ 				else {

@@ -1,0 +1,34 @@
+--- a/net/bridge/br_if.c	2017-11-22 17:48:36.189572475 +0800
++++ b/net/bridge/br_if.c	2017-11-22 17:11:08.253328421 +0800
+@@ -526,6 +526,31 @@
+ 		netdev = fdbe->dst->dev; /* port device */
+ 		dev_hold(netdev);
+ 	}
++	else
++	{
++#ifdef CONFIG_NETWORK_IPSTACK_VLAN
++		/* reuse skb->vlan_proto = vlan_tci */
++		if(skb && skb->vlan_proto < 4095)
++		{
++			fdbe = __br_fdb_get(br, addr, skb->vlan_proto);
++			if (fdbe && fdbe->dst) {
++				netdev = fdbe->dst->dev; /* port device */
++				dev_hold(netdev);
++				goto out;
++			}
++		}
++#endif
++		int i = 1;
++		for (i = 1; i < 4095; i++)
++		{
++			fdbe = __br_fdb_get(br, addr, i);
++			if (fdbe && fdbe->dst) {
++				netdev = fdbe->dst->dev; /* port device */
++				dev_hold(netdev);
++				break;
++			}
++		}
++	}
+ out:
+ 	rcu_read_unlock();
+ 	return netdev;

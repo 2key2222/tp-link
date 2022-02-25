@@ -1,0 +1,301 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>L2TP Server</title>
+<style type="text/css">
+</style>
+</head>
+
+<body>
+<div class="func-container">
+    
+
+    <div id="l2tp-server-list">
+        <div id="l2tp-server-grid">
+        </div>
+    </div>
+
+    <div id = "own_editor">
+        <input id = "bindif" name = "bindif" >
+        <input id = "ipsecenc" name = "ipsecenc" >
+        <input id = "presharekey" name = "presharekey" >
+        <input class = "hidden" id = "authtype" name = "authtype" >
+        <input id = "enable" name = "enable" >
+    </div>
+
+    <div id="delete_alert_cnt">
+        <div id="delete_pro_cnt" class="reboot-loading-msg">
+            <input id="delete_pro_bar" type="text" />
+        </div>
+    </div> 
+
+    <div id="l2tp-server-help"></div>
+</div>
+
+<script type="text/javascript">
+try{
+    $
+}catch(e){
+    location.href = "/";
+};
+
+$(document).ready(function(e){
+   // var URL_L2TP_SERVER_GLOBAL = $.su.url("/admin/l2tp?form=global4server")
+      var  URL_L2TP_SERVER_LIST = $.su.url("/admin/l2tp?form=server");
+
+
+	$("#l2tp-server-list").panel({
+		title: $.su.CHAR.L2TP_SERVER.PANEL_LIST,
+		collapsible: false
+	});
+
+    /* --the fields of the own_editor begin-- */
+    $('#bindif').combobox({
+        fieldLabel:$.su.CHAR.L2TP_SERVER.BIND_IF,
+        allowBlank: false,
+        vtype:"string_visible_allow_blank",
+        items:[
+            {value:"WAN1", name: "WAN1"},
+            {value:"LAN2", name: "LAN2"}
+        ]
+    });
+
+    $('#ipsecenc').combobox({
+        fieldLabel:$.su.CHAR.L2TP_SERVER.IPSEC_ENC,
+		allowBlank: false,
+        items:[
+            {value:"yes", name: $.su.CHAR.L2TP_SERVER.IPSEC_ENC_YES},
+            {value:"no", name: $.su.CHAR.L2TP_SERVER.IPSEC_ENC_NO },
+            {value:"auto", name: $.su.CHAR.L2TP_SERVER.IPSEC_ENC_AUTO}
+        ]
+    }).on("ev_change", function(e, oldValue, newValue){
+        var value = newValue[0];
+        if(value == 'no'){
+            $.su.func.hideWidgets($('#presharekey'));
+        }else
+        {
+            $.su.func.showWidgets($('#presharekey'));
+        }
+    });
+
+    $('#presharekey').textbox({
+        fieldLabel: $.su.CHAR.L2TP_SERVER.PRESHARE_KEY,
+        allowBlank: false,
+        maxLength: 128,
+        tips: $.su.CHAR.IPSEC_SETTING.PSK_TIPS,
+        validator: function(v) 
+        {
+            if(new $.su.vtype({vtype:'string_visible_username'}).validate(v) !== true)
+            {
+                return $.su.CHAR.L2TP_SERVER.WRONG_KEY;
+            }
+            if (v.indexOf(" ") >= 0)
+            {
+                return $.su.CHAR.L2TP_SERVER.WRONG_KEY;
+            }
+            if (v.length > 128)
+            {
+                return $.su.CHAR.L2TP_SERVER.WRONG_KEY_LENGTH;
+            }
+            return true;
+        }    
+    });
+
+    $('#authtype').combobox({
+        fieldLabel:$.su.CHAR.L2TP_SERVER.AUTH_TYPE,
+        items:[
+            {value:"local", name: $.su.CHAR.L2TP_SERVER.AUTH_TYPE_LOCAL, selected:true},
+            {value:"radius", name: $.su.CHAR.L2TP_SERVER.AUTH_TYPE_REMOTE }
+        ]
+    });
+
+    /*$('#enable').radio({
+        fieldLabel:$.su.CHAR.POLICY_ROUTE.STATUS,
+        columns: 2,
+        items:[
+            {boxlabel: "启用", name:'enable', inputValue:'yes',checked:true},
+            {boxlabel: "禁用", name:'enable', inputValue:'no'}
+        ]
+    });*/
+
+    $('#enable').checkbox({
+        fieldLabel:$.su.CHAR.POLICY_ROUTE.STATUS,
+        columns: 1,
+        items:[
+            {boxlabel: $.su.CHAR.L2TP_SERVER.ENABLE, name:'enable', inputValue:'yes', uncheckedValue: "no", checked:true}
+        ]
+    });
+
+    var l2tpServerListProxy = new $.su.Proxy({
+        url: URL_L2TP_SERVER_LIST
+    });
+
+    var l2tpServerGrid = $("#l2tp-server-grid").grid({
+        maxRulesProperty: "server_list_max",
+        editor: {
+            content:"#own_editor",
+            fields: [
+                {name: "bindif"},
+                {name: "ipsecenc"},
+                {name: "presharekey"},
+                {name: "enable"},
+                {name: "authtype"}
+            ]
+        },
+		store:{
+			proxy: l2tpServerListProxy,
+			fields: [
+                {name: "bindif"},
+                {name: "ipsecenc"},
+                {name: "presharekey"},
+                {name: "enable"},
+                {name: "authtype"},
+                {name: "t_label"}
+			],
+			autoLoad: true
+		},
+        paging:[],
+		columns: [
+			{
+				xtype: "checkcolumn"
+			},
+			{
+				xtype: "rownumberer"
+			},
+			{
+                text: $.su.CHAR.L2TP_SERVER.BIND_IF,
+                width: 100,
+                dataIndex: "bindif",
+				renderer: function(dd, jindex, data) {
+					return data.t_label ? data.t_label : dd;
+				}
+			},
+            {
+                text: $.su.CHAR.L2TP_SERVER.IPSEC_ENC,
+                width: 80,
+                dataIndex: "ipsecenc",
+                renderer: function(v){
+                    if (v=="yes"){
+                        return $.su.CHAR.L2TP_SERVER.IPSEC_ENC_YES;
+                    }else if(v == "no"){
+                        return $.su.CHAR.L2TP_SERVER.IPSEC_ENC_NO;
+                    }else if(v == "auto"){
+                        return $.su.CHAR.L2TP_SERVER.IPSEC_ENC_AUTO;
+                    }else{
+                        return "--";
+                    }
+                }
+            },
+            {
+                text: $.su.CHAR.L2TP_SERVER.PRESHARE_KEY,
+                width: $.su.CHAR.SETTING.L2TP_SERVER.PRESHARE_KEY_WIDTH,
+                dataIndex: "presharekey",
+                hidden: true
+            },
+            {
+                text: $.su.CHAR.L2TP_SERVER.AUTH_TYPE,
+                width: $.su.CHAR.SETTING.L2TP_SERVER.AUTH_TYPE_WIDTH,
+                dataIndex: "authtype",
+                hidden: true,
+                renderer: function(v){
+                    if (v=="local"){
+                        return $.su.CHAR.L2TP_SERVER.AUTH_TYPE_LOCAL;
+                    }else if(v == "radius"){
+                        return $.su.CHAR.L2TP_SERVER.AUTH_TYPE_REMOTE;
+                    }else{
+                        return "--";
+                    }
+                }
+            },
+            {
+                text: $.su.CHAR.POLICY_ROUTE.STATUS,
+                xtype: "statuscolumn",
+                dataIndex: "enable",
+                trueValue: "yes",
+                falseValue: "no"
+            },
+            {
+                xtype: "settings"
+            }
+		],
+		operation: 'prompt|add|delete'
+	}).on("ev_load", function(e,data, others){
+        /*发送form请求,获取interface列表.用于显示于bindif下拉框*/
+        if(others && others.server_list_max)
+        {
+            maxrules = others.server_list_max;
+        }
+        var interfaceItem=[];
+        var interfaceProxy = new $.su.Proxy({
+            url: $.su.url('/admin/interface?form=status'),
+            async: false
+        });
+        interfaceProxy.read({}, function(data){
+            for (var i=0; i<data.normal.length; i++){
+				if (!$.su.func.isLan(data.normal[i].t_name))
+					interfaceItem.push({name:data.normal[i].t_label,value:data.normal[i].t_name});
+            }
+            /*for (var i=0; i<data.vpn.length; i++){
+                interfaceItem.push({name:data.vpn[i].t_label,value:data.vpn[i].t_name});
+            }*/
+            var editor = l2tpServerGrid.grid('getEditor');
+            var comboInterface = $(editor).find('.combobox-value[name=bindif]');
+            if(comboInterface.length !== 0){
+                //debugger;
+                comboInterface.combobox('loadData',interfaceItem);
+            }
+        });
+    }).on("ev_startEdit",function(e){
+                var editor  = $(l2tpServerGrid.grid("getEditor"));
+                var ipsecenc = editor.find("[name=ipsecenc]").combobox("getValue");
+                if("no" == ipsecenc )
+                {
+                    $.su.func.hideWidgets($('#presharekey'));
+                }else 
+                {
+                    $.su.func.showWidgets($('#presharekey'));
+                }
+    }).on("ev_startDelete",function(){
+        var trList = l2tpServerGrid.find("tr.selected");
+        if(trList.length >= 3){
+            $("#delete_alert_cnt").msg("show");
+            $("#delete_pro_bar").waitingbar("run");         
+            //del_check();
+        }
+    }).on("ev_deleteError",function(){
+        $("#delete_alert_cnt").msg("close");
+        $("#delete_pro_bar").waitingbar("stop");
+        $("#delete_pro_bar").waitingbar("reset");
+    }).on("ev_remove", function(){
+        $("#delete_alert_cnt").msg("close");
+        $("#delete_pro_bar").waitingbar("stop");
+        $("#delete_pro_bar").waitingbar("reset");
+    });
+
+    $("#delete_alert_cnt").msg({
+        cls: 'warning reboot-confirm-size',
+        type: "confirm",
+        closeBtn: false,
+        okHandler:function(){},
+        cancelHandler:function(){}
+    });
+
+
+    $("#delete_alert_cnt").msg("hideButtons");
+    
+    $("#delete_pro_bar").waitingbar({
+        fieldLabel:$.su.CHAR.L2TP_SERVER.DELETE_TIP,//"删除多条L2TP设置可能需要一些时间，请您耐心等待",
+        labelCls:"xxxl"
+    });
+
+    var helpL2tpServerGrid = new $.su.Help({
+        container: "div#l2tp-server-help",
+        content: ["L2TP_SERVER_SET"]
+    }); /* TODO */
+
+});
+</script>
+</body>
+
+</html>

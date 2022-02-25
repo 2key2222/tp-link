@@ -1,0 +1,12 @@
+
+config dhcp6s 'basic'
+    option enabled '0'
+    option proto 'dhcp6s'
+    option interface 'lanv6'
+    option ifname 'br-lan'
+    option primary_dns ''
+    option secondary_dns ''
+    option startip ''
+    option endip ''
+    option leasetime '86400'
+    option config_file '/etc/dhcp6s.conf'

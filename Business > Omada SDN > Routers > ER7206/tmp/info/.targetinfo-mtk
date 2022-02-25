@@ -1,0 +1,66 @@
+Source-Makefile: target/linux/mtk/Makefile
+Target: mtk
+Target-Board: mtk
+Target-Name: MTK boards
+Target-Path: /home/ubuntu/tp-link/ER7206_trunk
+Target-Arch: mipsel
+Target-Arch-Packages: mtk
+Target-Features: jffs2 squashfs
+Target-Depends: 
+Target-Optimization: -Os -pipe -mno-branch-likely -mips32 -mtune=mips32
+CPU-Type: mips32
+Linux-Version: 3.10.14
+Linux-Release: 1
+Linux-Kernel-Arch: mips
+Target-Description:
+	Build firmware images for MTK boards.
+@@
+Default-Packages: base-files libc libgcc busybox dropbear mtd uci opkg netifd fstools dnsmasq iptables ip6tables ppp ppp-mod-pppoe kmod-ipt-nathelper firewall odhcpd odhcp6c busybox_custom conntrack-tools swconfig 
+Target: mtk/generic
+Target-Board: mtk
+Target-Name: Generic
+Target-Path: target/linux/mtk
+Target-Arch: mipsel
+Target-Arch-Packages: mtk
+Target-Features: jffs2 squashfs
+Target-Depends: 
+Target-Optimization: -Os -pipe -mno-branch-likely -mips32 -mtune=mips32
+CPU-Type: mips32
+Linux-Version: 3.10.14
+Linux-Release: 1
+Linux-Kernel-Arch: mips
+Target-Description:
+	Build firmware images for MTK boards.
+@@
+Default-Packages: base-files libc libgcc busybox dropbear mtd uci opkg netifd fstools dnsmasq iptables ip6tables ppp ppp-mod-pppoe kmod-ipt-nathelper firewall odhcpd odhcp6c busybox_custom conntrack-tools swconfig 
+Target-Profile: TL_R470Tv6
+Target-Profile-Name: TP-LINK TL-R470T+ V6
+Target-Profile-Packages:  
+Target-Profile-Config: 
+
+@@
+Target-Profile-Description:
+        Package set for the TP-LINK TL-R470T+ V6.
+@@
+
+Target-Profile: TL_R480Tv9
+Target-Profile-Name: TP-LINK TL-R480T+ V9
+Target-Profile-Packages:  
+Target-Profile-Config: 
+
+@@
+Target-Profile-Description:
+        Package set for the TP-LINK TL-R480T+ V9.
+@@
+
+Target-Profile: OSG_v1
+Target-Profile-Name: Omada Security Gateway(UN) 1.0
+Target-Profile-Packages:  
+Target-Profile-Config: 
+
+@@
+Target-Profile-Description:
+        Package set for the Omada Security Gateway(UN) 1.0.
+@@
+
+

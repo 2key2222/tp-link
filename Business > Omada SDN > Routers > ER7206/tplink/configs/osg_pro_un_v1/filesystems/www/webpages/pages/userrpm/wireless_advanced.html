@@ -1,0 +1,297 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<style type="text/css">
+</style>
+<title>Wireless Advanced</title>
+</head>
+
+<body>
+<div class="func-container">
+    <div id="func-setting">
+        <form id="wireless-advanced-setting">
+            <input id="radio_id" name="radio_id" type="hidden" value="0"/>
+            <input id="channel-setting" name="channel" value=""/>
+            <input id="hwmode-setting" name="hwmode" value=""/>
+            <input id="htmode-setting" name="htmode" value=""/>
+            <input id="power-setting" name="txpower" value=""/>
+            <br />
+            <input id="beacon-setting" name="beacon" value=""/>
+            <input id="rts-setting" name="rts" value=""/>
+            <input id="frag-setting" name="frag" value=""/>
+            <input id="dtim-setting" name="dtim" value=""/>
+            <input id="sgi-setting" name="sgi" value=""/>
+            <input id="wmm-setting" name="wmm" value=""/>
+        </form>
+    </div>
+
+    <div id="wireless-advanced-help"></div>
+</div>
+
+<script type="text/javascript">
+
+//<![CDATA[
+try{
+    $
+}catch(e){
+    location.href = "/";
+};
+$(document).ready(function(e){
+    var URL_FORM = $.su.url('/admin/wlan_advanced?form=adv');
+    var URL_BANDLIST = $.su.url('/admin/wlan_advanced?form=channel_list');
+    var radio_id = 0;// 0: 2.4GHz, 1: 5GHz
+    var is_wep_tkip = null,
+        wds_enable = null;
+
+    $('#radio_id').val(radio_id);
+
+    $("#func-setting").panel({
+        title: $.su.CHAR.WIRELESS_ADVANCED.ADVANCED,
+        help: $("#wireless-advanced-help")
+    });
+
+    var channel = $("#channel-setting").combobox({
+        fieldLabel: $.su.CHAR.WIRELESS_ADVANCED.CHANNEL,
+        multiSelect:false,
+        allowBlank: false
+        //items:channelItem
+    });
+
+    var hwmode = $("#hwmode-setting").combobox({
+        fieldLabel: $.su.CHAR.WIRELESS_ADVANCED.HWMODE,
+        multiSelect:false,
+        allowBlank: false,
+        items:[
+            {name: $.su.CHAR.WIRELESS_ADVANCED.HWMODE_11B_ONLY,value:"0"},
+            {name: $.su.CHAR.WIRELESS_ADVANCED.HWMODE_11G_ONLY,value:"1"},
+            {name: $.su.CHAR.WIRELESS_ADVANCED.HWMODE_11N_ONLY,value:"2"},
+            {name: $.su.CHAR.WIRELESS_ADVANCED.HWMODE_11BG_MIXED,value:"3", selected: true},
+            {name: $.su.CHAR.WIRELESS_ADVANCED.HWMODE_11BGN_MIXED,value:"4"}
+        ]
+    });
+
+    var htmode = $("#htmode-setting").combobox({
+        fieldLabel:  $.su.CHAR.WIRELESS_ADVANCED.HTMODE,
+        multiSelect:false,
+        allowBlank: false,
+        items:[
+            {name: $.su.CHAR.WIRELESS_ADVANCED.HTMODE_AUTO, value:"0", selected:true},
+            {name: $.su.CHAR.WIRELESS_ADVANCED.HTMODE_20MHZ, value:"1"},
+            {name: $.su.CHAR.WIRELESS_ADVANCED.HTMODE_40MHZ, value:"2"}
+        ]
+    });
+
+    var power = $("#power-setting").combobox({
+        fieldLabel: $.su.CHAR.WIRELESS_ADVANCED.POWER,
+        items:[
+            {name: $.su.CHAR.WIRELESS_ADVANCED.POWER_HIGH,value:"2", selected: true},
+            {name: $.su.CHAR.WIRELESS_ADVANCED.POWER_MIDDLE,value:"1"},
+            {name: $.su.CHAR.WIRELESS_ADVANCED.POWER_LOW,value:"0"}
+        ]
+    });
+
+    var beacon = $("#beacon-setting").textbox({
+        fieldLabel: $.su.CHAR.WIRELESS_ADVANCED.BEACON_INTVAL,
+        allowBlank:false,
+        value: 100,
+        vtype: {
+            vtype: "number",
+            max: 1000,
+            min: 40
+        },
+        tips: $.su.CHAR.WIRELESS_ADVANCED.BEACON_INTVAL_TIPS
+    });
+
+    var rts = $("#rts-setting").textbox({
+        fieldLabel: $.su.CHAR.WIRELESS_ADVANCED.RTS_THRESHOLD,
+        allowBlank:false,
+        value: 2346,
+        vtype: {
+            vtype: "number",
+            max: 2346,
+            min: 1
+        },
+        tips: $.su.CHAR.WIRELESS_ADVANCED.RTS_THRESHOLD_TIPS
+    });
+
+    var frag = $("#frag-setting").textbox({
+        fieldLabel: $.su.CHAR.WIRELESS_ADVANCED.FRAG_THRESHOLD,
+        allowBlank:false,
+        value: 2346,
+        vtype: {
+            vtype: "number",
+            max: 2346,
+            min: 256
+        },
+        tips: $.su.CHAR.WIRELESS_ADVANCED.FRAG_THRESHOLD_TIPS
+    });
+
+    var dtim = $("#dtim-setting").textbox({
+        fieldLabel: $.su.CHAR.WIRELESS_ADVANCED.DTIM_INTVAL,
+        allowBlank:false,
+        value: 1,
+        vtype: {
+            vtype: "number",
+            max: 255,
+            min: 1
+        },
+        tips: $.su.CHAR.WIRELESS_ADVANCED.DTIM_INTVAL_TIPS
+    });
+
+    var sgi = $("#sgi-setting").checkbox({
+        fieldLabel: $.su.CHAR.WIRELESS_ADVANCED.SGI,
+        items:[
+            {boxlabel: $.su.CHAR.OPERATION.ENABLE, inputValue:'on', uncheckedValue: "off"}
+        ]
+    });
+
+    var wmm = $("#wmm-setting").checkbox({
+        fieldLabel: $.su.CHAR.WIRELESS_ADVANCED.WMM,
+        items:[
+            {boxlabel: $.su.CHAR.OPERATION.ENABLE, inputValue:'on', uncheckedValue: "off"}
+        ]
+    });
+
+    var proxy = new $.su.Proxy({
+        url: URL_FORM
+    });
+
+    var form = $("#wireless-advanced-setting").form({
+        proxy: proxy,
+        autoLoad: false,
+        fields: [
+            {name: "channel", mapping: "channel"},
+            {name: "hwmode", mapping: "hwmode"},
+            {name: "htmode", mapping: "htmode"},
+            {name: "txpower", mapping: "txpower"},
+            {name: "beacon",mapping: "beacon"},
+            {name: "rts",mapping: "rts"},
+            {name: "frag",mapping: "frag"},
+            {name: "dtim",mapping: "dtim"},
+            {name: "sgi",mapping: "sgi"},
+            {name: "wmm", mapping: "wmm"}      
+        ],
+        submitBtn: "default"
+    }).on("ev_loadData", function(e, data){
+        if(data){
+            if(data.hwmode){
+                /*
+                var hwmode = data.hwmode.toString();
+                if (hwmode == '2' || hwmode == '4'){
+                    wmm.checkbox("disable");
+                }else{
+                    wmm.checkbox("enable");
+                }
+                */
+                var mode = {};
+                mode[0] = data.hwmode.toString();
+                onModeChange(mode);
+            }
+
+        }
+        is_wep_tkip = data.is_wep_tkip;
+        wds_enable = data.wds_enable;
+        setFormState();
+        loadChannel(data.channel);
+    });
+
+	proxy.read({params: {radio_id: radio_id}});
+    hwmode.on('ev_change', function(e, oldValue, newValue){
+        if(newValue[0] == 2){
+            is_11n_only = true;
+        }else{
+            is_11n_only = false;
+        }
+        onModeChange(newValue);
+        //Wireless.$elements.$form.form("reset");
+        //if(newValue[0] == 2 && Wireless.$elements.$secType.combobox("getValue")[0] == 3){
+        //   Wireless.$elements.$secType.combobox("reset");
+        //}
+    });
+
+    var onModeChange = function (newValue) {
+        if (newValue[0] == '4' || newValue[0] == '2') {
+            if (!wds_enable) {
+                htmode.combobox("enable");
+            }
+            wmm.checkbox("disable");
+            wmm.checkbox("setValue", "on");
+            frag.textbox("disableStyle");
+            frag.textbox("setValue", 2346);
+        } else {
+            htmode.combobox("disableStyle");
+            wmm.checkbox("enable");
+            frag.textbox("enable");
+        }
+    };
+
+    function setFormState(){
+        //1. 如果已经有ssid使用wep或者wpa-tkip或者psk-tkip，前端根据isweptkip=true在用户配置11n模式时提示错误。
+        // 11n和wep，wpa-tkip,psk-tkip冲突
+        if(is_wep_tkip){
+            hwmode.combobox("disableItem", [2]);
+        }else{
+            hwmode.combobox("enableItem", [2]);
+        }
+
+        if(wds_enable){
+            channel.combobox("disableStyle");
+            hwmode.combobox("disableStyle");
+            htmode.combobox("disableStyle");
+        }
+        else{
+            channel.combobox("enable");
+            hwmode.combobox("enable");
+            var mode = hwmode.combobox("getValue");
+            if (mode == 4 || mode == "2") {
+                htmode.combobox("enable");
+            }
+        }
+    }
+
+    var first_load = true;
+    function loadChannel(chnl) {
+        if (first_load) {
+            var channelItem = [
+                {name: $.su.CHAR.WIRELESS_ADVANCED.CHANNEL_AUTO,value:"0", selected: true}
+            ];
+
+            var bandlist_Proxy = new $.su.Proxy({
+                url: URL_BANDLIST
+            });
+
+            bandlist_Proxy.read({
+                params: {
+                    radio_id: radio_id
+                }
+            }, function(data){
+                for(var i=0; i<data.length; i++){
+                    var v = parseInt(data[i])
+                    channelItem.push({
+                        name: data[i],
+                        value: data[i],
+                        selected: false
+                    });
+                }        
+                channel.combobox("loadData", channelItem);
+                channel.combobox("setValue", chnl);
+            });
+            first_load = false;
+        }
+        else {
+            channel.combobox("setValue", chnl);
+        }
+    }
+
+    var helper = new $.su.Help({
+        container: "div#wireless-advanced-help",
+        content: ["WIRELESS_ADVANCED"]
+    });
+});
+
+//]]>
+</script>
+</body>
+
+</html>

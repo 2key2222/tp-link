@@ -1,0 +1,66 @@
+--- a/networking/udhcp/packet.c	2014-01-10 02:15:44.000000000 +0800
++++ b/networking/udhcp/packet.c	2017-03-07 08:57:16.494195710 +0800
+@@ -185,9 +185,9 @@
+ }
+ 
+ /* Let the kernel do all the work for packet generation */
+-int FAST_FUNC udhcp_send_kernel_packet(struct dhcp_packet *dhcp_pkt,
++int FAST_FUNC udhcp_send_kernel_packet_specific(struct dhcp_packet *dhcp_pkt,
+ 		uint32_t source_nip, int source_port,
+-		uint32_t dest_nip, int dest_port)
++		uint32_t dest_nip, int dest_port, const char *inf)
+ {
+ 	struct sockaddr_in sa;
+ 	unsigned padding;
+@@ -202,6 +202,11 @@
+ 	}
+ 	setsockopt_reuseaddr(fd);
+ 
++	if (inf && setsockopt_bindtodevice(fd, inf)) {
++		msg = "bindtodevice(%s)";
++		goto ret_msg;
++	}
++
+ 	memset(&sa, 0, sizeof(sa));
+ 	sa.sin_family = AF_INET;
+ 	sa.sin_port = htons(source_port);
+@@ -234,3 +239,12 @@
+ 	}
+ 	return result;
+ }
++
++/* Let the kernel do all the work for packet generation */
++int FAST_FUNC udhcp_send_kernel_packet(struct dhcp_packet *dhcp_pkt,
++		uint32_t source_nip, int source_port,
++		uint32_t dest_nip, int dest_port)
++{
++	return udhcp_send_kernel_packet_specific(dhcp_pkt, source_nip,
++		source_port, dest_nip, dest_port, NULL);
++}
+--- a/networking/udhcp/common.h	2017-03-07 09:19:53.853195894 +0800
++++ b/networking/udhcp/common.h	2017-03-07 09:19:55.637201900 +0800
+@@ -293,6 +293,10 @@
+ 		uint32_t dest_nip, int dest_port, const uint8_t *dest_arp,
+ 		int ifindex) FAST_FUNC;
+ 
++int udhcp_send_kernel_packet_specific(struct dhcp_packet *dhcp_pkt,
++		uint32_t source_nip, int source_port,
++		uint32_t dest_nip, int dest_port, const char *inf) FAST_FUNC;
++
+ int udhcp_send_kernel_packet(struct dhcp_packet *dhcp_pkt,
+ 		uint32_t source_nip, int source_port,
+ 		uint32_t dest_nip, int dest_port) FAST_FUNC;
+--- a/networking/udhcp/dhcpc.c	2017-03-07 09:51:50.677201275 +0800
++++ b/networking/udhcp/dhcpc.c	2017-03-07 09:34:41.154193333 +0800
+@@ -888,9 +888,9 @@
+ static int bcast_or_ucast(struct dhcp_packet *packet, uint32_t ciaddr, uint32_t server)
+ {
+ 	if (server)
+-		return udhcp_send_kernel_packet(packet,
++		return udhcp_send_kernel_packet_specific(packet,
+ 			ciaddr, CLIENT_PORT,
+-			server, SERVER_PORT);
++			server, SERVER_PORT, client_config.interface);
+ 	return raw_bcast_from_client_config_ifindex(packet, ciaddr);
+ }
+ 

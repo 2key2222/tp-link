@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <style type="text/css">
+        #btn_set .button-container{
+            margin: 10px 10px 0 0;
+        }
+
+        #btn_set{
+            padding: 10px 10px 10px 0;
+        }
+    </style>
+</head>
+<body>
+<div id="func_settings">
+    <form id="func_settings_f">
+        <input id="ssid_list" name="key_idx"/>
+        <input id="radio_id" name="radio_id" type="hidden" value="1"/>
+    </form>
+</div>
+
+<div id="sta_list">
+    <div id="sta_list_g">
+    </div>
+    <p>当前连接的主机数：<span id="sta_num"></span></p>
+    <div id="btn_set">
+        <input id="refresh_sta"/>
+        <input id="clear_sta"/>
+    </div>
+</div>
+
+<div id="wireless-host-help"></div>
+
+<script type="application/javascript">
+    //<![CDATA[
+    try {
+        $
+    } catch (e) {
+        location.href = "/";
+    }
+    ;
+    $(document).ready(function (e) {
+        var ssidUrl = "/admin/wlan_station?form=ssidlist",
+                ssidProxy = new $.su.Proxy({url: $.su.url(ssidUrl)}),
+                staUrl = "/admin/wlan_station?form=stainfo",
+                staProxy  = new $.su.Proxy({url : $.su.url(staUrl)}),
+                radio_id = 1;
+
+        $("#radio_id").val(radio_id);
+        function refresh_sta(){
+            ssidProxy.read({
+                params: {
+                    radio_id: radio_id
+                }
+            }, function(jsonData){
+                var items = [{"name": "ALL", "value":-1}];
+                global.refresh(items.concat(jsonData.items));
+            });
+        };
+
+        function clear_sta(){
+            staProxy.write({
+                params: {
+                    radio_id: radio_id,
+                    key_idx: global.getData()[0]
+                }
+            }, function(jsonData){
+                staList.refresh(jsonData);
+            });
+        }
+
+        refresh_sta();
+        $("#refresh_sta").button({
+            fieldLabel: null,
+            text: '刷新',
+            cls: 'inline',
+            handler: function(){
+                refresh_sta();
+            }
+        });
+
+        $("#clear_sta").button({
+            fieldLabel: null,
+            text: '清空',
+            cls: 'inline',
+            handler: function(){
+                clear_sta();
+            }
+        });
+
+        var global = (function(){
+            var $list = $("#ssid_list"),
+                    $form = $("#func_settings_f"),
+                    $panel = $("#func_settings");
+
+            $list.combobox({
+                fieldLabel:"主机状态列表显示范围",
+                multiSelect:false,
+                allowBlank: false,
+                alwaysTrigger: false,
+                value: 1
+            }).on('ev_change', function(e, oldValue, newValue){
+                        staProxy.read({
+                            params: {
+                                radio_id:radio_id,
+                                key_idx: newValue[0]
+                            }
+                        }, function(jsonData){
+                            staList.refresh(jsonData);
+                        });
+                    });
+
+            $form.form({
+                fields: [
+                    {name: "key_idx", mapping: "key_idx"},
+                    {name: "radio_id", mapping: "radio_id"}
+                ]
+            });
+
+            $panel.panel({
+                title: "功能设置"
+            });
+
+            return {
+                refresh: function(jsonData){
+                    $list.combobox("loadData", jsonData);
+                    $list.combobox("setValue", -1);
+                },
+                getData: function(){
+                    return $list.combobox("getValue");
+                }
+            };
+        })();
+
+        var staList = (function(){
+            var $grid = $("#sta_list_g"),
+                    $staNum = $("#sta_num"),
+                    $panel = $("#sta_list");
+
+
+            $grid.grid({
+                store:{
+                    fields: [
+                        {name: "sta_mac", mapping:"sta_mac"},
+                        {name: "ssid", mapping:"ssid"},
+                        {name: "state", mapping:"state"},
+                        {name: "tx_pkt", mapping:"tx_pkt"},
+                        {name: "rx_pkt", mapping:"rx_pkt"},
+                        {name: "tx_byte", mapping:"tx_byte"},
+                        {name: "rx_byte", mapping:"rx_byte"},
+                        {name: "tx_rate", mapping:"tx_rate"},
+                        {name: "rx_rate", mapping:"rx_rate"}
+                    ],
+                    autoLoad: false
+                },
+                columns: [
+                    {
+                        xtype: "rownumberer",
+                        width: $.su.CHAR.SETTING.IPGROUP_ADDRESS.ROW_NUMBER_WIDTH
+                    },
+                    {
+                        text: "MAC地址",
+                        width: $.su.CHAR.SETTING.IPGROUP_ADDRESS.IP_MASK_WIDTH,
+                        dataIndex: "sta_mac"
+                    },
+                    {
+                        text: "所属SSID",
+                        width: $.su.CHAR.SETTING.IPGROUP_ADDRESS.IP_TYPE_WIDTH,
+                        dataIndex: "ssid"
+                    },{
+                        text: "当前状态",
+                        width: $.su.CHAR.SETTING.IPGROUP_ADDRESS.IP_TYPE_WIDTH,
+                        dataIndex: "state",
+                        renderer: function(v){
+                            if(v == 0){
+                                return "连接";
+                            }else{
+                                return "断开";
+                            }
+                        }
+                    },
+                    {
+                        text: "发送总包数<br/>(Pkt)",
+                        width: $.su.CHAR.SETTING.IPGROUP_ADDRESS.IP_TYPE_WIDTH,
+                        dataIndex: "tx_pkt"
+                    },
+                    {
+                        text: "接收总包数<br/>(Pkt)",
+                        width: $.su.CHAR.SETTING.IPGROUP_ADDRESS.IP_TYPE_WIDTH,
+                        dataIndex: "rx_pkt"
+                    },
+                    {
+                        text: "发送总字节数<br/>(Byte)",
+                        width: $.su.CHAR.SETTING.IPGROUP_ADDRESS.IP_TYPE_WIDTH,
+                        dataIndex: "tx_byte"
+                    },
+                    {
+                        text: "接收总字节数<br/>(Byte)",
+                        width: $.su.CHAR.SETTING.IPGROUP_ADDRESS.IP_TYPE_WIDTH,
+                        dataIndex: "rx_byte"
+                    },
+                    {
+                        text: "上传速率<br/>(KB/s)",
+                        width: $.su.CHAR.SETTING.IPGROUP_ADDRESS.IP_TYPE_WIDTH,
+                        dataIndex: "tx_rate"
+                    },
+                    {
+                        text: "下载速率<br/>(KB/s)",
+                        width: $.su.CHAR.SETTING.IPGROUP_ADDRESS.IP_TYPE_WIDTH,
+                        dataIndex: "rx_rate"
+                    }
+                ],
+                operation: ''
+            });
+
+            $panel.panel({
+                title: "主机状态"
+            });
+            return {
+                refresh: function(jsonData){
+                    $grid.grid("load", jsonData);
+                    $staNum.text(jsonData.length || "0");
+                }
+            };
+
+        })();
+
+
+        var helpInfo = new $.su.Help({
+            container: "#wireless-host-help",
+            content: ["WIRELESS_HOST", "WIRELESS_HOST_STATUS"]
+        });
+    });
+</script>
+</body>
+</html>

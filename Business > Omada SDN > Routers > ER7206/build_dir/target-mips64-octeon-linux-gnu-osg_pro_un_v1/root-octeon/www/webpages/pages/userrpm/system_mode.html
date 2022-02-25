@@ -1,0 +1,72 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Syetem Mode</title>
+</head>
+
+<body>
+<div class="func-container">
+    <div id="system-mode-setting">
+        <form id="mode-form-system">
+            <input id="system_mode" name="system_mode"/>
+        </form>
+    </div>
+
+    <div id="system-mode-help"></div>
+</div>
+
+<script type="text/javascript">
+
+//<![CDATA[
+try{
+    $
+}catch(e){
+    location.href = "/";
+};
+
+$(document).ready(function(e){
+    var URL_FORM = $.su.url('/admin/system_mode?form=system_mode');
+
+    $("#system-mode-setting").panel({
+        title: $.su.CHAR.SYSTEM_MODE.SYSTEM_MODE,
+        collapsible: false
+    });
+
+    $systemMode = $('#system_mode').radio({
+        fieldLabel: $.su.CHAR.SYSTEM_MODE.SYSTEM_MODE,
+        columns: 3,
+        items: [{
+            boxlabel: $.su.CHAR.SYSTEM_MODE.NAT, name:'system_mode', inputValue: "0", checked: true
+        },{
+            boxlabel: $.su.CHAR.SYSTEM_MODE.NON_NAT, name:'system_mode', inputValue: "1"
+        },{
+            boxlabel: $.su.CHAR.SYSTEM_MODE.CLASSIC, name:'system_mode', inputValue: "2"
+        }]
+    });
+
+    var proxy = new $.su.Proxy({
+        url: URL_FORM
+    });
+
+    $form = $("#mode-form-system").form({
+        proxy: proxy,
+        showPrompt:false,
+        fields: [
+            {name: "system_mode", mapping: "system_mode"}
+        ],
+        autoLoad: true,
+        submitBtn: "default"
+    });
+
+    var helper = new $.su.Help({
+        container: "div#system-mode-help",
+        content: ["SYSTEM_MODE"]
+    });
+});
+
+//]]>
+</script>
+</body>
+
+</html>

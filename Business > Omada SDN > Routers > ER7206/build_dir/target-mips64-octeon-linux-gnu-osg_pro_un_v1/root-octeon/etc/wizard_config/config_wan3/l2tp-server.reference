@@ -1,0 +1,19 @@
+config global global                     
+        option  l2tphellointerval  10
+        option  lcpechointerval  10
+
+config lns server1  
+        option  bindif  eth0
+        option  ipsecenc  yes
+        option  presharekey  123456789
+        option  enable  yes
+		
+		option authtype local
+		
+config lns server2  
+        option  bindif  eth1
+        option  ipsecenc  yes
+        option  presharekey  123456789
+        option  enable  yes
+		
+		option  authtype radius

@@ -1,0 +1,31 @@
+
+config interface 'radvd_interface'
+    option AdvManagedFlag '0'
+    option AdvSendAdvert '1'
+    option ignore '1'
+    list client ''
+    option AdvOtherConfigFlag '0'
+    option interface 'lan'
+
+config prefix 'radvd_prefix'
+    option AdvRouterAddr '0'
+    option AdvAutonomous '1'
+    option ignore '1'
+    list prefix ''
+    option AdvOnLink '1'
+    option interface 'lan'
+
+config route 'radvd_route'
+    list prefix ''
+    option ignore '1'
+    option interface 'lan'
+
+config rdnss 'radvd_rdnss'
+    option ignore '1'
+    list addr ''
+    option interface 'lan'
+
+config dnssl 'radvd_dnssl'
+    list suffix ''
+    option ignore '1'
+    option interface 'lan'

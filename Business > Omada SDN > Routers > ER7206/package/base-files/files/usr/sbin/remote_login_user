@@ -1,0 +1,54 @@
+#!/bin/sh
+
+. /lib/functions.sh
+. /lib/upgrade/common.sh
+
+HOMEDIR=/var/run/.ssh_login_home
+
+BUSYBOX_BIN_FILES="/bin/busybox /bin/ash /bin/ls /sbin/ifconfig /bin/echo /bin/ping /bin/ping6 \
+	/bin/ps /bin/cp /bin/cat /bin/pwd /bin/false /bin/true /bin/netstat \
+	/usr/bin/[ /usr/bin/[[ /usr/bin/top /usr/bin/traceroute /usr/bin/which"
+
+OTHER_BIN_FILES="/usr/sbin/ip /usr/sbin/omada-tool"
+
+OTHER_CFG_FILES="/etc/config/omada-tool.conf /etc/config/omada-tool.lock"
+
+# -d [username]              -- delete username's linux login account.
+# -a [username] [password]   -- add username's linux login account.
+# -c [username]              -- create username's home dir.
+
+case "$1" in
+	"-d")
+		sed -i "/$2:/d" /etc/passwd
+		sed -i "/$2:/d" /etc/group
+		sed -i "/$2:/d" /etc/shadow
+	;;
+	"-a")
+		[ -z "$HOMEDIR" ] && HOMEDIR=/var/run/.ssh/"$2"
+		user_add "$2" 899 899 "$2" "$HOMEDIR" "/bin/ash"
+		group_add "$2" 899
+		(echo "$3";sleep 1;echo "$3") | passwd "$2" > /dev/null
+	;;
+	"-c")
+		[ -z "$HOMEDIR" ] && HOMEDIR=/var/run/.ssh/"$2"
+		[ ! -d  "$HOMEDIR" ] && {
+			mkdir -p "$HOMEDIR"
+			RAM_ROOT="$HOMEDIR"
+			install_bin $BUSYBOX_BIN_FILES
+			for bfile in $OTHER_BIN_FILES
+			do
+				install_bin $bfile
+			done
+			install_file /lib/ld.so.1 /lib64/ld.so.1
+			
+			mkdir -p "$HOMEDIR/usr/config"
+			for cfile in $OTHER_CFG_FILES
+			do
+				cp -f $cfile $HOMEDIR/usr/config/
+			done
+		}
+
+		chown -R "$2":"$2" "$HOMEDIR"
+		chmod -R +x "$HOMEDIR"/lib "$HOMEDIR"/lib64 "$HOMEDIR"/bin "$HOMEDIR"/sbin "$HOMEDIR"/usr/bin "$HOMEDIR"/usr/sbin
+	;;
+esac

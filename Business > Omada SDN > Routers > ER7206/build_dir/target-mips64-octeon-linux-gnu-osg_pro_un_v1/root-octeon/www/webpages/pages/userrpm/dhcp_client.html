@@ -1,0 +1,169 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>DHCP_CLIENT</title>
+</head>
+
+<body>
+<div class="func-container">
+    <div id="checkList">
+        <div id="checkListGrid">
+
+        </div>
+    </div>
+
+    <div id="dhcp_client_help"></div>
+</div>
+
+<script type="text/javascript">
+try{
+    $
+}catch(e){
+    location.href = "/";
+};
+
+$(document).ready(function(e){
+	var URL_DHCP_STATIC_LIST = $.su.url("/admin/dhcps?form=reservation");
+	var sproxy = new $.su.Proxy({
+		url: URL_DHCP_STATIC_LIST
+	});
+
+	var interface_lan = [];
+	var interfaceIpProxy = new $.su.Proxy({
+		url: $.su.url('/admin/interface?form=status2'),
+		async: false
+	});
+	
+	$("div#checkList").panel({
+		title: $.su.CHAR.DHCP_SERVER.CLIENTSLIST
+	});
+
+	$("div#checkListGrid").grid({
+		operation: [{
+			xtype: "totalCount",
+			fieldLabel: $.su.CHAR.DHCP_SERVER.CLIENT_NUMBER,
+			cls: "left"
+		},"refresh"],
+		store:{
+			proxy: {
+				url: $.su.url('/admin/dhcps?form=client')
+			},
+			fields: [
+			    {name: "interface"},
+				{name: "name"},
+				{name: "macaddr"},
+				{name: "ipaddr"},
+				{name: "leasetime"},
+				{name: "bind"}
+			],
+			autoLoad: true
+		},
+		minLines: 0,
+		paging:[],
+		columns: [
+			{
+				text: $.su.CHAR.DHCP_SERVER.ID, 
+				xtype: "rownumberer",
+				width: 40
+			},
+			{
+				text: $.su.CHAR.DHCP_SERVER.INTERFACE, 
+				dataIndex: "interface",
+				width: 90,
+				hidden:true
+			},
+			{
+				text: $.su.CHAR.DHCP_SERVER.CLIENT_NAME, 
+				dataIndex: "name",
+				width: 150
+			},
+			{
+				text: $.su.CHAR.DHCP_SERVER.MAC_ADDR, 
+				width: 120,
+				dataIndex: "macaddr"
+			},
+			{
+				text: $.su.CHAR.DHCP_SERVER.ASSIGNED_IP, 
+				width: 120,
+				dataIndex: "ipaddr"
+			},
+			{
+				text: $.su.CHAR.DHCP_SERVER.LEASE_TIME, 
+				dataIndex: "leasetime",
+				width: 90,
+			},
+            {
+                width: 70,
+                text: $.su.CHAR.GRID.OPERATION,
+                dataIndex: "bind",
+                renderer: function(dd, index, data){
+                    var inHTML="<div class=\"button-container interface-operation\" style=\"text-align:center\">";
+					if (!data.bind) {
+						inHTML +=   "<a href=\"javascript:void(0);\" data-index=\""+index+"\" data-key=\""+index+"\" title=\""+ $.su.CHAR.OPERATION.RESERVE +"\" class=\"grid-content-btn btn-link\">";
+						inHTML +=       "<span class=\"icon\"></span>";
+						inHTML +=       "<span class=\"text\">"+$.su.CHAR.OPERATION.RESERVE+"</span>";
+						inHTML +=   "</a>";
+					} else {
+                        inHTML += "<span class=\"text\">---</span>"
+					}
+                    inHTML +="</div>";
+                    return inHTML;
+                }
+            }
+		]
+
+	}).delegate("a.grid-content-btn.btn-link", "click", function(e){
+		e.preventDefault();
+		e.stopPropagation();
+
+		var btn = $(this),
+			tr = btn.closest("tr.grid-content-tr");
+		if (tr.hasClass("disabled")){
+			return;
+		};
+
+		var index = $(this).attr("data-key")
+		var rowdata = $("div#checkListGrid").get(0).store.getDataByIndex(index)
+		$("div#checkListGrid").grid("runProgress")
+		sproxy.write({
+			method: "add",
+			params:$.extend({"index": index}, {
+				"old": "add",
+				"new": {
+					"interface": interface_lan[0].value,
+					"mac": rowdata.macaddr,
+					"ip": rowdata.ipaddr,
+					"note": rowdata.name,
+					"enable": "on"
+				}
+			}, {"key": "add"})
+		}, function(){
+			$("div#checkListGrid").grid("prompt", true);
+			$("div#checkListGrid").grid("getStore").load();
+		}, function(){
+			$("div#checkListGrid").grid("prompt", false);
+		}, function(){
+			$("div#checkListGrid").grid("prompt", false);
+		});
+	});
+
+	interfaceIpProxy.read({}, function(data){
+		for (var i = 0; i < data["normal"].length; i++) {
+			if ($.su.func.isLan(data["normal"][i].t_name)) {
+				interface_lan.push({value:data["normal"][i].t_name, name:data["normal"][i].t_label});
+			}
+		}
+	});
+
+	var helpDhcpServer = new $.su.Help({
+		container: "div#dhcp_client_help",
+		content: ["DHCP_CLIENT_LIST"]
+	});
+
+
+});
+</script>
+</body>
+
+</html>

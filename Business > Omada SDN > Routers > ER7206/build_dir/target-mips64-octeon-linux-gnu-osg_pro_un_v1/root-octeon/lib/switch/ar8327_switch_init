@@ -1,0 +1,290 @@
+#!/bin/sh
+
+ar8327_switch_load_config_vlan()
+{
+	swconfig dev switch0 load vlan
+}
+
+# ar8327 switch init
+ar8327_switch_init()
+{
+	local reg=0
+	local val=0
+	local ports=""
+
+	# enable MAC can be configured by software
+	for i in `seq 0 $(($MAX_PORT_NUM-1))`; do
+		reg=`echo $(($S17_P1STATUS_REG + $(($i*4)))) | awk '{printf("0x%x"), $0}'`
+		val=`swconfig_reg_read $reg`
+		val=`set_bit_value $val 12 0`
+		swconfig_reg_write $reg $val
+	done
+
+	# init mirror config
+	config_get state "mirror" "state"
+	config_get mode "mirror" "mode"
+	config_get mirrorport "mirror" "mirrorport"
+	config_get mirroredports "mirror" "mirroredports"
+	
+
+	ar8327_switch_port_mirror_init $state $mode $mirrorport "$mirroredports"
+
+
+	for i in `seq 1 $MAX_PORT_NUM`; do
+		# port para init
+		config_get port_state "port"$i "port_state"
+		config_get flowcontrol "port"$i "flowcontrol"
+		config_get ng_mode "port"$i "negotiation_mode"	
+
+		ar8327_switch_port_para_init $i $port_state $flowcontrol $ng_mode
+
+		# port rateControl init
+		config_get ingress_state "port"$i "ingress_state"
+		config_get ingress_mode "port"$i "ingress_mode"
+		config_get ingress_rate "port"$i "ingress_rate"
+		config_get egress_state "port"$i "egress_state"
+		config_get egress_rate "port"$i "egress_rate"
+
+		ar8327_switch_port_rateControl_init $i $ingress_state $ingress_mode $ingress_rate $egress_state $egress_rate
+	done
+
+	# set 1000M and 100M LED bling freq to 8Hz
+	val=`swconfig_reg_read 0x0050`
+	val=`set_bit_value $val 0 0`
+	val=`set_bit_value $val 1 1`
+	val=`set_bit_value $val 16 0`
+	val=`set_bit_value $val 17 1`
+	swconfig_reg_write 0x0050 $val
+
+	val=`swconfig_reg_read 0x0054`
+	val=`set_bit_value $val 0 0`
+	val=`set_bit_value $val 1 1`
+	# set 10M LED same as 100M
+	val=`set_bit_value $val 8 1`
+	val=`set_bit_value $val 24 1`
+	val=`set_bit_value $val 16 0`
+	val=`set_bit_value $val 17 1`
+	swconfig_reg_write 0x0054 $val
+
+	#swconfig_reg_write 0x0050 0xcc36cc36
+	#swconfig_reg_write 0x0054 0xca36ca36
+
+
+	# set port ingress mode is secure, egress mode is umodified.
+	for i in `seq 0 $(($AR8337_PORTS_MAX-1))`; do
+		ssdk_sh portVlan ingress set $i secure &>/dev/null
+		ssdk_sh portVlan egress set $i unmodified &>/dev/null
+	done
+
+	# load vlan
+	ar8327_switch_reload_8021Qvlan
+}
+
+ar8327_switch_reload_mirror()
+{
+	config_get state "mirror" "state"
+	config_get mode "mirror" "mode"
+	config_get mirrorport "mirror" "mirrorport"
+	config_get mirroredports "mirror" "mirroredports"	
+
+	ar8327_switch_port_mirror_init $state $mode $mirrorport "$mirroredports"
+}
+
+# reload para config
+# $1: ports id
+ar8327_switch_reload_para()
+{
+	for i in $1;do
+		config_get port_state "port"$i "port_state"
+		config_get flowcontrol "port"$i "flowcontrol"
+		config_get ng_mode "port"$i "negotiation_mode"	
+
+		ar8327_switch_port_para_init $i $port_state $flowcontrol $ng_mode
+	done
+
+}
+
+# reload rateControl config
+# $1: ports id
+ar8327_switch_reload_rateControl()
+{
+	for i in $1; do		
+		config_get ingress_state "port"$i "ingress_state"
+		config_get ingress_mode "port"$i "ingress_mode"
+		config_get ingress_rate "port"$i "ingress_rate"
+		config_get egress_state "port"$i "egress_state"
+		config_get egress_rate "port"$i "egress_rate"
+
+		ar8327_switch_port_rateControl_init $i $ingress_state $ingress_mode $ingress_rate $egress_state $egress_rate
+	done
+}
+
+ar8327_switch_reload_pvlan()
+{
+	local vlan_bitmap=0
+	local ports=""
+
+	for i in `seq 1 $MAX_PORT_NUM`; do		
+		config_get cfg_vid "port"$i "pvlan_id"
+		if [ $cfg_vid -eq 0 ]; then
+			continue
+		fi
+
+		bit=`get_bit_value $vlan_bitmap $cfg_vid`
+
+		if [ $bit -eq 0 ]; then
+			vlan_bitmap=`set_bit_value $vlan_bitmap $cfg_vid 1`
+		fi
+
+		append "vid"$cfg_vid " $i"
+
+	done
+
+	for i in `seq 1 $PORT_VLAN_MAX`; do
+		bit=`get_bit_value $vlan_bitmap $i`
+		if [ $bit -eq 1 ]; then		
+			eval ports=\$vid$i
+			ar8327_switch_port_pvlan_init "$ports"
+		fi
+	done
+}
+
+# create vlan entry
+# $1: vlan id
+ar8327_switch_vlan_create()
+{
+	ssdk_sh vlan entry create $1 &>/dev/null
+}
+
+# flush all vlan entry
+ar8327_switch_vlan_flush()
+{
+	ssdk_sh vlan entry flush &>/dev/null
+}
+
+# update portVlan memeber
+# $1: bitmap
+# $2..: ports
+update_switch_portVlan_member()
+{
+	local bitmap=$1
+	local port
+	local portmap=0
+
+	shift
+
+	while [ -n "$1" ]
+	do
+		port=${1:0:1}
+		shift
+
+		portmap=`set_bit_value $bitmap $port 0`
+		ssdk_sh portVlan member update $port $portmap &>/dev/null
+	done
+}
+
+setup_switch_vlan()
+{
+	local vlan
+	local ports
+	local val
+	local port
+	local flag
+	local bitmap=0
+
+	config_get vlan "$1" "vlan"
+	config_get ports "$1" "ports"
+
+	if [ -z "$ports" ]; then
+		return
+	fi
+
+	# for ssdk phy polling
+	swconfig dev switch0 vlan $vlan set vid $vlan
+	swconfig dev switch0 vlan $vlan set ports "$ports"
+
+	ar8327_switch_vlan_create $vlan
+	for val in $ports
+	do
+		port=${val:0:1}
+		flag=${val:1}
+
+		bitmap=`set_bit_value $bitmap $port 1`
+
+		case "$flag" in
+			t) ssdk_sh vlan member add $vlan $port tagged &>/dev/null ;;
+			*) ssdk_sh vlan member add $vlan $port untagged &>/dev/null ;;
+		esac
+	done
+
+	update_switch_portVlan_member $bitmap $ports
+}
+
+setup_switch_pvid()
+{
+	local port
+	local pvid
+
+	config_get port "$1" "port"
+	config_get pvid "$1" "pvid"
+
+	# for ssdk phy polling
+	swconfig dev switch0 port $port set pvid $pvid
+	ssdk_sh portVlan defaultCVid set $port $pvid &>/dev/null
+}
+
+setup_switch_apply()
+{
+	swconfig dev switch0 set apply
+}
+
+setup_switch_reset()
+{
+	swconfig dev switch0 set reset
+}
+
+ar8327_switch_reload_8021Qvlan()
+{
+	config_load vlan
+
+	ar8327_switch_vlan_flush
+	config_foreach setup_switch_vlan switch_vlan
+	config_foreach setup_switch_pvid switch_port
+
+	# setup_switch_apply
+}
+
+# restart switch
+# restart port mirror&para&pvlan 
+ar8327_switch_restart()
+{
+	ar8327_switch_init
+}
+
+#ar8327 switch reload
+# $1: module type
+# $2: ports id
+ar8327_switch_reload()
+{
+	case $1 in
+		"mirror" )
+			ar8327_switch_reload_mirror
+			;;
+		"pvlan" )
+			ar8327_switch_reload_pvlan
+			;;
+		"para" )
+			ar8327_switch_reload_para "$2"
+			;;
+		"rateControl")
+			ar8327_switch_reload_rateControl "$2"
+			;;
+		"vlan")
+			ar8327_switch_reload_8021Qvlan
+			;;
+		*)
+			;;
+	esac
+
+}
+

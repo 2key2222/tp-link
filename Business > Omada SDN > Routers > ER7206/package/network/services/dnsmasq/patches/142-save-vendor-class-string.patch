@@ -1,0 +1,11 @@
+--- a/src/dhcp-common.c	2014-05-17 03:21:55.000000000 +0800
++++ b/src/dhcp-common.c	2017-01-17 16:39:57.728198369 +0800
+@@ -547,7 +547,7 @@
+   { "max-message-size", 57, OT_INTERNAL },
+   { "T1", 58, OT_INTERNAL | OT_TIME},
+   { "T2", 59, OT_INTERNAL | OT_TIME},
+-  { "vendor-class", 60, 0 },
++  { "vendor-class", 60, OT_CSTRING },
+   { "client-id", 61, OT_INTERNAL },
+   { "nis+-domain", 64, OT_NAME },
+   { "nis+-server", 65, OT_ADDR_LIST },

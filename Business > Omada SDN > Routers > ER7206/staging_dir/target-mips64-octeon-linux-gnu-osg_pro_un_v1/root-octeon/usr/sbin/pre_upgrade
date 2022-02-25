@@ -1,0 +1,81 @@
+#!/bin/sh
+
+# stop modules
+/etc/init.d/monitor stop
+/etc/init.d/sys_monitor stop
+/etc/init.d/uhttpd stop
+/etc/init.d/nginx stop
+/etc/init.d/dnsmasq stop
+/etc/init.d/improxy stop
+/etc/init.d/cmxddns stop
+/etc/init.d/ippool stop
+/etc/init.d/tmngtd stop
+/etc/init.d/cron stop
+/etc/init.d/loggerd stop
+/etc/init.d/queueventd stop
+/etc/init.d/pptpd stop
+/etc/init.d/xl2tpd stop
+/etc/init.d/online stop
+/etc/init.d/ifstat-mini stop
+/etc/init.d/ipstat stop
+/etc/init.d/dnsproxy stop
+/etc/init.d/tddpd stop
+/etc/init.d/sysntpd stop
+/etc/init.d/zzomada_server stop
+# kill tasks
+killall online_check
+killall load_balance
+killall balance_loop
+killall netifd
+killall klogd
+killall queueventd
+killall lua
+killall vnete
+
+# umount userconfig jffs2 to avoid read/write when upgrading.
+umount /tmp/userconfig
+
+# down eth interface
+for ifname in `ifconfig -a | grep '^[a-z]' | awk '{print $1}'`
+do
+	ifconfig $ifname down
+done
+# free memory in kernel.
+anete iptables -t mangle -I PREROUTING 1 -j DROP
+/etc/init.d/sfe stop
+vnete conntrack -F
+conntrack -F
+echo 1 > /proc/sys/vm/drop_caches
+
+# change mtdroot dev(31:4) to mtdram dev(31:14)
+[ -e /lib/modules/$(uname -r)/mtdram.ko ] && {
+	# create mtdram block device
+	tsize=$(cat /proc/mtd | grep '"rootfs"' | awk '{print("0x"$2)}')
+	esize=$(cat /proc/mtd | grep '"rootfs"' | awk '{print("0x"$3)}')
+	insmod mtdram.ko total_size=$(($tsize>>10)) erase_size=$(($esize>>10))
+	echo insmod mtdram.ko total_size=$(($tsize>>10)) erase_size=$(($esize>>10)) > /dev/console
+
+	# copy binary data of mtdroot dev to mtdram dev
+	rootid=$(cat /proc/mtd | grep '"rootfs"' | sed 's/mtd\(.*\):.*/\1/g')
+	ramid=$(cat /proc/mtd | grep '"mtdram"' | sed 's/mtd\(.*\):.*/\1/g')
+	rootblkid=$(ls /dev/mtdblock${rootid} -l | awk '{print$5}' | sed 's/,//g')
+	ramblkid=$(ls /dev/mtdblock${ramid} -l | awk '{print$5}' | sed 's/,//g')
+	dd if=/dev/mtdblock${rootid} of=/dev/mtdblock${ramid} bs=$(printf '%d' $esize)
+
+	# mount a tmp dir of squashfs from mtdram dev
+	mkdir -p /tmp/.mtdram
+	mount -t squashfs /dev/mtdblock${ramid} /tmp/.mtdram
+
+	#ubi block
+	rootdev=$(cat /proc/cmdline | sed "s/^.*root=\([^[:space:]]*\).*$/\1/g")
+	[ "${rootdev:0:13}" == "/dev/ubiblock" ] && {
+		rootid=$(ls ${rootdev} -l | awk '{print$6}')
+		rootblkid=$(ls ${rootdev} -l | awk '{print$5}' | sed 's/,//g')
+	}
+	# bind tmp dir of squashfs to rootfs
+	echo "squashfs,rootdev=${rootblkid}:${rootid},ramdev=${ramblkid}:${ramid}" > /sys/mtdram/mtdram
+}
+
+# echo debug info
+busybox ps > /dev/console
+cat /proc/meminfo > /dev/console

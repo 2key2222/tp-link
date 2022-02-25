@@ -1,0 +1,322 @@
+#!/bin/sh
+
+#route table base num
+ID_BASE=9000
+
+#fwmark base numb
+MARK_BASE=1024
+
+#max fwmark, support 255 ports
+MAX_MARK=255
+
+CONFIG_NAME="mwan3"
+
+IPT="iptables -t mangle -w"
+
+. /lib/functions.sh
+. /lib/zone/zone_api.sh
+. /lib/balance/api.sh
+
+
+#get interface which balance setting is enabled
+#$1: inface_name
+get_inface_name()
+{
+	config_get balance $1 balance
+
+	if [ "$balance" -eq 1 ]; then
+	 	append interfaces $1
+	fi
+}
+
+#read the default_balance config and get wan interfaces
+get_wan_interfaces()
+{
+	local interfaces 
+
+	config_load $CONFIG_NAME
+
+	config_foreach get_inface_name interface
+
+	[ -z "$interfaces" ] && return 0
+	
+	load_ifaces=`uci get load_balance.balance.use_iface 2>/dev/null`	
+
+	if [ -n "$load_ifaces" ]; then
+		for j in $load_ifaces;do
+			for inface in $interfaces; do
+				if [ $j == $inface ];then
+					list_remove interfaces $inface
+					break;
+				fi
+			done
+		done
+	fi	
+
+	echo "$interfaces"
+}
+
+#get the iface's fwmark
+#$1 iface
+get_fwmark()
+{
+	local mark=0
+	local count=0
+
+	for i in $g_interfaces; do
+		let count++
+
+		[ "$count" -gt $MAX_MARK ] && logger -t default_balance -p warn "Could not support mark=[$count], when get fwmark." && return 
+
+		if [ "$i" == "$1" ]; then 			
+			mark=$(($MARK_BASE+$count))
+			break
+		fi
+	done
+	
+
+	echo $mark
+}
+
+#route table start from 5001
+#$1 iface
+set_iface_route()
+{
+	local counter=0
+	#get the interface's route args
+	dev=`zone_get_effect_devices $1`	
+	while [ -z "$dev" -a "$counter" -lt 5 ]; do
+		sleep 1
+		dev=`zone_get_effect_devices $1`
+		let counter++
+		if [ "$counter" -ge 5 ]; then
+			logger -t default_balance -p warn "Could not find dev for interface:[$1], when set route info."
+			return 1
+		fi
+	done
+	
+	gateway=`get_inface_gw $1`
+
+	if [ -n "$dev" -a -n "$gateway" ];then
+		route_args="via $gateway"
+		route_args="$route_args dev $dev"
+
+		ip -4 route flush table $(($table_id+1000))
+		ip -4 route add table $(($table_id+1000)) default $route_args
+
+		return 0
+	else
+		return 1
+	fi
+}
+
+#set route table and ip rule
+#$1 interfaces
+default_balance_set_ip_route()
+{
+	local count table_id route_args
+
+	for iface in $1; do
+		let count++
+
+		[ "$count" -gt $MAX_MARK ] && logger -t default_balance -p warn "Could not support mark=[$count], when set ip rule." && return 
+
+		state=`balance_get_state $iface`
+
+		[ "$state" != "on" ] && continue
+
+		#create route table
+		table_id=$(($ID_BASE+$count))
+		#set_iface_route $iface
+
+		dev=`zone_get_effect_devices $iface`	
+
+		ip -4 rule del pref $table_id &> /dev/null
+		ip -4 rule add pref $table_id iif $dev lookup main
+
+		#set ip rule		
+		mark=$(($MARK_BASE+$count))	
+
+		interface=`zone_get_effect_ifaces $iface`
+		ip -4 rule del pref $(($table_id+1000))	&> /dev/null
+		ip -4 rule add pref $(($table_id+1000)) fwmark $mark/0x7ff lookup $interface
+	done 
+}
+
+default_balance_set_general_iptables()
+{
+	if ! $IPT -S default_balance &> /dev/null; then		
+		$IPT -N default_balance			
+	fi	
+
+	$IPT -F default_balance 	
+
+	##policy_route[TP_pr_hook]---->special_route[TP_sr_hook]------>isp_route---->load_balance--->default_balance--->wifidog
+	if ! $IPT -S PREROUTING | grep default_balance &> /dev/null; then
+		load_balance=`$IPT -n --line-number -L PREROUTING |grep load_balance`
+		if [ -n "$load_balance" ]; then
+			num=`echo $load_balance |cut -d " " -f 1`
+			let num++
+			$IPT -I PREROUTING $num -j default_balance
+		else
+			isp_route=`$IPT -n --line-number -L PREROUTING |grep isp_route`
+			if [ -n "$isp_route" ]; then
+				num=`echo $isp_route |cut -d " " -f 1`
+				let num++
+				$IPT -I PREROUTING $num -j default_balance
+			else
+				TP_special_route=`$IPT -n --line-number -L PREROUTING |grep TP_sr_hook`
+				if [ -n "$TP_special_route" ]; then
+					num=`echo $TP_special_route |cut -d " " -f 1`
+					let num++
+					$IPT -I PREROUTING $num -j default_balance
+				else
+					TP_policy_route=`$IPT -n --line-number -L PREROUTING |grep TP_pr_hook`
+					if [ -n "$TP_policy_route" ];then
+						num=`echo $TP_policy_route |cut -d " " -f 1`
+						let num++
+						$IPT -I PREROUTING $num -j default_balance
+					else
+						#check the wifidog
+						local wechat_num=0 trust_num=0 outgo_num=0 min_num=65535
+						wifidog_wechat=`$IPT -n --line-number -L PREROUTING |grep WiFiDog_Wechat`
+						wifidog_trust=`$IPT -n --line-number -L PREROUTING |grep WiFiDog_Trusted`
+						wifidog_outgo=`$IPT -n --line-number -L PREROUTING |grep WiFiDog_Outgoing`						
+
+						if [ -n "$wifidog_wechat" ];then
+							wechat_num=`echo $wifidog_wechat |cut -d " " -f 1`   
+							[ $wechat_num -lt $min_num ] && min_num=$wechat_num
+						fi
+
+						if [ -n "$wifidog_trust" ]; then
+							trust_num=`echo $wifidog_trust |cut -d " " -f 1`
+							[ $trust_num -lt $min_num ] && min_num=$trust_num
+						fi
+
+						if [ -n "$wifidog_outgo" ]; then
+							outgo_num=`echo $wifidog_outgo |cut -d " " -f 1` 
+							[ $outgo_num -lt $min_num ] && min_num=$outgo_num
+						fi
+
+						if [ $min_num -eq 65535 ];then
+							$IPT -A PREROUTING -j default_balance
+						else
+							$IPT -I PREROUTING $num -j default_balance
+						fi
+					fi
+				fi
+			fi
+		fi
+	fi
+
+	if ! $IPT -S default_balance_pre &> /dev/null; then		
+		$IPT -N default_balance_pre			
+	fi
+
+	$IPT -F default_balance_pre 
+
+	$IPT -A default_balance_pre -m balance_route --dev_set default_balance_set -j MARK --set-mark $MARK_BASE/0x7ff
+
+	#save conneted's mark to all packages
+	$IPT -A default_balance -j CONNMARK --restore-mark --nfmask 0x7ff --ctmask 0x7ff
+	#$IPT -A default_balance -m state ! --state NEW -j RETURN
+	$IPT -A default_balance -m mark ! --mark 0x0/0x7ff -j RETURN
+	$IPT -A default_balance -j default_balance_pre
+	$IPT -A default_balance -m mark --mark 0x0/0x7ff -j RETURN
+	$IPT -A default_balance -j MARK --set-mark 0x0/0x7ff
+	$IPT -A default_balance -j default_balance_policy
+
+	#save package's mark to conneted
+	$IPT -A default_balance -j CONNMARK --save-mark --nfmask 0x7ff --ctmask 0x7ff
+}
+
+#$1: interfaces
+default_balance_set_policy()
+{
+	local probability flag=0 total_weight=0
+
+	if ! $IPT -S default_balance_policy &> /dev/null; then		
+		$IPT -N default_balance_policy		
+	fi
+
+	$IPT -F default_balance_policy &> /dev/null
+
+	for inface in $g_interfaces ; do
+		state=`balance_get_state $inface`
+
+		[ "$state" != "on" ] && continue
+
+		idle_mark=`get_fwmark $inface`
+
+		[ -n "$idle_mark" ] || continue
+
+		let g_ifup_inface++
+
+		if [ "$flag" -eq 0 ]; then	
+
+			$IPT -A default_balance_policy -m mark --mark 0x0/0x7ff -m comment --comment "[$inface]" -j MARK --set-mark $idle_mark/0x7ff
+
+			total_weight=1
+			let flag++
+		else	
+			total_weight=$(($total_weight+1))
+			percent=`awk 'BEGIN{printf "%f\n", (1/'$total_weight')}'`
+
+			probability="-m statistic --mode random --probability $percent"
+				
+			$IPT -I default_balance_policy -m mark --mark 0x0/0x7ff $probability -m comment --comment "[$inface]" -j MARK --set-mark $idle_mark/0x7ff
+		fi
+	done
+}
+
+#$1: interfaces
+default_balance_set_ipset()
+{
+	local counter=0
+
+	ipset -! create default_balance_set hash:iface
+
+	for iface in $1;do
+		counter=0
+                zone=`zone_get_zone_byif $iface`
+                if [ $zone == "VPN" ]; then 
+                        continue     
+                fi
+		device=`zone_get_effect_devices $iface`
+		while [ -z "$device" -a "$counter" -lt 10 ]; do
+			sleep 1
+			device=`zone_get_effect_devices $1`
+			let counter++
+			if [ "$counter" -ge 10 ]; then
+				logger -t default_balance -p warn "Could not find device for interface:[$1], when create ipset."
+				continue
+			fi
+		done
+		
+		gw=`get_inface_gw $iface`
+
+		[ -n "$gw" ] && ipset add default_balance_set $device
+	done
+}
+
+default_balance()
+{
+	g_interfaces=`get_wan_interfaces`
+
+	[ -z "$g_interfaces" ] && exit 1
+
+	default_balance_set_ipset "$g_interfaces"
+
+	default_balance_set_ip_route "$g_interfaces"
+
+	local g_ifup_inface=0
+
+	default_balance_set_policy
+
+
+	[ $g_ifup_inface -eq 0 ] || default_balance_set_general_iptables 
+
+	balance_policy_notify "$g_interfaces"
+}
+
+default_balance

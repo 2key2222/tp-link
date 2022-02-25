@@ -1,0 +1,30 @@
+--- a/include/net/pkt_sched.h
++++ b/include/net/pkt_sched.h
+@@ -110,6 +110,13 @@ extern int tc_classify_compat(struct sk_
+ extern int tc_classify(struct sk_buff *skb, const struct tcf_proto *tp,
+ 		       struct tcf_result *res);
+ 
++struct TPHOOK_AUTHLIMIT {
++    int (*match)(const struct sk_buff *);
++    int (*add)(unsigned int ip, unsigned int txrate, unsigned int rxrate);
++    void (*del)(unsigned int ip);
++};
++extern struct TPHOOK_AUTHLIMIT tphook_authlimit;
++
+ /* Calculate maximal size of packet seen by hard_start_xmit
+    routine of this device.
+  */
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -132,6 +132,11 @@
+ 
+ #include "net-sysfs.h"
+ 
++
++struct TPHOOK_AUTHLIMIT tphook_authlimit = {0};
++EXPORT_SYMBOL(tphook_authlimit);
++
++
+ /* Instead of increasing this, you should create a hash table. */
+ #define MAX_GRO_SKBS 8
+ 

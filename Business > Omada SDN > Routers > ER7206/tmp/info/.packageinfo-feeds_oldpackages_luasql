@@ -1,0 +1,23 @@
+Source-Makefile: package/feeds/oldpackages/luasql/Makefile
+Package: luasql-sqlite3
+Submenu: Lua
+Version: 2.1.1-1
+Depends: +libc +USE_EGLIBC:librt +USE_EGLIBC:libpthread +lua +libsqlite3
+Menu-Depends: 
+Provides: 
+Build-Variant: sqlite3
+Section: lang
+Category: Languages
+Title: Lua SQL binding for SQLite 3
+Maintainer: 
+Source: luasql-2.1.1.tar.gz
+Type: ipkg
+Feed: oldpackages
+Description:  LuaSQL is a simple interface from Lua to a DBMS.
+ .
+ This package contains the SQLite 3 binding.
+http://www.keplerproject.org/luasql/
+
+@@
+
+

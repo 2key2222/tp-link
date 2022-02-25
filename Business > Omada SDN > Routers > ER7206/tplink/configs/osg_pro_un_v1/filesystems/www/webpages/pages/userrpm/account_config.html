@@ -1,0 +1,431 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>account_config</title>
+</head>
+
+<body>
+<div class="func-container">
+	<div id="account">
+	 	<form id="account-setting">
+	    	<input type="text"  id="http_port" name="http_port" value="" />
+	    	<input id="redirect_https" name="redirect_https"/>
+	    	<input type="text"  id="https_port" name="https_port" value="" />	
+			<input id="enable_https" name="enable_https"/>
+			<input type="text"  id="web_timeout" name="web_timeout" value="" />
+			<input id="ssh_port_switch" name="ssh_port_switch"/>
+	 		<input type="text"  id="ssh_port" name="ssh_port" value="" />
+	    </form>
+	</div>
+	<div id="help_admin_config"></div>
+</div>
+
+<script type="text/javascript">
+try{
+    $
+}catch(e){
+    location.href = "/";
+};
+
+$(document).ready(function(e){
+	var ACC_CONFIG_URL = $.su.url("/admin/administration?form=management");
+	var origin_http_port = "80";
+	var origin_https_port = "443";
+	var origin_ssh_port = "33400";
+	var val_auth = "8080";
+	var origin_web_timeout = "6";
+	var origin_ssh_enable = "on";
+	var origin_redirect = "off";
+	var SYS_PORTS = [];
+
+	$("div.func-container").page({
+		title: $.su.CHAR.ACCOUNT.TITLE,
+		help: ""	//可能是个调用的id 也可能是个url
+	});
+
+	$("div#account").panel({
+		title: $.su.CHAR.ACCOUNT_CONFIG.TITLE,
+		collapsible: false
+	});
+
+	$("input#ssh_port_switch").checkbox({
+		fieldLabel:$.su.CHAR.ACCOUNT_CONFIG.SSH_ENABLE,
+		items:[
+			{boxlabel: $.su.CHAR.ACCOUNT_CONFIG.ENABLE, inputValue: "on", uncheckedValue: "off"}
+		]
+	}).on("ev_change", function(e, oldValue, newValue){
+		if(newValue == "on" || newValue == "ssh_port_switch"){
+			$("input#ssh_port").textbox("enableStyle");
+		}else{
+			$("input#ssh_port").textbox("disableStyle");
+		}
+	});
+
+	$("input#http_port").textbox({
+		fieldLabel: $.su.CHAR.ACCOUNT_CONFIG.HTTP_PORT,
+		allowBlank: false,
+		tips: "(80, 1024-65535)",
+		validator: function(v){
+		    var  val_http = $("input#http_port").textbox("getValue");
+			var  val_https = $("input#https_port").textbox("getValue");
+			var  val_ssh = $("input#ssh_port").textbox("getValue");
+
+			for(var i = 0; i < SYS_PORTS.length; i++){
+				if(val_http == SYS_PORTS[i]){
+					return $.su.CHAR.ACCOUNT_CONFIG.ERR2;
+				}
+			}
+
+			if (val_http == val_https && val_http != origin_http_port)
+			{
+			    return $.su.CHAR.ACCOUNT_CONFIG.ERR4;//"与https端口号冲突";
+			}
+			/*else if (val_http == 8080){
+				return $.su.CHAR.ACCOUNT_CONFIG.ERR1;//"8080端口已被占用，请重新输入";
+			}*/
+			else if (val_http == val_auth && val_http != origin_http_port)
+			{
+			    return $.su.CHAR.ACCOUNT_CONFIG.ERR5;
+ 			}
+			else if (val_http == 80)
+			{
+				return true;
+			}
+			else if (val_ssh == val_http  && val_http != origin_http_port)
+			{
+			    return $.su.CHAR.ACCOUNT_CONFIG.ERR2;//"与系统默认端口冲突";
+			}
+			else
+			{
+			    return (new $.su.vtype({
+			    	vtype: "number",
+			    	min: 1024,
+			    	max: 65535,
+			    	validator:function(value){
+			    		if(value < this.min || value > this.max){
+			    			return $.su.CHAR.ACCOUNT_CONFIG.HTTP_ERR;//"请输入80或者1024-65535之间的数字";
+			    		}else{
+			    			return true;
+			    		}
+			    	}
+			    }).validate(v));
+			}
+            
+        }
+	});
+	
+	$("input#https_port").textbox({
+		fieldLabel: $.su.CHAR.ACCOUNT_CONFIG.HTTPS_PORT,
+		allowBlank: false,
+		tips: "(443, 1024-65535)",
+		validator: function(v){
+		    var  val_http = $("input#http_port").textbox("getValue");
+			var  val_https = $("input#https_port").textbox("getValue");
+			var  val_ssh = $("input#ssh_port").textbox("getValue");
+
+			for(var i = 0; i < SYS_PORTS.length; i++){
+				if(val_https == SYS_PORTS[i]){
+					return $.su.CHAR.ACCOUNT_CONFIG.ERR2;
+				}
+			}
+			if (val_https == val_http && val_https != origin_https_port)
+			{
+			    return $.su.CHAR.ACCOUNT_CONFIG.ERR3;//"与http端口号冲突";
+			}
+			/*else if (val_https == 8080){
+				return $.su.CHAR.ACCOUNT_CONFIG.ERR1;//"8080端口已被占用，请重新输入";
+			}*/
+			else if (val_https == val_auth && val_https != origin_https_port)
+			{
+			    return $.su.CHAR.ACCOUNT_CONFIG.ERR5;
+ 			}
+			else if (val_https == 443)
+			{
+				return true;
+			}
+			else if (val_ssh == val_https  && val_https != origin_https_port)
+			{
+			    return $.su.CHAR.ACCOUNT_CONFIG.ERR2;//"与系统默认端口冲突";
+			}
+			else
+			{
+			    return (new $.su.vtype({
+			    	vtype: "number", 
+			    	min: 1024, 
+			    	max: 65535,
+			    	validator:function(value){
+			    		if(value < this.min || value > this.max){
+			    			return $.su.CHAR.ACCOUNT_CONFIG.HTTPS_ERR;//"请输入443或者1024-65535之间的数字";
+			    		}else{
+			    			return true;
+			    		}
+			    	}
+			    }).validate(v));
+			}
+            
+        }
+	});
+	
+	$("input#ssh_port").textbox({
+	    fieldLabel: $.su.CHAR.ACCOUNT_CONFIG.SSH_PORT,
+		allowBlank: false,
+		tips: "(22, 1024-65535)",
+		validator: function(v){
+		    var  val_http = $("input#http_port").textbox("getValue");
+			var  val_https = $("input#https_port").textbox("getValue");
+			var  val_ssh = $("input#ssh_port").textbox("getValue");
+			if (val_ssh == val_http && val_ssh != origin_ssh_port)
+			{
+			    return $.su.CHAR.ACCOUNT_CONFIG.ERR3;//"与http端口号冲突";
+			}
+			/*else if (val_ssh == 8080){
+				return $.su.CHAR.ACCOUNT_CONFIG.ERR1;//"8080端口已被占用，请重新输入";
+			}*/
+			else if (val_ssh == val_https  && val_ssh != origin_ssh_port)
+			{
+			    return $.su.CHAR.ACCOUNT_CONFIG.ERR4;//"与https端口号冲突";
+			}
+			else if (val_ssh == 22)
+			{
+				return true;
+			}
+			else
+			{
+			    return (new $.su.vtype({
+			    	vtype: "number", 
+			    	min: 1024, 
+			    	max: 65535,
+			    	validator:function(value){
+			    		if(value < this.min || value > this.max){
+			    			return $.su.CHAR.ACCOUNT_CONFIG.SSH_ERR;//"请输入22或者1024-65535之间的数字";
+			    		}else{
+			    			return true;
+			    		}
+			    	}
+			    }).validate(v));
+			}
+            
+        }
+	});
+	
+	$("input#web_timeout").textbox({
+	    fieldLabel: $.su.CHAR.ACCOUNT_CONFIG.WEB_TIMEOUT,
+		allowBlank: false,
+		tips: $.su.CHAR.ACCOUNT_CONFIG.WEB_TIMEOUT_TIPS,
+		validator: function(v){
+			return (new $.su.vtype({vtype: "number", min: 5, max: 60}).validate(v));
+        }
+	});
+
+	$("#redirect_https").checkbox({
+		fieldLabel:"",
+		items: [
+             {boxlabel: $.su.CHAR.ACCOUNT_CONFIG.REDIRECT_TO_HTTPS, inputValue: "on", uncheckedValue: "off"}
+        ]
+	}).on("ev_click", function(e, newValue){
+		if(newValue == "on" || newValue == "redirect_https"){
+			$("#enable_https").checkbox("setValue","on")
+		}
+	});
+
+	$("#enable_https").checkbox({
+		fieldLabel:$.su.CHAR.ACCOUNT_CONFIG.HTTPS_STATUS,
+		items: [
+             {boxlabel: $.su.CHAR.ACCOUNT_CONFIG.ENABLE, inputValue: "on", uncheckedValue: "off"}
+        ]
+	}).on("ev_click", function(e, newValue){
+		if(newValue == "off" || newValue != "enable_https"){
+			$("#redirect_https").checkbox("setValue","off")
+		}
+	});
+
+	var pwdProxy = new $.su.Proxy({
+		url: ACC_CONFIG_URL,
+		autoLoad:false
+	});
+
+	var submit_and_flush = function(url){
+		$("form#account-setting").form("setPrompt", false);
+		$("form#account-setting").form("submit");
+		if ($.su.app && $.su.app.errorOperation && $.su.app.errorOperation.denied){
+			$.su.app.errorOperation.denied(706);
+			$("div#global-warning-msg").msg("hideButtons");
+		}
+
+		setTimeout(function(){
+			location.href = url;
+			}, 2000);
+	};
+	
+	$("form#account-setting").form({
+		proxy: pwdProxy,
+		/*去掉默认提示框*/
+		//showPrompt: false,
+		fields: [
+			//{name: "ssh_port_switch", mapping: "ssh_port_switch"},
+			{name: "ssh_port", mapping: "ssh_port"},
+			{name: "http_port", mapping: "http_port"},
+			{name: "https_port", mapping: "https_port"},
+			{name: "web_timeout", mapping: "web_timeout"},
+			{name: "redirect_https",mapping: "redirect_https"},
+			{name: "enable_https",mapping: "enable_https"}
+		],
+		//autoLoad:true,/
+		validator:function(){
+			if($("input#http_port").textbox("validate") !== true){
+				return false;
+			}
+			if($("input#https_port").textbox("validate") !== true){
+				return false;
+			}
+			/*if($("input#ssh_port").textbox("validate") !== true){
+				return false;
+			}*/
+			if($("input#web_timeout").textbox("validate") !== true){
+				return false;
+			}
+			else{
+				return true;
+			}
+		},
+		submitBtn: "default"
+	}).on("ev_loadData", function(e, data){
+		origin_http_port = data.http_port;
+		origin_https_port = data.https_port;
+		origin_ssh_port = data.ssh_port;
+		origin_web_timeout =data.web_timeout;
+		if(data && data.auth_port){
+			val_auth =data.auth_port;
+		}
+		origin_ssh_enable = data.ssh_port_switch;
+		origin_redirect = data.redirect_https;
+		origin_enable_https = data.enable_https;
+		SYS_PORTS = data.port_list;
+	});
+
+	tarButton = $("form#account-setting").find("button.button-button");
+	$(tarButton).button({
+		handler: function(){
+			if($("form#account-setting").form("validate") !== true){
+				return false;
+			}
+
+			/*获取当前协议类型*/
+			var protocol = window.location.protocol;
+			/*获取当前host，去掉端口部分*/
+			var host = window.location.host;
+			/*获取当前端口号*/
+			var port = window.location.port;
+			/*获取改动后的端口号*/
+			var  val_http = $("input#http_port").textbox("getValue");
+			var  val_https = $("input#https_port").textbox("getValue");
+			var  val_ssh = $("input#ssh_port").textbox("getValue");
+			var  val_timeout = $("input#web_timeout").textbox("getValue");
+			var  val_ssh_enable = $("input#ssh_port_switch").checkbox("getValue1");
+			var  val_redirect = $("#redirect_https").checkbox("getValue");
+			var  val_enable_https = $("#enable_https").checkbox("getValue");
+			var  url = "";
+			//console.log(val_ssh_enable)
+
+			if(val_redirect[0]=="redirect_https")
+			{
+				val_redirect = "on";
+			}
+			else
+			{
+				val_redirect = "off";
+			}
+
+			if(val_enable_https[0]=="enable_https")
+			{
+				val_enable_https = "on";
+			}
+			else
+			{
+				val_enable_https = "off";
+			}
+
+			if(!$("input#http_port").textbox("validate")){
+				return;
+			}
+			if(!$("input#https_port").textbox("validate")){
+				return;
+			}
+
+			if("" == port){
+				host = host + ":";
+			}else{
+				host = host.match(/.*:/);
+				host = host[0];
+			}
+
+			switch(protocol){
+				case "http:":
+					if((val_redirect == "on") && (val_enable_https == "on")){
+						url = "https://" + host + val_https;
+						submit_and_flush(url);
+						return;
+					}
+				
+					if(origin_http_port != val_http){
+						url = "http://" + host + val_http;
+						submit_and_flush(url);
+						return;
+					}
+				break;
+
+				case "https:":
+					if((origin_https_port != val_https) && (val_enable_https == "on")){
+						url = "https://" + host + val_https;
+						submit_and_flush(url);
+						return;
+					}
+					if ((val_enable_https == "off")){
+						url = "http://" + host + val_http;
+						submit_and_flush(url);
+						return;
+					}
+				break;
+
+				default:
+				break;
+			}
+
+			/*
+			if((origin_http_port == val_http) && (origin_https_port == val_https)
+				&& (origin_web_timeout == val_timeout) && (origin_ssh_port == val_ssh)
+				&& (origin_ssh_enable == val_ssh_enable)){
+					if ($.su.app && $.su.app.errorOperation && $.su.app.errorOperation.denied){
+	                	$.su.app.errorOperation.denied(705);
+	                }
+            }else{
+
+            	*/
+            $.su.loading.show();
+            $("form#account-setting").form("submit",{},function(data){
+            	$("form#account-setting").form("setPrompt", true);
+            	$.su.loading.hide();
+            },function(error){
+            	$.su.loading.hide();
+            	$("form#account-setting").form("setPrompt", false);
+            },function(fail){
+            	$.su.loading.hide();
+            	$("form#account-setting").form("setPrompt", false);
+            });
+            //}
+		}
+	});
+
+	$("input#ssh_port_switch").checkbox("hide").checkbox("disableAllItem");
+	$("input#ssh_port").textbox("hide").textbox("disable");
+	var helpAdmin = new $.su.Help({
+		container: "div#help_admin_config",
+		content: ["ADMIN_CONFIG"]
+	});
+
+});
+</script>
+</body>
+
+</html>

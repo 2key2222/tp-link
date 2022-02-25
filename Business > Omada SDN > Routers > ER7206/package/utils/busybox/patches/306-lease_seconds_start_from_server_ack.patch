@@ -1,0 +1,20 @@
+--- a/networking/udhcp/dhcpc.c	2019-11-15 13:54:48.845189409 +0800
++++ b/networking/udhcp/dhcpc.c	2019-11-15 16:52:52.616189411 +0800
+@@ -2061,6 +2061,7 @@
+ 		case REBINDING:
+ 			if (*message == DHCPACK) {
+ 				uint32_t lease_seconds;
++				unsigned lease_at_server = (unsigned)monotonic_sec();
+ 				struct in_addr temp_addr;
+ 
+ 				temp = udhcp_get_option(&packet, DHCP_LEASE_TIME);
+@@ -2154,7 +2155,8 @@
+ #endif
+ 				/* make future renew packets use different xid */
+ 				/* xid = random_xid(); ...but why bother? */
+-				already_waited_sec = 0;
++				already_waited_sec = (unsigned)monotonic_sec() - lease_at_server;
++				already_waited_sec = (already_waited_sec > timeout) ? timeout : already_waited_sec;
+ 				continue; /* back to main loop */
+ 			}
+ 			if (*message == DHCPNAK) {

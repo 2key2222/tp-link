@@ -1,0 +1,682 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>URL FILTER</title>
+<style type="text/css">
+</style>
+</head>
+
+<body>
+	<div class="func-container">
+		<div id="function_setting">
+			<form id="urlfilter_settings">
+				<input id="urlfilter_enable" name="enable" value="" />
+			</form>
+		</div>
+
+		<div id="rule_list">
+			<div id="urlfilter_rule_grid">
+			</div>
+		</div>
+
+	<div id="own_editor">
+		<input id="usergroup" name="usergroupname" />
+		<input id="radio_url_method" name="action" />
+		<input id="radio_filter_method" name="filter_way" />
+		<textarea id="url_textarea" name="filter_content" /></textarea>
+		<input id="action1" name="action1" />
+		<input id="redirect" name="redirect"/>
+		
+		<input id="time" name="time" />
+		<input id="enable" name="enable" />
+	
+		<input id="comment" name="comment" />
+		<!--<div id="dstIP" class="hidden">
+			<div class="widget-container">
+			
+			<input id="dstaddr" name="dstaddr" />
+			<span>/</span>
+			<input id="dstmask" name="dstmask" />
+			</div>
+		</div>-->
+		<input id="position_number" name="index_position" />
+	</div>
+
+	<div id="link-detail-window">
+        <table class="link-detail-table detail">
+            <tr>
+                <td class="detail-value"></td>
+            </tr>
+        </table>
+    </div>
+
+		<div id="urlfilter_help"></div>
+	</div>
+
+
+<script type="text/javascript">
+	try{
+		$
+	}catch(e){
+		location.href="/";
+	};
+
+$(document).ready(function(e){
+	var url_filter_enable = $.su.url("/admin/url_filter?form=enable"),
+		url_filter_rule = $.su.url("/admin/url_filter?form=url_list");
+
+	var enableProxy = new $.su.Proxy({
+		url:url_filter_enable
+	});
+
+	var maxrules;
+	var MAX_WEB_PER_RULE = 10;
+	$("#function_setting").panel({
+		title:$.su.CHAR.URLFILTER.SETTINGS,
+		collapsible:false
+	});
+
+
+	$("#urlfilter_enable").checkbox({
+		items:[
+			{boxlabel:$.su.CHAR.URLFILTER.ENABLE_FILTER,inputValue:"1",uncheckedValue:"0"}
+		]
+	});
+
+	$("#urlfilter_settings").form({
+		proxy:enableProxy,
+		fields:[
+			{name:"enable",mapping:"enable"}
+		],
+		submitBtn:"default"
+	});
+
+	/*$("#rule_setting").panel({
+		title:$.su.CHAR.URLFILTER.RULE_SETTING,
+		collapsible:false
+	});*/
+
+	$("#rule_list").panel({
+		title:$.su.CHAR.URLFILTER.RULE_LIST,
+		collapsible:false
+	});
+
+	$("#usergroup").combobox({
+		fieldLabel:$.su.CHAR.URLFILTER.USERGROUP,
+		cls:"inline-block",
+		allowBlank:false,
+		items:[
+			{"value":"ANY","name":"ANY", selected:true} //need an proxy here infact
+		]
+	});
+
+	var groupItem = [];
+	var groupProxy = new $.su.Proxy({
+            url: $.su.url('/admin/ipgroup?form=ipgroup_list'),
+            async: false
+    });     
+    groupProxy.read({}, function(data){                     
+                var i,flag=0;
+                for (i=0; i<data.length; i++){
+                    groupItem.push({name:data[i].name,value:data[i].name});
+					if(data[i].name == "IPGROUP_ANY")
+					{
+						flag = 1;
+						continue;
+					}
+                }
+				if(flag == 0)
+				{
+					groupItem.push({name:"IPGROUP_ANY",value:"Any"});
+				}	
+                var combobox = $('#usergroup');
+                combobox.combobox('loadData',groupItem);
+    });
+
+	$("input#radio_url_method").radio({
+		fieldLabel:$.su.CHAR.URLFILTER.STRATEGY,
+		columns:2,
+		items:[
+			  {boxlabel:$.su.CHAR.URLFILTER.ACCEPT_URL,name:"action",inputValue:'accept'},
+			  {boxlabel:$.su.CHAR.URLFILTER.FORBIDDEN_URL,name:"action",inputValue:'drop',checked:true}
+		]
+	});
+
+	$("input#radio_filter_method").radio({
+		fieldLabel:$.su.CHAR.URLFILTER.FILTER_METHOD,
+		columns:2,
+		items:[
+			{boxlabel:$.su.CHAR.URLFILTER.KEYWORD,name:"filter_way",inputValue:"keyword",checked:true},
+			{boxlabel:$.su.CHAR.URLFILTER.COMPLETE_URL,name:"filter_way",inputValue:"url"}
+		]
+	});
+
+	var fileext = $("#url_textarea").textarea({
+		fieldLabel: $.su.CHAR.URLFILTER.FILTER_CONTENT,
+		tips:$.su.CHAR.URLFILTER.TIPS1,//"多个过滤内容以换行或者分号隔开",
+		//allowBlank: false,
+		//vtype:"ascii_visible",
+		inputCls:"long"
+	});
+
+	var redirect = $("#redirect").textbox({
+		fieldLabel: "",
+		allowBlank: false,
+		cls: "inline",
+		labelCls: "xxxxs"
+	}).textbox("disable");
+
+	redirect.textbox("hide");
+
+	var action2 = $("#action1").checkbox({
+		fieldLabel: $.su.CHAR.URLFILTER.ACTION_PREFIX,//"访问上述网站时",
+		columns: 3,
+        items: [
+        	{boxlabel: $.su.CHAR.URLFILTER.LOG_URL, inputValue: "log", uncheckedValue: "log_off"},//"记录到系统日志"
+            {boxlabel: $.su.CHAR.URLFILTER.WARN, inputValue: "warn", uncheckedValue: "warn_off"},//"弹出警告"
+            {boxlabel: $.su.CHAR.URLFILTER.REDIRECT, inputValue: "redirect", uncheckedValue: "redirect_off"}//"重定向至"
+        ],
+        cls: "inline"
+	}).on('ev_change', function(e, oldValue, newValue){
+		var value = action2.checkbox("getValue1");
+		var flag = false;
+		for (var i = 0; i < value.length; i++){
+			if (value[i] == "redirect"){
+				$("#redirect").textbox("enable");
+				flag = true;
+				break;
+			}
+		}
+		if (flag == false){
+			$("#redirect").textbox("disable");
+		}
+    });
+
+    action2.checkbox("hide");
+
+	
+
+
+	var time = $("#time").combobox({
+		fieldLabel: $.su.CHAR.URLFILTER.RULE_WORKTIME,//"规则生效时间",
+		items: [
+			{name:"Any", value:"Any", selected:true}
+		]
+	});
+	//读取时间对象
+	var tmngtItem=[];
+    var tmngtProxy = new $.su.Proxy({
+        url: $.su.url('/admin/time_mngt?form=timeobj_list'),
+        async: false
+    });
+    tmngtProxy.read({}, function(data){
+        for (i=0; i<data.length; i++){
+            tmngtItem.push({name: data[i].entry_name, value: data[i].entry_name});
+        }
+    });
+
+    if (tmngtItem.length != 0){
+        $("#time").combobox("loadData", tmngtItem);
+    }
+
+	$("input#enable").checkbox({
+		fieldLabel:$.su.CHAR.URLFILTER.STATUS,
+		columns:1,
+		items:[
+		{
+			boxlabel:$.su.CHAR.URLFILTER.ENABLE,inputValue:'on',uncheckedValue:"off",checked:true
+			}]
+	});
+
+	$("input#comment").textbox({
+		fieldLabel:$.su.CHAR.URLFILTER.COMMENT,
+		tips:$.su.CHAR.URLFILTER.TIPS2,//"(可选,1-50个字符)",
+		allowBlank:true,
+		maxLength:50
+	});
+
+
+	/*$("input#insert_position_enable").checkbox({
+		fieldLabel:null,
+		cls:"inline part-seperate",
+		items:[
+			{boxlabel:$.su.CHAR.URLFILTER.SPECIFY_POSITION,uncheckedValue:"0",inputValue:"1"}
+		]
+	}).on("ev_change",function(e,oldValue,newValue){
+		if(newValue[0] == "1"){
+			$("#position_number").textbox("enable");
+		}
+		else{
+			$("#position_number").textbox("disable");
+		}
+	});*/
+
+	$("input#position_number").textbox({
+		fieldLabel:$.su.CHAR.ACCESS_CONTROL.POSITION,
+		tips:$.su.CHAR.ACCESS_CONTROL.OPTIONAL,
+		vtype:"number"
+	});
+
+	var $linkDetail = $("#link-detail-window").msg({
+        closeBtn: true,
+        cls:"l",
+        title: $.su.CHAR.URLFILTER.FILTER_CONTENT,//"过滤内容列表",
+        type: "window"
+    }).msg("hide");
+
+    function showDetail(domain){
+ 		var domainString = "";  
+		var domainArray = domain.split('\n');
+		
+		for(var i = 0; i < domainArray.length; i++){
+			if(i == domainArray.length - 1){
+				domainString += domainArray[i] + "</br>";
+			}else{
+				domainString += domainArray[i] + "&nbsp&nbsp&nbsp&nbsp" + domainArray[i+1] + "</br>";
+				i++;
+			}
+			
+		}
+		$linkDetail.find(".detail-value").html(domainString).css({
+			"lineHeight":"20px",
+			"textAlign":"center",
+			"wordBreak":"break-all"
+		});
+        $linkDetail.msg('show');
+    }
+
+    function textSelect(o, a, b){
+        var a = parseInt(a, 10), b = parseInt(b, 10);
+        if(o.createTextRange){//IE浏览器
+            var range = o.createTextRange();         
+            range.moveStart("character", a);
+            range.moveEnd("character",b);
+            range.select();
+        }else{
+            o.setSelectionRange(a, b);
+            o.focus();
+        }
+        
+    }
+
+
+	var ruleListProxy = new $.su.Proxy({
+		url:url_filter_rule
+	});
+
+	var ruleGrid = $("#urlfilter_rule_grid").grid({
+		maxRulesProperty: "max_rules",
+		editor:{
+			content:"#own_editor",
+			fields:[
+				{name:"usergroupname"},
+				{name:"action"},
+				{name:"filter_way"},
+				{name:"filter_content"},
+				{name:"action1"},
+				{name:"redirect"},
+				{name:"time"},
+				{name:"comment"},
+				{name:"enable"}
+			],
+			validator:function(){
+				var extList = fileext.textarea("getValue");
+                if("" == extList){
+                    fileext.textarea("setError", $.su.CHAR.URLFILTER.ERR1);//"请您输入过滤内容");
+                    $("div.textarea-container").find("div.widget-error-tips").css("margin-top", "200px");
+                    return false;
+                }
+                if(extList.toString().length > 300){
+                	fileext.textarea("setError", $.su.CHAR.URLFILTER.ERR2);//"输入的字符总长度超过限制");
+                    $("div.textarea-container").find("div.widget-error-tips").css("margin-top", "200px");
+                    return false;
+                }
+                extList = extList.match(/(.*[\n]){0,}.*[^\n]/);
+                extList = extList[0];
+                extList = extList.split(/[\s,;]+/);
+                var errBegin = -1;
+                var errEnd = -1;
+                var reg =  new RegExp(/^[\x21-\x7e]{1,}$/); 
+                var isValid = true;
+                var tmpExt = "";
+                var errString = "";
+                $(extList).each(function(i, obj){
+                    if(obj == ""){
+                        extList.splice(i,1);
+                        return;
+                    }
+                    if(obj.toString().length > 64){
+                    	isValid = false;
+                    	errBegin = tmpExt.length;
+                        errEnd = errBegin + obj.length + 1;
+                    	errString = $.su.CHAR.URLFILTER.ERR3;//"输入的每个关键字或者URL长度超过限制";
+                    	return;
+                    }
+                    if(!reg.test(obj)){
+                        isValid = false;
+                        errBegin = tmpExt.length;
+                        errEnd = errBegin + obj.length + 1;
+                        errString = $.su.CHAR.URLFILTER.ERR4;//"输入的关键字或者URL格式不正确";
+                        return;
+                    }
+                    tmpExt = tmpExt + obj + "\n";
+                });
+
+                tmpExt = tmpExt.match(/(.*[\n]){0,}.*[^\n]/);
+                //console.log(tmpExt)
+                if(extList.length > MAX_WEB_PER_RULE){
+					fileext.textarea("setError", $.su.CHAR.URLFILTER.LENGTH_ERR.replace("%N%",MAX_WEB_PER_RULE));//"输入的关键字或者URL超过上限，最多支持"+MAX_WEB_PER_RULE+"个关键字或者URL");
+					$("div.textarea-container").find("div.widget-error-tips").css("margin-top", "210px");
+					isValid = false;
+					return false;
+				}
+
+                if(isValid){
+                    fileext.textarea("setValue",tmpExt[0]);
+                }else{
+                	textSelect($("textarea").get(0), errBegin, errEnd);
+                    fileext.textarea("setError", errString);
+                    $("div.textarea-container").find("div.widget-error-tips").css("margin-top", "200px");
+                    return false;
+                }
+
+
+				var nameList = $("#urlfilter_rule_grid").grid('getStore').data;
+				var editingId = $($("#urlfilter_rule_grid").grid('getEditor')).editor("getEditingId");
+				var position = $("#position_number").textbox('getValue');
+				var modify_flag = 0;
+				//var modify_flag = 0;
+				if(position == ""){
+					return true;
+				}
+				if(!$("#position_number").textbox('validate')){
+					$("input#position_number").textbox("setError", $.su.CHAR.URLFILTER.ERR5);//"请保持为空或者输入数字");
+					return false;
+				}
+				position = parseInt(position);
+				/*if(position < 1 || position > nameList.length){
+					$("input#position_number").textbox("setError", "输入的位置超出了指定的范围");
+					return false;
+				}
+
+				return true;*/
+
+
+
+				//console.log(position);
+
+				if(position<1 || position > maxrules) 
+				{
+					$($("#urlfilter_rule_grid").grid("getEditor")).form('setError',$.su.CHAR.URLFILTER.ERR6);//"输入数字超过最大范围");
+					return false;
+				}
+				
+				for(var i=0;i<nameList.length;i++){
+					if(editingId == nameList[i].key){
+						 modify_flag = 1;
+						 break;
+					}
+				}
+				
+		
+					if(modify_flag)
+					{
+						if(position > nameList.length)
+						{
+						$($("#urlfilter_rule_grid").grid("getEditor")).form('setError',$.su.CHAR.URLFILTER.ERR6);//"输入数字超过最大范围");
+						return false;
+						}
+					}
+					if(position == nameList.length+1){
+						$("#position_number").textbox('setValue',"");
+					}
+			
+				
+				return true;
+				
+			}
+		},
+		store:{
+			proxy:ruleListProxy,
+			fields:[
+				{name:"usergroupname"},
+				{name:"action"},
+				{name:"filter_way"},
+				{name:"filter_content"},
+				{name:"action1"},
+				{name:"redirect"},
+				{name:"time"},
+				{name:"comment"},
+				{name:"enable"}
+			],
+			autoLoad:true
+		},
+		paging:[],
+		columns:[
+			{
+				xtype: "checkcolumn"
+			},
+			{
+				xtype: "rownumberer"
+			},
+			/*{
+				text:$.su.CHAR.URLFILTER.URLGROUP,
+				width:$.su.CHAR.SETTING.URLFILTER.URLGROUP_WIDTH,
+				hidden:true,
+				dataIndex:"urlgroupname",
+				editor:{
+					xtype:"textbox",
+					allowBlank:true,
+					hidden:true
+				}
+			},*/
+			{
+				text:$.su.CHAR.URLFILTER.USERGROUP,
+				width:100,
+				dataIndex:"usergroupname" /*,
+				editor:{
+					xtype:"combobox",
+					items:[
+					]
+				}*/
+			},
+			{
+				text:$.su.CHAR.URLFILTER.STRATEGY,
+				width:60,
+				dataIndex:"action",
+				renderer:function(val){
+					if(val == "accept")
+					{
+						return $.su.CHAR.URLFILTER.ACCEPT;
+					}
+					else{
+						return $.su.CHAR.URLFILTER.FORBIDDEN;
+					}
+				}/*,
+				editor:{
+					xtype:"radio",
+					allowBlank:false,
+					columns:2 ,
+					items:[
+						{boxlabel:$.su.CHAR.URLFILTER.ACCEPT_URL,name:"action",inputValue:'accept'},
+						{boxlabel:$.su.CHAR.URLFILTER.FORBIDDEN_URL,name:"action",inputValue:'drop',checked:true}
+					]
+				}*/
+			},
+			{
+				text:$.su.CHAR.URLFILTER.FILTER_METHOD,
+				width:60,
+				dataIndex:"filter_way",
+				renderer:function(val){
+					if(val=="keyword"){
+						return $.su.CHAR.URLFILTER.KEYWORD;
+					}else
+					{
+						return $.su.CHAR.URLFILTER.COMPLETE_URL;
+					}
+				}/*,
+				editor:{
+					xtype:"radio",
+					allowBlank:false,
+					columns:2,
+					items:[
+						{boxlabel:$.su.CHAR.URLFILTER.KEYWORD,name:"filter_way",inputValue:"keyword",checked:true},
+						{boxlabel:$.su.CHAR.URLFILTER.COMPLETE_URL,name:"filter_way",inputValue:"url"}
+					]
+				}*/
+			},
+			{
+				text:$.su.CHAR.URLFILTER.FILTER_CONTENT,
+				width:120,
+				dataIndex:"filter_content",
+				renderer:function(dd, index, data){
+					//console.log(dd,index,data);
+					if("" == dd || typeof dd == "undefined"){
+						return "---";
+					}
+					var escapeData = $.su.func.escapeHtml(dd);
+					var URL = escapeData.split("\n");
+					
+					switch(URL.length){
+						case 0:
+							return "---";
+							break;
+						case 1:
+							return URL[0];
+							break;
+						case 2:
+							return URL[0] + "</br>" + URL[1];
+							break;
+						default:
+							return URL[0] + "&nbsp&nbsp" + "<a href='javascript:void(0);' class='btn-detail' data-index='"+ index +"'>"+$.su.CHAR.URLFILTER.DETAIL+"</a>";
+							break;
+					}     
+
+					//return data;
+				} /*,
+				
+				cls:"height:200",
+				editor:{
+					xtype:"textbox",
+					cls:"",
+					allowBlank:false,
+					tips:"(1-125个字符)",
+					maxLength:125
+					//height:
+				}*/
+			},
+			
+			/*{
+				text:$.su.CHAR.URLFILTER.TARGET,
+				width:$.su.CHAR.SETTING.URLFILTER.TARGET_WIDTH,
+				dataIndex:"target",
+				editor:{
+					xtype:"checkbox",
+					columns:3,
+					items:[
+						{boxlabel:$.su.CHAR.URLFILTER.LOG_URL,name:"target1",inputValue:"log", uncheckedValue:"nolog"},
+						{boxlabel:$.su.CHAR.URLFILTER.WARN,name:"target2",inputValue:"warn"},
+						{boxlabel:$.su.CHAR.URLFILTER.REDIRECT,name:"target3",inputValue:"redirect"}
+					]
+				}
+			},
+			{
+				text:"重定向至",
+				width:0,
+				hidden:true,
+				editor:{
+					xtype:"textbox",
+					allowBlank:true
+				}
+			},
+			{
+				text:$.su.CHAR.URLFILTER.WORKTIME,
+				width:$.su.CHAR.SETTING.URLFILTER.WORKTIME_WIDTH,
+				dataIndex:"worktime",
+				editor:{
+					xtype:"combobox",
+					items:[
+						{value:"ANY",name:"ANY",selected:true}
+					]
+				}
+			},*/
+			{
+				text: $.su.CHAR.URLFILTER.WORKTIME,//"生效时间",
+				width:60,
+				dataIndex:"time"
+			},
+			{
+				text:$.su.CHAR.URLFILTER.STATUS,
+				dataIndex:"enable" ,
+				renderer:function(val){
+					if(val=="1"){
+						return $.su.CHAR.URLFILTER.ENABLE;
+					}
+					else{
+						return $.su.CHAR.URLFILTER.NON_USE;
+					}
+				},
+				xtype:"statuscolumn"
+			},
+			{
+
+				xtype:"comment",
+				dataIndex:"comment" /*,
+				editor:{
+					xtype:"textbox",
+					allowBlank:true,
+					tips:"(可选,1-50个字符)",
+					maxLength:50
+				}*/
+			},
+			{
+				xtype: "settings"
+			}
+		],
+		operation:"prompt|add|delete"
+	}).delegate('a.btn-detail', 'click', function(e){
+        var index = $(this).data('index');
+        showDetail(ruleGrid.grid("getStore").data[index].filter_content);
+    }).on("ev_load", function(e,data, others){
+		/*ruleListProxy.read({},function(data){
+			console.log("length: "+ data.list);
+			console.log(data);
+				
+		});*/
+		if(others)
+		{
+				//console.log(others.max_rules);
+                MAX_WEB_PER_RULE = others.max_num_per_rule;
+		}
+		
+	}).on("ev_insert", function(){
+        ruleGrid.grid("getStore").load();}
+    ).on("ev_remove", function(){
+        ruleGrid.grid("getStore").load();}
+    ).on("ev_update", function(){
+        ruleGrid.grid("getStore").load();
+    }).on("ev_startEdit",function(){
+    	var value = action2.checkbox("getValue1");
+		var flag = false;
+		for (var i = 0; i < value.length; i++){
+			if (value[i] == "redirect"){
+				$("#redirect").textbox("enable");
+				flag = true;
+				break;
+			}
+		}
+		if (flag == false){
+			$("#redirect").textbox("disable");
+		}
+    });
+
+	  var helpImb = new $.su.Help({
+        container: "div#urlfilter_help",
+        content: ["URLFILTER_ENABLE", "URLFILTER_LIST"]
+    });
+
+});
+</script>
+</body>
+</html>

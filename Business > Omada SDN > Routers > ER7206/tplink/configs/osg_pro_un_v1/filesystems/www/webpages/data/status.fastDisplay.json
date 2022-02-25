@@ -1,0 +1,34 @@
+{ "id": 1, "result": {
+	"normal": [
+		{
+			"t_isup": true,
+			"t_type": "none",
+			"t_name": "GE1",
+			"macaddr": "14:CC:20:EC:07:D7"
+		},
+		{
+			"t_isup": false,
+			"t_type": "ethernet",
+			"t_name": "GE2",
+			"macaddr": "00:00:00:00:00:00",
+			"t_linktype": "dhcp"
+		},
+		{
+			"t_isup": false,
+			"t_type": "pppoe",
+			"t_name": "if_eth_pppoe",
+			"macaddr": "00:00:00:00:00:00",
+			"t_linktype": "auto"
+		}
+	],
+	"vpn": [
+		{
+			"ipaddr": "192.168.60.10",
+			"dns1": "192.168.1.1",
+			"netmask": "255.255.255.255",
+			"t_name": "vpn_xx1",
+			"t_isup": true,
+			"t_type": "l2tp"
+		}
+	]
+}, "error_code": "0" }

@@ -1,0 +1,244 @@
+                                     VETH
+                        Virtual Ethernet Daemon for Linux
+                       by Néstor Peña <nestor@linux.org.ve>
+                         http://projects.epca.com.ve/veth/
+                       ====================================
+
+VETH is a daemon that virtualizes a ethernet card in Linux.  The
+virtualization is done via Universal TUN/TAP Driver.  Linux has an
+implementation that does the work, but partially.  Sometimes, this
+emulation doesn't work as expected.  Because of this, I wrote VETH, to
+help in this situations.
+
+How it works
+============
+
+Perhaps you are saying "hey, man, don't mess with me, I can do that
+with aliasing.  With an ifconfig eth0:1 I have a new ethernet".  OK,
+perhaps, perhaps...
+
+It isn't 100% true.  Look at this scenario:
+
+You have a DSL modem working as a bridge.  You have a firewall with
+exactly 2 NICs, no more.  One of these NICs is crossover-connected to
+your modem, and another is in your internal subnet.
+
+Apart from this, your ISP provides 2 (TWO) or more IPs via DHCP.  Look
+at the sketch:
+
+ To
+Telco             Ethernet
+     -----------            ----------             ---------------...
+-----|DSL modem|------------|Firewall|-------------|Internal network
+     -----------       NIC0 ---------- NIC1        ---------------...
+                     1.2.3.4        192.168.10.1
+                       eth0            eth1
+
+
+And now the question:
+
+Now, the firewall has ONE (read, ONE) real IP.  But you need another,
+(or two, or more) IP.  How do you that WITHOUT installing a third NIC?
+
+I thought "simply, is a matter of running dhclient in an alias: say
+dhclient eth0:1..."  But:
+
+---
+root@parsec:~# dhclient eth0:1
+Internet Software Consortium DHCP Client V3.0.1rc11
+Copyright 1995-2002 Internet Software Consortium.
+All rights reserved.
+For info, please visit http://www.isc.org/products/DHCP
+
+SIOCSIFFLAGS: Cannot assign requested address
+SIOCSIFFLAGS: Cannot assign requested address
+Bind socket to interface: No such device
+---
+
+It doesn't work.  Mainly because eth0:1 is NOT a real ethernet device.
+Possibly patching dhclient could circumvent this, but there are some
+other problems.
+
+When the system activates DHCP in a NIC, puts a IP address of 0.0.0.0
+in the ethernet device and sends a datagram via UDP 67 saying "hey,
+please, if you know my IP, tell me.  Thanks".  But... how the datagram
+returns back (when someone answers?)  Simply: although has a IP
+address 0.0.0.0 their MAC address is unique.  DHCP server sends the
+answer datagram back to that MAC address.
+
+Knowing this, isn't too dificult to understand the big problem of
+running two DHCP clients in one NIC card: the two sends the SAME MAC
+address.  The DHCP server cannot recognize if the datagram comes from
+the first or the second DHCP client.  For him, it's the same card, and
+send the SAME IP.
+
+I tried VMware for a few days, and I could do that.  But, the "second"
+NIC is really in the virtual machine and not in the real machine.  If
+you want this IP for NAT or for another service, you must reroute from
+the virtual to the real machine.... A mess...  And if your firewall is
+a 5x86-133 with no disk or floppy, booting via network (PXE) and only
+64MB of memory (the machine is slow but cool, doesn't require fans or
+a case ;-), running VMware in this machine is simply madness.
+
+The Universal TUN/TAP driver is a Linux module that creates a software
+ethernet card, with their own MAC address.  This module is extensively
+used for tunnels and VPNs, because the kernel "sees" an ethernet
+device.  But, the real network doesn't see this card... Until now.
+
+VETH chooses a ethernet device specified by the user, puts it in
+promiscuous mode and "links" this device with a TAP device, relaying
+all the traffic from and to this real card.
+
+When you send a packet thru the virtual ethernet created by VETH, this
+packet passes thru VETH, totally formatted (with the virtual MAC
+address), and VETH takes it and sends it, *RAW*, to the NIC card.
+Because is sent via raw, the ethernet kernel driver doesn't touch it,
+leaving the original MAC address and sending as is to thw REAL
+network.  Conclusion: the net sees a new NIC card...
+
+Because VETH puts the original NIC in promiscuous mode, VETH can see
+if there are traffic with destination the virtual card.  VETH takes
+it, and sends  to the TAP.  Conclusion: the software has received a
+packet from the NIC "card"...
+
+VETH isn't difficult to understand or to program.  It was a 3-hour
+hacking.
+
+Installing
+==========
+
+Please, read the INSTALL file.
+
+Using VETH
+==========
+
+Using VETH is very easy.  If you want to create a new interface
+(called veth0, for "virtual ethernet 0"), call it as is:
+
+# vethd
+
+VETH creates a new ethernet interface called veth0, linked to the
+existent eth0.
+
+If you want to change that, check out the usage:
+
+Usage: vethd [-v veth-device] [-e eth-device] [-m mac-address]
+
+If some or all of them are not defined, these are the defaults:
+
+veth-device     veth0
+eth-device      eth0
+mac-address     Generated automagically (and dynamic) by kernel
+
+As you can see, you can label the new ethernet at your own.  For
+example, if you want to label your "new card" :) veth1:
+
+# vethd -v veth1
+VETH 1.0 - Virtual Ethernet Driver
+(C) MMIII by Néstor Peña <nestor@linux.org.ve>
+This software is GPL - See LICENSE for details
+
+Attached veth1 into eth0
+
+And now, you have a new interface called veth1:
+
+# ifconfig veth1
+veth1     Link encap:Ethernet  HWaddr 00:FF:46:7B:29:C5
+          BROADCAST MULTICAST  MTU:1500  Metric:1
+          RX packets:2586 errors:0 dropped:0 overruns:0 frame:0
+          TX packets:0 errors:0 dropped:0 overruns:0 carrier:0
+          collisions:0 txqueuelen:100
+          RX bytes:526822 (514.4 KiB)  TX bytes:0 (0.0 b)
+
+As you can see, this act like a regular NIC device.  Now, try to use a
+DHCP client:
+
+# dhclient veth1
+Internet Software Consortium DHCP Client V3.0.1rc11
+Copyright 1995-2002 Internet Software Consortium.
+All rights reserved.
+For info, please visit http://www.isc.org/products/DHCP
+
+Listening on LPF/veth1/00:ff:46:7b:29:c5
+Sending on   LPF/veth1/00:ff:46:7b:29:c5
+Sending on   Socket/fallback
+DHCPDISCOVER on veth1 to 255.255.255.255 port 67 interval 4
+DHCPOFFER from 192.168.1.1
+DHCPREQUEST on veth1 to 255.255.255.255 port 67
+DHCPACK from 192.168.1.1
+bound to 192.168.1.11 -- renewal in 10518 seconds.
+
+And voilà!, you have now two IPs, dinamically assigned! And in the
+same NIC! :-D
+
+CPU load
+========
+
+VETH load isn't too high.  While I'm developing I took a snapshot and
+change all routes on my machine to use veth0, and deactivate the
+original NIC (ifconfig eth0 0.0.0.0 up).  In fact, I'm writing this in
+XEmacs exported from another machine (passing thru veth0), and
+listening Planet Euro from Live365.  Less that 0,1% of load.  My
+machine is a Pentium 4 2400MHz overclocked to 3120MHz.  I copied a
+17GB file thru an exported filesystem via NFS, and load was 9,5%,
+transferring  7,3MB/sec in a 100Mbps network. Pretty cool in a Pentium
+4, but, in a slower machine... I don't know.
+
+The MAC issue
+=============
+
+If you read carefully the usage, you can see a parameter called -m.
+This parameter is used if you want to set a particular MAC address.
+Universal TUN/TAP driver assigns a new MAC address based in (I think,
+I didn't see the kernel code) timestamps.  The main problem with that
+is the MAC address changes between shutdowns.  If you shuts down your
+machine regularly and, if you want to preserve your IP, you must force
+the MAC address.
+
+Mmmm... the problems begins....
+
+The problem isn't assigning the MAC address, but in CHOOSING A
+NUMBER.  Read this CAREFULLY.  (in BIG CAPS)
+
+YOU CAN'T CHOOSE AN ARBITRARY NUMBER!!!!!!!!!
+YOU MUSTN'T CHOOSE AN ARBITRARY NUMBER!!!!!!!!!
+
+Please, remember your Network 101 classes: a MAC address IS UNIQUE IN
+THE UNIVERSE.  NO ONE CAN HAVE YOUR MAC ADDRESS!!!!!
+
+IEEE maintains a database of assigned numbers.  This is the web site:
+
+http://standards.ieee.org/regauth/oui/index.shtml
+
+Here, you can download the listing.
+
+But I'm hearing you now, saying: "OK, but... what f*****g number can
+I take?"  Well... I suggest you some solutions:
+
+- I'm totally sure that you must have a damaged NIC.  By a general
+  rule, the maker writes the MAC address in a sticker behind.  Took
+  this number, and use it.  But I suggest you that you took the
+  damaged board and DESTROY the sticker, in order to assuring that
+  nobody takes this number in your subnet.
+
+- VMware has a unique number, starting with 00:50:56.  In their
+  manual, they suggests 00-3F in the fourth number, and whatever you
+  like it in fifth and sixth bytes.
+
+- Any other solution is kindly appreciated.
+
+Of course, picking a MAC address of your own has other disadvantages.
+I will write this in BIG CAPS:
+
+I, NESTOR PEÑA, WILL NOT TAKE ANY RESPONSABILITIES IF THIS PROGRAM IS
+USED FOR PURPOSES THAT COULD HARM GROUPS OR INDIVIDUALS IN ANY WAY.
+
+Moreover, if you want to change your MAC address you don't need this
+program.  If the card has an EEPROM, with a simple utility you can
+change the MAC address, on-the fly, if you want...
+
+Well... it's the end.  Time for a pizza ;-)
+
+_____________________
+Néstor Peña
+<nestor@linux.org.ve>

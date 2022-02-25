@@ -1,0 +1,47 @@
+--- a/drivers/net/raeth/raether.c	2020-03-22 21:13:47.455416871 +0800
++++ b/drivers/net/raeth/raether.c	2020-03-22 21:15:15.421416236 +0800
+@@ -134,6 +134,8 @@
+ #define	MAX_RX_LENGTH	1536
+ #endif
+ 
++#define TPLINK_RESERVE_PPP_LEN 128
++
+ struct net_device		*dev_raether;
+ 
+ static int rx_dma_owner_idx[MAX_RX_RING_NUM];
+@@ -910,7 +912,7 @@
+ 		data = netdev_alloc_frag(skb_size);
+ #else
+ #ifdef CONFIG_ETH_SLAB_ALLOC_SKB
+-		skb = alloc_skb(MAX_RX_LENGTH + NET_IP_ALIGN + NET_SKB_PAD, GFP_ATOMIC);
++		skb = alloc_skb(MAX_RX_LENGTH + NET_IP_ALIGN + NET_SKB_PAD + TPLINK_RESERVE_PPP_LEN, GFP_ATOMIC);
+ #else
+     		skb = netdev_alloc_skb(dev, MAX_RX_LENGTH + NET_IP_ALIGN);
+ #endif
+@@ -971,7 +973,7 @@
+ 		}
+ #ifdef CONFIG_ETH_SLAB_ALLOC_SKB
+ #ifndef USE_BUILD_SKB
+-		skb_reserve(skb, NET_SKB_PAD);
++		skb_reserve(skb, NET_SKB_PAD + TPLINK_RESERVE_PPP_LEN);
+ #endif
+ #endif
+ 
+@@ -3550,7 +3552,7 @@
+ 		}
+ #else
+ #ifdef CONFIG_ETH_SLAB_ALLOC_SKB
+-		ei_local->netrx_skbuf[0][i] = alloc_skb(MAX_RX_LENGTH + NET_IP_ALIGN + NET_SKB_PAD, GFP_ATOMIC);
++		ei_local->netrx_skbuf[0][i] = alloc_skb(MAX_RX_LENGTH + NET_IP_ALIGN + NET_SKB_PAD + TPLINK_RESERVE_PPP_LEN, GFP_ATOMIC);
+ #else
+ 		ei_local->netrx_skbuf[0][i] = netdev_alloc_skb(dev, MAX_RX_LENGTH + NET_IP_ALIGN);
+ #endif
+@@ -3559,7 +3561,7 @@
+ 			goto no_rx_mem;
+ 		} else {
+ #ifdef CONFIG_ETH_SLAB_ALLOC_SKB
+-			skb_reserve(ei_local->netrx_skbuf[0][i], NET_SKB_PAD);
++			skb_reserve(ei_local->netrx_skbuf[0][i], NET_SKB_PAD + TPLINK_RESERVE_PPP_LEN);
+ #endif
+ 
+ #if !defined (CONFIG_RAETH_SCATTER_GATHER_RX_DMA)

@@ -1,0 +1,11 @@
+--- a/net/bridge/br_private.h	2016-11-28 15:17:23.944646393 +0800
++++ b/net/bridge/br_private.h	2016-11-28 15:19:55.220646994 +0800
+@@ -769,7 +769,7 @@
+ #define br_netfilter_init()	(0)
+ #define br_netfilter_fini()	do { } while(0)
+ #define br_netfilter_rtable_init(x)
+-#define br_netfilter_run_hooks()	false
++#define br_netfilter_run_hooks()	true
+ #endif
+ 
+ static inline int

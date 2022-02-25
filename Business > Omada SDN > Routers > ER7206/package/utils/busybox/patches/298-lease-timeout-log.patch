@@ -1,0 +1,10 @@
+--- a/networking/udhcp/dhcpc.c	2018-03-07 16:58:45.268209833 +0800
++++ b/networking/udhcp/dhcpc.c	2018-03-07 16:58:46.624210779 +0800
+@@ -1729,6 +1729,7 @@
+ 				client_config.first_secs = 0; /* make secs field count from 0 */
+ 				change_listen_mode(LISTEN_KERNEL);
+ 				log1("Entering renew state");
++				DHCP_CLIENT_LOGGER_REG(DHCP_CLIENT_START_REQUEST,LOGGER_PARAM_STRING,zone_namex);
+ 				/* fall right through */
+ 			case RENEW_REQUESTED: /* manual (SIGUSR1) renew */
+ 			case_RENEW_REQUESTED:

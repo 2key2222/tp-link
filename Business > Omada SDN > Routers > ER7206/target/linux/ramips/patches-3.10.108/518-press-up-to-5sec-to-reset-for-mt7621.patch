@@ -1,0 +1,141 @@
+diff -uprN a/drivers/char/ralink_gpio.c b/drivers/char/ralink_gpio.c
+--- a/drivers/char/ralink_gpio.c	2019-08-04 13:17:45.418405300 +0800
++++ b/drivers/char/ralink_gpio.c	2019-08-04 13:27:48.668078863 +0800
+@@ -142,6 +142,9 @@ void ralink_gpio_notify_user(int usr);
+ static struct work_struct gpio_event_hold;
+ static struct work_struct gpio_event_click;
+ 
++#define SLP_RESET_BUTTON_DEBOUNCE 40	/* msecs */
++static struct timer_list slp_reset_timer;
++pid_t syswdt_pid;
+ 
+ MODULE_DESCRIPTION("Ralink SoC GPIO Driver");
+ MODULE_AUTHOR("Winfred Lu <winfred_lu@ralinktech.com.tw>");
+@@ -809,6 +812,9 @@ int ralink_gpio_ioctl(struct inode *inod
+ 		printk(KERN_ERR NAME ": gpio led support not built\n");
+ #endif
+ 		break;
++	case SLP_SYSWDT_PID_REGISTER:
++		copy_from_user(&syswdt_pid, (pid_t*)arg, sizeof(syswdt_pid));
++		break;
+ 	default:
+ 		return -ENOIOCTLCMD;
+ 	}
+@@ -822,8 +828,6 @@ int ralink_gpio_open(struct inode *inode
+ #else
+ 	try_module_get(THIS_MODULE);
+ #endif
+-    INIT_WORK(&gpio_event_hold, gpio_hold_notify);
+-    INIT_WORK(&gpio_event_click, gpio_click_notify);
+ 	return 0;
+ }
+ 
+@@ -2478,6 +2482,31 @@ void ralink_gpio_led_init_timer(void)
+ }
+ #endif
+ 
++/* reset timer handler, send sig to syswdt and restore factory, add by Wu Yin, 02Nov14 */
++static void reset_timer_func(unsigned long usr)
++{
++	struct task_struct *p = NULL;
++
++	/* don't send any signal if pid is 0 or 1 */
++	if ((int)syswdt_pid < 2)
++	{
++		return;
++	}
++	
++	p = find_task_by_vpid(syswdt_pid);
++
++	if (NULL == p) {
++		printk(KERN_ERR NAME ": no registered process to notify\n");
++		return;
++	}
++
++	/* send sigusr2 to syswdt to make system light always on */
++	send_sig(SIGUSR2, p, 0);
++
++	/* announce daemon to exceute factory restore */
++	schedule_work(&gpio_event_hold);
++}
++
+ int __init ralink_gpio_init(void)
+ {
+ 	unsigned int i;
+@@ -2506,6 +2535,10 @@ int __init ralink_gpio_init(void)
+ 	}
+ #endif
+ 
++	/* put work init process into module_init, in case of duplicate init when chardev opened more than once */
++    INIT_WORK(&gpio_event_hold, gpio_hold_notify);
++    INIT_WORK(&gpio_event_click, gpio_click_notify);
++
+ 	//config these pins to gpio mode
+ 	gpiomode = le32_to_cpu(*(volatile u32 *)(RALINK_REG_GPIOMODE));
+ #if !defined (CONFIG_RALINK_RT2880)
+@@ -2527,6 +2560,10 @@ int __init ralink_gpio_init(void)
+ #ifdef CONFIG_RALINK_GPIO_LED
+ 	ralink_gpio_led_init_timer();
+ #endif
++
++	/* setup slp reset timer */
++	setup_timer(&slp_reset_timer, reset_timer_func, NULL);
++
+ 	printk("Ralink gpio driver initialized\n");
+ 	return 0;
+ }
+@@ -2789,21 +2826,33 @@ irqreturn_t ralink_gpio_irq_handler(int 
+ 			continue;
+ 		ralink_gpio_irqnum = i;
+ 		if (ralink_gpio6332_edge & (1 << (i - 32))) {
+-			if (record[i].rising != 0 && time_before_eq(now,
+-						record[i].rising + 40L)) {
++			if (record[i].falling != 0 && time_before_eq(now, record[i].falling + msecs_to_jiffies(SLP_RESET_BUTTON_DEBOUNCE)))
++			{
++				/* If the interrupt comes in a short period, it might be floating. We ignore it */
+ 			}
+-			else {
++			else
++			{
+ 				record[i].rising = now;
+-				if (time_before(now, record[i].falling + HZ * 5)) {
+-					schedule_work(&gpio_event_click);
+-				}
+-				else {
+-					schedule_work(&gpio_event_hold);
++				if (timer_pending(&slp_reset_timer))
++				{
++					del_timer_sync(&slp_reset_timer);
+ 				}
+ 			}
+ 		}
+-		else {
+-			record[i].falling = now;
++		else
++		{
++			if (record[i].rising != 0 && time_before_eq(now, record[i].rising + msecs_to_jiffies(SLP_RESET_BUTTON_DEBOUNCE)))
++			{
++				/* If the interrupt comes in a short period, it might be floating. We ignore it */
++			}
++			else
++			{
++				record[i].falling = now;
++				if (!timer_pending(&slp_reset_timer))
++				{
++					mod_timer(&slp_reset_timer, jiffies + HZ * 5); 	/* wait 5s to enable reset action */
++				}
++			}
+ 		}
+ 		break;
+ 	}
+diff -uprN a/drivers/char/ralink_gpio.h b/drivers/char/ralink_gpio.h
+--- a/drivers/char/ralink_gpio.h	2019-08-04 13:17:45.674405000 +0800
++++ b/drivers/char/ralink_gpio.h	2019-08-04 13:28:29.911986141 +0800
+@@ -75,6 +75,7 @@
+ #define RALINK_GPIO_DISABLE_INTP	0x09
+ #define RALINK_GPIO_REG_IRQ		0x0A
+ #define RALINK_GPIO_LED_SET		0x41
++#define SLP_SYSWDT_PID_REGISTER 0x82
+ 
+ #if defined (RALINK_GPIO_HAS_2722)
+ 

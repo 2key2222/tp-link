@@ -1,0 +1,25 @@
+--- a/ip/ipnetns.c	2014-06-11 00:39:14.000000000 +0800
++++ b/ip/ipnetns.c	2017-03-29 11:10:39.063134000 +0800
+@@ -43,7 +43,7 @@
+ #endif
+ 
+ #ifndef HAVE_SETNS
+-static int setns(int fd, int nstype)
++static int do_setns(int fd, int nstype)
+ {
+ #ifdef __NR_setns
+ 	return syscall(__NR_setns, fd, nstype);
+@@ -156,8 +156,11 @@
+ 			name, strerror(errno));
+ 		return -1;
+ 	}
+-
+-	if (setns(netns, CLONE_NEWNET) < 0) {
++#ifndef HAVE_SETNS
++	if (do_setns(netns, CLONE_NEWNET) < 0) {
++#else
++	if (setns(netns, CLONE_NEWNET) < 0) {
++#endif
+ 		fprintf(stderr, "seting the network namespace \"%s\" failed: %s\n",
+ 			name, strerror(errno));
+ 		return -1;

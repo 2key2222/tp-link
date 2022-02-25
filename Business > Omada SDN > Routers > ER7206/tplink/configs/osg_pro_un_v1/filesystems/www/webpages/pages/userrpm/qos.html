@@ -1,0 +1,597 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>QOS</title>
+<style type="text/css">
+</style>
+</head>
+<body>
+<div class="func-container">
+    <div id="function_setting">
+        <form id="qos_settings">
+            <input id="qos_enable" name="qos_enable" value=""/>
+            <input id="threshold_enable" name="threshold_enable" value=""/>
+            <input id="qos_threshold" name="qos_threshold" value=""/>
+        </form>
+        <button id="submitBtn" type="button"></button>
+    </div>
+
+    <div id="qos_rule_list">
+        <div id="qos_rule_grid">
+        </div>
+    </div>
+
+    <div id="own_editor">
+        <input id="name" name="name"/>
+        <input id="if_ping" name="if_ping"/>
+        <input id="if_pong" name="if_pong"/>
+        <input id="if_pong_single" name="if_pong_single"/>
+        <input id="ip_group" name="ip_group"/>
+        <input id="rate_max" name="rate_max"/>
+        <input id="rate_max_mate" name="rate_max_mate"/>
+        <input id="mode" name="mode"/>
+        <input id="time" name="time"/>
+        <input id="comment" name="comment"/>
+        <input id="position_number" name="position" />
+        <input id="enable", name="enable"/>
+        <input id="ip_type" name="ip_type"/>
+    </div>
+
+    <div id="qos_help">
+    </div>
+</div>
+
+<script type="text/javascript">
+try{
+    $
+}catch(e){
+    location.href = "/";
+};
+
+$(document).ready(function(e){
+    var bandwidthMin = 100, bandwidthMax = 1000000;
+    var interfaceList = false;
+
+    var URL_QOS_ENABLE = $.su.url('/admin/qos?form=global'),
+        URL_QOS_RULE_LIST = $.su.url("/admin/qos?form=rule");
+
+    var enableProxy = new $.su.Proxy({
+        url: URL_QOS_ENABLE,
+    });
+
+    var ruleListProxy = new $.su.Proxy({
+        url: URL_QOS_RULE_LIST
+    });
+
+    var interfaceItem=[], ipgroupItem=[], tmngtItem=[], maxrules;
+    var isSingleWAN = false;
+
+    $("#function_setting").panel({
+        title: $.su.CHAR.QOS.SETTINGS,
+        collapsible: false
+    });
+
+    $("#qos_enable").checkbox({
+        items: [
+            {boxlabel: $.su.CHAR.QOS.ENABLE_QOS, inputValue: "on", uncheckedValue: "off"}
+        ]
+    }).on("ev_change", function(e, oldValue, newValue){
+        var val = (newValue[0]=="qos_enable" || newValue[0]=="on") ? "on" : "off";
+        switch(val){
+            case "on":
+                $("#threshold_enable").checkbox("enable");
+                $("#qos_threshold").textbox("enable");
+                break;
+            case "off":
+                $("#threshold_enable").checkbox("disable");
+                $("#threshold_enable").checkbox("setValue", "off");
+                $("#qos_threshold").textbox("disable");
+                $("#qos_threshold").textbox("setValue", 0);
+                break;
+        }
+    });
+
+    $("#threshold_enable").checkbox({
+        cls:"inline",
+        items: [
+            {boxlabel: $.su.CHAR.QOS.ENABLE_QOS_THRESHOLD, inputValue:"on", uncheckedValue: "off"}
+        ]
+    });
+
+    $("#qos_threshold").textbox({
+        cls: "inline",
+        inputCls: "xxxs lp",
+        labelCls: "xxxxs",
+        allowBlank: false,
+        maxLength: 3,
+        tips: $.su.CHAR.QOS.QOS_THRESHOLD,
+        validator: function(v){
+            return (new $.su.vtype({vtype: "number", min: 0, max: 100}).validate(v));
+        }
+    });
+
+
+    $("#submitBtn").button({
+        text: $.su.CHAR.OPERATION.SAVE,//"设置",
+        cls: "submit",
+        handler: function(e){
+            if ($("#qos_threshold").textbox("validate") != true){
+                return false;
+            }
+            $.su.loading.show();
+            setting_form.form("submit", function(){
+                $.su.loading.hide();
+            } ,function(){
+                $.su.loading.hide();
+            });
+        }
+    });
+    var setting_form = $("#qos_settings").form({
+        proxy: enableProxy,
+        fields: [
+            {name: "qos_enable", mapping: "qos_enable"},
+            {name: "threshold_enable", mapping: "threshold_enable"},
+            {name: "qos_threshold", mapping: "qos_threshold"}
+        ],
+        submitBtn: "#submitBtn"
+
+        }).on("ev_loadData", function(e, data){
+        if(data){
+		if(data.bandwidth){
+			bandwidthMax = data.bandwidth*1000;
+		}
+        }
+
+    });
+
+    $("#qos_rule_list").panel({
+        title: $.su.CHAR.QOS.RULE_LIST,
+        collapsible: false
+    });
+
+    $("#name").textbox({
+        fieldLabel: $.su.CHAR.QOS.RULE_NAME,
+        allowBlank: false,
+        vtype: "string_visible_allow_blank",
+        vtype: "name"
+    });
+
+    //实例化if_ping为textbox时用变量记住对象的引用
+    var if_ping = $("#if_ping").textbox({
+        fieldLabel: $.su.CHAR.QOS.IFACE_SRC,
+        cls: "inline",
+        value: "LAN"
+    });
+    //仅为了向后台传递固定值“LAN”，并不在页面上显示
+    if_ping.textbox("hide");
+
+    //单WAN口机型
+    var if_pong_single = $("#if_pong_single").textbox({
+        fieldLabel: $.su.CHAR.QOS.FLOW_DIRECTION,
+        readOnly: true,
+        cls: "inline",
+        value: "LAN <--> WAN"
+    });
+    //默认是多WAN口机型，所以隐藏单WAN口实例
+    if_pong_single.textbox("hide");
+
+    //多WAN口机型
+    var if_pong = $("#if_pong").combobox({
+        fieldLabel: $.su.CHAR.QOS.FLOW_DIRECTION,
+        allowBlank: false,
+        vtype: "string_visible_allow_blank",
+        items: [
+            {value: "---", name: "---"}
+        ]
+    });
+
+    $("#ip_group").combobox({
+        fieldLabel: $.su.CHAR.QOS.IP_GROUP,
+        allowBlank: false,
+        vtype: "string_visible_allow_blank",
+        items: [
+            {value: "IPGROUP_ANY", name: "IPGROUP_ANY", selected: true}
+        ]
+    });
+
+    $("#rate_max").textbox({
+        fieldLabel: $.su.CHAR.QOS.RATE,
+        allowBlank: false,
+        value: "1000",
+        vtype: "number",
+        //tips: "Kbps(100-10000000)",
+        validator: function(value){
+            value = parseInt(value, 10);
+            if(value < bandwidthMin || value > bandwidthMax){
+                var str = $.su.CHAR.VTYPETEXT.NUMBER_MIN_MAX.replace("%min", bandwidthMin.toString()).replace("%max", bandwidthMax.toString());
+                return str;
+            }else{
+                return true;
+            }
+        }
+    });
+
+    $("#rate_max_mate").textbox({
+        fieldLabel: $.su.CHAR.QOS.RATE_MATE,
+        allowBlank: false,
+        value: "1000",
+        vtype: "number",
+        //tips: "Kbps(100-10000000)",
+        validator: function(value){
+            value = parseInt(value, 10);
+            if(value < bandwidthMin || value > bandwidthMax){
+                var str = $.su.CHAR.VTYPETEXT.NUMBER_MIN_MAX.replace("%min", bandwidthMin.toString()).replace("%max", bandwidthMax.toString());
+                return str;
+            }else{
+                return true;
+            }
+        }
+    });
+
+    $("#mode").radio({
+        fieldLabel: $.su.CHAR.QOS.MODE,
+        allowBlank: false,
+        columns: 2,
+        vtype: "string_visible_allow_blank",
+        items: [
+            {boxlabel: $.su.CHAR.QOS.MODE_SHARE, name: 'mode', inputValue: 'share', checked: true},
+            {boxlabel: $.su.CHAR.QOS.MODE_PRIV, name: 'mode', inputValue: 'priv'}
+        ]
+    });
+
+    $("#time").combobox({
+        fieldLabel: $.su.CHAR.QOS.TIME_OBJ,
+        allowBlank: true,
+        vtype: "string_visible_allow_blank",
+        //tips: "Any:立即生效；特殊管理请先创建对象-时间管理",
+        tipsCls: "inline-block",
+        items: [
+            {value: "Any", name: "Any", selected: true}
+        ]
+    });
+
+    $("#comment").textbox({
+        fieldLabel: $.su.CHAR.QOS.NOTE,
+        allowBlank: true,
+        vtype: "string_visible_allow_blank",
+        tips: $.su.CHAR.ACCESS_CONTROL.OPTIONAL,
+        maxLength: 50
+    });
+
+    //实例化position为textbox时用变量记住对象的引用
+    var position = $("#position_number").textbox({
+        fieldLabel: $.su.CHAR.ACCESS_CONTROL.POSITION,
+        tips: $.su.CHAR.ACCESS_CONTROL.OPTIONAL,
+        vtype: {
+            vtype: "number",
+            min: 1
+        }
+    });
+
+    $("#enable").checkbox({
+        fieldLabel: $.su.CHAR.QOS.STATUS,
+        cls: "inline",
+        items: [
+            {boxlabel: $.su.CHAR.QOS.ENABLE_THIS_ENTRY, inputValue: 'on', uncheckedValue: 'off', checked: true}
+        ]
+    });
+
+    //实例化#ip_type为textbox时用变量记住对象的引用
+    var ip_type = $("#ip_type").textbox({
+        fieldLabel: $.su.CHAR.QOS.IP_TYPE,
+        cls: "inline",
+        value: "src"
+    });
+    //仅为了向后台传递固定值“src”，并不在页面上显示
+    ip_type.textbox("getContainer").addClass("hidden");
+
+    //发送form请求,获取系统的interface列表, 用于显示源接口和目的接口下拉框
+    var interfaceProxy = new $.su.Proxy({
+        url: $.su.url('/admin/interface?form=status'),
+        async: false
+    });
+    interfaceProxy.read({}, function(data){
+        var i;
+        interfaceList = data;
+        for (i=0; i<data.normal.length; i++){
+            if ($.su.func.isLan(data.normal[i].t_name)){
+                continue;
+            }
+            if (data.normal[i].t_name == "WAN"){
+                isSingleWAN = true;
+            }
+            interfaceItem.push({name: "LAN <--> " + data.normal[i].t_label,value: data.normal[i].t_name});
+        }
+        for (i=0; i<data.vpn.length; i++){
+            interfaceItem.push({name: "LAN <--> " + data.vpn[i].t_label,value: data.vpn[i].t_name});
+        }
+        //添加WAN_ALL的数据流向选项
+        if (!isSingleWAN) {
+            interfaceItem.push({name: "LAN <--> WAN_ALL", value: "WAN_ALL"});
+        } else {
+            //目前单WAN口机型数据流向这项在页面不显示
+            //if_pong_single.textbox("show");
+            if_pong.combobox("hide");
+        }
+    });
+
+    //发送form请求,获取ip地址组对象，提供给规则ip_group下拉框*/
+    var ipgroupProxy = new $.su.Proxy({
+        url: $.su.url('/admin/ipgroup?form=ipgroup_list'),
+        async: false
+    });
+    ipgroupProxy.read({}, function(data){
+        var flag=0;
+        for (i=0; i<data.length; i++){
+            ipgroupItem.push({name: data[i].name,value: data[i].name});
+        }
+    });
+
+    //发送form请求,获取时间对象列表
+    var tmngtProxy = new $.su.Proxy({
+        url: $.su.url('/admin/time_mngt?form=timeobj_list'),
+        async: false
+    });
+    tmngtProxy.read({}, function(data){
+        for (i=0; i<data.length; i++){
+            tmngtItem.push({name: data[i].entry_name, value: data[i].entry_name});
+        }
+    });
+
+    if (interfaceItem.length != 0){
+        $("#if_pong").combobox('loadData', interfaceItem);
+    }
+    if (ipgroupItem.length != 0){
+        $("#ip_group").combobox("loadData", ipgroupItem);
+    }
+    if (tmngtItem.length != 0){
+        $("#time").combobox("loadData", tmngtItem);
+    }
+
+    var qosStore = new $.su.Store({
+        proxy: ruleListProxy,
+        fields: [
+            {name: "name", mapping: "name"},
+            {name: "if_ping", mapping: "if_ping"},
+            {name: "if_pong", mapping: "if_pong"},
+            {name: "ip_group", mapping: "ip_group"},
+            {name: "rate_max", mapping: "rate_max"},
+            {name: "rate_max_mate", mapping: "rate_max_mate"},
+            {name: "mode", mapping: "mode"},
+            {name: "time", mapping: "time"},
+            {name: "comment", mapping: "comment"},
+            {name: "position", mapping: "position"},
+            {name: "enable", mapping: "enable"},
+            {name: "ip_type", mapping: "ip_type"},
+            {name: "t_ping_label", mapping: "t_ping_label"},
+            {name: "t_pong_label", mapping: "t_pong_label"}
+        ],
+        autoLoad: true
+    });
+
+    var qosruleGrid = $("#qos_rule_grid").grid({
+        store: qosStore,
+        paging:[],
+        editor: {
+            content:"#own_editor",
+            fields: [
+                {name: "name", mapping: "name"},
+                {name: "if_ping", mapping: "if_ping"},
+                {name: "if_pong", mapping: "if_pong"},
+                {name: "ip_group", mapping: "ip_group"},
+                {name: "rate_max", mapping: "rate_max"},
+                {name: "rate_max_mate", mapping: "rate_max_mate"},
+                {name: "mode", mapping: "mode"},
+                {name: "time", mapping: "time"},
+                {name: "comment", mapping: "comment"},
+                {name: "position", mapping: "position"},
+                {name: "enable", mapping: "enable"},
+                {name: "ip_type", mapping: "ip_type"}
+            ],
+            validator:function(){
+                var editor  = $(qosruleGrid.grid("getEditor"));
+                var nameList = qosruleGrid.grid('getStore').data;
+                var ruleName = editor.find(".text-text[name=name]").textbox("getValue");
+                var editingId = editor.editor("getEditingId");
+                var rulePosition = $("#position_number").textbox('getValue');
+                var ruleRateMax = editor.find(".text-text[name=rate_max]").textbox("getValue");
+                var ruleRateMaxMate = editor.find(".text-text[name=rate_max_mate]").textbox("getValue");
+                var ruleMode = editor.find(".radio-value[name=mode]").radio("getValue");
+                var ruleDstIface = editor.find('.combobox-value[name=if_pong]').combobox("getValue");
+                var ruleIpGroup = editor.find('.combobox-value[name=ip_group]').combobox("getValue");
+                var ruleTime = editor.find('.combobox-value[name=time]').combobox("getValue");
+
+                var modify_flag = 0;
+                if (interfaceList) {
+                    for (var i=0; i<interfaceList.normal.length; i++){
+                        if (interfaceList.normal[i].t_name == ruleName){
+                            editor.form('setError', $.su.CHAR.QOS.ERR6); //"    规则名与接口名重复！");
+                            return false;
+                        }
+                    }
+                    for (var i=0; i<interfaceList.vpn.length; i++){
+                        if (interfaceList.vpn[i].t_name == ruleName){
+                            editor.form('setError', $.su.CHAR.QOS.ERR6); //"    规则名与接口名重复！");
+                            return false;
+                        }
+                    }
+                }
+
+                for(var i=0; i<nameList.length; i++){
+                    if(editingId == nameList[i].key){
+                        modify_flag = 1;
+                        continue;
+                    }
+                    else if(nameList[i].name == ruleName){
+                        editor.form('setError', $.su.CHAR.QOS.ERR1);//"    规则名已存在！");
+                        return false;
+                    }
+                    //检查是否存在相同配置的规则
+                    if(nameList[i].rate_max == ruleRateMax &&
+                            nameList[i].rate_max_mate == ruleRateMaxMate &&
+                            nameList[i].mode == ruleMode &&
+                            nameList[i].ip_group == ruleIpGroup[0] &&
+                            nameList[i].time == ruleTime[0]){
+                        var sameDstFlag = 1;
+                        if(nameList[i].if_pong instanceof Array &&
+                            nameList[i].if_pong.length == ruleDstIface.length){
+                            for (var j=0; j<ruleDstIface.length; j++){
+                                if(nameList[i].if_pong[j] != ruleDstIface[j]){
+                                    sameDstFlag = 0;
+                                    break;
+                                }
+                            }
+                        }
+                        else if(ruleDstIface.length == 1){
+                            if(nameList[i].if_pong != ruleDstIface[0]){
+                                sameDstFlag = 0;
+                            }
+                        }
+                        else {
+                            sameDstFlag = 0;
+                        }
+
+                        if(sameDstFlag){
+                            editor.form('setError', $.su.CHAR.QOS.ERR2);//"    相同配置已存在！");
+                            return false;
+                        }
+                    }
+                }
+                //检查规则插入位置
+                if(rulePosition!=""){
+                    rulePosition = parseInt(rulePosition);
+                    if(rulePosition<1 || rulePosition>maxrules){
+                        editor.form('setError',$.su.CHAR.QOS.ERR3);//"   添加到指定位置超过允许范围");
+                        return false;
+                    }
+                    if(modify_flag){
+                        if(rulePosition > nameList.length){
+                            editor.form('setError',$.su.CHAR.QOS.ERR4);//"   添加到指定位置超过当前条目数");
+                            return false;
+                        }
+                    }
+                    if(rulePosition > nameList.length+1){
+                        editor.form('setError',$.su.CHAR.QOS.ERR5);//"   添加到指定位置超出范围");
+                        return false;
+                    }
+                    if(rulePosition == nameList.length+1){
+                        $("#position_number").textbox('setValue', "");
+                    }
+                }
+                return true;
+            }
+        },
+        columns: [
+            {
+                xtype: "checkcolumn",
+            },
+            {
+                xtype: "rownumberer",
+            },
+            {
+                text: $.su.CHAR.QOS.RULE_NAME,
+                width: 80,
+                dataIndex: "name"
+            },
+            {
+                text: $.su.CHAR.QOS.FLOW_DIRECTION,
+                width: 100,
+                dataIndex: "if_pong",
+                renderer: function(v, index, data){
+                    if(v){
+                        return "LAN<-->" + data.t_pong_label;
+                    }
+                }
+            },
+            {
+                text: $.su.CHAR.QOS.IP_GROUP,
+                width: 100,
+                dataIndex: "ip_group",
+                hidden: false
+            },
+            {
+                text: $.su.CHAR.QOS.RATE,
+                width: 80,
+                dataIndex: "rate_max"
+            },
+            {
+                text: $.su.CHAR.QOS.RATE_MATE,
+                width: 80,
+                dataIndex: "rate_max_mate"
+            },
+            {
+                text: $.su.CHAR.QOS.MODE,
+                width: 80,
+                dataIndex: "mode",
+                hidden: false,
+                renderer: function(v){
+                    if(v == "share"){
+                        return $.su.CHAR.QOS.MODE_SHARE;
+                    } else{
+                        return $.su.CHAR.QOS.MODE_PRIV;
+                    }
+                }
+            },
+            {
+                text: $.su.CHAR.QOS.TIME_OBJ,
+                width: 80,
+                dataIndex: "time",
+                hidden: false
+            },
+            {
+                text: $.su.CHAR.QOS.NOTE,
+                dataIndex: "comment",
+                xtype: "comment",
+                hidden: true
+            },
+            {
+                text: $.su.CHAR.QOS.STATUS,
+                width: 90,
+                xtype: "statuscolumn",
+                dataIndex: "enable",
+                hidden: false
+            },
+            {
+                xtype: "settings",
+                width: 70
+            }
+        ],
+        operation: 'prompt|add|delete'
+    }).on("ev_load", function(e, data, others){
+        //通过json里的others参数传递动态阀值
+        //用来传递模块规则总规格限制
+        if(others){
+            maxrules = others.max_rules;
+        }
+    // }).on("ev_insert",function(){
+    //     qosruleGrid.grid("getStore").load();
+    // }).on("ev_remove", function(){
+    //     qosruleGrid.grid("getStore").load();
+    // }).on("ev_update", function(){
+    //     qosruleGrid.grid("getStore").load();
+    });
+
+    var helpqos = new $.su.Help({
+        container: "div#qos_help",
+        content: ["QOS_SETTING", "QOS_LIST"]
+    });
+
+    //新增规则时检查是否单WAN口机型并作相应显示上的处理
+    var qosEditor = qosruleGrid.grid('getEditor');
+    $(qosEditor).on("ev_startEdit", function(e, editingIndex, editingId){
+	var bandwidth_tips = 'Kbps(100-' + bandwidthMax + ')';
+	$("#rate_max").textbox("setTips", bandwidth_tips);
+	$("#rate_max_mate").textbox("setTips", bandwidth_tips);
+
+        if (editingIndex == "add"){
+            if (isSingleWAN) {
+                if_pong.combobox("setValue", "WAN");
+            }
+        }
+    });
+});
+</script>
+
+</body>
+</html>

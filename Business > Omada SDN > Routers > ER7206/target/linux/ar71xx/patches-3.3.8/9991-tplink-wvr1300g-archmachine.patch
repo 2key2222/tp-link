@@ -1,0 +1,113 @@
+--- a/arch.bak/mips/ath79/Kconfig	2015-12-01 14:44:40.023307000 +0800
++++ b/arch/mips/ath79/Kconfig	2015-12-01 15:06:13.487390000 +0800
+@@ -727,6 +727,17 @@
+         select ATH79_DEV_M25P80
+         select ATH79_DEV_USB
+         select ATH79_DEV_WMAC
++        
++config ATH79_MACH_TL_WVR1300G
++	bool "TP-LINK TL-WVR1300G support"
++	select SOC_QCA956X
++	select ATH79_DEV_GPIO_BUTTONS
++	select ATH79_DEV_LEDS_GPIO
++	select ATH79_DEV_SPI
++	select ATH79_DEV_USB
++	select ATH79_DEV_WMAC
++	select ATH79_DEV_ETH
++	select ATH79_DEV_M25P80
+ 
+ config ATH79_MACH_TL_WR2543N
+ 	bool "TP-LINK TL-WR2543N/ND support"
+--- a/arch.bak/mips/ath79/machtypes.h	2015-12-01 15:16:48.415158000 +0800
++++ b/arch/mips/ath79/machtypes.h	2015-12-01 15:17:40.285204000 +0800
+@@ -130,6 +130,7 @@
+ 	ATH79_MACH_ZCN_1523H_5,		/* Zcomax ZCN-1523H-5-xx */
+ 	ATH79_MACH_TL_WVR300,                 /*############################## 添加WVR300 target profile   20140912  pole.zhou*/
+ 	ATH79_MACH_TL_WVR450G,		/*wvr450g*/
++	ATH79_MACH_TL_WVR1300G,		/*wvr1300g*/
+ };
+ 
+ #endif /* _ATH79_MACHTYPE_H */
+--- a/arch/mips/ath79/Makefile	2015-11-30 15:55:02.312412400 +0800
++++ b/arch/mips/ath79/Makefile	2015-12-01 15:06:39.772333000 +0800
+@@ -105,6 +105,7 @@
+ obj-$(CONFIG_ATH79_MACH_TL_WR941ND)	+= mach-tl-wr941nd.o
+ obj-$(CONFIG_ATH79_MACH_TL_WR1041N_V2)	+= mach-tl-wr1041n-v2.o
+ obj-$(CONFIG_ATH79_MACH_TL_WVR450G)     += mach-tl-wvr450g.o
++obj-$(CONFIG_ATH79_MACH_TL_WVR1300G)     += mach-tl-wvr1300g.o
+ obj-$(CONFIG_ATH79_MACH_TL_WR1043ND)	+= mach-tl-wr1043nd.o
+ obj-$(CONFIG_ATH79_MACH_TL_WR2543N)	+= mach-tl-wr2543n.o
+ obj-$(CONFIG_ATH79_MACH_TL_WR703N)	+= mach-tl-wr703n.o
+--- a/arch/mips/kernel/setup.c	2015-11-30 15:55:02.312412400 +0800
++++ b/arch/mips/kernel/setup.c	2015-12-01 15:06:39.772333000 +0800
+@@ -539,6 +539,11 @@
+ 
+ 	pr_info("@@----debug cmdline=[ %s ]\n", command_line);
+ #endif
++#ifdef CONFIG_ATH79_MACH_TL_WVR1300G
++	strlcpy(command_line, " board=TL-WVR1300G console=ttyS0,115200 root=31:02 init=/sbin/init mtdparts=spi0.0:256k(u-boot)ro,3072k(kernel),12288k(rootfs)", COMMAND_LINE_SIZE);
++
++	pr_info("@@----debug cmdline=[ %s ]\n", command_line);
++#endif
+ 	*cmdline_p = command_line;
+ 
+ 	parse_early_param();
+--- a/drivers/usb/core/hub.c	星期六 十二月 12 18:09:31 2015
++++ b/drivers/usb/core/hub.c	星期六 十二月 12 18:58:50 2015
+@@ -38,6 +38,18 @@
+ #endif
+ #endif
+ 
++#if defined(CONFIG_ATH79_MACH_TL_WVR1300G)
++extern void gpio_set_value(unsigned gpio, int value);
++void wvr1300g_usb_led_on(void)
++{
++	gpio_set_value(19,0);
++}
++void wvr1300g_usb_led_off(void)
++{
++	gpio_set_value(19,1);
++}
++#endif
++
+ struct usb_hub {
+ 	struct device		*intfdev;	/* the "interface" device */
+ 	struct usb_device	*hdev;
+@@ -1652,7 +1664,9 @@
+ 	usb_set_device_state(udev, USB_STATE_NOTATTACHED);
+ 	dev_info(&udev->dev, "USB disconnect, device number %d\n",
+ 			udev->devnum);
+-
++#if defined(CONFIG_ATH79_MACH_TL_WVR1300G)
++	wvr1300g_usb_led_off();
++#endif
+ 	usb_lock_device(udev);
+ 
+ 	/* Free up all the children before we remove this device */
+@@ -3015,6 +3029,10 @@
+ 			retval = hub_port_reset(hub, port1, udev, delay, false);
+ 			if (retval < 0)		/* error or disconnect */
+ 				goto fail;
++#if defined(CONFIG_ATH79_MACH_TL_WVR1300G)
++			if(!(udev->bus->controller->driver->mod_name))
++				wvr1300g_usb_led_on();
++#endif
+ 			if (oldspeed != udev->speed) {
+ 				dev_dbg(&udev->dev,
+ 					"device reset changed speed!\n");
+--- a/arch/mips/ath79/dev-wmac.c	星期五 十二月  4 17:23:26 2015
++++ b/arch/mips/ath79/dev-wmac.c	星期日 十二月 13 17:40:16 2015
+@@ -361,9 +361,12 @@
+ 	else
+ 		BUG();
+ 
+-	if (cal_data)
++	if (cal_data){
+ 		memcpy(ath79_wmac_data.eeprom_data, cal_data,
+ 		       sizeof(ath79_wmac_data.eeprom_data));
++		memcpy(ath79_wmac_data.eeprom_data5g, cal_data+0x4000,
++		       sizeof(ath79_wmac_data.eeprom_data5g));
++	}
+ 
+ 	if (mac_addr) {
+ 		/* wifi dev mac valid check

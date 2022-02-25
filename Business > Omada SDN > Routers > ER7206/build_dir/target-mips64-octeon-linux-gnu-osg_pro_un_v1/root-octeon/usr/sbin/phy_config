@@ -1,0 +1,81 @@
+#!/bin/sh
+
+PCS_MR_STATUS_BASE_REG=0x11800B0001008
+PCS_MR_STATUS_INTERFACE_OFFSET=0x8000000
+PCS_MR_STATUS_PORT_OFFSET=0x400
+PCS_MR_STATUS_LINK_MASK=0x4
+GMX_RX_STATS_PKTS_BASE_REG=0x1180008000080
+GMX_RX_STATS_PKTS_INTERFACE_OFFSET=0x8000000
+GMX_RX_STATS_PKTS_PORT_OFFSET=0x800
+GMX_RX_STATS_OCTS_BASE_REG=0x1180008000088
+GMX_RX_STATS_OCTS_INTERFACE_OFFSET=0x8000000
+GMX_RX_STATS_OCTS_PORT_OFFSET=0x800
+GMX_TX_STATS_PKTS_BASE_REG=0x1180008000298
+GMX_TX_STATS_PKTS_INTERFACE_OFFSET=0x8000000
+GMX_TX_STATS_PKTS_PORT_OFFSET=0x800
+GMX_TX_STATS_OCTS_BASE_REG=0x1180008000290
+GMX_TX_STATS_OCTS_INTERFACE_OFFSET=0x8000000
+GMX_TX_STATS_OCTS_PORT_OFFSET=0x800
+
+subcmd="$1"
+phyport="$2"
+phyname="$3"
+
+case "$subcmd" in
+	"getState")
+		interface=$(uci get profile.@"${phyname}"[0].reg_interface -c /etc/profile.d 2>/dev/null)
+		port=$(uci get profile.@"${phyname}"[0].reg_port -c /etc/profile.d 2>/dev/null)
+		[ -z "$interface" ] && interface=0
+		[ -z "$port" ] && port=0
+		regaddr=$((${PCS_MR_STATUS_BASE_REG} + interface * ${PCS_MR_STATUS_INTERFACE_OFFSET} + port * ${PCS_MR_STATUS_PORT_OFFSET}))
+		regval=$(oct-linux-memory $regaddr | awk '{print $4}')
+
+		if [ $(($regval & $PCS_MR_STATUS_LINK_MASK)) = $(($PCS_MR_STATUS_LINK_MASK)) ];
+		then
+			port_state="connected"
+			port_speed="1000M"
+			port_dup_mode="Full"
+			port_flowcontrol="off"
+		else
+			port_state="disconnected"
+			port_speed="---"
+			port_dup_mode="---"
+			port_flowcontrol="---"
+		fi
+
+		echo "Port $phyport:"
+		echo "   state       : $port_state "
+		echo "   speed       : $port_speed "
+		echo "   dup_mode    : $port_dup_mode "    
+		echo "   flowcontrol : $port_flowcontrol "
+		echo "" 
+	;;
+
+	"setState")
+
+	;;
+	"statistics")
+		interface=$(uci get profile.@"${phyname}"[0].reg_interface -c /etc/profile.d 2>/dev/null)
+		port=$(uci get profile.@"${phyname}"[0].reg_port -c /etc/profile.d 2>/dev/null)
+		[ -z "$interface" ] && interface=0
+		[ -z "$port" ] && port=0
+		regaddr=$((${GMX_RX_STATS_OCTS_BASE_REG} + interface * ${GMX_RX_STATS_OCTS_INTERFACE_OFFSET} + port * ${GMX_RX_STATS_OCTS_PORT_OFFSET}))
+		regval=$(oct-linux-memory $regaddr | awk '{print $4}')	
+		echo "RxAll:"$(($regval))
+		regaddr=$((${GMX_TX_STATS_OCTS_BASE_REG} + interface * ${GMX_TX_STATS_OCTS_INTERFACE_OFFSET} + port * ${GMX_TX_STATS_OCTS_PORT_OFFSET}))
+		regval=$(oct-linux-memory $regaddr | awk '{print $4}')
+		echo "TxAll:"$(($regval))
+		regaddr=$((${GMX_RX_STATS_PKTS_BASE_REG} + interface * ${GMX_RX_STATS_PKTS_INTERFACE_OFFSET} + port * ${GMX_RX_STATS_PKTS_PORT_OFFSET}))
+		regval=$(oct-linux-memory $regaddr | awk '{print $4}')
+		echo "RxNormal:"$(($regval))
+		regaddr=$((${GMX_TX_STATS_PKTS_BASE_REG} + interface * ${GMX_TX_STATS_PKTS_INTERFACE_OFFSET} + port * ${GMX_TX_STATS_PKTS_PORT_OFFSET}))
+		regval=$(oct-linux-memory $regaddr | awk '{print $4}')
+		echo "TxNormal:"$(($regval))
+	;;
+	"init")	
+		interface=$(uci get profile.@"${phyname}"[0].reg_interface -c /etc/profile.d 2>/dev/null)
+		port=$(uci get profile.@"${phyname}"[0].reg_port -c /etc/profile.d 2>/dev/null)
+		[ -z "$interface" ] && interface=0
+		[ -z "$port" ] && port=0
+	;;
+esac

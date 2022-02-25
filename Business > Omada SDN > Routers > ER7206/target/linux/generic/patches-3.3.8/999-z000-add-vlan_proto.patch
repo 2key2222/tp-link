@@ -1,0 +1,29 @@
+--- a/include/linux/skbuff.h	2017-03-31 19:58:30.066198751 +0800
++++ b/include/linux/skbuff.h	2017-03-31 19:59:22.936198226 +0800
+@@ -369,6 +369,7 @@
+  *	@secmark: security marking
+  *	@mark: Generic packet mark
+  *	@dropcount: total number of sk_receive_queue overflows
++ *	@vlan_proto: vlan encapsulation protocol
+  *	@vlan_tci: vlan tag control information
+  *	@transport_header: Transport layer header
+  *	@network_header: Network layer header
+@@ -485,6 +486,7 @@
+ 		__u32		avail_size;
+ 	};
+ 
++	__be16			vlan_proto;
+ 	__u16			vlan_tci;
+ 
+ #ifdef CONFIG_NF_CONNTRACK_EXTMARK
+--- a/net/core/skbuff.c	2017-04-01 19:51:41.018198209 +0800
++++ b/net/core/skbuff.c	2017-04-06 16:55:57.010197623 +0800
+@@ -950,6 +950,8 @@
+ 	new->tc_verd		= old->tc_verd;
+ #endif
+ #endif
++
++	new->vlan_proto		= old->vlan_proto;
+ 	new->vlan_tci		= old->vlan_tci;
+ 
+ 	skb_copy_secmark(new, old);

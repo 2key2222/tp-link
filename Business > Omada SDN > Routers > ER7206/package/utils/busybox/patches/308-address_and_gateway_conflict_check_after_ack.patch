@@ -1,0 +1,54 @@
+--- a/networking/udhcp/dhcpc.c	2020-02-28 18:34:05.106419663 +0800
++++ b/networking/udhcp/dhcpc.c	2020-02-28 18:40:43.374597951 +0800
+@@ -2072,6 +2072,51 @@
+ 					if (lease_seconds >= 0x10000000)
+ 						lease_seconds = 0x0fffffff;
+ 				}
++				requested_ip = packet.yiaddr;
++				requested_mask = 0xFFFFFF00; requested_gw = 0;
++				fill_envp(&packet);
++				{
++					struct in_addr requested_tmp;
++					char *tmp = getenv("subnet");
++
++					if (tmp) {
++						inet_pton(AF_INET, tmp, &requested_tmp);
++						requested_mask = requested_tmp.s_addr;
++					}
++					tmp = getenv("router");
++
++					if (tmp) {
++						inet_pton(AF_INET, tmp, &requested_tmp);
++						requested_gw = requested_tmp.s_addr;
++					}
++				}
++				if ((check_ip_available_v2(ntohl(requested_ip), ntohl(requested_mask)) != 0) || (requested_gw && (check_ip_available_v2(ntohl(requested_gw), ntohl(requested_mask)) != 0))) {
++					send_decline(/*xid,*/ server_addr, packet.yiaddr);
++					if (state != REQUESTING)
++						udhcp_run_script(NULL, "deconfig");
++
++					change_listen_mode(LISTEN_RAW);
++					state = INIT_SELECTING;
++					client_config.first_secs = 0; /* make secs field count from 0 */
++					requested_ip = 0;
++					timeout = tryagain_timeout;
++					packet_num = 0;
++					already_waited_sec = 0;
++					{
++						char *tmp = getenv("router");
++						if (tmp) {
++							strncpy(router_x, tmp, 31);
++						}
++						tmp = getenv("subnet");
++						if (tmp) {
++							strncpy(subnet_x, tmp, 31);
++						}
++					}
++					DHCP_CLIENT_LOGGER_REG(DHCP_CLIENT_SET_FAIL,LOGGER_PARAM_STRING,zone_namex/*client_config.interface*/,LOGGER_PARAM_IPV4,ntohl(requested_ip), LOGGER_PARAM_STRING, subnet_x, LOGGER_PARAM_STRING, router_x);
++					sleep(5);
++					continue;
++				}
++
+ #if ENABLE_FEATURE_UDHCPC_ARPING
+ 				if (opt & OPT_a) {
+ /* RFC 2131 3.1 paragraph 5:

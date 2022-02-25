@@ -1,0 +1,105 @@
+#!/bin/sh
+
+. /lib/switch/switch_functions
+
+# get port state
+# $1: portid
+get_port_state()
+{
+	local val=0
+	local portbit=0;
+	local bit=0
+
+	local port_state=0
+	local port_speed=0
+	local port_dup_mode=0
+	local port_flowcontrol="off"
+	
+	portbit=`expr $1 + 24`
+
+	val=`swconfig_reg_read 0x80`
+	bit=`get_bit_value $val $portbit`
+
+	if [ $bit -eq 1 ]; then
+		port_state="connected"
+
+		#get speed
+		portbit=`expr $1 - 1`
+		local speed=`get_bit_value $val $portbit`
+		if [ $speed -eq 1 ]; then
+			port_speed="100M"
+		else
+			port_speed="10M"
+		fi
+
+		# get duplex mode
+		portbit=`expr $1 + 8`
+		local duplex=`get_bit_value $val $portbit`
+		if [ $duplex -eq 1 ]; then
+			port_dup_mode="Full"
+		else
+			port_dup_mode="Half"
+		fi
+
+		portbit=`expr $1 + 15`
+		local flowcontrol=`get_bit_value $val $portbit`
+		if [ $flowcontrol -eq 1 ]; then
+			port_flowcontrol="on"
+		else
+			port_flowcontrol="off"
+		fi
+
+		#get flowcontrol
+		val=`swconfig_phy_reg_read $(($1-1)) $PHY_AN_ADVERTISEMENT_REG`
+		bit=`get_bit_value $val 10`
+		if [ $bit -eq 1 ]; then
+			port_flowcontrol="on"
+		else
+			port_flowcontrol="off"
+		fi
+
+	else
+		port_state="disconnected"
+
+		port_speed="---"
+		port_dup_mode="---"
+		port_flowcontrol="---"
+	fi	
+
+	echo "Port $port:"
+	echo "   state       : $port_state "
+	echo "   speed       : $port_speed "
+	echo "   dup_mode    : $port_dup_mode "
+	echo "   flowcontrol : $port_flowcontrol "
+	echo ""
+}
+
+
+stata_arg_check()
+{
+	local portsid=$1
+
+	for i in $portsid; do
+		if [ `expr match $i "[0-9]"` = 0 ] || [ $i -lt 1 ] || [ $i -gt $MAX_PORT_NUM ] ;then
+		echo "[state] port is invalid. "
+		exit 0
+		fi
+	done
+}
+# mt7628 switch get port state
+# $1: op (get)
+# $2: portsid (1.2.3.4.5...)
+mt7628_switch_port_state()
+{
+	local op=$1
+	local portsid=$2
+
+	if [ $op = "get" ]; then	
+		stata_arg_check "$portsid"
+		for i in $portsid; do			
+			get_port_state $i
+		done
+	else
+		echo "[state] error op. (get)"
+	fi
+}

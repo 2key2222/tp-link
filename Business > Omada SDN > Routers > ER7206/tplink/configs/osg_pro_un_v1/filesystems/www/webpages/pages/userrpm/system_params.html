@@ -1,0 +1,101 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>BALANCE_BASIC</title>
+<style type="text/css">
+</style>
+</head>
+
+<body>
+<div class="func-container">
+    <div id="metric-setting-panel">
+        <form id="metric-settings">
+            <input id="metric-static" name="static" value=""/>
+            <input id="metric-dhcp" name="dhcp" value=""/>
+            <input id="metric-pppoe" name="pppoe" value=""/>
+            <input id="metric-l2tp" name="l2tp" value=""/>
+            <input id="metric-pptp" name="pptp" value=""/>
+        </form>
+    </div>
+    
+    <div id="system_params_help">    
+    </div>
+
+<script type="text/javascript">
+try{
+    $
+}catch(e){
+    location.href = "/";
+};
+
+
+$(document).ready(function(e){
+    var METRIC_URL = $.su.url("/admin/metric?form=metric_setting");
+
+    $("#metric-setting-panel").panel({
+        title: "metric设置",
+        collapsible: false
+    });
+
+    $("#metric-static").textbox({
+        fieldLabel: "静态IP接口",
+        allowBlank: false,
+        tips: "（0-15）",
+        validator: function(v){
+            return (new $.su.vtype({vtype: "number", min: 0, max: 15}).validate(v));
+        }
+    });
+    $("#metric-dhcp").textbox({
+        fieldLabel: "DHCP接口",
+        allowBlank: false,
+        tips: "（0-15）",
+        validator: function(v){
+            return (new $.su.vtype({vtype: "number", min: 0, max: 15}).validate(v));
+        }
+    });
+    $("#metric-pppoe").textbox({
+        fieldLabel: "PPPOE接口",
+        allowBlank: false,
+        tips: "（0-15）",
+        validator: function(v){
+            return (new $.su.vtype({vtype: "number", min: 0, max: 15}).validate(v));
+        }
+    });
+    $("#metric-l2tp").textbox({
+        fieldLabel: "L2TP接口",
+        allowBlank: false,
+        tips: "（0-15）",
+        validator: function(v){
+            return (new $.su.vtype({vtype: "number", min: 0, max: 15}).validate(v));
+        }
+    });
+    $("#metric-pptp").textbox({
+        fieldLabel: "PPTP接口",
+        allowBlank: false,
+        tips: "（0-15）",
+        validator: function(v){
+            return (new $.su.vtype({vtype: "number", min: 0, max: 15}).validate(v));
+        }
+    });
+
+    $("#metric-settings").form({
+        proxy: new $.su.Proxy({
+            url: METRIC_URL
+        }),
+        fields: [
+            {name: "static", mapping: "static"},
+            {name: "dhcp", mapping: "dhcp"},
+            {name: "pppoe", mapping: "pppoe"},
+            {name: "l2tp", mapping: "l2tp"},
+            {name: "pptp", mapping: "pptp"}
+        ],
+        submitBtn: "default"
+    });
+    
+
+});
+</script>
+</body>
+
+</html>

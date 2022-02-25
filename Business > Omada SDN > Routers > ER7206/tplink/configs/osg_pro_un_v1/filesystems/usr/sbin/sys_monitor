@@ -1,0 +1,64 @@
+#!/bin/sh 
+# Copyright(c) 2011-2015 Shenzhen TP-LINK Technologies Co.Ltd.
+# file     sys_monito.sh
+# brief    
+# author   QianXujun
+# version  1.0.0
+# date     03Jan16
+# histry   arg 1.0.0, 03Jan16, Qian Xujun, Create the file.
+
+CONFIG_FILE="/etc/sys_monitor.conf"
+CHECK_UPDATE=30
+INIT_DELAY=300
+
+sleep $INIT_DELAY
+while [ 1 ]
+    do
+        index=0
+        lines=`awk -F"#" 'BEGIN{ORS=""}{print $1 "#" $2 "#"}' $CONFIG_FILE`           
+        OLD_IFS="$IFS"
+        IFS="#"            
+        index=0
+        match=0          
+        prev_ele=""
+        for ele in $lines             
+        do                            
+                turn=`expr $index % 2`    
+                if [ "0" == "$turn" ];then 
+                        prev_ele=$ele              
+                        procID=`pgrep $ele`        
+                        if [ "" == "$procID" ];then
+                            echo "Detect $prev_ele is missing 1 times..." > /dev/console
+                            for count in 2 3
+                            do  
+                                sleep $CHECK_UPDATE
+                                procID=`pgrep $ele`
+                                if [ "" != "$procID" ];then
+                                    match=0
+                                    break 
+                                else
+                                    echo "Detect $prev_ele is missing $count times..." > /dev/console
+                                    match=1
+                                fi
+                            done                                    
+                        fi                         
+                else                                          
+                        if [ "1" == "$match" ];then           
+                                if [ "Reboot" == "$ele" ];then
+                                        echo "Detect $prev_ele is missing...Reboot now..." > /dev/console
+                                        reboot
+                                        match=0
+                                else
+                                        echo "Detect $prev_ele is missing...Do {$ele}..." > /dev/console
+                                        eval $ele
+                                        match=0
+                                fi
+                        fi  
+                            
+                fi          
+                let index+=1
+        done        
+        IFS=$OLD_IFS
+    sleep $CHECK_UPDATE
+done
+

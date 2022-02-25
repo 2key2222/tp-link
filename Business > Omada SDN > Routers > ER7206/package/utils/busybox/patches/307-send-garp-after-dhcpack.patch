@@ -1,0 +1,11 @@
+--- a/networking/udhcp/dhcpc.c	2019-11-15 16:52:52.616189411 +0800
++++ b/networking/udhcp/dhcpc.c	2019-12-13 08:04:18.463183501 +0800
+@@ -2091,7 +2091,7 @@
+  * the configuration process..." */
+ 					if (!arpping(packet.yiaddr,
+ 							NULL,
+-							(uint32_t) 0,
++							(uint32_t) packet.yiaddr,
+ 							client_config.client_mac,
+ 							client_config.interface)
+ 					) {
