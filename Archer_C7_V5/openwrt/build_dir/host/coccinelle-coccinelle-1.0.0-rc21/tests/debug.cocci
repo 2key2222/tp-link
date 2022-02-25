@@ -1,7 +1,0 @@
-@@
-identifier init;
-@@
-  init(...) {
--   DEBUG(...);
-    ...
-  }

@@ -1,2 +1,0 @@
-int func(int i) { 
-}

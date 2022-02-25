@@ -1,8 +1,0 @@
-@@
-statement S;
-@@
-
- {
- S
- }
-+foo();

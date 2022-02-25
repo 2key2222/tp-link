@@ -1,4 +1,0 @@
-@@
-@@
-
-- #include <linux/config.h>

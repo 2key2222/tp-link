@@ -1,7 +1,0 @@
-@@ @@
--long
-+int
-
-@@ @@
--unsigned
- char

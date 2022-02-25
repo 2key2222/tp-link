@@ -1,5 +1,0 @@
-@@
-@@
-
-- SA_INTERRUPT
-+ foo()

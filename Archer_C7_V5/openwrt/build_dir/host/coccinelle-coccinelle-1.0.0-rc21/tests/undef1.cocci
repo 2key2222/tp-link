@@ -1,5 +1,0 @@
-@@
-identifier x;
-@@
-
-- #undef x

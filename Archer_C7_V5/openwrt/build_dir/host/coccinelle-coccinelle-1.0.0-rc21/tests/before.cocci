@@ -1,6 +1,0 @@
-@@
-statement S;
-@@
-
-+blah();
-S

@@ -1,5 +1,0 @@
-@@
-identifier id;
-@@
-
-- int id;
