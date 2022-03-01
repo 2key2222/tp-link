@@ -1,0 +1,5 @@
+[ "$ACTION" = ifup ] && {
+	which wifi_rtl > /dev/null || {
+		/etc/init.d/dnsmasq enabled && /etc/init.d/dnsmasq restart &
+	}
+}

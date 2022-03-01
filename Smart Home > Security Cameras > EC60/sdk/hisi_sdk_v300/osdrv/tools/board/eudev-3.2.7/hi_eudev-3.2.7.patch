@@ -1,0 +1,59 @@
+diff --git a/src/udev/udev-builtin-input_id.c b/src/udev/udev-builtin-input_id.c
+index 3c769e3..c62949e 100644
+--- a/src/udev/udev-builtin-input_id.c
++++ b/src/udev/udev-builtin-input_id.c
+@@ -34,6 +34,18 @@
+ #include "util.h"
+ #include "missing.h"
+ 
++#ifndef BTN_DPAD_UP
++#define BTN_DPAD_UP 0x220
++#endif
++
++#ifndef BTN_DPAD_RIGHT
++#define BTN_DPAD_RIGHT 0x223
++#endif
++
++#ifndef KEY_ALS_TOGGLE
++#define KEY_ALS_TOGGLE 0x230
++#endif
++
+ /* we must use this kernel-compatible implementation */
+ #define BITS_PER_LONG (sizeof(unsigned long) * 8)
+ #define NBITS(x) ((((x)-1)/BITS_PER_LONG)+1)
+diff --git a/src/udev/udev-node.c b/src/udev/udev-node.c
+index 021051e..3367772 100644
+--- a/src/udev/udev-node.c
++++ b/src/udev/udev-node.c
+@@ -266,7 +266,13 @@ static int node_permissions_apply(struct udev_device *dev, bool apply,
+         if (lstat(devnode, &stats) != 0) {
+                 err = -errno;
+                 log_debug_errno(errno, "can not stat() node '%s' (%m)", devnode);
+-                goto out;
++
++		err = mknod(devnode, mode, devnum);
++		if (err != 0)
++			err = -errno;
++		chmod(devnode, mode);
++		chown(devnode, uid, gid);
++		log_info("mknod %s %u:%u %#o' ok\n",devnode,major(devnum), minor(devnum), mode);
+         }
+ 
+         if (((stats.st_mode & S_IFMT) != (mode & S_IFMT)) || (stats.st_rdev != devnum)) {
+diff --git a/src/udev/udevd.c b/src/udev/udevd.c
+index cf826c6..b1fcc07 100644
+--- a/src/udev/udevd.c
++++ b/src/udev/udevd.c
+@@ -1179,6 +1179,12 @@ int main(int argc, char *argv[]) {
+ 
+         udev_list_init(udev, &properties_list, true);
+ 
++        r = mkdir(UDEV_ROOT_RUN , 0755);
++        if (r < 0 && errno != EEXIST) {
++                r = log_error_errno(errno, "could not create " UDEV_ROOT_RUN ": %m");
++                goto exit;
++        }
++
+         r = mkdir(UDEV_ROOT_RUN "/udev", 0755);
+         if (r < 0 && errno != EEXIST) {
+                 r = log_error_errno(errno, "could not create " UDEV_ROOT_RUN "/udev: %m");

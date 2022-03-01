@@ -1,0 +1,11 @@
+--- a/iwinfo.c	2016-01-13 22:44:34.000000000 +0800
++++ b/iwinfo.c	2016-02-25 11:48:54.941312194 +0800
+@@ -386,7 +386,7 @@
+	char res[IWINFO_BUFSIZE];
+	struct iwinfo_assoclist_entry *a;
+	struct ether_addr *macaddr = NULL;
+-	void *c, *d, *e;
++	void *c = NULL, *d = NULL, *e = NULL;
+	struct blob_attr *tb[__RPC_A_MAX];
+	bool found = false;
+ 

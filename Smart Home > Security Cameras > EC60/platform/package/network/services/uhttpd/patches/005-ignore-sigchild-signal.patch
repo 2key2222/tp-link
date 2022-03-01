@@ -1,0 +1,19 @@
+--- a/lua.c
++++ b/lua.c
+@@ -22,6 +22,8 @@
+ #include <lauxlib.h>
+ #include <lualib.h>
+ #include <stdio.h>
++#include <signal.h>
++#include <sys/wait.h>
+ #include <poll.h>
+ 
+ #include "uhttpd.h"
+@@ -209,6 +210,7 @@ static void lua_main(struct client *cl, 
+ 	int path_len, prefix_len;
+ 	char *str;
+ 	int rem;
+ 
++	signal(SIGCHLD, (__sighandler_t)wait);
+ 	lua_getglobal(L, UH_LUA_CB);
+ 

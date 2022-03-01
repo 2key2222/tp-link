@@ -1,0 +1,32 @@
+menuconfig KERNEL_OPTIONS
+	bool "Kernel Options"  if DEVEL
+
+	config LINUX_KERNEL_PATH
+		string "Linux kernel path" if KERNEL_OPTIONS
+		default ""
+		help
+		  setting the linux kernel path for your tp_platform
+
+	config LINUX_KARCH
+		string "Kernel ARCH" if KERNEL_OPTIONS
+		default "arm"
+		help
+		  setting the kernel arch [arm, mips]
+
+	config LINUX_KERNEL_VERSION
+		string "Linux kernel version" if KERNEL_OPTIONS
+		default "2.6.36"
+		help
+		  VERSION.PATCHLEVEL.SUBLEVEL, like 2.6.36, 3.0.y
+	
+	config TARGET_OPTIMIZATION
+		string "Target Optimizations" if KERNEL_OPTIONS
+		default ""
+		help
+		  Optimizations to use when building for the target host.
+
+	config LINK_OPTIMIZATION
+		string "Link Optimizations" if KERNEL_OPTIONS
+		default ""
+		help
+		  Optimizations to use when linking the target executable prog.

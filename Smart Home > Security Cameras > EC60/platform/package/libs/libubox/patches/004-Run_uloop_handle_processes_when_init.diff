@@ -1,0 +1,12 @@
+diff -purbBN libubox-2016-07-29-origin/uloop.c libubox-2016-07-29/uloop.c
+--- libubox-2016-07-29-origin/uloop.c	2016-07-29 18:01:37.000000000 +0800
++++ libubox-2016-07-29/uloop.c	2019-03-05 11:10:43.002940866 +0800
+@@ -59,7 +59,7 @@ static struct list_head processes = LIST
+ static int poll_fd = -1;
+ bool uloop_cancelled = false;
+ static int uloop_status = 0;
+-static bool do_sigchld = false;
++static bool do_sigchld = true;
+ 
+ static struct uloop_fd_event cur_fds[ULOOP_MAX_EVENTS];
+ static int cur_fd, cur_nfds;

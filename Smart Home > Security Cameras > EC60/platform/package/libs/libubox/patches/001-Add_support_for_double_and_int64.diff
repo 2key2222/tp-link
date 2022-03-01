@@ -1,0 +1,370 @@
+diff -purbBN a/blob.c b/blob.c
+--- a/blob.c	2016-07-29 18:01:37.000000000 +0800
++++ b/blob.c	2017-11-07 10:49:14.830845707 +0800
+@@ -192,6 +192,7 @@ static const int blob_type_minlen[BLOB_A
+ 	[BLOB_ATTR_INT16] = sizeof(uint16_t),
+ 	[BLOB_ATTR_INT32] = sizeof(uint32_t),
+ 	[BLOB_ATTR_INT64] = sizeof(uint64_t),
++	[BLOB_ATTR_DOUBLE] = sizeof(double),
+ };
+ 
+ bool
+diff -purbBN a/blob.h b/blob.h
+--- a/blob.h	2016-07-29 18:01:37.000000000 +0800
++++ b/blob.h	2017-11-07 10:47:49.779783891 +0800
+@@ -39,6 +39,7 @@ enum {
+ 	BLOB_ATTR_INT16,
+ 	BLOB_ATTR_INT32,
+ 	BLOB_ATTR_INT64,
++	BLOB_ATTR_DOUBLE,
+ 	BLOB_ATTR_LAST
+ };
+ 
+diff -purbBN a/blobmsg.c b/blobmsg.c
+--- a/blobmsg.c	2016-07-29 18:01:37.000000000 +0800
++++ b/blobmsg.c	2017-11-07 09:03:51.397672832 +0800
+@@ -20,6 +20,7 @@ static const int blob_type[__BLOBMSG_TYP
+ 	[BLOBMSG_TYPE_INT16] = BLOB_ATTR_INT16,
+ 	[BLOBMSG_TYPE_INT32] = BLOB_ATTR_INT32,
+ 	[BLOBMSG_TYPE_INT64] = BLOB_ATTR_INT64,
++	[BLOBMSG_TYPE_DOUBLE] = BLOB_ATTR_DOUBLE,
+ 	[BLOBMSG_TYPE_STRING] = BLOB_ATTR_STRING,
+ 	[BLOBMSG_TYPE_UNSPEC] = BLOB_ATTR_BINARY,
+ };
+diff -purbBN a/blobmsg_ext.h b/blobmsg_ext.h
+--- a/blobmsg_ext.h	1970-01-01 08:00:00.000000000 +0800
++++ b/blobmsg_ext.h	2017-11-07 09:41:33.206329973 +0800
+@@ -0,0 +1,212 @@
++/*
++ * Copyright (C) 2010-2017 TP-Link Technologies Co., Ltd.
++ *
++ * Permission to use, copy, modify, and/or distribute this software for any
++ * purpose with or without fee is hereby granted, provided that the above
++ * copyright notice and this permission notice appear in all copies.
++ *
++ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
++ * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
++ * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
++ * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
++ * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
++ * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
++ * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
++ */
++#ifndef __BLOBMSG_EXT_H
++#define __BLOBMSG_EXT_H
++
++#define __NARG__(...)  __NARG_I_(__VA_ARGS__,__RSEQ_N())
++#define __2NARG__(...)  __NARG_I_(__VA_ARGS__,__RSEQ_2N())
++#define __NARG_I_(...) __ARG_N(__VA_ARGS__)
++#define __ARG_N( \
++      _1, _2, _3, _4, _5, _6, _7, _8, _9,_10, \
++     _11,_12,_13,_14,_15,_16,_17,_18,_19,_20, \
++     _21,_22,_23,_24,_25,_26,_27,_28,_29,_30, \
++     _31,_32,_33,_34,_35,_36,_37,_38,_39,_40, \
++     _41,_42,_43,_44,_45,_46,_47,_48,_49,_50, \
++     _51,_52,_53,_54,_55,_56,_57,_58,_59,_60, \
++     _61,_62,_63,N,...) N
++#define __RSEQ_N() \
++		 63,62,61,60,					\
++		 59,58,57,56,55,54,53,52,51,50, \
++		 49,48,47,46,45,44,43,42,41,40, \
++		 39,38,37,36,35,34,33,32,31,30, \
++		 29,28,27,26,25,24,23,22,21,20, \
++		 19,18,17,16,15,14,13,12,11,10, \
++		 9,8,7,6,5,4,3,2,1,0
++#define __RSEQ_2N() \
++		 62,62,60,60,					\
++		 58,58,56,56,54,54,52,52,50,50, \
++		 48,48,46,46,44,44,42,42,40,40, \
++		 38,38,36,36,34,34,32,32,30,30, \
++		 28,28,26,26,24,24,22,22,20,20, \
++		 18,18,16,16,14,14,12,12,10,10, \
++		 8,8,6,6,4,4,2,2,0,0
++
++#define _VFUNC_(name, n) name##n
++#define _VFUNC(name, n) _VFUNC_(name, n)
++#define VFUNC(func, ...) _VFUNC(func, __NARG__(__VA_ARGS__)) (__VA_ARGS__)
++#define VFUNC2N(func, ...) _VFUNC(func, __2NARG__(__VA_ARGS__)) (__VA_ARGS__)
++
++#define _blobmsg_attr(t,n)		  struct blob_attr*n;
++#define _blobmsg_attr0(...)
++#define _blobmsg_attr2(t,n,...)   _blobmsg_attr(t,n) _blobmsg_attr0(__VA_ARGS__)
++#define _blobmsg_attr4(t,n,...)   _blobmsg_attr(t,n) _blobmsg_attr2(__VA_ARGS__)
++#define _blobmsg_attr6(t,n,...)   _blobmsg_attr(t,n) _blobmsg_attr4(__VA_ARGS__)
++#define _blobmsg_attr8(t,n,...)   _blobmsg_attr(t,n) _blobmsg_attr6(__VA_ARGS__)
++#define _blobmsg_attr10(t,n,...)  _blobmsg_attr(t,n) _blobmsg_attr8(__VA_ARGS__)
++#define _blobmsg_attr12(t,n,...)  _blobmsg_attr(t,n) _blobmsg_attr10(__VA_ARGS__)
++#define _blobmsg_attr14(t,n,...)  _blobmsg_attr(t,n) _blobmsg_attr12(__VA_ARGS__)
++#define _blobmsg_attr16(t,n,...)  _blobmsg_attr(t,n) _blobmsg_attr14(__VA_ARGS__)
++#define _blobmsg_attr18(t,n,...)  _blobmsg_attr(t,n) _blobmsg_attr16(__VA_ARGS__)
++#define _blobmsg_attr20(t,n,...)  _blobmsg_attr(t,n) _blobmsg_attr18(__VA_ARGS__)
++#define _blobmsg_attr22(t,n,...)  _blobmsg_attr(t,n) _blobmsg_attr20(__VA_ARGS__)
++#define _blobmsg_attr24(t,n,...)  _blobmsg_attr(t,n) _blobmsg_attr22(__VA_ARGS__)
++#define _blobmsg_attr26(t,n,...)  _blobmsg_attr(t,n) _blobmsg_attr24(__VA_ARGS__)
++#define _blobmsg_attr28(t,n,...)  _blobmsg_attr(t,n) _blobmsg_attr26(__VA_ARGS__)
++#define _blobmsg_attr30(t,n,...)  _blobmsg_attr(t,n) _blobmsg_attr28(__VA_ARGS__)
++#define _blobmsg_attr32(t,n,...)  _blobmsg_attr(t,n) _blobmsg_attr30(__VA_ARGS__)
++#define _blobmsg_attr34(t,n,...)  _blobmsg_attr(t,n) _blobmsg_attr32(__VA_ARGS__)
++#define _blobmsg_attr36(t,n,...)  _blobmsg_attr(t,n) _blobmsg_attr34(__VA_ARGS__)
++#define _blobmsg_attr38(t,n,...)  _blobmsg_attr(t,n) _blobmsg_attr36(__VA_ARGS__)
++#define _blobmsg_attr40(t,n,...)  _blobmsg_attr(t,n) _blobmsg_attr38(__VA_ARGS__)
++#define _blobmsg_attr42(t,n,...)  _blobmsg_attr(t,n) _blobmsg_attr40(__VA_ARGS__)
++#define _blobmsg_attr44(t,n,...)  _blobmsg_attr(t,n) _blobmsg_attr42(__VA_ARGS__)
++#define _blobmsg_attr46(t,n,...)  _blobmsg_attr(t,n) _blobmsg_attr44(__VA_ARGS__)
++#define _blobmsg_attr48(t,n,...)  _blobmsg_attr(t,n) _blobmsg_attr46(__VA_ARGS__)
++#define _blobmsg_attr50(t,n,...)  _blobmsg_attr(t,n) _blobmsg_attr48(__VA_ARGS__)
++#define _blobmsg_attr52(t,n,...)  _blobmsg_attr(t,n) _blobmsg_attr50(__VA_ARGS__)
++#define _blobmsg_attr54(t,n,...)  _blobmsg_attr(t,n) _blobmsg_attr52(__VA_ARGS__)
++#define _blobmsg_attr56(t,n,...)  _blobmsg_attr(t,n) _blobmsg_attr54(__VA_ARGS__)
++#define _blobmsg_attr58(t,n,...)  _blobmsg_attr(t,n) _blobmsg_attr56(__VA_ARGS__)
++#define _blobmsg_attr60(t,n,...)  _blobmsg_attr(t,n) _blobmsg_attr58(__VA_ARGS__)
++#define _blobmsg_attr62(t,n,...)  _blobmsg_attr(t,n) _blobmsg_attr60(__VA_ARGS__)
++
++#define _blobmsg_policy(t,n)	   {#n, t}
++#define _blobmsg_policy0(...)
++#define _blobmsg_policy2(t,n,...)  _blobmsg_policy(t,n), _blobmsg_policy0(__VA_ARGS__)
++#define _blobmsg_policy4(t,n,...)  _blobmsg_policy(t,n), _blobmsg_policy2(__VA_ARGS__)
++#define _blobmsg_policy6(t,n,...)  _blobmsg_policy(t,n), _blobmsg_policy4(__VA_ARGS__)
++#define _blobmsg_policy8(t,n,...)  _blobmsg_policy(t,n), _blobmsg_policy6(__VA_ARGS__)
++#define _blobmsg_policy10(t,n,...) _blobmsg_policy(t,n), _blobmsg_policy8(__VA_ARGS__)
++#define _blobmsg_policy12(t,n,...) _blobmsg_policy(t,n), _blobmsg_policy10(__VA_ARGS__)
++#define _blobmsg_policy14(t,n,...) _blobmsg_policy(t,n), _blobmsg_policy12(__VA_ARGS__)
++#define _blobmsg_policy16(t,n,...) _blobmsg_policy(t,n), _blobmsg_policy14(__VA_ARGS__)
++#define _blobmsg_policy18(t,n,...) _blobmsg_policy(t,n), _blobmsg_policy16(__VA_ARGS__)
++#define _blobmsg_policy20(t,n,...) _blobmsg_policy(t,n), _blobmsg_policy18(__VA_ARGS__)
++#define _blobmsg_policy22(t,n,...) _blobmsg_policy(t,n), _blobmsg_policy20(__VA_ARGS__)
++#define _blobmsg_policy24(t,n,...) _blobmsg_policy(t,n), _blobmsg_policy22(__VA_ARGS__)
++#define _blobmsg_policy26(t,n,...) _blobmsg_policy(t,n), _blobmsg_policy24(__VA_ARGS__)
++#define _blobmsg_policy28(t,n,...) _blobmsg_policy(t,n), _blobmsg_policy26(__VA_ARGS__)
++#define _blobmsg_policy30(t,n,...) _blobmsg_policy(t,n), _blobmsg_policy28(__VA_ARGS__)
++#define _blobmsg_policy32(t,n,...) _blobmsg_policy(t,n), _blobmsg_policy30(__VA_ARGS__)
++#define _blobmsg_policy34(t,n,...) _blobmsg_policy(t,n), _blobmsg_policy32(__VA_ARGS__)
++#define _blobmsg_policy36(t,n,...) _blobmsg_policy(t,n), _blobmsg_policy34(__VA_ARGS__)
++#define _blobmsg_policy38(t,n,...) _blobmsg_policy(t,n), _blobmsg_policy36(__VA_ARGS__)
++#define _blobmsg_policy40(t,n,...) _blobmsg_policy(t,n), _blobmsg_policy38(__VA_ARGS__)
++#define _blobmsg_policy42(t,n,...) _blobmsg_policy(t,n), _blobmsg_policy40(__VA_ARGS__)
++#define _blobmsg_policy44(t,n,...) _blobmsg_policy(t,n), _blobmsg_policy42(__VA_ARGS__)
++#define _blobmsg_policy46(t,n,...) _blobmsg_policy(t,n), _blobmsg_policy44(__VA_ARGS__)
++#define _blobmsg_policy48(t,n,...) _blobmsg_policy(t,n), _blobmsg_policy46(__VA_ARGS__)
++#define _blobmsg_policy50(t,n,...) _blobmsg_policy(t,n), _blobmsg_policy48(__VA_ARGS__)
++#define _blobmsg_policy52(t,n,...) _blobmsg_policy(t,n), _blobmsg_policy50(__VA_ARGS__)
++#define _blobmsg_policy54(t,n,...) _blobmsg_policy(t,n), _blobmsg_policy52(__VA_ARGS__)
++#define _blobmsg_policy56(t,n,...) _blobmsg_policy(t,n), _blobmsg_policy54(__VA_ARGS__)
++#define _blobmsg_policy58(t,n,...) _blobmsg_policy(t,n), _blobmsg_policy56(__VA_ARGS__)
++#define _blobmsg_policy60(t,n,...) _blobmsg_policy(t,n), _blobmsg_policy58(__VA_ARGS__)
++#define _blobmsg_policy62(t,n,...) _blobmsg_policy(t,n), _blobmsg_policy60(__VA_ARGS__)
++
++#define blobmsg_array BLOBMSG_TYPE_ARRAY,
++#define blobmsg_table BLOBMSG_TYPE_TABLE,
++#define blobmsg_string BLOBMSG_TYPE_STRING,
++#define blobmsg_double BLOBMSG_TYPE_DOUBLE,
++#define blobmsg_int64 BLOBMSG_TYPE_INT64,
++#define blobmsg_int32 BLOBMSG_TYPE_INT32,
++#define blobmsg_int16 BLOBMSG_TYPE_INT16,
++#define blobmsg_int8 BLOBMSG_TYPE_INT8,
++#define blobmsg_bool BLOBMSG_TYPE_BOOL,
++#define blobmsg_any BLOBMSG_TYPE_UNSPEC,
++
++
++#define blobmsg_option BLOBMSG_TYPE_STRING,
++#define blobmsg_section BLOBMSG_TYPE_TABLE,
++
++#define _blobmsg_declare_1(name) name = {._policy_ = _VFUNC(__policy__, __LINE__), ._count_ = ARRAY_SIZE(_VFUNC(__policy__, __LINE__))}
++#define _blobmsg_declare_2(name, buf) _blobmsg_declare_1(name); \
++	int _VFUNC(__parse__, __LINE__) __attribute__ ((unused)) = parse_blobbuf(&name, buf)
++#define _blobmsg_declare_3(name, msg, filter) _blobmsg_declare_1(name);\
++	int _VFUNC(__parse__, __LINE__) __attribute__ ((unused)) = (filter)?_parse_blobmsg(&name, msg):parse_blobmsg(&name, msg)
++#define _blobmsg_declare_(...) VFUNC(_blobmsg_declare_, __VA_ARGS__)
++#define blobmsg(...) _VFUNC(__dummy__, __LINE__); static struct blobmsg_policy _VFUNC(__policy__, __LINE__)[] = {VFUNC2N(_blobmsg_policy, __VA_ARGS__)}; \
++	struct _VFUNC(__dummy__, __LINE__) {VFUNC2N(_blobmsg_attr, __VA_ARGS__) int _count_; const struct blobmsg_policy * _policy_;} _blobmsg_declare_
++
++#define parse_blobmsg(attr, msg) \
++	blobmsg_parse((attr)->_policy_, (attr)->_count_, (struct blob_attr **)attr, blobmsg_data(msg), blobmsg_data_len(msg))
++#define parse_blobbuf(attr, buf) parse_blobmsg(attr, (buf)->head)
++#define _parse_blobmsg(attr, msg) ({int i=(attr)->_count_;while(i--)if((attr)->_policy_[i].name[0]=='_')((struct blobmsg_policy*)&((attr)->_policy_[i]))->name++;\
++	blobmsg_parse((attr)->_policy_, (attr)->_count_, (struct blob_attr **)attr, blobmsg_data(msg), blobmsg_data_len(msg));})
++
++#define blobmsg_get_table(attr, name) ({\
++		int rem = 0;\
++		struct blob_attr *cur = NULL, *ret = NULL;\
++		blobmsg_for_each_attr(cur, attr, rem) {\
++			if (blobmsg_type(cur) == BLOBMSG_TYPE_TABLE && (!name || !strcmp(blobmsg_name(cur), name))) {\
++				ret = cur; break;\
++			}\
++		}\
++		ret;\
++	})
++#define blobmsg_get_array(attr, name) ({\
++		int rem = 0;\
++		struct blob_attr *cur = NULL, *ret = NULL;\
++		blobmsg_for_each_attr(cur, attr, rem) {\
++			if (blobmsg_type(cur) == BLOBMSG_TYPE_ARRAY && (!name || !strcmp(blobmsg_name(cur), name))) {\
++				ret = cur; break;\
++			}\
++		}\
++		ret;\
++	})
++/* Usage of the blobmsg automate parser macro
++ *
++ * 1. Parsing from a object of type "struct blob_buf *" to new defined struct my_struct:
++ *	struct blobmsg (
++ *		blobmsg_int32 count,
++ *		blobmsg_bool isReady,
++ *		blobmsg_string name,
++ *	) (my_struct, &my_buf);
++ *
++ *  The struct members of my_struct are in type of "struct blob_attr*", you can use my_struct.count to visit member as below:
++ *
++ *  if (my_struct.count) {
++ *     printf("count = %d\n", blobmsg_get_u32(my_struct.count));
++ *  } else {
++ *    printf("count is missing from the blobmsg!\n");
++ *  }
++ * 
++ * 2. Parsing from a object of type "struct blob_attr *" to new defined struct my_struct:
++ *	struct blobmsg (
++ *		blobmsg_int32 count,
++ *		blobmsg_bool isReady,
++ *		blobmsg_string name,
++ *	) (my_struct, &my_attr, false);
++ * 
++ *  The third parameter of boolean type is used for clarifing if there is any C language key word in the member name,
++ *  for example, if you have a member of name "return" then you have to write in this way:
++ *	struct blobmsg (
++ *		blobmsg_int32 _return,
++ *		blobmsg_bool isReady,
++ *		blobmsg_string name,
++ *	) (my_struct, &my_attr, true);
++ * 
++ *  The third parameter is "true" and the special member name is started with an extra prefix "_".
++ * 
++ *  if (my_struct._return) {
++ *     printf("return = %d\n", blobmsg_get_u32(my_struct._return));
++ *  } else {
++ *    printf("return is missing from the blobmsg!\n");
++ *  }
++ * 
++ */
++
++#endif
+diff -purbBN a/blobmsg.h b/blobmsg.h
+--- a/blobmsg.h	2016-07-29 18:01:37.000000000 +0800
++++ b/blobmsg.h	2017-11-07 09:42:05.517178438 +0800
+@@ -18,6 +18,7 @@
+ 
+ #include <stdarg.h>
+ #include "blob.h"
++#include "blobmsg_ext.h"
+ 
+ #define BLOBMSG_ALIGN	2
+ #define BLOBMSG_PADDING(len) (((len) + (1 << BLOBMSG_ALIGN) - 1) & ~((1 << BLOBMSG_ALIGN) - 1))
+@@ -31,6 +32,7 @@ enum blobmsg_type {
+ 	BLOBMSG_TYPE_INT32,
+ 	BLOBMSG_TYPE_INT16,
+ 	BLOBMSG_TYPE_INT8,
++	BLOBMSG_TYPE_DOUBLE,
+ 	__BLOBMSG_TYPE_LAST,
+ 	BLOBMSG_TYPE_LAST = __BLOBMSG_TYPE_LAST - 1,
+ 	BLOBMSG_TYPE_BOOL = BLOBMSG_TYPE_INT8,
+@@ -114,6 +116,18 @@ int blobmsg_add_field(struct blob_buf *b
+                       const void *data, unsigned int len);
+ 
+ static inline int
++blobmsg_add_double(struct blob_buf *buf, const char *name, double val)
++{
++	union {
++		double d;
++		uint64_t u64;
++	} v;
++	v.d = val;
++	v.u64 = cpu_to_be64(v.u64);
++	return blobmsg_add_field(buf, BLOBMSG_TYPE_DOUBLE, name, &v.u64, 8);
++}
++
++static inline int
+ blobmsg_add_u8(struct blob_buf *buf, const char *name, uint8_t val)
+ {
+ 	return blobmsg_add_field(buf, BLOBMSG_TYPE_INT8, name, &val, 1);
+@@ -212,6 +226,16 @@ static inline uint64_t blobmsg_get_u64(s
+ 	return tmp;
+ }
+ 
++static inline double blobmsg_get_double(struct blob_attr *attr)
++{
++	union {
++		double d;
++		uint64_t u64;
++	} v;
++	v.u64 = blobmsg_get_u64(attr);
++	return v.d;
++}
++
+ static inline char *blobmsg_get_string(struct blob_attr *attr)
+ {
+ 	if (!attr)
+@@ -233,7 +257,7 @@ int blobmsg_printf(struct blob_buf *buf,
+ 
+ #define blobmsg_for_each_attr(pos, attr, rem) \
+ 	for (rem = attr ? blobmsg_data_len(attr) : 0, \
+-	     pos = attr ? blobmsg_data(attr) : 0; \
++             pos = (struct blob_attr *) (attr ? blobmsg_data(attr) : NULL); \
+ 	     rem > 0 && (blob_pad_len(pos) <= rem) && \
+ 	     (blob_pad_len(pos) >= sizeof(struct blob_attr)); \
+ 	     rem -= blob_pad_len(pos), pos = blob_next(pos))
+diff -purbBN a/blobmsg_json.h b/blobmsg_json.h
+--- a/blobmsg_json.h	2017-12-21 08:42:05.751020402 +0800
++++ b/blobmsg_json.h	2017-12-21 11:00:48.850715699 +0800
+@@ -24,6 +24,7 @@ bool blobmsg_add_object(struct blob_buf
+ bool blobmsg_add_object(struct blob_buf *b, struct json_object *obj);
+ bool blobmsg_add_json_element(struct blob_buf *b, const char *name, struct json_object *obj);
+ bool blobmsg_add_json_from_string(struct blob_buf *b, const char *str);
++bool blobmsg_add_json_from_string_with_len(struct blob_buf *b, const char *str, int len, bool dupkey);
+ bool blobmsg_add_json_from_file(struct blob_buf *b, const char *file);
+ 
+ typedef const char *(*blobmsg_json_format_t)(void *priv, struct blob_attr *attr);
+diff -purbBN a/blobmsg_json.c b/blobmsg_json.c
+--- a/blobmsg_json.c	2016-07-29 18:01:37.000000000 +0800
++++ b/blobmsg_json.c	2017-11-07 09:04:42.771836992 +0800
+@@ -48,6 +48,7 @@ bool blobmsg_add_json_element(struct blo
+ {
+ 	bool ret = true;
+ 	void *c;
++	int64_t cint64;
+ 
+ 	switch (json_object_get_type(obj)) {
+ 	case json_type_object:
+@@ -69,6 +69,13 @@ bool blobmsg_add_json_element(struct blo
+ 	case json_type_int:
++		cint64 = json_object_get_int64(obj);
++		if (cint64 < INT32_MIN || cint64 > INT32_MAX)
++			blobmsg_add_u64(b, name, cint64);
++		else
+ 		blobmsg_add_u32(b, name, json_object_get_int(obj));
+ 		break;
++	case json_type_double:
++		blobmsg_add_double(b, name, json_object_get_double(obj));
++		break;
+ 	case json_type_null:
+ 		blobmsg_add_field(b, BLOBMSG_TYPE_UNSPEC, name, NULL, 0);
+ 		break;
+@@ -105,6 +113,10 @@ bool blobmsg_add_json_from_string(struct blo
+ 	return __blobmsg_add_json(b, json_tokener_parse(str));
+ }
+
++bool blobmsg_add_json_from_string_with_len(struct blob_buf *b, const char *str, int len, bool dupkey)
++{
++	return __blobmsg_add_json(b, json_tokener_parse_with_len(str, len, dupkey));
++}
+ 
+ struct strbuf {
+ 	int len;
+@@ -255,6 +267,9 @@ static void blobmsg_format_element(struc
+ 	case BLOBMSG_TYPE_INT64:
+ 		sprintf(buf, "%" PRId64, (int64_t) be64_to_cpu(*(uint64_t *)data));
+ 		break;
++	case BLOBMSG_TYPE_DOUBLE:
++		sprintf(buf, "%lf", blobmsg_get_double(attr));
++		break;
+ 	case BLOBMSG_TYPE_STRING:
+ 		blobmsg_format_string(s, data);
+ 		return;

@@ -1,0 +1,82 @@
+diff -purbBN a/initd/init.c b/initd/init.c
+--- a/initd/init.c	2017-03-28 15:53:38.867024907 +0800
++++ b/initd/init.c	2017-03-28 16:06:52.053672704 +0800
+@@ -16,6 +16,7 @@
+ #include <sys/types.h>
+ #include <sys/stat.h>
+ #include <sys/reboot.h>
++#include <sys/mount.h>
+ 
+ #include <libubox/uloop.h>
+ #include <libubus.h>
+@@ -35,6 +36,62 @@
+ 
+ unsigned int debug = 0;
+ 
++#ifndef MS_MOVE
++#define MS_MOVE		8192
++#endif
++
++int pivot_root(const char *new_root, const char *put_old);
++
++static void later()
++{
++	char line[128] = "1";
++	char *argv[] = { "/sbin/procd", NULL};
++
++	if (!get_cmdline_val("fast", line, sizeof(line)) || strtol(line, NULL, 10) != 0) {
++		unsigned int oldumask = umask(0);
++
++		LOG("- fast -\n");
++
++		mkdir("/overlay", 0777);
++		mount("root", "/overlay", "tmpfs", 0, "mode=0755");
++		
++		if (get_cmdline_val("spdev", line, sizeof(line))) {
++			if (mount(line, "/sp_rom", "squashfs", 0, 0)) {
++				mount(line, "/sp_rom", "jffs2", MS_NOATIME, 0);
++			}
++			mount("overlayfs:/overlay", "/mnt", "overlayfs", MS_NOATIME, "lowerdir=/,upperdir=/sp_rom");
++			mount("overlayfs:/overlay", "/mnt", "overlayfs", MS_NOATIME, "lowerdir=/mnt,upperdir=/overlay");
++		} else {
++			mount("overlayfs:/overlay", "/mnt", "overlayfs", MS_NOATIME, "lowerdir=/,upperdir=/overlay");
++		}
++		
++		mount("/proc", "/mnt/proc", "proc", MS_NOATIME | MS_MOVE, 0);
++		pivot_root("/mnt", "/mnt/rom");
++		mount("/rom/dev", "/dev", "devtmpfs", MS_NOATIME | MS_MOVE, 0);
++		mount("/rom/tmp", "/tmp", "tmpfs", MS_NOATIME | MS_MOVE, 0);
++		mount("/rom/sys", "/sys", "sysfs", MS_NOATIME | MS_MOVE, 0);
++		mount("/rom/overlay", "/overlay", "overlay", MS_NOATIME | MS_MOVE, 0);
++		
++		if (get_cmdline_val("rwdev", line, sizeof(line))) {
++			mkdir("/etc/rwdir", 0777);
++			mount(line, "/etc/rwdir", "jffs2", MS_NOATIME, 0);
++			mkdir("/etc/rwdir/config", 0777);
++			mkdir("/etc/rwdir/log", 0777);
++			system("rm -rf /etc/config /usr/log");
++			symlink("/etc/rwdir/config", "/etc/config");
++			symlink("/etc/rwdir/log", "/usr/log");
++		}
++		
++		umask(oldumask);
++
++		snprintf(line, 2, "%d", debug);
++		setenv("DBGLVL", line, 1);
++
++		LOG("- procd -\n");
++		execvp(argv[0], argv);
++	}
++}
++
+ static void
+ signal_shutdown(int signal, siginfo_t *siginfo, void *data)
+ {
+@@ -80,6 +137,7 @@ main(int argc, char **argv)
+ 
+ 	early();
+ 	cmdline();
++	later();
+ 	watchdog_init(1);
+ 
+ 	pid = fork();

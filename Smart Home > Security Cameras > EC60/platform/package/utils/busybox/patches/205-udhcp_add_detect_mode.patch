@@ -1,0 +1,42 @@
+--- a/networking/udhcp/dhcpc.c
++++ b/networking/udhcp/dhcpc.c
+@@ -81,8 +81,10 @@ enum {
+ 	OPT_x = 1 << 18,
+ 	OPT_f = 1 << 19,
+ 	OPT_B = 1 << 20,
++	/* add detect-mode for dhcpc */
++	OPT_D = 1 << 21,
+ /* The rest has variable bit positions, need to be clever */
+-	OPTBIT_B = 20,
++	OPTBIT_B = 21,
+ 	USE_FOR_MMU(             OPTBIT_b,)
+ 	IF_FEATURE_UDHCPC_ARPING(OPTBIT_a,)
+ 	IF_FEATURE_UDHCP_PORT(   OPTBIT_P,)
+@@ -1168,6 +1170,7 @@ static void client_background(void)
+ //usage:     "\n	-A,--tryagain SEC	Wait if lease is not obtained (default 20)"
+ //usage:     "\n	-n,--now		Exit if lease is not obtained"
+ //usage:     "\n	-q,--quit		Exit after obtaining lease"
++//usage:     "\n	-D,				Enable Detect-mode"
+ //usage:     "\n	-R,--release		Release IP on exit"
+ //usage:     "\n	-f,--foreground		Run in foreground"
+ //usage:	USE_FOR_MMU(
+@@ -1270,7 +1273,7 @@ int udhcpc_main(int argc UNUSED_PARAM, c
+ 	/* O,x: list; -T,-t,-A take numeric param */
+ 	opt_complementary = "O::x::T+:t+:A+" IF_UDHCP_VERBOSE(":vv") ;
+ 	IF_LONG_OPTS(applet_long_options = udhcpc_longopts;)
+-	opt = getopt32(argv, "CV:H:h:F:i:np:qRr:s:T:t:SA:O:ox:fB"
++	opt = getopt32(argv, "CV:H:h:F:i:np:qRr:s:T:t:SA:O:ox:fBD"
+ 		USE_FOR_MMU("b")
+ 		IF_FEATURE_UDHCPC_ARPING("a::")
+ 		IF_FEATURE_UDHCP_PORT("P:")
+@@ -1681,6 +1684,10 @@ int udhcpc_main(int argc UNUSED_PARAM, c
+  * They either supply DHCP_SERVER_ID of 0.0.0.0 or don't supply it at all.
+  * They say ISC DHCP client supports this case.
+  */
++				if (opt & OPT_D) {
++					retval = 0;
++					goto ret;
++				}
+ 				server_addr = 0;
+ 				temp = udhcp_get_option(&packet, DHCP_SERVER_ID);
+ 				if (!temp) {

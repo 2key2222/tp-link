@@ -1,0 +1,47 @@
+diff -purbBN a/main.c b/main.c
+--- a/main.c	2017-04-07 15:48:04.829855068 +0800
++++ b/main.c	2017-04-07 15:47:59.366598632 +0800
+@@ -57,6 +57,13 @@ exec_self(int argc, char **argv)
+ 	execv(cmd, (char * const *)args);
+ }
+ 
++static void ubus_conn_cb(struct ubus_context *ctx)
++{
++	rpc_session_api_init(ctx);
++	rpc_uci_api_init(ctx);
++	rpc_plugin_api_init(ctx);
++}
++
+ int main(int argc, char **argv)
+ {
+ 	struct stat s;
+@@ -84,7 +91,7 @@ int main(int argc, char **argv)
+ 	signal(SIGUSR1, handle_signal);
+ 
+ 	uloop_init();
+-
++  if (ubus_socket) {
+ 	ctx = ubus_connect(ubus_socket);
+ 	if (!ctx) {
+ 		fprintf(stderr, "Failed to connect to ubus\n");
+@@ -96,7 +103,11 @@ int main(int argc, char **argv)
+ 	rpc_session_api_init(ctx);
+ 	rpc_uci_api_init(ctx);
+ 	rpc_plugin_api_init(ctx);
+-
++  } else {
++	/* cjf: to support ubus auto reconnect */
++	static struct ubus_auto_conn ubus_conn = {.cb = ubus_conn_cb};
++	ubus_auto_connect(&ubus_conn);
++  }
+ 	hangup = getenv("RPC_HANGUP");
+ 
+ 	if (!hangup || strcmp(hangup, "1"))
+@@ -105,6 +116,7 @@ int main(int argc, char **argv)
+ 		rpc_session_thaw();
+ 
+ 	uloop_run();
++	if(ctx)
+ 	ubus_free(ctx);
+ 	uloop_done();
+ 

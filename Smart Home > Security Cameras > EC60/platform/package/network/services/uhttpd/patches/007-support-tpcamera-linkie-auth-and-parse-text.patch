@@ -1,0 +1,270 @@
+--- a/lua.c
++++ b/lua.c
+@@ -333,9 +333,36 @@
+ };
+ #endif
+ 
+-static int do_auth(struct client *cl, struct path_info *pi)
++static int get_shell_result(const char *cmd, char *val, int len)
+ {
++	FILE *fp = NULL;
++	char *ret = NULL;
++
++	if (cmd) {
++		fp = popen(cmd, "r");
++		if (fp != NULL) {
++			char *tmp = NULL;
++			ret = fgets(val, 128, fp);
++			if (ret == NULL) {
++				pclose(fp);
++				return -1;
++			}
++			if (val[0] != '\0') {
++				/* remove the '\n' in the end */
++				tmp = strstr(val, "\n");
++				if (tmp) {
++					*tmp = '\0';
++				}
++			}
++			pclose(fp);
++			return 0;
++		}
++	}
++	return -1;
++}
+ 
++static int do_auth(struct client *cl, struct path_info *pi)
++{
+ 	char realm[256] = {};
+ 	char realm_decode[256] = {};
+ 	char ipc_auth_password[128] = {};
+@@ -344,7 +371,7 @@
+ 	int usr_len = 0;
+ 	struct blob_attr *cur;
+ 	int rem;
+- 
++
+ 	blob_for_each_attr(cur, cl->hdr.head, rem) {
+ 		if (!strncasecmp(blobmsg_name(cur), "authorization", 13)) {
+ 			strncpy(realm, (char *)blobmsg_data(cur), 256);
+@@ -388,9 +415,48 @@
+ 			}
+ 		}
+ 	}
++	/* keep compatible with old tpcamera, use COOKIE as the auth key */
++	else
++	{
++		len = 0;
++		blob_for_each_attr(cur, cl->hdr.head, rem) {
++			if (!strncasecmp(blobmsg_name(cur), "cookie", 6)) {
++				strncpy(realm, (char *)blobmsg_data(cur), 256);
++				//echo_print_str(realm);
++				len = strlen(realm);
++			}
++		}
++		if(len > 7)
++		{
++			char cookieItem[64] = {0};
++			int realm_len = 0;
++			//int cookie_len = 0;
++			char cookieUse[1024] = {0};
++
++			ptr = realm + 7; /*skip 'COOKIE=' */
++			realm_len = strlen(ptr);
++
++			char* ubus_cmd = "ubus call session list | tail +22 | grep \"ubus_rpc_session\" | cut -d ' ' -f 2 | cut -d '\"' -f 2 > /tmp/tmpUbus.txt";
++			get_shell_result(ubus_cmd, cookieUse, 64);
++			
++			FILE *pFile = fopen("/tmp/tmpUbus.txt", "r");
++			while(fgets(cookieItem, 64, pFile))
++			{
++				//cookie_len = strlen(cookieItem);
++				if(strncmp(cookieItem, ptr, realm_len) == 0)
++				{
++					fclose(pFile);
++					return 0;
++				}
++			}
++			fclose(pFile);
++		}
++	}
++
+ 	return -1;
+ }
+ 
++#ifndef _LINKIE_FOR_TPCAMERA
+ static void simple_decode(uint8_t *buf, int len)
+ {
+     uint8_t seed = 0xAB, tmp;
+@@ -413,6 +479,7 @@
+         seed = buf[i];
+     }
+ }
++#endif
+ 
+ static cJSON *auth_err(void)
+ {
+@@ -547,16 +614,83 @@
+ 	return ret;
+ }
+ 
++#ifdef _LINKIE_FOR_TPCAMERA
++static int get_content(char *in_buf, int in_buf_len, char *out_buf)
++{
++	int i = 0;
++	int key_len = 0,out_buf_len = 0,flag = 0;
++	char *key = NULL;
++
++
++	/* get key */
++	key = in_buf;
++	for (i = 0; i < in_buf_len; i++)
++	{
++		if ('=' == in_buf[i])
++		{
++			key_len = i;
++			*(key+key_len) = '\0';
++
++			flag = 1;
++			break;
++		}
++	}
++
++	/* get value */
++	if (1 == flag)
++	{
++		for (i = key_len+1; i < in_buf_len; i++)
++		{
++			if ('&' == in_buf[i])
++			{
++				out_buf_len = i;
++				break;
++			}
++		}
++	}
++	else
++	{
++		/* failed */
++		return 0;
++	}
++
++	if (i == in_buf_len)
++	{
++		out_buf_len = in_buf_len;
++	}
++
++	/* check whether the key is "content" */
++	if (0 == strncmp("content", key, key_len))
++	{
++		for (i = 0; i < out_buf_len; i++)
++		{
++			out_buf[i] = in_buf[i];
++		}
++		return out_buf_len;
++	}
++	else
++	{
++		if (in_buf_len - out_buf_len > 1)
++		{
++			/* 1 because of '&' */
++			return get_content(in_buf+out_buf_len + 1, in_buf_len - out_buf_len -1, out_buf);
++		}
++		else
++		{
++			/* failed */
++			return 0;
++		}
++	}
++}
++#endif
++
+ static int fast_linkie_main(struct client *cl, struct path_info *pi, char *url)
+ {
+ 	int path_len, prefix_len;
+ 	char *str;
+ 
+ 	char request_buf[4096] = {};
+-	char request_buf1[4096] = {};
+-	char request_buf2[4096] = {};
+ 	char response_buf[65535] = {};
+-	char response_buf1[65535] = {};
+ 	int len = 0;
+ 
+ 	prefix_len = strlen(conf.lua_prefix);
+@@ -569,6 +703,68 @@
+ 	}
+ 	if (path_len > prefix_len) {
+ 		if (!strncmp(url + prefix_len, "/LINKIE", 7)) {
++#ifdef _LINKIE_FOR_TPCAMERA
++			int errorCode = 0;
++			char *response = NULL;
++			cJSON *obj, *rsp;
++			char content_buf[4096] = {0};
++			char content_buf1[4096] = {0};
++			char content_buf2[4096] = {0};
++			obj = rsp = NULL;
++
++			obj = cJSON_CreateObject();
++			if (NULL == obj)
++				return -1;
++
++			len = uh_fast_linkie_recv(STDIN_FILENO, request_buf, 4096);
++
++			len = get_content(request_buf, len, content_buf);
++			if (0 == len) {
++				cJSON_Delete(obj);
++				return -1;
++			}
++
++			len = urldecode(content_buf1, 4096, content_buf, len);
++
++			decode_base64((unsigned char *)(content_buf1 + 8), len - 8, (unsigned char *)content_buf2);
++
++			/* do auth */
++			if (do_auth(cl, pi) != 0){
++				if (-1 == auth_err_handle(content_buf2, len - 8, response_buf, &len)) {
++					cJSON_Delete(obj);
++					return -1;
++				}
++				else {
++					errorCode = -1;
++				}
++			}
++			else {
++				write(fast_linkie_ctx->fd, content_buf2, len - 8);
++				len = uh_fast_linkie_recv(fast_linkie_ctx->fd, response_buf, 65535);
++			}
++
++			rsp = cJSON_Parse(response_buf);
++			if (NULL == rsp) {
++				cJSON_Delete(obj);
++				return -1;
++			}
++
++			cJSON_AddItemToObject(obj, "content", rsp);
++			cJSON_AddNumberToObject(obj, "errorCode", errorCode);
++			response = cJSON_PrintUnformatted(obj);
++
++			printf("Status: 200\r\nExpires: 0\r\nContent-Type: application/json\r\n"
++					"Cache-Control: no-cache\r\n\r\n%s\r\n", response);
++			if (obj)
++				cJSON_Delete(obj);
++
++			if (response)
++				free(response);
++#else
++			char request_buf1[4096] = {};
++			char request_buf2[4096] = {};
++			char response_buf1[65535] = {};
++
+ 			/* Do auth */			
+ 			len = uh_fast_linkie_recv(STDIN_FILENO, request_buf, 4096);
+ 
+@@ -592,6 +788,7 @@
+ 
+ 			printf("Status: 200\r\nExpires: 0\r\nContent-Type: application/json\r\n"
+ 					"Cache-Control: no-cache\r\n\r\n%s\r\n", response_buf1);
++#endif
+ 			return 0;
+ 		}
+ 	}

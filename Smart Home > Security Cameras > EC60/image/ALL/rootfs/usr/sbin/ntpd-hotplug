@@ -1,0 +1,8 @@
+#!/bin/sh
+
+TIMESETTING_STATUS="/tmp/status/timesetting"
+[ "$1" = get_reply ] && echo 0 > "$TIMESETTING_STATUS" && ubus call ledd get_time 
+[ "$1" = resolve_failed ] && echo 1 > "$TIMESETTING_STATUS"
+
+[ "$1" = stratum ] || exit 0
+ACTION="$1" /sbin/hotplug-call ntp

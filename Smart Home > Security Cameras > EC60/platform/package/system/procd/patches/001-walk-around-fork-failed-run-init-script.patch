@@ -1,0 +1,29 @@
+--- a/rcS.c	2015-12-22 09:28:18.000000000 +0800
++++ b/rcS.c	2016-03-22 17:26:15.963826901 +0800
+@@ -67,17 +67,24 @@
+ 	struct initd *s = container_of(t, struct initd, proc.task);
+ 	int pipefd[2];
+ 	pid_t pid;
+-
++	int ntimes = 5;
++	
+ 	DEBUG(2, "start %s %s \n", s->file, s->param);
+ 	if (pipe(pipefd) == -1) {
+ 		ERROR("Failed to create pipe\n");
+ 		return;
+ 	}
+-
++#if 0
+ 	pid = fork();
+ 	if (pid < 0)
+ 		return;
++#else
++	while ((pid = fork()) < 0 && (ntimes--) > 0);
+ 
++	if (ntimes <= 0) {
++		return;
++	}
++#endif
+ 	if (pid) {
+ 		close(pipefd[1]);
+ 		s->fd.stream.string_data = true,

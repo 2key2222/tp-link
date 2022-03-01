@@ -1,0 +1,524 @@
+diff -uprN origin/library/aes.c new/library/aes.c
+--- origin/library/aes.c	2018-01-06 12:32:47.695423199 +0800
++++ new/library/aes.c	2018-01-06 12:33:40.135421641 +0800
+@@ -52,6 +52,248 @@
+ #endif /* MBEDTLS_PLATFORM_C */
+ #endif /* MBEDTLS_SELF_TEST */
+ 
++
++//#define BOARD_HI3518EV200
++#ifdef BOARD_HI3518EV200
++#include <stdio.h>
++#include <stdlib.h>
++#include <string.h>
++#include <unistd.h>
++#include <stdarg.h>
++
++#include "hi_type.h"
++#include "hi_unf_cipher.h"
++#include "hi_mmz_api.h"
++#define COLOR_NONE              "\033[0000m"
++#define COLOR_GREEN             "\033[0;32m"
++#define COLOR_YELLOW            "\033[1;33m"
++#define COLOR_RED               "\033[0;31m"
++static void ssl_debug_do(const char *func, int line, const char * format,...);
++#define ssl_debug(arg...)  ssl_debug_do(__FUNCTION__, __LINE__, ##arg)
++//#define printBuffer(s1, s2, len) print_buffer(s1,s2,len)
++#define printBuffer(s1, s2, len)
++
++#define AES_MAXNR 14
++typedef struct hisi_aes_cipher
++{
++    unsigned int key[4 * (AES_MAXNR + 1)];
++    unsigned int iv[16];
++
++    /* hisi sdk */
++    HI_HANDLE cipher_handle;
++    HI_U32    input_addr_phy;
++    HI_U8     *input_addr_vir;
++    HI_U32    output_addr_phy;
++    HI_U8     *output_addr_vir;
++} HISI_AES_CIPHER;
++static HISI_AES_CIPHER g_hisi_aes;
++#endif
++
++
++#ifdef BOARD_HI3518EV200
++static void print_buffer(char *s1, char *s2, int len)
++{
++    int i = 0;
++
++    if ( NULL != s1 ){
++        printf("%s:\n", s1);
++    }
++
++    for (i=0; i<len; ++i){
++        if( (i % 16 == 0) && (i != 0)) printf("\n");
++        printf("0x%02x ", s2[i]);
++    }
++    printf("\n\n");
++}
++
++static void ssl_debug_do(const char *func, int line, const char * format,...)
++{
++    int lenStd = 0;
++    char msgStd[5*1024] = {0};
++    va_list ap_list;
++
++    va_start(ap_list, format);
++    sprintf(msgStd, COLOR_GREEN"[%s]"COLOR_NONE"[%s:%d] "COLOR_YELLOW, "ssl", func, line);
++    lenStd = strlen(msgStd);
++    vsnprintf(msgStd + lenStd, sizeof(msgStd) - lenStd, format,ap_list);
++    
++    if(access("/etc/rwdir/debug.1", F_OK) == 0){
++        FILE *fd_out = NULL;
++        fd_out = fopen("/dev/console", "w");
++        if(!fd_out){
++            ;
++        }else{
++            fprintf(fd_out, "%s"COLOR_NONE, msgStd);
++            fclose(fd_out);
++        }
++    }
++    if(access("/etc/rwdir/debug.2", F_OK) == 0){
++        fprintf(stdout, "%s"COLOR_NONE, msgStd);
++    }
++    
++    va_end(ap_list);
++    return;
++}
++
++static HI_S32 cipher_config_init(HISI_AES_CIPHER* aes, int rounds)
++{
++    HI_S32 s32Ret = 0;
++    HI_UNF_CIPHER_CTRL_S CipherCtrl;
++    
++    memset(&CipherCtrl, 0, sizeof(HI_UNF_CIPHER_CTRL_S));
++    CipherCtrl.enAlg = HI_UNF_CIPHER_ALG_AES;
++    CipherCtrl.enWorkMode = HI_UNF_CIPHER_WORK_MODE_CBC;
++    CipherCtrl.enBitWidth = HI_UNF_CIPHER_BIT_WIDTH_128BIT;
++    CipherCtrl.enKeySrc = HI_UNF_CIPHER_KEY_SRC_USER;
++    if (10 == rounds)
++    {
++        CipherCtrl.enKeyLen = HI_UNF_CIPHER_KEY_AES_128BIT;
++    }
++    else if (12 == rounds)
++    {
++        CipherCtrl.enKeyLen = HI_UNF_CIPHER_KEY_AES_192BIT;
++    }
++    else if (14 == rounds)
++    {
++        CipherCtrl.enKeyLen = HI_UNF_CIPHER_KEY_AES_256BIT;
++    }
++
++    //mode == HI_UNF_CIPHER_WORK_MODE_CBC
++    CipherCtrl.stChangeFlags.bit1IV = 1;  //must set for CBC , CFB mode
++    memcpy(CipherCtrl.u32IV, aes->iv, 16);
++
++    //HI_UNF_CIPHER_KEY_SRC_USER == enKeySrc
++    memcpy(CipherCtrl.u32Key, aes->key, 32);   
++    printBuffer("key of HI_UNF_CIPHER_ConfigHandle", CipherCtrl.u32Key, 32);
++
++    s32Ret = HI_UNF_CIPHER_ConfigHandle(aes->cipher_handle, &CipherCtrl);
++    if(0 != s32Ret){
++        ssl_debug("HI_UNF_CIPHER_ConfigHandle err\n");
++        return -1;  
++    }
++
++    return 0;
++}
++
++static inline unsigned int rotlFixed(unsigned int x, unsigned int y)
++{
++    return (x << y) | (x >> (sizeof(y) * 8 - y));
++}
++
++static inline unsigned int ByteReverseWord32(unsigned int value)
++{
++    value = ((value & 0xFF00FF00) >> 8) | ((value & 0x00FF00FF) << 8);
++    return rotlFixed(value, 16U);
++}
++
++static int reverse_key(unsigned int a[])
++{
++    a[0] = ByteReverseWord32(a[0]);
++    a[1] = ByteReverseWord32(a[1]);
++    a[2] = ByteReverseWord32(a[2]);
++    a[3] = ByteReverseWord32(a[3]);
++    a[4] = ByteReverseWord32(a[4]);
++    a[5] = ByteReverseWord32(a[5]);
++    a[6] = ByteReverseWord32(a[6]);
++    a[7] = ByteReverseWord32(a[7]);
++}
++
++static HI_S32 cipher_init(HISI_AES_CIPHER *aes)
++{
++    int buf_len = 30*1024;
++    int cached = 0;
++
++    HI_S32 s32Ret = HI_UNF_CIPHER_Init();
++    if(HI_SUCCESS != s32Ret)
++    {
++        return -1;    
++    }
++    s32Ret = HI_UNF_CIPHER_CreateHandle(&(aes->cipher_handle));
++    if(HI_SUCCESS != s32Ret)
++    {
++        HI_UNF_CIPHER_DeInit();
++        return -2;    
++    }
++
++    aes->input_addr_phy = (HI_U32)HI_MMZ_New(buf_len, 0, NULL, "CIPHER_BufIn_cyassl");
++    if (0 == aes->input_addr_phy)
++    {
++        ssl_debug("Error: Get phyaddr for input failed!\n");
++        goto __CIPHER_EXIT__;
++    }
++    aes->input_addr_vir = HI_MMZ_Map(aes->input_addr_phy, cached);
++
++    aes->output_addr_phy = (HI_U32)HI_MMZ_New(buf_len, 0, NULL, "CIPHER_BufOut_cyassl");
++    if (0 == aes->output_addr_phy)
++    {
++        ssl_debug("Error: Get phyaddr for outPut failed!\n");
++        goto __CIPHER_EXIT__;
++    }
++    aes->output_addr_vir = HI_MMZ_Map(aes->output_addr_phy, cached);
++    return 0;
++
++__CIPHER_EXIT__:
++    ssl_debug("something error, __CIPHER_EXIT__\n");
++    if (aes->input_addr_phy> 0)
++    {
++        HI_MMZ_Unmap(aes->input_addr_phy);
++        HI_MMZ_Delete(aes->input_addr_phy);
++    }
++    if (aes->output_addr_phy > 0)
++    {
++        HI_MMZ_Unmap(aes->output_addr_phy);
++        HI_MMZ_Delete(aes->output_addr_phy);
++    }  
++    HI_UNF_CIPHER_DestroyHandle(aes->cipher_handle);
++    HI_UNF_CIPHER_DeInit();
++    return -1;
++}
++//#define LITTLE_ENDIAN_ORDER
++
++static int aes_128_cbc_hisi(const unsigned char *in, unsigned char *out,
++                           size_t sz, mbedtls_aes_context *key, unsigned char ivec[16])
++{
++    memcpy(g_hisi_aes.key, key->rk, 16*key->nr);
++    printBuffer("ori key:", key->rk, 16*key->nr);
++    memcpy(g_hisi_aes.iv, ivec, 16);
++    printBuffer("ori iv:", ivec, 16);
++
++    /* hisi encrypt */
++    static int init = 0;
++    if (0 == init) {
++        if (cipher_init(&g_hisi_aes) < 0) {
++            ssl_debug("cipher_init error\n");
++            return -1;
++        }
++        init = 1;
++    }
++
++    #ifdef LITTLE_ENDIAN_ORDER
++    reverse_key(g_hisi_aes.key);
++    printf("key reversed\n");
++    printBuffer("reverse_key:", g_hisi_aes.key, 16);
++    #endif
++
++    if(cipher_config_init(&g_hisi_aes, key->nr) != 0){
++        ssl_debug("cipher_config_init error\n");
++        return -1;
++    }
++    
++    memcpy(g_hisi_aes.input_addr_vir, in, sz);
++
++    if(HI_UNF_CIPHER_Encrypt(g_hisi_aes.cipher_handle, g_hisi_aes.input_addr_phy, g_hisi_aes.output_addr_phy, sz) != 0){
++        ssl_debug("Cipher encrypt failed\n");
++        return -1;
++    }
++
++    printBuffer("hisi encrypt", g_hisi_aes.output_addr_vir, sz);
++
++    memcpy(out, g_hisi_aes.output_addr_vir, sz);
++    return 0;
++}
++#endif
++
++
+ #if !defined(MBEDTLS_AES_ALT)
+ 
+ /* Implementation that should never be optimized out by the compiler */
+@@ -877,6 +1119,71 @@ int mbedtls_aes_crypt_cbc( mbedtls_aes_c
+                     int mode,
+                     size_t length,
+                     unsigned char iv[16],
++                    const unsigned char *input,
++                    unsigned char *output )
++{
++    int i;
++    unsigned char temp[16];
++
++    if( length % 16 )
++        return( MBEDTLS_ERR_AES_INVALID_INPUT_LENGTH );
++
++#if defined(MBEDTLS_PADLOCK_C) && defined(MBEDTLS_HAVE_X86)
++    if( aes_padlock_ace )
++    {
++        if( mbedtls_padlock_xcryptcbc( ctx, mode, length, iv, input, output ) == 0 )
++            return( 0 );
++
++        // If padlock data misaligned, we just fall back to
++        // unaccelerated mode
++        //
++    }
++#endif
++
++    if( mode == MBEDTLS_AES_DECRYPT )
++    {
++        while( length > 0 )
++        {
++            memcpy( temp, input, 16 );
++            mbedtls_aes_crypt_ecb( ctx, mode, input, output );
++
++            for( i = 0; i < 16; i++ )
++                output[i] = (unsigned char)( output[i] ^ iv[i] );
++
++            memcpy( iv, temp, 16 );
++
++            input  += 16;
++            output += 16;
++            length -= 16;
++        }
++    }
++    else
++    {
++        #ifdef BOARD_HI3518EV200
++        aes_128_cbc_hisi(input, output, length, ctx, iv);
++        #else
++        while( length > 0 )
++        {
++            for( i = 0; i < 16; i++ )
++                output[i] = (unsigned char)( input[i] ^ iv[i] );
++
++            mbedtls_aes_crypt_ecb( ctx, mode, output, output );
++            memcpy( iv, output, 16 );
++
++            input  += 16;
++            output += 16;
++            length -= 16;
++        }
++        #endif
++    }
++
++    return( 0 );
++}
++
++int mbedtls_aes_crypt_cbc_origin( mbedtls_aes_context *ctx,
++                    int mode,
++                    size_t length,
++                    unsigned char iv[16],
+                     const unsigned char *input,
+                     unsigned char *output )
+ {
+diff -uprN origin/library/ssl_ciphersuites.c new/library/ssl_ciphersuites.c
+--- origin/library/ssl_ciphersuites.c	2018-01-06 12:32:47.695423199 +0800
++++ new/library/ssl_ciphersuites.c	2018-01-06 12:33:40.135421641 +0800
+@@ -58,9 +58,9 @@ static const int ciphersuite_preference[
+     MBEDTLS_SSL_CIPHERSUITES,
+ #else
+     /* All AES-256 ephemeral suites */
+-    MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+-    MBEDTLS_TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+-    MBEDTLS_TLS_DHE_RSA_WITH_AES_256_GCM_SHA384,
++    // MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
++    // MBEDTLS_TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
++    // MBEDTLS_TLS_DHE_RSA_WITH_AES_256_GCM_SHA384,
+     MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_256_CCM,
+     MBEDTLS_TLS_DHE_RSA_WITH_AES_256_CCM,
+     MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,
+@@ -73,18 +73,18 @@ static const int ciphersuite_preference[
+     MBEDTLS_TLS_DHE_RSA_WITH_AES_256_CCM_8,
+ 
+     /* All CAMELLIA-256 ephemeral suites */
+-    MBEDTLS_TLS_ECDHE_ECDSA_WITH_CAMELLIA_256_GCM_SHA384,
+-    MBEDTLS_TLS_ECDHE_RSA_WITH_CAMELLIA_256_GCM_SHA384,
+-    MBEDTLS_TLS_DHE_RSA_WITH_CAMELLIA_256_GCM_SHA384,
++    // MBEDTLS_TLS_ECDHE_ECDSA_WITH_CAMELLIA_256_GCM_SHA384,
++    // MBEDTLS_TLS_ECDHE_RSA_WITH_CAMELLIA_256_GCM_SHA384,
++    // MBEDTLS_TLS_DHE_RSA_WITH_CAMELLIA_256_GCM_SHA384,
+     MBEDTLS_TLS_ECDHE_ECDSA_WITH_CAMELLIA_256_CBC_SHA384,
+     MBEDTLS_TLS_ECDHE_RSA_WITH_CAMELLIA_256_CBC_SHA384,
+     MBEDTLS_TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA256,
+     MBEDTLS_TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA,
+ 
+     /* All AES-128 ephemeral suites */
+-    MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+-    MBEDTLS_TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+-    MBEDTLS_TLS_DHE_RSA_WITH_AES_128_GCM_SHA256,
++    // MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
++    // MBEDTLS_TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
++    // MBEDTLS_TLS_DHE_RSA_WITH_AES_128_GCM_SHA256,
+     MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_128_CCM,
+     MBEDTLS_TLS_DHE_RSA_WITH_AES_128_CCM,
+     MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,
+@@ -97,9 +97,9 @@ static const int ciphersuite_preference[
+     MBEDTLS_TLS_DHE_RSA_WITH_AES_128_CCM_8,
+ 
+     /* All CAMELLIA-128 ephemeral suites */
+-    MBEDTLS_TLS_ECDHE_ECDSA_WITH_CAMELLIA_128_GCM_SHA256,
+-    MBEDTLS_TLS_ECDHE_RSA_WITH_CAMELLIA_128_GCM_SHA256,
+-    MBEDTLS_TLS_DHE_RSA_WITH_CAMELLIA_128_GCM_SHA256,
++    // MBEDTLS_TLS_ECDHE_ECDSA_WITH_CAMELLIA_128_GCM_SHA256,
++    // MBEDTLS_TLS_ECDHE_RSA_WITH_CAMELLIA_128_GCM_SHA256,
++    // MBEDTLS_TLS_DHE_RSA_WITH_CAMELLIA_128_GCM_SHA256,
+     MBEDTLS_TLS_ECDHE_ECDSA_WITH_CAMELLIA_128_CBC_SHA256,
+     MBEDTLS_TLS_ECDHE_RSA_WITH_CAMELLIA_128_CBC_SHA256,
+     MBEDTLS_TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA256,
+@@ -111,24 +111,24 @@ static const int ciphersuite_preference[
+     MBEDTLS_TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA,
+ 
+     /* The PSK ephemeral suites */
+-    MBEDTLS_TLS_DHE_PSK_WITH_AES_256_GCM_SHA384,
++    //MBEDTLS_TLS_DHE_PSK_WITH_AES_256_GCM_SHA384,
+     MBEDTLS_TLS_DHE_PSK_WITH_AES_256_CCM,
+     MBEDTLS_TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA384,
+     MBEDTLS_TLS_DHE_PSK_WITH_AES_256_CBC_SHA384,
+     MBEDTLS_TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA,
+     MBEDTLS_TLS_DHE_PSK_WITH_AES_256_CBC_SHA,
+-    MBEDTLS_TLS_DHE_PSK_WITH_CAMELLIA_256_GCM_SHA384,
++    //MBEDTLS_TLS_DHE_PSK_WITH_CAMELLIA_256_GCM_SHA384,
+     MBEDTLS_TLS_ECDHE_PSK_WITH_CAMELLIA_256_CBC_SHA384,
+     MBEDTLS_TLS_DHE_PSK_WITH_CAMELLIA_256_CBC_SHA384,
+     MBEDTLS_TLS_DHE_PSK_WITH_AES_256_CCM_8,
+ 
+-    MBEDTLS_TLS_DHE_PSK_WITH_AES_128_GCM_SHA256,
++    //MBEDTLS_TLS_DHE_PSK_WITH_AES_128_GCM_SHA256,
+     MBEDTLS_TLS_DHE_PSK_WITH_AES_128_CCM,
+     MBEDTLS_TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA256,
+     MBEDTLS_TLS_DHE_PSK_WITH_AES_128_CBC_SHA256,
+     MBEDTLS_TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA,
+     MBEDTLS_TLS_DHE_PSK_WITH_AES_128_CBC_SHA,
+-    MBEDTLS_TLS_DHE_PSK_WITH_CAMELLIA_128_GCM_SHA256,
++    //MBEDTLS_TLS_DHE_PSK_WITH_CAMELLIA_128_GCM_SHA256,
+     MBEDTLS_TLS_DHE_PSK_WITH_CAMELLIA_128_CBC_SHA256,
+     MBEDTLS_TLS_ECDHE_PSK_WITH_CAMELLIA_128_CBC_SHA256,
+     MBEDTLS_TLS_DHE_PSK_WITH_AES_128_CCM_8,
+@@ -140,47 +140,47 @@ static const int ciphersuite_preference[
+     MBEDTLS_TLS_ECJPAKE_WITH_AES_128_CCM_8,
+ 
+     /* All AES-256 suites */
+-    MBEDTLS_TLS_RSA_WITH_AES_256_GCM_SHA384,
++    //MBEDTLS_TLS_RSA_WITH_AES_256_GCM_SHA384,
+     MBEDTLS_TLS_RSA_WITH_AES_256_CCM,
+     MBEDTLS_TLS_RSA_WITH_AES_256_CBC_SHA256,
+     MBEDTLS_TLS_RSA_WITH_AES_256_CBC_SHA,
+-    MBEDTLS_TLS_ECDH_RSA_WITH_AES_256_GCM_SHA384,
++    //MBEDTLS_TLS_ECDH_RSA_WITH_AES_256_GCM_SHA384,
+     MBEDTLS_TLS_ECDH_RSA_WITH_AES_256_CBC_SHA384,
+     MBEDTLS_TLS_ECDH_RSA_WITH_AES_256_CBC_SHA,
+-    MBEDTLS_TLS_ECDH_ECDSA_WITH_AES_256_GCM_SHA384,
++    //MBEDTLS_TLS_ECDH_ECDSA_WITH_AES_256_GCM_SHA384,
+     MBEDTLS_TLS_ECDH_ECDSA_WITH_AES_256_CBC_SHA384,
+     MBEDTLS_TLS_ECDH_ECDSA_WITH_AES_256_CBC_SHA,
+     MBEDTLS_TLS_RSA_WITH_AES_256_CCM_8,
+ 
+     /* All CAMELLIA-256 suites */
+-    MBEDTLS_TLS_RSA_WITH_CAMELLIA_256_GCM_SHA384,
++    //MBEDTLS_TLS_RSA_WITH_CAMELLIA_256_GCM_SHA384,
+     MBEDTLS_TLS_RSA_WITH_CAMELLIA_256_CBC_SHA256,
+     MBEDTLS_TLS_RSA_WITH_CAMELLIA_256_CBC_SHA,
+-    MBEDTLS_TLS_ECDH_RSA_WITH_CAMELLIA_256_GCM_SHA384,
++    //MBEDTLS_TLS_ECDH_RSA_WITH_CAMELLIA_256_GCM_SHA384,
+     MBEDTLS_TLS_ECDH_RSA_WITH_CAMELLIA_256_CBC_SHA384,
+-    MBEDTLS_TLS_ECDH_ECDSA_WITH_CAMELLIA_256_GCM_SHA384,
++    //MBEDTLS_TLS_ECDH_ECDSA_WITH_CAMELLIA_256_GCM_SHA384,
+     MBEDTLS_TLS_ECDH_ECDSA_WITH_CAMELLIA_256_CBC_SHA384,
+ 
+     /* All AES-128 suites */
+-    MBEDTLS_TLS_RSA_WITH_AES_128_GCM_SHA256,
++    //MBEDTLS_TLS_RSA_WITH_AES_128_GCM_SHA256,
+     MBEDTLS_TLS_RSA_WITH_AES_128_CCM,
+     MBEDTLS_TLS_RSA_WITH_AES_128_CBC_SHA256,
+     MBEDTLS_TLS_RSA_WITH_AES_128_CBC_SHA,
+-    MBEDTLS_TLS_ECDH_RSA_WITH_AES_128_GCM_SHA256,
++    //MBEDTLS_TLS_ECDH_RSA_WITH_AES_128_GCM_SHA256,
+     MBEDTLS_TLS_ECDH_RSA_WITH_AES_128_CBC_SHA256,
+     MBEDTLS_TLS_ECDH_RSA_WITH_AES_128_CBC_SHA,
+-    MBEDTLS_TLS_ECDH_ECDSA_WITH_AES_128_GCM_SHA256,
++    //MBEDTLS_TLS_ECDH_ECDSA_WITH_AES_128_GCM_SHA256,
+     MBEDTLS_TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA256,
+     MBEDTLS_TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA,
+     MBEDTLS_TLS_RSA_WITH_AES_128_CCM_8,
+ 
+     /* All CAMELLIA-128 suites */
+-    MBEDTLS_TLS_RSA_WITH_CAMELLIA_128_GCM_SHA256,
++    //MBEDTLS_TLS_RSA_WITH_CAMELLIA_128_GCM_SHA256,
+     MBEDTLS_TLS_RSA_WITH_CAMELLIA_128_CBC_SHA256,
+     MBEDTLS_TLS_RSA_WITH_CAMELLIA_128_CBC_SHA,
+-    MBEDTLS_TLS_ECDH_RSA_WITH_CAMELLIA_128_GCM_SHA256,
++    //MBEDTLS_TLS_ECDH_RSA_WITH_CAMELLIA_128_GCM_SHA256,
+     MBEDTLS_TLS_ECDH_RSA_WITH_CAMELLIA_128_CBC_SHA256,
+-    MBEDTLS_TLS_ECDH_ECDSA_WITH_CAMELLIA_128_GCM_SHA256,
++    //MBEDTLS_TLS_ECDH_ECDSA_WITH_CAMELLIA_128_GCM_SHA256,
+     MBEDTLS_TLS_ECDH_ECDSA_WITH_CAMELLIA_128_CBC_SHA256,
+ 
+     /* All remaining >= 128-bit suites */
+@@ -189,34 +189,34 @@ static const int ciphersuite_preference[
+     MBEDTLS_TLS_ECDH_ECDSA_WITH_3DES_EDE_CBC_SHA,
+ 
+     /* The RSA PSK suites */
+-    MBEDTLS_TLS_RSA_PSK_WITH_AES_256_GCM_SHA384,
++    //MBEDTLS_TLS_RSA_PSK_WITH_AES_256_GCM_SHA384,
+     MBEDTLS_TLS_RSA_PSK_WITH_AES_256_CBC_SHA384,
+     MBEDTLS_TLS_RSA_PSK_WITH_AES_256_CBC_SHA,
+-    MBEDTLS_TLS_RSA_PSK_WITH_CAMELLIA_256_GCM_SHA384,
++    //MBEDTLS_TLS_RSA_PSK_WITH_CAMELLIA_256_GCM_SHA384,
+     MBEDTLS_TLS_RSA_PSK_WITH_CAMELLIA_256_CBC_SHA384,
+ 
+-    MBEDTLS_TLS_RSA_PSK_WITH_AES_128_GCM_SHA256,
++    //MBEDTLS_TLS_RSA_PSK_WITH_AES_128_GCM_SHA256,
+     MBEDTLS_TLS_RSA_PSK_WITH_AES_128_CBC_SHA256,
+     MBEDTLS_TLS_RSA_PSK_WITH_AES_128_CBC_SHA,
+-    MBEDTLS_TLS_RSA_PSK_WITH_CAMELLIA_128_GCM_SHA256,
++    //MBEDTLS_TLS_RSA_PSK_WITH_CAMELLIA_128_GCM_SHA256,
+     MBEDTLS_TLS_RSA_PSK_WITH_CAMELLIA_128_CBC_SHA256,
+ 
+     MBEDTLS_TLS_RSA_PSK_WITH_3DES_EDE_CBC_SHA,
+ 
+     /* The PSK suites */
+-    MBEDTLS_TLS_PSK_WITH_AES_256_GCM_SHA384,
++    //MBEDTLS_TLS_PSK_WITH_AES_256_GCM_SHA384,
+     MBEDTLS_TLS_PSK_WITH_AES_256_CCM,
+     MBEDTLS_TLS_PSK_WITH_AES_256_CBC_SHA384,
+     MBEDTLS_TLS_PSK_WITH_AES_256_CBC_SHA,
+-    MBEDTLS_TLS_PSK_WITH_CAMELLIA_256_GCM_SHA384,
++    //MBEDTLS_TLS_PSK_WITH_CAMELLIA_256_GCM_SHA384,
+     MBEDTLS_TLS_PSK_WITH_CAMELLIA_256_CBC_SHA384,
+     MBEDTLS_TLS_PSK_WITH_AES_256_CCM_8,
+ 
+-    MBEDTLS_TLS_PSK_WITH_AES_128_GCM_SHA256,
++    //MBEDTLS_TLS_PSK_WITH_AES_128_GCM_SHA256,
+     MBEDTLS_TLS_PSK_WITH_AES_128_CCM,
+     MBEDTLS_TLS_PSK_WITH_AES_128_CBC_SHA256,
+     MBEDTLS_TLS_PSK_WITH_AES_128_CBC_SHA,
+-    MBEDTLS_TLS_PSK_WITH_CAMELLIA_128_GCM_SHA256,
++    //MBEDTLS_TLS_PSK_WITH_CAMELLIA_128_GCM_SHA256,
+     MBEDTLS_TLS_PSK_WITH_CAMELLIA_128_CBC_SHA256,
+     MBEDTLS_TLS_PSK_WITH_AES_128_CCM_8,
+ 
+diff -uprN origin/library/ssl_tls.c new/library/ssl_tls.c
+--- origin/library/ssl_tls.c	2018-01-06 12:32:47.695423199 +0800
++++ new/library/ssl_tls.c	2018-01-06 12:33:40.135421642 +0800
+@@ -7438,8 +7438,8 @@ static int ssl_preset_default_hashes[] =
+ #endif
+ 
+ static int ssl_preset_suiteb_ciphersuites[] = {
+-    MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+-    MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
++    MBEDTLS_TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,
++    MBEDTLS_TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,
+     0
+ };
+ 

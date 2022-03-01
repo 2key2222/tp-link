@@ -1,0 +1,61 @@
+#
+# Copyright (C) 2006-2014 OpenWrt.org
+#
+# This is free software, licensed under the GNU General Public License v2.
+# See /LICENSE for more information.
+#
+
+include $(TOPDIR)/rules.mk
+
+PKG_NAME:=wolfssl
+PKG_VERSION:=3.9.6
+PKG_RELEASE:=1
+
+PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).zip
+#PKG_SOURCE_URL:=http://www.yassl.com/
+#PKG_MD5SUM:=0303eb0f2f9065a1207d9104ab0eba7c
+
+PKG_FIXUP:=libtool
+PKG_INSTALL:=1
+PKG_BUILD_PARALLEL:=1
+PKG_LICENSE:=GPL-2.0+
+
+include $(INCLUDE_DIR)/package.mk
+
+define Package/libwolfssl
+  SECTION:=libs
+  SUBMENU:=SSL
+  CATEGORY:=Libraries
+  TITLE:=WolfSSL library
+  URL:=http://www.wolfssl.com/
+endef
+
+define Package/libcyassl/description
+WolfSSL is an SSL library optimized for small footprint, both on disk and for
+memory use.
+endef
+
+TARGET_CFLAGS += $(FPIC)
+
+CONFIGURE_ARGS += \
+	--without-zlib \
+	--enable-singlethreaded \
+	--enable-opensslextra \
+	--enable-sni \
+	--enable-ecc \
+	--disable-examples
+
+define Build/InstallDev
+	$(INSTALL_DIR) $(1)/usr/include
+	$(CP) $(PKG_INSTALL_DIR)/usr/include/* $(1)/usr/include/
+
+	$(INSTALL_DIR) $(1)/usr/lib
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libwolfssl.{so*,la} $(1)/usr/lib/
+endef
+
+define Package/libcyassl/install
+	$(INSTALL_DIR) $(1)/usr/lib
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libwolfssl.so* $(1)/usr/lib/
+endef
+
+$(eval $(call BuildPackage,libwolfssl))

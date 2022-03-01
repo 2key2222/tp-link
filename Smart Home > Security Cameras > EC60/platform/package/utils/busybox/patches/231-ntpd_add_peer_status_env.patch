@@ -1,0 +1,158 @@
+--- a/networking/ntpd.c
++++ b/networking/ntpd.c
+@@ -789,6 +789,71 @@ do_sendto(int fd,
+ 	return 0;
+ }
+ 
++
++/* Note that there is no provision to prevent several run_scripts
++ * to be started in quick succession. In fact, it happens rather often
++ * if initial syncronization results in a step.
++ * You will see "step" and then "stratum" script runs, sometimes
++ * as close as only 0.002 seconds apart.
++ * Script should be ready to deal with this.
++ */
++static void run_script(const char *action, double offset)
++{
++	char *argv[3];
++	char *env1, *env2, *env3, *env4, *env5, *env6, *env7;
++
++	G.last_script_run = G.cur_time;
++
++	if (!G.script_name)
++		return;
++
++	argv[0] = (char*) G.script_name;
++	argv[1] = (char*) action;
++	argv[2] = NULL;
++
++	VERB1 bb_error_msg("executing '%s %s'", G.script_name, action);
++
++	env1 = xasprintf("%s=%u", "stratum", G.stratum);
++	putenv(env1);
++	env2 = xasprintf("%s=%ld", "freq_drift_ppm", G.kernel_freq_drift);
++	putenv(env2);
++	env3 = xasprintf("%s=%u", "poll_interval", 1 << G.poll_exp);
++	putenv(env3);
++	env4 = xasprintf("%s=%f", "offset", offset);
++	putenv(env4);
++	env5 = xasprintf("%s=%f", "get_reply", offset);
++	putenv(env5);
++	env6 = xasprintf("%s=%f", "timed_out", offset);
++	putenv(env6);
++	env7 = xasprintf("%s=%f", "resolve_failed", offset);
++	putenv(env7);
++	/* Other items of potential interest: selected peer,
++	 * rootdelay, reftime, rootdisp, refid, ntp_status,
++	 * last_update_offset, last_update_recv_time, discipline_jitter,
++	 * how many peers have reachable_bits = 0?
++	 */
++
++	/* Don't want to wait: it may run hwclock --systohc, and that
++	 * may take some time (seconds): */
++	/*spawn_and_wait(argv);*/
++	spawn(argv);
++
++	unsetenv("stratum");
++	unsetenv("freq_drift_ppm");
++	unsetenv("poll_interval");
++	unsetenv("offset");
++	unsetenv("get_reply");
++	unsetenv("timed_out");
++	unsetenv("resolve_failed");
++	free(env1);
++	free(env2);
++	free(env3);
++	free(env4);
++	free(env5);
++	free(env6);
++	free(env7);
++}
++
+ static void
+ send_query_to_peer(peer_t *p)
+ {
+@@ -823,6 +888,7 @@ send_query_to_peer(peer_t *p)
+ 		{
+ 			set_next(p, RETRY_INTERVAL);
+ 			VERB1 bb_error_msg("could not resolve peer %s, skipping", p->p_hostname);
++			run_script("resolve_failed", 1);
+ 			return;
+ 		}
+ 	}
+@@ -899,58 +965,6 @@ send_query_to_peer(peer_t *p)
+ }
+ 
+ 
+-/* Note that there is no provision to prevent several run_scripts
+- * to be started in quick succession. In fact, it happens rather often
+- * if initial syncronization results in a step.
+- * You will see "step" and then "stratum" script runs, sometimes
+- * as close as only 0.002 seconds apart.
+- * Script should be ready to deal with this.
+- */
+-static void run_script(const char *action, double offset)
+-{
+-	char *argv[3];
+-	char *env1, *env2, *env3, *env4;
+-
+-	G.last_script_run = G.cur_time;
+-
+-	if (!G.script_name)
+-		return;
+-
+-	argv[0] = (char*) G.script_name;
+-	argv[1] = (char*) action;
+-	argv[2] = NULL;
+-
+-	VERB1 bb_error_msg("executing '%s %s'", G.script_name, action);
+-
+-	env1 = xasprintf("%s=%u", "stratum", G.stratum);
+-	putenv(env1);
+-	env2 = xasprintf("%s=%ld", "freq_drift_ppm", G.kernel_freq_drift);
+-	putenv(env2);
+-	env3 = xasprintf("%s=%u", "poll_interval", 1 << G.poll_exp);
+-	putenv(env3);
+-	env4 = xasprintf("%s=%f", "offset", offset);
+-	putenv(env4);
+-	/* Other items of potential interest: selected peer,
+-	 * rootdelay, reftime, rootdisp, refid, ntp_status,
+-	 * last_update_offset, last_update_recv_time, discipline_jitter,
+-	 * how many peers have reachable_bits = 0?
+-	 */
+-
+-	/* Don't want to wait: it may run hwclock --systohc, and that
+-	 * may take some time (seconds): */
+-	/*spawn_and_wait(argv);*/
+-	spawn(argv);
+-
+-	unsetenv("stratum");
+-	unsetenv("freq_drift_ppm");
+-	unsetenv("poll_interval");
+-	unsetenv("offset");
+-	free(env1);
+-	free(env2);
+-	free(env3);
+-	free(env4);
+-}
+-
+ static NOINLINE void
+ step_time(double offset)
+ {
+@@ -1965,6 +1979,8 @@ recv_and_process_peer_pkt(peer_t *p)
+ 		interval = BIGOFF_INTERVAL;
+ 	}
+ 
++	run_script("get_reply", 1);
++	
+ 	set_next(p, interval);
+ }
+ 
+@@ -2306,6 +2322,7 @@ int ntpd_main(int argc UNUSED_PARAM, char **argv)
+ 					timeout = poll_interval(NOREPLY_INTERVAL);
+ 					bb_error_msg("timed out waiting for %s, reach 0x%02x, next query in %us",
+ 							p->p_dotted, p->reachable_bits, timeout);
++					run_script("timed_out", 1);
+ 					set_next(p, timeout);
+ 				}
+ 			}

@@ -1,0 +1,62 @@
+diff -uprN a/file.c b/file.c
+--- a/file.c	2019-07-29 11:41:11.698064300 +0800
++++ b/file.c	2019-07-29 11:47:06.564743100 +0800
+@@ -1039,6 +1039,8 @@ static void uci_file_commit(struct uci_c
+ 	char *filename = NULL;
+ 	struct stat statbuf;
+ 	bool do_rename = false;
++	int i = 0, is_symlink = 0;
++	char cmd[128] = {0};
+ 
+ 	if (!p->path) {
+ 		if (overwrite)
+@@ -1049,10 +1051,10 @@ static void uci_file_commit(struct uci_c
+ 
+ 	if ((asprintf(&filename, "%s/.%s.uci-XXXXXX", ctx->confdir, p->e.name) < 0) || !filename)
+ 		UCI_THROW(ctx, UCI_ERR_MEM);
+-
++	/*
+ 	if (!mktemp(filename))
+-		*filename = 0;
+-
++	*filename = 0;
++	*/
+ 	if (!*filename) {
+ 		free(filename);
+ 		UCI_THROW(ctx, UCI_ERR_IO);
+@@ -1110,6 +1112,12 @@ done:
+ 	free(name);
+ 	free(path);
+ 	uci_close_stream(f1);
++	
++	if (readlink(p->path, cmd, sizeof(cmd)) > 0)
++	{
++		is_symlink = 1;
++	}
++	
+ 	if (do_rename && rename(filename, p->path)) {
+ 		unlink(filename);
+ 		UCI_THROW(ctx, UCI_ERR_IO);
+@@ -1118,9 +1126,7 @@ done:
+ 	
+ 	if (!strcmp(ctx->confdir, UCI_CONFDIR))
+ 	{
+-		int i = 0;
+-		char cmd[128] = {0};
+-		if (readlink(p->path, cmd, sizeof(cmd)) > 0)
++		if (is_symlink)
+ 		{
+ 				snprintf(cmd, sizeof(cmd), "config_cipher %s", p->e.name);
+ 				system(cmd);
+diff -uprN a/util.c b/util.c
+--- a/util.c	2015-12-22 09:02:27.000000000 +0800
++++ b/util.c	2019-07-29 11:49:37.373203000 +0800
+@@ -196,6 +196,8 @@ __private FILE *uci_open_stream(struct u
+ 	if (create) {
+ 		flags |= O_CREAT;
+ 		if (origfilename) {
++			if (write)
++				flags |= O_TRUNC;
+ 			name = basename((char *) origfilename);
+ 		} else {
+ 			name = basename((char *) filename);

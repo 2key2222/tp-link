@@ -1,0 +1,21 @@
+
+--- a/cli.c	2015-12-21 11:34:30.000000000 +0800
++++ b/cli.c	2018-05-30 17:54:50.653218318 +0800
+@@ -112,7 +112,7 @@ static int ubus_cli_call(struct ubus_con
+ 		return -2;
+ 
+ 	blob_buf_init(&b, 0);
+-	if (argc == 3 && !blobmsg_add_json_from_string(&b, argv[2])) {
++	if (argc == 3 && !blobmsg_add_json_from_string_with_len(&b, argv[2], -1, true)) {
+ 		if (!simple_output)
+ 			fprintf(stderr, "Failed to parse message data\n");
+ 		return -1;
+@@ -176,7 +176,7 @@ static int ubus_cli_send(struct ubus_con
+ 
+ 	blob_buf_init(&b, 0);
+ 
+-	if (argc == 2 && !blobmsg_add_json_from_string(&b, argv[1])) {
++	if (argc == 2 && !blobmsg_add_json_from_string_with_len(&b, argv[1], -1, true)) {
+ 		if (!simple_output)
+ 			fprintf(stderr, "Failed to parse message data\n");
+ 		return -1;

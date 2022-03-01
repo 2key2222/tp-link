@@ -1,0 +1,37 @@
+--- /miscutils/crond.c
++++ /miscutils/crond.c
+@@ -404,8 +404,8 @@
+ 
+ 	delete_cronfile(fileName);
+ 
+-	if (!getpwnam(fileName)) {
+-		log7("ignoring file '%s' (no such user)", fileName);
++	if (!getpwnam("root")) {
++		log7("ignoring file '%s' (no such user)", "root");
+ 		return;
+ 	}
+ 
+@@ -609,9 +609,9 @@
+ 	pid_t pid;
+ 
+ 	/* prepare things before vfork */
+-	pas = getpwnam(user);
++	pas = getpwnam("root");
+ 	if (!pas) {
+-		bb_error_msg("can't get uid for %s", user);
++		bb_error_msg("can't get uid for %s", "root");
+ 		goto err;
+ 	}
+ 
+@@ -752,9 +752,9 @@
+ 	struct passwd *pas;
+ 	pid_t pid;
+ 
+-	pas = getpwnam(user);
++	pas = getpwnam("root");
+ 	if (!pas) {
+-		bb_error_msg("can't get uid for %s", user);
++		bb_error_msg("can't get uid for %s", "root");
+ 		goto err;
+ 	}
+ 

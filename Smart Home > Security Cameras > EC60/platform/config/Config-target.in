@@ -1,0 +1,64 @@
+# Copyright (C) 2006-2013 OpenWrt.org
+#
+# This is free software, licensed under the GNU General Public License v2.
+# See /LICENSE for more information.
+#
+menuconfig TARGET_OPTIONS
+	bool "Target Options" if DEVEL
+
+	config PRODUCT_NAME
+		string
+		prompt "Product name set" if TARGET_OPTIONS
+		default "NC350"
+		help
+			Enter one of these product set [NC350, NC250, RE270]
+
+	config BOARD_NAME
+		string
+		prompt "Target board set" if TARGET_OPTIONS
+		default "model_hisi_hi3518"
+		help
+		  Enter one of these board set [model_hisi_hi3518, model_mtk_rt288x]
+
+	config TARGET_NAME
+		string
+		prompt "Target name" if TARGET_OPTIONS
+		default "arm-openwrt-linux-uclibc"
+
+	config ROOTFS_PATH
+		string
+		prompt "Rootfs Path" if TARGET_OPTIONS
+		default ""
+		help
+		  set the rootfs path for your packages install
+
+	config NEED_EXTERNAL_TARGET_FLAGS
+		bool
+		prompt "Does iplatform compiled with external target flags?" if TARGET_OPTIONS
+		default n
+		help
+		  If enabled, compilation of iplatform needs external target flags.
+
+	config EXTERNAL_TARGET_FLAGS_STAGING_PATH
+		string
+		prompt "External target flags staging path" if TARGET_OPTIONS
+		depends on NEED_EXTERNAL_TARGET_FLAGS
+		default ""
+		help
+		  Enter the compiling sdk staging dir path.
+
+	config EXTERNAL_TARGET_FLAGS_TOOLCHAIN_PATH
+		string
+		prompt "External target flags toolchain path" if TARGET_OPTIONS
+		depends on NEED_EXTERNAL_TARGET_FLAGS
+		default ""
+		help
+		  Enter the compiling sdk toolchain dir path.
+
+	config CLOUD_SDK_PATH_SUFFIX
+		string
+		prompt "cloud_sdk path suffix" if TARGET_OPTIONS
+		default "hisi"
+		help
+		  Enter the cloud_sdk path suffix.
+

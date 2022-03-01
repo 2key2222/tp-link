@@ -1,0 +1,36 @@
+--- a/system-linux.c	2016-01-11 20:12:12.000000000 +0800
++++ b/system-linux.c	2016-01-12 17:20:06.527515533 +0800
+@@ -890,6 +890,8 @@
+ 
+ int system_macvlan_add(struct device *macvlan, struct device *dev, struct macvlan_config *cfg)
+ {
++	return 0;
++#if 0
+ 	struct nl_msg *msg;
+ 	struct nlattr *linkinfo, *data;
+ 	struct ifinfomsg iim = { .ifi_family = AF_UNSPEC, };
+@@ -946,6 +948,7 @@
+ nla_put_failure:
+ 	nlmsg_free(msg);
+ 	return -ENOMEM;
++#endif
+ }
+ 
+ static int system_link_del(const char *ifname)
+@@ -1780,6 +1783,8 @@
+ 
+ static int system_iprule(struct iprule *rule, int cmd)
+ {
++	return 0;
++#if 0
+ 	int alen = ((rule->flags & IPRULE_FAMILY) == IPRULE_INET4) ? 4 : 16;
+ 
+ 	struct nl_msg *msg;
+@@ -1860,6 +1865,7 @@
+ 		nla_put_u32(msg, FRA_GOTO, rule->gotoid);
+ 
+ 	return system_rtnl_call(msg);
++#endif
+ }
+ 
+ int system_add_iprule(struct iprule *rule)

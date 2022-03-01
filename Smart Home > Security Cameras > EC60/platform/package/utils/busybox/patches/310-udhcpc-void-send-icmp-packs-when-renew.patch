@@ -1,0 +1,40 @@
+--- a/networking/udhcp/dhcpc.c
++++ b/networking/udhcp/dhcpc.c
+@@ -957,6 +957,7 @@
+ /*** Main ***/
+ 
+ static int sockfd = -1;
++static int sockfd2 = -1;
+ 
+ #define LISTEN_NONE   0
+ #define LISTEN_KERNEL 1
+@@ -1075,11 +1076,29 @@
+ 	if (sockfd >= 0) {
+ 		close(sockfd);
+ 		sockfd = -1;
++		if (sockfd2 >= 0) {
++			close(sockfd2);
++			sockfd2 = -1;
++		}
+ 	}
+ 	if (new_mode == LISTEN_KERNEL)
+ 		sockfd = udhcp_listen_socket(/*INADDR_ANY,*/ CLIENT_PORT, client_config.interface);
+ 	else if (new_mode != LISTEN_NONE)
++	{
+ 		sockfd = udhcp_raw_socket(client_config.ifindex);
++		if (sockfd >= 0)
++		{
++			sockfd2 = udhcp_listen_socket(/*INADDR_ANY,*/ CLIENT_PORT, client_config.interface);
++			if (sockfd2 >= 0)
++			{
++				int size = 1024;
++				setsockopt(sockfd2,SOL_SOCKET,SO_RCVBUF,&size,sizeof(size));
++				setsockopt(sockfd2,SOL_SOCKET,SO_SNDBUF,&size,sizeof(size));
++				int flags = fcntl(sockfd2, F_GETFL, 0);
++				fcntl(sockfd2, F_SETFL, flags | O_NONBLOCK);
++			}
++		}
++	}
+ 	/* else LISTEN_NONE: sockfd stays closed */
+ }
+ 

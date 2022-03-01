@@ -1,0 +1,43 @@
+--- a/file.c
++++ b/file.c
+@@ -830,10 +830,23 @@ static char *uh_handle_alias(char *old_u
+ 		int old_len;
+ 		int new_len;
+ 		int path_len = 0;
+-
+-		if (!uh_path_match(alias->alias, old_url))
+-			continue;
+-		old_url += strlen(alias->alias);
++		int slen = 0;
++		char * suffix = NULL;
++		if (alias->alias[0] == '.') {
++			 char * query = strstr(old_url, "?");
++			 slen = strlen(alias->alias);
++			 suffix = strstr(old_url, alias->alias);
++			 if (suffix != NULL && (suffix[slen] == '\0' || suffix[slen] == '/' || suffix[slen] == '?')
++			 	&& (query == NULL || query > suffix)) {
++			 } else {
++			 	slen = 0;
++			 	continue;
++			 }
++		} else {
++			if (!uh_path_match(alias->alias, old_url))
++				continue;
++			old_url += strlen(alias->alias);
++		}
+ 		if (alias->path)
+ 			path_len = strlen(alias->path);
+ 
+@@ -851,7 +864,11 @@ static char *uh_handle_alias(char *old_u
+ 			strcpy(new_url, alias->path);
+ 		else if (conf.cgi_prefix)
+ 			strcpy(new_url, conf.cgi_prefix);
+-		strcat(new_url, old_url);
++		if (slen) {
++			strncat(new_url, old_url, suffix - old_url);
++			strcat(new_url, suffix + slen);
++		} else
++			strcat(new_url, old_url);
+ 
+ 		return new_url;
+ 	}

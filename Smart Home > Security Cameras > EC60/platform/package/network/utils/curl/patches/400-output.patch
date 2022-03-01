@@ -1,0 +1,34 @@
+--- a/src/tool_getparam.c	2019-02-05 22:00:12.000000000 +0800
++++ b/src/tool_getparam.c	2019-03-25 14:01:54.068031324 +0800
+@@ -292,6 +292,7 @@ static const struct LongShort aliases[]=
+   {"N",  "buffer",                   ARG_BOOL},
+          /* 'buffer' listed as --no-buffer in the help */
+   {"o",  "output",                   ARG_FILENAME},
++  {"Z",  "output",                   ARG_FILENAME},
+   {"O",  "remote-name",              ARG_NONE},
+   {"Oa", "remote-name-all",          ARG_BOOL},
+   {"p",  "proxytunnel",              ARG_BOOL},
+@@ -1889,6 +1890,23 @@ ParameterError getparameter(const char *
+       url->flags |= GETOUT_OUTFILE;
+     }
+     break;
++    case 'Z': /* --output pid */
++      /* output file */
++    {
++      #include <fcntl.h>
++      char cmd[128] = {};
++      int pid_fd = 0;
++
++      pid_t pid = getpid();
++      pid_fd = open(nextarg, O_CREAT | O_TRUNC | O_WRONLY);
++      if (pid_fd != -1) {
++        sprintf(cmd, "%d", pid);
++        write(pid_fd, cmd, strlen(cmd));
++        close(pid_fd);
++      }
++    }
++    break;
++
+     case 'P':
+       /* This makes the FTP sessions use PORT instead of PASV */
+       /* use <eth0> or <192.168.10.10> style addresses. Anything except

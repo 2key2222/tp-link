@@ -1,0 +1,737 @@
+diff -purbBN a/uci_blobmsg.c b/uci_blobmsg.c
+--- a/uci_blobmsg.c	1970-01-01 08:00:00.000000000 +0800
++++ b/uci_blobmsg.c	2017-11-07 10:08:04.288392656 +0800
+@@ -0,0 +1,553 @@
++/*
++ * Copyright (C) 2010-2017 TP-Link Technologies Co., Ltd.
++ *
++ * Permission to use, copy, modify, and/or distribute this software for any
++ * purpose with or without fee is hereby granted, provided that the above
++ * copyright notice and this permission notice appear in all copies.
++ *
++ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
++ * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
++ * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
++ * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
++ * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
++ * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
++ * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
++ */
++#include "uci_blobmsg.h"
++#include <libubox/list.h>
++#include <libubox/blobmsg_json.h>
++
++#define DEBUG_UCI(...) //fprintf(stderr, __VA_ARGS__)
++
++struct uci_sec_list {
++	struct list_head list;
++	int index;
++};
++
++static int blobuci_section_sort(const char *pre_sec_name, const char *package, struct uci_sec_list *sec_list)
++{
++	int indexNew = 0;
++	struct uci_sec_list *secL = NULL, *secLNext = NULL;
++	struct uci_package *p = NULL;
++	struct uci_context *ctx = NULL;
++	if (!sec_list) {
++		return -1;
++	}
++	ctx = uci_alloc_context();
++	if (!ctx) {
++		return -1;
++	}
++	if (!pre_sec_name || !package) {
++		goto err_leave;
++	}
++	ctx->flags &= ~UCI_FLAG_STRICT;
++	if ((uci_load(ctx, package, &p) == UCI_OK) && p) {
++		struct uci_element *e, *tmp;
++		struct uci_ptr uci = {.package = package};
++		struct uci_sec_list secLTmp = {{NULL}};
++		INIT_LIST_HEAD(&secLTmp.list);
++		list_for_each_entry_safe(secL, secLNext, &sec_list->list, list) {
++			struct uci_sec_list *secL1 = NULL, *secLNext1 = NULL;
++			int flag = 0;
++			list_del(&secL->list);
++			if (list_empty(&secLTmp.list)) {
++				list_add_tail(&secL->list, &secLTmp.list);
++			}
++			else {
++				list_for_each_entry_safe(secL1, secLNext1, &secLTmp.list, list) {
++					if (secL->index < secL1->index) {
++						flag = 1;
++						list_add(&secL->list, secL1->list.prev);
++						break;
++					}
++				}
++				if (flag == 0) {
++					list_add_tail(&secL->list, &secLTmp.list);
++				}
++			}
++		}
++		list_for_each_entry_safe(secL, secLNext, &secLTmp.list, list) {
++			uci_foreach_element_safe(&p->sections, tmp, e) {
++				if (strncmp(e->name, pre_sec_name, strlen(pre_sec_name))) {
++					continue;
++				}
++				int index = -1;
++				char sec_name[64] = {'\0'};
++				char str_tmp[64] = {'\0'};
++				strcat(str_tmp,pre_sec_name);
++				strcat(str_tmp,"_%d");
++				sscanf(e->name, str_tmp, &index);
++				if (index == secL->index) {
++					snprintf(sec_name, strlen(pre_sec_name)+12, "%s_%d", pre_sec_name, indexNew++);
++					uci.s = uci_lookup_section(ctx, p, e->name);
++					if (uci.s) {
++						uci.section = NULL;
++						uci.option = NULL;
++						uci.p = p;
++						uci.value = sec_name;
++						uci_rename(ctx, &uci);
++					}
++					break;
++				}
++			}
++			list_del(&secL->list);
++			free(secL);
++		}
++		uci_save(ctx, p);
++		uci_commit(ctx, &p, false);
++		uci_unload(ctx, p);
++	}
++	else {
++		goto err_leave;
++	}
++
++	uci_free_context(ctx);
++	return indexNew;
++
++err_leave:
++	uci_free_context(ctx);
++	list_for_each_entry_safe(secL, secLNext, &sec_list->list, list) {
++		list_del(&secL->list);
++		free(secL);
++	}
++	return -1;
++}
++
++static char* blobuci_get_val_from_sec(struct uci_context *ctx, struct uci_section *s, const char *opt_name, char *val, int len)
++{
++	struct uci_element *e = NULL;
++	struct uci_option  *o = NULL;
++	if (0 == uci_lookup_next(ctx, &e, &s->options, opt_name)) {
++		o = uci_to_option(e);
++		if (!o || UCI_TYPE_STRING != o->type) {
++			return NULL;
++		} else {
++			if (len <= strlen(o->v.string)) {
++				return NULL;
++	}
++			memcpy(val, o->v.string, strlen(o->v.string));
++			return val;
++		}
++	} else {
++		return NULL;
++	}
++}
++
++bool blobuci_get_sec_name_by_val(struct blob_buf *b, const char *package, char *sec_name, int len)
++{
++	bool ret = false;
++	if (NULL == sec_name) {
++		return ret;
++	}
++	struct blob_buf buf = {NULL};
++	if (blobmsg_uci_operate(&buf, package, NULL, NULL, true)) {
++		struct blob_attr *bcur = NULL, *bcur2 = NULL, *bufcur = NULL, *bufcur2 = NULL;
++		int brem = 0, brem2 = 0, bufrem = 0, bufrem2 = 0;
++		brem = blobmsg_data_len(b->head);
++		__blob_for_each_attr(bcur, blobmsg_data(b->head), brem) {
++			if (blob_id(bcur) == BLOBMSG_TYPE_TABLE) {
++				brem2 = blobmsg_data_len(bcur);
++				__blob_for_each_attr(bcur2, blobmsg_data(bcur), brem2) {
++					if (blob_id(bcur2) == BLOBMSG_TYPE_STRING) {
++						bufrem = blobmsg_data_len(buf.head);
++						__blob_for_each_attr(bufcur, blobmsg_data(buf.head), bufrem) {
++							if (0 == strncmp(blobmsg_name(bufcur), blobmsg_name(bcur), strlen(blobmsg_name(bcur)))) {
++								bufrem2 = blobmsg_data_len(bufcur);
++								__blob_for_each_attr(bufcur2, blobmsg_data(bufcur), bufrem2) {
++									if (0 == strncmp(blobmsg_get_string(bufcur2), blobmsg_get_string(bcur2), strlen(blobmsg_get_string(bcur2)))) {
++										strncpy(sec_name, blobmsg_name(bufcur), len - 1);
++										sec_name[len - 1] = '\0';
++										ret = true;
++										goto leave;
++	}
++	}
++							}
++						}
++					}
++				}
++			}
++		}
++	}
++leave:
++	blob_buf_free(&buf);
++	return ret;
++}
++
++bool blobmsg_uci_operate(struct blob_buf *b, const char* package, const char* dir, const char* state, bool load)
++{
++	struct uci_package *p = NULL;
++	struct uci_context *ctx = NULL;
++
++	if (!b || !package || !(ctx = uci_alloc_context())) {
++		return false;
++	}
++	
++	ctx->flags &= ~UCI_FLAG_STRICT;
++	if (dir && *dir) {
++		uci_set_confdir(ctx, dir);
++	}
++
++	if (state && *state) {
++		if (load) {
++			uci_add_delta_path(ctx, state);
++		} else {
++			uci_set_savedir(ctx, state);
++		}
++	}
++
++	if ((uci_load(ctx, package, &p) == UCI_OK) && p) {
++		if (load) {
++			int swap = 1, diff = 0;
++			struct uci_section *s, *n;
++			struct uci_element *ptr, *tmp, *sec, *e;
++			void *array = NULL, *array2 = NULL, *table = NULL;
++
++			blobmsg_buf_init(b);
++			while (swap--) {
++				uci_foreach_element_safe(&p->sections, tmp, ptr) {
++					if (tmp && (&tmp->list != &p->sections)) {
++						s = (struct uci_section *)ptr;
++						n = (struct uci_section *)tmp;
++						diff = strcmp(s->type, n->type);
++						if (diff > 0 || (!diff && (ptr->name && !tmp->name))) {
++							ptr->list.prev->next = &tmp->list;
++							tmp->list.prev = ptr->list.prev;
++							ptr->list.next = tmp->list.next;
++							ptr->list.prev = &tmp->list;
++							tmp->list.next->prev = &ptr->list;
++							tmp->list.next = &ptr->list;
++							swap = 1;
++						}
++					}
++				}
++			}
++
++			uci_foreach_element_safe(&p->sections, tmp, ptr) {
++				s = (struct uci_section *)ptr;
++				n = (struct uci_section *)tmp;
++				DEBUG_UCI("UCI SEC %s.%s\n",package,ptr->name);
++				if (ptr->name) {
++					if (array) {
++						blobmsg_close_array(b, array);
++						array = NULL;
++					}
++				} else if (!array) {
++					array = blobmsg_open_array(b, s->type);
++					if (!array) {
++						continue;
++					}
++				}
++				table = blobmsg_open_table(b, ptr->name);
++				if (table) {
++					uci_foreach_element(&s->options, sec) {
++						struct uci_option *o = (struct uci_option *)sec;
++						if (o->type == UCI_TYPE_STRING) {
++							blobmsg_add_string(b, sec->name, o->v.string);
++							DEBUG_UCI("UCI OPT %s.%s.%s=%s\n",package,ptr->name,sec->name,o->v.string);
++						} else if (o->type == UCI_TYPE_LIST) {
++							array2 = blobmsg_open_array(b, sec->name);
++							if (array2) {
++								DEBUG_UCI("UCI OPT %s.%s.%s=[ ",package,ptr->name,sec->name);
++								uci_foreach_element(&o->v.list, e) {
++									blobmsg_add_string(b, NULL, e->name);
++									DEBUG_UCI("%s%s", e->name, (e->list.next != &o->v.list)?", ":" ]\n");
++								}
++								blobmsg_close_array(b, array2);
++							}
++						}
++					}
++					blobmsg_close_table(b, table);
++				}
++				if (!ptr->name && (!n || strcmp(s->type, n->type))) {
++					blobmsg_close_array(b, array);
++					array = NULL;
++				}
++			}
++		} else {
++			char index[20] = {0};
++			struct uci_section *sec;
++			struct uci_option *opt;
++			struct uci_ptr uci = {.package = package};
++
++			struct blob_attr *cur = NULL, *cur2 = NULL, *cur3 = NULL;
++			int rem = 0, rem2 = 0, rem3 = 0;
++
++			char sec_name[64] = {'\0'};
++			int b_table_rename = false;
++			struct uci_sec_list sec_list = {{NULL}};
++			INIT_LIST_HEAD(&sec_list.list);
++
++			uci.p = p;
++			rem = blobmsg_data_len(b->head);
++			__blob_for_each_attr(cur, blobmsg_data(b->head), rem) {
++				sec = uci_lookup_section(ctx, p, blobmsg_name(cur));
++				if (!sec) {
++					if (blob_id(cur) == BLOBMSG_TYPE_STRING) {
++						if (*blobmsg_get_string(cur) == '-') {
++							uci.section = blobmsg_get_string(cur) + 1;
++							uci.option = NULL;
++							uci.value = NULL;
++							uci_delete(ctx, &uci);
++							DEBUG_UCI("UCI DEL %s.%s\n",uci.package,blobmsg_get_string(cur)+1);
++						} else if (!uci_lookup_section(ctx, p, blobmsg_get_string(cur)) 
++							&& !uci_add_section(ctx, p, blobmsg_name(cur), &uci.s) && uci.s) {
++							uci.section = NULL;
++							uci.option = NULL;
++							uci.value = blobmsg_get_string(cur);
++							uci_rename(ctx, &uci);
++							DEBUG_UCI("UCI ADD %s.%s=%s\n",uci.package,uci.value,blobmsg_name(cur));
++						}
++					} else if (blob_id(cur) == BLOBMSG_TYPE_ARRAY) {
++						rem2 = blobmsg_data_len(cur);
++						__blob_for_each_attr(cur2, blobmsg_data(cur), rem2) {
++							if (blob_id(cur2) == BLOBMSG_TYPE_STRING) {
++								if (*blobmsg_get_string(cur2) == '-') {
++									uci.section = blobmsg_get_string(cur2) + 1;
++									uci.option = NULL;
++									uci.value = NULL;
++									uci_delete(ctx, &uci);
++									DEBUG_UCI("UCI DEL %s.%s\n",uci.package,blobmsg_get_string(cur2)+1);
++								} else if (!uci_lookup_section(ctx, p, blobmsg_get_string(cur2)) 
++										&& !uci_add_section(ctx, p, blobmsg_name(cur2), &uci.s) && uci.s) {
++									uci.section = NULL;
++									uci.option = NULL;
++									uci.value = blobmsg_get_string(cur2);
++									uci_rename(ctx, &uci);
++									DEBUG_UCI("UCI ADD %s.%s=%s\n",uci.package,uci.value,blobmsg_name(cur2));
++								}
++							}
++						}
++					}
++				}
++			}
++
++			rem = blobmsg_data_len(b->head);
++			__blob_for_each_attr(cur, blobmsg_data(b->head), rem) {
++				b_table_rename = false;
++				sec = uci_lookup_section(ctx, p, blobmsg_name(cur));
++				if (!sec && blob_id(cur) == BLOBMSG_TYPE_TABLE) {
++					struct uci_element *e, *tmp;
++					struct uci_section *s = NULL;
++					if (*blobmsg_name(cur) == '-') {
++						bool b_found = false;
++						rem2 = blobmsg_data_len(cur);
++						__blob_for_each_attr(cur2, blobmsg_data(cur), rem2) {
++							uci_foreach_element(&p->sections, e) {
++								s = uci_to_section(e);
++								if (0 == strncmp(s->type, blobmsg_name(cur)+1, strlen(s->type))) {
++									int val_len = strlen(blobmsg_get_string(cur2));
++									char *val_str = calloc(1, val_len + 1);
++									if (NULL == blobuci_get_val_from_sec(ctx, s, blobmsg_name(cur2), val_str, val_len + 1)) {
++										free(val_str);
++										break;
++									}
++									if (0 == strncmp(blobmsg_get_string(cur2), val_str, val_len)) {
++										b_found = true;
++										free(val_str);
++										break;
++									}
++									free(val_str);
++								}
++							}
++							if (false == b_found) {
++								break;
++							}
++							uci.s = s;
++							uci.section = NULL;
++							uci.option = NULL;
++							uci_delete(ctx, &uci);
++						}
++						if (false == b_found) {
++							uci_free_context(ctx);
++							return false;
++						}
++					}
++					else if (*blobmsg_name(cur) == '+') {
++						int index = -1, maxIndex = -1;
++						unsigned int num;
++						uci_foreach_element_safe(&p->sections, tmp, e) {
++							char str_tmp[64] = {'\0'};
++							strcat(str_tmp,blobmsg_name(cur)+1);
++							strcat(str_tmp,"_%d");
++							sscanf(e->name, str_tmp, &index);
++							if (index > maxIndex) {
++								maxIndex = index;
++							}
++							if (index >= 0) {
++								struct uci_sec_list *secTmp = calloc(1,sizeof(*secTmp));
++								secTmp->index = index;
++								list_add_tail(&secTmp->list, &sec_list.list);
++							}
++						}
++						if (maxIndex == 0x7fffffff) {
++							// re-sort and rename the uci section
++							// section_sort will list_del and free
++							num = blobuci_section_sort(blobmsg_name(cur)+1, package, &sec_list);
++							if (num < 0) {
++								continue;
++							}
++						}
++						else {
++							if (maxIndex < 0 ) {
++								num = 0;
++							}
++							else {
++								num = maxIndex + 1;
++							}
++							struct uci_sec_list *secL = NULL, *secLNext = NULL;
++							list_for_each_entry_safe(secL, secLNext, &sec_list.list, list) {
++								list_del(&secL->list);
++								memset(secL, 0, sizeof(*secL));
++								free(secL);
++							}
++						}
++						snprintf(sec_name, sizeof(sec_name), "%s_%d", blobmsg_name(cur)+1,num);
++						if (!uci_add_section(ctx, p, blobmsg_name(cur)+1, &uci.s) && uci.s) {
++							b_table_rename = true;
++							uci.o = NULL;
++							uci.section = NULL;
++							uci.option = NULL;
++							uci.value = sec_name;
++							uci_rename(ctx, &uci);
++							DEBUG_UCI("UCI ADD %s.%s=%s,sec_name=%s\n",uci.package,uci.value,blobmsg_name(cur)+1,sec_name);
++						}
++					}
++					else {
++						snprintf(sec_name, sizeof(sec_name), "%s", blobmsg_name(cur));
++						b_table_rename = true;
++						if (!uci_lookup_section(ctx, p, sec_name) &&
++							!uci_add_section(ctx, p, blobmsg_name(cur), &uci.s) && uci.s) {
++							uci.o = NULL;
++							uci.section = NULL;
++							uci.option = NULL;
++							uci.value = sec_name;
++							uci_rename(ctx, &uci);
++							DEBUG_UCI("UCI ADD %s.%s=%s,sec_name=%s\n",uci.package,uci.value,blobmsg_name(cur),sec_name);
++						}
++					}
++				}
++
++				if (b_table_rename) {
++					sec = uci_lookup_section(ctx, p, sec_name);
++				} else {
++					sec = uci_lookup_section(ctx, p, blobmsg_name(cur));
++				}
++				uci.s = sec;
++				if (sec && blob_id(cur) == BLOBMSG_TYPE_TABLE) {
++					if (b_table_rename) {
++						uci.section = sec_name;
++					} else {
++					uci.section = blobmsg_name(cur);
++					}
++					rem2 = blobmsg_data_len(cur);
++					__blob_for_each_attr(cur2, blobmsg_data(cur), rem2) {
++						uci.option = blobmsg_name(cur2);
++						if (*blobmsg_name(cur2) == '-') {
++							uci.option ++;
++							uci.value = NULL;
++							opt = uci_lookup_option(ctx, sec, uci.option);
++							if (opt) {
++								uci.o = opt;
++								if (opt->type == UCI_TYPE_STRING) {
++									uci_delete(ctx, &uci);
++								} else if (opt->type == UCI_TYPE_LIST) {
++									if (blob_id(cur2) == BLOBMSG_TYPE_ARRAY) {
++										rem3 = blobmsg_data_len(cur2);
++										__blob_for_each_attr(cur3, blobmsg_data(cur2), rem3) {
++											if (blob_id(cur3) == BLOBMSG_TYPE_INT32) {
++												snprintf(index, sizeof(index) - 1, "%d", blobmsg_get_u32(cur3));
++												uci.value = index;
++												uci_delete(ctx, &uci);
++											} else if (blob_id(cur3) == BLOBMSG_TYPE_STRING) {
++												uci.value = blobmsg_get_string(cur3);
++												uci_del_list(ctx, &uci);
++											} 
++										}
++									} else if (blob_id(cur2) == BLOBMSG_TYPE_INT32) {
++										snprintf(index, sizeof(index) - 1,"%d", blobmsg_get_u32(cur2));
++										uci.value = index;
++										uci_delete(ctx, &uci);
++									} else if (blob_id(cur2) == BLOBMSG_TYPE_STRING) {
++										uci.value = blobmsg_get_string(cur2);
++										uci_del_list(ctx, &uci);
++									} else {
++										uci_delete(ctx, &uci);
++									}
++								}
++								uci.o = NULL;
++								DEBUG_UCI("UCI DEL %s.%s.%s\n",uci.package,uci.section,uci.option);
++							}
++						} else if (blob_id(cur2) == BLOBMSG_TYPE_ARRAY) {
++							uci.value = NULL;
++							opt = uci_lookup_option(ctx, sec, uci.option + ((*uci.option == '+')?1:0));
++							if (opt) {
++								uci.o = opt;
++								if (opt->type == UCI_TYPE_STRING || (*uci.option != '+')) {
++									uci_delete(ctx, &uci);
++									uci.o = NULL;
++									uci_set(ctx, &uci);
++								}
++							} else {
++								uci.o = NULL;
++								uci_set(ctx, &uci);
++							}
++							if (*uci.option == '+')
++								uci.option ++;
++							rem3 = blobmsg_data_len(cur2);
++							__blob_for_each_attr(cur3, blobmsg_data(cur2), rem3) {
++								if (blob_id(cur3) == BLOBMSG_TYPE_STRING) {
++									uci.value= blobmsg_get_string(cur3);
++									uci_add_list(ctx, &uci);
++									DEBUG_UCI("UCI ADDLIST %s.%s.%s=%s\n",uci.package,uci.section,uci.option,uci.value);
++								}
++								else if (blob_id(cur3) == BLOBMSG_TYPE_INT32) {
++									snprintf(index, sizeof(index) - 1, "%d", blobmsg_get_u32(cur3));
++									uci.value = index;
++									uci_add_list(ctx, &uci);
++								}
++							}
++						} else if (blob_id(cur2) == BLOBMSG_TYPE_STRING) {
++							uci.value = blobmsg_get_string(cur2);
++							uci.o = NULL;
++							if (0 == strlen(uci.value)){
++								opt = uci_lookup_option(ctx, sec, uci.option);
++								if (!opt) {
++									continue;
++								}
++								uci.o = opt;
++								uci_delete(ctx, &uci);
++								uci.o = NULL;
++								DEBUG_UCI("UCI DEL %s.%s.%s\n",uci.package,uci.section,uci.option);
++							}
++							else {
++							uci_set(ctx, &uci);
++							DEBUG_UCI("UCI SET %s.%s.%s=%s\n",uci.package,uci.section,uci.option,uci.value);
++							}
++						} else {
++							char *v = blobmsg_format_json_value(cur2);
++							if (v) {
++								uci.value = v;
++								uci.o = NULL;
++								uci_set(ctx, &uci);
++								DEBUG_UCI("UCI SET %s.%s.%s=%s\n",uci.package,uci.section,uci.option,uci.value);
++								free(v);
++							}
++						}
++					}
++				}
++			}
++			uci_save(ctx, p);
++			if ((!state || !*state) && (!dir || !*dir)) {
++				uci_commit(ctx, &p, false);
++			}
++		}
++		uci_unload(ctx, p);
++		uci_free_context(ctx);
++
++		return true;
++	}
++
++	uci_free_context(ctx);
++
++	return false;
++}
+diff -purbBN a/uci_blobmsg.h b/uci_blobmsg.h
+--- a/uci_blobmsg.h	1970-01-01 08:00:00.000000000 +0800
++++ b/uci_blobmsg.h	2017-11-07 10:32:15.420743712 +0800
+@@ -0,0 +1,149 @@
++/*
++ * Copyright (C) 2010-2017 TP-Link Technologies Co., Ltd.
++ *
++ * Permission to use, copy, modify, and/or distribute this software for any
++ * purpose with or without fee is hereby granted, provided that the above
++ * copyright notice and this permission notice appear in all copies.
++ *
++ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
++ * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
++ * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
++ * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
++ * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
++ * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
++ * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
++ */
++#ifndef __BLOBMSG_UCI_H
++#define __BLOBMSG_UCI_H
++
++#include <libubox/blobmsg.h>
++#include <json-c/json_object.h>
++#include <uci.h>
++#define blobuci_get_string		blobmsg_get_string
++#define blobuci_dup_string(a)	strdup((a) ? blobmsg_get_string(a) : "")
++#define _blobuci_return(t,s,a) ({t v = 0;struct json_object* js = json_object_new_string(blobmsg_get_string(a));\
++	if(js){v = json_object_get_##s(js);json_object_put(js);}(t) v;})
++static inline bool blobuci_get_bool(struct blob_attr *attr)  {return _blobuci_return(bool, int, attr);}
++static inline double blobuci_get_double(struct blob_attr *attr) {return _blobuci_return(double, double, attr);}
++static inline uint8_t blobuci_get_u8(struct blob_attr *attr) {return _blobuci_return(uint8_t, int, attr);}
++static inline uint16_t blobuci_get_u16(struct blob_attr *attr) {return _blobuci_return(uint16_t,int, attr);}
++static inline uint32_t blobuci_get_u32(struct blob_attr *attr) {return _blobuci_return(uint32_t,int, attr);}
++static inline uint64_t blobuci_get_u64(struct blob_attr *attr) {return _blobuci_return(uint64_t, int64, attr);}
++static inline int blobuci_get_range(struct blob_attr *attr, int min, int max, int dft) {
++	int v = _blobuci_return(int,int, attr);
++	return (v>=min && v<=max)?v:dft;
++}
++
++bool blobmsg_uci_operate(struct blob_buf *b, const char* package, const char* dir, const char* state, bool load);
++bool blobuci_get_sec_name_by_val(struct blob_buf *b, const char *package, char *sec_name, int len);
++static inline bool blobuci_load_dir(struct blob_buf *b, const char* package, const char* dir)
++{
++	return blobmsg_uci_operate(b, package, dir, NULL, true);
++}
++
++static inline bool blobuci_save_dir(struct blob_buf *b, const char* package, const char* dir)
++{
++	return blobmsg_uci_operate(b, package, dir, NULL, false);
++}
++
++static inline bool blobuci_load_state(struct blob_buf *b, const char* package, const char* state)
++{
++	return blobmsg_uci_operate(b, package, NULL, state, true);
++}
++
++static inline bool blobuci_save_state(struct blob_buf *b, const char* package, const char* state)
++{
++	return blobmsg_uci_operate(b, package, NULL, state, false);
++}
++
++static inline bool blobuci_load(struct blob_buf *b, const char* package)
++{
++	return blobmsg_uci_operate(b, package, NULL, NULL, true);
++}
++
++static inline bool blobuci_save(struct blob_buf *b, const char* package)
++{
++	return blobmsg_uci_operate(b, package, NULL, NULL, false);
++}
++
++#define blobuci_set(p, s, o, set, v) ({bool ret = false;\
++		void* table = NULL;struct blob_buf b = {NULL};blobmsg_buf_init(&b);\
++		if (table = blobmsg_open_table(&b, #s)) {\
++			set(&b, #o, v);blobmsg_close_table(&b, table);ret = blobuci_save(&b, #p);}\
++		blob_buf_free(&b); ret;})
++
++#define blobuci_get(p, s, o, get, b) ({typeof(get(NULL)) ret = 0;\
++		if (blobuci_load(b, #p)) {\
++		struct blobmsg(blobmsg_section _##s)(__s__,(b)->head,true);if(__s__._##s) {\
++		struct blobmsg(blobmsg_option _##o)(__o__,__s__._##s,true);if(__o__._##o) {\
++		ret = get(__o__._##o);}} } ret;})
++
++/*
++ * Usage of UCI blobmsg API combining with blobmsg automate parser macro
++ *
++ *  1. Load config file "account" and read the options of section "account":
++ *	if (blobuci_load(&b, "account")) {
++ *		struct blobmsg(
++ *			blobmsg_section account,
++ *		) (acc, &b);
++ *
++ *		if (acc.account) {
++ *			struct blobmsg (
++ *				blobmsg_option user,
++ *				blobmsg_option uhash,
++ *				blobmsg_option password,
++ *			) (admin, acc.account, false);
++ *
++ *			printf("user=%s\n", blobuci_get_string(admin.user));
++ *			printf("pass=%s\n", blobuci_get_string(admin.password));
++ *		}
++ *	}
++ *
++ *  2. Modify and save the config file "datetime":
++ *  void ucloud_datetime_save()
++ *  {
++ *  	void* section = NULL;
++ *  	struct blob_buf b = {NULL};
++ *  
++ *  	blobmsg_buf_init(&b);
++ *  	if (NULL != (section = blobmsg_open_table(&b, "timezone"))) {
++ *  		blobmsg_add_string(&b, "area", "UTC+8");
++ *  		blobmsg_add_string(&b, "name", "Beijing");
++ *  		blobmsg_add_string(&b, "dstsource", "web");
++ *  		blobmsg_close_table(&b, section);
++ *  	}
++ *  	if (NULL != (section = blobmsg_open_table(&b, "sync"))) {
++ *  		blobmsg_add_string(&b, "ntpserver", "10.0.0.1");
++ *  		blobmsg_add_u32(&b, "type", 1);
++ *  		blobmsg_close_table(&b, section);
++ *  	}
++ *  	blobuci_save(&b, "datetime");
++ *  	blob_buf_free(&b);
++ *  }
++ *
++ *  3. If you want to visit config under "/var/state/", use as below:
++ *   
++ *  	if (blobuci_load_state(&b, "system", "/var/state/")) {
++ *  		struct blobmsg (
++ *  			blobmsg_section firm,
++ *  		) (sys, &b);
++ *  
++ *  		if (sys.firm) {
++ *  			struct blobmsg(
++ *  				blobmsg_option ALIAS, //My Wi-Fi Extender+
++ *  				blobmsg_option MODEL, //RE270K
++ *  				blobmsg_option DEVICE_NAME, //AC750 Wi-Fi Range Extender with Smart Plug
++ *  				blobmsg_option SOFTVERSION, //1.1.9 Build 20170425 rel.33433
++ *  			) (firm, sys.firm, false);
++ *  		}
++ *  	}
++ *
++ *  4. To be simply, use these 2 macros for single option config read/write:
++ *  
++ *	if (!blobuci_set(cloud_brd, default, heartbeat_interval_ms, blobmsg_add_u32, 3500)) {
++ *      printf("failed!\n");
++ *  }
++ * 
++ *  int hbint = blobuci_get(cloud_brd, default, heartbeat_interval_ms, blobmsg_get_u32);
++ */
++#endif
+diff -purbBN a/CMakeLists.txt b/CMakeLists.txt
+--- a/CMakeLists.txt	2016-07-29 18:01:37.000000000 +0800
++++ b/CMakeLists.txt	2017-11-07 10:30:21.609826464 +0800
+@@ -15,20 +15,20 @@ IF(JSONC_FOUND)
+   INCLUDE_DIRECTORIES(${JSONC_INCLUDE_DIRS})
+ ENDIF()
+ 
+-SET(LIB_SOURCES libuci.c file.c util.c delta.c parse.c blob.c)
++SET(LIB_SOURCES libuci.c file.c util.c delta.c parse.c blob.c uci_blobmsg.c)
+ 
+ ADD_LIBRARY(uci SHARED ${LIB_SOURCES})
+-TARGET_LINK_LIBRARIES(uci ubox)
++TARGET_LINK_LIBRARIES(uci blobmsg_json ubox)
+ SET_TARGET_PROPERTIES(uci PROPERTIES OUTPUT_NAME uci)
+ 
+ ADD_EXECUTABLE(cli cli.c)
+ SET_TARGET_PROPERTIES(cli PROPERTIES OUTPUT_NAME uci)
+ TARGET_LINK_LIBRARIES(cli uci)
+ 
+ ADD_LIBRARY(ucimap STATIC ucimap.c)
+ 
+ ADD_SUBDIRECTORY(lua)
+ 
+-INSTALL(FILES uci.h uci_config.h uci_blob.h ucimap.h
++INSTALL(FILES uci.h uci_config.h uci_blob.h ucimap.h uci_blobmsg.h
+ 	DESTINATION include
+ )

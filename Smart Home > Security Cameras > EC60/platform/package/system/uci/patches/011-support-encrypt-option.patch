@@ -1,0 +1,611 @@
+diff -purN a/cli.c b/cli.c
+--- a/cli.c	2017-08-15 11:16:34.198954818 +0800
++++ b/cli.c	2017-08-15 11:15:36.606952477 +0800
+@@ -158,6 +158,8 @@ static void uci_usage(void)
+ 		"\t-s         force strict mode (stop on parser errors, default)\n"
+ 		"\t-S         disable strict mode\n"
+ 		"\t-X         do not use extended syntax on 'show'\n"
++		"\t-E         use with commit or export, encrypt all options\n"
++		"\t-D         use with commit or export, decrypt all options\n"
+ 		"\n",
+ 		appname
+ 	);
+@@ -314,7 +316,7 @@ static int package_cmd(int cmd, char *tu
+ 		uci_show_changes(ptr.p);
+ 		break;
+ 	case CMD_COMMIT:
+-		if (flags & CLI_FLAG_NOCOMMIT) {
++		if ((flags & CLI_FLAG_NOCOMMIT) && ctx->encrypt_state == UCI_ENCRYPT_AUTO) {
+ 			ret = 0;
+ 			goto out;
+ 		}
+@@ -698,7 +700,7 @@ int main(int argc, char **argv)
+ 		return 1;
+ 	}
+ 
+-	while((c = getopt(argc, argv, "c:d:f:LmnNp:P:sSqXu")) != -1) {
++	while((c = getopt(argc, argv, "c:d:f:LmnNp:P:sSqXuED")) != -1) {
+ 		switch(c) {
+ 			case 'c':
+ 				uci_set_confdir(ctx, optarg);
+@@ -753,6 +755,12 @@ int main(int argc, char **argv)
+ 				flags |= CLI_FLAG_MERGE;
+ 				flags |= CLI_FLAG_UPGRADE;
+ 				break;
++			case 'E':
++				ctx->encrypt_state = UCI_ENCRYPT_ENABLE;
++				break;
++			case 'D':
++				ctx->encrypt_state = UCI_ENCRYPT_DISABLE;
++				break;
+ 			default:
+ 				uci_usage();
+ 				return 0;
+diff -purN a/file.c b/file.c
+--- a/file.c	2017-08-15 11:16:34.198954818 +0800
++++ b/file.c	2017-08-15 11:15:36.606952477 +0800
+@@ -34,6 +34,259 @@
+ 
+ #define LINEBUF	32
+ 
++static const struct {
++	const char *p;
++	const char *s;
++	const char *o;
++} enc_list[] = {
++UCI_ENCRYPT_OPTIONS
++};
++
++
++#ifdef UCI_ENCRYPTION_USING_KEY_DEVICE
++
++#include <sys/ioctl.h>
++#include <errno.h>
++
++#define CFGDEV_IOCTL_ENCRYPT	_IO('E', 1)
++#define CFGDEV_IOCTL_DECRYPT	_IO('E', 2)
++
++static inline const char *uci_encrypt(struct uci_context *ctx, const char *str)
++{
++	int text_len = strlen(str) + 1;
++	int crc_text_len_padded = (4 + text_len + 0xF) & ~0xF;
++	int total_len = (16 + crc_text_len_padded) * 2;
++	int ret;
++	
++	while (total_len + 1 > ctx->bufsz) {
++		ctx->bufsz *= 2;
++		ctx->buf = uci_realloc(ctx, ctx->buf, ctx->bufsz);
++	}
++
++	strcpy(ctx->buf, str);
++	
++	ret = ioctl(ctx->key_fd, CFGDEV_IOCTL_ENCRYPT, ctx->buf);
++	if (ret < 0) {
++		fprintf(stderr, "cfgdev ioctl error: %d\n", errno);
++		return NULL;
++	}
++	
++	return ctx->buf;
++}
++static inline bool uci_decrypt(struct uci_context *ctx, char *str)
++{
++	int ret;
++
++	ret = ioctl(ctx->key_fd, CFGDEV_IOCTL_DECRYPT, str);
++	if (ret < 0) {
++		fprintf(stderr, "cfgdev ioctl error: %d\n", errno);
++		return false;
++	}
++	
++	return true;
++}
++static inline bool uci_has_encrypt_key(struct uci_context *ctx)
++{
++	int fd, ret;
++	char buf[25];
++	
++	if (ctx->key_inited)
++		return !!ctx->key_fd;
++	ctx->key_inited = true;
++	
++	fd = open(UCI_KEYDEV, O_RDONLY, 0);
++	if (fd < 0) {
++		goto err;
++	}
++
++	ret = read(fd, buf, sizeof(buf));
++	if (ret < 0) {
++		goto err_fd;
++	}
++	if (buf[0] != '2' /* inited and found key in chip */) {
++		goto err_fd;
++	}
++
++	ctx->key_fd = fd;
++	return true;
++	
++err_fd:
++	close(fd);
++err:
++	return false;
++}
++#endif
++
++
++#ifdef UCI_ENCRYPTION_USING_KEY_FILE
++
++#include <sys/time.h>
++#include "aes.h"
++
++static const uint32_t crc32_tab_s[] = {
++	0x00000000, 0x1db71064, 0x3b6e20c8, 0x26d930ac,
++	0x76dc4190, 0x6b6b51f4, 0x4db26158, 0x5005713c,
++	0xedb88320, 0xf00f9344, 0xd6d6a3e8, 0xcb61b38c,
++	0x9b64c2b0, 0x86d3d2d4, 0xa00ae278, 0xbdbdf21c
++};
++static uint32_t crc32_calc_s(const uint8_t *buf, size_t size)
++{
++	uint32_t crc = ~0;
++	while (size--) {
++		crc ^= *buf++;
++		crc = crc32_tab_s[crc & 0xF] ^ (crc >> 4);
++		crc = crc32_tab_s[crc & 0xF] ^ (crc >> 4);
++	}
++	return crc ^ ~0;
++}
++
++static void ATOH(unsigned char a, char *out)
++{
++	unsigned char t = (a >> 4) & 0xF;
++	out[0] = t < 10 ? t + '0' : t - 10 + 'A';
++	t = a & 0xF;
++	out[1] = t < 10 ? t + '0' : t - 10 + 'A';
++}
++static void HTOA(char *h, unsigned char *out)
++{
++	char t, hp;
++	hp = h[0];
++	t = (hp >= '0' && hp <= '9') ? hp - '0' :
++		(hp >= 'A' && hp <= 'F') ? hp - 'A' + 10 :
++		(hp >= 'a' && hp <= 'f') ? hp - 'a' + 10 : 0;
++	hp = h[1];
++	t <<= 4;
++	t += (hp >= '0' && hp <= '9') ? hp - '0' :
++		(hp >= 'A' && hp <= 'F') ? hp - 'A' + 10 :
++		(hp >= 'a' && hp <= 'f') ? hp - 'a' + 10 : 0;
++	*out = t;
++}
++
++static inline const char *uci_encrypt(struct uci_context *ctx, const char *str)
++{
++	unsigned int text_len, crc_text_len_padded;
++	unsigned int total_len;
++	unsigned char iv[16];
++	unsigned char iv_cpy[16];
++	int i;
++	uint32_t crc;
++	
++	text_len = strlen(str) + 1;
++	crc_text_len_padded = (sizeof(crc) + text_len + 0xF) & ~0xF;
++
++	total_len = (sizeof(iv) + crc_text_len_padded) * 2;
++	while (total_len + 1 > ctx->bufsz) {
++		ctx->bufsz *= 2;
++		ctx->buf = uci_realloc(ctx, ctx->buf, ctx->bufsz);
++	}
++	
++	crc = crc32_calc_s((uint8_t *)str, text_len - 1);
++	
++	ctx->buf[0] = crc & 0xFF;
++	ctx->buf[1] = (crc >> 8) & 0xFF;
++	ctx->buf[2] = (crc >> 16) & 0xFF;
++	ctx->buf[3] = (crc >> 24) & 0xFF;
++	strcpy(ctx->buf + 4, str);
++
++	struct timeval tv;
++	gettimeofday(&tv, NULL);
++	srand(tv.tv_sec * 1000 + tv.tv_usec);
++
++	for (i = 0; i < sizeof(iv) / sizeof(*iv); ++i)
++		iv[i] = rand();
++
++	AES_KEY key;
++	AES_set_encrypt_key(ctx->key, ctx->key_len * 8, &key);
++	memcpy(iv_cpy, iv, sizeof(iv));
++ 	AES_cbc_encrypt((unsigned char*)ctx->buf, (unsigned char*)ctx->buf, crc_text_len_padded, &key, iv_cpy, true);
++	memset(&key, 0, sizeof(key));
++	
++	for (i = crc_text_len_padded - 1; i >= 0 ; --i)
++		ATOH(ctx->buf[i], &ctx->buf[(sizeof(iv) + i) * 2]);
++	for (i = 0; i < sizeof(iv); ++i)
++		ATOH(iv[i], &ctx->buf[i * 2]);
++	ctx->buf[total_len] = '\0';
++
++	return ctx->buf;
++}
++
++static inline bool uci_decrypt(struct uci_context *ctx, char *str)
++{
++	int i;
++	const int iv_len = 16;
++	unsigned int crc_text_len, total_len = strlen(str);
++	unsigned char *buf, *text;
++	uint32_t crc;
++
++	if (total_len < 64)
++		return false;
++	crc_text_len = total_len / 2 - iv_len;
++	crc_text_len &= ~0xF;
++
++	buf = uci_malloc(ctx, crc_text_len + iv_len + 1);
++	for (i = 0; i < (crc_text_len + iv_len); ++i)
++		HTOA(&str[i * 2], &buf[i]);
++	
++	AES_KEY key;
++	AES_set_decrypt_key(ctx->key, ctx->key_len * 8, &key);
++ 	AES_cbc_encrypt(&buf[iv_len], &buf[iv_len], crc_text_len, &key, buf, false);
++	memset(&key, 0, sizeof(key));
++	
++	crc = buf[iv_len];
++	crc |= buf[iv_len + 1] << 8;
++	crc |= buf[iv_len + 2] << 16;
++	crc |= buf[iv_len + 3] << 24;
++
++	text = &buf[iv_len + sizeof(crc)];
++
++	if (crc == crc32_calc_s(text, strlen((char *)text))) {
++		strcpy(str, (char *)text);
++		free(buf);
++		return true;
++	} else {
++		free(buf);
++		return false;
++	}
++}
++
++static inline bool uci_has_encrypt_key(struct uci_context *ctx)
++{
++	FILE *file;
++	unsigned char *key;
++	int key_len;
++	int max_key = 32;
++
++	if (ctx->key_inited)
++		return !!ctx->key;
++	ctx->key_inited = true;
++
++	key = uci_malloc(ctx, max_key);
++	
++	UCI_TRAP_SAVE(ctx, error);
++	file = uci_open_stream(ctx, UCI_KEYFILE, NULL, SEEK_SET, false, false);
++	key_len = fread(key, 1, max_key, file);
++	uci_close_stream(file);
++	UCI_ASSERT(ctx, key_len == 16 || key_len == 24 || key_len == 32);
++	UCI_TRAP_RESTORE(ctx);
++
++	ctx->key = key;
++	ctx->key_len = key_len;
++
++error:
++	if (ctx->err) {
++		free(key);
++		ctx->err = 0;
++		return false;
++	}
++	return true;
++}
++
++#endif
++
++#if (!(defined(UCI_ENCRYPTION_USING_KEY_FILE)) && !(defined(UCI_ENCRYPTION_USING_KEY_DEVICE)))
++#error "Please config encryption using key file or key device."
++#endif
++
+ /*
+  * Fetch a new line from the input stream and resize buffer if necessary
+  */
+@@ -189,10 +441,12 @@ static void parse_single_quote(struct uc
+ /*
+  * parse a string from the command line and detect the quoting style
+  */
+-static void parse_str(struct uci_context *ctx, int *target)
++static void parse_str(struct uci_context *ctx, int *target, bool accept_encrypt)
+ {
+ 	struct uci_parse_context *pctx = ctx->pctx;
+ 	bool next = true;
++	bool is_encrypt = false;
++	int target_ori = *target;
+ 	do {
+ 		switch(pctx_cur_char(pctx)) {
+ 		case '\'':
+@@ -212,11 +466,20 @@ static void parse_str(struct uci_context
+ 		case '\\':
+ 			if (!parse_backslash(ctx))
+ 				continue;
++			if (accept_encrypt && pctx_cur_char(pctx) == 'E'
++					&& pctx_char(pctx, pctx_pos(pctx) + 1) == 'N'
++					&& pctx_char(pctx, pctx_pos(pctx) + 2) == 'C') {
++				pctx->pos += 3;
++				accept_encrypt = false;
++				is_encrypt = true;
++				continue;
++			}
+ 			/* fall through */
+ 		default:
+ 			addc(ctx, target, &pctx->pos);
+ 			break;
+ 		}
++		accept_encrypt = false;
+ 	} while (pctx_cur_char(pctx) && !isspace(pctx_cur_char(pctx)));
+ done:
+ 
+@@ -230,12 +493,21 @@ done:
+ 
+ 	/* terminate the parsed string */
+ 	pctx_char(pctx, *target) = 0;
++
++	if (is_encrypt) {
++		if (uci_has_encrypt_key(ctx) && uci_decrypt(ctx, pctx_str(pctx, target_ori)))
++			pctx->encrypt_state = UCI_ENCRYPT_ENABLE;
++		else
++			pctx->encrypt_state = UCI_ENCRYPT_ENABLE_BUT_KEY_ERR;
++	} else {
++		pctx->encrypt_state = UCI_ENCRYPT_DISABLE;
++	}
+ }
+ 
+ /*
+  * extract the next argument from the command line
+  */
+-static int next_arg(struct uci_context *ctx, bool required, bool name, bool package)
++static int next_arg(struct uci_context *ctx, bool required, bool name, bool package, bool accept_encrypt)
+ {
+ 	struct uci_parse_context *pctx = ctx->pctx;
+ 	int val, ptr;
+@@ -246,7 +518,7 @@ static int next_arg(struct uci_context *
+ 		pctx_cur_char(pctx) = 0;
+ 		pctx->pos += 1;
+ 	} else {
+-		parse_str(ctx, &ptr);
++		parse_str(ctx, &ptr, accept_encrypt);
+ 	}
+ 	if (!pctx_char(pctx, val)) {
+ 		if (required)
+@@ -281,7 +553,7 @@ int uci_parse_argument(struct uci_contex
+ 		uci_getln(ctx, 0);
+ 	}
+ 
+-	ofs_result = next_arg(ctx, false, false, false);
++	ofs_result = next_arg(ctx, false, false, false, false);
+ 	*result = pctx_str(ctx->pctx, ofs_result);
+ 	*str = pctx_cur_str(ctx->pctx);
+ 
+@@ -335,7 +607,7 @@ static void assert_eol(struct uci_contex
+ 	int ofs_tmp;
+ 
+ 	skip_whitespace(ctx);
+-	ofs_tmp = next_arg(ctx, false, false, false);
++	ofs_tmp = next_arg(ctx, false, false, false, false);
+ 	tmp = pctx_str(ctx->pctx, ofs_tmp);
+ 	if (*tmp && (ctx->flags & UCI_FLAG_STRICT))
+ 		uci_parse_error(ctx, "too many arguments");
+@@ -388,7 +660,7 @@ static void uci_parse_package(struct uci
+ 	/* command string null-terminated by strtok */
+ 	pctx->pos += strlen(pctx_cur_str(pctx)) + 1;
+ 
+-	ofs_name = next_arg(ctx, true, true, true);
++	ofs_name = next_arg(ctx, true, true, true, false);
+ 	name = pctx_str(pctx, ofs_name);
+ 	assert_eol(ctx);
+ 	if (single)
+@@ -421,12 +693,12 @@ static void uci_parse_config(struct uci_
+ 	/* command string null-terminated by strtok */
+ 	pctx->pos += strlen(pctx_cur_str(pctx)) + 1;
+ 
+-	ofs_type = next_arg(ctx, true, false, false);
++	ofs_type = next_arg(ctx, true, false, false, false);
+ 	type = pctx_str(pctx, ofs_type);
+ 	if (!uci_validate_type(type))
+ 		uci_parse_error(ctx, "invalid character in type field");
+ 
+-	ofs_name = next_arg(ctx, false, true, false);
++	ofs_name = next_arg(ctx, false, true, false, false);
+ 	type = pctx_str(pctx, ofs_type);
+ 	name = pctx_str(pctx, ofs_name);
+ 	assert_eol(ctx);
+@@ -459,6 +731,7 @@ static void uci_parse_option(struct uci_
+ 	int ofs_name, ofs_value;
+ 	char *name = NULL;
+ 	char *value = NULL;
++	enum uci_encrypt_state encrypt_state;
+ 
+ 	if (!pctx->section)
+ 		uci_parse_error(ctx, "option/list command found before the first section");
+@@ -466,8 +739,9 @@ static void uci_parse_option(struct uci_
+ 	/* command string null-terminated by strtok */
+ 	pctx->pos += strlen(pctx_cur_str(pctx)) + 1;
+ 
+-	ofs_name = next_arg(ctx, true, true, false);
+-	ofs_value = next_arg(ctx, false, false, false);
++	ofs_name = next_arg(ctx, true, true, false, false);
++	ofs_value = next_arg(ctx, false, false, false, true);
++	encrypt_state = ctx->pctx->encrypt_state;
+ 	name = pctx_str(pctx, ofs_name);
+ 	value = pctx_str(pctx, ofs_value);
+ 	assert_eol(ctx);
+@@ -484,6 +758,9 @@ static void uci_parse_option(struct uci_
+ 		UCI_NESTED(uci_add_list, ctx, &ptr);
+ 	else
+ 		UCI_NESTED(uci_set, ctx, &ptr);
++
++	if (!list && value[0])
++		ptr.o->encrypt_state = encrypt_state;
+ }
+ 
+ /*
+@@ -609,7 +886,36 @@ static void uci_export_package(struct uc
+ 			switch(opt->type) {
+ 			case UCI_TYPE_STRING:
+ 				fprintf(stream, "\toption %s", uci_escape(ctx, opt->e.name));
+-				fprintf(stream, " '%s'\n", uci_escape(ctx, opt->v.string));
++				bool use_encrypt = false;
++				int idx;
++				const char *str;
++				enum uci_encrypt_state es =
++					opt->encrypt_state == UCI_ENCRYPT_ENABLE_BUT_KEY_ERR ? UCI_ENCRYPT_ENABLE_BUT_KEY_ERR :
++					ctx->encrypt_state == UCI_ENCRYPT_ENABLE ? UCI_ENCRYPT_AUTO :
++					ctx->encrypt_state == UCI_ENCRYPT_DISABLE ? UCI_ENCRYPT_DISABLE :
++					opt->encrypt_state;
++				if (es == UCI_ENCRYPT_ENABLE) {
++					use_encrypt = true;
++				} else if (es == UCI_ENCRYPT_AUTO) {
++					for (idx = 0; idx < sizeof(enc_list) / sizeof(*enc_list); ++idx)
++						if ((!enc_list[idx].o || !strcmp(enc_list[idx].o, uci_escape(ctx, opt->e.name)))
++							&& (!enc_list[idx].s || (!sec->anonymous && !strcmp(enc_list[idx].s, uci_escape(ctx, sec->e.name))))
++							&& (!enc_list[idx].p || !strcmp(enc_list[idx].p, uci_escape(ctx, p->e.name))))
++							use_encrypt = true;
++					/*
++					fprintf(stderr, "check enc=%d %s.", use_encrypt, uci_escape(ctx, p->e.name));
++					fprintf(stderr, "%s.", sec->anonymous ? "(null)" : uci_escape(ctx, sec->e.name));
++					fprintf(stderr, "%s=", uci_escape(ctx, opt->e.name));
++					fprintf(stderr, "'%s'\n", uci_escape(ctx, opt->v.string));
++					*/
++				}
++
++				if (es == UCI_ENCRYPT_ENABLE_BUT_KEY_ERR)
++					fprintf(stream, " \\ENC'%s'\n", opt->v.string);
++				else if (use_encrypt && uci_has_encrypt_key(ctx) && (str = uci_encrypt(ctx, opt->v.string)) != NULL)
++					fprintf(stream, " \\ENC'%s'\n", str);
++				else
++					fprintf(stream, " '%s'\n", uci_escape(ctx, opt->v.string));
+ 				break;
+ 			case UCI_TYPE_LIST:
+ 				uci_foreach_element(&opt->v.list, i) {
+@@ -751,7 +1057,7 @@ static void uci_file_commit(struct uci_c
+ 
+ 	/* flush unsaved changes and reload from delta file */
+ 	UCI_TRAP_SAVE(ctx, done);
+-	if (p->has_delta) {
++	if (p->has_delta && ctx->encrypt_state == UCI_ENCRYPT_AUTO) {
+ 		if (!overwrite) {
+ 			name = uci_strdup(ctx, p->e.name);
+ 			path = uci_strdup(ctx, p->path);
+@@ -1211,7 +1211,7 @@ static struct uci_package *uci_file_load
+ 	default:
+ 		/* config in /etc/config */
+ 		filename = uci_config_path(ctx, name);
+-		confdir = true;
++		confdir = ctx->encrypt_state == UCI_ENCRYPT_AUTO;
+ 		break;
+ 	}
+ 
+diff -purN a/libuci.c b/libuci.c
+--- a/libuci.c	2017-08-15 11:16:34.194954818 +0800
++++ b/libuci.c	2017-08-15 11:15:36.602952476 +0800
+@@ -24,6 +24,7 @@
+ #include <stdio.h>
+ #include <dlfcn.h>
+ #include <glob.h>
++#include <unistd.h>
+ #include "uci.h"
+ 
+ static const char *uci_errstr[] = {
+@@ -72,6 +73,18 @@ void uci_free_context(struct uci_context
+ {
+ 	struct uci_element *e, *tmp;
+ 
++#ifdef UCI_ENCRYPTION_USING_KEY_DEVICE
++	if (ctx->key_fd) {
++		close(ctx->key_fd);
++	}
++#endif
++#ifdef UCI_ENCRYPTION_USING_KEY_FILE
++	if (ctx->key) {
++		memset(ctx->key, 0, 32);
++		free(ctx->key);
++	}
++#endif
++
+ 	if (ctx->confdir != uci_confdir)
+ 		free(ctx->confdir);
+ 	if (ctx->savedir != uci_savedir)
+diff -purN a/list.c b/list.c
+--- a/list.c	2017-08-15 11:16:34.194954818 +0800
++++ b/list.c	2017-08-15 11:15:36.602952476 +0800
+@@ -707,8 +707,12 @@ int uci_set(struct uci_context *ctx, str
+ 		if ((ptr->o->type == UCI_TYPE_STRING) &&
+ 			!strcmp(ptr->o->v.string, ptr->value))
+ 			return 0;
++		enum uci_encrypt_state ori_encrypt_state = ptr->o->encrypt_state;
++		if (ori_encrypt_state == UCI_ENCRYPT_ENABLE_BUT_KEY_ERR)
++			return 0;
+ 		uci_free_option(ptr->o);
+ 		ptr->o = uci_alloc_option(ptr->s, ptr->option, ptr->value);
++		ptr->o->encrypt_state = ori_encrypt_state;
+ 		ptr->last = &ptr->o->e;
+ 	} else if (ptr->s && ptr->section) { /* update section */
+ 		char *s = uci_strdup(ctx, ptr->value);
+diff -purN a/uci.h b/uci.h
+--- a/uci.h	2017-08-15 11:16:34.194954818 +0800
++++ b/uci.h	2017-08-15 11:15:36.602952476 +0800
+@@ -37,6 +37,10 @@ extern "C" {
+ 
+ #define UCI_CONFDIR "/etc/config"
+ #define UCI_SAVEDIR "/tmp/.uci"
++// #define UCI_ENCRYPTION_USING_KEY_FILE
++#define UCI_ENCRYPTION_USING_KEY_DEVICE
++#define UCI_KEYFILE "/tmp/.ukey"
++#define UCI_KEYDEV "/dev/cfgdev"
+ #define UCI_DIRMODE 0700
+ #define UCI_FILEMODE 0600
+ 
+@@ -375,6 +379,13 @@ enum uci_flags {
+ 	UCI_FLAG_UPGRADE =		(1 << 4), /* we are merging the default config */
+ };
+ 
++enum uci_encrypt_state {
++	UCI_ENCRYPT_AUTO		= 0,
++	UCI_ENCRYPT_ENABLE		= 1,
++	UCI_ENCRYPT_DISABLE		= 2,
++	UCI_ENCRYPT_ENABLE_BUT_KEY_ERR		= 3,
++};
++
+ struct uci_element
+ {
+ 	struct uci_list list;
+@@ -416,6 +427,16 @@ struct uci_context
+ 	struct uci_list delta_path;
+ 
+ 	/* private: */
++#ifdef UCI_ENCRYPTION_USING_KEY_DEVICE
++	int key_fd;
++	int fd_error;
++#endif
++#ifdef UCI_ENCRYPTION_USING_KEY_FILE
++	unsigned char *key;
++	int key_len;
++#endif
++	bool key_inited;
++	enum uci_encrypt_state encrypt_state;
+ 	int err;
+ 	const char *func;
+ 	jmp_buf trap;
+@@ -454,6 +475,7 @@ struct uci_option
+ 	struct uci_element e;
+ 	struct uci_section *section;
+ 	enum uci_option_type type;
++	enum uci_encrypt_state encrypt_state;	/* set to non zero can force encrypt on or off, otherwise decided by tuple name */
+ 	union {
+ 		struct uci_list list;
+ 		char *string;
+diff -purN a/uci_internal.h b/uci_internal.h
+--- a/uci_internal.h	2017-08-15 11:16:34.198954818 +0800
++++ b/uci_internal.h	2017-08-15 11:15:36.606952477 +0800
+@@ -34,6 +34,7 @@ struct uci_parse_context
+ 	char *buf;
+ 	int bufsz;
+ 	int pos;
++	enum uci_encrypt_state encrypt_state;
+ };
+ #define pctx_pos(pctx)		((pctx)->pos)
+ #define pctx_str(pctx, i)	(&(pctx)->buf[(i)])

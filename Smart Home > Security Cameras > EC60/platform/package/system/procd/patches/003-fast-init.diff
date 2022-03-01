@@ -1,0 +1,49 @@
+diff -purbBN a/procd.h b/procd.h
+--- a/procd.h	2017-03-28 15:53:38.875024907 +0800
++++ b/procd.h	2017-04-06 11:14:46.039767128 +0800
+@@ -44,6 +44,7 @@ void procd_signal_preinit(void);
+ void procd_inittab(void);
+ void procd_inittab_run(const char *action);
+ void procd_bcast_event(char *event, struct blob_attr *msg);
++int procd_init_state(void);
+ 
+ struct trigger;
+ void trigger_init(void);
+diff -purbBN a/rcS.c platform/build_dir/b/rcS.c
+--- a/rcS.c	2017-03-28 15:53:38.875024907 +0800
++++ b/rcS.c	2017-04-06 10:45:48.949334853 +0800
+@@ -169,6 +169,11 @@ int rcS(char *pattern, char *param, void
+ 	q.empty_cb = q_empty;
+ 	q.max_running_tasks = 1;
+ 
++	if (!strcmp(param, "boot") & !access("/etc/rc.boot", 1)) {
++		add_initd(&q, "/etc/rc.boot", param);
++		return 0;
++	}
++
+ 	return _rc(&q, "/etc/rc.d", pattern, "*", param);
+ }
+ 
+diff -purbBN a/service/service.c b/service/service.c
+--- a/service/service.c	2017-03-28 15:53:38.875024907 +0800
++++ b/service/service.c	2017-04-06 10:56:03.205514458 +0800
+@@ -141,6 +141,7 @@ service_update(struct service *s, struct
+ 			vlist_flush(&s->instances);
+ 	}
+ 
++	if (!procd_init_state())
+ 	rc(s->name, "running");
+ 
+ 	return 0;
+diff -purbBN a/state.c b/state.c
+--- a/state.c	2017-03-28 15:53:38.867024907 +0800
++++ b/state.c	2017-04-06 10:56:32.290427831 +0800
+@@ -200,3 +200,8 @@ void procd_shutdown(int event)
+ 	state = STATE_SHUTDOWN;
+ 	state_enter();
+ }
++
++int procd_init_state(void)
++{
++	return (state == STATE_INIT);
++}

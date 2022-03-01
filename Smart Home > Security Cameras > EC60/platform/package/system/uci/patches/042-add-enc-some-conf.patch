@@ -1,0 +1,43 @@
+--- a/file.c	2019-07-29 11:32:03.894314400 +0800
++++ b/file.c	2019-07-29 11:20:12.833140000 +0800
+@@ -34,6 +34,8 @@
+ 
+ #define LINEBUF	32
+ 
++const char *encrypt_package_list[] = {"account", "location", "cloud_brd", "wireless", NULL};
++
+ static const struct {
+ 	const char *p;
+ 	const char *s;
+@@ -1113,6 +1115,31 @@ done:
+ 		UCI_THROW(ctx, UCI_ERR_IO);
+ 	}
+ 	free(filename);
++	
++	if (!strcmp(ctx->confdir, UCI_CONFDIR))
++	{
++		int i = 0;
++		char cmd[128] = {0};
++		if (readlink(p->path, cmd, sizeof(cmd)) > 0)
++		{
++				snprintf(cmd, sizeof(cmd), "config_cipher %s", p->e.name);
++				system(cmd);
++		}
++		else
++		{
++			while (encrypt_package_list[i])
++			{
++				if (!strcmp(p->e.name, encrypt_package_list[i]))
++				{
++					snprintf(cmd, sizeof(cmd), "config_cipher %s", encrypt_package_list[i]);
++					system(cmd);
++					break;
++				}
++				i ++;
++			}
++		}
++	}
++	
+ 	if (ctx->err)
+ 		UCI_THROW(ctx, ctx->err);
+ }

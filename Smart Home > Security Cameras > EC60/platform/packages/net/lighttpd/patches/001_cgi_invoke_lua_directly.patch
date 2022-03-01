@@ -1,0 +1,592 @@
+diff -rNu lighttpd-1.4.38/configure src/configure
+--- lighttpd-1.4.38/configure	2015-12-05 19:45:59.000000000 +0800
++++ src/configure	2016-05-12 10:06:55.913995202 +0800
+@@ -15492,7 +15492,6 @@
+ 
+ if test -n "$LUA_CFLAGS"; then
+     pkg_cv_LUA_CFLAGS="$LUA_CFLAGS"
+- elif test -n "$PKG_CONFIG"; then
+     if test -n "$PKG_CONFIG" && \
+     { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"lua5.1 >= 5.1\""; } >&5
+   ($PKG_CONFIG --exists --print-errors "lua5.1 >= 5.1") 2>&5
+@@ -19263,7 +19262,7 @@
+ 
+ 
+ 
+-do_build="mod_cgi mod_fastcgi mod_extforward mod_proxy mod_evhost mod_simple_vhost mod_access mod_alias mod_setenv mod_usertrack mod_auth mod_status mod_accesslog"
++do_build="mod_fastcgi mod_extforward mod_proxy mod_evhost mod_simple_vhost mod_access mod_alias mod_setenv mod_usertrack mod_auth mod_status mod_accesslog"
+ do_build="$do_build mod_rrdtool mod_secdownload mod_expire mod_compress mod_dirlisting mod_indexfile mod_userdir mod_webdav mod_staticfile mod_scgi mod_flv_streaming"
+ 
+ plugins="mod_rewrite mod_redirect mod_ssi mod_trigger_b4_dl"
+@@ -19283,7 +19282,7 @@
+ 	no_build="$no_build $plugins"
+ fi
+ 
+-plugins="mod_cml mod_magnet"
++plugins="mod_cml mod_magnet mod_cgi"
+ if test ! "x$LUA_LIBS" = x; then
+ 	do_build="$do_build $plugins"
+ else
+diff -rNu lighttpd-1.4.38/src/CMakeLists.txt src/src/CMakeLists.txt
+--- lighttpd-1.4.38/src/CMakeLists.txt	2015-12-05 04:25:15.000000000 +0800
++++ src/src/CMakeLists.txt	2016-05-12 10:06:55.917995205 +0800
+@@ -23,6 +23,7 @@
+ option(WITH_ZLIB "with deflate-support for mod_compress [default: on]" ON)
+ option(WITH_LDAP "with LDAP-support for the mod_auth [default: off]")
+ option(WITH_LUA "with lua 5.1 for mod_magnet [default: off]")
++option(WITH_LUA "with lua 5.1 for mod_cgi [default: off]")
+ # option(WITH_VALGRIND "with internal support for valgrind [default: off]")
+ # option(WITH_KERBEROS5 "use Kerberos5 support with OpenSSL [default: off]")
+ option(WITH_FAM "fam/gamin for reducing number of stat() calls [default: off]")
+@@ -584,6 +585,9 @@
+ target_link_libraries(mod_cml ${LUA_LDFLAGS})
+ add_target_properties(mod_cml COMPILE_FLAGS ${LUA_CFLAGS})
+ 
++target_link_libraries(mod_cgi ${LUA_LDFLAGS})
++add_target_properties(mod_cgi COMPILE_FLAGS ${LUA_CFLAGS})
++
+ if(HAVE_MYSQL_H AND HAVE_MYSQL)
+ 	target_link_libraries(mod_mysql_vhost mysqlclient)
+ 	include_directories(/usr/include/mysql)
+diff -rNu lighttpd-1.4.38/src/Makefile.am src/src/Makefile.am
+--- lighttpd-1.4.38/src/Makefile.am	2015-12-05 04:25:15.000000000 +0800
++++ src/src/Makefile.am	2016-05-12 10:06:55.925995200 +0800
+@@ -139,7 +139,8 @@
+ 
+ lib_LTLIBRARIES += mod_cgi.la
+ mod_cgi_la_SOURCES = mod_cgi.c
+-mod_cgi_la_LDFLAGS = -module -export-dynamic -avoid-version
++mod_cgi_la_CFLAGS = $(LUA_CFLAGS)
++mod_cgi_la_LDFLAGS = -module -export-dynamic -avoid-version $(LUA_LIBS) -lm
+ mod_cgi_la_LIBADD = $(common_libadd)
+ 
+ lib_LTLIBRARIES += mod_scgi.la
+diff -rNu lighttpd-1.4.38/src/Makefile.in src/src/Makefile.in
+--- lighttpd-1.4.38/src/Makefile.in	2015-12-05 19:46:01.000000000 +0800
++++ src/src/Makefile.in	2016-05-12 10:06:55.945995193 +0800
+@@ -818,7 +818,8 @@
+ mod_mysql_vhost_la_LIBADD = $(MYSQL_LIBS) $(common_libadd)
+ mod_mysql_vhost_la_CPPFLAGS = $(MYSQL_INCLUDE)
+ mod_cgi_la_SOURCES = mod_cgi.c
+-mod_cgi_la_LDFLAGS = -module -export-dynamic -avoid-version
++mod_cgi_la_CFLAGS = $(LUA_CFLAGS)
++mod_cgi_la_LDFLAGS = -module -export-dynamic -avoid-version $(LUA_LIBS) -lm
+ mod_cgi_la_LIBADD = $(common_libadd)
+ mod_scgi_la_SOURCES = mod_scgi.c
+ mod_scgi_la_LDFLAGS = -module -export-dynamic -avoid-version
+diff -rNu lighttpd-1.4.38/src/mod_cgi.c src/src/mod_cgi.c
+--- lighttpd-1.4.38/src/mod_cgi.c	2015-11-23 03:03:10.000000000 +0800
++++ src/src/mod_cgi.c	2016-05-12 10:07:49.953995440 +0800
+@@ -813,6 +813,200 @@
+ 	return 0;
+ }
+ 
++#define EMBEDED_LUA
++#ifdef EMBEDED_LUA
++#include <lua.h>
++#include <lauxlib.h>
++#include <lualib.h>
++
++#define ensure_out(x) \ 
++          do { if((x) < 0) goto out; } while(0)
++
++static struct lua_State *L = NULL;
++
++static int lh_lua_send_common(lua_State *L, int chunked)
++{
++	size_t length;
++
++	char chunk[16];
++	const char *buffer;
++
++	int rv;
++	int to = 1;
++	int fd = fileno(stdout);
++	int slen = 0;
++
++	buffer = luaL_checklstring(L, 1, &length);
++
++	if (chunked)
++	{
++		if (length > 0)
++		{
++			snprintf(chunk, sizeof(chunk), "%X\r\n", (int) length);
++
++			ensure_out(rv = write(fd, chunk, strlen(chunk)));
++			slen += rv;
++
++			ensure_out(rv = write(fd, buffer, length));
++			slen += rv;
++
++			ensure_out(rv = write(fd, "\r\n", 2));
++			slen += rv;
++		}
++		else
++		{
++			slen = write(fd, "0\r\n\r\n", 5);
++		}
++	}
++	else
++	{
++		slen = write(fd, buffer, length);
++	}
++
++out:
++	lua_pushnumber(L, slen);
++	return 1;
++}
++
++static int lh_lua_send(lua_State *L)
++{
++	return lh_lua_send_common(L, 1);
++}
++
++static int lh_lua_sendc(lua_State *L)
++{
++	return lh_lua_send_common(L, 0);
++}
++
++static int lh_lua_recv(lua_State *L)
++{
++	size_t length;
++
++	char buffer[4096];
++
++	int to = 1;
++	int fd = fileno(stdin);
++	int rlen = 0;
++
++	length = luaL_checknumber(L, 1);
++
++	if ((length > 0) && (length <= sizeof(buffer)))
++	{
++		/* receive data */
++		rlen = read(fd, buffer, length);
++
++		/* data read */
++		if (rlen > 0)
++		{
++			lua_pushnumber(L, rlen);
++			lua_pushlstring(L, buffer, rlen);
++			return 2;
++		}
++
++		/* eof */
++		else if (rlen == 0)
++		{
++			lua_pushnumber(L, 0);
++			return 1;
++		}
++
++		/* no, timeout and actually no data */
++		else
++		{
++			lua_pushnumber(L, -1);
++			return 1;
++		}
++	}
++
++	/* parameter error */
++	lua_pushnumber(L, -2);
++	return 1;
++}
++
++
++lua_State * lua_init(void)
++{
++	lua_State *L = lua_open();
++	const char *err_str = NULL;
++
++	luaopen_base(L);
++	/* Load standard libaries */
++	luaL_openlibs(L);
++
++	/* build uhttpd api table */
++	lua_newtable(L);
++
++	/* register global send and receive functions */
++	lua_pushcfunction(L, lh_lua_recv);
++	lua_setfield(L, -2, "recv");
++	lua_pushcfunction(L, lh_lua_send);
++	lua_setfield(L, -2, "send");
++	lua_pushcfunction(L, lh_lua_sendc);
++	lua_setfield(L, -2, "sendc");
++	lua_setglobal(L, "lighttpd");
++
++	/* load Lua handler */
++	switch (luaL_loadfile(L, "/usr/lib/lua/luci/sgi/uhttpd.lua"))
++	{
++		case LUA_ERRSYNTAX:
++			fprintf(stderr,
++					"Lua handler contains syntax errors, unable to continue\n");
++			exit(1);
++
++		case LUA_ERRMEM:
++			fprintf(stderr,
++					"Lua handler ran out of memory, unable to continue\n");
++			exit(1);
++
++		case LUA_ERRFILE:
++			fprintf(stderr,
++					"Lua cannot open the handler script, unable to continue\n");
++			exit(1);
++
++		default:
++			/* compile Lua handler */
++			switch (lua_pcall(L, 0, 0, 0))
++			{
++				case LUA_ERRRUN:
++					err_str = luaL_checkstring(L, -1);
++					fprintf(stderr,
++							"Lua handler had runtime error, "
++							"unable to continue\n"
++							"Error: %s\n", err_str);
++					exit(1);
++
++				case LUA_ERRMEM:
++					err_str = luaL_checkstring(L, -1);
++					fprintf(stderr,
++							"Lua handler ran out of memory, "
++							"unable to continue\n"
++							"Error: %s\n", err_str);
++					exit(1);
++
++				default:
++					/* test handler function */
++					lua_getglobal(L, "handle_request");
++
++					if (! lua_isfunction(L, -1))
++					{
++						fprintf(stderr,
++								"Lua handler provides no handle_request(), "
++								"unable to continue\n");
++						exit(1);
++					}
++
++					lua_pop(L, 1);
++					break;
++			}
++			break;
++	}
++
++	return L;
++}
++
++#endif
++
++
+ static int cgi_create_env(server *srv, connection *con, plugin_data *p, buffer *cgi_handler) {
+ 	pid_t pid;
+ 
+@@ -861,6 +1055,9 @@
+ 		char *c;
+ 		const char *s;
+ 		server_socket *srv_sock = con->srv_socket;
++#ifdef EMBEDED_LUA
++		const char *err_str = NULL;
++#endif
+ 
+ 		/* move stdout to from_cgi_fd[1] */
+ 		close(STDOUT_FILENO);
+@@ -881,6 +1078,236 @@
+ 		env.size = 0;
+ 		env.used = 0;
+ 
++#ifdef EMBEDED_LUA
++	{
++		/* put handler callback on stack */
++
++		/* build env table */
++		lua_getglobal(L, "handle_request");
++		lua_newtable(L);
++#if 0
++		if (buffer_is_empty(con->conf.server_tag)) {
++			cgi_env_add(&env, CONST_STR_LEN("SERVER_SOFTWARE"), CONST_STR_LEN(PACKAGE_DESC));
++		} else {
++			cgi_env_add(&env, CONST_STR_LEN("SERVER_SOFTWARE"), CONST_BUF_LEN(con->conf.server_tag));
++		}
++
++		if (!buffer_string_is_empty(con->server_name)) {
++			size_t len = buffer_string_length(con->server_name);
++
++			if (con->server_name->ptr[0] == '[') {
++				const char *colon = strstr(con->server_name->ptr, "]:");
++				if (colon) len = (colon + 1) - con->server_name->ptr;
++			} else {
++				const char *colon = strchr(con->server_name->ptr, ':');
++				if (colon) len = colon - con->server_name->ptr;
++			}
++
++			cgi_env_add(&env, CONST_STR_LEN("SERVER_NAME"), con->server_name->ptr, len);
++		} else {
++#ifdef HAVE_IPV6
++			s = inet_ntop(
++				srv_sock->addr.plain.sa_family,
++				srv_sock->addr.plain.sa_family == AF_INET6 ?
++				(const void *) &(srv_sock->addr.ipv6.sin6_addr) :
++				(const void *) &(srv_sock->addr.ipv4.sin_addr),
++				b2, sizeof(b2)-1);
++#else
++			s = inet_ntoa(srv_sock->addr.ipv4.sin_addr);
++#endif
++			force_assert(s);
++			cgi_env_add(&env, CONST_STR_LEN("SERVER_NAME"), s, strlen(s));
++		}
++		cgi_env_add(&env, CONST_STR_LEN("GATEWAY_INTERFACE"), CONST_STR_LEN("CGI/1.1"));
++#endif
++
++		lua_pushnumber(L, con->request.http_version);
++		lua_setfield(L, -2, "HTTP_VERSION");
++		s = get_http_version_name(con->request.http_version);
++		force_assert(s);
++
++		lua_pushstring(L, s);
++		lua_setfield(L, -2, "SERVER_PROTOCOL");
++
++		li_utostr(buf,
++#ifdef HAVE_IPV6
++			ntohs(srv_sock->addr.plain.sa_family == AF_INET6 ? srv_sock->addr.ipv6.sin6_port : srv_sock->addr.ipv4.sin_port)
++#else
++			ntohs(srv_sock->addr.ipv4.sin_port)
++#endif
++			);
++		lua_pushstring(L, buf);
++		lua_setfield(L, -2, "SERVER_PORT");
++
++		switch (srv_sock->addr.plain.sa_family) {
++#ifdef HAVE_IPV6
++		case AF_INET6:
++			s = inet_ntop(
++				srv_sock->addr.plain.sa_family,
++				(const void *) &(srv_sock->addr.ipv6.sin6_addr),
++				b2, sizeof(b2)-1);
++			break;
++		case AF_INET:
++			s = inet_ntop(
++				srv_sock->addr.plain.sa_family,
++				(const void *) &(srv_sock->addr.ipv4.sin_addr),
++				b2, sizeof(b2)-1);
++			break;
++#else
++		case AF_INET:
++			s = inet_ntoa(srv_sock->addr.ipv4.sin_addr);
++			break;
++#endif
++		default:
++			s = "";
++			break;
++		}
++
++		force_assert(s);
++		lua_pushstring(L, s);
++		lua_setfield(L, -2, "SERVER_ADDR");
++
++		s = get_http_method_name(con->request.http_method);
++		force_assert(s);
++		lua_pushstring(L, s);
++		lua_setfield(L, -2, "REQUEST_METHOD");
++
++		if (!buffer_string_is_empty(con->request.pathinfo)) {
++			lua_pushstring(L, con->request.pathinfo->ptr);
++			lua_setfield(L, -2, "PATH_INFO");
++		}
++
++		lua_pushstring(L, "200");
++		lua_setfield(L, -2, "REDIRECT_STATUS");
++
++		if (!buffer_string_is_empty(con->uri.query)) {
++			lua_pushstring(L, con->uri.query->ptr);
++			lua_setfield(L, -2, "QUERY_STRING");
++		}
++		if (!buffer_string_is_empty(con->request.orig_uri)) {
++			lua_pushstring(L, con->request.orig_uri->ptr);
++			lua_setfield(L, -2, "REQUEST_URI");
++		}
++
++
++		switch (con->dst_addr.plain.sa_family) {
++#ifdef HAVE_IPV6
++		case AF_INET6:
++			s = inet_ntop(
++				con->dst_addr.plain.sa_family,
++				(const void *) &(con->dst_addr.ipv6.sin6_addr),
++				b2, sizeof(b2)-1);
++			break;
++		case AF_INET:
++			s = inet_ntop(
++				con->dst_addr.plain.sa_family,
++				(const void *) &(con->dst_addr.ipv4.sin_addr),
++				b2, sizeof(b2)-1);
++			break;
++#else
++		case AF_INET:
++			s = inet_ntoa(con->dst_addr.ipv4.sin_addr);
++			break;
++#endif
++		default:
++			s = "";
++			break;
++		}
++		force_assert(s);
++		lua_pushstring(L, s);
++		lua_setfield(L, -2, "REMOTE_ADDR");
++
++		li_utostr(buf,
++#ifdef HAVE_IPV6
++			ntohs(con->dst_addr.plain.sa_family == AF_INET6 ? con->dst_addr.ipv6.sin6_port : con->dst_addr.ipv4.sin_port)
++#else
++			ntohs(con->dst_addr.ipv4.sin_port)
++#endif
++			);
++
++		lua_pushstring(L, buf);
++		lua_setfield(L, -2, "REMOTE_PORT");
++
++		li_itostr(buf, con->request.content_length);
++		lua_pushstring(L, buf);
++		lua_setfield(L, -2, "CONTENT_LENGTH");
++
++		lua_pushstring(L, con->physical.path->ptr);
++		lua_setfield(L, -2, "SCRIPT_FILENAME");
++		lua_pushstring(L, con->uri.path->ptr);
++		lua_setfield(L, -2, "SCRIPT_NAME");
++
++		lua_pushstring(L, con->physical.basedir->ptr);
++		lua_setfield(L, -2, "DOCUMENT_ROOT");
++#if 0
++		/* for valgrind */
++		if (NULL != (s = getenv("LD_PRELOAD"))) {
++			cgi_env_add(&env, CONST_STR_LEN("LD_PRELOAD"), s, strlen(s));
++		}
++
++		if (NULL != (s = getenv("LD_LIBRARY_PATH"))) {
++			cgi_env_add(&env, CONST_STR_LEN("LD_LIBRARY_PATH"), s, strlen(s));
++		}
++#ifdef __CYGWIN__
++		/* CYGWIN needs SYSTEMROOT */
++		if (NULL != (s = getenv("SYSTEMROOT"))) {
++			cgi_env_add(&env, CONST_STR_LEN("SYSTEMROOT"), s, strlen(s));
++		}
++#endif
++#endif
++		for (n = 0; n < con->environment->used; n++) {
++			data_string *ds;
++
++			ds = (data_string *)con->environment->data[n];
++
++			if (!buffer_is_empty(ds->value) && !buffer_is_empty(ds->key)) {
++				buffer_copy_string_encoded_cgi_varnames(p->tmp_buf, CONST_BUF_LEN(ds->key), 0);
++				lua_pushstring(L, ds->value->ptr);
++				lua_setfield(L, -2, "CONTENT_TYPE");
++			}
++		}
++
++		lua_newtable(L);
++		for (n = 0; n < con->request.headers->used; n++) {
++			data_string *ds;
++
++			ds = (data_string *)con->request.headers->data[n];
++
++			if (!buffer_is_empty(ds->value) && !buffer_is_empty(ds->key)) {
++				buffer_copy_string_encoded_cgi_varnames(p->tmp_buf, CONST_BUF_LEN(ds->key), 1);
++				lua_pushstring(L, ds->value->ptr);
++				lua_setfield(L, -2, p->tmp_buf->ptr);
++			}
++		}
++		lua_setfield(L, -2, "headers");
++
++		/* call */
++		switch (lua_pcall(L, 1, 0, 0))
++		{
++			case LUA_ERRMEM:
++			case LUA_ERRRUN:
++				err_str = luaL_checkstring(L, -1);
++
++				if (! err_str)
++					err_str = "Unknown error";
++
++				printf(" 500 Internal Server Error\r\n"
++					   "Connection: close\r\n"
++					   "Content-Type: text/plain\r\n"
++					   "Content-Length: %i\r\n\r\n"
++					   "Lua raised a runtime error:\n  %s\n",
++					   31 + (int) strlen(err_str), err_str);
++
++				break;
++
++			default:
++				break;
++		}
++		exit(1);
++	}
++#endif
++//#else /* EMBEDED_LUA */
++	
+ 		if (buffer_is_empty(con->conf.server_tag)) {
+ 			cgi_env_add(&env, CONST_STR_LEN("SERVER_SOFTWARE"), CONST_STR_LEN(PACKAGE_DESC));
+ 		} else {
+@@ -1089,6 +1516,32 @@
+ 			if (i != srv->errorlog_fd) close(i);
+ 		}
+ 
++#ifdef EMBEDED_LUA
++		/* call */
++		switch (lua_pcall(L, 1, 0, 0))
++		{
++			case LUA_ERRMEM:
++			case LUA_ERRRUN:
++				err_str = luaL_checkstring(L, -1);
++
++				if (! err_str)
++					err_str = "Unknown error";
++
++				printf(" 500 Internal Server Error\r\n"
++					   "Connection: close\r\n"
++					   "Content-Type: text/plain\r\n"
++					   "Content-Length: %i\r\n\r\n"
++					   "Lua raised a runtime error:\n  %s\n",
++					   31 + (int) strlen(err_str), err_str);
++
++				break;
++
++			default:
++				break;
++		}
++		exit(1);
++		break;
++#else
+ 		/* exec the cgi */
+ 		execve(args[0], args, env.ptr);
+ 
+@@ -1096,6 +1549,7 @@
+ 
+ 		/* */
+ 		SEGFAULT();
++#endif
+ 		break;
+ 	}
+ 	case -1:
+@@ -1470,6 +1924,9 @@
+ 	p->set_defaults   = mod_fastcgi_set_defaults;
+ 
+ 	p->data        = NULL;
++#ifdef EMBEDED_LUA
++	L = lua_init();
++#endif
+ 
+ 	return 0;
+ }
+diff -rNu lighttpd-1.4.38/src/SConscript src/src/SConscript
+--- lighttpd-1.4.38/src/SConscript	2015-12-05 04:25:15.000000000 +0800
++++ src/src/SConscript	2016-05-12 10:06:55.957995198 +0800
+@@ -45,7 +45,9 @@
+ 
+ ## the modules and how they are built
+ modules = {
+-	'mod_access' : { 'src' : [ 'mod_access.c' ] },
++	'mod_access' : { 'src' : [ 'mod_access.c' ],
++			 'lib' : [ env['LIBLUA'] ]
++	},
+ 	'mod_alias' : { 'src' : [ 'mod_alias.c' ] },
+ 	'mod_cgi' : { 'src' : [ 'mod_cgi.c' ] },
+ 	'mod_fastcgi' : { 'src' : [ 'mod_fastcgi.c' ] },

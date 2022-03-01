@@ -1,0 +1,1 @@
+../../../../../../arch/arm/cpu/armv7/hi3518ev300/pll_trainning.c

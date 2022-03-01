@@ -1,0 +1,11 @@
+--- a/miscutils/crond.c
++++ b/miscutils/crond.c
+@@ -849,7 +849,7 @@ static void start_jobs(void)
+ 
+ 			start_one_job(file->cf_username, line);
+ 			pid = line->cl_pid;
+-			log8("USER %s pid %3d cmd %s",
++			log5("USER %s pid %3d cmd %s",
+ 				file->cf_username, (int)pid, line->cl_cmd);
+ 			if (pid < 0) {
+ 				file->cf_wants_starting = 1;

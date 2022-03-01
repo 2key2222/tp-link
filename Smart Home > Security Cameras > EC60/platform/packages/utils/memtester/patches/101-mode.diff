@@ -1,0 +1,99 @@
+--- a/memtester.c	2016-04-26 16:36:37.749328002 +0800
++++ b/memtester.c	2016-04-26 16:38:03.653266686 +0800
+@@ -93,10 +93,28 @@
+ /* Global vars - so tests have access to this information */
+ int use_phys = 0;
+ off_t physaddrbase = 0;
++int mode = -1;
+ 
+ /* Function definitions */
+ void usage(char *me) {
+-    fprintf(stderr, "\nUsage: %s [-p physaddrbase] <mem>[B|K|M|G] [loops]\n", me);
++    fprintf(stderr, "\nUsage: %s [-p physaddrbase] <mem>[B|K|M|G] [loops] [-m testmode]\n", me);
++	fprintf(stderr, "	test mode:\n"
++					"		[0]: test_random_value\n"
++					"		[1]: test_xor_comparison\n"
++					"		[2]: test_sub_comparison\n"
++					"		[3]: test_mul_comparison\n"
++					"		[4]: test_div_comparison\n"
++					"		[5]: test_or_comparison\n"
++					"		[6]: test_and_comparison\n"
++					"		[7]: test_seqinc_comparison\n"
++					"		[8]: test_solidbits_comparison\n"
++					"		[9]: test_blockseq_comparison\n"
++					"		[10]: test_checkerboard_comparison\n"
++					"		[11]: test_bitspread_comparison\n"
++					"		[12]: test_bitflip_comparison\n"
++					"		[13]: test_walkbits1_comparison\n"
++					"		[14]: test_walkbits0_comparison\n"
++					, me);
+     exit(EXIT_FAIL_NONSTARTER);
+ }
+ 
+@@ -104,7 +122,7 @@
+     ul loops, loop, i;
+     size_t pagesize, wantraw, wantmb, wantbytes, wantbytes_orig, bufsize,
+          halflen, count;
+-    char *memsuffix, *addrsuffix, *loopsuffix;
++    char *memsuffix, *addrsuffix, *loopsuffix, *modesuffix;
+     ptrdiff_t pagesizemask;
+     void volatile *buf, *aligned;
+     ulv *bufa, *bufb;
+@@ -123,7 +141,7 @@
+     pagesizemask = (ptrdiff_t) ~(pagesize - 1);
+     printf("pagesizemask is 0x%tx\n", pagesizemask);
+ 
+-    while ((opt = getopt(argc, argv, "qp:")) != -1) {
++    while ((opt = getopt(argc, argv, "qp:m:")) != -1) {
+         switch (opt) {
+             case 'p':
+                 errno = 0;
+@@ -152,6 +170,17 @@
+                 break;
+             case 'q':
+                 quiet = 1;
++            case 'm':
++                mode = (int) strtoul(optarg, &modesuffix, 10);
++                if (*modesuffix != '\0') {
++                    fprintf(stderr, "failed to parse mode arg\n");
++                    usage(argv[0]);
++                }
++                if (mode <= -1 || mode >= sizeof(tests)/sizeof(tests[0]) - 1) {
++                    fprintf(stderr, "mode arg out of range\n");
++                    usage(argv[0]);
++                }
++                printf("mode: %d, maxmode:%d\n", mode, sizeof(tests)/sizeof(tests[0]));
+                 break;
+             default: /* '?' */
+                 usage(argv[0]); /* doesn't return */
+@@ -323,15 +352,26 @@
+         } else {
+             exit_code |= EXIT_FAIL_ADDRESSLINES;
+         }
+-        for (i=0;;i++) {
+-            if (!tests[i].name) break;
+-            printf("  %-20s: ", tests[i].name);
+-            if (!tests[i].fp(bufa, bufb, count)) {
++
++        if (mode > -1 && mode < sizeof(tests)/sizeof(tests[0])) {
++            printf("  %-20s: ", tests[mode].name);
++            if (!tests[mode].fp(bufa, bufb, count)) {
+                 printf("ok\n");
+             } else {
+                 exit_code |= EXIT_FAIL_OTHERTEST;
+             }
+             fflush(stdout);
++        } else {
++            for (i=0;;i++) {
++                if (!tests[i].name) break;
++                printf("  %-20s: ", tests[i].name);
++                if (!tests[i].fp(bufa, bufb, count)) {
++                    printf("ok\n");
++                } else {
++                    exit_code |= EXIT_FAIL_OTHERTEST;
++                }
++                fflush(stdout);
++            }
+         }
+         printf("\n");
+         fflush(stdout);

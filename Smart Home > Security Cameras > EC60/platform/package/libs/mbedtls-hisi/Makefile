@@ -1,0 +1,81 @@
+#
+# Copyright (C) 2011-2015 OpenWrt.org
+#
+# This is free software, licensed under the GNU General Public License v2.
+# See /LICENSE for more information.
+#
+
+include $(TOPDIR)/rules.mk
+
+PKG_NAME:=mbedtls-hisi
+PKG_NAME_BASE:=mbedtls
+PKG_VERSION:=2.6.0
+PKG_RELEASE:=2
+PKG_USE_MIPS16:=0
+
+PKG_SOURCE:=$(PKG_NAME_BASE)-$(PKG_VERSION)-apache.tgz
+PKG_SOURCE_URL:=https://tls.mbed.org/download/
+PKG_MD5SUM:=c56d2743a2158fccbf5536d18a11196eca76fc76
+
+PKG_BUILD_PARALLEL:=1
+PKG_LICENSE:=Apache-2.0
+
+PKG_FIXUP:=autocmd
+PKG_AUTO_CMD=sed -i 's/\(mbedtls\|mbedx509\|mbedcrypto\)/\1_hisi/g' library/CMakeLists.txt
+
+include $(INCLUDE_DIR)/package.mk
+include $(INCLUDE_DIR)/cmake.mk
+
+PKG_UNPACK=tar xf $(DL_DIR)/$(PKG_SOURCE) -C $(PKG_BUILD_DIR) ;mv $(PKG_BUILD_DIR)/$(PKG_NAME_BASE)-$(PKG_VERSION)/* $(PKG_BUILD_DIR)/;rm -rf $(PKG_BUILD_DIR)/$(PKG_NAME_BASE)-$(PKG_VERSION)
+
+define Package/mbedtls-hisi/Default
+  SUBMENU:=SSL
+  TITLE:=Embedded SSL
+  URL:=https://tls.mbed.org
+endef
+
+define Package/mbedtls/Default/description
+The aim of the mbedtls project is to provide a quality, open-source
+cryptographic library written in C and targeted at embedded systems.
+endef
+
+define Package/libmbedtls-hisi
+$(call Package/mbedtls/Default)
+  SECTION:=libs
+  CATEGORY:=Libraries
+  DEPENDS:=+SDK_HISI_3518E_V200:libmpp-3518e-v200
+  TITLE+= (library)
+  ABI_VERSION:=$(PKG_VERSION)-$(PKG_RELEASE)
+endef
+
+define Package/libmbedtls-hisi/description
+$(call Package/mbedtls/Default/description)
+This package contains the mbedtls library.
+endef
+
+PKG_INSTALL:=1
+
+ifeq ($(CONFIG_BOARD_NAME),"model_hisi_hi3518ev200")
+	TARGET_LDFLAGS += -lhi_cipher
+	TARGET_CPPFLAGS += -DBOARD_HI3518EV200
+endif
+
+CMAKE_OPTIONS += \
+	-DCMAKE_BUILD_TYPE:String="Release" \
+	-DUSE_SHARED_MBEDTLS_LIBRARY:Bool=ON \
+	-DENABLE_TESTING:Bool=OFF \
+	-DENABLE_PROGRAMS:Bool=OFF \
+
+define Build/InstallDev
+	$(INSTALL_DIR) $(1)/usr/include
+	$(CP) $(PKG_INSTALL_DIR)/usr/include/mbedtls $(1)/usr/include/
+	$(INSTALL_DIR) $(1)/usr/lib
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/lib*.so* $(1)/usr/lib/
+endef
+
+define Package/libmbedtls-hisi/install
+	$(INSTALL_DIR) $(1)/usr/lib
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/lib*.so* $(1)/usr/lib/
+endef
+
+$(eval $(call BuildPackage,libmbedtls-hisi))

@@ -1,0 +1,45 @@
+diff -uprN a/lua.c b/lua.c
+--- a/lua.c	2017-02-22 11:21:59.254982193 +0800
++++ b/lua.c	2017-02-22 11:27:50.727982080 +0800
+@@ -53,7 +53,6 @@ struct linkie_ctx {
+ 	int fd;		/* socket fd for communication with linkied */
+ };
+ 
+-static struct linkie_ctx *fast_linkie_ctx = NULL;
+ char dev_usr[128] = "";
+ char dev_password[128] = "";
+ 
+@@ -739,8 +738,11 @@ static int fast_linkie_main(struct clien
+ 				}
+ 			}
+ 			else {
++				struct linkie_ctx *fast_linkie_ctx = uh_fast_linkie_init();
+ 				write(fast_linkie_ctx->fd, content_buf2, len - 8);
+ 				len = uh_fast_linkie_recv(fast_linkie_ctx->fd, response_buf, 65535);
++				close(fast_linkie_ctx->fd);
++				free(fast_linkie_ctx);
+ 			}
+ 
+ 			rsp = cJSON_Parse(response_buf);
+@@ -781,8 +783,11 @@ static int fast_linkie_main(struct clien
+ 				}
+ 			}
+ 			else {
++				struct linkie_ctx *fast_linkie_ctx = uh_fast_linkie_init();
+ 				write(fast_linkie_ctx->fd, request_buf2, len - 8);
+ 				len = uh_fast_linkie_recv(fast_linkie_ctx->fd, response_buf, 65535);
++				close(fast_linkie_ctx->fd);
++				free(fast_linkie_ctx);
+ 			}
+ 			encode_base64((unsigned char *)response_buf, len, (unsigned char *)response_buf1);
+ 
+@@ -1080,9 +1085,6 @@ static int lua_plugin_init(const struct 
+ 	_conf = c;
+ 	_L = uh_lua_state_init();
+ 	ops->dispatch_add(&lua_dispatch);
+-#ifdef FASTEN_LINKIE
+-	fast_linkie_ctx = uh_fast_linkie_init();
+-#endif
+ 	return 0;
+ }
+ 

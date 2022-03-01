@@ -1,0 +1,51 @@
+diff -uaNr a/initd/init.c b/initd/init.c
+--- a/initd/init.c	2018-12-29 14:47:12.582486500 +0800
++++ b/initd/init.c	2019-05-14 14:27:18.365186400 +0800
+@@ -29,6 +29,7 @@
+ #include <regex.h>
+ #include <unistd.h>
+ #include <stdio.h>
++#include <sys/utsname.h>
+ 
+ #include "../utils/utils.h"
+ #include "init.h"
+@@ -48,21 +49,36 @@
+ 	char *argv[] = { "/sbin/procd", NULL};
+ 
+ 	if (!get_cmdline_val("fast", line, sizeof(line)) || strtol(line, NULL, 10) != 0) {
++		struct utsname unamebuf;
+ 		unsigned int oldumask = umask(0);
+ 
+ 		LOG("- fast -\n");
+ 
+ 		mkdir("/overlay", 0777);
+ 		mount("root", "/overlay", "tmpfs", 0, "mode=0755");
++
++		uname(&unamebuf);
++		if (unamebuf.release[0] == '4') {
++			mkdir("/overlay/root", 0777);
++			mkdir("/overlay/work", 0777);
++		}
+ 		
+ 		if (get_cmdline_val("spdev", line, sizeof(line))) {
+ 			if (mount(line, "/sp_rom", "squashfs", 0, 0)) {
+ 				mount(line, "/sp_rom", "jffs2", MS_NOATIME, 0);
+ 			}
+-			mount("overlayfs:/overlay", "/mnt", "overlayfs", MS_NOATIME, "lowerdir=/,upperdir=/sp_rom");
+-			mount("overlayfs:/overlay", "/mnt", "overlayfs", MS_NOATIME, "lowerdir=/mnt,upperdir=/overlay");
++			if (unamebuf.release[0] == '4') {
++				mount("overlayfs:/overlay", "/mnt", "overlay", MS_NOATIME, "lowerdir=/sp_rom:/,upperdir=/overlay/root,workdir=/overlay/work");
++			} else {
++				mount("overlayfs:/overlay", "/mnt", "overlayfs", MS_NOATIME, "lowerdir=/,upperdir=/sp_rom");
++				mount("overlayfs:/overlay", "/mnt", "overlayfs", MS_NOATIME, "lowerdir=/mnt,upperdir=/overlay");
++			}
+ 		} else {
+-			mount("overlayfs:/overlay", "/mnt", "overlayfs", MS_NOATIME, "lowerdir=/,upperdir=/overlay");
++			if (unamebuf.release[0] == '4') {
++				mount("overlayfs:/overlay", "/mnt", "overlay", MS_NOATIME, "lowerdir=/,upperdir=/overlay/root,workdir=/overlay/work");
++			} else {
++				mount("overlayfs:/overlay", "/mnt", "overlayfs", MS_NOATIME, "lowerdir=/,upperdir=/overlay");
++			}
+ 		}
+ 		
+ 		mount("/proc", "/mnt/proc", "proc", MS_NOATIME | MS_MOVE, 0);

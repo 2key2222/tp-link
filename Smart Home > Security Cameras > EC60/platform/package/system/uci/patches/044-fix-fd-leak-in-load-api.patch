@@ -1,0 +1,13 @@
+diff -uNar a/file.c b/file.c
+--- a/file.c	2019-05-14 15:39:01.808496600 +0800
++++ b/file.c	2019-05-14 15:38:42.988372300 +0800
+@@ -926,7 +926,9 @@
+ 
+ 	UCI_TRAP_SAVE(ctx, done);
+ 	file = uci_open_stream(ctx, filename, NULL, SEEK_SET, false, false);
++	UCI_TRAP_RESTORE(ctx);
+ 	ctx->err = 0;
++	UCI_TRAP_SAVE(ctx, done);
+ 	UCI_INTERNAL(uci_import, ctx, file, name, &package, true);
+ 	UCI_TRAP_RESTORE(ctx);
+ 

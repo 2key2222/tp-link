@@ -1,0 +1,80 @@
+diff -purbBN a/usock.c b/usock.c
+--- a/usock.c	2016-07-29 18:01:37.000000000 +0800
++++ b/usock.c	2018-01-04 16:46:22.956536509 +0800
+@@ -29,6 +29,8 @@
+ #include <stdbool.h>
+ #include <stdio.h>
+ #include <poll.h>
++#include <arpa/inet.h>
++#include <netinet/in.h>
+ 
+ #include "usock.h"
+ #include "utils.h"
+@@ -57,7 +57,7 @@ static int usock_connect(int type, struc
+ 		setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
+ 
+ 		if (!bind(sock, sa, sa_len) &&
+-		    (socktype != SOCK_STREAM || !listen(sock, SOMAXCONN)))
++		    ((socktype != SOCK_STREAM && socktype != SOCK_SEQPACKET) || !listen(sock, SOMAXCONN)))
+ 			return sock;
+ 	} else {
+ 		if (!connect(sock, sa, sa_len) || errno == EINPROGRESS)
+@@ -72,7 +72,7 @@ static int usock_unix(int type, const ch
+ {
+ 	struct sockaddr_un sun = {.sun_family = AF_UNIX};
+ 	bool server = !!(type & USOCK_SERVER);
+-	int socktype = ((type & 0xff) == USOCK_TCP) ? SOCK_STREAM : SOCK_DGRAM;
++	int socktype = ((type & 0xff) == USOCK_SEQPACKET) ? SOCK_SEQPACKET : ((type & 0xff) == USOCK_TCP) ? SOCK_STREAM : SOCK_DGRAM;
+ 
+ 	if (strlen(host) >= sizeof(sun.sun_path)) {
+ 		errno = EINVAL;
+@@ -150,6 +152,7 @@ int usock_inet_timeout(int type, const c
+ 	};
+ 	struct addrinfo *rp_v6 = NULL;
+ 	struct addrinfo *rp_v4 = NULL;
++	struct sockaddr_in ipv4;
+ 	struct pollfd pfds[2] = {
+ 	    { .fd = -1, .events = POLLOUT },
+ 	    { .fd = -1, .events = POLLOUT },
+@@ -157,7 +160,16 @@ int usock_inet_timeout(int type, const c
+ 	int sock = -1;
+ 	int i;
+ 
+-	if (getaddrinfo(host, service, &hints, &result))
++	if ((type & (USOCK_IPV4ONLY|USOCK_NUMERIC)) == (USOCK_IPV4ONLY|USOCK_NUMERIC)) {
++		memset(&ipv4, 0, sizeof(ipv4));
++		ipv4.sin_family = hints.ai_family;
++		ipv4.sin_port = htons(atoi(service));
++		inet_pton(hints.ai_family, host, &ipv4.sin_addr);
++		result = &hints;
++		result->ai_addr = (void*)&ipv4;
++		result->ai_addrlen = sizeof(ipv4);
++		result->ai_next = NULL;
++	} else if (getaddrinfo(host, service, &hints, &result))
+ 		return -1;
+ 
+ 	if (timeout <= 0 || server) {
+@@ -236,6 +247,12 @@ out:
+ 	if (addr && sock >= 0)
+ 		memcpy(addr, rp->ai_addr, rp->ai_addrlen);
+ free_addrinfo:
++	if (result && (result->ai_addr == (void*)&ipv4)) {
++		result->ai_addr = NULL;
++	}
++	if (result == &hints) {
++		result = NULL;
++	}
+ 	freeaddrinfo(result);
+ 	return sock;
+ }
+diff -pur a/usock.h b/usock.h
+--- a/usock.h	2018-07-02 09:52:29.417567704 +0800
++++ b/usock.h	2018-07-02 09:54:03.369571525 +0800
+@@ -21,6 +21,7 @@
+ 
+ #define USOCK_TCP 0
+ #define USOCK_UDP 1
++#define USOCK_SEQPACKET 2
+ 
+ #define USOCK_SERVER		0x0100
+ #define USOCK_NOCLOEXEC		0x0200

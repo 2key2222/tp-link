@@ -1,0 +1,33 @@
+diff -uprN a/wolfcrypt/src/random.c b/wolfcrypt/src/random.c
+--- a/wolfcrypt/src/random.c	2017-05-05 06:06:25.000000000 +0800
++++ b/wolfcrypt/src/random.c	2017-11-30 17:45:57.257945259 +0800
+@@ -398,11 +398,13 @@ static INLINE void array_add(byte* d, wo
+ /* Returns: DRBG_SUCCESS, DRBG_NEED_RESEED, or DRBG_FAILURE */
+ static int Hash_DRBG_Generate(DRBG* drbg, byte* out, word32 outSz)
+ {
+-    int ret = DRBG_NEED_RESEED;
++    int ret;
+     Sha256 sha;
+-    DECLARE_VAR(digest, byte, SHA256_DIGEST_SIZE, drbg->heap);
+ 
+-    if (drbg->reseedCtr != RESEED_INTERVAL) {
++    if (drbg->reseedCtr == RESEED_INTERVAL) {
++        return DRBG_NEED_RESEED;
++    } else {
++        DECLARE_VAR(digest, byte, SHA256_DIGEST_SIZE, drbg->heap);
+         byte type = drbgGenerateH;
+         word32 reseedCtr = drbg->reseedCtr;
+ 
+@@ -434,10 +436,9 @@ static int Hash_DRBG_Generate(DRBG* drbg
+             }
+             drbg->reseedCtr++;
+         }
++        ForceZero(digest, SHA256_DIGEST_SIZE);
++        FREE_VAR(digest, drbg->heap);
+     }
+-    ForceZero(digest, SHA256_DIGEST_SIZE);
+-
+-    FREE_VAR(digest, drbg->heap);
+ 
+     return (ret == 0) ? DRBG_SUCCESS : DRBG_FAILURE;
+ }

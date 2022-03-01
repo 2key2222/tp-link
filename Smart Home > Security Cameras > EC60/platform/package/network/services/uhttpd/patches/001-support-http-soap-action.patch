@@ -1,0 +1,18 @@
+--- a/proc.c
++++ b/proc.c
+@@ -27,6 +27,7 @@
+ 	__header(accept_encoding, accept-encoding) \
+ 	__header(accept_language, accept-language) \
+ 	__header(authorization, authorization) \
++	__header(soapaction, soapaction) \
+ 	__header(connection, connection) \
+ 	__header(cookie, cookie) \
+ 	__header(host, host) \
+@@ -58,6 +59,7 @@ static const struct {
+ 	{ "HTTP_ACCEPT_ENCODING", HDR_accept_encoding },
+ 	{ "HTTP_ACCEPT_LANGUAGE", HDR_accept_language },
+ 	{ "HTTP_AUTHORIZATION", HDR_authorization },
++	{ "HTTP_SOAPACTION", HDR_soapaction },
+ 	{ "HTTP_CONNECTION", HDR_connection },
+ 	{ "HTTP_COOKIE", HDR_cookie },
+ 	{ "HTTP_HOST", HDR_host },

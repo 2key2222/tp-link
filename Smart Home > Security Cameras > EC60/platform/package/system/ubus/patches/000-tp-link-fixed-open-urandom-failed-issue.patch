@@ -1,0 +1,23 @@
+--- a/ubusd_id.c	2016-03-15 15:43:08.398872147 +0800
++++ b/ubusd_id.c	2016-03-15 15:42:22.546872177 +0800
+@@ -39,9 +39,20 @@
+ 
+ void ubus_init_id_tree(struct avl_tree *tree)
+ {
++#define TP_LINK_FIXED_OPEN_URANDOM_ISSUE
++#ifdef TP_LINK_FIXED_OPEN_URANDOM_ISSUE
++RETRY:
++#endif
+ 	if (random_fd < 0) {
+ 		random_fd = open("/dev/urandom", O_RDONLY);
+ 		if (random_fd < 0) {
++#ifdef TP_LINK_FIXED_OPEN_URANDOM_ISSUE
++			static int retry_count = 5;
++			if (retry_count -- > 0) {
++				sleep(1);
++				goto RETRY;
++			}
++#endif
+ 			perror("open");
+ 			exit(1);
+ 		}

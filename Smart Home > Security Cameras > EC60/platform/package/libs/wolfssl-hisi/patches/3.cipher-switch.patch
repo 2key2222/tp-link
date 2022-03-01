@@ -1,0 +1,92 @@
+diff -uprN origin/src/ssl.c new/src/ssl.c
+--- origin/src/ssl.c	2018-03-21 11:47:55.285706930 +0800
++++ new/src/ssl.c	2018-03-21 11:48:57.893707864 +0800
+@@ -1245,6 +1245,11 @@ int wolfSSL_GetDhKey_Sz(WOLFSSL* ssl)
+ 
+ #endif /* !NO_DH */
+ 
++extern int g_encrypt_hisi;
++void wolfssl_set_encrypt_mode(int mode)
++{
++	g_encrypt_hisi = mode;
++}
+ 
+ int wolfSSL_write(WOLFSSL* ssl, const void* data, int sz)
+ {
+diff -uprN origin/wolfcrypt/src/aes.c new/wolfcrypt/src/aes.c
+--- origin/wolfcrypt/src/aes.c	2018-03-21 11:47:55.305706931 +0800
++++ new/wolfcrypt/src/aes.c	2018-03-21 11:48:57.909707864 +0800
+@@ -38,6 +38,8 @@ static void cayssl_debug_do(const char *
+ 
+ #include <wolfssl/wolfcrypt/aes.h>
+ 
++int g_encrypt_hisi = 0;
++
+ /* fips wrapper calls, user can call direct */
+ #ifdef HAVE_FIPS
+     int wc_AesSetKey(Aes* aes, const byte* key, word32 len, const byte* iv,
+@@ -2755,8 +2757,7 @@ int wc_AesSetIV(Aes* aes, const byte* iv
+     #endif /* HAVE_AES_DECRYPT */
+ 
+ #else
+-    #ifdef BOARD_HI3518EV200//add cipher
+-
++	#ifdef BOARD_HI3518EV200//add cipher
+     static void cayssl_debug_do(const char *func, int line, const char * format,...)
+     {
+         int lenStd = 0;
+@@ -2969,7 +2970,7 @@ __CIPHER_EXIT__:
+     //     return HI_SUCCESS;
+     // }
+ 
+-    int wc_AesCbcEncrypt(Aes* aes, byte* out, const byte* in, word32 sz)
++    int wc_AesCbcEncrypt_hisi(Aes* aes, byte* out, const byte* in, word32 sz)
+     {
+         //cayssl_debug("sz:%d, dd rounds: %d\n", sz,aes->rounds);
+         memcpy(g_hisi_aes.key, aes->key, sizeof(aes->key));
+@@ -3012,10 +3013,18 @@ __CIPHER_EXIT__:
+         memcpy(out, g_hisi_aes.output_addr_vir, sz);
+         return 0;
+     }
+-    #else
++    #endif
++	
+     int wc_AesCbcEncrypt(Aes* aes, byte* out, const byte* in, word32 sz)
+     {
+-        word32 blocks = sz / AES_BLOCK_SIZE;
++	
++		if(g_encrypt_hisi == 1){
++			#ifdef BOARD_HI3518EV200
++				return wc_AesCbcEncrypt_hisi(aes, out, in, sz);
++			#endif
++		}
++
++		word32 blocks = sz / AES_BLOCK_SIZE;
+ 
+     #if defined(WOLFSSL_ASYNC_CRYPT) && defined(WC_ASYNC_ENABLE_AES)
+         /* if async and byte count above threshold */
+@@ -3096,7 +3105,6 @@ __CIPHER_EXIT__:
+ 
+         return 0;
+     }
+-    #endif
+ 
+     #ifdef HAVE_AES_DECRYPT
+     int wc_AesCbcDecrypt(Aes* aes, byte* out, const byte* in, word32 sz)
+diff -uprN origin/wolfssl/ssl.h new/wolfssl/ssl.h
+--- origin/wolfssl/ssl.h	2018-03-21 11:47:55.317706931 +0800
++++ new/wolfssl/ssl.h	2018-03-21 11:48:57.925707865 +0800
+@@ -375,6 +375,7 @@ WOLFSSL_API void wolfSSL_set_using_nonbl
+ WOLFSSL_API int  wolfSSL_get_using_nonblock(WOLFSSL*);
+ WOLFSSL_API int  wolfSSL_connect(WOLFSSL*);     /* please see note at top of README
+                                              if you get an error from connect */
++WOLFSSL_API void wolfssl_set_encrypt_mode(int);
+ WOLFSSL_API int  wolfSSL_write(WOLFSSL*, const void*, int);
+ WOLFSSL_API int  wolfSSL_read(WOLFSSL*, void*, int);
+ WOLFSSL_API int  wolfSSL_peek(WOLFSSL*, void*, int);
+@@ -2330,5 +2331,4 @@ WOLFSSL_API void ERR_load_SSL_strings(vo
+     }  /* extern "C" */
+ #endif
+ 
+-
+ #endif /* WOLFSSL_SSL_H */

@@ -1,0 +1,140 @@
+diff -uNar a/CMakeLists.txt b/CMakeLists.txt
+--- a/CMakeLists.txt	2016-03-05 21:02:10.000000000 +0800
++++ b/CMakeLists.txt	2017-04-11 17:23:27.340320700 +0800
+@@ -34,7 +34,8 @@
+ 
+ ADD_EXECUTABLE(uhttpd ${SOURCES})
+ FIND_LIBRARY(libjson NAMES json-c json)
+-TARGET_LINK_LIBRARIES(uhttpd ubox dl json_script blobmsg_json ${libjson} ${LIBS})
++FIND_LIBRARY(LIBCLOUD cloud-api)
++TARGET_LINK_LIBRARIES(uhttpd ubox dl json_script blobmsg_json ${libjson} ${LIBS} ${LIBCLOUD})
+ 
+ SET(PLUGINS "")
+ IF(LUA_SUPPORT)
+@@ -63,7 +64,7 @@
+ 	SET(PLUGINS ${PLUGINS} uhttpd_lua)
+ 	ADD_DEFINITIONS(-DHAVE_LUA ${LUA_CFLAGS})
+ 	ADD_LIBRARY(uhttpd_lua MODULE lua.c)
+-	TARGET_LINK_LIBRARIES(uhttpd_lua ${LUA_LIBS} m dl)
++	TARGET_LINK_LIBRARIES(uhttpd_lua ${LUA_LIBS} m dl ${LIBCLOUD})
+ ENDIF()
+ 
+ IF(UBUS_SUPPORT)
+diff -uNar a/lua.c b/lua.c
+--- a/lua.c	2017-04-11 14:01:15.895011242 +0800
++++ b/lua.c	2017-04-11 18:13:39.255277800 +0800
+@@ -26,6 +26,7 @@
+ #include <signal.h>
+ #include <sys/wait.h>
+ #include <poll.h>
++#include <cloud-sdk/cloud_api.h>
+ 
+ #include "uhttpd.h"
+ #include "plugin.h"
+@@ -301,6 +302,41 @@
+ 	return 0;
+ }
+ 
++static int set_usrinfo(void)
++{
++	struct uci_context *ctx;
++	struct uci_ptr ptr =
++	{
++		.package = "account",
++		.section = "account",
++		.option = "password",
++		.value = dev_password,
++	};
++
++	ctx = uci_alloc_context();
++	if (!ctx)
++		return -1;
++
++	if (UCI_OK != uci_set(ctx, &ptr))
++	{
++		uci_unload(ctx, ptr.p);
++		uci_free_context(ctx);
++		return -2;
++	}
++
++	if (UCI_OK != uci_commit(ctx, &ptr.p, false))
++	{
++		uci_unload(ctx, ptr.p);
++		uci_free_context(ctx);
++		return -3;
++	}
++
++	uci_unload(ctx, ptr.p);
++	uci_free_context(ctx);
++	return 0;
++}
++
++
+ #ifdef UBUS_RELOAD_CONFIG
+ static struct ubus_context *ubus_ctx;
+ 
+@@ -387,28 +423,48 @@
+ 		decode_base64((unsigned char *)ptr, strlen(ptr), (unsigned char *)realm_decode);
+ 		ptr = realm_decode;
+ 		tmp = strstr(ptr, dev_usr);
+-		if (tmp == ptr) {
++		if (tmp == ptr && ptr[usr_len] == ':') {
+ 			/* Pass user name and ':' */
+-			ptr = ptr + usr_len + 1;
++			tmp[usr_len] = '\0';//tmp point to user
++			ptr = ptr + usr_len + 1;//ptr point to passwd
+ 			encode_base64((unsigned char *)ptr, strlen(ptr), (unsigned char *)ipc_auth_password);
+ 			if (!strcmp(ipc_auth_password, dev_password)) {
+ 				return 0;
+ 			}
+-			else {
+-				char rpt_auth_password[128] = {};
+-				struct MD5Context md5_ctx;
+-				unsigned char digest[16] = {};
+-				int i = 0;
+-				/* keep compatible with RE and IPC */
+-
+-				MD5Init(&md5_ctx);
+-				MD5Update(&md5_ctx, ptr, strlen(ptr));
+-				MD5Final(digest, &md5_ctx);
+-
+-				for (; i < 16; i++) {
+-					sprintf(rpt_auth_password + 2 * i, "%02X", *(digest + i));
++			else if (strcmp(dev_usr, "admin")){
++				char req[512],*resp = NULL;
++				cJSON * pJsonRoot = NULL,*pJsonErr =NULL;
++				int ret = -2,error_code = -1;
++				snprintf(req, sizeof(req) , "{\"method\":\"bindDevice\",\"params\":{\"cloudUserName\":\"%s\",\"cloudPassword\":\"%s\"}}",
++						tmp, ptr);
++				#if 0
++				FILE * fp_debug = fopen("/dev/console", "w");
++				fprintf(fp_debug, "=====================$$$req:\n%s\n", req);
++				#endif
++				ret = tlcc_send_request_sync(req, 4 * 1000, 0, &resp);
++				tlcc_cloud_api_destroy();
++				if (ret == 0 && resp != NULL)
++				{
++					pJsonRoot = cJSON_Parse(resp);
++					if (pJsonRoot)
++						pJsonErr = cJSON_GetObjectItem(pJsonRoot, "error_code");
++					if (pJsonErr)
++						error_code = pJsonErr->valueint;
+ 				}
+-				if (!strcasecmp(rpt_auth_password, dev_password)) {
++				if (pJsonRoot)
++					cJSON_Delete(pJsonRoot);
++				if(resp != NULL)
++					free(resp);
++				#if 0
++				fprintf(fp_debug, "========$$$ret = %d, error_code = %d\n", ret, error_code);
++				fprintf(fp_debug, "dev_password=%s\n", dev_password);
++				fprintf(fp_debug, "ipc_auth_password=%s\n\n", ipc_auth_password);
++				fclose(fp_debug);
++				#endif
++				if (error_code == 0)
++				{
++					strcpy(dev_password, ipc_auth_password);
++					set_usrinfo();
+ 					return 0;
+ 				}
+ 			}

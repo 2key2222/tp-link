@@ -1,0 +1,24 @@
+--- a/networking/udhcp/dhcpc.c	2018-01-16 11:51:45.391702556 +0800
++++ b/networking/udhcp/dhcpc.c	2018-01-16 14:10:33.734055646 +0800
+@@ -547,6 +547,7 @@
+ {
+ 	char **envp, **curr;
+ 	char *argv[3];
++	int count = 0, ret = -1;
+ 
+ 	envp = fill_envp(packet);
+ 
+@@ -555,7 +556,12 @@
+ 	argv[0] = (char*) client_config.script;
+ 	argv[1] = (char*) name;
+ 	argv[2] = NULL;
+-	spawn_and_wait(argv);
++	do {
++		ret = spawn_and_wait(argv);
++		if (ret) {
++			log1("spawn_and_wait %s %s error, ret = %d, try again", client_config.script, name, ret);
++		}
++	} while (ret && ++count < 3);
+ 
+ 	for (curr = envp; *curr; curr++) {
+ 		log2(" %s", *curr);

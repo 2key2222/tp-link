@@ -1,0 +1,28 @@
+--- a/file.c
++++ b/file.c
+@@ -677,13 +677,15 @@ dispatch_find(const char *url, struct pa
+ 	return NULL;
+ }
+ 
++static char *uh_handle_alias(char *old_url);
++
+ static void
+ uh_invoke_script(struct client *cl, struct dispatch_handler *d, struct path_info *pi)
+ {
+ 	char *url = blobmsg_data(blob_data(cl->hdr.head));
+ 
+ 	n_requests++;
+-	d->handle_request(cl, url, pi);
++	d->handle_request(cl, uh_handle_alias(url), pi);
+ }
+ 
+ static void uh_complete_request(struct client *cl)
+@@ -831,7 +833,7 @@ static char *uh_handle_alias(char *old_u
+ 
+ 		if (!uh_path_match(alias->alias, old_url))
+ 			continue;
+-
++		old_url += strlen(alias->alias);
+ 		if (alias->path)
+ 			path_len = strlen(alias->path);
+ 

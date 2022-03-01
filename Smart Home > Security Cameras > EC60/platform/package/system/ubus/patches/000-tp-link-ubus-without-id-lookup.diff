@@ -1,0 +1,76 @@
+diff -purBbN a/libubus.h b/libubus.h
+--- a/libubus.h	2015-12-21 11:34:30.000000000 +0800
++++ b/libubus.h	2018-09-28 10:10:37.714482560 +0800
+@@ -281,6 +281,10 @@ int ubus_invoke(struct ubus_context *ctx
+ int ubus_invoke_async(struct ubus_context *ctx, uint32_t obj, const char *method,
+ 		      struct blob_attr *msg, struct ubus_request *req);
+ 
++/* asynchronous version of ubus_invoke() without obj id */
++int ubus_invoke_async_new(struct ubus_context *ctx, const char *module, const char *method,
++		      struct blob_attr *msg, struct ubus_request *req);
++
+ /* send a reply to an incoming object method call */
+ int ubus_send_reply(struct ubus_context *ctx, struct ubus_request_data *req,
+ 		    struct blob_attr *msg);
+diff -purBbN a/libubus-req.c b/libubus-req.c
+--- a/libubus-req.c	2015-12-21 11:34:30.000000000 +0800
++++ b/libubus-req.c	2018-09-28 11:45:15.969762558 +0800
+@@ -220,6 +220,21 @@ int ubus_invoke_async(struct ubus_contex
+ 	return 0;
+ }
+ 
++int ubus_invoke_async_new(struct ubus_context *ctx, const char *module, const char *method,
++                       struct blob_attr *msg, struct ubus_request *req)
++{
++	blob_buf_init(&b, 0);
++	blob_put_string(&b, UBUS_ATTR_OBJPATH, module);
++	blob_put_string(&b, UBUS_ATTR_METHOD, method);
++	if (msg)
++		blob_put(&b, UBUS_ATTR_DATA, blob_data(msg), blob_len(msg));
++
++	if (ubus_start_request(ctx, req, b.head, UBUS_MSG_INVOKE, 0) < 0)
++		return UBUS_STATUS_INVALID_ARGUMENT;
++
++	return 0;
++}
++
+ int ubus_invoke(struct ubus_context *ctx, uint32_t obj, const char *method,
+                 struct blob_attr *msg, ubus_data_handler_t cb, void *priv,
+ 		int timeout)
+@@ -389,7 +404,7 @@ ubus_find_request(struct ubus_context *c
+ 			*id = ubus_find_notify_id(nreq, peer);
+ 			if (*id < 0)
+ 				continue;
+-		} else if (peer != req->peer)
++		} else if (req->peer && peer != req->peer)
+ 			continue;
+ 
+ 		return req;
+diff -purBbN a/ubusd_proto.c b/ubusd_proto.c
+--- a/ubusd_proto.c	2015-12-21 11:34:30.000000000 +0800
++++ b/ubusd_proto.c	2018-09-28 12:00:25.244140843 +0800
+@@ -233,14 +233,23 @@ static int ubusd_handle_invoke(struct ub
+ 	struct ubus_id *id;
+ 	const char *method;
+ 
+-	if (!attr[UBUS_ATTR_METHOD] || !attr[UBUS_ATTR_OBJID])
++	if (!attr[UBUS_ATTR_METHOD] || (!attr[UBUS_ATTR_OBJID] && !attr[UBUS_ATTR_OBJPATH]))
+ 		return UBUS_STATUS_INVALID_ARGUMENT;
+ 
++	if (attr[UBUS_ATTR_OBJPATH]) {
++		obj = avl_find_element(&path, blob_data(attr[UBUS_ATTR_OBJPATH]), obj, path);
++		if (!obj)
++			return UBUS_STATUS_NOT_FOUND;
++
++		id = &obj->id;
++		retmsg->hdr.peer = ub->hdr.peer = id->id;
++	} else {
+ 	id = ubus_find_id(&objects, blob_get_u32(attr[UBUS_ATTR_OBJID]));
+ 	if (!id)
+ 		return UBUS_STATUS_NOT_FOUND;
+ 
+ 	obj = container_of(id, struct ubus_object, id);
++	}
+ 
+ 	method = blob_data(attr[UBUS_ATTR_METHOD]);
+ 

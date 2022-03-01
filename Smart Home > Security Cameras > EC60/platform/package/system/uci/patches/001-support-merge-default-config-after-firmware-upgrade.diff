@@ -1,0 +1,88 @@
+diff -pubB a/uci.h b/uci.h
+--- a/uci.h	2015-12-22 09:02:28.000000000 +0800
++++ b/uci.h	2016-10-19 16:25:15.337982200 +0800
+@@ -372,6 +372,7 @@ enum uci_flags {
+ 	UCI_FLAG_PERROR =        (1 << 1), /* print parser error messages */
+ 	UCI_FLAG_EXPORT_NAME =   (1 << 2), /* when exporting, name unnamed sections */
+ 	UCI_FLAG_SAVED_DELTA = (1 << 3), /* store the saved delta in memory as well */
++	UCI_FLAG_UPGRADE =		(1 << 4), /* we are merging the default config */
+ };
+ 
+ struct uci_element
+diff -pubB a/cli.c b/cli.c
+--- a/cli.c	2015-12-22 09:02:28.000000000 +0800
++++ b/cli.c	2016-10-19 16:58:34.524224700 +0800
+@@ -29,6 +29,7 @@ static enum {
+ 	CLI_FLAG_NOCOMMIT = (1 << 2),
+ 	CLI_FLAG_BATCH =    (1 << 3),
+ 	CLI_FLAG_SHOW_EXT = (1 << 4),
++	CLI_FLAG_UPGRADE = 	(1 << 5),
+ } flags;
+ 
+ static FILE *input;
+@@ -380,11 +381,17 @@ static int uci_do_import(int argc, char 
+ 		else
+ 			merge = true;
+ 	}
++
++	if(flags & CLI_FLAG_UPGRADE) {
++		ctx->flags |= UCI_FLAG_UPGRADE;
++	}
++
+ 	ret = uci_import(ctx, input, name, &package, (name != NULL));
+ 	if (ret == UCI_OK) {
+ 		if (merge) {
+ 			ret = uci_save(ctx, package);
+-		} else {
++		}
++		if (!merge || (flags & CLI_FLAG_UPGRADE)) {
+ 			struct uci_element *e;
+ 			/* loop through all config sections and overwrite existing data */
+ 			uci_foreach_element(&ctx->root, e) {
+@@ -691,7 +694,7 @@ int main(int argc, char **argv)
+ 		return 1;
+ 	}
+ 
+-	while((c = getopt(argc, argv, "c:d:f:LmnNp:P:sSqX")) != -1) {
++	while((c = getopt(argc, argv, "c:d:f:LmnNp:P:sSqXu")) != -1) {
+ 		switch(c) {
+ 			case 'c':
+ 				uci_set_confdir(ctx, optarg);
+@@ -742,6 +745,10 @@ int main(int argc, char **argv)
+ 			case 'X':
+ 				flags &= ~CLI_FLAG_SHOW_EXT;
+ 				break;
++			case 'u':
++				flags |= CLI_FLAG_MERGE;
++				flags |= CLI_FLAG_UPGRADE;
++				break;
+ 			default:
+ 				uci_usage();
+ 				return 0;
+diff -pubB a/list.c b/list.c
+--- a/list.c	2015-12-22 09:02:28.000000000 +0800
++++ b/list.c	2016-10-19 16:42:39.172990700 +0800
+@@ -473,6 +473,14 @@ static void uci_add_element_list(struct 
+ 	struct uci_element *e;
+ 	struct uci_package *p;
+ 
++	if (ctx->flags & UCI_FLAG_UPGRADE) {
++		uci_foreach_element(&ptr->o->v.list, e) {
++			if (!strcmp(e->name, ptr->value)) {
++				return;
++			}
++		}
++	}
++
+ 	p = ptr->p;
+ 	if (!internal && p->has_delta)
+ 		uci_add_delta(ctx, &p->delta, UCI_CMD_LIST_ADD, ptr->section, ptr->option, ptr->value);
+@@ -694,6 +702,8 @@ int uci_set(struct uci_context *ctx, str
+ 		ptr->s = uci_alloc_section(ptr->p, ptr->value, ptr->section);
+ 		ptr->last = &ptr->s->e;
+ 	} else if (ptr->o && ptr->option) { /* update option */
++		if ((ptr->o->type == UCI_TYPE_STRING) && (ctx->flags & UCI_FLAG_UPGRADE))
++			return 0;
+ 		if ((ptr->o->type == UCI_TYPE_STRING) &&
+ 			!strcmp(ptr->o->v.string, ptr->value))
+ 			return 0;
