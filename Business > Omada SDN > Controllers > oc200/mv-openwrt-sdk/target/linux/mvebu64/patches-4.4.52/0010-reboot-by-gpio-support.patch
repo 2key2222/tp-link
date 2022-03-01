@@ -1,0 +1,72 @@
+diff -Nuar a/driver/firmware/Kconfig b/drivers/firmware/Kconfig
+--- a/drivers/firmware/Kconfig	2017-11-16 11:10:55.000000000 +0800
++++ b/drivers/firmware/Kconfig	2019-12-26 19:09:13.000000000 +0800
+@@ -173,6 +173,11 @@
+ 	def_bool y
+ 	depends on QCOM_SCM && ARM64
+ 
++config REBOOT_BY_GPIO
++	tristate "reboot by gpio"
++	bool
++	default	n
++
+ source "drivers/firmware/broadcom/Kconfig"
+ source "drivers/firmware/google/Kconfig"
+ source "drivers/firmware/efi/Kconfig"
+diff -Nuar a/drivers/firmware/psci.c b/drivers/firmware/psci.c
+--- a/drivers/firmware/psci.c	2017-11-16 11:10:55.000000000 +0800
++++ b/drivers/firmware/psci.c	2019-12-26 19:56:19.000000000 +0800
+@@ -28,6 +28,7 @@
+ #include <asm/system_misc.h>
+ #include <asm/smp_plat.h>
+ #include <asm/suspend.h>
++#include <linux/gpio.h>
+ 
+ /*
+  * While a 64-bit OS can make calls with SMC32 calling conventions, for some
+@@ -209,6 +210,37 @@
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_REBOOT_BY_GPIO
++#define REBOOT_GPIO   75
++static void psci_sys_reset(enum reboot_mode reboot_mode, const char *cmd)
++{
++	struct gpio_desc *desc = NULL;
++
++    desc = gpio_to_desc(REBOOT_GPIO);
++    if(desc == NULL)
++    {
++        printk("gpio_to_desc fail\r\n");
++        return;
++    }
++
++    if(0 > gpiod_direction_output(desc, 0))
++    {
++        printk("reboot FAIL \r\n");
++    }
++    else
++    {
++        printk("reboot OK\r\n");
++        while(1);
++    }
++
++    return;
++}
++
++static void psci_sys_poweroff(void)
++{
++	return;
++}
++#else
+ static void psci_sys_reset(enum reboot_mode reboot_mode, const char *cmd)
+ {
+ 	invoke_psci_fn(PSCI_0_2_FN_SYSTEM_RESET, 0, 0, 0);
+@@ -218,6 +250,7 @@
+ {
+ 	invoke_psci_fn(PSCI_0_2_FN_SYSTEM_OFF, 0, 0, 0);
+ }
++#endif
+ 
+ static int __init psci_features(u32 psci_func_id)
+ {

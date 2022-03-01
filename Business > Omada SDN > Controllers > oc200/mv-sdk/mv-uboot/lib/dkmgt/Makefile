@@ -1,0 +1,13 @@
+obj-y += thirdparty/cJSON/cJSON.o
+obj-y += dkmgt_common.o
+obj-y += dkmgt_file.o
+obj-y += dkmgt_ptn.o
+obj-y += dkmgt_ptn_header.o
+obj-y += dkmgt_ptn_device_info.o
+obj-y += dkmgt_ptn_support_list.o
+obj-y += dkmgt_firmware.o
+#obj-y += dkmgt_firmware_upgrade.o
+#obj-y += md5.o
+obj-y += bigNumber.o
+obj-y += shaAndSha512.o
+obj-y += rsaVerify.o

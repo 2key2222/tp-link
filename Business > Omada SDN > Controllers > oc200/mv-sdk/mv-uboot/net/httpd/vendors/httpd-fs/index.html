@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Recovery Mode</title>
+    <link rel="stylesheet" href="./style.css">
+</head>
+
+<body>
+    <div class="layer">
+        <div class="top-layer">
+            <div class="top">
+                <div class="logo-img"></div>
+                <div class="page-title">Recovery Mode</div>
+            </div>
+        </div>
+        <div class="split-bar"></div>
+        <div class="main">
+            <div class="separate-part">
+                <div class="title-container">
+                    <h3>Device</h3>
+                </div>
+                <div class="row">
+                    <div class="label">Model:</div>
+                    <div class="content">
+                        <span id="model"></span>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="label">MAC Address:</div>
+                    <div class="content">
+                        <span id="mac"></span>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="label">Version:</div>
+                    <div class="content">
+                        <span id="firmware_version"></span>
+                    </div>
+                </div>
+            </div>
+            <div class="separate-part">
+                <div class="title-container">
+                    <h3>Maintenance</h3>
+                </div>
+                <div class="row">
+                    <div class="label">Reboot:</div>
+                    <div class="content">
+                        <button id="reboot" class="button">Reboot</button>
+                    </div>
+                </div>
+                <div class="row init-hide">
+                    <div class="label">Power Off:</div>
+                    <div class="content">
+                        <button id="power-off" class="button">Power Off</button>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="label">Reset:</div>
+                    <div class="content">
+                        <button id="reset" class="button warning">Factory Reset</button>
+                    </div>
+                </div>
+            </div>
+            <div class="separate-part">
+                <div class="title-container">
+                    <h3>Firmware</h3>
+                </div>
+                <div class="row">
+                    <div class="label">Upgrade File:</div>
+                    <div class="content">
+                        <div class="file-container">
+                            <form id="update-form" method="post" enctype="multipart/form-data" action="./" target="update-frame">
+                                <input type="file" id="firmware-file" name="file" accept=".bin">
+                            </form>
+                            <div class="file-name-container">
+                                <input type="text" id="firmware-name">
+                            </div>
+                            <button class="button">Browser</button>
+                        </div>
+                    </div>
+                </div>
+                <div id="update" class="row init-hide">
+                    <div class="label"></div>
+                    <div class="content">
+                        <button class="button" id="update-now">Upgrade Now</button>
+                    </div>
+                </div>
+                <div id="progressing" class="row init-hide">
+                    <div class="label"></div>
+                    <div class="content progress-bar">
+                        <div class="progress-bar-container">
+                            <div class="progress-text">
+                                <span>Upgrading(</span>
+                                <label></label>
+                                <span>%)</span>
+                            </div>
+                            <div class="progress-total">
+                                <div id="update-progress" class="progress-current"></div>
+                            </div>
+                        </div>
+                        <!-- <button id="update-cancel" class="button">Cancel</button> -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="pover-container">
+        <div class="mask"></div>
+        <div class="pover-content-wrap">
+            <div class="pover-content">
+                <div id="pover-unit-container">
+                    <div id="reboot-confirm" class="init-hide">
+                        <div class="pover-unit-title">
+                            <span>Reboot</span>
+                        </div>
+                        <div class="pover-unit-content">
+                            <span>Reboot your device right now?</span>
+                        </div>
+                        <div class="pover-unit-button-container">
+                            <button id="reboot-cancel" class="button">Cancel</button>
+                            <button id="reboot-ok" class="button">Reboot</button>
+                        </div>
+                    </div>
+                    <div id="reset-confirm" class="init-hide">
+                        <div class="pover-unit-title">
+                            <span>Reset</span>
+                        </div>
+                        <div class="pover-unit-content">
+                            <p>Reset your device to default?</p>
+                            <p class="tips">(Your device will auto reboot)</p>
+                        </div>
+                        <div class="pover-unit-button-container">
+                            <button id="reset-cancel" class="button">Cancel</button>
+                            <button id="reset-ok" class="button warning">Reset</button>
+                        </div>
+                    </div>
+                    <div id="power-confirm" class="init-hide">
+                        <div class="pover-unit-title">
+                            <span>Power Off</span>
+                        </div>
+                        <div class="pover-unit-content">
+                            <span>Power Off your device right now?</span>
+                        </div>
+                        <div class="pover-unit-button-container">
+                            <button id="power-off-cancel" class="button">Cancel</button>
+                            <button id="power-off-ok" class="button">Power Off</button>
+                        </div>
+                    </div>
+                    <div id="rebooting" class="init-hide">
+                        <div class="pover-unit-title">
+                            <span>Rebooting...</span>
+                        </div>
+                        <div class="pover-unit-content">
+                            <div class="content progress-bar l">
+                                <div class="progress-bar-container">
+                                    <div class="progress-total">
+                                        <div id="reboot-progress" class="progress-current"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <span id="reboot-tips">It will take several minutes...</span>
+                        </div>
+                    </div>
+                    <div id="error" class="init-hide">
+                        <div class="pover-unit-title">
+                            <span id="">Upgrade</span>
+                        </div>
+                        <div class="pover-unit-content">
+                            <span  id="errorStr"></span>
+                        </div>
+                        <div class="pover-unit-button-container">
+                            <button id="error-ok" class="button">OK</button>
+                        </div>
+                    </div>
+                    <!--                     <div id="power-offing" class="init-hide">
+                        <div class="pover-unit-title">
+                            <span>Power Off...</span>
+                        </div>
+                        <div id="power-offing-content" class="pover-unit-content">
+                            <span class="loading-img"></span>
+                        </div>
+                    </div> -->
+                    <div id="power-off-done" class="init-hide">
+                        <div class="pover-unit-title">
+                            <span>Power Off</span>
+                        </div>
+                        <div class="pover-unit-content">
+                            <span>Your device have been shut down!</span>
+                        </div>
+                        <div class="pover-unit-button-container">
+                            <button id="power-off-done-ok" class="button">OK</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <iframe src="" frameborder="0" id="update-frame" name="update-frame"></iframe>
+</body>
+<script>
+(function() {
+	var rebootTime,updateTime;
+    var progressIntervalId;
+    var fileResultIntervalId;
+    function createXHR() {
+        if (typeof XMLHttpRequest != "undefined") {
+            return new XMLHttpRequest();
+        } else if (typeof ActiveXObject != "undefined") {
+            if (typeof arguments.callee.activeXString != "string") {
+                var versions = ["MSXML2.XMLHttp.6.0", "MSXML2.XMLHttp.3.0", "MSXML2.XMLHttp"];
+                for (var i = 0, len = versions.length; i < len; i++) {
+                    try {
+                        new ActiveXObject(versions[i]);
+                        arguments.callee.activeXString = versions[i];
+                        break;
+                    } catch (ex) {
+                    }
+                }
+            }
+            return new ActiveXObject(arguments.callee.activeXString);
+        } else {
+            throw new Error("No XHR object available.");
+        }
+    }
+    var $ = {
+        ajax: function(options) {
+            var defaultOption = {
+                type: "get",
+                async: true
+            };
+            var xhr = createXHR();
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState == 4) {
+                    if ((xhr.status >= 200 && xhr.status < 300) || xhr.status == 304) {
+                       
+                        var data = JSON.parse(xhr.responseText);
+                        if (data.success && options.success && typeof options.success == "function") {
+                            options.success(data);
+                        } else if (!data.success) {
+                            options.success(data);
+                        }
+                    } else {
+                        if (options.fail && typeof options.fail == "function") {
+                            options.fail(xhr.responseText);
+                        } else {
+                            $.alert();
+                        }
+                        
+                    }
+                }
+            };
+            var flag = (options.async === undefined) ? true : options.async;
+            xhr.open(options.type || defaultOption.type, options.url, flag);
+            xhr.send(null);
+        },
+        addHandler: function(element, type, handler) {
+            if (element.addEventListener) {
+                element.addEventListener(type, handler, false);
+            } else if (element.attachEvent) {
+                element.attachEvent("on" + type, handler);
+            } else {
+                element["on" + type] = handler;
+            }
+        },
+        removeHandler: function(element, type, handler) {
+            if (element.removeEventListener) {
+                element.removeEventListener(type, handler, false);
+            } else if (element.detachEvent) {
+                element.detachEvent("on" + type, handler);
+            } else {
+                element["on" + type] = null;
+            }
+        },
+        alert: function(text) {
+            if (text) {
+				alert(text);
+			}
+        }
+    };
+
+
+    function stopProgress(id)
+    {
+		clearInterval(progressIntervalId);
+        progressIntervalId = null;
+    }
+    function startProgress(id, options, callback) {
+        var elem = document.getElementById(id);
+        var count = options.start || 0;
+        var intervalId = null;
+        if (!elem) {
+            return;
+        }
+        intervalId = setInterval(function() {
+            count += 100;
+            var width = parseInt(count / options.duration * 100, 10);
+            if (width > 100) {
+                clearInterval(intervalId);
+                clearInterval(fileResultIntervalId);
+                fileResultIntervalId = null;
+                if (typeof callback == "function") {
+                    callback();
+                }
+            } else {
+                var label = document.getElementsByTagName("label")[0];
+                if (label) {
+                    label.innerHTML = width;
+                }
+                elem.style.width = width + "%";
+            }
+        }, 100);
+		return intervalId;
+    }
+
+    function doRebooting() {
+        startProgress("reboot-progress", {
+            duration: rebootTime || 60000
+        }, function() {
+            location.href = location.href;
+        });
+    }
+
+    var resizeId = null;
+
+    function adjustPover() {
+        var height = document.body.offsetHeight || window.innerHeight || document.body.clientHeight;
+        document.getElementById("pover-unit-container").style.maxHeight = height + "px";
+    }
+    $.addHandler(window, "resize", function() {
+        clearTimeout(resizeId);
+        resizeId = setTimeout(adjustPover, 100);
+    });
+
+    function showPover(id) {
+        document.getElementById("pover-container").style.display = "block";
+        document.getElementById(id).style.display = "block";
+    }
+
+    function hidePover(id) {
+        document.getElementById("pover-container").style.display = "none";
+        document.getElementById(id).style.display = "none";
+    }
+
+    $.addHandler(document.getElementById("reboot"), "click", function() {
+        showPover("reboot-confirm");
+    });
+    $.addHandler(document.getElementById("reboot-cancel"), "click", function() {
+        hidePover("reboot-confirm");
+    });
+    $.addHandler(document.getElementById("reboot-ok"), "click", function() {
+        $.ajax({
+            url: "./reboot",
+            success: function() {
+                hidePover("reboot-confirm");
+                showPover("rebooting");
+                doRebooting();
+            },
+            fail: function(){
+            	$.alert();
+            	hidePover("reboot-confirm");
+            }
+        });
+    });
+
+    $.addHandler(document.getElementById("power-off"), "click", function() {
+        showPover("power-confirm");
+    });
+    $.addHandler(document.getElementById("power-off-cancel"), "click", function() {
+        hidePover("power-confirm");
+    });
+
+    $.addHandler(document.getElementById("error-ok"), "click", function() {
+        hidePover("error");
+    });
+
+    $.addHandler(document.getElementById("power-off-ok"), "click", function() {
+        $.ajax({
+            url: "./power-off",
+            success: function() {
+                hidePover("power-confirm");
+                showPover("power-off-done");
+            },
+            fail: function(){
+            	$.alert();
+            	hidePover("power-confirm");
+                hidePover("power-off-done");
+            }
+        });
+
+    });
+    $.addHandler(document.getElementById("power-off-done-ok"), "click", function() {
+        hidePover("power-off-done");
+    });
+
+    $.addHandler(document.getElementById("reset"), "click", function() {
+        showPover("reset-confirm");
+    });
+    $.addHandler(document.getElementById("reset-cancel"), "click", function() {
+        hidePover("reset-confirm");
+    });
+    $.addHandler(document.getElementById("reset-ok"), "click", function() {
+        $.ajax({
+            url: "./reset",
+            success: function() {
+                hidePover("reset-confirm");
+                showPover("rebooting");
+                doRebooting();
+            },
+            fail: function(){
+            	$.alert();
+            	hidePover("reset-confirm");
+            }
+        });
+    });
+
+    $.addHandler(document.getElementById("firmware-file"), "change", function(e) {
+        var filename = document.getElementById("firmware-name");
+        var value = document.getElementById("firmware-file").value;
+        var p = /.+(?=\\)/g;
+        var v = value.toString().match(p);
+        if (v && v[0] && v[0].length) {
+            v = value.substring(v[0].length + 1);
+        } else {
+            v = value;
+        }
+        filename.value = v;
+        if (v) {
+            document.getElementById("update").style.display = "block";
+        } else {
+            document.getElementById("update").style.display = "none";
+        }
+    });
+
+        $.addHandler(document.getElementById("update-frame"), "load", function() {
+            var frame = document.getElementById("update-frame");
+            var doc = frame.contentWindow.document || frame.contentDocument || window.frames[frame.id].document;
+            var response = {};
+            if (doc.body) {
+                if ((contentNode = doc.body.firstChild) && /pre/i.test(contentNode.tagName)) {
+                    response.responseText = contentNode.textContent;
+                } else if ((contentNode = doc.getElementsByTagName('textarea')[0])) {
+                    response.responseText = contentNode.value;
+                } else {
+                    response.responseText = doc.body.textContent || doc.body.innerText;
+                }
+            }
+            
+            response.responseXML = doc.XMLDocument || doc;
+            var data = {};
+            try{
+            	data = (response.responseText && JSON.parse(response.responseText));
+            } catch(e){
+
+            }
+            if (data.success) {
+            
+            } else {
+                document.getElementById("update").style.display = "block";
+                    document.getElementById("progressing").style.display = "none";
+                $.alert();
+            }
+                });
+
+    $.addHandler(document.getElementById("update-now"), "click", function() {
+    
+        document.getElementById("update").style.display = "none";
+        document.getElementById("progressing").style.display = "block";
+        document.getElementById("update-form").submit();
+		progressIntervalId = startProgress("update-progress", {
+				duration: updateTime || 120000
+			}, function() {
+                document.getElementById("progressing").style.display = "none";
+				showPover("rebooting");
+				doRebooting();
+        });
+        if(fileResultIntervalId == null)
+        {
+            fileResultIntervalId = setInterval(function() {
+                $.ajax({
+                    url: "./upgrade_result",
+                    success: function(data) {
+                        if(data.success)
+                        {
+
+                        }
+                        else
+                        {
+                            var strArr = {
+                    "0":"Upgrade success.",
+                    "1":"File verify OK.",
+                    "2":"Upgrade is not begin.",
+                    "3":"Upgrade Error.",
+                    "4":"Checksum Error.",
+                    "5":"Checksum Error.",
+                    "6":"Checksum Error.",
+                    "7":"File is too large.",
+                    "8":"File size is invalid.",
+                    "9":"File is not for this device."
+                    };
+                    var str = strArr[data.data.error_code];
+                            document.getElementById("errorStr").innerHTML = str;
+                            clearInterval(fileResultIntervalId);
+                            fileResultIntervalId = null;
+                            stopProgress("update-progress");
+                            document.getElementById("progressing").style.display = "none";
+							showPover("error");
+                        }
+                    },
+                    error:function()
+                    {
+                    }
+                });
+             }, 5000);
+        }
+    });
+
+    function init() {
+       $.ajax({
+            url: "./deviceinfo",
+            success: function(data) {
+                document.getElementById("model").innerHTML = data.data.model;
+                document.getElementById("mac").innerHTML = data.data.mac;
+                document.getElementById("firmware_version").innerHTML = data.data.firmware_version;
+                rebootTime = data.data.reboot_time;
+                updateTime = data.data.update_time;
+            }
+        });
+	adjustPover();
+    }
+    init();
+})();
+</script>
+</html>

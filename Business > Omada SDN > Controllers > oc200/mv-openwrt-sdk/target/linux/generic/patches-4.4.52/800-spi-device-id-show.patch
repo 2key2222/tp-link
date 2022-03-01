@@ -1,0 +1,37 @@
+--- a/drivers/spi/spi.c
++++ b/drivers/spi/spi.c
+@@ -54,6 +54,26 @@ static void spidev_release(struct device
+ }
+ 
+ static ssize_t
++device_id_show(struct device *dev, struct device_attribute *a, char *buf)
++{
++	const struct spi_device	*spi = to_spi_device(dev);
++	int			tmp;
++	u8			code = 0x4b;
++	u8			id[13];
++	u32*		jedec;
++	u32*		ext_jedec;
++	tmp = spi_write_then_read(spi, &code, 1, id, 13);
++	if (tmp < 0) {
++		return sprintf(buf, "none\n");
++	}
++	jedec = &id[5];
++	ext_jedec = &id[9] ;
++
++	return sprintf(buf, "%08x%08x\n", *jedec,*ext_jedec);
++}
++static DEVICE_ATTR_RO(device_id);
++
++static ssize_t
+ modalias_show(struct device *dev, struct device_attribute *a, char *buf)
+ {
+ 	const struct spi_device	*spi = to_spi_device(dev);
+@@ -147,6 +167,7 @@ SPI_STATISTICS_TRANSFER_BYTES_HISTO(16,
+ 
+ static struct attribute *spi_dev_attrs[] = {
+ 	&dev_attr_modalias.attr,
++	&dev_attr_device_id.attr,
+ 	NULL,
+ };
+ 

@@ -1,0 +1,19 @@
+diff -uNr a/Makefile b/Makefile
+--- a/arch/arm64/boot/dts/marvell/Makefile	2017-11-16 11:10:54.000000000 +0800
++++ b/arch/arm64/boot/dts/marvell/Makefile	2017-12-07 08:25:25.121048000 +0800
+@@ -7,6 +7,7 @@
+ dtb-$(CONFIG_ARCH_MVEBU) += armada-3720-db-B.dtb
+ dtb-$(CONFIG_ARCH_MVEBU) += armada-3720-db-C.dtb
+ dtb-$(CONFIG_ARCH_MVEBU) += armada-3720-community.dtb
++dtb-$(CONFIG_ARCH_MVEBU) += armada-3720-eck.dtb
+ dtb-$(CONFIG_ARCH_MVEBU) += armada-37x0-customer.dtb
+ dtb-$(CONFIG_ARCH_MVEBU) += armada-7040-db-A.dtb
+ dtb-$(CONFIG_ARCH_MVEBU) += armada-7040-db-B.dtb
+@@ -18,6 +19,7 @@
+ dtb-$(CONFIG_ARCH_MVEBU) += armada-70x0-customer.dtb
+ dtb-$(CONFIG_ARCH_MVEBU) += armada-7040-pcac.dtb
+ dtb-$(CONFIG_ARCH_MVEBU_PD) += armada-7040-pd.dtb
++dtb-$(CONFIG_ARCH_MVEBU) += armada-7040-oc300.dtb
+ dtb-$(CONFIG_ARCH_MVEBU) += armada-8040-db-A.dtb
+ dtb-$(CONFIG_ARCH_MVEBU) += armada-8040-db-B.dtb
+ dtb-$(CONFIG_ARCH_MVEBU) += armada-8040-db-C.dtb

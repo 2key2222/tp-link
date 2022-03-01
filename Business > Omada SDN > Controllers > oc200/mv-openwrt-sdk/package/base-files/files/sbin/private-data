@@ -1,0 +1,41 @@
+#!/bin/sh
+
+# $1 : write / clear / read
+# $2 : file to read or write
+
+PRIVATE_PART=mmcblk0boot0
+TMP_FILE=/tmp/.private-data-tmp
+
+echo 0 > /sys/block/${PRIVATE_PART}/force_ro
+
+case "$1" in
+write)
+	if [ -f "$2" ]
+	then
+		# clear first
+		dd if=/dev/zero of=/dev/${PRIVATE_PART} count=1 bs=1M >/dev/null 2>/dev/null
+		
+		tpcrypt -e -i "$2" -o "$2".enc
+		wc -c < "$2".enc > ${TMP_FILE}
+		dd if=${TMP_FILE} of=/dev/${PRIVATE_PART} count=512 bs=1 >/dev/null 2>/dev/null
+		dd if="$2".enc of=/dev/${PRIVATE_PART} bs=1 seek=512 >/dev/null 2>/dev/null
+		rm -f "$2".enc
+	fi
+;;
+read)
+	if [ -f "$2" ]
+	then
+		rm -f "$2"
+	fi
+
+	dd if=/dev/${PRIVATE_PART} of=${TMP_FILE} count=512 bs=1 >/dev/null 2>/dev/null
+	dd if=/dev/${PRIVATE_PART} of="$2".enc count=`cat ${TMP_FILE}` bs=1 skip=512 >/dev/null 2>/dev/null
+	tpcrypt -d -i "$2".enc -o "$2"
+	rm -f "$2".enc
+;;
+clear)
+	dd if=/dev/zero of=/dev/${PRIVATE_PART} count=1 bs=1M >/dev/null 2>/dev/null
+;;
+esac
+
+echo 1 > /sys/block/${PRIVATE_PART}/force_ro

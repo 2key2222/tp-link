@@ -1,0 +1,17 @@
+config DKMGT
+	bool "TP-Link dkmgt"
+	help
+	  TP-Link dkmgt used for firmware upgrade.
+
+config DKMGT_PARTITION_TABLE_BASE_ADDR
+	depends on DKMGT
+	hex
+	prompt "Set the partition table base address(see your partition.json for makeflash tool)"
+	default 0x0
+
+config PRODUCT_INFO
+	depends on DKMGT
+	string "Product Info"
+	prompt "Set Product Info(is composed of product_name and product_version in device-info.json)"
+	help
+	  TP-Link dkmgt used for firmware upgrade.Check product-info is whether or not correct.

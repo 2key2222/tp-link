@@ -1,0 +1,11 @@
+--- a/drivers/mtd/spi-nor/spi-nor.c	2017-12-25 08:50:17.108569000 +0800
++++ b/drivers/mtd/spi-nor/spi-nor.c	2017-12-25 08:51:45.442883962 +0800
+@@ -697,6 +697,7 @@
+ 	{ "mb85rs1mt", INFO(0x047f27, 0, 128 * 1024, 1, SPI_NOR_NO_ERASE) },
+ 
+ 	/* GigaDevice */
++	{ "gd25lq80", INFO(0xc86014, 0, 64 * 1024, 16, SECT_4K) },
+ 	{ "gd25q32", INFO(0xc84016, 0, 64 * 1024,  64, SECT_4K) },
+ 	{ "gd25q64", INFO(0xc84017, 0, 64 * 1024, 128, SECT_4K) },
+ 	{ "gd25q128", INFO(0xc84018, 0, 64 * 1024, 256, SECT_4K) },
+

@@ -1,0 +1,11 @@
+diff -Nuar a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c
+--- a/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c	2020-02-10 15:53:03.000000000 +0800
++++ b/drivers/net/ethernet/marvell/mvpp2x/mv_pp2x_main.c	2020-08-04 10:23:21.830261080 +0800
+@@ -4681,6 +4681,7 @@
+ 		if (of_property_read_u32(fixed_link_node, "speed",
+ 					 &port->mac_data.speed))
+ 			return -EINVAL;
++		printk("port %d is fixed-link, speed=%d,duplex=%d\r\n", id, port->mac_data.speed, port->mac_data.duplex);
+ 	} else {
+ 		port->mac_data.force_link = false;
+ 

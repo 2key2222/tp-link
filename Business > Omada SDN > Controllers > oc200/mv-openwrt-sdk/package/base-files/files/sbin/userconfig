@@ -1,0 +1,12 @@
+#!/bin/sh
+
+. /lib/functions.sh
+. /lib/functions/userconfig.sh
+
+case "$1" in
+save)
+	save_userconfig
+;;
+esac
+
+exit 0

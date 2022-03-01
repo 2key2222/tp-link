@@ -1,0 +1,26 @@
+diff -uNr a/SConstruct b/SConstruct
+--- a/SConstruct	2017-11-21 16:08:01.285280000 +0800
++++ b/SConstruct	2017-11-21 16:07:00.709565000 +0800
+@@ -408,6 +408,11 @@
+     nargs=0,
+ )
+ 
++add_option('propagate-shell-environment',
++    help="Pass shell environment to sub-processes",
++    nargs=0,
++)
++
+ add_option('variables-help',
+     help='Print the help text for SCons variables',
+     nargs=0,
+@@ -1303,6 +1307,9 @@
+ if optBuild:
+     env.SetConfigHeaderDefine("MONGO_CONFIG_OPTIMIZED_BUILD")
+ 
++if has_option("propagate-shell-environment"):
++    env['ENV'] = dict(os.environ);
++
+ # Enable the fast decider if exlicltly requested or if in 'auto' mode and not in conflict with other
+ # options.
+ if get_option('build-fast-and-loose') == 'on' or \
+

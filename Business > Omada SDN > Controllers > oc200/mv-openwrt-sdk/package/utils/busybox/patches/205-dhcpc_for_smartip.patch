@@ -1,0 +1,162 @@
+diff -uNr a/networking/udhcp/dhcpc.c b/networking/udhcp/dhcpc.c
+--- a/networking/udhcp/dhcpc.c	2017-12-18 15:11:41.694329000 +0800
++++ b/networking/udhcp/dhcpc.c	2017-12-18 15:33:50.728320000 +0800
+@@ -28,6 +28,9 @@
+ #include <netinet/if_ether.h>
+ #include <linux/filter.h>
+ #include <linux/if_packet.h>
++#ifdef CONFIG_BUILD_SMARTIP
++#include "libubox/blobmsg_json.h"
++#endif
+ 
+ #ifndef PACKET_AUXDATA
+ # define PACKET_AUXDATA 8
+@@ -572,6 +575,69 @@
+ 	free(envp);
+ }
+ 
++#ifdef CONFIG_BUILD_SMARTIP
++#define DETECT_SUCCESS 1
++#define DETECT_FAIL 0
++
++static int udhcpc_send_msg(uint16_t detect_result, struct dhcp_packet *packet)
++{
++    uint32_t dns[2] = {0, 0};
++    uint32_t dns_num, i;
++    uint32_t *temp;
++    static struct blob_buf blob;
++    char *jtok = NULL;
++    char cmd[256];
++
++    blob_buf_init(&blob, 0);
++
++    blobmsg_add_u16(&blob, "action", 1);
++    blobmsg_add_u16(&blob, "status", detect_result);
++
++    if (NULL != packet)
++    {
++        blobmsg_add_u32(&blob, "ip", (packet->yiaddr));
++
++        temp = (uint32_t *)udhcp_get_option(packet, DHCP_SUBNET);
++        if (temp)
++        {
++            blobmsg_add_u32(&blob, "mask", (*temp));
++        }
++
++        temp = (uint32_t *)udhcp_get_option(packet, 0x03);
++        if (temp)
++        {
++            blobmsg_add_u32(&blob, "gw", (*temp));
++        }
++
++        temp = (uint32_t*)udhcp_get_option(packet, 0x06);
++        if (temp)
++        {
++            dns_num = (*((uint8_t *)temp - 1)) / 4;
++            dns_num = dns_num > 2 ? 2 : dns_num;
++            for (i = 0 ; i < dns_num; i++)
++            {
++                dns[i] = (*(temp + i));
++            }
++        }
++
++        blobmsg_add_u32(&blob, "pridns", dns[0]);
++        blobmsg_add_u32(&blob, "secdns", dns[1]);
++    }
++
++    jtok = blobmsg_format_json(blob.head, true);
++    if (NULL == jtok)
++    {
++        return 0;
++    }
++
++    memset(cmd, 0, sizeof(cmd));
++    sprintf(cmd, "ubus send %s '%s'", "smartip", jtok);
++    system(cmd);
++
++    free(jtok);
++    return 0;
++}
++#endif
+ 
+ /*** Sending/receiving packets ***/
+ 
+@@ -1125,6 +1191,9 @@
+ 				inet_ntoa(temp_addr), buffer);
+ 		send_release(server_addr, requested_ip); /* unicast */
+ 		udhcp_run_script(NULL, "deconfig");
++#ifdef CONFIG_BUILD_SMARTIP
++		udhcpc_send_msg(DETECT_FAIL, NULL);
++#endif
+ 	}
+ 	bb_info_msg("Entering released state");
+ 
+@@ -1402,6 +1471,9 @@
+ 
+ 	state = INIT_SELECTING;
+ 	udhcp_run_script(NULL, "deconfig");
++#ifdef CONFIG_BUILD_SMARTIP
++	udhcpc_send_msg(DETECT_FAIL, NULL);
++#endif
+ 	change_listen_mode(LISTEN_RAW);
+ 	packet_num = 0;
+ 	timeout = 0;
+@@ -1488,6 +1560,10 @@
+ 				}
+  leasefail:
+ 				udhcp_run_script(NULL, "leasefail");
++#ifdef CONFIG_BUILD_SMARTIP
++                udhcpc_send_msg(DETECT_FAIL, NULL);
++#endif
++
+ #if BB_MMU /* -b is not supported on NOMMU */
+ 				if (opt & OPT_b) { /* background if no lease */
+ 					bb_info_msg("No lease, forking to background");
+@@ -1562,6 +1638,10 @@
+ 				/* Timed out, enter init state */
+ 				bb_info_msg("Lease lost, entering init state");
+ 				udhcp_run_script(NULL, "deconfig");
++#ifdef CONFIG_BUILD_SMARTIP
++                udhcpc_send_msg(DETECT_FAIL, NULL);
++#endif
++
+ 				state = INIT_SELECTING;
+ 				client_config.first_secs = 0; /* make secs field count from 0 */
+ 				/*timeout = 0; - already is */
+@@ -1754,7 +1834,12 @@
+ 						send_decline(/*xid,*/ server_addr, packet.yiaddr);
+ 
+ 						if (state != REQUESTING)
++						{
+ 							udhcp_run_script(NULL, "deconfig");
++#ifdef CONFIG_BUILD_SMARTIP
++							udhcpc_send_msg(DETECT_FAIL, NULL);
++#endif
++						}
+ 						change_listen_mode(LISTEN_RAW);
+ 						state = INIT_SELECTING;
+ 						client_config.first_secs = 0; /* make secs field count from 0 */
+@@ -1774,6 +1859,10 @@
+ 
+ 				start = monotonic_sec();
+ 				udhcp_run_script(&packet, state == REQUESTING ? "bound" : "renew");
++#ifdef CONFIG_BUILD_SMARTIP
++                udhcpc_send_msg(DETECT_SUCCESS, &packet);
++#endif
++
+ 				already_waited_sec = (unsigned)monotonic_sec() - start;
+ 				timeout = lease_seconds / 2;
+ 				if ((unsigned)timeout < already_waited_sec) {
+@@ -1825,7 +1914,12 @@
+ 				bb_info_msg("Received DHCP NAK");
+ 				udhcp_run_script(&packet, "nak");
+ 				if (state != REQUESTING)
++				{
+ 					udhcp_run_script(NULL, "deconfig");
++#ifdef CONFIG_BUILD_SMARTIP
++					udhcpc_send_msg(DETECT_FAIL, NULL);
++#endif
++				}
+ 				change_listen_mode(LISTEN_RAW);
+ 				sleep(3); /* avoid excessive network traffic */
+ 				state = INIT_SELECTING;

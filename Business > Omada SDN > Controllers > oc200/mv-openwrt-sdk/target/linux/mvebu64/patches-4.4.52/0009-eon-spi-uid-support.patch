@@ -1,0 +1,56 @@
+diff -Nuar a/drivers/spi/spi.c b/drivers/spi/spi.c
+--- a/drivers/spi/spi.c	2019-12-09 19:15:59.000000000 +0800
++++ b/drivers/spi/spi.c	2019-12-14 19:08:04.000000000 +0800
+@@ -58,18 +58,47 @@
+ {
+ 	const struct spi_device	*spi = to_spi_device(dev);
+ 	int			tmp;
+-	u8			code = 0x4b;
++	u8			code[4] = {0};
+ 	u8			id[13];
+ 	u32*		jedec;
+ 	u32*		ext_jedec;
+-	tmp = spi_write_then_read(spi, &code, 1, id, 13);
++	u32*		ext_jedec2;
++
++    /* get jedec id */
++	code[0] = 0x9f;
++	tmp = spi_write_then_read(spi, code, 1, id, 6);
+ 	if (tmp < 0) {
+ 		return sprintf(buf, "none\n");
+ 	}
+-	jedec = &id[5];
+-	ext_jedec = &id[9] ;
+ 
+-	return sprintf(buf, "%08x%08x\n", *jedec,*ext_jedec);
++    /* EON nor flash */
++    if(id[0] == 0x1c) {
++        code[0] = 0x5a;
++        code[1] = 0x0;
++        code[2] = 0x0;
++        code[3] = 0x80;
++        tmp = spi_write_then_read(spi, code, 4, id, 13);
++        if (tmp < 0) {
++            return sprintf(buf, "none\n");
++        }
++
++        /* id[0] is dummy, out[1]~out[13] is uid */
++        
++    	jedec = &id[1];
++    	ext_jedec = &id[5] ;
++    	ext_jedec2 = &id[9] ;
++        return sprintf(buf, "%08x%08x%08x\n", *jedec,*ext_jedec,*ext_jedec2);
++    } else {
++        code[0] = 0x4b;
++    	tmp = spi_write_then_read(spi, code, 1, id, 13);
++    	if (tmp < 0) {
++    		return sprintf(buf, "none\n");
++    	}
++    	jedec = &id[5];
++    	ext_jedec = &id[9] ;
++        return sprintf(buf, "%08x%08x\n", *jedec,*ext_jedec);
++    }
++
+ }
+ static DEVICE_ATTR_RO(device_id);
+ 

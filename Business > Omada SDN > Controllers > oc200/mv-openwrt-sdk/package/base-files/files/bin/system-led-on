@@ -1,0 +1,11 @@
+#!/bin/sh
+
+system_led=/sys/class/leds/system-led/
+
+# set trigger to none
+echo none > ${system_led}/trigger
+
+# turn on led
+echo 1 > ${system_led}/brightness
+
+exit 0

@@ -1,0 +1,38 @@
+--- a/drivers/mmc/core/core.c
++++ b/drivers/mmc/core/core.c
+@@ -1719,6 +1719,12 @@ void mmc_power_up(struct mmc_host *host,
+ 	/* Set initial state and call mmc_set_ios */
+ 	mmc_set_initial_state(host);
+ 
++	/*
++	* we use mmc high-speed mode and 1.8v hardware design.
++	* but high-speed will use 3.3v first, so need to be force
++	* use 1.8v.
++	*/
++#if 0
+ 	/* Try to set signal voltage to 3.3V but fall back to 1.8v or 1.2v */
+ 	if (__mmc_set_signal_voltage(host, MMC_SIGNAL_VOLTAGE_330) == 0)
+ 		dev_dbg(mmc_dev(host), "Initial signal voltage of 3.3v\n");
+@@ -1726,6 +1732,10 @@ void mmc_power_up(struct mmc_host *host,
+ 		dev_dbg(mmc_dev(host), "Initial signal voltage of 1.8v\n");
+ 	else if (__mmc_set_signal_voltage(host, MMC_SIGNAL_VOLTAGE_120) == 0)
+ 		dev_dbg(mmc_dev(host), "Initial signal voltage of 1.2v\n");
++#else
++	if (__mmc_set_signal_voltage(host, MMC_SIGNAL_VOLTAGE_180) == 0)
++		dev_dbg(mmc_dev(host), "Initial signal voltage of 1.8v\n");
++#endif
+ 
+ 	/*
+ 	 * This delay should be sufficient to allow the power supply
+--- a/drivers/mmc/host/sdhci-xenon.c
++++ b/drivers/mmc/host/sdhci-xenon.c
+@@ -435,6 +435,9 @@ static int xenon_probe_dt(struct platfor
+ 	if (of_device_is_compatible(np, "marvell,armada-ap806-sdhci"))
+ 		host->quirks2 |= SDHCI_QUIRK2_BROKEN_HS200;
+ 
++	if (of_property_read_bool(np, "marvell,xenon-broken-hs200"))
++		host->quirks2 |= SDHCI_QUIRK2_BROKEN_HS200;
++
+ 	priv->init_card_type = XENON_CARD_TYPE_UNKNOWN;
+ 	/* Check if mmc-card sub-node exists */
+ 	if (mmc_of_parse_mmc_card(mmc)) {

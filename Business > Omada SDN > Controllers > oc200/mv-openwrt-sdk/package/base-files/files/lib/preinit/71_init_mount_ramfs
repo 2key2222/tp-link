@@ -1,0 +1,18 @@
+#!/bin/sh
+
+#add directories here
+RAMFS_DIRS="/etc/ /mnt/"
+ 
+rootfs_init_etc_ramfs() {
+    for dir in $RAMFS_DIRS;
+    do
+        echo "mount ${dir} to ramfs..."
+        tmp_dir=/tmp/`basename ${dir}`_tmp
+        cp -a ${dir} ${tmp_dir}
+        mount -t ramfs -n none ${dir}
+        [ -n "`ls -A ${tmp_dir}`" ] && cp -a ${tmp_dir}/* ${dir}
+        rm -rf ${tmp_dir} 
+    done
+}
+
+boot_hook_add preinit_mount_root rootfs_init_etc_ramfs

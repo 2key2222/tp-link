@@ -1,0 +1,17 @@
+#!/bin/sh
+
+system_led=/sys/class/leds/system-led/
+
+if [ ! -n "$1" ]; then
+	echo "system-led-blink: missing arg!"
+	exit 1
+fi
+
+# set trigger to timer
+echo timer > ${system_led}/trigger
+
+# set delay_off/delay_on
+echo $1 > ${system_led}/delay_off
+echo $1 > ${system_led}/delay_on
+
+exit 0

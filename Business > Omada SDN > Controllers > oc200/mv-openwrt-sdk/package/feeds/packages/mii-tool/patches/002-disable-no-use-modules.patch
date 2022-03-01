@@ -1,0 +1,21 @@
+--- a/config.in	2018-01-22 11:12:19.000000000 +0800
++++ b/config.in	2018-01-22 14:32:40.523835790 +0800
+@@ -90,11 +90,11 @@
+ *           Other Features.
+ *
+ bool 'IP Masquerading support' HAVE_FW_MASQUERADE y
+-bool 'Build arp and rarp' HAVE_ARP_TOOLS y
+-bool 'Build hostname' HAVE_HOSTNAME_TOOLS y
+-bool 'Install hostname NIS/YP symlinks' HAVE_HOSTNAME_SYMLINKS y
+-bool 'Build iptunnel and ipmaddr' HAVE_IP_TOOLS y
++bool 'Build arp and rarp' HAVE_ARP_TOOLS n
++bool 'Build hostname' HAVE_HOSTNAME_TOOLS n
++bool 'Install hostname NIS/YP symlinks' HAVE_HOSTNAME_SYMLINKS n
++bool 'Build iptunnel and ipmaddr' HAVE_IP_TOOLS n
+ bool 'Build mii-tool' HAVE_MII y
+-bool 'Build plipconfig' HAVE_PLIP_TOOLS y
+-bool 'Build slattach' HAVE_SERIAL_TOOLS y
++bool 'Build plipconfig' HAVE_PLIP_TOOLS n
++bool 'Build slattach' HAVE_SERIAL_TOOLS n
+ bool 'SELinux support' HAVE_SELINUX n
+

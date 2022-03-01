@@ -1,0 +1,13 @@
+diff -uNr a/SConstruct b/SConstruct
+--- a/SConstruct	2017-11-21 17:28:54.242781000 +0800
++++ b/SConstruct	2017-11-21 17:34:14.838266292 +0800
+@@ -2451,7 +2451,7 @@
+         if env.TargetOSIs('posix') and not env.ToolchainIs('clang') and conf.CheckForFortify():
+             conf.env.Append(
+                 CPPDEFINES=[
+-                    ('_FORTIFY_SOURCE', 2),
++                    ('_FORTIFY_SOURCE', 1),
+                 ],
+             )
+ 
+

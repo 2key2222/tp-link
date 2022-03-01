@@ -1,0 +1,16 @@
+#!/bin/sh
+
+USERCONFIG_DEVICE=/dev/mmcblk0p3
+USERCONFIG_DIR=/userconfig
+
+init_userconfig() {
+	update_userconfig
+}
+
+mount_userconfig() {
+	mount -t ext4 -o noexec ${USERCONFIG_DEVICE} ${USERCONFIG_DIR}
+	[ $? -ne 0 ] && mke2fs -t ext4 ${USERCONFIG_DEVICE} && mount -t ext4 -o noexec ${USERCONFIG_DEVICE} ${USERCONFIG_DIR}
+}
+
+boot_hook_add preinit_mount_root mount_userconfig
+boot_hook_add preinit_mount_root init_userconfig

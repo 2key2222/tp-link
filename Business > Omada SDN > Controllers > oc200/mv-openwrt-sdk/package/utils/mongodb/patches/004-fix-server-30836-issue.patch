@@ -1,0 +1,69 @@
+diff -uNr a/src/mongo/db/storage/SConscript b/src/mongo/db/storage/SConscript
+--- a/src/mongo/db/storage/SConscript	2017-10-19 00:01:51.000000000 +0800
++++ b/src/mongo/db/storage/SConscript	2018-02-04 10:27:49.423606000 +0800
+@@ -183,12 +183,13 @@
+     target='storage_engine_metadata',
+     source=[
+         'storage_engine_metadata.cpp',
+-        ],
++    ],
+     LIBDEPS=[
++        'paths',
+         '$BUILD_DIR/mongo/base',
+         '$BUILD_DIR/mongo/db/bson/dotted_path_support',
+-        ]
+-    )
++    ],
++)
+ 
+ env.CppUnitTest(
+     target= 'storage_engine_metadata_test',
+
+diff -uNr a/src/mongo/db/storage/storage_engine_metadata.cpp b/src/mongo/db/storage/storage_engine_metadata.cpp
+--- a/src/mongo/db/storage/storage_engine_metadata.cpp	2017-10-19 00:01:51.000000000 +0800
++++ b/src/mongo/db/storage/storage_engine_metadata.cpp	2018-02-04 10:27:58.897878000 +0800
+@@ -42,7 +42,9 @@
+ 
+ #include "mongo/db/bson/dotted_path_support.h"
+ #include "mongo/db/jsobj.h"
++#include "mongo/db/storage/paths.h"
+ #include "mongo/util/assert_util.h"
++#include "mongo/util/file.h"
+ #include "mongo/util/log.h"
+ #include "mongo/util/mongoutils/str.h"
+ 
+@@ -63,6 +65,17 @@
+         boost::filesystem::exists((directoryPath / "local") / "local.ns");
+ }
+ 
++bool fsyncFile(boost::filesystem::path path) {
++    invariant(path.has_filename());
++    File file;
++    file.open(path.string().c_str(), /*read-only*/ false, /*direct-io*/ false);
++    if (!file.is_open()) {
++        return false;
++    }
++    file.fsync();
++    return true;
++}
++
+ }  // namespace
+ 
+ // static
+@@ -240,7 +253,16 @@
+     // Rename temporary file to actual metadata file.
+     boost::filesystem::path metadataPath = boost::filesystem::path(_dbpath) / kMetadataBasename;
+     try {
++        // Renaming a file (at least on POSIX) should:
++        // 1) fsync the temporary file.
++        // 2) perform the rename.
++        // 3) fsync the to and from directory (in this case, both to and from are the same).
++        if (!fsyncFile(metadataTempPath)) {
++            return Status(ErrorCodes::FileRenameFailed,
++                          str::stream() << "Failed to fsync new `storage.bson` file.");
++        }
+         boost::filesystem::rename(metadataTempPath, metadataPath);
++        flushMyDirectory(metadataPath.parent_path());
+     } catch (const std::exception& ex) {
+         return Status(ErrorCodes::FileRenameFailed,
+                       str::stream() << "Unexpected error while renaming temporary metadata file "

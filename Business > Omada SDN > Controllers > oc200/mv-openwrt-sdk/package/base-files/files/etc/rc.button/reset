@@ -1,0 +1,48 @@
+#!/bin/sh
+
+. /lib/functions.sh
+
+local ret
+config_load system
+
+check_reset_button_config() {
+	local reset
+
+	config_get_bool reset $1 reset_button
+
+	if [ "${reset}" -eq 0 ]; then
+		echo "reset_button off, ignore the pressed event" > /dev/console
+		ret=0
+		return
+	else
+		ret=1
+		return
+	fi
+}
+
+config_foreach check_reset_button_config system
+[ "${ret}" -eq 0 ] && return 0
+
+case "$ACTION" in
+pressed)
+	echo "meet pressed" > /dev/console
+	return 5
+;;
+timeout)
+	echo "pressed for 5s, blink led" > /dev/console
+	system-led-blink 500
+	echo > /tmp/prep_for_reset
+	sleep 15 && [ -f /tmp/prep_for_reset ] && rm -f /tmp/prep_for_reset && echo "pressed for 20s to reset" > /dev/console && factoryreset && eapcontroller-reset && reboot &
+;;
+released)
+	echo "meet released, SEEN=$SEEN" > /dev/console
+	if [ "$SEEN" -ge 5 -o -f /tmp/prep_for_reset ]; then
+		[ -f /tmp/prep_for_reset ] && rm -f /tmp/prep_for_reset
+		echo "FACTORY RESET" > /dev/console
+		factoryreset && eapcontroller-reset && reboot &
+		echo "FACTORY RESET DONE" > /dev/console
+	fi
+;;
+esac
+
+return 0

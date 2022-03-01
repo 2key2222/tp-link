@@ -1,0 +1,15 @@
+diff -uNr a/configure.ac b/configure.ac
+--- a/configure.ac	2017-12-07 17:08:10.948552000 +0800
++++ b/configure.ac	2017-12-07 17:07:40.155931000 +0800
+@@ -31,6 +31,10 @@
+     AC_DEFINE([STRESSAPPTEST_CPU_ARMV7A],[],
+               [Defined if the target CPU is armv7a])
+     ], 
++  [*aarch64*], [
++    AC_DEFINE([STRESSAPPTEST_CPU_ARMV8A],[],
++              [Defined if the target CPU is armv8a])
++    ], 
+   [AC_MSG_WARN([Unsupported CPU: $host_cpu! Try x86_64, i686, powerpc, or armv7a])]
+ )
+ 
+

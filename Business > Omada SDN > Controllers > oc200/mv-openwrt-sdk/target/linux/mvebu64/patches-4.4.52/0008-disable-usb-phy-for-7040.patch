@@ -1,0 +1,15 @@
+diff -Nuar a/arch/arm64/boot/dts/marvell/armada-7040-db.dtsi b/arch/arm64/boot/dts/marvell/armada-7040-db.dtsi
+--- a/arch/arm64/boot/dts/marvell/armada-7040-db.dtsi	2017-11-16 11:10:54.000000000 +0800
++++ b/arch/arm64/boot/dts/marvell/armada-7040-db.dtsi	2019-12-14 13:40:40.000000000 +0800
+@@ -100,9 +100,9 @@
+ 			usb3h0: usb3@500000 {
+ 				usb-phy = <&usb3h0_phy>;
+ 			};
+-			usb3h1: usb3@510000 {
++			/*usb3h1: usb3@510000 {
+ 				usb-phy = <&usb3h1_phy>;
+-			};
++			};*/
+ 			sdhci@780000 {
+ 				pinctrl-names = "default";
+ 				bus-width = <4>;
