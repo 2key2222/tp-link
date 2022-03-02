@@ -1,0 +1,20 @@
+Source-Makefile: feeds/iplatform/gettext-full/Makefile
+Package: libintl-full
+Version: 0.19.6-2
+Depends:  
+Menu-Depends: 
+Provides: 
+Build-Depends: gettext-full/host
+Build-Types: host
+Section: libs
+Category: Libraries
+Title: GNU Internationalization library
+Maintainer: OpenWrt Developers Team <openwrt-devel@openwrt.org>
+Source: gettext-0.19.6.tar.xz
+Type: ipkg
+Description: GNU Internationalization library
+http://www.gnu.org/software/gettext/
+OpenWrt Developers Team <openwrt-devel@openwrt.org>
+@@
+
+

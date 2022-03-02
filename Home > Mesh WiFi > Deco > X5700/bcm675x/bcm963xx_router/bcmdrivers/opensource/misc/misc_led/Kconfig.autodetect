@@ -1,0 +1,17 @@
+config BCM_MISC_LED
+	bool "Broadcom misc led support"
+	depends on I2C
+	default n
+	help
+	  Enable misc led
+
+config BCM_MISC_LED_IMPL
+	int "Implementation index for sound driver"
+	depends on BCM_MISC_LED
+	default 1
+
+config MISC_LED_SN3236
+	bool "SN3236"
+	depends on BCM_MISC_LED
+	help
+	  Say Y if you want to add support sn3236.

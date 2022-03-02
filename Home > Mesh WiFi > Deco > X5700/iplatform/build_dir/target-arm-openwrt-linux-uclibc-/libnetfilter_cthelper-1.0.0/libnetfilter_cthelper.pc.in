@@ -1,0 +1,15 @@
+# libnetfilter_cthelper pkg-config file
+
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: libnetfilter_cthelper
+Description: Netfilter user-space helper infrastructure library
+URL: http://netfilter.org/projects/libnetfilter_cthelper/
+Version: @VERSION@
+Requires:
+Conflicts:
+Libs: -L${libdir} -lnetfilter_cthelper
+Cflags: -I${includedir}

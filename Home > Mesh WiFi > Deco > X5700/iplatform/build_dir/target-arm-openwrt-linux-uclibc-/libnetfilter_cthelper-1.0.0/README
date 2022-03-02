@@ -1,0 +1,61 @@
+= nfnl_cthelper: User-space infrastructure for connection tracking helpers =
+
+Author: Pablo Neira Ayuso <pablo@netfilter.org>
+
+== Introduction ==
+
+Connection tracking helpers allows you to filter multi-flow protocols
+that usually separate control and data traffic into different flows.
+This is the case of application protocols like FTP, SIP and H.323 that
+are already supported by Netfilter. These helpers are implemented in
+kernel-space.
+
+There are good reasons to implement helpers in user-space instead:
+
+* Rapid connection tracking helper development, as developing code
+  in user-space is usually faster.
+
+* Reliability: A buggy helper does not crash the kernel. Moreover,
+  we can monitor the helper process and restart it in case of problems.
+
+* Security: Avoid complex string matching and mangling in kernel-space
+  running in unprivileged mode. Going further, we can even think about
+  running user-space helpers as a non-root process.
+
+* It allows the development of very specific helpers (most likely
+  non-standard proprietary protocols) that are very likely to be rejected
+  for mainline inclusion in the form of kernel-space connection tracking
+  helpers.
+
+== Basic operation ==
+
+In a few steps:
+
+1) Register user-space helper
+
+# ./nfct-helper-add test 0
+
+This adds a helper `test' that uses the queue number 0.
+
+2) Add rules to enable the `test' user-space helper
+
+For locally generated packets:
+# iptables -I OUTPUT -t raw -p tcp -j CT --helper test
+
+For non-locally generated packets:
+# iptables -I PREROUTING -t raw -p tcp -j CT --helper test
+
+3) Run the test libnetfilter_queue program
+
+# ./nfqnl_test
+
+4) Generate traffic, if everything is OK, then `nfqnl_test' program
+   displays lines like this:
+
+ pkt received
+ hw_protocol=0x0800 hook=4 id=4 outdev=3 payload_len=60
+ entering callback
+ [...]
+
+This means that the cthelper infrastructure is passing traffic to
+user-space.

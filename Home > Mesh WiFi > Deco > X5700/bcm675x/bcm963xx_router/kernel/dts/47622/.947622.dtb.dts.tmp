@@ -1,0 +1,442 @@
+# 1 "/home/ubuntu/tp-link/GPL_X5700_1/bcm675x/bcm963xx_router/kernel/dts/47622/947622.dts"
+# 1 "<built-in>"
+# 1 "<command-line>"
+# 1 "/home/ubuntu/tp-link/GPL_X5700_1/bcm675x/bcm963xx_router/kernel/dts/47622/947622.dts"
+# 1 "./arch/arm/boot/dts/include/dt-bindings/interrupt-controller/arm-gic.h" 1
+
+
+
+
+
+
+
+# 1 "./arch/arm/boot/dts/include/dt-bindings/interrupt-controller/irq.h" 1
+# 9 "./arch/arm/boot/dts/include/dt-bindings/interrupt-controller/arm-gic.h" 2
+# 2 "/home/ubuntu/tp-link/GPL_X5700_1/bcm675x/bcm963xx_router/kernel/dts/47622/947622.dts" 2
+
+# 1 "./arch/arm/boot/dts/include/dt-bindings/soc/bcm963xx_dt_bindings.h" 1
+# 4 "/home/ubuntu/tp-link/GPL_X5700_1/bcm675x/bcm963xx_router/kernel/dts/47622/947622.dts" 2
+# 25 "/home/ubuntu/tp-link/GPL_X5700_1/bcm675x/bcm963xx_router/kernel/dts/47622/947622.dts"
+/dts-v1/;
+
+/memreserve/ 0x00000000 0x00008000;
+
+
+
+# 1 "/home/ubuntu/tp-link/GPL_X5700_1/bcm675x/bcm963xx_router/kernel/dts/47622/../../../shared/opensource/include/pmc/pmc_firmware_47622.h" 1
+# 32 "/home/ubuntu/tp-link/GPL_X5700_1/bcm675x/bcm963xx_router/kernel/dts/47622/947622.dts" 2
+/memreserve/ (0x4001000 - 0x1000) (0x100000);
+
+
+# 1 "/home/ubuntu/tp-link/GPL_X5700_1/bcm675x/bcm963xx_router/kernel/dts/47622/../bcm_963xx_template.dtsi" 1
+
+
+
+
+
+
+/ {
+ #address-cells = <1>;
+ #size-cells = <1>;
+
+ aliases {
+  spi1 = &hsspi;
+ };
+
+
+
+
+ chosen {
+  bootargs = "console=ttyS0,115200 debug irqaffinity=0 rootwait";
+ };
+
+ memory {
+  device_type = "memory";
+  reg = <0x00000000 0x04000000>;
+ };
+
+
+
+
+
+
+
+ rng: rng@ff800b80 {
+  compatible = "brcm,iproc-rng200";
+  reg = <0xff800b80 0x28>;
+ };
+
+};
+# 36 "/home/ubuntu/tp-link/GPL_X5700_1/bcm675x/bcm963xx_router/kernel/dts/47622/947622.dts" 2
+# 1 "/home/ubuntu/tp-link/GPL_X5700_1/bcm675x/bcm963xx_router/kernel/dts/47622/../bcm_rsvdmem_32.dtsi" 1
+
+
+
+
+
+
+/ {
+ reserved-memory {
+  #address-cells = <1>;
+  #size-cells = <1>;
+  ranges;
+# 76 "/home/ubuntu/tp-link/GPL_X5700_1/bcm675x/bcm963xx_router/kernel/dts/47622/../bcm_rsvdmem_32.dtsi"
+ };
+# 131 "/home/ubuntu/tp-link/GPL_X5700_1/bcm675x/bcm963xx_router/kernel/dts/47622/../bcm_rsvdmem_32.dtsi"
+};
+# 37 "/home/ubuntu/tp-link/GPL_X5700_1/bcm675x/bcm963xx_router/kernel/dts/47622/947622.dts" 2
+
+/ {
+ model = "Broadcom BCM947622";
+ compatible = "brcm,bcm947622";
+ interrupt-parent = <&gic>;
+ #address-cells = <1>;
+ #size-cells = <1>;
+
+ chosen {
+  bootargs = "console=ttyAMA0 earlyprintk debug irqaffinity=0";
+ };
+
+ cpus {
+  #address-cells = <1>;
+  #size-cells = <0>;
+
+  CA7_0: cpu@0 {
+   device_type = "cpu";
+   compatible = "arm,cortex-a7";
+   reg = <0x0>;
+   next-level-cache = <&L2_0>;
+  };
+
+  CA7_1: cpu@1 {
+   device_type = "cpu";
+   compatible = "arm,cortex-a7";
+   reg = <0x1>;
+   next-level-cache = <&L2_0>;
+
+
+
+   enable-method = "brcm,bca-smp";
+
+  };
+  CA7_2: cpu@2 {
+   device_type = "cpu";
+   compatible = "arm,cortex-a7";
+   reg = <0x2>;
+   next-level-cache = <&L2_0>;
+
+
+
+   enable-method = "brcm,bca-smp";
+
+  };
+  CA7_3: cpu@3 {
+   device_type = "cpu";
+   compatible = "arm,cortex-a7";
+   reg = <0x3>;
+   next-level-cache = <&L2_0>;
+
+
+
+   enable-method = "brcm,bca-smp";
+
+  };
+
+  L2_0: l2-cache0 {
+   compatible = "cache";
+  };
+ };
+# 115 "/home/ubuntu/tp-link/GPL_X5700_1/bcm675x/bcm963xx_router/kernel/dts/47622/947622.dts"
+ gic: interrupt-controller@81000000 {
+  compatible = "arm,cortex-a7-gic";
+  #interrupt-cells = <3>;
+  #address-cells = <0>;
+  interrupt-controller;
+  reg = <0x81001000 0x1000>,
+        <0x81002000 0x2000>;
+ };
+
+ timer {
+  compatible = "arm,armv7-timer";
+  interrupts = <1 13 ((((1 << (2)) - 1) << 8) | 8)>,
+        <1 14 ((((1 << (2)) - 1) << 8) | 8)>,
+        <1 11 ((((1 << (2)) - 1) << 8) | 8)>,
+        <1 10 ((((1 << (2)) - 1) << 8) | 8)>;
+  arm,cpu-registers-not-fw-configured = <1>;
+ };
+
+ pmu {
+  compatible = "arm,cortex-a7-pmu";
+  interrupts = <0 7 4>,
+        <0 8 4>;
+  interrupt-affinity = <&CA7_0>,
+         <&CA7_1>;
+ };
+
+ uartclk: uartclk {
+  compatible = "fixed-clock";
+  #clock-cells = <0>;
+  clock-frequency = <50000000>;
+ };
+
+ clocks {
+  #address-cells = <1>;
+  #size-cells = <1>;
+  ranges;
+
+  i2s_clkmclk_syscon: i2s_clkmclk_syscon@0xFF802080 {
+   compatible = "brcm,i2s-audio-clkmclk-syscon", "syscon";
+   reg = <0xFF802080 0x7f>;
+ };
+ osc: oscillator {
+  #clock-cells = <0>;
+  compatible = "fixed-clock";
+  clock-frequency = <200000000>;
+ };
+
+  i2sclk: i2sclk@0x80158000 {
+   #clock-cells = <0>;
+   compatible = "brcm,i2s-clock";
+   clocks = <&osc>;
+   clk-mclk-syscon = <&i2s_clkmclk_syscon>;
+   clock-output-names = "i2s_clk";
+  };
+
+
+  hsspi_pll: hsspi-pll {
+   compatible = "fixed-clock";
+   #clock-cells = <0>;
+   clock-frequency = <200000000>;
+  };
+
+
+ };
+
+
+ ubus@ff800000 {
+  compatible = "simple-bus";
+  #address-cells = <1>;
+  #size-cells = <1>;
+  ranges = <0 0xff800000 0x7fffff>;
+
+  nand@ff801800 {
+   #address-cells = <1>;
+   #size-cells = <0>;
+   compatible = "brcm,nand-bcm63xx", "brcm,brcmnand-v7.1";
+   reg = <0x1800 0x600>, <0x2000 0x10>;
+   reg-names = "nand", "nand-int-base";
+   status = "okay";
+
+   nandcs@0 {
+    compatible = "brcm,nandcs";
+    reg = <0>;
+    nand-on-flash-bbt;
+   };
+
+  };
+
+  watchdog@480 {
+   compatible = "brcm,bcm96xxx-wdt";
+   reg = <0x480 0x10>;
+   timeout-sec = <80>;
+  };
+
+  i2s: bcm63xx-i2s {
+   compatible = "brcm,bcm63xx-i2s";
+   reg = <0x2080 0x7f>;
+   interrupts = <0 78 4>;
+   clocks = <&i2sclk>, <&osc>;
+   clock-names = "i2sclk","i2sosc";
+  };
+
+  i2c: i2c@0xff802100 {
+   compatible = "brcm,bcm63000-i2c";
+   reg = <0x2100 0x60>;
+            ad82584f_e6: ad82584f_e6@e6 {
+                compatible = "ESMT, ad82584f";
+                reg = <0x30>;
+                status = "okay";
+
+
+            };
+            es7210: es7210_40@40 {
+                compatible = "MicArray_0";
+                reg = <0x40>;
+                status = "okay";
+            };
+            sn3236: sn3236_3c@3c {
+                compatible = "sugr,sn3236";
+                reg = < 0x3C >;
+                status = "okay";
+                sn3236,led-num = < 12 >;
+                sn3236,total-led-num = < 12 >;
+                sn3236,led-startup-current = < 6 >;
+                sn3236,sdb-pin = < 1 >;
+                sn3236,led-order = /bits/ 8 <
+                            1 2 3
+                            4 5 6
+                            7 8 9
+                            10 11 12
+                            13 14 15
+                            16 17 18
+                            19 20 21
+                            22 23 24
+                            25 26 27
+                            28 29 30
+                            31 32 33
+                            34 35 36
+                            >;
+                sn3236,led-startup = /bits/ 8 <
+                            0 0 0 0 0 0 0 0 0 255 255 255 0 0 0 0 0 0
+                            0 0 0 0 0 0 0 0 0 255 255 255 0 0 0 0 0 0
+                            255 255 255 0 0 0 0 0 0 255 255 255 0 0 0 0 0 0
+                            255 255 255 0 0 0 0 0 0 255 255 255 0 0 0 0 0 0
+                            >;
+                sn3236,led-startup-len = < 72 >;
+            };
+# 275 "/home/ubuntu/tp-link/GPL_X5700_1/bcm675x/bcm963xx_router/kernel/dts/47622/947622.dts"
+  };
+  serial@ff812000 {
+   #address-cells = <1>;
+   #size-cells = <1>;
+   compatible = "arm,pl011", "arm,primecell";
+   reg = <0x12000 0x1000>;
+   interrupts = <0 32 4>;
+   clocks = <&uartclk>, <&uartclk>;
+   clock-names = "uartclk", "apb_pclk";
+
+  };
+
+  sdhci@ff810000 {
+   compatible = "brcm,bcm63xx-sdhci";
+   #address-cells = <1>;
+   #size-cells = <1>;
+   reg = <0x10000 0x100>;
+   interrupts = <0 86 4>;
+   bus-width = <8>;
+# 302 "/home/ubuntu/tp-link/GPL_X5700_1/bcm675x/bcm963xx_router/kernel/dts/47622/947622.dts"
+   no-1-8-v;
+
+ };
+
+
+
+  gpio3: gpio-controller@0xff80050c {
+   compatible = "brcm,bcm6345-gpio";
+   reg-names = "dirout", "dat";
+   reg = <0x50c 0x4>, <0x52c 0x4>;
+   ngpios = <32>;
+
+   #gpio-cells = <2>;
+   gpio-controller;
+  };
+  gpio2: gpio-controller@0xff800508 {
+   compatible = "brcm,bcm6345-gpio";
+   reg-names = "dirout", "dat";
+   reg = <0x508 0x4>, <0x528 0x4>;
+   ngpios = <32>;
+
+   #gpio-cells = <2>;
+   gpio-controller;
+  };
+  gpio1: gpio-controller@0xff800504 {
+   compatible = "brcm,bcm6345-gpio";
+   reg-names = "dirout", "dat";
+   reg = <0x504 0x4>, <0x524 0x4>;
+   ngpios = <32>;
+
+   #gpio-cells = <2>;
+   gpio-controller;
+  };
+  gpio0: gpio-controller@0xff800500 {
+   compatible = "brcm,bcm6345-gpio";
+   reg-names = "dirout", "dat";
+   reg = <0x500 0x4>, <0x520 0x4>;
+   ngpios = <32>;
+
+   #gpio-cells = <2>;
+   gpio-controller;
+  };
+
+
+        hsspi: spi@0xff801000 {
+            #address-cells = <1>;
+            #size-cells = <0>;
+            compatible = "brcm,bcm6328-hsspi";
+            reg = <0x1000 0x600>;
+            clocks = <&hsspi_pll>, <&hsspi_pll>;
+            clock-names = "hsspi", "pll";
+            spi-max-frequency = <100000000>;
+            num-cs = <8>;
+            cs-gpios = <0>, <0>;
+            interrupts = <0 36 4>;
+            status = "okay";
+
+        spidev_test: spidev@0 {
+            status = "okay";
+            compatible = "rohm,dh2228fv";
+            reg = <0>;
+            spi-max-frequency = <60000000>;
+            };
+
+        };
+
+
+ };
+ brcm-legacy {
+  compatible = "brcm,brcm-legacy";
+ };
+
+ cs4345 {
+  compatible = "crus,cs4345-dac";
+ };
+
+
+ pcie1: pcie@85000000 {
+  compatible = "brcm,bcm963xx-vpcie";
+  device_type = "vpci";
+  reg = <0x85000000 0x01000000>,
+     <0x86000000 0x01000000>;
+
+  brcm,coreid = <1>;
+ };
+
+ pcie0: pcie@80040000 {
+  compatible = "brcm,bcm963xx-pcie";
+  device_type = "pci";
+  reg = <0x80040000 0x0000A000>;
+
+  #address-cells = <3>;
+  #size-cells = <2>;
+
+  ranges = <0x02000000 0 0xC0000000 0xC0000000 0 0x10000000>;
+
+  interrupt-names = "intr";
+  interrupts = <0 43 4>;
+
+  #interrupt-cells = <1>;
+  interrupt-map-mask = <0 0 0 0>;
+  interrupt-map = <0 0 0 0 &gic 0 43 4>;
+  brcm,coreid = <0>;
+ };
+
+
+ pdc@0x8001c000 {
+  compatible = "brcm,pdc";
+  reg = <0x8001c000 0x448>;
+  interrupts = <0 91 4>;
+  brcm,num_chan = <4>;
+  dma-coherent;
+ };
+
+ spu-crypto@0x8001d000 {
+  compatible = "brcm,spu-crypto";
+  reg = <0x8001d000 0x64>;
+  brcm,num_spu = <1>;
+  dma-coherent;
+ };
+ therm0: brcm-therm {
+  compatible = "brcm,therm";
+  status = "okay";
+ };
+};

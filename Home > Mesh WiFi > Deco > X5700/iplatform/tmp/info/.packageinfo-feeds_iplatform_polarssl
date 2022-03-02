@@ -1,0 +1,21 @@
+Source-Makefile: package/feeds/iplatform/polarssl/Makefile
+Package: libpolarssl
+Submenu: SSL
+Version: 1.3.15-1
+Depends:  
+Menu-Depends: 
+Provides: 
+Section: libs
+Category: Libraries
+Title: Embedded SSL (library)
+Maintainer: OpenWrt Developers Team <openwrt-devel@openwrt.org>
+Source: mbedtls-1.3.15-gpl.tgz
+Type: ipkg
+Description: The aim of the PolarSSL project is to provide a quality, open-source
+cryptographic library written in C and targeted at embedded systems.
+This package contains the PolarSSL library.
+http://polarssl.org/
+OpenWrt Developers Team <openwrt-devel@openwrt.org>
+@@
+
+

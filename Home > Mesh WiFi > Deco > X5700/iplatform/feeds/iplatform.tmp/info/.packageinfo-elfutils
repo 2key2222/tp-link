@@ -1,0 +1,53 @@
+Source-Makefile: feeds/iplatform/elfutils/Makefile
+Package: libasm
+Version: 0.161-1
+Depends:  libelf1
+Menu-Depends: 
+Provides: 
+Build-Depends: USE_UCLIBC:argp-standalone USE_MUSL:argp-standalone !BUILD_NLS:libiconv !BUILD_NLS:libintl
+Section: libs
+Category: Libraries
+Title: ELF manipulation libraries (libasm)
+Maintainer: OpenWrt Developers Team <openwrt-devel@openwrt.org>
+Source: elfutils-0.161.tar.bz2
+Type: ipkg
+Description: ELF manipulation libraries (libasm)
+https://fedorahosted.org/elfutils/
+OpenWrt Developers Team <openwrt-devel@openwrt.org>
+@@
+
+Package: libdw
+Version: 0.161-1
+Depends:  libelf1 +zlib +libbz2
+Menu-Depends: 
+Provides: 
+Build-Depends: USE_UCLIBC:argp-standalone USE_MUSL:argp-standalone !BUILD_NLS:libiconv !BUILD_NLS:libintl
+Section: libs
+Category: Libraries
+Title: ELF manipulation libraries (libdw)
+Maintainer: OpenWrt Developers Team <openwrt-devel@openwrt.org>
+Source: elfutils-0.161.tar.bz2
+Type: ipkg
+Description: ELF manipulation libraries (libdw)
+https://fedorahosted.org/elfutils/
+OpenWrt Developers Team <openwrt-devel@openwrt.org>
+@@
+
+Package: libelf1
+Version: 0.161-1
+Depends:  +BUILD_NLS:libintl-full
+Menu-Depends: 
+Provides: 
+Build-Depends: USE_UCLIBC:argp-standalone USE_MUSL:argp-standalone !BUILD_NLS:libiconv !BUILD_NLS:libintl
+Section: libs
+Category: Libraries
+Title: ELF manipulation libraries (libelf)
+Maintainer: OpenWrt Developers Team <openwrt-devel@openwrt.org>
+Source: elfutils-0.161.tar.bz2
+Type: ipkg
+Description: ELF manipulation libraries (libelf)
+https://fedorahosted.org/elfutils/
+OpenWrt Developers Team <openwrt-devel@openwrt.org>
+@@
+
+

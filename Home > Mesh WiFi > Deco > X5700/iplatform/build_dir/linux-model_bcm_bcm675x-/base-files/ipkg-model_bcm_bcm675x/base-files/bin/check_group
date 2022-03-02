@@ -1,0 +1,77 @@
+#!/usr/bin/lua
+local dbg = require "luci.tools.debug"
+-- local nixio = require "nixio"
+local json = require "luci.json"
+local fs = require "nixio.fs"
+-- local sync  = require "luci.model.sync"
+local quick = require "luci.controller.admin.mobile_app.quick_setup"
+
+
+local function read_group_from_file(file_name)
+
+	local f
+
+	if not file_name then
+        dbg.print("invalid input file name")
+		return false, "invalid input file name"
+	end
+
+    if not fs.access(file_name) then
+        dbg.print("file not exist")
+		return false, "file not exist"
+    end
+
+    f = io.open(file_name, "r")
+    if not f then
+        dbg.print("open file error")
+        return false, "open file error"
+    end
+
+    local data = json.decode(f:read("*a"))
+    f:close()
+
+    return data or {}
+end
+
+local function write_check_group_result(params, file_name)
+	local val = "fail"
+	if params then
+		val = "success"
+	end
+	
+	local f = io.open(file_name, "w")
+    if not f then
+        return false
+    end
+	
+	f:write(val)
+    f:close()
+	
+end
+
+local function is_group_valid(group)
+	local ret
+	if not group or not group.gid or not group.key then
+        dbg.print("group is not valid")
+		return false
+	end
+	ret = quick.preconf_check(group)
+	return ret
+end
+
+
+local input_file = arg[1]
+local output_file = arg[2]
+
+if not input_file or not output_file then
+    dbg.print(" Usage: check_group [input_file] [output_file]")
+	return
+end
+
+local group_read = read_group_from_file(input_file)
+local is_valid = is_group_valid(group_read, output_file)
+if is_valid then
+	write_check_group_result(true, output_file)
+else
+	write_check_group_result(false, output_file)
+end

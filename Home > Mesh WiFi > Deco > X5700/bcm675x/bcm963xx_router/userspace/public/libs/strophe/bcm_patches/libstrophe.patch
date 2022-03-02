@@ -1,0 +1,12 @@
+diff -rupN oldlibstrophe/src/event.c libstrophe/src/event.c
+--- oldlibstrophe/src/event.c	2017-09-12 22:45:11.000000000 +0800
++++ libstrophe/src/event.c	2017-11-24 14:13:30.767193202 +0800
+@@ -74,7 +74,7 @@ void xmpp_run_once(xmpp_ctx_t *ctx, cons
+     struct timeval tv;
+     xmpp_send_queue_t *sq, *tsq;
+     int towrite;
+-    char buf[4096];
++    char buf[4096]={0};
+     uint64_t next;
+     uint64_t usec;
+     int tls_read_bytes = 0;

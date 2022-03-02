@@ -1,0 +1,27 @@
+cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
+project(KWD LANGUAGES CXX)
+
+add_subdirectory("src")
+add_subdirectory("test")
+
+if(AMAZON_KEY_WORD_DETECTOR)
+    add_subdirectory("Amazon")
+endif()
+if(AMAZONLITE_KEY_WORD_DETECTOR)
+    add_subdirectory("AmazonLite")
+endif()
+if(KITTAI_KEY_WORD_DETECTOR)
+    add_subdirectory("KittAi")
+endif()
+if(SENSORY_KEY_WORD_DETECTOR)
+    add_subdirectory("Sensory")
+endif()
+#BROADCOM_CUSTOM
+if(BROADCOM_TAB_KEY_DETECTOR)
+    add_subdirectory("Broadcom")
+endif()
+#BROADCOM_CUSTOM
+
+if(KWD)
+    add_subdirectory("KWDProvider")
+endif()

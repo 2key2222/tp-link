@@ -1,0 +1,24 @@
+config BCM_MISC_BUTTON
+	bool "Broadcom misc button support"
+	depends on I2C
+	default n
+	help
+	  Enable misc button
+
+config BCM_MISC_BUTTON_IMPL
+	int "Implementation index for sound driver"
+	depends on BCM_MISC_BUTTON
+	default 1 if MISC_BUTTON_AW9163
+	default 2 if MISC_BUTTON_AW9136
+
+config MISC_BUTTON_AW9163
+	bool "AW9163"
+	depends on BCM_MISC_BUTTON
+	help
+	  Say Y if you want to add support aw9163.
+
+config MISC_BUTTON_AW9136
+	bool "AW9136"
+	depends on BCM_MISC_BUTTON
+	help
+	  Say Y if you want to add support aw9136.

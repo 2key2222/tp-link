@@ -1,0 +1,320 @@
+Determining if the pthread_create exist failed with the following output:
+Change Dir: /home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTC_1b3a9/fast"
+make[4]: Entering directory `/home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp'
+/usr/bin/make -f CMakeFiles/cmTC_1b3a9.dir/build.make CMakeFiles/cmTC_1b3a9.dir/build
+make[5]: Entering directory `/home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_1b3a9.dir/CheckSymbolExists.c.o
+/home/ubuntu/tp-link/GPL_X5700_1/iplatform/../bcm675x/toolchain/opt/toolchains/crosstools-arm-gcc-5.5-linux-4.1-glibc-2.26-binutils-2.28.1/usr/bin/arm-buildroot-linux-gnueabi-gcc   -I/home/ubuntu/tp-link/GPL_X5700_1/iplatform/staging_dir/target-arm-openwrt-linux-uclibc-/usr/include -I/home/ubuntu/tp-link/GPL_X5700_1/iplatform/staging_dir/target-arm-openwrt-linux-uclibc-/include -I/home/ubuntu/tp-link/GPL_X5700_1/iplatform/../bcm675x/toolchain/opt/toolchains/crosstools-arm-gcc-5.5-linux-4.1-glibc-2.26-binutils-2.28.1/usr/include -std=gnu99 -pedantic -pedantic-errors -Wall -Wextra -Wshadow -Wmissing-prototypes -Wdeclaration-after-statement -Wunused -Wfloat-equal -Wpointer-arith -Wwrite-strings -Wformat-security -Wmissing-format-attribute -fPIC    -o CMakeFiles/cmTC_1b3a9.dir/CheckSymbolExists.c.o   -c /home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp/CheckSymbolExists.c
+/home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp/CheckSymbolExists.c: In function 'main':
+/home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp/CheckSymbolExists.c:8:11: error: ISO C forbids conversion of function pointer to object pointer type [-Wpedantic]
+   return ((int*)(&pthread_create))[argc];
+           ^
+make[5]: *** [CMakeFiles/cmTC_1b3a9.dir/CheckSymbolExists.c.o] Error 1
+make[5]: Leaving directory `/home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp'
+make[4]: *** [cmTC_1b3a9/fast] Error 2
+make[4]: Leaving directory `/home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp'
+
+File /home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp/CheckSymbolExists.c:
+/* */
+#include <pthread.h>
+
+int main(int argc, char** argv)
+{
+  (void)argv;
+#ifndef pthread_create
+  return ((int*)(&pthread_create))[argc];
+#else
+  (void)argc;
+  return 0;
+#endif
+}
+
+Determining if the function pthread_create exists in the pthreads failed with the following output:
+Change Dir: /home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTC_444c4/fast"
+make[4]: Entering directory `/home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp'
+/usr/bin/make -f CMakeFiles/cmTC_444c4.dir/build.make CMakeFiles/cmTC_444c4.dir/build
+make[5]: Entering directory `/home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_444c4.dir/CheckFunctionExists.c.o
+/home/ubuntu/tp-link/GPL_X5700_1/iplatform/../bcm675x/toolchain/opt/toolchains/crosstools-arm-gcc-5.5-linux-4.1-glibc-2.26-binutils-2.28.1/usr/bin/arm-buildroot-linux-gnueabi-gcc   -I/home/ubuntu/tp-link/GPL_X5700_1/iplatform/staging_dir/target-arm-openwrt-linux-uclibc-/usr/include -I/home/ubuntu/tp-link/GPL_X5700_1/iplatform/staging_dir/target-arm-openwrt-linux-uclibc-/include -I/home/ubuntu/tp-link/GPL_X5700_1/iplatform/../bcm675x/toolchain/opt/toolchains/crosstools-arm-gcc-5.5-linux-4.1-glibc-2.26-binutils-2.28.1/usr/include -std=gnu99 -pedantic -pedantic-errors -Wall -Wextra -Wshadow -Wmissing-prototypes -Wdeclaration-after-statement -Wunused -Wfloat-equal -Wpointer-arith -Wwrite-strings -Wformat-security -Wmissing-format-attribute -fPIC -DCHECK_FUNCTION_EXISTS=pthread_create   -o CMakeFiles/cmTC_444c4.dir/CheckFunctionExists.c.o   -c /home/ubuntu/tp-link/GPL_X5700_1/iplatform/staging_dir/host/share/cmake-3.13/Modules/CheckFunctionExists.c
+Linking C executable cmTC_444c4
+/home/ubuntu/tp-link/GPL_X5700_1/iplatform/staging_dir/host/bin/cmake -E cmake_link_script CMakeFiles/cmTC_444c4.dir/link.txt --verbose=1
+/home/ubuntu/tp-link/GPL_X5700_1/iplatform/../bcm675x/toolchain/opt/toolchains/crosstools-arm-gcc-5.5-linux-4.1-glibc-2.26-binutils-2.28.1/usr/bin/arm-buildroot-linux-gnueabi-gcc -I/home/ubuntu/tp-link/GPL_X5700_1/iplatform/staging_dir/target-arm-openwrt-linux-uclibc-/usr/include -I/home/ubuntu/tp-link/GPL_X5700_1/iplatform/staging_dir/target-arm-openwrt-linux-uclibc-/include -I/home/ubuntu/tp-link/GPL_X5700_1/iplatform/../bcm675x/toolchain/opt/toolchains/crosstools-arm-gcc-5.5-linux-4.1-glibc-2.26-binutils-2.28.1/usr/include -std=gnu99 -pedantic -pedantic-errors -Wall -Wextra -Wshadow -Wmissing-prototypes -Wdeclaration-after-statement -Wunused -Wfloat-equal -Wpointer-arith -Wwrite-strings -Wformat-security -Wmissing-format-attribute -fPIC -DCHECK_FUNCTION_EXISTS=pthread_create  -L/home/ubuntu/tp-link/GPL_X5700_1/iplatform/staging_dir/target-arm-openwrt-linux-uclibc-/usr/lib -L/home/ubuntu/tp-link/GPL_X5700_1/iplatform/staging_dir/target-arm-openwrt-linux-uclibc-/lib -Wl,-rpath-link,/home/ubuntu/tp-link/GPL_X5700_1/iplatform/staging_dir/target-arm-openwrt-linux-uclibc-/usr/lib -L/home/ubuntu/tp-link/GPL_X5700_1/iplatform/../bcm675x/toolchain/opt/toolchains/crosstools-arm-gcc-5.5-linux-4.1-glibc-2.26-binutils-2.28.1/usr/lib -L/home/ubuntu/tp-link/GPL_X5700_1/iplatform/../bcm675x/toolchain/opt/toolchains/crosstools-arm-gcc-5.5-linux-4.1-glibc-2.26-binutils-2.28.1/lib  -rdynamic CMakeFiles/cmTC_444c4.dir/CheckFunctionExists.c.o  -o cmTC_444c4 -lpthreads 
+/home/ubuntu/tp-link/GPL_X5700_1/bcm675x/toolchain/opt/toolchains/crosstools-arm-gcc-5.5-linux-4.1-glibc-2.26-binutils-2.28.1/bin/../lib/gcc/arm-buildroot-linux-gnueabi/5.5.0/../../../../arm-buildroot-linux-gnueabi/bin/ld: cannot find -lpthreads
+collect2: error: ld returned 1 exit status
+make[5]: *** [cmTC_444c4] Error 1
+make[5]: Leaving directory `/home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp'
+make[4]: *** [cmTC_444c4/fast] Error 2
+make[4]: Leaving directory `/home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp'
+
+
+Determining if the include file util.h exists failed with the following output:
+Change Dir: /home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTC_69eae/fast"
+make[4]: Entering directory `/home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp'
+/usr/bin/make -f CMakeFiles/cmTC_69eae.dir/build.make CMakeFiles/cmTC_69eae.dir/build
+make[5]: Entering directory `/home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_69eae.dir/CheckIncludeFile.c.o
+/home/ubuntu/tp-link/GPL_X5700_1/iplatform/../bcm675x/toolchain/opt/toolchains/crosstools-arm-gcc-5.5-linux-4.1-glibc-2.26-binutils-2.28.1/usr/bin/arm-buildroot-linux-gnueabi-gcc   -I/home/ubuntu/tp-link/GPL_X5700_1/iplatform/staging_dir/target-arm-openwrt-linux-uclibc-/usr/include -I/home/ubuntu/tp-link/GPL_X5700_1/iplatform/staging_dir/target-arm-openwrt-linux-uclibc-/include -I/home/ubuntu/tp-link/GPL_X5700_1/iplatform/../bcm675x/toolchain/opt/toolchains/crosstools-arm-gcc-5.5-linux-4.1-glibc-2.26-binutils-2.28.1/usr/include -std=gnu99 -pedantic -pedantic-errors -Wall -Wextra -Wshadow -Wmissing-prototypes -Wdeclaration-after-statement -Wunused -Wfloat-equal -Wpointer-arith -Wwrite-strings -Wformat-security -Wmissing-format-attribute -fPIC    -o CMakeFiles/cmTC_69eae.dir/CheckIncludeFile.c.o   -c /home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp/CheckIncludeFile.c
+/home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp/CheckIncludeFile.c:1:18: fatal error: util.h: No such file or directory
+compilation terminated.
+make[5]: *** [CMakeFiles/cmTC_69eae.dir/CheckIncludeFile.c.o] Error 1
+make[5]: Leaving directory `/home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp'
+make[4]: *** [cmTC_69eae/fast] Error 2
+make[4]: Leaving directory `/home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp'
+
+
+Determining if the include file libutil.h exists failed with the following output:
+Change Dir: /home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTC_8f581/fast"
+make[4]: Entering directory `/home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp'
+/usr/bin/make -f CMakeFiles/cmTC_8f581.dir/build.make CMakeFiles/cmTC_8f581.dir/build
+make[5]: Entering directory `/home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_8f581.dir/CheckIncludeFile.c.o
+/home/ubuntu/tp-link/GPL_X5700_1/iplatform/../bcm675x/toolchain/opt/toolchains/crosstools-arm-gcc-5.5-linux-4.1-glibc-2.26-binutils-2.28.1/usr/bin/arm-buildroot-linux-gnueabi-gcc   -I/home/ubuntu/tp-link/GPL_X5700_1/iplatform/staging_dir/target-arm-openwrt-linux-uclibc-/usr/include -I/home/ubuntu/tp-link/GPL_X5700_1/iplatform/staging_dir/target-arm-openwrt-linux-uclibc-/include -I/home/ubuntu/tp-link/GPL_X5700_1/iplatform/../bcm675x/toolchain/opt/toolchains/crosstools-arm-gcc-5.5-linux-4.1-glibc-2.26-binutils-2.28.1/usr/include -std=gnu99 -pedantic -pedantic-errors -Wall -Wextra -Wshadow -Wmissing-prototypes -Wdeclaration-after-statement -Wunused -Wfloat-equal -Wpointer-arith -Wwrite-strings -Wformat-security -Wmissing-format-attribute -fPIC    -o CMakeFiles/cmTC_8f581.dir/CheckIncludeFile.c.o   -c /home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp/CheckIncludeFile.c
+/home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp/CheckIncludeFile.c:1:21: fatal error: libutil.h: No such file or directory
+compilation terminated.
+make[5]: *** [CMakeFiles/cmTC_8f581.dir/CheckIncludeFile.c.o] Error 1
+make[5]: Leaving directory `/home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp'
+make[4]: *** [cmTC_8f581/fast] Error 2
+make[4]: Leaving directory `/home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp'
+
+
+Determining if the vsnprintf exist failed with the following output:
+Change Dir: /home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTC_4790c/fast"
+make[4]: Entering directory `/home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp'
+/usr/bin/make -f CMakeFiles/cmTC_4790c.dir/build.make CMakeFiles/cmTC_4790c.dir/build
+make[5]: Entering directory `/home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_4790c.dir/CheckSymbolExists.c.o
+/home/ubuntu/tp-link/GPL_X5700_1/iplatform/../bcm675x/toolchain/opt/toolchains/crosstools-arm-gcc-5.5-linux-4.1-glibc-2.26-binutils-2.28.1/usr/bin/arm-buildroot-linux-gnueabi-gcc  -I/home/ubuntu/tp-link/GPL_X5700_1/iplatform/staging_dir/target-arm-openwrt-linux-uclibc-/usr/include  -I/home/ubuntu/tp-link/GPL_X5700_1/iplatform/staging_dir/target-arm-openwrt-linux-uclibc-/usr/include -I/home/ubuntu/tp-link/GPL_X5700_1/iplatform/staging_dir/target-arm-openwrt-linux-uclibc-/include -I/home/ubuntu/tp-link/GPL_X5700_1/iplatform/../bcm675x/toolchain/opt/toolchains/crosstools-arm-gcc-5.5-linux-4.1-glibc-2.26-binutils-2.28.1/usr/include -std=gnu99 -pedantic -pedantic-errors -Wall -Wextra -Wshadow -Wmissing-prototypes -Wdeclaration-after-statement -Wunused -Wfloat-equal -Wpointer-arith -Wwrite-strings -Wformat-security -Wmissing-format-attribute -fPIC    -o CMakeFiles/cmTC_4790c.dir/CheckSymbolExists.c.o   -c /home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp/CheckSymbolExists.c
+/home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp/CheckSymbolExists.c: In function 'main':
+/home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp/CheckSymbolExists.c:8:11: error: ISO C forbids conversion of function pointer to object pointer type [-Wpedantic]
+   return ((int*)(&vsnprintf))[argc];
+           ^
+make[5]: *** [CMakeFiles/cmTC_4790c.dir/CheckSymbolExists.c.o] Error 1
+make[5]: Leaving directory `/home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp'
+make[4]: *** [cmTC_4790c/fast] Error 2
+make[4]: Leaving directory `/home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp'
+
+File /home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp/CheckSymbolExists.c:
+/* */
+#include <stdio.h>
+
+int main(int argc, char** argv)
+{
+  (void)argv;
+#ifndef vsnprintf
+  return ((int*)(&vsnprintf))[argc];
+#else
+  (void)argc;
+  return 0;
+#endif
+}
+
+Determining if the snprintf exist failed with the following output:
+Change Dir: /home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTC_6c53a/fast"
+make[4]: Entering directory `/home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp'
+/usr/bin/make -f CMakeFiles/cmTC_6c53a.dir/build.make CMakeFiles/cmTC_6c53a.dir/build
+make[5]: Entering directory `/home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_6c53a.dir/CheckSymbolExists.c.o
+/home/ubuntu/tp-link/GPL_X5700_1/iplatform/../bcm675x/toolchain/opt/toolchains/crosstools-arm-gcc-5.5-linux-4.1-glibc-2.26-binutils-2.28.1/usr/bin/arm-buildroot-linux-gnueabi-gcc  -I/home/ubuntu/tp-link/GPL_X5700_1/iplatform/staging_dir/target-arm-openwrt-linux-uclibc-/usr/include  -I/home/ubuntu/tp-link/GPL_X5700_1/iplatform/staging_dir/target-arm-openwrt-linux-uclibc-/usr/include -I/home/ubuntu/tp-link/GPL_X5700_1/iplatform/staging_dir/target-arm-openwrt-linux-uclibc-/include -I/home/ubuntu/tp-link/GPL_X5700_1/iplatform/../bcm675x/toolchain/opt/toolchains/crosstools-arm-gcc-5.5-linux-4.1-glibc-2.26-binutils-2.28.1/usr/include -std=gnu99 -pedantic -pedantic-errors -Wall -Wextra -Wshadow -Wmissing-prototypes -Wdeclaration-after-statement -Wunused -Wfloat-equal -Wpointer-arith -Wwrite-strings -Wformat-security -Wmissing-format-attribute -fPIC    -o CMakeFiles/cmTC_6c53a.dir/CheckSymbolExists.c.o   -c /home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp/CheckSymbolExists.c
+/home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp/CheckSymbolExists.c: In function 'main':
+/home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp/CheckSymbolExists.c:8:11: error: ISO C forbids conversion of function pointer to object pointer type [-Wpedantic]
+   return ((int*)(&snprintf))[argc];
+           ^
+make[5]: *** [CMakeFiles/cmTC_6c53a.dir/CheckSymbolExists.c.o] Error 1
+make[5]: Leaving directory `/home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp'
+make[4]: *** [cmTC_6c53a/fast] Error 2
+make[4]: Leaving directory `/home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp'
+
+File /home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp/CheckSymbolExists.c:
+/* */
+#include <stdio.h>
+
+int main(int argc, char** argv)
+{
+  (void)argv;
+#ifndef snprintf
+  return ((int*)(&snprintf))[argc];
+#else
+  (void)argc;
+  return 0;
+#endif
+}
+
+Determining if the ntohll exist failed with the following output:
+Change Dir: /home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTC_5a8df/fast"
+make[4]: Entering directory `/home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp'
+/usr/bin/make -f CMakeFiles/cmTC_5a8df.dir/build.make CMakeFiles/cmTC_5a8df.dir/build
+make[5]: Entering directory `/home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_5a8df.dir/CheckSymbolExists.c.o
+/home/ubuntu/tp-link/GPL_X5700_1/iplatform/../bcm675x/toolchain/opt/toolchains/crosstools-arm-gcc-5.5-linux-4.1-glibc-2.26-binutils-2.28.1/usr/bin/arm-buildroot-linux-gnueabi-gcc  -I/home/ubuntu/tp-link/GPL_X5700_1/iplatform/staging_dir/target-arm-openwrt-linux-uclibc-/usr/include  -I/home/ubuntu/tp-link/GPL_X5700_1/iplatform/staging_dir/target-arm-openwrt-linux-uclibc-/usr/include -I/home/ubuntu/tp-link/GPL_X5700_1/iplatform/staging_dir/target-arm-openwrt-linux-uclibc-/include -I/home/ubuntu/tp-link/GPL_X5700_1/iplatform/../bcm675x/toolchain/opt/toolchains/crosstools-arm-gcc-5.5-linux-4.1-glibc-2.26-binutils-2.28.1/usr/include -std=gnu99 -pedantic -pedantic-errors -Wall -Wextra -Wshadow -Wmissing-prototypes -Wdeclaration-after-statement -Wunused -Wfloat-equal -Wpointer-arith -Wwrite-strings -Wformat-security -Wmissing-format-attribute -fPIC    -o CMakeFiles/cmTC_5a8df.dir/CheckSymbolExists.c.o   -c /home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp/CheckSymbolExists.c
+/home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp/CheckSymbolExists.c: In function 'main':
+/home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp/CheckSymbolExists.c:8:19: error: 'ntohll' undeclared (first use in this function)
+   return ((int*)(&ntohll))[argc];
+                   ^
+/home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp/CheckSymbolExists.c:8:19: note: each undeclared identifier is reported only once for each function it appears in
+/home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp/CheckSymbolExists.c:4:14: warning: parameter 'argc' set but not used [-Wunused-but-set-parameter]
+ int main(int argc, char** argv)
+              ^
+make[5]: *** [CMakeFiles/cmTC_5a8df.dir/CheckSymbolExists.c.o] Error 1
+make[5]: Leaving directory `/home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp'
+make[4]: *** [cmTC_5a8df/fast] Error 2
+make[4]: Leaving directory `/home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp'
+
+File /home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp/CheckSymbolExists.c:
+/* */
+#include <arpa/inet.h>
+
+int main(int argc, char** argv)
+{
+  (void)argv;
+#ifndef ntohll
+  return ((int*)(&ntohll))[argc];
+#else
+  (void)argc;
+  return 0;
+#endif
+}
+
+Determining if the htonll exist failed with the following output:
+Change Dir: /home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTC_61204/fast"
+make[4]: Entering directory `/home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp'
+/usr/bin/make -f CMakeFiles/cmTC_61204.dir/build.make CMakeFiles/cmTC_61204.dir/build
+make[5]: Entering directory `/home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_61204.dir/CheckSymbolExists.c.o
+/home/ubuntu/tp-link/GPL_X5700_1/iplatform/../bcm675x/toolchain/opt/toolchains/crosstools-arm-gcc-5.5-linux-4.1-glibc-2.26-binutils-2.28.1/usr/bin/arm-buildroot-linux-gnueabi-gcc  -I/home/ubuntu/tp-link/GPL_X5700_1/iplatform/staging_dir/target-arm-openwrt-linux-uclibc-/usr/include  -I/home/ubuntu/tp-link/GPL_X5700_1/iplatform/staging_dir/target-arm-openwrt-linux-uclibc-/usr/include -I/home/ubuntu/tp-link/GPL_X5700_1/iplatform/staging_dir/target-arm-openwrt-linux-uclibc-/include -I/home/ubuntu/tp-link/GPL_X5700_1/iplatform/../bcm675x/toolchain/opt/toolchains/crosstools-arm-gcc-5.5-linux-4.1-glibc-2.26-binutils-2.28.1/usr/include -std=gnu99 -pedantic -pedantic-errors -Wall -Wextra -Wshadow -Wmissing-prototypes -Wdeclaration-after-statement -Wunused -Wfloat-equal -Wpointer-arith -Wwrite-strings -Wformat-security -Wmissing-format-attribute -fPIC    -o CMakeFiles/cmTC_61204.dir/CheckSymbolExists.c.o   -c /home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp/CheckSymbolExists.c
+/home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp/CheckSymbolExists.c: In function 'main':
+/home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp/CheckSymbolExists.c:8:19: error: 'htonll' undeclared (first use in this function)
+   return ((int*)(&htonll))[argc];
+                   ^
+/home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp/CheckSymbolExists.c:8:19: note: each undeclared identifier is reported only once for each function it appears in
+/home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp/CheckSymbolExists.c:4:14: warning: parameter 'argc' set but not used [-Wunused-but-set-parameter]
+ int main(int argc, char** argv)
+              ^
+make[5]: *** [CMakeFiles/cmTC_61204.dir/CheckSymbolExists.c.o] Error 1
+make[5]: Leaving directory `/home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp'
+make[4]: *** [cmTC_61204/fast] Error 2
+make[4]: Leaving directory `/home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp'
+
+File /home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp/CheckSymbolExists.c:
+/* */
+#include <arpa/inet.h>
+
+int main(int argc, char** argv)
+{
+  (void)argv;
+#ifndef htonll
+  return ((int*)(&htonll))[argc];
+#else
+  (void)argc;
+  return 0;
+#endif
+}
+
+Determining if the function __strtoull exists failed with the following output:
+Change Dir: /home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTC_ef4d3/fast"
+make[4]: Entering directory `/home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp'
+/usr/bin/make -f CMakeFiles/cmTC_ef4d3.dir/build.make CMakeFiles/cmTC_ef4d3.dir/build
+make[5]: Entering directory `/home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_ef4d3.dir/CheckFunctionExists.c.o
+/home/ubuntu/tp-link/GPL_X5700_1/iplatform/../bcm675x/toolchain/opt/toolchains/crosstools-arm-gcc-5.5-linux-4.1-glibc-2.26-binutils-2.28.1/usr/bin/arm-buildroot-linux-gnueabi-gcc  -I/home/ubuntu/tp-link/GPL_X5700_1/iplatform/staging_dir/target-arm-openwrt-linux-uclibc-/usr/include  -I/home/ubuntu/tp-link/GPL_X5700_1/iplatform/staging_dir/target-arm-openwrt-linux-uclibc-/usr/include -I/home/ubuntu/tp-link/GPL_X5700_1/iplatform/staging_dir/target-arm-openwrt-linux-uclibc-/include -I/home/ubuntu/tp-link/GPL_X5700_1/iplatform/../bcm675x/toolchain/opt/toolchains/crosstools-arm-gcc-5.5-linux-4.1-glibc-2.26-binutils-2.28.1/usr/include -std=gnu99 -pedantic -pedantic-errors -Wall -Wextra -Wshadow -Wmissing-prototypes -Wdeclaration-after-statement -Wunused -Wfloat-equal -Wpointer-arith -Wwrite-strings -Wformat-security -Wmissing-format-attribute -fPIC -DCHECK_FUNCTION_EXISTS=__strtoull   -o CMakeFiles/cmTC_ef4d3.dir/CheckFunctionExists.c.o   -c /home/ubuntu/tp-link/GPL_X5700_1/iplatform/staging_dir/host/share/cmake-3.13/Modules/CheckFunctionExists.c
+Linking C executable cmTC_ef4d3
+/home/ubuntu/tp-link/GPL_X5700_1/iplatform/staging_dir/host/bin/cmake -E cmake_link_script CMakeFiles/cmTC_ef4d3.dir/link.txt --verbose=1
+/home/ubuntu/tp-link/GPL_X5700_1/iplatform/../bcm675x/toolchain/opt/toolchains/crosstools-arm-gcc-5.5-linux-4.1-glibc-2.26-binutils-2.28.1/usr/bin/arm-buildroot-linux-gnueabi-gcc -I/home/ubuntu/tp-link/GPL_X5700_1/iplatform/staging_dir/target-arm-openwrt-linux-uclibc-/usr/include -I/home/ubuntu/tp-link/GPL_X5700_1/iplatform/staging_dir/target-arm-openwrt-linux-uclibc-/include -I/home/ubuntu/tp-link/GPL_X5700_1/iplatform/../bcm675x/toolchain/opt/toolchains/crosstools-arm-gcc-5.5-linux-4.1-glibc-2.26-binutils-2.28.1/usr/include -std=gnu99 -pedantic -pedantic-errors -Wall -Wextra -Wshadow -Wmissing-prototypes -Wdeclaration-after-statement -Wunused -Wfloat-equal -Wpointer-arith -Wwrite-strings -Wformat-security -Wmissing-format-attribute -fPIC -DCHECK_FUNCTION_EXISTS=__strtoull  -L/home/ubuntu/tp-link/GPL_X5700_1/iplatform/staging_dir/target-arm-openwrt-linux-uclibc-/usr/lib -L/home/ubuntu/tp-link/GPL_X5700_1/iplatform/staging_dir/target-arm-openwrt-linux-uclibc-/lib -Wl,-rpath-link,/home/ubuntu/tp-link/GPL_X5700_1/iplatform/staging_dir/target-arm-openwrt-linux-uclibc-/usr/lib -L/home/ubuntu/tp-link/GPL_X5700_1/iplatform/../bcm675x/toolchain/opt/toolchains/crosstools-arm-gcc-5.5-linux-4.1-glibc-2.26-binutils-2.28.1/usr/lib -L/home/ubuntu/tp-link/GPL_X5700_1/iplatform/../bcm675x/toolchain/opt/toolchains/crosstools-arm-gcc-5.5-linux-4.1-glibc-2.26-binutils-2.28.1/lib  -rdynamic CMakeFiles/cmTC_ef4d3.dir/CheckFunctionExists.c.o  -o cmTC_ef4d3 -lrt 
+CMakeFiles/cmTC_ef4d3.dir/CheckFunctionExists.c.o: In function `main':
+CheckFunctionExists.c:(.text.startup+0xc): undefined reference to `__strtoull'
+collect2: error: ld returned 1 exit status
+make[5]: *** [cmTC_ef4d3] Error 1
+make[5]: Leaving directory `/home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp'
+make[4]: *** [cmTC_ef4d3/fast] Error 2
+make[4]: Leaving directory `/home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp'
+
+
+Performing C SOURCE FILE Test HAVE_MSC_THREAD_LOCAL_STORAGE failed with the following output:
+Change Dir: /home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTC_812fb/fast"
+make[4]: Entering directory `/home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp'
+/usr/bin/make -f CMakeFiles/cmTC_812fb.dir/build.make CMakeFiles/cmTC_812fb.dir/build
+make[5]: Entering directory `/home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_812fb.dir/src.c.o
+/home/ubuntu/tp-link/GPL_X5700_1/iplatform/../bcm675x/toolchain/opt/toolchains/crosstools-arm-gcc-5.5-linux-4.1-glibc-2.26-binutils-2.28.1/usr/bin/arm-buildroot-linux-gnueabi-gcc  -I/home/ubuntu/tp-link/GPL_X5700_1/iplatform/staging_dir/target-arm-openwrt-linux-uclibc-/usr/include  -I/home/ubuntu/tp-link/GPL_X5700_1/iplatform/staging_dir/target-arm-openwrt-linux-uclibc-/usr/include -I/home/ubuntu/tp-link/GPL_X5700_1/iplatform/staging_dir/target-arm-openwrt-linux-uclibc-/include -I/home/ubuntu/tp-link/GPL_X5700_1/iplatform/../bcm675x/toolchain/opt/toolchains/crosstools-arm-gcc-5.5-linux-4.1-glibc-2.26-binutils-2.28.1/usr/include -std=gnu99 -pedantic -pedantic-errors -Wall -Wextra -Wshadow -Wmissing-prototypes -Wdeclaration-after-statement -Wunused -Wfloat-equal -Wpointer-arith -Wwrite-strings -Wformat-security -Wmissing-format-attribute -fPIC -DHAVE_MSC_THREAD_LOCAL_STORAGE   -o CMakeFiles/cmTC_812fb.dir/src.c.o   -c /home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp/src.c
+/home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp/src.c:2:1: error: return type defaults to 'int' [-Wimplicit-int]
+ __declspec(thread) int tls;
+ ^
+/home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp/src.c:2:1: warning: no previous prototype for '__declspec' [-Wmissing-prototypes]
+/home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp/src.c: In function '__declspec':
+/home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp/src.c:4:16: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+ int main(void) {
+                ^
+/home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp/src.c:2:1: error: type of 'thread' defaults to 'int' [-Wimplicit-int]
+ __declspec(thread) int tls;
+ ^
+/home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp/src.c:2:24: error: declaration for parameter 'tls' but no such parameter
+ __declspec(thread) int tls;
+                        ^
+/home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp/src.c:6:1: error: expected '{' at end of input
+ }
+ ^
+/home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp/src.c:2:1: warning: unused parameter 'thread' [-Wunused-parameter]
+ __declspec(thread) int tls;
+ ^
+/home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp/src.c:2:24: warning: unused parameter 'tls' [-Wunused-parameter]
+ __declspec(thread) int tls;
+                        ^
+/home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp/src.c:6:1: warning: control reaches end of non-void function [-Wreturn-type]
+ }
+ ^
+make[5]: *** [CMakeFiles/cmTC_812fb.dir/src.c.o] Error 1
+make[5]: Leaving directory `/home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp'
+make[4]: *** [cmTC_812fb/fast] Error 2
+make[4]: Leaving directory `/home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp'
+
+Source file was:
+
+__declspec(thread) int tls;
+
+int main(void) {
+    return 0;
+}
+Performing C SOURCE FILE Test HAVE_COMPILER__FUNCTION__ failed with the following output:
+Change Dir: /home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTC_66c94/fast"
+make[4]: Entering directory `/home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp'
+/usr/bin/make -f CMakeFiles/cmTC_66c94.dir/build.make CMakeFiles/cmTC_66c94.dir/build
+make[5]: Entering directory `/home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_66c94.dir/src.c.o
+/home/ubuntu/tp-link/GPL_X5700_1/iplatform/../bcm675x/toolchain/opt/toolchains/crosstools-arm-gcc-5.5-linux-4.1-glibc-2.26-binutils-2.28.1/usr/bin/arm-buildroot-linux-gnueabi-gcc  -I/home/ubuntu/tp-link/GPL_X5700_1/iplatform/staging_dir/target-arm-openwrt-linux-uclibc-/usr/include  -I/home/ubuntu/tp-link/GPL_X5700_1/iplatform/staging_dir/target-arm-openwrt-linux-uclibc-/usr/include -I/home/ubuntu/tp-link/GPL_X5700_1/iplatform/staging_dir/target-arm-openwrt-linux-uclibc-/include -I/home/ubuntu/tp-link/GPL_X5700_1/iplatform/../bcm675x/toolchain/opt/toolchains/crosstools-arm-gcc-5.5-linux-4.1-glibc-2.26-binutils-2.28.1/usr/include -std=gnu99 -pedantic -pedantic-errors -Wall -Wextra -Wshadow -Wmissing-prototypes -Wdeclaration-after-statement -Wunused -Wfloat-equal -Wpointer-arith -Wwrite-strings -Wformat-security -Wmissing-format-attribute -fPIC -DHAVE_COMPILER__FUNCTION__   -o CMakeFiles/cmTC_66c94.dir/src.c.o   -c /home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp/src.c
+/home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp/src.c: In function 'main':
+/home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp/src.c:4:18: error: ISO C does not support '__FUNCTION__' predefined identifier [-Wpedantic]
+     printf("%s", __FUNCTION__);
+                  ^
+make[5]: *** [CMakeFiles/cmTC_66c94.dir/src.c.o] Error 1
+make[5]: Leaving directory `/home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp'
+make[4]: *** [cmTC_66c94/fast] Error 2
+make[4]: Leaving directory `/home/ubuntu/tp-link/GPL_X5700_1/iplatform/build_dir/target-arm-openwrt-linux-uclibc-/libssh-0.7.3/CMakeFiles/CMakeTmp'
+
+Source file was:
+
+#include <stdio.h>
+int main(void) {
+    printf("%s", __FUNCTION__);
+    return 0;
+}

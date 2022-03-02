@@ -1,0 +1,20 @@
+Package: ndppd
+Version: 0.2.6-1
+Depends: libstdcpp
+Provides: 
+Source: opensource/opensource/ndppd
+Section: ipv6
+Status: unknown ok not-installed
+Essential: no
+Priority: optional
+Maintainer: Gabriel Kerneis <gabriel@kerneis.info>
+Architecture: model_bcm_bcm675x
+Installed-Size: 40295
+Description:  ndppd, or NDP Proxy Daemon, is a daemon that proxies NDP (Neighbor Discovery
+ Protocol) messages between interfaces.  ndppd currently only supports Neighbor
+ Solicitation Messages and Neighbor Advertisement Messages.
+ 
+ The ndp_proxy provided by Linux doesn't support listing proxies, and only hosts
+ are supported.  No subnets.  ndppd solves this by listening for Neighbor
+ Solicitation messages on an interface, then query the internal interfaces for
+ that target IP before finally sending a Neighbor Advertisement message.

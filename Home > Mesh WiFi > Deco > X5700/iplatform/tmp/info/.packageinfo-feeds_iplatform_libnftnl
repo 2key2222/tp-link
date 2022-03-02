@@ -1,0 +1,19 @@
+Source-Makefile: package/feeds/iplatform/libnftnl/Makefile
+Package: libnftnl
+Version: 1.0.3-1
+Depends:  +libmnl
+Menu-Depends: 
+Provides: 
+Section: libs
+Category: Libraries
+Title: Low-level netlink library for the nf_tables subsystem
+Maintainer: OpenWrt Developers Team <openwrt-devel@openwrt.org>
+Source: libnftnl-1.0.3.tar.bz2
+Type: ipkg
+Description:  libnftnl is a userspace library providing a low-level netlink
+ programming interface (API) to the in-kernel nf_tables subsystem.
+http://www.netfilter.org/projects/libnftnl
+OpenWrt Developers Team <openwrt-devel@openwrt.org>
+@@
+
+

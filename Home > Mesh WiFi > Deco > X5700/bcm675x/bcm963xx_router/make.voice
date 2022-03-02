@@ -1,0 +1,374 @@
+###############################################################################
+#
+#                          VOICE MAKE TARGETS
+#
+###############################################################################
+# This section should only be included from top-level Makefile, which sets the
+# BRCM_VOICE_INCLUDE_MAKE_TARGETS variable to 1.
+ifeq ($(BRCM_VOICE_INCLUDE_MAKE_TARGETS),1)
+
+voice_full: xchg voice dectd slicslac dsphal dect
+
+voice_full_clean: sanity_check xchg_clean voice_clean dectd_clean slicslac_clean dsphal_clean dect_clean 
+
+voice:
+	$(MAKE) -j$(ACTUAL_MAX_JOBS) -C $(BUILD_DIR)/userspace/private/apps/voice
+
+dectd:
+	$(MAKE) -j$(ACTUAL_MAX_JOBS) -C $(BUILD_DIR)/userspace/private/apps/dectd
+
+slicslac dect:
+	$(call bcm_build_mod, $@)
+
+dsphal:
+	$(call opensource_build_mod, $@)
+
+xchg:
+	$(MAKE) -j$(ACTUAL_MAX_JOBS) -C $(BUILD_DIR)/userspace/private/libs/xchg
+
+voice_clean:
+	$(MAKE) -C $(BUILD_DIR)/userspace/private/apps/voice clean
+
+dectd_clean:
+	$(MAKE) -C $(BUILD_DIR)/userspace/private/apps/dectd clean
+
+slicslac_clean:
+	$(call bcm_clean_mod, $(BUILD_DIR)/bcmdrivers/broadcom/char/slicslac/impl1, Slicslac)
+	@rm -f $(BUILD_DIR)/bcmdrivers/broadcom/char/slicslac/impl1/apm/flexicalc_constants.gen.*
+
+dsphal_clean:
+	$(call bcm_clean_mod, $(BUILD_DIR)/bcmdrivers/opensource/char/dsphal/impl1, DSPHAL)
+
+dect_clean:
+	$(call bcm_clean_mod, $(BUILD_DIR)/bcmdrivers/broadcom/char/dect/impl1, Dect)
+	$(MAKE) -C $(BUILD_DIR)/bcmdrivers/broadcom/char/dect/impl1 clean
+
+xchg_clean:
+	$(MAKE) -j$(ACTUAL_MAX_JOBS) -C $(BUILD_DIR)/userspace/private/libs/xchg clean
+
+%_voice_modbuild:
+	$(MAKE) -C $(KERNEL_DIR) -j$(ACTUAL_MAX_JOBS) M=$(BUILD_DIR)/bcmdrivers/broadcom/char/$(subst _voice_modbuild,,$@)/bcm9$(BRCM_CHIP) modules
+
+%_osvoice_modbuild:
+	$(MAKE) -C $(KERNEL_DIR) -j$(ACTUAL_MAX_JOBS) M=$(BUILD_DIR)/bcmdrivers/opensource/char/$(subst _osvoice_modbuild,,$@)/bcm9$(BRCM_CHIP) modules
+
+
+#############################################################################
+#
+# Kernel build dependent exports
+#
+#############################################################################
+export BRCM_VOICE_DPLL_LOCK_WAIT
+export BRCM_VOICE_DSPHAL_CAPTURE
+export BRCM_VOICE_DSPHAL_EGRESS_1KHZ_TONE
+export BRCM_VOICE_DSPHAL_INGRESS_1KHZ_TONE
+export BRCM_VOICE_SLICSLAC_DEBUG
+export BRCM_VRG_SLACVENDOR_CFG_ZARLINK
+export BRCM_VRG_SLACVENDOR_CFG_SILABS
+export BRCM_VOICE_COUNTRY_AUSTRALIA
+export BRCM_VOICE_COUNTRY_AUSTRIA
+export BRCM_VOICE_COUNTRY_BELGIUM
+export BRCM_VOICE_COUNTRY_BRAZIL
+export BRCM_VOICE_COUNTRY_CHILE
+export BRCM_VOICE_COUNTRY_CHINA
+export BRCM_VOICE_COUNTRY_CYPRUS
+export BRCM_VOICE_COUNTRY_CZECH
+export BRCM_VOICE_COUNTRY_DENMARK
+export BRCM_VOICE_COUNTRY_ETSI
+export BRCM_VOICE_COUNTRY_FINLAND
+export BRCM_VOICE_COUNTRY_FRANCE
+export BRCM_VOICE_COUNTRY_GERMANY
+export BRCM_VOICE_COUNTRY_HUNGARY
+export BRCM_VOICE_COUNTRY_INDIA
+export BRCM_VOICE_COUNTRY_IRELAND
+export BRCM_VOICE_COUNTRY_ITALY
+export BRCM_VOICE_COUNTRY_JAPAN
+export BRCM_VOICE_COUNTRY_NETHERLANDS
+export BRCM_VOICE_COUNTRY_NEW_ZEALAND
+export BRCM_VOICE_COUNTRY_NORTH_AMERICA
+export BRCM_VOICE_COUNTRY_NORWAY
+export BRCM_VOICE_COUNTRY_POLAND
+export BRCM_VOICE_COUNTRY_ROMANIA
+export BRCM_VOICE_COUNTRY_SLOVAKIA
+export BRCM_VOICE_COUNTRY_SLOVENIA
+export BRCM_VOICE_COUNTRY_SPAIN
+export BRCM_VOICE_COUNTRY_SWEDEN
+export BRCM_VOICE_COUNTRY_SWITZERLAND
+export BRCM_VOICE_COUNTRY_TAIWAN
+export BRCM_VOICE_COUNTRY_TR57
+export BRCM_VOICE_COUNTRY_UK
+
+#############################################################################
+#
+# Host-tools dependent exports
+#
+#############################################################################
+export BRCM_VOICE_DECT_SUPPORT
+
+endif  #if BRCM_VOICE_INCLUDE_MAKE_TARGETS == 1
+
+#############################################################################
+#
+# Hard-coded defines.  Changes will need binaries to be rebuilt.
+#
+#############################################################################
+BRCM_SIP_TLS_SUPPORT:=y
+
+###############################################################################
+#
+#                        MISC VOICE FUNCTIONS
+#
+###############################################################################
+# Function to initialize the voice flags list
+define init-defs-list
+$(eval VOICE_CFLAGS :=) ;
+$(eval VOICE_LDFLAGS :=)
+endef
+
+# Function to add to defines (only add if value is not empty):
+#   $1 : name of define to add
+#   $2 : value of define (1, 0, etc)
+define add-def
+$(if $(strip $(2)),$(eval VOICE_CFLAGS += -D$(strip $(1))=$(strip $(2))))
+endef
+
+# Function to add to defines with conditional argument:
+#   $1 : name of define to add
+#   $2 : value of define (1, 0, etc)
+#   $3 : conditional value (empty to skip)
+define add-def-cond
+$(if $(strip $(3)),$(eval VOICE_CFLAGS += -D$(strip $(1))=$(strip $(2))))
+endef
+
+# Function to add include path to build
+#   $1 : name of include path to add
+define add-inc
+$(eval VOICE_CFLAGS += $(addprefix -I,$(strip $(1))))
+endef
+
+# Function to add include path to build
+#   $1 : name of include path to add
+#   $2 : conditional value (empty to skip include)
+define add-inc-cond
+$(if $(strip $(2)),$(eval VOICE_CFLAGS += -I$(strip $(1))))
+endef
+
+# Function to add extra command args to CFLAGS
+#   $1 : extra args to add
+define add-extra
+$(eval VOICE_CFLAGS += $(strip $(1)))
+endef
+
+# Function to add extra command args to CFLAGS
+#   $1 : extra args to add
+#   $2 : conditional value (empty to skip)
+define add-extra-cond
+$(if $(strip $(2)),$(eval VOICE_CFLAGS += $(strip $(1))))
+endef
+
+# Function to set environment variables
+#  $1 : name of variable
+#  $2 : value of variable
+define add-var
+$(eval $(strip $(1)):=$(strip $(2)))
+endef
+
+# Function to conditionally set environment variables
+#   $1 : name of variable
+#   $2 : value of new variable
+#   $3 : conditional value to check (empty to not set)
+define add-var-cond
+$(if $(strip $(3)),$(eval $(strip $(1)):=$(strip $(2))))
+endef
+
+# Function to add extra shared libraries to link against
+#   $1 : extra linker flags
+define add-ldflags
+$(eval VOICE_LDFLAGS += $(strip $(1)))
+endef
+
+# Function to conditionally add extra shared libraries to link against
+#   $1 : extra linker flags
+#   $2 : conditional value (empty to skip)
+define add-ldflags-cond
+$(if $(strip $(2)),$(eval VOICE_LDFLAGS += $(strip $(1))))
+endef
+
+# Function to build kernel module directories
+#   $1 : module name
+define bcm_build_mod
+CURRENT_ARCH=$(KERNEL_ARCH) TOOLCHAIN_TOP= $(MAKE) $(strip $1)_voice_modbuild
+endef
+
+# Function to build kernel module directories
+#   $1 : module name
+define opensource_build_mod
+CURRENT_ARCH=$(KERNEL_ARCH) TOOLCHAIN_TOP= $(MAKE) $(strip $1)_osvoice_modbuild
+endef
+
+# Function to clean kernel module directories
+#   $1 : path to module
+#  [$2 : Custom module name]
+define bcm_clean_mod
+@echo "Cleaning driver $(if $(strip $2),$(strip $2),$(strip $1)) ..."
+@find $(strip $1) \
+	\( -name '*.[oas]' -o -name '*.ko' -o -name '.*.cmd' \
+	-o -name '.*.d' -o -name '.*.tmp' -o -name '*.mod.c' \
+	-o -name '*.symtypes' -o -name 'modules.order' \
+	-o -name modules.builtin -o -name '.tmp_*.o.*' \
+	-o -name '*.gcno' \) -type f -print | xargs rm -f
+endef
+
+
+
+###############################################################################
+#
+#              SETUP GLOBAL VOICE VARIABLES AND CONFIGS
+#
+###############################################################################
+
+# When voice gets built, many of the configuration items set by config.in
+# should be turned into defines. This makefile adds these defines to a special
+# voice flag called VOICE_CFLAGS.
+$(call init-defs-list)
+
+$(call add-def-cond, BRCM_VOICE_SUPPORT, 1, $(BRCM_VOICE_SUPPORT))
+$(call add-var, VOICE_PATH, $(BUILD_DIR)/userspace/private/apps/voice)
+$(call add-var, BRCM_RELEASETAG, $(BRCM_RELEASETAG).$(BRCM_APP_PHONE))
+
+$(call add-def, SIPLOAD, $(BRCM_VOICE_APP_SIP))
+
+$(call add-var-cond, BRCM_VOICE_APP, eptapp, $(BRCM_VOICE_APP_EPTAPP))
+$(call add-def, EPTAPPLOAD, $(BRCM_VOICE_APP_EPTAPP))
+
+$(call add-def-cond, BRCM_VOICE_DECT_SUPPORT, 1, $(BRCM_VOICE_DECT_SUPPORT))
+$(call add-def-cond, BRCM_NTR_SUPPORT, 1, $(BRCM_NTR_SUPPORT))
+$(call add-def-cond, BUILD_AVS_DEVICE_SDK, 1, $(BUILD_AVS_DEVICE_SDK))
+
+
+###############################################################################
+#
+#                     SETUP GLOBAL LOCALE DEFINES
+#
+###############################################################################
+$(call add-def-cond, VRG_COUNTRY_CFG_AUSTRALIA, 1, $(BRCM_VOICE_COUNTRY_AUSTRALIA))
+$(call add-def-cond, VRG_COUNTRY_CFG_AUSTRIA, 1, $(BRCM_VOICE_COUNTRY_AUSTRIA))
+$(call add-def-cond, VRG_COUNTRY_CFG_BELGIUM, 1, $(BRCM_VOICE_COUNTRY_BELGIUM))
+$(call add-def-cond, VRG_COUNTRY_CFG_BRAZIL, 1, $(BRCM_VOICE_COUNTRY_BRAZIL))
+$(call add-def-cond, VRG_COUNTRY_CFG_CHILE, 1, $(BRCM_VOICE_COUNTRY_CHILE))
+$(call add-def-cond, VRG_COUNTRY_CFG_CHINA, 1, $(BRCM_VOICE_COUNTRY_CHINA))
+$(call add-def-cond, VRG_COUNTRY_CFG_CYPRUS, 1, $(BRCM_VOICE_COUNTRY_CYPRUS))
+$(call add-def-cond, VRG_COUNTRY_CFG_CZECH, 1, $(BRCM_VOICE_COUNTRY_CZECH))
+$(call add-def-cond, VRG_COUNTRY_CFG_DENMARK, 1, $(BRCM_VOICE_COUNTRY_DENMARK))
+$(call add-def-cond, VRG_COUNTRY_CFG_ETSI, 1, $(BRCM_VOICE_COUNTRY_ETSI))
+$(call add-def-cond, VRG_COUNTRY_CFG_FINLAND, 1, $(BRCM_VOICE_COUNTRY_FINLAND))
+$(call add-def-cond, VRG_COUNTRY_CFG_FRANCE, 1, $(BRCM_VOICE_COUNTRY_FRANCE))
+$(call add-def-cond, VRG_COUNTRY_CFG_GERMANY, 1, $(BRCM_VOICE_COUNTRY_GERMANY))
+$(call add-def-cond, VRG_COUNTRY_CFG_HUNGARY, 1, $(BRCM_VOICE_COUNTRY_HUNGARY))
+$(call add-def-cond, VRG_COUNTRY_CFG_INDIA, 1, $(BRCM_VOICE_COUNTRY_INDIA))
+$(call add-def-cond, VRG_COUNTRY_CFG_IRELAND, 1, $(BRCM_VOICE_COUNTRY_IRELAND))
+$(call add-def-cond, VRG_COUNTRY_CFG_ITALY, 1, $(BRCM_VOICE_COUNTRY_ITALY))
+$(call add-def-cond, VRG_COUNTRY_CFG_JAPAN, 1, $(BRCM_VOICE_COUNTRY_JAPAN))
+$(call add-def-cond, VRG_COUNTRY_CFG_NETHERLANDS, 1, $(BRCM_VOICE_COUNTRY_NETHERLANDS))
+$(call add-def-cond, VRG_COUNTRY_CFG_NEW_ZEALAND, 1, $(BRCM_VOICE_COUNTRY_NEW_ZEALAND))
+$(call add-def-cond, VRG_COUNTRY_CFG_NORTH_AMERICA, 1, $(BRCM_VOICE_COUNTRY_NORTH_AMERICA))
+$(call add-def-cond, VRG_COUNTRY_CFG_NORWAY, 1, $(BRCM_VOICE_COUNTRY_NORWAY))
+$(call add-def-cond, VRG_COUNTRY_CFG_POLAND, 1, $(BRCM_VOICE_COUNTRY_POLAND))
+$(call add-def-cond, VRG_COUNTRY_CFG_ROMANIA, 1, $(BRCM_VOICE_COUNTRY_ROMANIA))
+$(call add-def-cond, VRG_COUNTRY_CFG_SLOVAKIA, 1, $(BRCM_VOICE_COUNTRY_SLOVAKIA))
+$(call add-def-cond, VRG_COUNTRY_CFG_SLOVENIA, 1, $(BRCM_VOICE_COUNTRY_SLOVENIA))
+$(call add-def-cond, VRG_COUNTRY_CFG_SPAIN, 1, $(BRCM_VOICE_COUNTRY_SPAIN))
+$(call add-def-cond, VRG_COUNTRY_CFG_SWEDEN, 1, $(BRCM_VOICE_COUNTRY_SWEDEN))
+$(call add-def-cond, VRG_COUNTRY_CFG_SWITZERLAND, 1, $(BRCM_VOICE_COUNTRY_SWITZERLAND))
+$(call add-def-cond, VRG_COUNTRY_CFG_TAIWAN, 1, $(BRCM_VOICE_COUNTRY_TAIWAN))
+$(call add-def-cond, VRG_COUNTRY_CFG_TR57, 1, $(BRCM_VOICE_COUNTRY_TR57))
+$(call add-def-cond, VRG_COUNTRY_CFG_UK, 1, $(BRCM_VOICE_COUNTRY_UK))
+
+
+###############################################################################
+#
+#                      SETUP VOIP FEATURE FLAGS
+#
+###############################################################################
+$(call add-def-cond, BRCM_VOICE_ANNOUNCEMENT_SUPPORT, 1, $(BRCM_VOICE_ANNOUNCEMENT))
+$(call add-def-cond, BRCM_VOICE_HALCAP_NETWORK_SUPPORT, 1, $(BRCM_VOICE_HALCAP_NETWORK_SUPPORT))
+$(call add-def-cond, BRCM_VOICE_LOW_POWER_IDLE, 1, $(BRCM_VOICE_LOW_POWER_IDLE))
+$(call add-def, BRCM_VOICE_RECORDING_SUPPORT, $(BRCM_VOICE_RECORDING))
+$(call add-def, BRCM_VOICE_SRTP_SUPPORT, $(BRCM_VOICE_SRTP_SUPPORT))
+$(call add-def, BRCM_SIP_TLS_SUPPORT, $(BRCM_SIP_TLS_SUPPORT))
+$(call add-def-cond, VOICE_IPV6_SUPPORT, 1, $(BUILD_IPV6))
+
+###############################################################################
+#
+#                        VOIP EXTRA/DEBUG OPTIONS
+#
+###############################################################################
+$(call add-def-cond, BRCM_VOICE_DPLL_LOCK_WAIT, 1, $(BRCM_VOICE_DPLL_LOCK_WAIT))
+$(call add-def-cond, BRCM_VOICE_DSPHAL_CAPTURE, 1, $(BRCM_VOICE_DSPHAL_CAPTURE))
+$(call add-def-cond, BRCM_VOICE_DSPHAL_EGRESS_1KHZ_TONE, 1, $(BRCM_VOICE_DSPHAL_EGRESS_1KHZ_TONE))
+$(call add-def-cond, BRCM_VOICE_DSPHAL_INGRESS_1KHZ_TONE, 1, $(BRCM_VOICE_DSPHAL_INGRESS_1KHZ_TONE))
+$(call add-def-cond, BRCM_VOICE_SLICSLAC_DEBUG, 1, $(BRCM_VOICE_SLICSLAC_DEBUG))
+$(call add-extra, -Wtype-limits)
+
+ifeq ($(strip $(BRCM_CHIP)),6838)
+$(call add-def, BRCM_VOICE_APM_CHANNEL_SWAP, 1)
+endif
+
+###############################################################################
+#
+#                 SETUP VOIP DSP CONFIGS AND INCLUDES
+#
+###############################################################################
+ifeq ($(ARCH),arm)
+ifeq ($(strip $(BRCM_VOICE_DSP_CONLY)),)
+$(call add-var, LDX_LOCAL_APP_DIR, ldx_apps/dsl/apps/hausware_libs_gateway_nodist_arm/lib/arm_glibc_risc.arm.armv7.asm)
+else
+$(call add-var, LDX_LOCAL_APP_DIR, ldx_apps/dsl/apps/hausware_libs_gateway_nodist_arm/lib/arm_glibc_risc.arm.armv7.conly)
+endif
+endif
+
+ifeq ($(ARCH),arm64)
+$(call add-var, LDX_LOCAL_APP_DIR, ldx_apps/dsl/apps/hausware_libs_gateway_nodist_arm/lib/arm_glibc_risc.arm.armv7.conly)
+endif
+ifeq ($(ARCH),mips)
+$(call add-var, LDX_LOCAL_APP_DIR, ldx_apps/dsl/apps/hausware_libs_gateway_nodist_flexible/lib/mips_gnu_2_risc.mips.4351.asm)
+endif
+ifeq ($(strip $(DESKTOP_LINUX)),)
+ifeq (,$(strip $(LDX_LOCAL_APP_DIR)))
+$(error Building for unknown architecture '$(ARCH)')
+endif
+endif
+$(call add-var, LDX_APP_DIR, $(VOICE_PATH)/endpt/ldx/$(LDX_LOCAL_APP_DIR))
+$(call add-inc, $(LDX_APP_DIR))
+$(call add-inc, $(VOICE_PATH)/inc)
+
+
+###############################################################################
+#
+#                  SETUP VOIP CMS PROFILE FLAGS
+#
+###############################################################################
+$(call add-def, DMP_TAENDPOINT_1, 1)
+$(call add-def, DMP_ENDPOINT_1, 1)
+$(call add-def, DMP_X_BROADCOM_COM_PSTNENDPOINT_1, 1)
+$(call add-def-cond, DMP_SIPENDPOINT_1, 1, $(BRCM_VOICE_APP_SIP))
+$(call add-def-cond, DMP_X_BROADCOM_COM_NTR_1, 1, $(BRCM_NTR_SUPPORT))
+$(call add-def-cond, DMP_X_BROADCOM_COM_DECTENDPOINT_1, 1, $(BRCM_VOICE_DECT_SUPPORT))
+$(call add-def-cond, DMP_DECT_1, 1, $(BRCM_VOICE_DECT_SUPPORT))
+$(call add-def-cond, DMP_X_BROADCOM_COM_DECTD_1, 1, $(BRCM_VOICE_DECT_SUPPORT))
+$(call add-def-cond, DMP_X_BROADCOM_COM_DECTEEPROM_1, 1, $(BRCM_VOICE_DECT_SUPPORT))
+
+ifeq ($(BUILD_TR104_PROFILES),2)
+$(call add-def, DMP_VOICE_SERVICE_2, 1)
+$(call add-def, DMP_POTS_1, 1)
+$(call add-def, DMP_POTSFXO_1, 1)
+$(call add-def, DMP_POTSFXS_1 , 1)
+$(call add-def, DMP_VOIPPROFILE_1, 1)
+$(call add-def, DMP_CALLCONTROL_1, 1)
+$(call add-def, DMP_SIPCLIENT_1, 1)
+$(call add-def, DMP_CALLINGFEATURES_1, 1)
+else
+ifeq ($(BUILD_TR104_PROFILES),1)
+$(call add-def, DMP_VOICE_SERVICE_1, 1)
+endif
+endif

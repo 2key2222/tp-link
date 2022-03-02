@@ -1,0 +1,10 @@
+/* This file is auto-generated. DO NOT EDIT. */
+#ifndef L2TP_OPTIONS_H
+#define L2TP_OPTIONS_H
+
+#define L2TP_FEATURE_LAC_SUPPORT
+#define L2TP_FEATURE_LAIC_SUPPORT
+#define L2TP_FEATURE_LAOC_SUPPORT
+#define L2TP_FEATURE_RPC_MANAGEMENT
+
+#endif

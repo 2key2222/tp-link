@@ -1,0 +1,50 @@
+Source-Makefile: feeds/iplatform/ustream-ssl/Makefile
+Package: libustream-polarssl
+Version: 2020-06-18-40b563b1ea89dabb2b6cd90644908134a0c8eff2
+Depends:  +libubox +libopenssl +libpolarssl
+Menu-Depends: 
+Provides: 
+Build-Variant: polarssl
+Section: libs
+Category: Libraries
+Title: ustream SSL Library (polarssl)
+Maintainer: OpenWrt Developers Team <openwrt-devel@openwrt.org>
+Source: ustream-ssl-2020-06-18-40b563b1ea89dabb2b6cd90644908134a0c8eff2.tar.gz
+Type: ipkg
+Description: ustream SSL Library (polarssl)
+OpenWrt Developers Team <openwrt-devel@openwrt.org>
+@@
+
+Package: libustream-cyassl
+Version: 2020-06-18-40b563b1ea89dabb2b6cd90644908134a0c8eff2
+Depends:  +libubox +libopenssl +PACKAGE_libustream-cyassl:libcyassl
+Menu-Depends: 
+Provides: 
+Build-Variant: cyassl
+Section: libs
+Category: Libraries
+Title: ustream SSL Library (cyassl)
+Maintainer: OpenWrt Developers Team <openwrt-devel@openwrt.org>
+Source: ustream-ssl-2020-06-18-40b563b1ea89dabb2b6cd90644908134a0c8eff2.tar.gz
+Type: ipkg
+Description: ustream SSL Library (cyassl)
+OpenWrt Developers Team <openwrt-devel@openwrt.org>
+@@
+
+Package: libustream-openssl
+Version: 2020-06-18-40b563b1ea89dabb2b6cd90644908134a0c8eff2
+Depends:  +libubox +libopenssl +PACKAGE_libustream-openssl:libopenssl
+Menu-Depends: 
+Provides: 
+Build-Variant: openssl
+Section: libs
+Category: Libraries
+Title: ustream SSL Library (openssl)
+Maintainer: OpenWrt Developers Team <openwrt-devel@openwrt.org>
+Source: ustream-ssl-2020-06-18-40b563b1ea89dabb2b6cd90644908134a0c8eff2.tar.gz
+Type: ipkg
+Description: ustream SSL Library (openssl)
+OpenWrt Developers Team <openwrt-devel@openwrt.org>
+@@
+
+

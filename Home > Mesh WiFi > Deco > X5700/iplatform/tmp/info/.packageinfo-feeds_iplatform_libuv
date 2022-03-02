@@ -1,0 +1,20 @@
+Source-Makefile: package/feeds/iplatform/libuv/Makefile
+Package: libuv
+Version: 1.9.1-1
+Depends:  +libpthread +librt
+Menu-Depends: 
+Provides: 
+Section: libs
+Category: Libraries
+Title: Cross-platform asychronous I/O library
+Maintainer: OpenWrt Developers Team <openwrt-devel@openwrt.org>
+Source: libuv-v1.9.1.tar.gz
+Type: ipkg
+Description:  libuv is a multi-platform support library with a focus on asynchronous I/O. It
+ was primarily developed for use by Node.js, but it's also used by Luvit, Julia,
+ pyuv, and others.
+https://github.com/libuv/libuv
+OpenWrt Developers Team <openwrt-devel@openwrt.org>
+@@
+
+

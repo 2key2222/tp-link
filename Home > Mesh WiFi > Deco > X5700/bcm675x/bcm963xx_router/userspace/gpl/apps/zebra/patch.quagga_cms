@@ -1,0 +1,54 @@
+ diff -urN  orig_quagga-1.2.4/ripd/rip_main.c  quagga-1.2.4/ripd/rip_main.c
+--- orig_quagga-1.2.4/ripd/rip_main.c	2018-02-20 05:24:55.000000000 +0800
++++ quagga-1.2.4/ripd/rip_main.c	2018-04-25 10:18:05.968033190 +0800
+@@ -37,6 +37,11 @@
+ 
+ #include "ripd/ripd.h"
+ 
++#ifdef BRCM_CMS_BUILD
++#include "cms_msg.h"
++static void *msgHandle=NULL;
++#endif
++
+ /* ripd options. */
+ static struct option longopts[] = 
+ {
+@@ -270,6 +275,11 @@
+ 	}
+     }
+ 
++#ifdef BRCM_CMS_BUILD
++  /* initialize the message pipe with smd */
++  cmsMsg_init(EID_RIPD, &msgHandle);
++#endif
++
+   /* Prepare master thread. */
+   master = thread_master_create ();
+ 
+ diff -urN  orig_quagga-1.2.4/zebra/main.c  quagga-1.2.4/zebra/main.c
+--- orig_quagga-1.2.4/zebra/main.c	2018-02-20 05:24:55.000000000 +0800
++++ quagga-1.2.4/zebra/main.c	2018-04-25 10:18:21.619855668 +0800
+@@ -42,6 +42,11 @@
+ #include "zebra/rtadv.h"
+ #include "zebra/zebra_fpm.h"
+ 
++#ifdef BRCM_CMS_BUILD
++#include "cms_msg.h"
++static void *msgHandle=NULL;
++#endif
++
+ /* Zebra instance */
+ struct zebra_t zebrad =
+ {
+@@ -389,6 +394,11 @@
+ 	}
+     }
+ 
++#ifdef BRCM_CMS_BUILD
++  /* initialize the message pipe with smd */
++  cmsMsg_init(EID_ZEBRA, &msgHandle);
++#endif
++
+   /* Make master thread emulator. */
+   zebrad.master = thread_master_create ();
+ 

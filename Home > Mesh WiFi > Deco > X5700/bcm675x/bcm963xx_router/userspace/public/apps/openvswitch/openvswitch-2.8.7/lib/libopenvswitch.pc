@@ -1,0 +1,11 @@
+prefix=/auto/hudson_new_slave_root/workspace/CommEngine_502L07_Stage_Dorel/opt1/linux/targets/962118GW_OVS_SPDTEST_NOWLAN_DOREL/fs.install
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: libopenvswitch
+Description: Open vSwitch library
+Version: 2.8.7
+Libs: -L${libdir} -lopenvswitch
+Libs.private: -latomic -lpthread -lrt -lm -L/auto/hudson_new_slave_root/workspace/CommEngine_502L07_Stage_Dorel/opt1/linux/userspace/public/apps/openvswitch/../../../private/libs/bcmmcast/ -lbcmmcast
+Cflags: -I${includedir}/openvswitch

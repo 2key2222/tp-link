@@ -1,0 +1,26 @@
+<PUBLISH>
+--- 963138GWV	2018-10-11 15:34:27.698638093 -0700
++++ 963138GWV_EPTAPP	2018-10-11 16:21:33.038707012 -0700
+@@ -306,8 +306,8 @@
+ # Voice/Phone Selection
+ #
+ BRCM_VOICE_SUPPORT=y
+-BRCM_VOICE_APP_SIP=y
+-# BRCM_VOICE_APP_EPTAPP is not set
++# BRCM_VOICE_APP_SIP is not set
++BRCM_VOICE_APP_EPTAPP=y
+ BUILD_DM_TR104_V1=y
+ # BUILD_DM_TR104_V2 is not set
+ BRCM_VOICE_DECT_SUPPORT=y
+@@ -316,6 +316,11 @@
+ # BUILD_BCM_DSP_ALSA_BRIDGE is not set
+ 
+ #
++#     Endpoint Application Configuration Options
++#
++BRCM_VOICE_ANNOUNCEMENT=y
++
++#
+ #     Locale Selection
+ #
+ BRCM_VOICE_COUNTRY_NORTH_AMERICA=y

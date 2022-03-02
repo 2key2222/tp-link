@@ -1,0 +1,111 @@
+#!/usr/bin/env python
+# Check gitlab permission and clone.
+
+import sys
+import os
+import json
+import getpass
+import httplib
+import urllib
+import subprocess
+
+def _tty_input(prompt = ""):
+    with open("/dev/tty", "r+") as tty:
+        tty.write(prompt)
+        tty.flush()
+        line = tty.readline()
+        if not line:
+            raise EOFError
+        if line[-1] == '\n':
+            line = line[:-1]
+        return line
+
+class GitLab:
+    def __init__(self):
+        self.url = "sohoiipf.rd.tp-link.net"
+        self.api_path = "/api/v3/"
+        self.timeout = 3
+        self.private_token_path = os.path.expanduser("~/.gitlab-private-token")
+        self.private_token = None
+        self.private_token = self.get_private_token()
+
+    def request(self, path, data = None):
+        conn = httplib.HTTPConnection(self.url, timeout = self.timeout)
+        method = "GET"
+        params = None
+        headers = {}
+        if data:
+            method = "POST"
+            params = urllib.urlencode(data)
+        if self.private_token:
+            headers["PRIVATE-TOKEN"] = self.private_token
+        conn.request(method, self.api_path + path, params, headers)
+        res = conn.getresponse().read()
+        conn.close()
+        return json.loads(res)
+
+    def get_private_token(self):
+        token = None
+        if os.path.exists(self.private_token_path):
+            with open(self.private_token_path) as f:
+                token = f.readline().strip()
+        if not token:
+            print >>sys.stderr, "Your Gitlab account:"
+            while not token:
+                user = _tty_input("User: ")
+                pwd = getpass.getpass("Password: ")
+                sess = self.request("session", {"login": user, "password": pwd})
+                if "private_token" in sess:
+                    token = sess["private_token"]
+                else:
+                    if "message" in sess:
+                        print >>sys.stderr, sess["message"]
+                    else:
+                        print >>sys.stderr, "Unknown error"
+                    print >>sys.stderr, "Please input again:"
+            with open(self.private_token_path, "w") as f:
+                f.write(token)
+                f.write("\n")
+                f.flush()
+                print >>sys.stderr, "Your private token has been cached at ~/.gitlab-private-token."
+                print >>sys.stderr, "Remove it to login as another user."
+        return token
+
+    def check_permission(self, url):
+        projects = self.request("projects")
+        for project in projects:
+            if url == project["http_url_to_repo"] or url == project["ssh_url_to_repo"]:
+                return True
+        return False
+
+def main(argv):
+    if len(argv) != 4:
+        return 127
+    name = argv[1]
+    url = argv[2]
+    branch = argv[3]
+
+    if os.path.exists(name):
+        return 0
+
+    gitlab = GitLab()
+    if not gitlab.check_permission(url):
+        return 1
+
+    with open(os.devnull, "w") as fnull:
+        while True:
+            rc = subprocess.call(["git", "clone", "-b", branch, url, name], stdout=fnull)
+            if rc == 0:
+                break
+            else:
+                print >>sys.stderr, "Try again? or Ctrl-C to interrupt."
+    return rc
+
+if __name__ == "__main__":
+    try:
+        sys.exit(main(sys.argv))
+    except Exception as e:
+        print >>sys.stderr, "Oooops: " + str(e)
+        sys.exit(255)
+    except KeyboardInterrupt:
+        sys.exit(130)

@@ -1,0 +1,79 @@
+{
+  "app-name": "start_avs",
+  "vendor": "Broadcom Ltd.",
+  "version": "1.0",
+  "description": "Amazon Alexa Demo App",
+  "isPrivileged": 1,
+  "runLevel": 100,
+  "linux":
+  {
+    "resources":
+    {
+      "cpu": {
+          "quota":50,
+      },
+      "memory": {
+          "limit":32000000,
+      },
+      "flash-size": "32MB",
+      "network-setup": {"mode":"Primary"},
+      "devices": [
+          {
+            "allow": true
+          },
+          {
+            "allow": true,
+            "major": 116,
+            "type": "c",
+            "access": "rw"
+          }
+      ]
+    },
+    "devices": [
+      {
+          "path": "/dev/snd/controlC0",
+          "type": "c",
+          "major": 116,
+          "minor": 2
+      },
+      {
+          "path": "/dev/snd/controlC1",
+          "type": "c",
+          "major": 116,
+          "minor": 4
+      },
+      {
+          "path": "/dev/snd/pcmC0D0p",
+          "type": "c",
+          "major": 116,
+          "minor": 3
+      },
+      {
+          "path": "/dev/snd/pcmC1D0c",
+          "type": "c",
+          "major": 116,
+          "minor": 6
+      },
+      {
+          "path": "/dev/snd/pcmC1D0p",
+          "type": "c",
+          "major": 116,
+          "minor": 5
+      },
+      {
+          "path": "/dev/snd/timer",
+          "type": "c",
+          "major": 116,
+          "minor": 33
+      }
+    ]
+  },
+  "config":
+  {
+    "ExposedPorts":"5000/tcp"
+  },
+  "dependency":
+  {
+    "libraries": "sqlite3,crypt,pthread,rt,expat,ffi,dbus-1,gio-2.0,glib-2.0,gmodule-2.0,gobject-2.0,gthread-2.0,z"
+  }
+}

@@ -1,0 +1,35 @@
+diff -upN busybox-1.30.1_vanilla/Makefile busybox-1.30.1/Makefile
+--- busybox-1.30.1_vanilla/Makefile	2019-02-14 22:25:27.000000000 +0800
++++ busybox-1.30.1/Makefile	2019-02-20 12:55:06.095970584 +0800
+@@ -294,7 +294,13 @@ LD		= $(CC) -nostdlib
+ CPP		= $(CC) -E
+ AR		= $(CROSS_COMPILE)ar
+ NM		= $(CROSS_COMPILE)nm
++# brcm begin
++ifneq ($(strip $(DESKTOP_LINUX)),)
++STRIP		= strip
++else
+ STRIP		= $(CROSS_COMPILE)strip
++endif
++# brcm end
+ OBJCOPY		= $(CROSS_COMPILE)objcopy
+ OBJDUMP		= $(CROSS_COMPILE)objdump
+ PKG_CONFIG	?= $(CROSS_COMPILE)pkg-config
+diff -upN busybox-1.30.1_vanilla/Makefile.flags busybox-1.30.1/Makefile.flags
+--- busybox-1.30.1_vanilla/Makefile.flags	2018-12-05 22:44:34.000000000 +0800
++++ busybox-1.30.1/Makefile.flags	2019-02-15 16:51:54.972769015 +0800
+@@ -81,6 +81,14 @@ CFLAGS += $(call cc-option,-fsanitize=le
+ CFLAGS += $(call cc-option,-fsanitize=undefined,)
+ endif
+ 
++# brcm begin
++ifneq ($(strip $(DESKTOP_LINUX)),)
++CFLAGS += -DDESKTOP_LINUX $(BCM_LD_FLAGS)
++LDFLAGS += $(BCM_LD_FLAGS)
++endif
++# brcm end
++
++
+ # If arch/$(ARCH)/Makefile did not override it (with, say, -fPIC)...
+ ARCH_FPIC ?= -fpic
+ ARCH_FPIE ?= -fpie

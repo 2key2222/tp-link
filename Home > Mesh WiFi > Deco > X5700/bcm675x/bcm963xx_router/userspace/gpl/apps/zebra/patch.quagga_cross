@@ -1,0 +1,12 @@
+ diff -urN  orig_quagga-1.2.4/lib/prefix.h  quagga-1.2.4/lib/prefix.h
+--- orig_quagga-1.2.4/lib/prefix.h	2018-02-25 16:48:06.425391420 +0800
++++ quagga-1.2.4/lib/prefix.h	2018-02-25 16:50:04.614618650 +0800
+@@ -44,7 +44,7 @@
+  */
+ struct ethaddr {
+     u_char octet[ETHER_ADDR_LEN];
+-} __packed;
++} __attribute__((packed));
+ 
+ 
+ /*

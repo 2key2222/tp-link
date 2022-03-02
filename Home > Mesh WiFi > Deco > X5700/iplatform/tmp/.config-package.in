@@ -1,0 +1,4616 @@
+menuconfig IMAGEOPT
+	bool "Image configuration"
+	default n
+source "package/*/image-config.in"
+source "package/feeds/*/*/image-config.in"
+menu "Base system"
+
+	config PACKAGE_jsonfilter
+		tristate "jsonfilter................................... OpenWrt JSON filter utility"
+		default y if DEFAULT_jsonfilter
+		default m if ALL
+		select PACKAGE_libjson-c
+		select PACKAGE_libubox
+		help
+		 OpenWrt JSON filter utility
+		 http://git.openwrt.org/?p=project/jsonpath.git
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_libasan
+		tristate "libasan............................................. asan support library"
+		default y if DEFAULT_libasan
+		default m if ALL
+		select PACKAGE_libgcc
+		help
+		 asan support library
+		 http://gcc.gnu.org/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+
+		menu "Configuration"
+			depends on EXTERNAL_TOOLCHAIN && PACKAGE_libasan
+	
+		config LIBASAN_ROOT_DIR
+			string
+			prompt "libasan shared library base directory"
+			depends on EXTERNAL_TOOLCHAIN && PACKAGE_libasan
+			default TOOLCHAIN_ROOT  if !NATIVE_TOOLCHAIN
+			default "/"  if NATIVE_TOOLCHAIN
+	
+		config LIBASAN_FILE_SPEC
+			string
+			prompt "libasan shared library files (use wildcards)"
+			depends on EXTERNAL_TOOLCHAIN && PACKAGE_libasan
+			default "./lib/libasan.so.*"
+	
+		endmenu
+
+	config PACKAGE_libatomic
+		tristate "libatomic......................................... Atomic support library"
+		default y if DEFAULT_libatomic
+		default m if ALL
+		select PACKAGE_libgcc
+		help
+		 Atomic support library
+		 http://gcc.gnu.org/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+
+		menu "Configuration"
+			depends on EXTERNAL_TOOLCHAIN && PACKAGE_libatomic
+	
+		config LIBATOMIC_ROOT_DIR
+			string
+			prompt "libatomic shared library base directory"
+			depends on EXTERNAL_TOOLCHAIN && PACKAGE_libatomic
+			default TOOLCHAIN_ROOT  if !NATIVE_TOOLCHAIN
+			default "/"  if NATIVE_TOOLCHAIN
+	
+		config LIBATOMIC_FILE_SPEC
+			string
+			prompt "libatomic shared library files (use wildcards)"
+			depends on EXTERNAL_TOOLCHAIN && PACKAGE_libatomic
+			default "./lib/libatomic.so.*"
+	
+		endmenu
+
+	config PACKAGE_libc
+		tristate "libc........................................................... C library"
+		default y if DEFAULT_libc
+		default m if ALL
+		select PACKAGE_libgcc
+		help
+		 C library
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+
+		menu "Configuration"
+		depends on EXTERNAL_TOOLCHAIN && PACKAGE_libc
+	
+		config LIBC_ROOT_DIR
+			string
+			prompt "libc shared library base directory"
+			depends on EXTERNAL_TOOLCHAIN && PACKAGE_libc
+			default TOOLCHAIN_ROOT  if !NATIVE_TOOLCHAIN
+			default "/"  if NATIVE_TOOLCHAIN
+	
+		config LIBC_FILE_SPEC
+			string
+			prompt "libc shared library files (use wildcards)"
+			depends on EXTERNAL_TOOLCHAIN && PACKAGE_libc
+			default "./lib/ld{-*.so,-linux*.so.*} ./lib/lib{anl,c,cidn,crypt,dl,m,nsl,nss_dns,nss_files,resolv,util}{-*.so,.so.*}"
+	
+		endmenu
+
+	config PACKAGE_libgcc
+		tristate "libgcc............................................... GCC support library"
+		default y if DEFAULT_libgcc
+		default m if ALL
+		help
+		 GCC support library
+		 http://gcc.gnu.org/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+
+		menu "Configuration"
+			depends on EXTERNAL_TOOLCHAIN && PACKAGE_libgcc
+	
+		config LIBGCC_ROOT_DIR
+			string
+			prompt "libgcc shared library base directory"
+			depends on EXTERNAL_TOOLCHAIN && PACKAGE_libgcc
+			default TOOLCHAIN_ROOT  if !NATIVE_TOOLCHAIN
+			default "/"  if NATIVE_TOOLCHAIN
+	
+		config LIBGCC_FILE_SPEC
+			string
+			prompt "libgcc shared library files (use wildcards)"
+			depends on EXTERNAL_TOOLCHAIN && PACKAGE_libgcc
+			default "./lib/libgcc_s.so.*"
+	
+		endmenu
+
+	config PACKAGE_libgfortran
+		tristate "libgfortran..................................... GFortran support library"
+		default y if DEFAULT_libgfortran
+		default m if ALL
+		depends INSTALL_GFORTRAN
+		help
+		 GFortran support library
+		 http://gcc.gnu.org/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+
+		menu "Configuration"
+			depends on EXTERNAL_TOOLCHAIN && PACKAGE_libgfortran
+	
+		config LIBGFORTRAN_ROOT_DIR
+			string
+			prompt "libgfortran shared library base directory"
+			depends on EXTERNAL_TOOLCHAIN && PACKAGE_libgfortran
+			default TOOLCHAIN_ROOT  if !NATIVE_TOOLCHAIN
+			default "/"  if NATIVE_TOOLCHAIN
+	
+		config LIBGFORTRAN_FILE_SPEC
+			string
+			prompt "libgfortran shared library files (use wildcards)"
+			depends on EXTERNAL_TOOLCHAIN && PACKAGE_libgfortran
+			default "./usr/lib/libgfortran.so.*"
+	
+		endmenu
+
+	config PACKAGE_libpthread
+		tristate "libpthread.......................................... POSIX thread library"
+		default y if DEFAULT_libpthread
+		default m if ALL
+		select PACKAGE_libgcc
+		help
+		 POSIX thread library
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+
+		menu "Configuration"
+		depends on EXTERNAL_TOOLCHAIN && PACKAGE_libpthread
+	
+		config LIBPTHREAD_ROOT_DIR
+			string
+			prompt "libpthread shared library base directory"
+			depends on EXTERNAL_TOOLCHAIN && PACKAGE_libpthread
+			default TOOLCHAIN_ROOT  if !NATIVE_TOOLCHAIN
+			default "/"  if NATIVE_TOOLCHAIN
+	
+		config LIBPTHREAD_FILE_SPEC
+			string
+			prompt "libpthread shared library files (use wildcards)"
+			depends on EXTERNAL_TOOLCHAIN && PACKAGE_libpthread
+			default "./lib/libpthread{-*.so,.so.*}"
+	
+		endmenu
+
+	config PACKAGE_librt
+		tristate "librt................................ POSIX.1b RealTime extension library"
+		default y if DEFAULT_librt
+		default m if ALL
+		select PACKAGE_libpthread
+		help
+		 POSIX.1b RealTime extension library
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+
+		menu "Configuration"
+		depends on EXTERNAL_TOOLCHAIN && PACKAGE_librt
+	
+		config LIBRT_ROOT_DIR
+			string
+			prompt "librt shared library base directory"
+			depends on EXTERNAL_TOOLCHAIN && PACKAGE_librt
+			default TOOLCHAIN_ROOT  if !NATIVE_TOOLCHAIN
+			default "/"  if NATIVE_TOOLCHAIN
+	
+		config LIBRT_FILE_SPEC
+			string
+			prompt "librt shared library files (use wildcards)"
+			depends on EXTERNAL_TOOLCHAIN && PACKAGE_librt
+			default "./lib/librt{-*.so,.so.*}"
+	
+		endmenu
+
+	config PACKAGE_libssp
+		tristate "libssp............................................... GCC support library"
+		default y if DEFAULT_libssp
+		default m if ALL
+		depends SSP_SUPPORT
+		help
+		 GCC support library
+		 http://gcc.gnu.org/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+
+		menu "Configuration"
+			depends on EXTERNAL_TOOLCHAIN && PACKAGE_libssp
+	
+		config LIBSSP_ROOT_DIR
+			string
+			prompt "libssp shared library base directory"
+			depends on EXTERNAL_TOOLCHAIN && PACKAGE_libssp
+			default TOOLCHAIN_ROOT  if !NATIVE_TOOLCHAIN
+			default "/"  if NATIVE_TOOLCHAIN
+	
+		config LIBSSP_FILE_SPEC
+			string
+			prompt "libssp shared library files (use wildcards)"
+			depends on EXTERNAL_TOOLCHAIN && PACKAGE_libssp
+			default "./lib/libssp.so.*"
+	
+		endmenu
+
+	config PACKAGE_libstdcpp
+		tristate "libstdcpp.................................... GNU Standard C++ Library v3"
+		default y if DEFAULT_libstdcpp
+		default m if ALL
+		help
+		 GNU Standard C++ Library v3
+		 http://gcc.gnu.org/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+
+		menu "Configuration"
+		depends on EXTERNAL_TOOLCHAIN && PACKAGE_libstdcpp
+	
+		config LIBSTDCPP_ROOT_DIR
+			string
+			prompt "libstdcpp shared library base directory"
+			depends on EXTERNAL_TOOLCHAIN && PACKAGE_libstdcpp
+			default TOOLCHAIN_ROOT  if !NATIVE_TOOLCHAIN
+			default "/"  if NATIVE_TOOLCHAIN
+	
+		config LIBSTDCPP_FILE_SPEC
+			string
+			prompt "libstdc++ shared library files (use wildcards)"
+			depends on EXTERNAL_TOOLCHAIN && PACKAGE_libstdcpp
+			default "./lib/libstdc++.so.*"
+	
+		endmenu
+
+	config PACKAGE_libthread-db
+		tristate "libthread-db...................... POSIX thread library debugging support"
+		default y if DEFAULT_libthread-db
+		default m if ALL
+		depends !USE_MUSL
+		help
+		 POSIX thread library debugging support
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_libubsan
+		tristate "libubsan........................................... ubsan support library"
+		default y if DEFAULT_libubsan
+		default m if ALL
+		select PACKAGE_libgcc
+		help
+		 ubsan support library
+		 http://gcc.gnu.org/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+
+		menu "Configuration"
+			depends on EXTERNAL_TOOLCHAIN && PACKAGE_libubsan
+	
+		config LIBUBSAN_ROOT_DIR
+			string
+			prompt "libubsan shared library base directory"
+			depends on EXTERNAL_TOOLCHAIN && PACKAGE_libubsan
+			default TOOLCHAIN_ROOT  if !NATIVE_TOOLCHAIN
+			default "/"  if NATIVE_TOOLCHAIN
+	
+		config LIBUBSAN_FILE_SPEC
+			string
+			prompt "libubsan shared library files (use wildcards)"
+			depends on EXTERNAL_TOOLCHAIN && PACKAGE_libubsan
+			default "./lib/libubsan.so.*"
+	
+		endmenu
+
+	config PACKAGE_opkg
+		tristate "opkg...................................... opkg package management system"
+		default y if DEFAULT_opkg
+		default m if ALL
+		select PACKAGE_zlib
+		help
+		 Lightweight package management system
+		   opkg is the opkg Package Management System, for handling
+		   installation and removal of packages on a system. It can
+		   recursively follow dependencies and download all packages
+		   necessary to install a particular package.
+		 
+		   opkg knows how to install both .ipk and .deb packages.
+		 http://wiki.openmoko.org/wiki/Opkg
+		 Jo-Philipp Wich <xm@subsignal.org>
+
+	config PACKAGE_opkg-curl
+		tristate "opkg-curl............. opkg package management system (with curl support)"
+		default y if DEFAULT_opkg-curl
+		default m if ALL
+		select PACKAGE_zlib
+		select PACKAGE_libcurl
+		help
+		 Lightweight package management system
+		   opkg is the opkg Package Management System, for handling
+		   installation and removal of packages on a system. It can
+		   recursively follow dependencies and download all packages
+		   necessary to install a particular package.
+		 
+		   opkg knows how to install both .ipk and .deb packages.
+		 
+		 This is a variant with curl support
+		 http://wiki.openmoko.org/wiki/Opkg
+		 Jo-Philipp Wich <xm@subsignal.org>
+
+endmenu
+
+menu "TP-LINK ibase"
+
+menu "1. Collections"
+	config PACKAGE_luci
+		tristate "luci"
+		default y if DEFAULT_luci
+		default m if ALL
+		select PACKAGE_libiwinfo-lua
+		select PACKAGE_luci-mod-admin-full
+		select PACKAGE_luci-app-firewall
+		select PACKAGE_uhttpd-mod-ubus
+		select PACKAGE_uhttpd
+		select PACKAGE_luci-proto-ppp
+		select PACKAGE_luci-theme-bootstrap
+		help
+		 Standard OpenWrt set including full admin with ppp support and the default OpenWrt theme
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-light
+		tristate "luci-light"
+		default y if DEFAULT_luci-light
+		default m if ALL
+		depends BROKEN
+		select PACKAGE_luci-theme-openwrt
+		select PACKAGE_luci-mod-admin-mini
+		select PACKAGE_uhttpd
+		help
+		 Minimum package set using only admin mini and the standard theme
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-ssl
+		tristate "luci-ssl......................... Standard OpenWrt set with HTTPS support"
+		default y if DEFAULT_luci-ssl
+		default m if ALL
+		select PACKAGE_luci
+		select PACKAGE_libustream-cyassl
+		select PACKAGE_px5g
+		help
+		 Standard OpenWrt set with HTTPS support
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+endmenu
+menu "2. Modules"
+	config PACKAGE_luci-mod-admin-core
+		tristate "luci-mod-admin-core................................... Web UI Core module"
+		default y if DEFAULT_luci-mod-admin-core
+		default m if ALL
+		select PACKAGE_luci-i18n-english
+		select PACKAGE_luci-proto-core
+		select PACKAGE_luci-lib-web
+		help
+		 Web UI Core module
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-mod-admin-full
+		tristate "luci-mod-admin-full. LuCI Administration - full-featured for full control"
+		default y if DEFAULT_luci-mod-admin-full
+		default m if ALL
+		select PACKAGE_luci-mod-admin-core
+		select PACKAGE_luci-lib-ipkg
+		help
+		 LuCI Administration - full-featured for full control
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-mod-admin-mini
+		tristate "luci-mod-admin-mini.... LuCI Essentials - stripped down and user-friendly"
+		default y if DEFAULT_luci-mod-admin-mini
+		default m if ALL
+		depends BROKEN
+		select PACKAGE_luci-mod-admin-core
+		help
+		 LuCI Essentials - stripped down and user-friendly
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-mod-failsafe
+		tristate "luci-mod-failsafe........... LuCI Fail-Safe - Fail-Safe sysupgrade module"
+		default y if DEFAULT_luci-mod-failsafe
+		default m if ALL
+		select PACKAGE_luci-mod-admin-core
+		help
+		 LuCI Fail-Safe - Fail-Safe sysupgrade module
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-mod-freifunk
+		tristate "luci-mod-freifunk................................... LuCI Freifunk module"
+		default y if DEFAULT_luci-mod-freifunk
+		default m if ALL
+		select PACKAGE_luci-mod-admin-full
+		select PACKAGE_freifunk-firewall
+		select PACKAGE_luci-lib-json
+		select PACKAGE_freifunk-common
+		help
+		 LuCI Freifunk module
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-mod-niu
+		tristate "luci-mod-niu............................. NIU - Next Generation Interface"
+		default y if DEFAULT_luci-mod-niu
+		default m if ALL
+		depends BROKEN
+		select PACKAGE_luci-mod-admin-core
+		help
+		 NIU - Next Generation Interface
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-mod-rpc
+		tristate "luci-mod-rpc..................................... LuCI RPC - JSON-RPC API"
+		default y if DEFAULT_luci-mod-rpc
+		default m if ALL
+		select PACKAGE_luci-lib-json
+		help
+		 LuCI RPC - JSON-RPC API
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+endmenu
+menu "3. Applications"
+	config PACKAGE_luci-app-ahcp
+		tristate "luci-app-ahcp..................................... LuCI Support for AHCPd"
+		default y if DEFAULT_luci-app-ahcp
+		default m if ALL
+		select PACKAGE_ahcpd
+		help
+		 LuCI Support for AHCPd
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-app-commands
+		tristate "luci-app-commands.............................. LuCI Shell Command Module"
+		default y if DEFAULT_luci-app-commands
+		default m if ALL
+		help
+		 LuCI Shell Command Module
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-app-ddns
+		tristate "luci-app-ddns........................... Dynamic DNS configuration module"
+		default y if DEFAULT_luci-app-ddns
+		default m if ALL
+		select PACKAGE_ddns-scripts
+		help
+		 Dynamic DNS configuration module
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-app-diag-core
+		tristate "luci-app-diag-core......................... LuCI Diagnostics Tools (Core)"
+		default y if DEFAULT_luci-app-diag-core
+		default m if ALL
+		help
+		 LuCI Diagnostics Tools (Core)
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-app-diag-devinfo
+		tristate "luci-app-diag-devinfo............... LuCI Diagnostics Tools (Device Info)"
+		default y if DEFAULT_luci-app-diag-devinfo
+		default m if ALL
+		select PACKAGE_mac-to-devinfo
+		select PACKAGE_httping
+		select PACKAGE_netdiscover
+		select PACKAGE_smap-to-devinfo
+		select PACKAGE_luci-app-diag-core
+		select PACKAGE_netdiscover-to-devinfo
+		select PACKAGE_smap
+		help
+		 LuCI Diagnostics Tools (Device Info)
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-app-firewall
+		tristate "luci-app-firewall................ Firewall and Portforwarding application"
+		default y if DEFAULT_luci-app-firewall
+		default m if ALL
+		select PACKAGE_firewall
+		help
+		 Firewall and Portforwarding application
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-app-freifunk-diagnostics
+		tristate "luci-app-freifunk-diagnostics"
+		default y if DEFAULT_luci-app-freifunk-diagnostics
+		default m if ALL
+		help
+		 Tools for network diagnosis like traceroute and ping
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-app-freifunk-policyrouting
+		tristate "luci-app-freifunk-policyrouting.......... Policy routing for mesh traffic"
+		default y if DEFAULT_luci-app-freifunk-policyrouting
+		default m if ALL
+		select PACKAGE_freifunk-policyrouting
+		help
+		 Policy routing for mesh traffic
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-app-freifunk-widgets
+		tristate "luci-app-freifunk-widgets............ Widgets for the Freifunk index page"
+		default y if DEFAULT_luci-app-freifunk-widgets
+		default m if ALL
+		select PACKAGE_luci-mod-freifunk
+		help
+		 Widgets for the Freifunk index page
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-app-hd-idle
+		tristate "luci-app-hd-idle......................... Hard Disk Idle Spin-Down module"
+		default y if DEFAULT_luci-app-hd-idle
+		default m if ALL
+		select PACKAGE_hd-idle
+		help
+		 Hard Disk Idle Spin-Down module
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-app-ltqtapi
+		tristate "luci-app-ltqtapi............................................. Lantiq voip"
+		default y if DEFAULT_luci-app-ltqtapi
+		default m if ALL
+		help
+		 Lantiq voip
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-app-meshwizard
+		tristate "luci-app-meshwizard...... Shellscript based wizard to setup mesh networks"
+		default y if DEFAULT_luci-app-meshwizard
+		default m if ALL
+		select PACKAGE_meshwizard if PACKAGE_luci-app-freifunk-meshwizard
+		help
+		 Shellscript based wizard to setup mesh networks
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-app-minidlna
+		tristate "luci-app-minidlna.............................. LuCI Support for miniDLNA"
+		default y if DEFAULT_luci-app-minidlna
+		default m if ALL
+		select PACKAGE_minidlna
+		help
+		 LuCI Support for miniDLNA
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-app-mmc-over-gpio
+		tristate "luci-app-mmc-over-gpio................ MMC-over-GPIO configuration module"
+		default y if DEFAULT_luci-app-mmc-over-gpio
+		default m if ALL
+		select PACKAGE_kmod-mmc-over-gpio
+		help
+		 MMC-over-GPIO configuration module
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-app-multiwan
+		tristate "luci-app-multiwan............ LuCI Support for the OpenWrt MultiWAN agent"
+		default y if DEFAULT_luci-app-multiwan
+		default m if ALL
+		select PACKAGE_multiwan
+		depends PACKAGE_luci-app-firewall
+		help
+		 LuCI Support for the OpenWrt MultiWAN agent
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-app-ntpc
+		tristate "luci-app-ntpc.............. NTP time synchronisation configuration module"
+		default y if DEFAULT_luci-app-ntpc
+		default m if ALL
+		select PACKAGE_ntpclient
+		help
+		 NTP time synchronisation configuration module
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-app-olsr
+		tristate "luci-app-olsr....................... OLSR configuration and status module"
+		default y if DEFAULT_luci-app-olsr
+		default m if ALL
+		select PACKAGE_olsrd-mod-jsoninfo
+		select PACKAGE_luci-lib-luaneightbl
+		select PACKAGE_olsrd
+		help
+		 OLSR configuration and status module
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-app-olsr-services
+		tristate "luci-app-olsr-services"
+		default y if DEFAULT_luci-app-olsr-services
+		default m if ALL
+		select PACKAGE_olsrd-mod-nameservice
+		depends PACKAGE_luci-app-olsr
+		help
+		 Show services announced with the nameservice plugin
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-app-olsr-viz
+		tristate "luci-app-olsr-viz..................................... OLSR Visualisation"
+		default y if DEFAULT_luci-app-olsr-viz
+		default m if ALL
+		depends PACKAGE_luci-app-olsr
+		select PACKAGE_olsrd-mod-txtinfo
+		help
+		 OLSR Visualisation
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-app-openvpn
+		tristate "luci-app-openvpn................................ LuCI Support for OpenVPN"
+		default y if DEFAULT_luci-app-openvpn
+		default m if ALL
+		depends BROKEN
+		select PACKAGE_openvpn
+		help
+		 LuCI Support for OpenVPN
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-app-p2pblock
+		tristate "luci-app-p2pblock.......... LuCI Support for the Freifunk P2P-Block addon"
+		default y if DEFAULT_luci-app-p2pblock
+		default m if ALL
+		select PACKAGE_freifunk-p2pblock
+		depends PACKAGE_luci-app-firewall
+		help
+		 LuCI Support for the Freifunk P2P-Block addon
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-app-p910nd
+		tristate "luci-app-p910nd........................... p910nd - Printer server module"
+		default y if DEFAULT_luci-app-p910nd
+		default m if ALL
+		select PACKAGE_p910nd
+		help
+		 p910nd - Printer server module
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-app-pbx
+		tristate "luci-app-pbx..................................... LuCI PBX Administration"
+		default y if DEFAULT_luci-app-pbx
+		default m if ALL
+		select PACKAGE_asterisk18-res-crypto
+		select PACKAGE_asterisk18-func-channel
+		select PACKAGE_asterisk18-app-system
+		select PACKAGE_asterisk18
+		select PACKAGE_asterisk18-app-authenticate
+		select PACKAGE_asterisk18-res-clioriginate
+		select PACKAGE_asterisk18-codec-a-mu
+		select PACKAGE_asterisk18-app-record
+		select PACKAGE_asterisk18-chan-local
+		select PACKAGE_asterisk18-func-cut
+		select PACKAGE_asterisk18-chan-gtalk
+		select PACKAGE_asterisk18-app-disa
+		select PACKAGE_asterisk18-app-setcallerid
+		select PACKAGE_asterisk18-codec-alaw
+		select PACKAGE_asterisk18-app-senddtmf
+		help
+		 LuCI PBX Administration
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-app-pbx-voicemail
+		tristate "luci-app-pbx-voicemail......... LuCI PBX Administration Voicemail Support"
+		default y if DEFAULT_luci-app-pbx-voicemail
+		default m if ALL
+		select PACKAGE_msmtp
+		depends PACKAGE_luci-app-pbx
+		select PACKAGE_coreutils-base64
+		help
+		 LuCI PBX Administration Voicemail Support
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-app-polipo
+		tristate "luci-app-polipo........................ LuCI Support for the Polipo Proxy"
+		default y if DEFAULT_luci-app-polipo
+		default m if ALL
+		select PACKAGE_polipo
+		help
+		 LuCI Support for the Polipo Proxy
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-app-qos
+		tristate "luci-app-qos..................... Quality of Service configuration module"
+		default y if DEFAULT_luci-app-qos
+		default m if ALL
+		select PACKAGE_qos-scripts
+		help
+		 Quality of Service configuration module
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-app-radvd
+		tristate "luci-app-radvd.................................... LuCI Support for Radvd"
+		default y if DEFAULT_luci-app-radvd
+		default m if ALL
+		select PACKAGE_radvd
+		help
+		 LuCI Support for Radvd
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-app-samba
+		tristate "luci-app-samba.................... Network Shares - Samba SMB/CIFS module"
+		default y if DEFAULT_luci-app-samba
+		default m if ALL
+		select PACKAGE_samba36-server
+		help
+		 Network Shares - Samba SMB/CIFS module
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-app-siitwizard
+		tristate "luci-app-siitwizard............. SIIT IPv4-over-IPv6 configuration wizard"
+		default y if DEFAULT_luci-app-siitwizard
+		default m if ALL
+		select PACKAGE_kmod-siit
+		help
+		 SIIT IPv4-over-IPv6 configuration wizard
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-app-splash
+		tristate "luci-app-splash......................... Freifunk DHCP-Splash application"
+		default y if DEFAULT_luci-app-splash
+		default m if ALL
+		select PACKAGE_tc
+		select PACKAGE_luci-lib-nixio
+		depends PACKAGE_iptables
+		select PACKAGE_kmod-sched
+		select PACKAGE_iptables-mod-ipopt
+		select PACKAGE_iptables-mod-nat-extra
+		help
+		 Freifunk DHCP-Splash application
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-app-statistics
+		tristate "luci-app-statistics.......................... LuCI Statistics Application"
+		default y if DEFAULT_luci-app-statistics
+		default m if ALL
+		select PACKAGE_collectd-mod-iwinfo
+		select PACKAGE_collectd-mod-load
+		select PACKAGE_collectd
+		select PACKAGE_collectd-mod-rrdtool
+		select PACKAGE_rrdtool1
+		select PACKAGE_collectd-mod-interface
+		help
+		 LuCI Statistics Application
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-app-tinyproxy
+		tristate "luci-app-tinyproxy............... Tinyproxy - HTTP(S)-Proxy configuration"
+		default y if DEFAULT_luci-app-tinyproxy
+		default m if ALL
+		select PACKAGE_tinyproxy
+		help
+		 Tinyproxy - HTTP(S)-Proxy configuration
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-app-transmission
+		tristate "luci-app-transmission...................... LuCI Support for Transmission"
+		default y if DEFAULT_luci-app-transmission
+		default m if ALL
+		select PACKAGE_transmission-daemon
+		help
+		 LuCI Support for Transmission
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-app-upnp
+		tristate "luci-app-upnp................. Universal Plug & Play configuration module"
+		default y if DEFAULT_luci-app-upnp
+		default m if ALL
+		select PACKAGE_miniupnpd
+		help
+		 Universal Plug & Play configuration module
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-app-ushare
+		tristate "luci-app-ushare.................... uShare - UPnP A/V & DLNA Media Server"
+		default y if DEFAULT_luci-app-ushare
+		default m if ALL
+		select PACKAGE_ushare
+		help
+		 uShare - UPnP A/V & DLNA Media Server
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-app-vnstat
+		tristate "luci-app-vnstat.................................. LuCI Support for VnStat"
+		default y if DEFAULT_luci-app-vnstat
+		default m if ALL
+		select PACKAGE_vnstati
+		select PACKAGE_vnstat
+		help
+		 LuCI Support for VnStat
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-app-voice-core
+		tristate "luci-app-voice-core........................... LuCI Voice Software (Core)"
+		default y if DEFAULT_luci-app-voice-core
+		default m if ALL
+		help
+		 LuCI Voice Software (Core)
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-app-voice-diag
+		tristate "luci-app-voice-diag.................... LuCI Voice Software (Diagnostics)"
+		default y if DEFAULT_luci-app-voice-diag
+		default m if ALL
+		depends PACKAGE_luci-app-diag-devinfo
+		help
+		 LuCI Voice Software (Diagnostics)
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-app-watchcat
+		tristate "luci-app-watchcat.............................. LuCI Support for Watchcat"
+		default y if DEFAULT_luci-app-watchcat
+		default m if ALL
+		select PACKAGE_watchcat
+		help
+		 LuCI Support for Watchcat
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-app-wol
+		tristate "luci-app-wol................................ LuCI Support for Wake-on-LAN"
+		default y if DEFAULT_luci-app-wol
+		default m if ALL
+		select PACKAGE_etherwake
+		help
+		 LuCI Support for Wake-on-LAN
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-app-wshaper
+		tristate "luci-app-wshaper................................ LuCI Support for wshaper"
+		default y if DEFAULT_luci-app-wshaper
+		default m if ALL
+		select PACKAGE_wshaper
+		help
+		 LuCI Support for wshaper
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+endmenu
+menu "4. Themes"
+	config PACKAGE_luci-theme-base
+		tristate "luci-theme-base............................... Common base for all themes"
+		default y if DEFAULT_luci-theme-base
+		default m if ALL
+		help
+		 Common base for all themes
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-theme-bootstrap
+		tristate "luci-theme-bootstrap........................... Bootstrap Theme (default)"
+		default y if DEFAULT_luci-theme-bootstrap
+		default PACKAGE_luci-lib-core
+		select PACKAGE_luci-theme-base
+		help
+		 Bootstrap Theme (default)
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-theme-freifunk-bno
+		tristate "luci-theme-freifunk-bno.................... Freifunk Berlin Nordost Theme"
+		default y if DEFAULT_luci-theme-freifunk-bno
+		default m if ALL
+		select PACKAGE_luci-theme-base
+		help
+		 Freifunk Berlin Nordost Theme
+		 http://luci.subsignal.org/
+		 Stefan Pirwitz <stefan-at-freifunk-bno-dot-de>
+
+	config PACKAGE_luci-theme-freifunk-generic
+		tristate "luci-theme-freifunk-generic....................... Freifunk Generic Theme"
+		default y if DEFAULT_luci-theme-freifunk-generic
+		default m if ALL
+		select PACKAGE_luci-theme-base
+		help
+		 Freifunk Generic Theme
+		 http://luci.subsignal.org/
+		 Manuel Munz <freifunk-at-somakoma-dot-de>
+
+	config PACKAGE_luci-theme-openwrt
+		tristate "luci-theme-openwrt........................................... OpenWrt.org"
+		default y if DEFAULT_luci-theme-openwrt
+		default m if ALL
+		select PACKAGE_luci-theme-base
+		help
+		 OpenWrt.org
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+endmenu
+menu "5. Translations"
+	config PACKAGE_luci-i18n-catalan
+		tristate "luci-i18n-catalan.............................. Catalan (by Eduard Duran)"
+		default y if DEFAULT_luci-i18n-catalan
+		default m if ALL
+		help
+		 Catalan (by Eduard Duran)
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-i18n-chinese
+		tristate "luci-i18n-chinese....................... Chinese (by Chinese Translators)"
+		default y if DEFAULT_luci-i18n-chinese
+		default m if ALL
+		help
+		 Chinese (by Chinese Translators)
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-i18n-english
+		tristate "luci-i18n-english................................................ English"
+		default y if DEFAULT_luci-i18n-english
+		default m if ALL
+		help
+		 English
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-i18n-french
+		tristate "luci-i18n-french............................ French (by Florian Fainelli)"
+		default y if DEFAULT_luci-i18n-french
+		default m if ALL
+		help
+		 French (by Florian Fainelli)
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-i18n-german
+		tristate "luci-i18n-german.................................................. German"
+		default y if DEFAULT_luci-i18n-german
+		default m if ALL
+		help
+		 German
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-i18n-greek
+		tristate "luci-i18n-greek.......................... Greek (by Vasilis Tsiligiannis)"
+		default y if DEFAULT_luci-i18n-greek
+		default m if ALL
+		help
+		 Greek (by Vasilis Tsiligiannis)
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-i18n-hebrew
+		tristate "luci-i18n-hebrew.................................................. Hebrew"
+		default y if DEFAULT_luci-i18n-hebrew
+		default m if ALL
+		help
+		 Hebrew
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-i18n-hungarian
+		tristate "luci-i18n-hungarian............................................ Hungarian"
+		default y if DEFAULT_luci-i18n-hungarian
+		default m if ALL
+		help
+		 Hungarian
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-i18n-italian
+		tristate "luci-i18n-italian.............................. Italian (by Matteo Croce)"
+		default y if DEFAULT_luci-i18n-italian
+		default m if ALL
+		help
+		 Italian (by Matteo Croce)
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-i18n-japanese
+		tristate "luci-i18n-japanese.......................... Japanese (by Tsukasa Hamano)"
+		default y if DEFAULT_luci-i18n-japanese
+		default m if ALL
+		help
+		 Japanese (by Tsukasa Hamano)
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-i18n-malay
+		tristate "luci-i18n-malay................................. Malay (by Teow Wai Chet)"
+		default y if DEFAULT_luci-i18n-malay
+		default m if ALL
+		help
+		 Malay (by Teow Wai Chet)
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-i18n-norwegian
+		tristate "luci-i18n-norwegian............................ Norwegian (by Lars Hardy)"
+		default y if DEFAULT_luci-i18n-norwegian
+		default m if ALL
+		help
+		 Norwegian (by Lars Hardy)
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-i18n-polish
+		tristate "luci-i18n-polish.................................................. Polish"
+		default y if DEFAULT_luci-i18n-polish
+		default m if ALL
+		help
+		 Polish
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-i18n-portuguese
+		tristate "luci-i18n-portuguese....................... Portuguese (by Jose Monteiro)"
+		default y if DEFAULT_luci-i18n-portuguese
+		default m if ALL
+		help
+		 Portuguese (by Jose Monteiro)
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-i18n-portuguese-brazilian
+		tristate "luci-i18n-portuguese-brazilian"
+		default y if DEFAULT_luci-i18n-portuguese-brazilian
+		default m if ALL
+		help
+		 Portuguese (Brazilian) (by Carlos Cesario)
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-i18n-romanian
+		tristate "luci-i18n-romanian.............................................. Romanian"
+		default y if DEFAULT_luci-i18n-romanian
+		default m if ALL
+		help
+		 Romanian
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-i18n-russian
+		tristate "luci-i18n-russian........................... Russian (by Skryabin Dmitry)"
+		default y if DEFAULT_luci-i18n-russian
+		default m if ALL
+		help
+		 Russian (by Skryabin Dmitry)
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-i18n-spanish
+		tristate "luci-i18n-spanish.................. Spanish (by Guillermo Javier Nardoni)"
+		default y if DEFAULT_luci-i18n-spanish
+		default m if ALL
+		help
+		 Spanish (by Guillermo Javier Nardoni)
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-i18n-ukrainian
+		tristate "luci-i18n-ukrainian............................................ Ukrainian"
+		default y if DEFAULT_luci-i18n-ukrainian
+		default m if ALL
+		help
+		 Ukrainian
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-i18n-vietnamese
+		tristate "luci-i18n-vietnamese...................... Vietnamese (by Hong Phuc Dang)"
+		default y if DEFAULT_luci-i18n-vietnamese
+		default m if ALL
+		help
+		 Vietnamese (by Hong Phuc Dang)
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+endmenu
+menu "6. Protocols"
+	config PACKAGE_luci-proto-3g
+		tristate "luci-proto-3g............................................. Support for 3G"
+		default y if DEFAULT_luci-proto-3g
+		default m if ALL
+		select PACKAGE_comgt
+		help
+		 Support for 3G
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-proto-core
+		tristate "luci-proto-core............................. Support for static/dhcp/none"
+		default y if DEFAULT_luci-proto-core
+		default m if ALL
+		help
+		 Support for static/dhcp/none
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-proto-ipv6
+		tristate "luci-proto-ipv6................. Support for DHCPv6/6in4/6to4/6rd/DS-Lite"
+		default y if DEFAULT_luci-proto-ipv6
+		default m if ALL
+		help
+		 Support for DHCPv6/6in4/6to4/6rd/DS-Lite
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-proto-ppp
+		tristate "luci-proto-ppp.......................... Support for PPP/PPPoE/PPPoA/PPtP"
+		default y if DEFAULT_luci-proto-ppp
+		default m if ALL
+		help
+		 Support for PPP/PPPoE/PPPoA/PPtP
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-proto-relay
+		tristate "luci-proto-relay....................... Support for relayd pseudo bridges"
+		default y if DEFAULT_luci-proto-relay
+		default m if ALL
+		select PACKAGE_relayd
+		help
+		 Support for relayd pseudo bridges
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+endmenu
+menu "7. Server Interfaces"
+	config PACKAGE_luci-sgi-cgi
+		tristate "luci-sgi-cgi....................... CGI Gateway behind existing Webserver"
+		default y if DEFAULT_luci-sgi-cgi
+		default m if ALL
+		help
+		 CGI Gateway behind existing Webserver
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-sgi-uhttpd
+		tristate "luci-sgi-uhttpd............................ Binding for the uHTTPd server"
+		default y if DEFAULT_luci-sgi-uhttpd
+		default m if ALL
+		select PACKAGE_uhttpd-mod-lua
+		select PACKAGE_uhttpd
+		help
+		 Binding for the uHTTPd server
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+endmenu
+menu "8. Libraries"
+	config PACKAGE_luci-lib-core
+		tristate "luci-lib-core........................................ LuCI core libraries"
+		default y if DEFAULT_luci-lib-core
+		default m if ALL
+		select PACKAGE_libubus-lua
+		select PACKAGE_libuci-lua
+		select PACKAGE_lua
+		help
+		 LuCI core libraries
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+
+	       choice
+	               prompt "Build Target"
+	               default PACKAGE_luci-lib-core_source
+	
+	       config PACKAGE_luci-lib-core_compile
+	               bool "Precompiled"
+	
+	       config PACKAGE_luci-lib-core_stripped
+	               bool "Stripped"
+	
+	       config PACKAGE_luci-lib-core_srcdiet
+	               bool "Compressed Source"
+	
+	       config PACKAGE_luci-lib-core_source
+	               bool "Full Source"
+	
+	       endchoice
+
+	config PACKAGE_luci-lib-fastindex
+		tristate "luci-lib-fastindex............................. Fastindex indexing module"
+		default y if DEFAULT_luci-lib-fastindex
+		default m if ALL
+		select PACKAGE_liblua
+		select PACKAGE_luci-lib-core
+		help
+		 Fastindex indexing module
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-lib-httpclient
+		tristate "luci-lib-httpclient............................... HTTP(S) client library"
+		default y if DEFAULT_luci-lib-httpclient
+		default m if ALL
+		select PACKAGE_luci-lib-core
+		select PACKAGE_luci-lib-web
+		help
+		 HTTP(S) client library
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-lib-ipkg
+		tristate "luci-lib-ipkg.................... LuCI IPKG/OPKG call abstraction library"
+		default y if DEFAULT_luci-lib-ipkg
+		default m if ALL
+		help
+		 LuCI IPKG/OPKG call abstraction library
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-lib-json
+		tristate "luci-lib-json.......................................... LuCI JSON library"
+		default y if DEFAULT_luci-lib-json
+		default m if ALL
+		help
+		 LuCI JSON library
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-lib-luaneightbl
+		tristate "luci-lib-luaneightbl............... neightbl - Lua lib for IPv6 neighbors"
+		default y if DEFAULT_luci-lib-luaneightbl
+		default m if ALL
+		select PACKAGE_luci-lib-core
+		help
+		 neightbl - Lua lib for IPv6 neighbors
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-lib-lucid
+		tristate "luci-lib-lucid................................ LuCId Full-Stack Webserver"
+		default y if DEFAULT_luci-lib-lucid
+		default m if ALL
+		select PACKAGE_luci-lib-web
+		select PACKAGE_luci-lib-px5g
+		select PACKAGE_luci-lib-nixio
+		select PACKAGE_luci-lib-core
+		help
+		 LuCId Full-Stack Webserver
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-lib-lucid-http
+		tristate "luci-lib-lucid-http................................... LuCId HTTP Backend"
+		default y if DEFAULT_luci-lib-lucid-http
+		default m if ALL
+		select PACKAGE_luci-lib-core
+		select PACKAGE_luci-lib-lucid
+		help
+		 LuCId HTTP Backend
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-lib-lucid-rpc
+		tristate "luci-lib-lucid-rpc..................................... LuCId RPC Backend"
+		default y if DEFAULT_luci-lib-lucid-rpc
+		default m if ALL
+		select PACKAGE_luci-lib-lucid
+		select PACKAGE_luci-lib-core
+		help
+		 LuCId RPC Backend
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-lib-nixio
+		tristate "luci-lib-nixio....................................... NIXIO POSIX library"
+		default y if DEFAULT_luci-lib-nixio
+		default m if ALL
+		select PACKAGE_libcyassl if PACKAGE_luci-lib-nixio_cyassl
+		select PACKAGE_libifaddrs if IFADDRS
+		select PACKAGE_luci-lib-core
+		select PACKAGE_libopenssl if PACKAGE_luci-lib-nixio_openssl
+		help
+		 NIXIO POSIX library
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+
+		choice
+			prompt "TLS Provider"
+			default PACKAGE_luci-lib-nixio_notls
+	
+			config PACKAGE_luci-lib-nixio_notls
+				bool "Disabled"
+	
+			config PACKAGE_luci-lib-nixio_axtls
+				bool "Builtin (axTLS)"
+	
+			config PACKAGE_luci-lib-nixio_cyassl
+				bool "CyaSSL"
+				select PACKAGE_libcyassl
+	
+			config PACKAGE_luci-lib-nixio_openssl
+				bool "OpenSSL"
+				select PACKAGE_libopenssl
+		endchoice
+
+	config PACKAGE_luci-lib-px5g
+		tristate "luci-lib-px5g... RSA/X.509 Key Generator (required for LuCId SSL support)"
+		default y if DEFAULT_luci-lib-px5g
+		default m if ALL
+		select PACKAGE_luci-lib-core
+		select PACKAGE_luci-lib-nixio
+		help
+		 RSA/X.509 Key Generator (required for LuCId SSL support)
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-lib-sys
+		tristate "luci-lib-sys............................. LuCI Linux/POSIX system library"
+		default y if DEFAULT_luci-lib-sys
+		default m if ALL
+		help
+		 LuCI Linux/POSIX system library
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+	config PACKAGE_luci-lib-web
+		tristate "luci-lib-web............................................ MVC Webframework"
+		default y if DEFAULT_luci-lib-web
+		default m if ALL
+		select PACKAGE_luci-lib-nixio
+		select PACKAGE_luci-lib-core
+		select PACKAGE_luci-lib-sys
+		select PACKAGE_luci-sgi-cgi
+		help
+		 MVC Webframework
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+endmenu
+menu "9. Freifunk"
+	config PACKAGE_luci-mod-freifunk-community
+		tristate "luci-mod-freifunk-community.............. Freifunk Community Meta-Package"
+		default y if DEFAULT_luci-mod-freifunk-community
+		default m if ALL
+		select PACKAGE_freifunk-watchdog
+		select PACKAGE_freifunk-mapupdate
+		select PACKAGE_kmod-tun
+		select PACKAGE_ip
+		select PACKAGE_luci-i18n-german
+		select PACKAGE_olsrd-mod-dyn-gw-plain
+		select PACKAGE_olsrd
+		select PACKAGE_olsrd-mod-nameservice
+		select PACKAGE_luci-app-splash
+		select PACKAGE_luci-lib-web
+		select PACKAGE_olsrd-mod-watchdog
+		select PACKAGE_olsrd-mod-jsoninfo
+		select PACKAGE_luci-app-olsr
+		select PACKAGE_freifunk-gwcheck
+		select PACKAGE_luci-app-olsr-services
+		depends PACKAGE_iptables
+		help
+		 Freifunk Community Meta-Package
+		 http://luci.subsignal.org/
+		 LuCI Development Team <luci@lists.subsignal.org>
+
+endmenu
+menu "Lua"
+	config PACKAGE_liblua
+		tristate "liblua.............................. Lua programming language (libraries)"
+		default y if DEFAULT_liblua
+		default m if ALL
+		help
+		 Lua is a powerful light-weight programming language designed for extending 
+		  applications. Lua is also frequently used as a general-purpose, stand-alone 
+		  language. Lua is free software.
+		  This package contains the Lua shared libraries, needed by other programs.
+		 http://www.lua.org/
+		 Jo-Philipp Wich <jow@openwrt.org>
+
+	config PACKAGE_lua
+		tristate "lua............................... Lua programming language (interpreter)"
+		default y if DEFAULT_lua
+		default m if ALL
+		select PACKAGE_liblua
+		help
+		 Lua is a powerful light-weight programming language designed for extending 
+		  applications. Lua is also frequently used as a general-purpose, stand-alone 
+		  language. Lua is free software.
+		  This package contains the Lua language interpreter.
+		 http://www.lua.org/
+		 Jo-Philipp Wich <jow@openwrt.org>
+
+	config PACKAGE_lua-examples
+		tristate "lua-examples......................... Lua programming language (examples)"
+		default y if DEFAULT_lua-examples
+		default m if ALL
+		depends PACKAGE_lua
+		help
+		 Lua is a powerful light-weight programming language designed for extending 
+		  applications. Lua is also frequently used as a general-purpose, stand-alone 
+		  language. Lua is free software.
+		  This package contains Lua language examples.
+		 http://www.lua.org/
+		 Jo-Philipp Wich <jow@openwrt.org>
+
+	config PACKAGE_luac
+		tristate "luac................................. Lua programming language (compiler)"
+		default y if DEFAULT_luac
+		default m if ALL
+		select PACKAGE_liblua
+		help
+		 Lua is a powerful light-weight programming language designed for extending 
+		  applications. Lua is also frequently used as a general-purpose, stand-alone 
+		  language. Lua is free software.
+		  This package contains the Lua language compiler.
+		 http://www.lua.org/
+		 Jo-Philipp Wich <jow@openwrt.org>
+
+endmenu
+menu "Web Servers/Proxies"
+	config PACKAGE_uhttpd
+		tristate "uhttpd........................ uHTTPd - tiny, single threaded HTTP server"
+		default y if DEFAULT_uhttpd
+		default m if ALL
+		select PACKAGE_libblobmsg-json
+		select PACKAGE_libjson-script
+		select PACKAGE_libubox
+		help
+		 uHTTPd is a tiny single threaded HTTP server with TLS, CGI and Lua
+		  support. It is intended as a drop-in replacement for the Busybox
+		  HTTP daemon.
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+
+	  config PACKAGE_uhttpd_debug
+	    bool "Build with debug messages"
+	    default n
+
+	config PACKAGE_uhttpd-mod-lua
+		tristate "uhttpd-mod-lua... uHTTPd - tiny, single threaded HTTP server (Lua plugin)"
+		default y if DEFAULT_uhttpd-mod-lua
+		default m if ALL
+		depends PACKAGE_uhttpd
+		select PACKAGE_liblua
+		help
+		 The Lua plugin adds a CGI-like Lua runtime interface to uHTTPd.
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_uhttpd-mod-tls
+		tristate "uhttpd-mod-tls... uHTTPd - tiny, single threaded HTTP server (TLS plugin)"
+		default y if DEFAULT_uhttpd-mod-tls
+		default m if ALL
+		select PACKAGE_libustream-cyassl if PACKAGE_uhttpd-mod-tls_cyassl
+		depends PACKAGE_uhttpd
+		select PACKAGE_libustream-openssl if PACKAGE_uhttpd-mod-tls_openssl
+		select PACKAGE_libustream-polarssl if PACKAGE_uhttpd-mod-tls_polarssl
+		help
+		 The TLS plugin adds HTTPS support to uHTTPd.
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+
+	  choice
+	    depends on PACKAGE_uhttpd-mod-tls
+	    prompt "TLS Provider"
+	    default PACKAGE_uhttpd-mod-tls_polarssl
+	
+	    config PACKAGE_uhttpd-mod-tls_polarssl
+	      bool "PolarSSL"
+	
+	    config PACKAGE_uhttpd-mod-tls_cyassl
+	      bool "CyaSSL"
+	
+	    config PACKAGE_uhttpd-mod-tls_openssl
+	      bool "OpenSSL"
+	  endchoice
+
+	config PACKAGE_uhttpd-mod-ubus
+		tristate "uhttpd-mod-ubus. uHTTPd - tiny, single threaded HTTP server (ubus plugin)"
+		default y if DEFAULT_uhttpd-mod-ubus
+		default m if ALL
+		depends PACKAGE_uhttpd
+		select PACKAGE_libubus
+		select PACKAGE_libblobmsg-json
+		help
+		 The ubus plugin adds a HTTP/JSON RPC proxy for ubus and publishes the
+		  session.* namespace and procedures.
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+endmenu
+	config PACKAGE_jshn
+		tristate "jshn................................................. JSON SHell Notation"
+		default y if DEFAULT_jshn
+		default m if ALL
+		select PACKAGE_libjson-c
+		select PACKAGE_libblobmsg-json
+		select PACKAGE_libubox
+		help
+		 Library for parsing and generating JSON from shell scripts
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_libblobmsg-json
+		tristate "libblobmsg-json...................... blobmsg <-> json conversion library"
+		default y if DEFAULT_libblobmsg-json
+		default m if ALL
+		select PACKAGE_libubox
+		select PACKAGE_libjson-c
+		help
+		 blobmsg <-> json conversion library
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_libjson-script
+		tristate "libjson-script.................. Minimalistic JSON based scripting engine"
+		default y if DEFAULT_libjson-script
+		default m if ALL
+		select PACKAGE_libubox
+		help
+		 Minimalistic JSON based scripting engine
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_libosmsg
+		tristate "libosmsg............................................. unix socket library"
+		default y if DEFAULT_libosmsg
+		default m if ALL
+		help
+		 Library for unix socket
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_libubox
+		tristate "libubox............................................ Basic utility library"
+		default y if DEFAULT_libubox
+		default m if ALL
+		help
+		 Basic utility library
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_libubus
+		tristate "libubus....................................... OpenWrt RPC client library"
+		default y if DEFAULT_libubus
+		default m if ALL
+		select PACKAGE_libubox
+		help
+		 OpenWrt RPC client library
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_libubus-lua
+		tristate "libubus-lua....................... Lua binding for the OpenWrt RPC client"
+		default y if DEFAULT_libubus-lua
+		default m if ALL
+		select PACKAGE_libubus
+		select PACKAGE_liblua
+		help
+		 Lua binding for the OpenWrt RPC client
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_libuci
+		tristate "libuci........... C library for the Unified Configuration Interface (UCI)"
+		default y if DEFAULT_libuci
+		default m if ALL
+		select PACKAGE_libubox
+		help
+		 C library for the Unified Configuration Interface (UCI)
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_libuci-lua
+		tristate "libuci-lua............................................ Lua plugin for UCI"
+		default y if DEFAULT_libuci-lua
+		default m if ALL
+		select PACKAGE_libuci
+		select PACKAGE_liblua
+		help
+		 Lua plugin for UCI
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_ubus
+		tristate "ubus.......................................... OpenWrt RPC client utility"
+		default y if DEFAULT_ubus
+		default m if ALL
+		select PACKAGE_libubus
+		select PACKAGE_libblobmsg-json
+		select PACKAGE_ubusd
+		help
+		 OpenWrt RPC client utility
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_ubusd
+		tristate "ubusd................................................. OpenWrt RPC daemon"
+		default y if DEFAULT_ubusd
+		default m if ALL
+		select PACKAGE_libubox
+		help
+		 OpenWrt RPC daemon
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_uci
+		tristate "uci................ Utility for the Unified Configuration Interface (UCI)"
+		default y if DEFAULT_uci
+		default m if ALL
+		select PACKAGE_libuci
+		help
+		 Utility for the Unified Configuration Interface (UCI)
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+endmenu
+
+menu "Utilities"
+
+menu "Filesystem"
+	config PACKAGE_sysfsutils
+		tristate "sysfsutils............................... System Utilities Based on Sysfs"
+		default y if DEFAULT_sysfsutils
+		default m if ALL
+		select PACKAGE_libsysfs
+		help
+		 A utility built upon libsysfs that lists devices by bus, class, and topology.
+		 http://linux-diag.sourceforge.net/Sysfsutils.html
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+endmenu
+	config PACKAGE_iconv
+		tristate "iconv................................... Character set conversion utility"
+		default y if DEFAULT_iconv
+		default m if ALL
+		select PACKAGE_libcharset
+		select PACKAGE_libiconv-full
+		help
+		 Character set conversion utility
+		 http://www.gnu.org/software/libiconv/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_iwinfo
+		tristate "iwinfo.......................... Generalized Wireless Information utility"
+		default y if DEFAULT_iwinfo
+		default m if ALL
+		select PACKAGE_libiwinfo
+		help
+		 Command line frontend for the wireless information library.
+		 Jo-Philipp Wich <xm@subsignal.org>
+
+	config PACKAGE_ldconfig
+		tristate "ldconfig............................... Shared library path configuration"
+		default y if DEFAULT_ldconfig
+		default m if ALL
+		depends !USE_MUSL
+		help
+		 Shared library path configuration
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+
+		menu "Configuration"
+			depends on EXTERNAL_TOOLCHAIN && PACKAGE_ldconfig
+	
+		config LDCONFIG_ROOT_DIR
+			string
+			prompt "ldconfig base directory"
+			depends on EXTERNAL_TOOLCHAIN && PACKAGE_ldconfig
+			default TOOLCHAIN_ROOT  if !NATIVE_TOOLCHAIN
+			default "/"  if NATIVE_TOOLCHAIN
+	
+		config LDCONFIG_FILE_SPEC
+			string
+			prompt "ldconfig file"
+			depends on EXTERNAL_TOOLCHAIN && PACKAGE_ldconfig
+			default "./sbin/ldconfig"
+	
+		endmenu
+
+	config PACKAGE_ldd
+		tristate "ldd.................................................... LDD trace utility"
+		default y if DEFAULT_ldd
+		default m if ALL
+		depends !USE_MUSL
+		help
+		 LDD trace utility
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+
+		menu "Configuration"
+			depends on EXTERNAL_TOOLCHAIN && PACKAGE_ldd
+	
+		config LDD_ROOT_DIR
+			string
+			prompt "ldd trace utility base directory"
+			depends on EXTERNAL_TOOLCHAIN && PACKAGE_ldd
+			default TOOLCHAIN_ROOT  if !NATIVE_TOOLCHAIN
+			default "/"  if NATIVE_TOOLCHAIN
+	
+		config LDD_FILE_SPEC
+			string
+			prompt "ldd trace utility file"
+			depends on EXTERNAL_TOOLCHAIN && PACKAGE_ldd
+			default "./usr/bin/ldd"
+	
+		endmenu
+
+	config PACKAGE_mbedtls-util
+		tristate "mbedtls-util.................................... Embedded SSL (utilities)"
+		default y if DEFAULT_mbedtls-util
+		default m if ALL
+		select PACKAGE_libmbedtls
+		help
+		 The aim of the mbedtls project is to provide a quality, open-source
+		 cryptographic library written in C and targeted at embedded systems.
+		 This package contains mbedtls helper programs for private key and
+		 CSR generation (gen_key, cert_req)
+		 https://tls.mbed.org
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_ocf-crypto-headers
+		tristate "ocf-crypto-headers............................ OCF-Linux cryptodev header"
+		default y if DEFAULT_ocf-crypto-headers
+		default m if ALL
+		help
+		 OCF-Linux cryptodev header
+		 http://ocf-linux.sourceforge.net/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_px5g
+		tristate "px5g.............................. Standalone X.509 certificate generator"
+		default y if DEFAULT_px5g
+		default m if ALL
+		help
+		 Px5g is a tiny standalone X.509 certificate generator.
+		  It suitable to create key files and certificates in DER
+		  and PEM format for use with stunnel, uhttpd and others.
+		 Jo-Philipp Wich <xm@subsignal.org>
+
+endmenu
+
+menu "Languages"
+
+menu "Lua"
+	config PACKAGE_libiwinfo-lua
+		tristate "libiwinfo-lua...................................... libiwinfo Lua binding"
+		default y if DEFAULT_libiwinfo-lua
+		default m if ALL
+		select PACKAGE_lua
+		select PACKAGE_libiwinfo
+		select PACKAGE_liblua
+		help
+		 This is the Lua binding for the iwinfo library. It provides access to all enabled
+		   backends.
+		 Jo-Philipp Wich <xm@subsignal.org>
+
+endmenu
+endmenu
+
+menu "TP-LINK iplatform apps"
+
+menu "Base system"
+	config PACKAGE_resolveip
+		tristate "resolveip.................. Simple DNS resolver with configurable timeout"
+		default y if DEFAULT_resolveip
+		default m if ALL
+		help
+		 This package contains the small resolveip utility which
+		  can be used by scripts to turn host names into numeric
+		  IP addresses. It supports IPv4 and IPv6 resolving and
+		  has a configurable timeout to guarantee a certain maximum
+		  runtime in case of slow or defunct DNS servers.
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+endmenu
+menu "Debug"
+	config PACKAGE_strace
+		tristate "strace................................................ System call tracer"
+		default y if DEFAULT_strace
+		default m if ALL
+		help
+		 A useful diagnostic, instructional, and debugging tool. Allows you to track what
+		 system calls a program makes while it is running.
+		 http://strace.sourceforge.net/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_sysstat
+		tristate "sysstat............................. Sysstat performance monitoring tools"
+		default y if DEFAULT_sysstat
+		default m if ALL
+		help
+		 The sysstat utilities are a collection of performance monitoring tools for
+		   Linux. These include sar, sadf, mpstat, iostat, pidstat and sa tools.
+		 http://pagesperso-orange.fr/sebastien.godard/index.html
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+endmenu
+menu "Firewall"
+	config PACKAGE_conntrack-tools
+		tristate "conntrack-tools...................... Connection tracking userspace tools"
+		default y if DEFAULT_conntrack-tools
+		default m if ALL
+		select PACKAGE_libnetfilter-queue
+		select PACKAGE_libnetfilter-conntrack
+		select PACKAGE_libnetfilter-cttimeout
+		select PACKAGE_libnetfilter-cthelper
+		help
+		 The conntrack-tools are a set of free software userspace tools for Linux
+		  that allow system administrators interact with the Connection Tracking
+		  System, which is the module that provides stateful packet inspection for
+		  iptables. The conntrack-tools are the userspace daemon conntrackd and the
+		  command line interface conntrack.
+		 http://conntrack-tools.netfilter.org/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_conntrack-tools-1-0
+		tristate "conntrack-tools-1-0.................. Connection tracking userspace tools"
+		default y if DEFAULT_conntrack-tools-1-0
+		default m if ALL
+		select PACKAGE_libnetfilter-conntrack
+		help
+		 The conntrack-tools are a set of free software userspace tools for Linux
+		  that allow system administrators interact with the Connection Tracking
+		  System, which is the module that provides stateful packet inspection for
+		  iptables. The conntrack-tools are the userspace daemon conntrackd and the
+		  command line interface conntrack.
+		 http://conntrack-tools.netfilter.org/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+endmenu
+menu "IPv6"
+	config PACKAGE_6rd
+		tristate "6rd..................................... 6rd configuration support Daemon"
+		default y if DEFAULT_6rd
+		default m if ALL
+		select PACKAGE_kmod-sit
+		select PACKAGE_kmod-ipv6
+		help
+		 Provides support for 6rd tunnels in /etc/config/network.
+		 Refer to http://wiki.openwrt.org/doc/uci/network for
+		 configuration details.
+		 Stéphan Kochen <stephan@kochen.nl>
+
+	config PACKAGE_ds-lite
+		tristate "ds-lite........... Dual-Stack Lite (DS-Lite) configuration support Daemon"
+		default y if DEFAULT_ds-lite
+		default m if ALL
+		select PACKAGE_kmod-ipv6
+		select PACKAGE_kmod-ip6-tunnel
+		help
+		 Provides support for Dual-Stack Lite in /etc/config/network.
+		 Refer to http://wiki.openwrt.org/doc/uci/network for
+		 configuration details.
+		 Steven Barth <steven@midlink.org>
+
+	config PACKAGE_iputils-ping6
+		tristate "iputils-ping6.............................................. iputils ping6"
+		default y if DEFAULT_iputils-ping6
+		default m if ALL
+		help
+		 ping6 is a icmp tool for IPv6.
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_ivi-dns
+		tristate "ivi-dns.............................................. ivi dns for TP-LINK"
+		default y if DEFAULT_ivi-dns
+		default m if ALL
+		help
+		 ivi dns for TP-LINK
+		 http://www.tp-link.com/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_ndppd
+		tristate "ndppd................................................... NDP Proxy Daemon"
+		default y if DEFAULT_ndppd
+		default m if ALL
+		select PACKAGE_libstdcpp
+		help
+		 ndppd, or NDP Proxy Daemon, is a daemon that proxies NDP (Neighbor Discovery
+		  Protocol) messages between interfaces.  ndppd currently only supports Neighbor
+		  Solicitation Messages and Neighbor Advertisement Messages.
+		 
+		  The ndp_proxy provided by Linux doesn't support listing proxies, and only hosts
+		  are supported.  No subnets.  ndppd solves this by listening for Neighbor
+		  Solicitation messages on an interface, then query the internal interfaces for
+		  that target IP before finally sending a Neighbor Advertisement message.
+		 http://www.priv.nu/projects/ndppd/
+		 Gabriel Kerneis <gabriel@kerneis.info>
+
+	config PACKAGE_radvd
+		tristate "radvd.................................. IPv6 Routing Advertisement Daemon"
+		default y if DEFAULT_radvd
+		default m if ALL
+		select PACKAGE_libdaemon
+		select PACKAGE_libifaddrs if IFADDRS
+		select PACKAGE_kmod-ipv6
+		help
+		 radvd is the router advertisement daemon for IPv6. It listens to router
+		 solicitations and sends router advertisements as described in "Neighbor
+		 Discovery for IP Version 6 (IPv6)" (RFC 4861).  With these advertisements hosts
+		 can automatically configure their addresses and some other parameters. They also
+		 can choose a default router based on these advertisements.
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_radvdump
+		tristate "radvdump............................... IPv6 Routing Advertisement Dumper"
+		default y if DEFAULT_radvdump
+		default m if ALL
+		select PACKAGE_libdaemon
+		select PACKAGE_libifaddrs if IFADDRS
+		select PACKAGE_kmod-ipv6
+		help
+		 radvdump prints out the contents of incoming router advertisements sent by radvd
+		 or some other software implementing (parts of) "Neighbor Discovery for IP
+		 Version 6 (IPv6)" (RFC 4861).
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_wide-dhcpv6-client
+		tristate "wide-dhcpv6-client.................................... WIDE-DHCPv6 client"
+		default y if DEFAULT_wide-dhcpv6-client
+		default m if ALL
+		select PACKAGE_kmod-ipv6
+		help
+		 WIDE-DHCPv6 is an open-source implementation of Dynamic Host Configuration Protocol
+		 	for IPv6 (DHCPv6) originally developed by the KAME project. The implementation
+		 	mainly conforms to the following standards: RFC3315,3319,3633,3646,4075,4272,etc.
+		 
+		 	This package installs the client component.
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_wide-dhcpv6-server
+		tristate "wide-dhcpv6-server.................................... WIDE-DHCPv6 server"
+		default y if DEFAULT_wide-dhcpv6-server
+		default m if ALL
+		select PACKAGE_kmod-ipv6
+		help
+		 WIDE-DHCPv6 is an open-source implementation of Dynamic Host Configuration Protocol
+		 	for IPv6 (DHCPv6) originally developed by the KAME project. The implementation
+		 	mainly conforms to the following standards: RFC3315,3319,3633,3646,4075,4272,etc.
+		 
+		 	This package installs the server component.
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+endmenu
+menu "Network"
+	config PACKAGE_netifd
+		tristate "netifd.................... OpenWrt Network Interface Configuration Daemon"
+		default y if DEFAULT_netifd
+		default m if ALL
+		select PACKAGE_kmod-bonding
+		select PACKAGE_libuci
+		select PACKAGE_libnl-tiny
+		select PACKAGE_ubus
+		select PACKAGE_libopenat if OPENAT
+		select PACKAGE_jshn
+		select PACKAGE_libubus
+		help
+		 OpenWrt Network Interface Configuration Daemon
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_pppd
+		tristate "pppd........................ PPP daemon (PPPoE/PPTP/L2TP plugin included)"
+		default y if DEFAULT_pppd
+		default m if ALL
+		select PACKAGE_kmod-pptp
+		select PACKAGE_resolveip
+		select PACKAGE_kmod-pppoe
+		select PACKAGE_kmod-ppp
+		help
+		 This package contains the PPP (Point-to-Point Protocol) daemon for PPPoE, L2TP and PPTP.
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_xl2tpd
+		tristate "xl2tpd....................... An L2TP (Layer 2 Tunneling Protocol) daemon"
+		default y if DEFAULT_xl2tpd
+		default m if ALL
+		select PACKAGE_kmod-ppp
+		select PACKAGE_resolveip
+		select PACKAGE_ip
+		select PACKAGE_kmod-pppol2tp
+		depends PACKAGE_pppd
+		help
+		 l2tpd is the open source implementation of the L2TP tunneling protocol (RFC2661).
+		 It does implement both LAC and LNS role in a L2TP networking architecture. The
+		 main goal of this protocol is to tunnel PPP frame trough an IP network.
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+endmenu
+menu "Routing and Redirection"
+	config PACKAGE_improxy
+		tristate "improxy..................................... Multicast Proxy for IGMP/MLD"
+		default y if DEFAULT_improxy
+		default m if ALL
+		help
+		 Improxy is an IGMP/MLD Proxy daemon written in c for Linux. It is lightweight and do not depend on any thirdparty library.
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+endmenu
+menu "SSL"
+	menuconfig PACKAGE_libopenssl
+		tristate "libopenssl........................... Open source SSL toolkit (libraries)"
+		default y if DEFAULT_libopenssl
+		default m if ALL
+		select PACKAGE_zlib
+		help
+		 The OpenSSL Project is a collaborative effort to develop a robust,
+		 commercial-grade, full-featured, and Open Source toolkit implementing the Secure
+		 Sockets Layer (SSL v2/v3) and Transport Layer Security (TLS v1) protocols as well
+		 as a full-strength general purpose cryptography library.
+		 This package contains the OpenSSL shared libraries, needed by other programs.
+		 http://www.openssl.org/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+
+	source "opensource/opensource/openssl/Config.in"
+
+endmenu
+menu "administration"
+	config PACKAGE_luasocket
+		tristate "luasocket...................................................... LuaSocket"
+		default y if DEFAULT_luasocket
+		default m if ALL
+		select PACKAGE_lua
+		help
+		 LuaSocket is the most comprehensive networking support
+		   library for the Lua language. It provides easy access to
+		   TCP, UDP, DNS, SMTP, FTP, HTTP, MIME and much more.
+		 http://luasocket.luaforge.net/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+endmenu
+menu "iproute2"
+	config PACKAGE_genl
+		tristate "genl.................................... General netlink utility frontend"
+		default y if DEFAULT_genl
+		default m if ALL
+		help
+		 General netlink utility frontend
+		 http://linux-net.osdl.org/index.php/Iproute2
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_ip
+		tristate "ip............................................... Routing control utility"
+		default y if DEFAULT_ip
+		default m if ALL
+		select PACKAGE_libunshare if UNSHARE
+		help
+		 Routing control utility
+		 http://linux-net.osdl.org/index.php/Iproute2
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_ss
+		tristate "ss............................................. Socket statistics utility"
+		default y if DEFAULT_ss
+		default m if ALL
+		help
+		 Socket statistics utility
+		 http://linux-net.osdl.org/index.php/Iproute2
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_tc
+		tristate "tc............................................... Traffic control utility"
+		default y if DEFAULT_tc
+		default m if ALL
+		select PACKAGE_kmod-sched-core
+		help
+		 Traffic control utility
+		 http://linux-net.osdl.org/index.php/Iproute2
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+endmenu
+menu "util-linux"
+	config PACKAGE_agetty
+		tristate "agetty........................................... alternative Linux getty"
+		default y if DEFAULT_agetty
+		default m if ALL
+		help
+		 agetty opens a tty port, prompts for a login name and invokes the
+		  /bin/login command
+		 http://www.kernel.org/pub/linux/utils/util-linux/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_blkid
+		tristate "blkid............................... locate/print block device attributes"
+		default y if DEFAULT_blkid
+		default m if ALL
+		select PACKAGE_libblkid
+		help
+		 The blkid program is the command-line interface to working with the libblkid
+		  library.
+		 http://www.kernel.org/pub/linux/utils/util-linux/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_cal
+		tristate "cal................................................... display a calendar"
+		default y if DEFAULT_cal
+		default m if ALL
+		select PACKAGE_libncurses
+		help
+		 cal displays a simple calendar
+		 http://www.kernel.org/pub/linux/utils/util-linux/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_cfdisk
+		tristate "cfdisk........................ display or manipulate disk partition table"
+		default y if DEFAULT_cfdisk
+		default m if ALL
+		select PACKAGE_libblkid
+		select PACKAGE_libncurses
+		help
+		 cfdisk is a curses-based program for partitioning any hard disk drive
+		 http://www.kernel.org/pub/linux/utils/util-linux/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_dmesg
+		tristate "dmesg............................ print or control the kernel ring buffer"
+		default y if DEFAULT_dmesg
+		default m if ALL
+		help
+		 dmesg  is used to examine or control the kernel ring buffer
+		 http://www.kernel.org/pub/linux/utils/util-linux/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_fdisk
+		tristate "fdisk.................................... manipulate disk partition table"
+		default y if DEFAULT_fdisk
+		default m if ALL
+		select PACKAGE_libblkid
+		help
+		 a menu-driven program for creation and manipulation of partition tables
+		 http://www.kernel.org/pub/linux/utils/util-linux/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_findfs
+		tristate "findfs................................ find a filesystem by label or UUID"
+		default y if DEFAULT_findfs
+		default m if ALL
+		select PACKAGE_libblkid
+		help
+		 findfs will search the disks in the system looking for a filesystem which has
+		  a label matching label or a UUID equal to uuid
+		 http://www.kernel.org/pub/linux/utils/util-linux/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_flock
+		tristate "flock.................................... manage locks from shell scripts"
+		default y if DEFAULT_flock
+		default m if ALL
+		help
+		 manages flock locks from within shell scripts or the command line
+		 http://www.kernel.org/pub/linux/utils/util-linux/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_getopt
+		tristate "getopt.................................. parse command options (enhanced)"
+		default y if DEFAULT_getopt
+		default m if ALL
+		help
+		 getopt is used to break up (parse) options in command lines for easy parsing
+		  by shell procedures, and to check for legal options
+		 http://www.kernel.org/pub/linux/utils/util-linux/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_hwclock
+		tristate "hwclock.................................. query or set the hardware clock"
+		default y if DEFAULT_hwclock
+		default m if ALL
+		help
+		 hwclock is a tool for accessing the Hardware Clock
+		 http://www.kernel.org/pub/linux/utils/util-linux/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_libblkid
+		tristate "libblkid......................................... block device id library"
+		default y if DEFAULT_libblkid
+		default m if ALL
+		select PACKAGE_libuuid
+		help
+		 The libblkid library is used to identify block devices (disks) as to their
+		  content (e.g. filesystem type, partitions) as well as extracting additional
+		  information such as filesystem labels/volume names, partitions, unique
+		  identifiers/serial numbers...
+		 http://www.kernel.org/pub/linux/utils/util-linux/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_libmount
+		tristate "libmount................................................... mount library"
+		default y if DEFAULT_libmount
+		default m if ALL
+		select PACKAGE_libversionsort if VERSIONSORT
+		select PACKAGE_libblkid
+		help
+		 The libmount library is used to parse /etc/fstab, /etc/mtab and
+		  /proc/self/mountinfo files, manage the mtab file, evaluate mount options...
+		 http://www.kernel.org/pub/linux/utils/util-linux/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_libuuid
+		tristate "libuuid............. DCE compatible Universally Unique Identifier library"
+		default y if DEFAULT_libuuid
+		default m if ALL
+		help
+		 The UUID library is used to generate unique identifiers for objects
+		  that may be accessible beyond the local system. This library
+		  generates UUIDs compatible with those created by the Open Software
+		  Foundation (OSF) Distributed Computing Environment (DCE) utility.
+		 http://www.kernel.org/pub/linux/utils/util-linux/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_logger
+		tristate "logger......... a shell command interface to the syslog system log module"
+		default y if DEFAULT_logger
+		default m if ALL
+		help
+		 logger makes entries in the system log, it provides a shell command interface
+		  to the syslog system log module
+		 http://www.kernel.org/pub/linux/utils/util-linux/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_look
+		tristate "look......................... display lines beginning with a given string"
+		default y if DEFAULT_look
+		default m if ALL
+		help
+		 look utility displays any lines in file which contain string
+		 http://www.kernel.org/pub/linux/utils/util-linux/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_losetup
+		tristate "losetup.................................. set up and control loop devices"
+		default y if DEFAULT_losetup
+		default m if ALL
+		help
+		 losetup is used to associate loop devices with regular files or block devices,
+		  to detach loop devices and to query the status of a loop device
+		 http://www.kernel.org/pub/linux/utils/util-linux/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_lsblk
+		tristate "lsblk................................................. list block devices"
+		default y if DEFAULT_lsblk
+		default m if ALL
+		select PACKAGE_libblkid
+		help
+		 lsblk lists information about all or the specified block devices
+		 http://www.kernel.org/pub/linux/utils/util-linux/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_mcookie
+		tristate "mcookie................................. generate magic cookies for xauth"
+		default y if DEFAULT_mcookie
+		default m if ALL
+		help
+		 mcookie generates a 128-bit random hexadecimal number for use with the X
+		  authority system
+		 http://www.kernel.org/pub/linux/utils/util-linux/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_mount-utils
+		tristate "mount-utils................................... related (u)mount utilities"
+		default y if DEFAULT_mount-utils
+		default m if ALL
+		select PACKAGE_libmount
+		help
+		 contains: mount, umount, findmnt
+		 http://www.kernel.org/pub/linux/utils/util-linux/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_namei
+		tristate "namei.................. follow a pathname until a terminal point is found"
+		default y if DEFAULT_namei
+		default m if ALL
+		help
+		 namei uses its arguments as pathnames to any type of Unix file (symlinks,
+		  files, directories, and so forth)
+		 http://www.kernel.org/pub/linux/utils/util-linux/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_partx-utils
+		tristate "partx-utils"
+		default y if DEFAULT_partx-utils
+		default m if ALL
+		select PACKAGE_libblkid
+		help
+		 contains partx, addpart, delpart
+		 http://www.kernel.org/pub/linux/utils/util-linux/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_rename
+		tristate "rename...................................................... rename files"
+		default y if DEFAULT_rename
+		default m if ALL
+		help
+		 rename will rename the specified files by replacing the first occurrence of
+		  expression in their name by replacement
+		 http://www.kernel.org/pub/linux/utils/util-linux/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_script-utils
+		tristate "script-utils.............. make and replay typescript of terminal session"
+		default y if DEFAULT_script-utils
+		default m if ALL
+		help
+		 contains: script, scriptreplay
+		 http://www.kernel.org/pub/linux/utils/util-linux/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_setterm
+		tristate "setterm.......................................... set terminal attributes"
+		default y if DEFAULT_setterm
+		default m if ALL
+		select PACKAGE_libncurses
+		help
+		 setterm writes to standard output a character string that will invoke the
+		  specified terminal capabilities
+		 http://www.kernel.org/pub/linux/utils/util-linux/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_sfdisk
+		tristate "sfdisk............................. partition table manipulator for Linux"
+		default y if DEFAULT_sfdisk
+		default m if ALL
+		help
+		 list the size of a partition, list the partitions on a device, check the
+		  partitions on a device and repartition a device
+		 http://www.kernel.org/pub/linux/utils/util-linux/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_swap-utils
+		tristate "swap-utils............................... swap space management utilities"
+		default y if DEFAULT_swap-utils
+		default m if ALL
+		select PACKAGE_libblkid
+		help
+		 contains: mkswap, swaplabel, swapon, swapoff
+		 http://www.kernel.org/pub/linux/utils/util-linux/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_uuidd
+		tristate "uuidd............................................. UUID generation daemon"
+		default y if DEFAULT_uuidd
+		default m if ALL
+		select PACKAGE_libfdopendir if FDOPENDIR
+		select PACKAGE_libuuid
+		help
+		 The uuidd daemon is used by the UUID library to generate universally unique
+		  identifiers (UUIDs), especially time-based UUIDs, in a secure and
+		  guaranteed-unique fashion, even in the face of large numbers of threads
+		  running on different CPUs trying to grab UUIDs.
+		 http://www.kernel.org/pub/linux/utils/util-linux/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_uuidgen
+		tristate "uuidgen.......................................... create a new UUID value"
+		default y if DEFAULT_uuidgen
+		default m if ALL
+		select PACKAGE_libuuid
+		help
+		 The uuidgen program creates (and prints) a new universally unique identifier
+		  (UUID) using the libuuid library. The new UUID can reasonably be considered
+		  unique among all UUIDs created on the local system, and among UUIDs created on
+		  other systems in the past and in the future.
+		 http://www.kernel.org/pub/linux/utils/util-linux/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_wall
+		tristate "wall.............................. send a message to everybody's terminal"
+		default y if DEFAULT_wall
+		default m if ALL
+		help
+		 wall sends a message to everybody logged in with their mesg permission
+		  set to yes
+		 http://www.kernel.org/pub/linux/utils/util-linux/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_whereis
+		tristate "whereis... locate the binary, source, and manual page files for a command"
+		default y if DEFAULT_whereis
+		default m if ALL
+		help
+		 whereis locates source/binary and manuals sections for specified files
+		 http://www.kernel.org/pub/linux/utils/util-linux/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_wipefs
+		tristate "wipefs.................................... wipe a signature from a device"
+		default y if DEFAULT_wipefs
+		default m if ALL
+		select PACKAGE_libblkid
+		help
+		 wipefs can erase filesystem, raid or partition table signatures (magic
+		  strings) from the specified device to make the signature invisible for
+		  libblkid.
+		 http://www.kernel.org/pub/linux/utils/util-linux/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+endmenu
+menu "xtables-addons"
+	config PACKAGE_iptables-mod-LOOPBACKDNAT
+		tristate "iptables-mod-LOOPBACKDNAT................ LOOPBACKDNAT iptables extension"
+		default y if DEFAULT_iptables-mod-LOOPBACKDNAT
+		default m if ALL
+		depends PACKAGE_iptables
+		depends PACKAGE_kmod-ipt-core
+		select PACKAGE_kmod-ipt-LOOPBACKDNAT
+		help
+		 LOOPBACKDNAT iptables extension
+		 http://xtables-addons.sourceforge.net/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_iptables-mod-account
+		tristate "iptables-mod-account.......................... ACCOUNT iptables extension"
+		default y if DEFAULT_iptables-mod-account
+		default m if ALL
+		depends PACKAGE_iptables
+		depends PACKAGE_kmod-ipt-core
+		select PACKAGE_kmod-ipt-account
+		help
+		 ACCOUNT iptables extension
+		 http://xtables-addons.sourceforge.net/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_iptables-mod-app
+		tristate "iptables-mod-app.................................. app iptables extension"
+		default y if DEFAULT_iptables-mod-app
+		default m if ALL
+		select PACKAGE_kmod-ipt-app
+		depends PACKAGE_kmod-ipt-core
+		depends PACKAGE_iptables
+		help
+		 app iptables extension
+		 http://xtables-addons.sourceforge.net/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_iptables-mod-chaos
+		tristate "iptables-mod-chaos.............................. CHAOS iptables extension"
+		default y if DEFAULT_iptables-mod-chaos
+		default m if ALL
+		select PACKAGE_kmod-ipt-chaos
+		depends PACKAGE_iptables
+		depends PACKAGE_kmod-ipt-core
+		help
+		 CHAOS iptables extension
+		 http://xtables-addons.sourceforge.net/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_iptables-mod-condition
+		tristate "iptables-mod-condition...................... Condition iptables extension"
+		default y if DEFAULT_iptables-mod-condition
+		default m if ALL
+		depends PACKAGE_kmod-ipt-core
+		depends PACKAGE_iptables
+		select PACKAGE_kmod-ipt-condition
+		help
+		 Condition iptables extension
+		 http://xtables-addons.sourceforge.net/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_iptables-mod-delude
+		tristate "iptables-mod-delude............................ DELUDE iptables extension"
+		default y if DEFAULT_iptables-mod-delude
+		default m if ALL
+		select PACKAGE_kmod-ipt-delude
+		depends PACKAGE_iptables
+		depends PACKAGE_kmod-ipt-core
+		help
+		 DELUDE iptables extension
+		 http://xtables-addons.sourceforge.net/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_iptables-mod-dhcpmac
+		tristate "iptables-mod-dhcpmac.......................... DHCPMAC iptables extension"
+		default y if DEFAULT_iptables-mod-dhcpmac
+		default m if ALL
+		depends PACKAGE_iptables
+		depends PACKAGE_kmod-ipt-core
+		select PACKAGE_kmod-ipt-dhcpmac
+		help
+		 DHCPMAC iptables extension
+		 http://xtables-addons.sourceforge.net/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_iptables-mod-dnetmap
+		tristate "iptables-mod-dnetmap.......................... DNETMAP iptables extension"
+		default y if DEFAULT_iptables-mod-dnetmap
+		default m if ALL
+		depends PACKAGE_iptables
+		depends PACKAGE_kmod-ipt-core
+		select PACKAGE_kmod-ipt-dnetmap
+		help
+		 DNETMAP iptables extension
+		 http://xtables-addons.sourceforge.net/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_iptables-mod-fuzzy
+		tristate "iptables-mod-fuzzy.............................. fuzzy iptables extension"
+		default y if DEFAULT_iptables-mod-fuzzy
+		default m if ALL
+		depends PACKAGE_kmod-ipt-core
+		select PACKAGE_kmod-ipt-fuzzy
+		depends PACKAGE_iptables
+		help
+		 fuzzy iptables extension
+		 http://xtables-addons.sourceforge.net/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_iptables-mod-geoip
+		tristate "iptables-mod-geoip.............................. geoip iptables extension"
+		default y if DEFAULT_iptables-mod-geoip
+		default m if ALL
+		depends PACKAGE_kmod-ipt-core
+		depends PACKAGE_iptables
+		select PACKAGE_kmod-ipt-geoip
+		help
+		 geoip iptables extension
+		 http://xtables-addons.sourceforge.net/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_iptables-mod-httphost
+		tristate "iptables-mod-httphost........................ httphost iptables extension"
+		default y if DEFAULT_iptables-mod-httphost
+		default m if ALL
+		depends PACKAGE_kmod-ipt-core
+		depends PACKAGE_iptables
+		select PACKAGE_kmod-ipt-httphost
+		help
+		 httphost iptables extension
+		 http://xtables-addons.sourceforge.net/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_iptables-mod-iface
+		tristate "iptables-mod-iface.............................. iface iptables extension"
+		default y if DEFAULT_iptables-mod-iface
+		default m if ALL
+		select PACKAGE_kmod-ipt-iface
+		depends PACKAGE_iptables
+		depends PACKAGE_kmod-ipt-core
+		help
+		 iface iptables extension
+		 http://xtables-addons.sourceforge.net/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_iptables-mod-ipmark
+		tristate "iptables-mod-ipmark............................ IPMARK iptables extension"
+		default y if DEFAULT_iptables-mod-ipmark
+		default m if ALL
+		select PACKAGE_kmod-ipt-ipmark
+		depends PACKAGE_kmod-ipt-core
+		depends PACKAGE_iptables
+		help
+		 IPMARK iptables extension
+		 http://xtables-addons.sourceforge.net/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_iptables-mod-ipp2p
+		tristate "iptables-mod-ipp2p.............................. IPP2P iptables extension"
+		default y if DEFAULT_iptables-mod-ipp2p
+		default m if ALL
+		select PACKAGE_kmod-ipt-ipp2p
+		depends PACKAGE_iptables
+		depends PACKAGE_kmod-ipt-core
+		help
+		 IPP2P iptables extension
+		 http://xtables-addons.sourceforge.net/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_iptables-mod-ipv4options
+		tristate "iptables-mod-ipv4options.................. ipv4options iptables extension"
+		default y if DEFAULT_iptables-mod-ipv4options
+		default m if ALL
+		depends PACKAGE_iptables
+		depends PACKAGE_kmod-ipt-core
+		select PACKAGE_kmod-ipt-ipv4options
+		help
+		 ipv4options iptables extension
+		 http://xtables-addons.sourceforge.net/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_iptables-mod-length2
+		tristate "iptables-mod-length2.......................... length2 iptables extension"
+		default y if DEFAULT_iptables-mod-length2
+		default m if ALL
+		select PACKAGE_kmod-ipt-length2
+		depends PACKAGE_kmod-ipt-core
+		depends PACKAGE_iptables
+		help
+		 length2 iptables extension
+		 http://xtables-addons.sourceforge.net/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_iptables-mod-logmark
+		tristate "iptables-mod-logmark.......................... LOGMARK iptables extension"
+		default y if DEFAULT_iptables-mod-logmark
+		default m if ALL
+		select PACKAGE_kmod-ipt-logmark
+		depends PACKAGE_iptables
+		depends PACKAGE_kmod-ipt-core
+		help
+		 LOGMARK iptables extension
+		 http://xtables-addons.sourceforge.net/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_iptables-mod-lscan
+		tristate "iptables-mod-lscan.............................. lscan iptables extension"
+		default y if DEFAULT_iptables-mod-lscan
+		default m if ALL
+		depends PACKAGE_kmod-ipt-core
+		depends PACKAGE_iptables
+		select PACKAGE_kmod-ipt-lscan
+		help
+		 lscan iptables extension
+		 http://xtables-addons.sourceforge.net/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_iptables-mod-lua
+		tristate "iptables-mod-lua..................... Lua PacketScript iptables extension"
+		default y if DEFAULT_iptables-mod-lua
+		default m if ALL
+		select PACKAGE_kmod-ipt-lua
+		depends PACKAGE_iptables
+		depends PACKAGE_kmod-ipt-core
+		help
+		 Lua PacketScript iptables extension
+		 http://xtables-addons.sourceforge.net/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_iptables-mod-pctl
+		tristate "iptables-mod-pctl................................ pctl iptables extension"
+		default y if DEFAULT_iptables-mod-pctl
+		default m if ALL
+		select PACKAGE_kmod-ipt-pctl
+		depends PACKAGE_iptables
+		depends PACKAGE_kmod-ipt-core
+		help
+		 pctl iptables extension
+		 http://xtables-addons.sourceforge.net/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_iptables-mod-psd
+		tristate "iptables-mod-psd.................................. psd iptables extension"
+		default y if DEFAULT_iptables-mod-psd
+		default m if ALL
+		select PACKAGE_kmod-ipt-psd
+		depends PACKAGE_iptables
+		depends PACKAGE_kmod-ipt-core
+		help
+		 psd iptables extension
+		 http://xtables-addons.sourceforge.net/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_iptables-mod-quota2
+		tristate "iptables-mod-quota2............................ quota2 iptables extension"
+		default y if DEFAULT_iptables-mod-quota2
+		default m if ALL
+		depends PACKAGE_iptables
+		depends PACKAGE_kmod-ipt-core
+		select PACKAGE_kmod-ipt-quota2
+		help
+		 quota2 iptables extension
+		 http://xtables-addons.sourceforge.net/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_iptables-mod-rawnat
+		tristate "iptables-mod-rawnat............................ RAWNAT iptables extension"
+		default y if DEFAULT_iptables-mod-rawnat
+		default m if ALL
+		select PACKAGE_kmod-ipt-rawnat
+		depends PACKAGE_iptables
+		depends PACKAGE_kmod-ipt-core
+		help
+		 RAWNAT iptables extension
+		 http://xtables-addons.sourceforge.net/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_iptables-mod-steal
+		tristate "iptables-mod-steal.............................. STEAL iptables extension"
+		default y if DEFAULT_iptables-mod-steal
+		default m if ALL
+		select PACKAGE_kmod-ipt-steal
+		depends PACKAGE_kmod-ipt-core
+		depends PACKAGE_iptables
+		help
+		 STEAL iptables extension
+		 http://xtables-addons.sourceforge.net/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_iptables-mod-sysrq
+		tristate "iptables-mod-sysrq.............................. SYSRQ iptables extension"
+		default y if DEFAULT_iptables-mod-sysrq
+		default m if ALL
+		select PACKAGE_kmod-ipt-sysrq
+		depends PACKAGE_iptables
+		depends PACKAGE_kmod-ipt-core
+		help
+		 SYSRQ iptables extension
+		 http://xtables-addons.sourceforge.net/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_iptables-mod-tarpit
+		tristate "iptables-mod-tarpit............................ TARPIT iptables extension"
+		default y if DEFAULT_iptables-mod-tarpit
+		default m if ALL
+		depends PACKAGE_kmod-ipt-core
+		depends PACKAGE_iptables
+		select PACKAGE_kmod-ipt-tarpit
+		help
+		 TARPIT iptables extension
+		 http://xtables-addons.sourceforge.net/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_iptables-mod-trigger
+		tristate "iptables-mod-trigger.......................... TRIGGER iptables extension"
+		default y if DEFAULT_iptables-mod-trigger
+		default m if ALL
+		select PACKAGE_kmod-ipt-trigger
+		depends PACKAGE_iptables
+		depends PACKAGE_kmod-ipt-core
+		help
+		 TRIGGER iptables extension
+		 http://xtables-addons.sourceforge.net/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_iptables-mod-urlfilter
+		tristate "iptables-mod-urlfilter...................... urlfilter iptables extension"
+		default y if DEFAULT_iptables-mod-urlfilter
+		default m if ALL
+		depends PACKAGE_iptables
+		depends PACKAGE_kmod-ipt-core
+		select PACKAGE_kmod-ipt-urlfilter
+		help
+		 urlfilter iptables extension
+		 http://xtables-addons.sourceforge.net/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_iptaccount
+		tristate "iptaccount.......................... iptables-mod-account control utility"
+		default y if DEFAULT_iptaccount
+		default m if ALL
+		depends PACKAGE_kmod-ipt-core
+		depends PACKAGE_iptables
+		select PACKAGE_iptables-mod-account
+		help
+		 iptables-mod-account control utility
+		 http://xtables-addons.sourceforge.net/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_xtables-addons
+		tristate "xtables-addons............ Extensions not distributed in the main Xtables"
+		default y if DEFAULT_xtables-addons
+		default m if ALL
+		help
+		 Extensions not distributed in the main Xtables
+		 http://xtables-addons.sourceforge.net/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+
+		config PACKAGE_XTABLES_ADDONS_VERSION
+			string "xtables-addons compile version"
+			depends PACKAGE_xtables-addons
+			default "v1"
+			help
+				if kernel version > 3.7, please set the value to v2 to support it. otherwise let it to default value v1.
+				current support valid value "v1" and "v2"
+
+endmenu
+	config PACKAGE_base-files
+		tristate "base-files................................... Base filesystem for OpenWrt"
+		default y if DEFAULT_base-files
+		default m if ALL
+		select PACKAGE_netifd
+		select PACKAGE_libc
+		help
+		 This package contains a base filesystem and system scripts for OpenWrt.
+		 http://openwrt.org/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_block-mount
+		tristate "block-mount........................... Block device mounting and checking"
+		default y if DEFAULT_block-mount
+		default m if ALL
+		select PACKAGE_ubox
+		help
+		 Block device mounting and checking
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_bridge
+		tristate "bridge........................... Ethernet bridging configuration utility"
+		default y if DEFAULT_bridge
+		default m if ALL
+		help
+		 Manage ethernet bridging: a way to connect networks together to 
+		  form a larger network.
+		 http://bridge.sourceforge.net/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	menuconfig PACKAGE_busybox
+		tristate "busybox................................ Core utilities for embedded Linux"
+		default y if DEFAULT_busybox
+		default m if ALL
+		select PACKAGE_libpam if BUSYBOX_CONFIG_PAM
+		select PACKAGE_ubus
+		select PACKAGE_common
+		select PACKAGE_librpc if BUSYBOX_USE_LIBRPC
+		select PACKAGE_uci
+		select PACKAGE_libuci
+		help
+		 The Swiss Army Knife of embedded Linux.
+		  It slices, it dices, it makes Julian Fries.
+		 http://busybox.net/
+		 Felix Fietkau <nbd@openwrt.org>
+
+
+		source "opensource/opensource/busybox/Config.in"
+
+	config PACKAGE_dnsmasq
+		tristate "dnsmasq................................ A lightweight DNS and DHCP server"
+		default y if DEFAULT_dnsmasq
+		default m if ALL
+		help
+		 It is intended to provide coupled DNS and DHCP service to a LAN.
+		 http://www.thekelleys.org.uk/dnsmasq/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_dnsmasq-dhcpv6
+		tristate "dnsmasq-dhcpv6... A lightweight DNS and DHCP server (with DHCPv6 support)"
+		default y if DEFAULT_dnsmasq-dhcpv6
+		default m if ALL
+		select PACKAGE_kmod-ipv6
+		depends IPV6
+		help
+		 It is intended to provide coupled DNS and DHCP service to a LAN.
+		 
+		 This is a variant with DHCPv6 support
+		 http://www.thekelleys.org.uk/dnsmasq/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_dropbear
+		tristate "dropbear........................................ Small SSH2 client/server"
+		default y if DEFAULT_dropbear
+		default m if ALL
+		select PACKAGE_zlib if DROPBEAR_ZLIB
+		select PACKAGE_libuci
+		help
+		 A small SSH2 server/client designed for small memory environments.
+		 http://matt.ucc.asn.au/dropbear/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+
+		source "opensource/opensource/dropbear/Config.in"
+
+	config PACKAGE_dropbearconvert
+		tristate "dropbearconvert.......................... Utility for converting SSH keys"
+		default y if DEFAULT_dropbearconvert
+		default m if ALL
+		select PACKAGE_libuci
+		help
+		 Utility for converting SSH keys
+		 http://matt.ucc.asn.au/dropbear/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_firewall
+		tristate "firewall................................................ OpenWrt firewall"
+		default y if DEFAULT_firewall
+		default m if ALL
+		select PACKAGE_kmod-ipt-conntrack
+		select PACKAGE_iptables
+		select PACKAGE_kmod-ipt-nat
+		help
+		 UCI based firewall for OpenWrt
+		 http://openwrt.org/
+		 Jo-Philipp Wich <xm@subsignal.org>
+
+	config PACKAGE_fstools
+		tristate "fstools......................................... OpenWrt filesystem tools"
+		default y if DEFAULT_fstools
+		default m if ALL
+		select PACKAGE_ubox
+		help
+		 OpenWrt filesystem tools
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_libdaemon
+		tristate "libdaemon. A lightweight C library that eases the writing of UNIX daemons"
+		default y if DEFAULT_libdaemon
+		default m if ALL
+		help
+		 libdaemon is a lightweight C library that eases the writing of UNIX daemons.
+		 	It consists of the following parts:
+		 	- A wrapper around fork() which does the correct daemonization procedure of a process
+		 	- A wrapper around syslog() for simpler and compatible log output to Syslog or STDERR
+		 	- An API for writing PID files
+		 	- An API for serializing UNIX signals into a pipe for usage with select() or poll()
+		 	- An API for running subprocesses with STDOUT and STDERR redirected to syslog
+		 
+		 	APIs like these are used in most daemon software available. It is not that
+		 	simple to get it done right and code duplication is not a goal.
+		 http://0pointer.de/lennart/projects/libdaemon/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_libjson
+		tristate "libjson...................... javascript object notation (compat library)"
+		default y if DEFAULT_libjson
+		default m if ALL
+		select PACKAGE_libjson-c
+		help
+		 This package contains a compatibility library for packages that have not
+		  been adapted to the json-c library rename yet
+		 http://oss.metaparadigm.com/json-c/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_libjson-c
+		tristate "libjson-c..................................... javascript object notation"
+		default y if DEFAULT_libjson-c
+		default m if ALL
+		help
+		 This package contains a library for javascript object notation backends.
+		 http://oss.metaparadigm.com/json-c/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_liblzo
+		tristate "liblzo.............................. A real-time data compression library"
+		default y if DEFAULT_liblzo
+		default m if ALL
+		help
+		 LZO is a data compression library which is suitable for data de-/compression
+		  in real-time. This means it favours speed over compression ratio.
+		 http://www.oberhumer.com/opensource/lzo/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_libnl-tiny
+		tristate "libnl-tiny........................................ netlink socket library"
+		default y if DEFAULT_libnl-tiny
+		default m if ALL
+		help
+		 This package contains a stripped down version of libnl
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	menuconfig PACKAGE_libpcap
+		tristate "libpcap................................. Low-level packet capture library"
+		default y if DEFAULT_libpcap
+		default m if ALL
+		help
+		 This package contains a system-independent library for user-level network packet
+		 capture.
+		 http://www.tcpdump.org/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+
+		source "opensource/opensource/libpcap/Config.in"
+
+	config PACKAGE_libssh
+		tristate "libssh....................................................... SSH library"
+		default y if DEFAULT_libssh
+		default m if ALL
+		select PACKAGE_zlib
+		select PACKAGE_libpthread
+		select PACKAGE_libopenssl
+		select PACKAGE_librt
+		help
+		 libssh is a mulitplatform C library implementing the SSHv2 and SSHv1 protocol
+		  for client and server implementations.
+		 http://www.libssh.org/
+		 Luka Perkov <luka@openwrt.org>
+
+	config PACKAGE_miniupnpd
+		tristate "miniupnpd........................................ Lightweight UPnP daemon"
+		default y if DEFAULT_miniupnpd
+		default m if ALL
+		select PACKAGE_libnfnetlink
+		select PACKAGE_iptables
+		help
+		 Lightweight UPnP daemon
+		 http://miniupnp.free.fr/
+		 Daniel Dickinson <openwrt@cshore.neomailbox.net>
+
+	config PACKAGE_mtd
+		tristate "mtd............................... Update utility for trx firmware images"
+		default y if DEFAULT_mtd
+		default m if ALL
+		select PACKAGE_libubox
+		help
+		 This package contains an utility useful to upgrade from other firmware or 
+		  older OpenWrt releases.
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_openssl-util
+		tristate "openssl-util........................... Open source SSL toolkit (utility)"
+		default y if DEFAULT_openssl-util
+		default m if ALL
+		select PACKAGE_libopenssl
+		help
+		 The OpenSSL Project is a collaborative effort to develop a robust,
+		 commercial-grade, full-featured, and Open Source toolkit implementing the Secure
+		 Sockets Layer (SSL v2/v3) and Transport Layer Security (TLS v1) protocols as well
+		 as a full-strength general purpose cryptography library.
+		 This package contains the OpenSSL command-line utility.
+		 http://www.openssl.org/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_pppoe-discovery
+		tristate "pppoe-discovery.......................................... pppoe discovery"
+		default y if DEFAULT_pppoe-discovery
+		default m if ALL
+		help
+		 pppoe discovery
+		 Ye Qianchuan <yeqianchuan@tp-link.net>
+
+	config PACKAGE_procd
+		tristate "procd..................................... OpenWrt system process manager"
+		default y if DEFAULT_procd
+		default m if ALL
+		select PACKAGE_procd-nand if NAND_SUPPORT
+		select PACKAGE_ubusd
+		select PACKAGE_ubus
+		select PACKAGE_ubox
+		select PACKAGE_librt if USE_GLIBC
+		select PACKAGE_libjson-script
+		help
+		 OpenWrt system process manager
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+
+	menu "Configuration"
+		depends on PACKAGE_procd
+	
+	config PROCD_SHOW_BOOT
+		bool
+		default n
+		prompt "Print the shutdown to the console as well as logging it to syslog"
+	
+	config PROCD_ZRAM_TMPFS
+		bool
+		default n
+		prompt "Mount /tmp using zram."
+	endmenu
+
+	config PACKAGE_procd-nand
+		tristate "procd-nand................................ OpenWrt sysupgrade nand helper"
+		default y if DEFAULT_procd-nand
+		default m if ALL
+		select PACKAGE_ubi-utils
+		depends NAND_SUPPORT
+		help
+		 OpenWrt sysupgrade nand helper
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_procd-nand-firstboot
+		tristate "procd-nand-firstboot....................... OpenWrt firstboot nand helper"
+		default y if DEFAULT_procd-nand-firstboot
+		default m if ALL
+		depends PACKAGE_procd-nand
+		help
+		 OpenWrt firstboot nand helper
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_procd-seccomp
+		tristate "procd-seccomp.................... OpenWrt process seccomp helper + utrace"
+		default y if DEFAULT_procd-seccomp
+		default m if ALL
+		select PACKAGE_libblobmsg-json
+		depends arm||@armeb||@mips||@mipsel||@i386||@x86_64
+		depends KERNEL_SECCOMP
+		depends !TARGET_uml
+		select PACKAGE_libubox
+		help
+		 OpenWrt process seccomp helper + utrace
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_procd-ujail
+		tristate "procd-ujail.................................. OpenWrt process jail helper"
+		default y if DEFAULT_procd-ujail
+		default m if ALL
+		select KERNEL_PID_NS
+		select KERNEL_IPC_NS
+		select PACKAGE_libblobmsg-json
+		depends KERNEL_NAMESPACES
+		select PACKAGE_libubox
+		select KERNEL_UTS_NS
+		help
+		 OpenWrt process jail helper
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_swconfig
+		tristate "swconfig.................................... Switch configuration utility"
+		default y if DEFAULT_swconfig
+		default m if ALL
+		help
+		 Switch configuration utility
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_tcpdump
+		tristate "tcpdump..................... Network monitoring and data acquisition tool"
+		default y if DEFAULT_tcpdump
+		default m if ALL
+		select PACKAGE_libpcap
+		help
+		 Network monitoring and data acquisition tool
+		 http://www.tcpdump.org/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_tcpdump-mini
+		tristate "tcpdump-mini"
+		default y if DEFAULT_tcpdump-mini
+		default m if ALL
+		select PACKAGE_libpcap
+		help
+		 Network monitoring and data acquisition tool (minimal version)
+		 http://www.tcpdump.org/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_ubi-flash
+		tristate "ubi-flash...................................... OpenWrt ubi flashing tool"
+		default y if DEFAULT_ubi-flash
+		default m if ALL
+		help
+		 OpenWrt ubi flashing tool
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_ubox
+		tristate "ubox....................................... OpenWrt system helper toolbox"
+		default y if DEFAULT_ubox
+		default m if ALL
+		select PACKAGE_libubox
+		select PACKAGE_librt if USE_EGLIBC
+		select PACKAGE_ubusd
+		select PACKAGE_ubus
+		select PACKAGE_libuci
+		help
+		 OpenWrt system helper toolbox
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_zlib
+		tristate "zlib................. Library implementing the deflate compression method"
+		default y if DEFAULT_zlib
+		default m if ALL
+		help
+		 Library implementing the deflate compression method
+		 http://www.zlib.net/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+endmenu
+
+menu "Network"
+
+menu "File Transfer"
+	config PACKAGE_curl
+		tristate "curl.................................. A client-side URL transfer utility"
+		default y if DEFAULT_curl
+		default m if ALL
+		select PACKAGE_libcurl
+		help
+		 A client-side URL transfer utility
+		 http://curl.haxx.se/
+		 Imre Kaloz <kaloz@openwrt.org>
+
+endmenu
+menu "Firewall"
+	menuconfig PACKAGE_ip6tables
+		tristate "ip6tables.............................. IPv6 firewall administration tool"
+		default y if DEFAULT_ip6tables
+		default m if ALL
+		depends PACKAGE_kmod-ip6tables
+		help
+		 IPv6 firewall administration tool
+		 http://netfilter.org/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_ip6tables-extra
+		tristate "ip6tables-extra............................. IPv6 header matching modules"
+		default y if DEFAULT_ip6tables-extra
+		default m if ALL
+		select PACKAGE_kmod-ip6tables-extra
+		depends PACKAGE_ip6tables
+		help
+		 IPv6 header matching modules
+		 http://netfilter.org/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_ip6tables-mod-nat
+		tristate "ip6tables-mod-nat.................................... IPv6 NAT extensions"
+		default y if DEFAULT_ip6tables-mod-nat
+		default m if ALL
+		depends PACKAGE_ip6tables
+		select PACKAGE_kmod-ipt-nat6
+		help
+		 iptables extensions for IPv6-NAT targets.
+		 http://netfilter.org/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	menuconfig PACKAGE_iptables
+		tristate "iptables................................. IP firewall administration tool"
+		default y if DEFAULT_iptables
+		default m if ALL
+		select PACKAGE_libip6tc if IPV6
+		select PACKAGE_kmod-ipt-core
+		select PACKAGE_libip4tc
+		select PACKAGE_libxtables
+		help
+		 IP firewall administration tool.
+		 
+		  Matches:
+		   - icmp
+		   - tcp
+		   - udp
+		   - comment
+		   - conntrack
+		   - limit
+		   - mac
+		   - mark
+		   - multiport
+		   - set
+		   - state
+		   - time
+		 
+		  Targets:
+		   - ACCEPT
+		   - CT
+		   - DNAT
+		   - DROP
+		   - REJECT
+		   - LOG
+		   - MARK
+		   - MASQUERADE
+		   - REDIRECT
+		   - SET
+		   - SNAT
+		   - TCPMSS
+		 
+		  Tables:
+		   - filter
+		   - mangle
+		   - nat
+		   - raw
+		 
+		 http://netfilter.org/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_iptables-mod-conntrack-extra
+		tristate "iptables-mod-conntrack-extra........ Extra connection tracking extensions"
+		default y if DEFAULT_iptables-mod-conntrack-extra
+		default m if ALL
+		select PACKAGE_kmod-ipt-conntrack-extra
+		depends PACKAGE_iptables
+		help
+		 Extra iptables extensions for connection tracking.
+		 
+		  Matches:
+		   - connbytes
+		   - connlimit
+		   - connmark
+		   - recent
+		   - helper
+		 
+		  Targets:
+		   - CONNMARK
+		 
+		 http://netfilter.org/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_iptables-mod-extra
+		tristate "iptables-mod-extra....................... Other extra iptables extensions"
+		default y if DEFAULT_iptables-mod-extra
+		default m if ALL
+		select PACKAGE_kmod-ipt-extra
+		depends PACKAGE_iptables
+		help
+		 Other extra iptables extensions.
+		 
+		  Matches:
+		   - addrtype
+		   - condition
+		   - owner
+		   - physdev (if ebtables is enabled)
+		   - pkttype
+		   - quota
+		 
+		 http://netfilter.org/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_iptables-mod-filter
+		tristate "iptables-mod-filter........................ Content inspection extensions"
+		default y if DEFAULT_iptables-mod-filter
+		default m if ALL
+		depends PACKAGE_iptables
+		select PACKAGE_kmod-ipt-filter
+		help
+		 iptables extensions for packet content inspection.
+		 Includes support for:
+		 
+		  Matches:
+		   - layer7
+		   - string
+		 
+		 http://netfilter.org/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_iptables-mod-hashlimit
+		tristate "iptables-mod-hashlimit................................ hashlimit matching"
+		default y if DEFAULT_iptables-mod-hashlimit
+		default m if ALL
+		depends PACKAGE_iptables
+		select PACKAGE_kmod-ipt-hashlimit
+		help
+		 iptables extensions for hashlimit matching
+		 
+		  Matches:
+		   - hashlimit
+		 
+		 http://netfilter.org/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_iptables-mod-ipopt
+		tristate "iptables-mod-ipopt........................... IP/Packet option extensions"
+		default y if DEFAULT_iptables-mod-ipopt
+		default m if ALL
+		select PACKAGE_kmod-ipt-ipopt
+		depends PACKAGE_iptables
+		help
+		 iptables extensions for matching/changing IP packet options.
+		 
+		  Matches:
+		   - dscp
+		   - ecn
+		   - length
+		   - statistic
+		   - tcpmss
+		   - unclean
+		   - hl
+		 
+		  Targets:
+		   - DSCP
+		   - CLASSIFY
+		   - ECN
+		   - HL
+		 
+		 http://netfilter.org/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_iptables-mod-iprange
+		tristate "iptables-mod-iprange.................................. IP range extension"
+		default y if DEFAULT_iptables-mod-iprange
+		default m if ALL
+		depends PACKAGE_iptables
+		select PACKAGE_kmod-ipt-iprange
+		help
+		 iptables extensions for matching ip ranges.
+		 
+		  Matches:
+		   - iprange
+		 
+		 http://netfilter.org/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_iptables-mod-ipsec
+		tristate "iptables-mod-ipsec...................................... IPsec extensions"
+		default y if DEFAULT_iptables-mod-ipsec
+		default m if ALL
+		select PACKAGE_kmod-ipt-ipsec
+		depends PACKAGE_iptables
+		help
+		 iptables extensions for matching ipsec traffic.
+		 
+		  Matches:
+		   - ah
+		   - esp
+		   - policy
+		 
+		 http://netfilter.org/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_iptables-mod-led
+		tristate "iptables-mod-led.......................... LED trigger iptables extension"
+		default y if DEFAULT_iptables-mod-led
+		default m if ALL
+		select PACKAGE_kmod-ipt-led
+		depends PACKAGE_iptables
+		help
+		 iptables extension for triggering a LED.
+		 
+		  Targets:
+		   - LED
+		 
+		 http://netfilter.org/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_iptables-mod-nat-extra
+		tristate "iptables-mod-nat-extra.............................. Extra NAT extensions"
+		default y if DEFAULT_iptables-mod-nat-extra
+		default m if ALL
+		select PACKAGE_kmod-ipt-nat-extra
+		depends PACKAGE_iptables
+		help
+		 iptables extensions for extra NAT targets.
+		 
+		  Targets:
+		   - MIRROR
+		   - NETMAP
+		 http://netfilter.org/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_iptables-mod-nflog
+		tristate "iptables-mod-nflog................................ Netfilter NFLOG target"
+		default y if DEFAULT_iptables-mod-nflog
+		default m if ALL
+		select PACKAGE_kmod-ipt-nflog
+		depends PACKAGE_iptables
+		select PACKAGE_kmod-nfnetlink-log
+		help
+		 iptables extension for user-space logging via NFNETLINK.
+		 
+		  Includes:
+		   - libxt_NFLOG
+		 
+		 http://netfilter.org/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_iptables-mod-nfqueue
+		tristate "iptables-mod-nfqueue............................ Netfilter NFQUEUE target"
+		default y if DEFAULT_iptables-mod-nfqueue
+		default m if ALL
+		depends PACKAGE_iptables
+		select PACKAGE_kmod-nfnetlink-queue
+		select PACKAGE_kmod-ipt-nfqueue
+		help
+		 iptables extension for user-space queuing via NFNETLINK.
+		 
+		  Includes:
+		   - libxt_NFQUEUE
+		 
+		 http://netfilter.org/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_iptables-mod-tee
+		tristate "iptables-mod-tee................................. TEE iptables extensions"
+		default y if DEFAULT_iptables-mod-tee
+		default m if ALL
+		depends PACKAGE_iptables
+		select PACKAGE_kmod-ipt-tee
+		help
+		 TEE iptables extensions.
+		 
+		  Targets:
+		   - TEE
+		 
+		 http://netfilter.org/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_iptables-mod-tproxy
+		tristate "iptables-mod-tproxy................ Transparent proxy iptables extensions"
+		default y if DEFAULT_iptables-mod-tproxy
+		default m if ALL
+		depends PACKAGE_iptables
+		select PACKAGE_kmod-ipt-tproxy
+		help
+		 Transparent proxy iptables extensions.
+		 
+		  Matches:
+		   - socket
+		 
+		  Targets:
+		   - TPROXY
+		 
+		 http://netfilter.org/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_iptables-mod-u32
+		tristate "iptables-mod-u32................................. U32 iptables extensions"
+		default y if DEFAULT_iptables-mod-u32
+		default m if ALL
+		select PACKAGE_kmod-ipt-u32
+		depends PACKAGE_iptables
+		help
+		 U32 iptables extensions.
+		 
+		  Matches:
+		   - u32
+		 
+		 http://netfilter.org/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_iptables-mod-ulog
+		tristate "iptables-mod-ulog.............................. user-space packet logging"
+		default y if DEFAULT_iptables-mod-ulog
+		default m if ALL
+		select PACKAGE_kmod-ipt-ulog
+		depends PACKAGE_iptables
+		help
+		 iptables extensions for user-space packet logging.
+		 
+		  Targets:
+		   - ULOG
+		 
+		 http://netfilter.org/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+endmenu
+	config PACKAGE_uclient-fetch
+		tristate "uclient-fetch..................... Tiny wget replacement using libuclient"
+		default y if DEFAULT_uclient-fetch
+		default m if ALL
+		select PACKAGE_libuclient
+		help
+		 Tiny wget replacement using libuclient
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+endmenu
+
+menu "Kernel modules"
+
+menu "Netfilter Extensions"
+	config PACKAGE_kmod-ipt-LOOPBACKDNAT
+		tristate "kmod-ipt-LOOPBACKDNAT...................... LOOPBACKDNAT netfilter module"
+		default y if DEFAULT_kmod-ipt-LOOPBACKDNAT
+		default m if ALL
+		depends PACKAGE_kmod-ipt-core
+		help
+		 LOOPBACKDNAT netfilter module
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_kmod-ipt-account
+		tristate "kmod-ipt-account................................ ACCOUNT netfilter module"
+		default y if DEFAULT_kmod-ipt-account
+		default m if ALL
+		select PACKAGE_kmod-ipt-compat-xtables
+		depends PACKAGE_kmod-ipt-core
+		help
+		 ACCOUNT netfilter module
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_kmod-ipt-app
+		tristate "kmod-ipt-app........................................ app netfilter module"
+		default y if DEFAULT_kmod-ipt-app
+		default m if ALL
+		depends PACKAGE_kmod-ipt-core
+		help
+		 app netfilter module
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_kmod-ipt-chaos
+		tristate "kmod-ipt-chaos.................................... CHAOS netfilter module"
+		default y if DEFAULT_kmod-ipt-chaos
+		default m if ALL
+		select PACKAGE_kmod-ipt-delude
+		depends PACKAGE_kmod-ipt-core
+		select PACKAGE_kmod-ipt-tarpit
+		select PACKAGE_kmod-ipt-compat-xtables
+		help
+		 CHAOS netfilter module
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_kmod-ipt-compat-xtables
+		tristate "kmod-ipt-compat-xtables.......... API compatibilty layer netfilter module"
+		default y if DEFAULT_kmod-ipt-compat-xtables
+		default m if ALL
+		depends PACKAGE_kmod-ipt-core
+		help
+		 API compatibilty layer netfilter module
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_kmod-ipt-condition
+		tristate "kmod-ipt-condition............................ Condition netfilter module"
+		default y if DEFAULT_kmod-ipt-condition
+		default m if ALL
+		depends PACKAGE_kmod-ipt-core
+		help
+		 Condition netfilter module
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_kmod-ipt-delude
+		tristate "kmod-ipt-delude.................................. DELUDE netfilter module"
+		default y if DEFAULT_kmod-ipt-delude
+		default m if ALL
+		depends PACKAGE_kmod-ipt-core
+		select PACKAGE_kmod-ipt-compat-xtables
+		help
+		 DELUDE netfilter module
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_kmod-ipt-dhcpmac
+		tristate "kmod-ipt-dhcpmac................................ DHCPMAC netfilter module"
+		default y if DEFAULT_kmod-ipt-dhcpmac
+		default m if ALL
+		select PACKAGE_kmod-ipt-compat-xtables
+		depends PACKAGE_kmod-ipt-core
+		help
+		 DHCPMAC netfilter module
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_kmod-ipt-dnetmap
+		tristate "kmod-ipt-dnetmap................................ DNETMAP netfilter module"
+		default y if DEFAULT_kmod-ipt-dnetmap
+		default m if ALL
+		depends PACKAGE_kmod-ipt-core
+		select PACKAGE_kmod-ipt-compat-xtables
+		help
+		 DNETMAP netfilter module
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_kmod-ipt-fuzzy
+		tristate "kmod-ipt-fuzzy.................................... fuzzy netfilter module"
+		default y if DEFAULT_kmod-ipt-fuzzy
+		default m if ALL
+		depends PACKAGE_kmod-ipt-core
+		help
+		 fuzzy netfilter module
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_kmod-ipt-geoip
+		tristate "kmod-ipt-geoip.................................... geoip netfilter module"
+		default y if DEFAULT_kmod-ipt-geoip
+		default m if ALL
+		depends PACKAGE_kmod-ipt-core
+		help
+		 geoip netfilter module
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_kmod-ipt-httphost
+		tristate "kmod-ipt-httphost.............................. httphost netfilter module"
+		default y if DEFAULT_kmod-ipt-httphost
+		default m if ALL
+		depends PACKAGE_kmod-ipt-core
+		help
+		 httphost netfilter module
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_kmod-ipt-iface
+		tristate "kmod-ipt-iface.................................... iface netfilter module"
+		default y if DEFAULT_kmod-ipt-iface
+		default m if ALL
+		depends PACKAGE_kmod-ipt-core
+		help
+		 iface netfilter module
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_kmod-ipt-ipmark
+		tristate "kmod-ipt-ipmark.................................. IPMARK netfilter module"
+		default y if DEFAULT_kmod-ipt-ipmark
+		default m if ALL
+		depends PACKAGE_kmod-ipt-core
+		select PACKAGE_kmod-ipt-compat-xtables
+		help
+		 IPMARK netfilter module
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_kmod-ipt-ipp2p
+		tristate "kmod-ipt-ipp2p.................................... IPP2P netfilter module"
+		default y if DEFAULT_kmod-ipt-ipp2p
+		default m if ALL
+		select PACKAGE_kmod-ipt-compat-xtables
+		depends PACKAGE_kmod-ipt-core
+		help
+		 IPP2P netfilter module
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_kmod-ipt-ipv4options
+		tristate "kmod-ipt-ipv4options........................ ipv4options netfilter module"
+		default y if DEFAULT_kmod-ipt-ipv4options
+		default m if ALL
+		depends PACKAGE_kmod-ipt-core
+		help
+		 ipv4options netfilter module
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_kmod-ipt-length2
+		tristate "kmod-ipt-length2................................ length2 netfilter module"
+		default y if DEFAULT_kmod-ipt-length2
+		default m if ALL
+		depends PACKAGE_kmod-ipt-core
+		help
+		 length2 netfilter module
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_kmod-ipt-logmark
+		tristate "kmod-ipt-logmark................................ LOGMARK netfilter module"
+		default y if DEFAULT_kmod-ipt-logmark
+		default m if ALL
+		depends PACKAGE_kmod-ipt-core
+		select PACKAGE_kmod-ipt-compat-xtables
+		help
+		 LOGMARK netfilter module
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_kmod-ipt-lscan
+		tristate "kmod-ipt-lscan.................................... lscan netfilter module"
+		default y if DEFAULT_kmod-ipt-lscan
+		default m if ALL
+		depends PACKAGE_kmod-ipt-core
+		help
+		 lscan netfilter module
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_kmod-ipt-lua
+		tristate "kmod-ipt-lua........................... Lua PacketScript netfilter module"
+		default y if DEFAULT_kmod-ipt-lua
+		default m if ALL
+		select PACKAGE_kmod-ipt-conntrack-extra
+		depends PACKAGE_kmod-ipt-core
+		help
+		 Lua PacketScript netfilter module
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_kmod-ipt-nathelper-rtsp
+		tristate "kmod-ipt-nathelper-rtsp.......... RTSP Conntrack and NAT netfilter module"
+		default y if DEFAULT_kmod-ipt-nathelper-rtsp
+		default m if ALL
+		depends PACKAGE_kmod-ipt-core
+		select PACKAGE_kmod-ipt-conntrack-extra
+		help
+		 RTSP Conntrack and NAT netfilter module
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_kmod-ipt-pctl
+		tristate "kmod-ipt-pctl...................................... pctl netfilter module"
+		default y if DEFAULT_kmod-ipt-pctl
+		default m if ALL
+		depends PACKAGE_kmod-ipt-core
+		help
+		 pctl netfilter module
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_kmod-ipt-psd
+		tristate "kmod-ipt-psd........................................ psd netfilter module"
+		default y if DEFAULT_kmod-ipt-psd
+		default m if ALL
+		depends PACKAGE_kmod-ipt-core
+		help
+		 psd netfilter module
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_kmod-ipt-quota2
+		tristate "kmod-ipt-quota2.................................. quota2 netfilter module"
+		default y if DEFAULT_kmod-ipt-quota2
+		default m if ALL
+		depends PACKAGE_kmod-ipt-core
+		help
+		 quota2 netfilter module
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_kmod-ipt-rawnat
+		tristate "kmod-ipt-rawnat.................................. RAWNAT netfilter module"
+		default y if DEFAULT_kmod-ipt-rawnat
+		default m if ALL
+		depends PACKAGE_kmod-ipt-core
+		select PACKAGE_kmod-ipt-compat-xtables
+		help
+		 RAWNAT netfilter module
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_kmod-ipt-rawpost
+		tristate "kmod-ipt-rawpost................................ RAWPOST netfilter module"
+		default y if DEFAULT_kmod-ipt-rawpost
+		default m if ALL
+		depends PACKAGE_kmod-ipt-core
+		select PACKAGE_kmod-ipt-compat-xtables
+		help
+		 RAWPOST netfilter module
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_kmod-ipt-steal
+		tristate "kmod-ipt-steal.................................... STEAL netfilter module"
+		default y if DEFAULT_kmod-ipt-steal
+		default m if ALL
+		depends PACKAGE_kmod-ipt-core
+		select PACKAGE_kmod-ipt-compat-xtables
+		help
+		 STEAL netfilter module
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_kmod-ipt-sysrq
+		tristate "kmod-ipt-sysrq.................................... SYSRQ netfilter module"
+		default y if DEFAULT_kmod-ipt-sysrq
+		default m if ALL
+		depends PACKAGE_kmod-ipt-core
+		select PACKAGE_kmod-ipt-compat-xtables
+		help
+		 SYSRQ netfilter module
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_kmod-ipt-tarpit
+		tristate "kmod-ipt-tarpit.................................. TARPIT netfilter module"
+		default y if DEFAULT_kmod-ipt-tarpit
+		default m if ALL
+		depends PACKAGE_kmod-ipt-core
+		select PACKAGE_kmod-ipt-compat-xtables
+		help
+		 TARPIT netfilter module
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_kmod-ipt-trigger
+		tristate "kmod-ipt-trigger................................ TRIGGER netfilter module"
+		default y if DEFAULT_kmod-ipt-trigger
+		default m if ALL
+		depends PACKAGE_kmod-ipt-core
+		select PACKAGE_kmod-ipt-compat-xtables
+		help
+		 TRIGGER netfilter module
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_kmod-ipt-urlfilter
+		tristate "kmod-ipt-urlfilter............................ urlfilter netfilter module"
+		default y if DEFAULT_kmod-ipt-urlfilter
+		default m if ALL
+		depends PACKAGE_kmod-ipt-core
+		help
+		 urlfilter netfilter module
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+endmenu
+menu "Network Support"
+	config PACKAGE_kmod-shortcut-fe
+		tristate "kmod-shortcut-fe................................... Kernel driver for SFE"
+		default y if DEFAULT_kmod-shortcut-fe
+		default m if ALL
+		select PACKAGE_kmod-pptp
+		help
+		 Kernel driver for SFE
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_kmod-shortcut-fe-cm
+		tristate "kmod-shortcut-fe-cm................................ Kernel driver for SFE"
+		default y if DEFAULT_kmod-shortcut-fe-cm
+		default m if ALL
+		select PACKAGE_kmod-shortcut-fe
+		select PACKAGE_kmod-ipv6
+		select PACKAGE_kmod-ipt-conntrack
+		help
+		 Kernel driver for SFE
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+endmenu
+endmenu
+
+menu "Libraries"
+
+menu "Filesystem"
+	config PACKAGE_libsysfs
+		tristate "libsysfs................................................... Sysfs library"
+		default y if DEFAULT_libsysfs
+		default m if ALL
+		help
+		 The library's purpose is to provide a consistant and stable interface for
+		 querying system device information exposed through sysfs.
+		 http://linux-diag.sourceforge.net/Sysfsutils.html
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+endmenu
+menu "Firewall"
+	config PACKAGE_libip4tc
+		tristate "libip4tc.......................... IPv4 firewall - shared libiptc library"
+		default y if DEFAULT_libip4tc
+		default m if ALL
+		help
+		 IPv4 firewall - shared libiptc library
+		 http://netfilter.org/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_libip6tc
+		tristate "libip6tc.......................... IPv6 firewall - shared libiptc library"
+		default y if DEFAULT_libip6tc
+		default m if ALL
+		help
+		 IPv6 firewall - shared libiptc library
+		 http://netfilter.org/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_libiptc
+		tristate "libiptc. IPv4/IPv6 firewall - shared libiptc library (compatibility stub)"
+		default y if DEFAULT_libiptc
+		default m if ALL
+		select PACKAGE_libip4tc
+		select PACKAGE_libip6tc if IPV6
+		help
+		 IPv4/IPv6 firewall - shared libiptc library (compatibility stub)
+		 http://netfilter.org/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_libxtables
+		tristate "libxtables................... IPv4/IPv6 firewall - shared xtables library"
+		default y if DEFAULT_libxtables
+		default m if ALL
+		help
+		 IPv4/IPv6 firewall - shared xtables library
+		 http://netfilter.org/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+endmenu
+menu "SSL"
+	config PACKAGE_libcyassl
+		tristate "libcyassl................................................. CyaSSL library"
+		default y if DEFAULT_libcyassl
+		default m if ALL
+		help
+		 CyaSSL is an SSL library optimized for small footprint, both on disk and for
+		 memory use.
+		 http://www.wolfssl.com/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_libmbedtls
+		tristate "libmbedtls........................................ Embedded SSL (library)"
+		default y if DEFAULT_libmbedtls
+		default m if ALL
+		help
+		 The aim of the mbedtls project is to provide a quality, open-source
+		 cryptographic library written in C and targeted at embedded systems.
+		 This package contains the mbedtls library.
+		 https://tls.mbed.org
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+
+	config LIBMBEDTLS_DEBUG_C
+		depends on PACKAGE_libmbedtls
+		bool "Enable debug functions"
+		default n
+		help
+		 This option enables mbedtls library's debug functions.
+		 It increases the uncompressed libmbedtls binary size
+		 by around 60 KiB (for an ARMv5 platform).
+		 Usually, you don't need this, so don't select this if you're unsure.
+
+	config PACKAGE_libpolarssl
+		tristate "libpolarssl....................................... Embedded SSL (library)"
+		default y if DEFAULT_libpolarssl
+		default m if ALL
+		help
+		 The aim of the PolarSSL project is to provide a quality, open-source
+		 cryptographic library written in C and targeted at embedded systems.
+		 This package contains the PolarSSL library.
+		 http://polarssl.org/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+endmenu
+	config PACKAGE_libbsd
+		tristate "libbsd................................................ common BSD library"
+		default y if DEFAULT_libbsd
+		default m if ALL
+		depends USE_GLIBC
+		help
+		 This library provides useful functions commonly found on BSD systems, and lacking on others like GNU systems, thus making it easier to port projects with strong BSD origins, without needing to embed the same code over and over again on each project.
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_libcap
+		tristate "libcap........................................ Linux capabilities library"
+		default y if DEFAULT_libcap
+		default m if ALL
+		help
+		 Linux capabilities library
+		 http://www.kernel.org/pub/linux/libs/security/linux-privs/libcap2/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_libcharset
+		tristate "libcharset.............................. Character set conversion library"
+		default y if DEFAULT_libcharset
+		default m if ALL
+		help
+		 Character set conversion library
+		 http://www.gnu.org/software/libiconv/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_libconfig
+		tristate "libconfig..................................... Configuration File Library"
+		default y if DEFAULT_libconfig
+		default m if ALL
+		help
+		 Libconfig is a simple library for manipulating structured configuration
+		  files. This file format is more compact and more readable than XML. And
+		  unlike XML, it is type-aware, so it is not necessary to do string
+		  parsing in application code.
+		 
+		  Libconfig is very compact -- just 38K for the stripped C shared
+		  library (less than one-fourth the size of the expat XML parser library)
+		  and 66K for the stripped C++ shared library. This makes it well-suited
+		  for memory-constrained systems like handheld devices.
+		 http://www.hyperrealm.com/libconfig/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_libelf1
+		tristate "libelf1.............................. ELF manipulation libraries (libelf)"
+		default y if DEFAULT_libelf1
+		default m if ALL
+		select PACKAGE_libintl-full if BUILD_NLS
+		help
+		 ELF manipulation libraries (libelf)
+		 https://fedorahosted.org/elfutils/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_libasm
+		tristate "libasm............................... ELF manipulation libraries (libasm)"
+		default y if DEFAULT_libasm
+		default m if ALL
+		depends PACKAGE_libelf1
+		help
+		 ELF manipulation libraries (libasm)
+		 https://fedorahosted.org/elfutils/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	menuconfig PACKAGE_libcurl
+		tristate "libcurl............................... A client-side URL transfer library"
+		default y if DEFAULT_libcurl
+		default m if ALL
+		select PACKAGE_libssh2 if LIBCURL_SSH2
+		select PACKAGE_libaxtls if LIBCURL_AXTLS
+		select PACKAGE_libgnutls if LIBCURL_GNUTLS
+		select PACKAGE_libopenssl if LIBCURL_OPENSSL
+		select PACKAGE_libcyassl if LIBCURL_CYASSL
+		select PACKAGE_libpolarssl if LIBCURL_POLARSSL
+		select PACKAGE_libidn if LIBCURL_LIBIDN
+		select PACKAGE_libpthread if LIBCURL_THREADED_RESOLVER
+		select PACKAGE_libopenldap if LIBCURL_LDAP
+		select PACKAGE_zlib if LIBCURL_ZLIB
+		help
+		 A client-side URL transfer library
+		 http://curl.haxx.se/
+		 Imre Kaloz <kaloz@openwrt.org>
+
+
+	  source "opensource/opensource/curl/Config.in"
+
+	config PACKAGE_libdw
+		tristate "libdw................................. ELF manipulation libraries (libdw)"
+		default y if DEFAULT_libdw
+		default m if ALL
+		select PACKAGE_libbz2
+		depends PACKAGE_libelf1
+		select PACKAGE_zlib
+		help
+		 ELF manipulation libraries (libdw)
+		 https://fedorahosted.org/elfutils/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_libevent2
+		tristate "libevent2....................... Event notification library (version 2.0)"
+		default y if DEFAULT_libevent2
+		default m if ALL
+		help
+		 The libevent API provides a mechanism to execute a callback function
+		 	when a specific event occurs on a file descriptor or after a timeout
+		 	has been reached. Furthermore, libevent also support callbacks due
+		 	to signals or regular timeouts.
+		 
+		 	libevent is meant to replace the event loop found in event driven
+		 	network servers. An application just needs to call event_dispatch()
+		 	and then add or remove events dynamically without having to change
+		 	the event loop.
+		 
+		 	This package contains the libevent shared library historically
+		 	containing both the core & extra libraries.
+		 http://www.monkey.org/~provos/libevent/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_libevent2-core
+		tristate "libevent2-core............. Event notification core library (version 2.0)"
+		default y if DEFAULT_libevent2-core
+		default m if ALL
+		help
+		 The libevent API provides a mechanism to execute a callback function
+		 	when a specific event occurs on a file descriptor or after a timeout
+		 	has been reached. Furthermore, libevent also support callbacks due
+		 	to signals or regular timeouts.
+		 
+		 	libevent is meant to replace the event loop found in event driven
+		 	network servers. An application just needs to call event_dispatch()
+		 	and then add or remove events dynamically without having to change
+		 	the event loop.
+		 
+		 	This package contains the libevent core shared library for the event,
+		 	buffer & utility functions.
+		 http://www.monkey.org/~provos/libevent/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_libevent2-extra
+		tristate "libevent2-extra........... Event notification extra library (version 2.0)"
+		default y if DEFAULT_libevent2-extra
+		default m if ALL
+		help
+		 The libevent API provides a mechanism to execute a callback function
+		 	when a specific event occurs on a file descriptor or after a timeout
+		 	has been reached. Furthermore, libevent also support callbacks due
+		 	to signals or regular timeouts.
+		 
+		 	libevent is meant to replace the event loop found in event driven
+		 	network servers. An application just needs to call event_dispatch()
+		 	and then add or remove events dynamically without having to change
+		 	the event loop.
+		 
+		 	This package contains the libevent extra shared library for specific
+		 	protocols including HTTP, DNS & RPC.
+		 http://www.monkey.org/~provos/libevent/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_libevent2-openssl
+		tristate "libevent2-openssl....... Event notification OpenSSL library (version 2.0)"
+		default y if DEFAULT_libevent2-openssl
+		default m if ALL
+		select PACKAGE_libopenssl
+		help
+		 The libevent API provides a mechanism to execute a callback function
+		 	when a specific event occurs on a file descriptor or after a timeout
+		 	has been reached. Furthermore, libevent also support callbacks due
+		 	to signals or regular timeouts.
+		 
+		 	libevent is meant to replace the event loop found in event driven
+		 	network servers. An application just needs to call event_dispatch()
+		 	and then add or remove events dynamically without having to change
+		 	the event loop.
+		 
+		 	This package contains the libevent OpenSSL shared library for encrypted
+		 	bufferevents.
+		 http://www.monkey.org/~provos/libevent/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_libevent2-pthreads
+		tristate "libevent2-pthreads..... Event notification Pthreads library (version 2.0)"
+		default y if DEFAULT_libevent2-pthreads
+		default m if ALL
+		select PACKAGE_libpthread
+		help
+		 The libevent API provides a mechanism to execute a callback function
+		 	when a specific event occurs on a file descriptor or after a timeout
+		 	has been reached. Furthermore, libevent also support callbacks due
+		 	to signals or regular timeouts.
+		 
+		 	libevent is meant to replace the event loop found in event driven
+		 	network servers. An application just needs to call event_dispatch()
+		 	and then add or remove events dynamically without having to change
+		 	the event loop.
+		 
+		 	This package contains the libevent Pthreads shared library for
+		 	threading & locking.
+		 http://www.monkey.org/~provos/libevent/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_libgmp
+		tristate "libgmp............................. GNU multiprecision arithmetic library"
+		default y if DEFAULT_libgmp
+		default m if ALL
+		help
+		 GMP is a free library for arbitrary precision arithmetic, operating on
+		 	signed integers, rational numbers, and floating point numbers.
+		 http://gmplib.org/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_libiconv
+		tristate "libiconv"
+		default y if DEFAULT_libiconv
+		default m if ALL
+		help
+		 Tiny drop-in replacement for the GNU Character set conversion library
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_libiconv-full
+		tristate "libiconv-full........................... Character set conversion library"
+		default y if DEFAULT_libiconv-full
+		default m if ALL
+		help
+		 Character set conversion library
+		 http://www.gnu.org/software/libiconv/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_libintl
+		tristate "libintl............. Stub header for the GNU Internationalization library"
+		default y if DEFAULT_libintl
+		default m if ALL
+		help
+		 Stub header for the GNU Internationalization library
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_libintl-full
+		tristate "libintl-full............................ GNU Internationalization library"
+		default y if DEFAULT_libintl-full
+		default m if ALL
+		help
+		 GNU Internationalization library
+		 http://www.gnu.org/software/gettext/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_libiwinfo
+		tristate "libiwinfo.............. Generalized Wireless Information Library (iwinfo)"
+		default y if DEFAULT_libiwinfo
+		default m if ALL
+		select PACKAGE_libnl-tiny if PACKAGE_kmod-qca-mac80211
+		select PACKAGE_kmod-qca-wifi-akronite-perf if CONFIG_PACKAGE_kmod-qca-wifi-akronite-perf
+		select PACKAGE_libuci
+		select PACKAGE_libnl-tiny if PACKAGE_kmod-mac80211
+		help
+		 Wireless information library with consistent interface for proprietary Broadcom,
+		   madwifi, nl80211 and wext driver interfaces.
+		 Jo-Philipp Wich <xm@subsignal.org>
+
+	config PACKAGE_libltdl
+		tristate "libltdl......................... A generic dynamic object loading library"
+		default y if DEFAULT_libltdl
+		default m if ALL
+		help
+		 A generic dynamic object loading library
+		 http://www.gnu.org/software/libtool/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_libmnl
+		tristate "libmnl....................... Minimalistic user-space library for Netlink"
+		default y if DEFAULT_libmnl
+		default m if ALL
+		help
+		 libmnl is a minimalistic user-space library oriented to Netlink developers.
+		  There are a lot of common tasks in parsing, validating, constructing of
+		  both the Netlink header and TLVs that are repetitive and easy to get wrong.
+		  This library aims to provide simple helpers that allows you to re-use code
+		  and to avoid re-inventing the wheel. The main features of this library are:
+		  .
+		  * Small: the shared library requires around 30KB for an x86-based computer.
+		  .
+		  * Simple: this library avoids complexity and elaborated abstractions that
+		    tend to hide Netlink details.
+		  .
+		  * Easy to use: the library simplifies the work for Netlink-wise developers.
+		    It provides functions to make socket handling, message building, validating,
+		    parsing and sequence tracking, easier.
+		  .
+		  * Easy to re-use: you can use the library to build your own abstraction layer
+		    on top of this library.
+		  .
+		  * Decoupling: the interdependency of the main bricks that compose the library
+		    is reduced, i.e. the library provides many helpers, but the programmer is not
+		    forced to use them.
+		 http://www.netfilter.org/projects/libmnl/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_libncurses
+		tristate "libncurses..................................... Terminal handling library"
+		default y if DEFAULT_libncurses
+		default m if ALL
+		select PACKAGE_terminfo
+		help
+		 Terminal handling library
+		 http://www.gnu.org/software/ncurses/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_libncursesw
+		tristate "libncursesw.......................... Terminal handling library (Unicode)"
+		default y if DEFAULT_libncursesw
+		default m if ALL
+		help
+		 Terminal handling library (Unicode)
+		 http://www.gnu.org/software/ncurses/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_libnetfilter-conntrack
+		tristate "libnetfilter-conntrack"
+		default y if DEFAULT_libnetfilter-conntrack
+		default m if ALL
+		select PACKAGE_kmod-nf-conntrack-netlink
+		select PACKAGE_libnfnetlink
+		help
+		 libnetfilter_conntrack is a userspace library providing a programming
+		  interface (API) to the in-kernel connection tracking state table. The
+		  library libnetfilter_conntrack has been previously known as
+		  libnfnetlink_conntrack and libctnetlink. This library is currently
+		  used by conntrack-tools among many other applications.
+		 http://www.netfilter.org/projects/libnetfilter_conntrack/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_libnetfilter-cthelper
+		tristate "libnetfilter-cthelper"
+		default y if DEFAULT_libnetfilter-cthelper
+		default m if ALL
+		select PACKAGE_libmnl
+		help
+		 libnetfilter_cthelper is a userspace library providing a programming
+		  interface (API) to the in-kernel connection tracking helpers. 
+		  This library is currently used by conntrack-tools.
+		 http://www.netfilter.org/projects/libnetfilter_cthelper/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_libnetfilter-cttimeout
+		tristate "libnetfilter-cttimeout"
+		default y if DEFAULT_libnetfilter-cttimeout
+		default m if ALL
+		select PACKAGE_libmnl
+		help
+		 libnetfilter_cttimeout is a userspace library providing a programming
+		  interface (API) to the in-kernel connection tracking timeout handling.
+		  This library is currently used by conntrack-tools.
+		 http://www.netfilter.org/projects/libnetfilter_cttimeout/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_libnetfilter-log
+		tristate "libnetfilter-log"
+		default y if DEFAULT_libnetfilter-log
+		default m if ALL
+		select PACKAGE_kmod-nfnetlink-log
+		select PACKAGE_libmnl
+		select PACKAGE_libnfnetlink
+		help
+		 libnetfilter_log is a userspace library providing interface to packets that
+		  have been logged by the kernel packet filter. It is is part of a system that
+		  deprecates the old syslog/dmesg based packet logging. This library has been
+		  previously known as libnfnetlink_log.
+		 http://www.netfilter.org/projects/libnetfilter_log/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_libnetfilter-queue
+		tristate "libnetfilter-queue"
+		default y if DEFAULT_libnetfilter-queue
+		default m if ALL
+		select PACKAGE_libmnl
+		select PACKAGE_libnfnetlink
+		help
+		 libnetfilter_queue is a userspace library providing a programming
+		  interface (API) to the in-kernel connection tracking state table.
+		  This library is currently used by conntrack-tools.
+		 http://www.netfilter.org/projects/libnetfilter_queue/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_libnettle
+		tristate "libnettle............................................. GNU crypto library"
+		default y if DEFAULT_libnettle
+		default m if ALL
+		select PACKAGE_libgmp if !LIBNETTLE_MINI
+		help
+		 GNU crypto library
+		 http://www.lysator.liu.se/~nisse/nettle/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+
+		source "opensource/opensource/nettle/Config.in"
+
+	config PACKAGE_libnfnetlink
+		tristate "libnfnetlink"
+		default y if DEFAULT_libnfnetlink
+		default m if ALL
+		help
+		 libnfnetlink is is the low-level library for netfilter related kernel/userspace communication.
+		  It provides a generic messaging infrastructure for in-kernel netfilter subsystems
+		  (such as nfnetlink_log, nfnetlink_queue, nfnetlink_conntrack) and their respective users
+		  and/or management tools in userspace.
+		 http://netfilter.org/projects/libnfnetlink/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_libnftnl
+		tristate "libnftnl........... Low-level netlink library for the nf_tables subsystem"
+		default y if DEFAULT_libnftnl
+		default m if ALL
+		select PACKAGE_libmnl
+		help
+		 libnftnl is a userspace library providing a low-level netlink
+		  programming interface (API) to the in-kernel nf_tables subsystem.
+		 http://www.netfilter.org/projects/libnftnl
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_libnl
+		tristate "libnl............................................. netlink socket library"
+		default y if DEFAULT_libnl
+		default m if ALL
+		select PACKAGE_libpthread
+		help
+		 This package contains a library for applications dealing with netlink sockets
+		 http://people.suug.ch/~tgr/libnl/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_libpopt
+		tristate "libpopt............................ A command line option parsing library"
+		default y if DEFAULT_libpopt
+		default m if ALL
+		help
+		 A command line option parsing library
+		 http://rpm5.org/files/popt/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_libreadline
+		tristate "libreadline................................ Command lines edition library"
+		default y if DEFAULT_libreadline
+		default m if ALL
+		help
+		 The Readline library provides a set of functions for use by applications 
+		 	that allow users to edit command lines as they are typed in. Both Emacs 
+		 	and vi editing modes are available. The Readline library includes 
+		 	additional functions to maintain a list of previously-entered command 
+		 	lines, to recall and perhaps reedit those lines, and perform csh-like 
+		 	history expansion on previous commands.
+		 http://cnswww.cns.cwru.edu/php/chet/readline/rltop.html
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_libroxml
+		tristate "libroxml..... Minimum, easy-to-use, C implementation for xml file parsing"
+		default y if DEFAULT_libroxml
+		default m if ALL
+		help
+		 Minimum, easy-to-use, C implementation for xml file parsing
+		 http://www.libroxml.net/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_librpc
+		tristate "librpc................................................ uClibc RPC library"
+		default y if DEFAULT_librpc
+		default m if ALL
+		help
+		 uClibc RPC library
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_libsodium
+		tristate "libsodium...................................... The Sodium crypto library"
+		default y if DEFAULT_libsodium
+		default m if ALL
+		select PACKAGE_libpthread
+		help
+		 Sodium is a new, easy-to-use software library for encryption, decryption, signatures, password hashing and more.
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_libubox-lua
+		tristate "libubox-lua............ Lua binding for the OpenWrt Basic utility library"
+		default y if DEFAULT_libubox-lua
+		default m if ALL
+		select PACKAGE_libubox
+		select PACKAGE_liblua
+		help
+		 Lua binding for the OpenWrt Basic utility library
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_libuclient
+		tristate "libuclient....................................... HTTP/1.1 client library"
+		default y if DEFAULT_libuclient
+		default m if ALL
+		select PACKAGE_libubox
+		help
+		 HTTP/1.1 client library
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_libusb-1.0
+		tristate "libusb-1.0..................... A library for accessing Linux USB devices"
+		default y if DEFAULT_libusb-1.0
+		default m if ALL
+		select PACKAGE_libpthread
+		select PACKAGE_librt
+		help
+		 libusb is a C library that gives applications easy access to USB devices on
+		   many different operating systems.
+		 http://libusb.wiki.sourceforge.net/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_libusb-compat
+		tristate "libusb-compat........................... libusb-0.1 compatibility library"
+		default y if DEFAULT_libusb-compat
+		default m if ALL
+		select PACKAGE_libusb-1.0
+		help
+		 libusb is a C library that gives applications easy access to USB devices on
+		   many different operating systems.
+		 http://libusb.wiki.sourceforge.net/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_libustream-cyassl
+		tristate "libustream-cyassl........................... ustream SSL Library (cyassl)"
+		default y if DEFAULT_libustream-cyassl
+		default m if ALL
+		select PACKAGE_libcyassl
+		select PACKAGE_libubox
+		select PACKAGE_libopenssl
+		help
+		 ustream SSL Library (cyassl)
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_libustream-openssl
+		tristate "libustream-openssl......................... ustream SSL Library (openssl)"
+		default y if DEFAULT_libustream-openssl
+		default m if ALL
+		select PACKAGE_libopenssl
+		select PACKAGE_libubox
+		help
+		 ustream SSL Library (openssl)
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_libustream-polarssl
+		tristate "libustream-polarssl....................... ustream SSL Library (polarssl)"
+		default y if DEFAULT_libustream-polarssl
+		default m if ALL
+		select PACKAGE_libopenssl
+		select PACKAGE_libubox
+		select PACKAGE_libpolarssl
+		help
+		 ustream SSL Library (polarssl)
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_libuv
+		tristate "libuv............................. Cross-platform asychronous I/O library"
+		default y if DEFAULT_libuv
+		default m if ALL
+		select PACKAGE_librt
+		select PACKAGE_libpthread
+		help
+		 libuv is a multi-platform support library with a focus on asynchronous I/O. It
+		  was primarily developed for use by Node.js, but it's also used by Luvit, Julia,
+		  pyuv, and others.
+		 https://github.com/libuv/libuv
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_libwebsockets-full
+		tristate "libwebsockets-full... libwebsockets (Full - OpenSSL, libuv, plugins, CGI)"
+		default y if DEFAULT_libwebsockets-full
+		default m if ALL
+		select PACKAGE_zlib
+		select PACKAGE_libopenssl
+		select PACKAGE_libuv
+		select PACKAGE_libcap
+		help
+		 libwebsockets (Full - OpenSSL, libuv, plugins, CGI)
+		 https://libwebsockets.org
+		 Karl Palsson <karlp@etactica.com>
+
+	config PACKAGE_libwebsockets-mbedtls
+		tristate "libwebsockets-mbedtls............................ libwebsockets (mbedTLS)"
+		default y if DEFAULT_libwebsockets-mbedtls
+		default m if ALL
+		select PACKAGE_libmbedtls
+		select PACKAGE_zlib
+		select PACKAGE_libcap
+		help
+		 libwebsockets (mbedTLS)
+		 https://libwebsockets.org
+		 Karl Palsson <karlp@etactica.com>
+
+	config PACKAGE_libwebsockets-openssl
+		tristate "libwebsockets-openssl............................ libwebsockets (OpenSSL)"
+		default y if DEFAULT_libwebsockets-openssl
+		default m if ALL
+		select PACKAGE_libopenssl
+		select PACKAGE_zlib
+		select PACKAGE_libcap
+		help
+		 libwebsockets (OpenSSL)
+		 https://libwebsockets.org
+		 Karl Palsson <karlp@etactica.com>
+
+	config PACKAGE_sshpass
+		tristate "sshpass.......................................................... sshpass"
+		default y if DEFAULT_sshpass
+		default m if ALL
+		help
+		 SSHpass offers you the ability to automatically offer a password via SSH when you are prompted for it.
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_terminfo
+		tristate "terminfo................................ Terminal Info Database (ncurses)"
+		default y if DEFAULT_terminfo
+		default m if ALL
+		help
+		 Terminal Info Database (ncurses)
+		 http://www.gnu.org/software/ncurses/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+	config PACKAGE_uclibcxx
+		tristate "uclibcxx................................ C++ library for embedded systems"
+		default y if DEFAULT_uclibcxx
+		default m if ALL
+		help
+		 C++ library for embedded systems
+		 http://cxx.uclibc.org/src/
+		 OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
+endmenu
+

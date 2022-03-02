@@ -1,0 +1,23 @@
+Source-Makefile: package/feeds/iplatform/conntrack-tools-1-0/Makefile
+Package: conntrack-tools-1-0
+Submenu: Firewall
+Version: 1.0.0-1
+Depends:  +libnetfilter-conntrack
+Menu-Depends: 
+Provides: 
+Section: TP-LINK
+Category: TP-LINK iplatform apps
+Title: Connection tracking userspace tools
+Maintainer: OpenWrt Developers Team <openwrt-devel@openwrt.org>
+Source: 
+Type: ipkg
+Description:  The conntrack-tools are a set of free software userspace tools for Linux
+ that allow system administrators interact with the Connection Tracking
+ System, which is the module that provides stateful packet inspection for
+ iptables. The conntrack-tools are the userspace daemon conntrackd and the
+ command line interface conntrack.
+http://conntrack-tools.netfilter.org/
+OpenWrt Developers Team <openwrt-devel@openwrt.org>
+@@
+
+

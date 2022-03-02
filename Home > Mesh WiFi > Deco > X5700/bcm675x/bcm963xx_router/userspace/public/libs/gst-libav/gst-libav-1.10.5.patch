@@ -1,0 +1,13 @@
+--- gst-libav-1.10.5/configure	2017-06-15 01:22:47.000000000 -0700
++++ ./configure	2017-12-08 16:40:56.278321434 -0800
+@@ -18307,6 +18307,10 @@
+     emblibav_configure_args="$emblibav_configure_args --nm=\\\"\\\$NM\\\""
+   fi
+ 
++  if test x"$RANLIB" != x; then
++    emblibav_configure_args="$emblibav_configure_args --ranlib=\\\"\\\$RANLIB\\\""
++  fi
++
+     LIBAV_OPTS=`cd $srcdir/gst-libs/ext/libav && ./configure --help`
+   # Let's check if we can disable the building of the libav binary
+   can_disable=`echo "$LIBAV_OPTS" | grep 'disable-ffmpeg'`

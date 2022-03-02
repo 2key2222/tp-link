@@ -1,0 +1,34 @@
+Source-Makefile: feeds/iplatform/uclient/Makefile
+Package: libuclient
+Version: 2015-04-14-81fdb8fdf1470e1c7bf3124ff20d17feaeb519ee
+Depends:  +libubox
+Menu-Depends: 
+Provides: 
+Build-Depends: ustream-ssl
+Section: libs
+Category: Libraries
+Title: HTTP/1.1 client library
+Maintainer: OpenWrt Developers Team <openwrt-devel@openwrt.org>
+Source: uclient-2015-04-14-81fdb8fdf1470e1c7bf3124ff20d17feaeb519ee.tar.gz
+Type: ipkg
+Description: HTTP/1.1 client library
+OpenWrt Developers Team <openwrt-devel@openwrt.org>
+@@
+
+Package: uclient-fetch
+Version: 2015-04-14-81fdb8fdf1470e1c7bf3124ff20d17feaeb519ee
+Depends:  +libuclient
+Menu-Depends: 
+Provides: 
+Build-Depends: ustream-ssl
+Section: net
+Category: Network
+Title: Tiny wget replacement using libuclient
+Maintainer: OpenWrt Developers Team <openwrt-devel@openwrt.org>
+Source: uclient-2015-04-14-81fdb8fdf1470e1c7bf3124ff20d17feaeb519ee.tar.gz
+Type: ipkg
+Description: Tiny wget replacement using libuclient
+OpenWrt Developers Team <openwrt-devel@openwrt.org>
+@@
+
+

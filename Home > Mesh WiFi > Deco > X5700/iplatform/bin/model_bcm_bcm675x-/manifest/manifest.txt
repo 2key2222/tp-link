@@ -1,0 +1,1457 @@
+Package: 6rd
+Version: 2-1
+Depends: kmod-ipv6, kmod-sit
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+4.0K	/lib/netifd/proto/6rd.sh
+8.0K	/usr/sbin/6rdcalc
+12K	total
+
+Package: base-files
+Version: 157.2-unknown
+Depends: netifd, libc
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+Conffiles:
+ /etc/config/network 3b0b448d2b15a482cad689130f72b464
+ /etc/config/system 5f02b4f3e8851724a76aee38d72a6121
+ /etc/hosts 0eea71665fb6890c06421fd13aa3f849
+ /etc/inittab e505fa469df79c113a1fd511eb99bd4a
+ /etc/group 4a116d818b2f49e14939d581ec786de1
+ /etc/passwd 8a31e6d3e2d67fc7b99f56055e9d802b
+ /etc/shadow b3fb0239813cef6d784a28beb28f2f80
+ /etc/profile 42203a4f0b360b65f4a839080321d66a
+ /etc/protocols e1b2c07d83ff5322a6353945a5c4b7e6
+ /etc/services e30a9085944e0dd94ab277a512298256
+ /etc/shells 725ba6f40dff0612f61ecd3f171bb3e1
+ /etc/sysctl.conf ab8df241f87cf25521570667773de136
+ /etc/rc.local 6f8bfdaf36d3ec4aa9be6e96fa61d32b
+ /etc/sysupgrade.conf f91aef484370cefee501d64b5725c1d2
+ /etc/config/network 3b0b448d2b15a482cad689130f72b464
+ /etc/config/system 5f02b4f3e8851724a76aee38d72a6121
+
+4.0K	/bin/board_detect
+4.0K	/bin/check_group
+4.0K	/bin/config_generate
+4.0K	/bin/ipcalc.sh
+4.0K	/bin/login.sh
+0	/etc/TZ
+4.0K	/etc/banner
+4.0K	/etc/banner.failsafe
+4.0K	/etc/config/network
+4.0K	/etc/config/system
+4.0K	/etc/device_info
+4.0K	/etc/diag.sh
+0	/etc/fstab
+4.0K	/etc/group
+4.0K	/etc/hosts
+4.0K	/etc/hotplug.d/net/00-sysctl
+4.0K	/etc/init.d/boot
+4.0K	/etc/init.d/done
+4.0K	/etc/init.d/led
+4.0K	/etc/init.d/reload_config
+4.0K	/etc/init.d/sysctl
+4.0K	/etc/init.d/sysfixtime
+4.0K	/etc/init.d/system
+4.0K	/etc/init.d/umount
+4.0K	/etc/init.d/zzz
+4.0K	/etc/inittab
+0	/etc/mtab
+4.0K	/etc/openwrt_release
+4.0K	/etc/openwrt_version
+4.0K	/etc/opkg/keys/53bad1233d4c98c5
+4.0K	/etc/opkg/keys/de98a2dd1d0f8a07
+4.0K	/etc/passwd
+4.0K	/etc/preinit
+4.0K	/etc/profile
+4.0K	/etc/protocols
+4.0K	/etc/rc.button/failsafe
+4.0K	/etc/rc.button/power
+4.0K	/etc/rc.button/reset
+4.0K	/etc/rc.button/rfkill
+4.0K	/etc/rc.common
+4.0K	/etc/rc.local
+0	/etc/resolv.conf
+4.0K	/etc/services
+4.0K	/etc/shadow
+4.0K	/etc/shells
+4.0K	/etc/sysctl.conf
+4.0K	/etc/sysupgrade.conf
+4.0K	/etc/uci-defaults/10_migrate-shadow
+4.0K	/etc/uci-defaults/11_migrate-sysctl
+4.0K	/etc/uci-defaults/12_network-generate-ula
+12K	/lib/functions.sh
+4.0K	/lib/functions/leds.sh
+8.0K	/lib/functions/network.sh
+4.0K	/lib/functions/preinit.sh
+4.0K	/lib/functions/service.sh
+4.0K	/lib/functions/system.sh
+8.0K	/lib/functions/uci-defaults-new.sh
+8.0K	/lib/functions/uci-defaults.sh
+8.0K	/lib/upgrade/common.sh
+4.0K	/lib/upgrade/keep.d/base-files
+4.0K	/lib/upgrade/keep.d/base-files-essential
+4.0K	/rom/note
+4.0K	/sbin/firstboot
+4.0K	/sbin/gen_passwd
+8.0K	/sbin/getfirm
+4.0K	/sbin/hotplug-call
+4.0K	/sbin/led.sh
+4.0K	/sbin/loadconfig
+4.0K	/sbin/loadprofile
+4.0K	/sbin/loaduci
+4.0K	/sbin/mergeextraconfig
+4.0K	/sbin/network_firm
+4.0K	/sbin/network_get_firm
+4.0K	/sbin/saveconfig
+4.0K	/sbin/setwifi
+8.0K	/sbin/sysupgrade
+8.0K	/sbin/wifi
+4.0K	/sbin/wifi_commit
+0	/var
+332K	total
+
+Package: block-mount
+Version: 2015-02-25-4b68e9f9ea894bf58d31e26ca5ed92c81b1a115e
+Depends: ubox, libubox, libuci
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+4.0K	/etc/hotplug.d/block/10-mount
+4.0K	/etc/init.d/fstab
+4.0K	/etc/uci-defaults/10-fstab
+24K	/lib/libblkid-tiny.so
+24K	/sbin/block
+0	/usr/sbin/swapoff
+0	/usr/sbin/swapon
+60K	total
+
+Package: bridge
+Version: 1.5-1
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+28K	/usr/sbin/brctl
+28K	total
+
+Package: busybox
+Version: 1.22.1-3
+Depends: common, ubus, libubus, libubox, libblobmsg-json, libuci, uci
+Provides:
+Status: install user installed
+Essential: yes
+Architecture: model_bcm_bcm675x
+
+0	/bin/ash
+384K	/bin/busybox
+0	/bin/cat
+0	/bin/chgrp
+0	/bin/chmod
+0	/bin/chown
+0	/bin/cp
+0	/bin/date
+0	/bin/dd
+0	/bin/df
+0	/bin/dmesg
+0	/bin/echo
+0	/bin/egrep
+0	/bin/false
+0	/bin/fgrep
+0	/bin/fsync
+0	/bin/grep
+0	/bin/gunzip
+0	/bin/gzip
+0	/bin/kill
+0	/bin/ln
+0	/bin/login
+0	/bin/ls
+0	/bin/mkdir
+0	/bin/mknod
+0	/bin/mktemp
+0	/bin/mount
+0	/bin/mv
+0	/bin/netstat
+0	/bin/nice
+0	/bin/pidof
+0	/bin/ping
+0	/bin/ping6
+0	/bin/ps
+0	/bin/pwd
+0	/bin/rm
+0	/bin/rmdir
+0	/bin/sed
+0	/bin/sh
+0	/bin/sleep
+0	/bin/stat
+0	/bin/sync
+0	/bin/tar
+0	/bin/touch
+0	/bin/true
+0	/bin/umount
+0	/bin/uname
+0	/bin/usleep
+0	/bin/vi
+0	/bin/zcat
+0	/etc/crontabs/root
+4.0K	/etc/init.d/cron
+4.0K	/etc/init.d/sysntpd
+4.0K	/etc/init.d/telnet
+0	/sbin/devmem
+0	/sbin/halt
+0	/sbin/hwclock
+0	/sbin/ifconfig
+0	/sbin/mdev
+0	/sbin/mkswap
+0	/sbin/pivot_root
+0	/sbin/poweroff
+0	/sbin/reboot
+0	/sbin/route
+0	/sbin/start-stop-daemon
+0	/sbin/switch_root
+0	/sbin/sysctl
+0	/sbin/udhcpc
+0	/sbin/vconfig
+0	/usr/bin/[
+0	/usr/bin/[[
+0	/usr/bin/awk
+0	/usr/bin/basename
+0	/usr/bin/bunzip2
+0	/usr/bin/bzcat
+0	/usr/bin/chrt
+0	/usr/bin/clear
+0	/usr/bin/cmp
+0	/usr/bin/crontab
+0	/usr/bin/cut
+0	/usr/bin/diff
+0	/usr/bin/dirname
+0	/usr/bin/du
+0	/usr/bin/dumpleases
+0	/usr/bin/env
+0	/usr/bin/expr
+0	/usr/bin/find
+0	/usr/bin/free
+0	/usr/bin/head
+0	/usr/bin/hexdump
+0	/usr/bin/hostid
+0	/usr/bin/id
+0	/usr/bin/killall
+0	/usr/bin/less
+0	/usr/bin/logger
+0	/usr/bin/lsof
+0	/usr/bin/md5sum
+0	/usr/bin/mkfifo
+0	/usr/bin/nc
+0	/usr/bin/nslookup
+0	/usr/bin/passwd
+0	/usr/bin/pgrep
+0	/usr/bin/printf
+0	/usr/bin/readlink
+0	/usr/bin/reset
+0	/usr/bin/seq
+0	/usr/bin/sha1sum
+0	/usr/bin/sort
+0	/usr/bin/strings
+0	/usr/bin/tail
+0	/usr/bin/taskset
+0	/usr/bin/tee
+0	/usr/bin/telnet
+0	/usr/bin/test
+0	/usr/bin/tftp
+0	/usr/bin/time
+0	/usr/bin/top
+0	/usr/bin/tr
+0	/usr/bin/traceroute
+0	/usr/bin/uniq
+0	/usr/bin/unzip
+0	/usr/bin/uptime
+0	/usr/bin/wc
+0	/usr/bin/wget
+0	/usr/bin/which
+0	/usr/bin/xargs
+0	/usr/bin/yes
+0	/usr/sbin/arping
+0	/usr/sbin/chroot
+0	/usr/sbin/crond
+0	/usr/sbin/dhcprelay
+0	/usr/sbin/ntpd
+0	/usr/sbin/telnetd
+0	/usr/sbin/tftpd
+0	/usr/sbin/udhcpd
+396K	total
+
+Package: conntrack-tools-1-0
+Version: 1.0.0-1
+Depends: libnetfilter-conntrack
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+Conffiles:
+ /etc/conntrackd/conntrackd.conf 1d6497f4781ca1d72f2f901bd4cdee80
+
+4.0K	/etc/conntrackd/conntrackd.conf
+40K	/usr/sbin/conntrack
+156K	/usr/sbin/conntrackd
+200K	total
+
+Package: curl
+Version: 7.40.0-3.2
+Depends: libcurl
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+88K	/usr/bin/curl
+88K	total
+
+Package: dnsmasq
+Version: 2.62-2
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+Conffiles:
+ /etc/config/dhcp b55f8be7c5771a38fe25833d5cded077
+ /etc/dnsmasq.conf 7cf378e58d3fe5db31f4116a16c15c61
+
+4.0K	/etc/config/dhcp
+4.0K	/etc/dnsmasq.conf
+4.0K	/etc/hotplug.d/iface/60-dnsmasq
+16K	/etc/init.d/dnsmasq
+84K	/usr/sbin/dnsmasq
+112K	total
+
+Package: ds-lite
+Version: 1-1
+Depends: kmod-ipv6, kmod-ip6-tunnel
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+8.0K	/lib/netifd/proto/dslite.sh
+8.0K	total
+
+Package: firewall
+Version: 2-55.1
+Depends: iptables, kmod-ipt-conntrack, kmod-ipt-nat
+Provides:
+Status: install user installed
+Architecture: all
+Conffiles:
+ /etc/config/firewall 08ef8fc70f91bf121f82589d82605e7c
+ /etc/firewall.user 43e25ef73306f7ea73813d648990b181
+
+4.0K	/etc/config/firewall
+4.0K	/etc/firewall.user
+4.0K	/etc/hotplug.d/firewall/10-nat-reflection
+4.0K	/etc/hotplug.d/iface/20-firewall
+4.0K	/etc/init.d/firewall
+4.0K	/lib/firewall/config.sh
+4.0K	/lib/firewall/core.sh
+4.0K	/lib/firewall/core_forwarding.sh
+8.0K	/lib/firewall/core_init.sh
+8.0K	/lib/firewall/core_interface.sh
+4.0K	/lib/firewall/core_log.sh
+4.0K	/lib/firewall/core_redirect.sh
+4.0K	/lib/firewall/core_rule.sh
+4.0K	/lib/firewall/core_tpcmd.sh
+12K	/lib/firewall/fw.sh
+12K	/lib/firewall/tpcmd.sh
+4.0K	/lib/firewall/uci_firewall.sh
+4.0K	/lib/upgrade/keep.d/firewall
+4.0K	/sbin/fw
+100K	total
+
+Package: fstools
+Version: 2015-02-25-4b68e9f9ea894bf58d31e26ca5ed92c81b1a115e
+Depends: ubox
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+28K	/lib/libfstools.so
+0	/sbin/jffs2mark
+12K	/sbin/jffs2reset
+8.0K	/sbin/mount_root
+4.0K	/sbin/snapshot
+12K	/sbin/snapshot_tool
+64K	total
+
+Package: improxy
+Version: 1.0-1
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+Conffiles:
+ /etc/config/improxy 0d35cf18b3ad6555ed9638d73cd04e4b
+
+4.0K	/etc/config/improxy
+4.0K	/etc/hotplug.d/firewall/50-improxy
+4.0K	/etc/hotplug.d/iface/50-improxy
+4.0K	/etc/init.d/improxy
+44K	/usr/sbin/improxy
+60K	total
+
+Package: ip
+Version: 3.3.0-1
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+Conffiles:
+ /etc/iproute2/rt_tables a1313318d6778fe6b8c680248ef5a463
+
+4.0K	/etc/iproute2/rt_tables
+220K	/usr/sbin/ip
+224K	total
+
+Package: iptables
+Version: 1.4.21-1
+Depends: kmod-ipt-core, libip4tc, libip6tc, libxtables
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+0	/usr/sbin/iptables
+0	/usr/sbin/iptables-restore
+0	/usr/sbin/iptables-save
+256K	/usr/sbin/xtables-multi
+256K	total
+
+Package: iptables-mod-extra
+Version: 1.4.21-1
+Depends: iptables, kmod-ipt-extra
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+Package: iptables-mod-iprange
+Version: 1.4.21-1
+Depends: iptables, kmod-ipt-iprange
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+Package: iputils-ping6
+Version: 20101006-1
+Depends: libopenssl
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+36K	/usr/sbin/ping6
+36K	total
+
+Package: iwinfo
+Version: 36
+Depends: libiwinfo
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+20K	/usr/bin/iwinfo
+20K	total
+
+Package: jshn
+Version: 2015-11-08-10429bccd0dc5d204635e110a7a8fae7b80d16cb
+Depends: libjson-c, libubox, libblobmsg-json
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+12K	/usr/bin/jshn
+8.0K	/usr/share/libubox/jshn.sh
+20K	total
+
+Package: jsonfilter
+Version: 2014-06-19-cdc760c58077f44fc40adbbe41e1556a67c1b9a9
+Depends: libubox, libjson-c
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+20K	/usr/bin/jsonfilter
+20K	total
+
+Package: libasan
+Version: -1
+Depends: libgcc
+Provides:
+Status: install hold installed
+Essential: yes
+Architecture: model_bcm_bcm675x
+
+Package: libblobmsg-json
+Version: 2015-11-08-10429bccd0dc5d204635e110a7a8fae7b80d16cb
+Depends: libjson-c, libubox
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+12K	/lib/libblobmsg_json.so
+12K	total
+
+Package: libc
+Version: -1
+Depends: libgcc
+Provides:
+Status: install hold installed
+Essential: yes
+Architecture: model_bcm_bcm675x
+
+Package: libcap
+Version: 2.22-1
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+0	/usr/lib/libcap.so
+0	/usr/lib/libcap.so.2
+16K	/usr/lib/libcap.so.2.22
+16K	total
+
+Package: libcurl
+Version: 7.40.0-3.2
+Depends: libopenssl
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+0	/usr/lib/libcurl.so.4
+232K	/usr/lib/libcurl.so.4.3.0
+232K	total
+
+Package: libcyassl
+Version: 3.8.0-2
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+0	/usr/lib/libcyassl.so
+0	/usr/lib/libwolfssl.so
+0	/usr/lib/libwolfssl.so.3
+244K	/usr/lib/libwolfssl.so.3.1.0
+244K	total
+
+Package: libdaemon
+Version: 0.14-2
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+0	/usr/lib/libdaemon.so.0
+24K	/usr/lib/libdaemon.so.0.5.0
+24K	total
+
+Package: libgcc
+Version: -1
+Provides:
+Status: install hold installed
+Essential: yes
+Architecture: model_bcm_bcm675x
+
+Package: libip4tc
+Version: 1.4.21-1
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+0	/usr/lib/libip4tc.so
+0	/usr/lib/libip4tc.so.0
+24K	/usr/lib/libip4tc.so.0.1.0
+24K	total
+
+Package: libip6tc
+Version: 1.4.21-1
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+0	/usr/lib/libip6tc.so
+0	/usr/lib/libip6tc.so.0
+24K	/usr/lib/libip6tc.so.0.1.0
+24K	total
+
+Package: libiwinfo
+Version: 36
+Depends: libuci
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+28K	/usr/lib/libiwinfo.so
+28K	total
+
+Package: libiwinfo-lua
+Version: 36
+Depends: libiwinfo, liblua, lua
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+20K	/usr/lib/lua/iwinfo.so
+20K	total
+
+Package: libjson
+Version: 0.11-2
+Depends: libjson-c
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+0	/usr/lib/libjson.so.0
+8.0K	/usr/lib/libjson.so.0.1.0
+8.0K	total
+
+Package: libjson-c
+Version: 0.11-2
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+0	/usr/lib/libjson-c.so.2
+32K	/usr/lib/libjson-c.so.2.0.1
+32K	total
+
+Package: libjson-script
+Version: 2015-11-08-10429bccd0dc5d204635e110a7a8fae7b80d16cb
+Depends: libubox
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+12K	/lib/libjson_script.so
+12K	total
+
+Package: liblua
+Version: 5.1.5-1
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+128K	/usr/lib/liblua.so.5.1.5
+128K	total
+
+Package: liblzo
+Version: 2.06-1
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+0	/usr/lib/liblzo2.so
+0	/usr/lib/liblzo2.so.2
+96K	/usr/lib/liblzo2.so.2.0.0
+96K	total
+
+Package: libmbedtls
+Version: 2.16.1-1
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+288K	/usr/lib/libmbedcrypto.so.2.16.1
+0	/usr/lib/libmbedcrypto.so.3
+0	/usr/lib/libmbedtls.so.12
+96K	/usr/lib/libmbedtls.so.2.16.1
+0	/usr/lib/libmbedx509.so.0
+68K	/usr/lib/libmbedx509.so.2.16.1
+452K	total
+
+Package: libmnl
+Version: 1.0.3-2
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+0	/usr/lib/libmnl.so.0
+16K	/usr/lib/libmnl.so.0.1.0
+16K	total
+
+Package: libnetfilter-conntrack
+Version: 0.9.1-1
+Depends: libnfnetlink, kmod-nf-conntrack-netlink
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+0	/usr/lib/libnetfilter_conntrack.so.3
+60K	/usr/lib/libnetfilter_conntrack.so.3.1.3
+60K	total
+
+Package: libnetfilter-cthelper
+Version: 1.0.0-1
+Depends: libmnl
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+0	/usr/lib/libnetfilter_cthelper.so.0
+12K	/usr/lib/libnetfilter_cthelper.so.0.0.0
+12K	total
+
+Package: libnetfilter-cttimeout
+Version: 1.0.0-1
+Depends: libmnl
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+0	/usr/lib/libnetfilter_cttimeout.so.1
+16K	/usr/lib/libnetfilter_cttimeout.so.1.0.0
+16K	total
+
+Package: libnetfilter-queue
+Version: 1.0.2-1
+Depends: libmnl, libnfnetlink
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+0	/usr/lib/libnetfilter_queue.so.1
+20K	/usr/lib/libnetfilter_queue.so.1.3.0
+20K	total
+
+Package: libnfnetlink
+Version: 1.0.1-1
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+0	/usr/lib/libnfnetlink.so.0
+24K	/usr/lib/libnfnetlink.so.0.2.0
+24K	total
+
+Package: libnl-tiny
+Version: 0.1-3
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+28K	/usr/lib/libnl-tiny.so
+28K	total
+
+Package: libopenssl
+Version: 1.0.2d-1
+Depends: zlib
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+1.1M	/usr/lib/libcrypto.so.1.0.0
+264K	/usr/lib/libssl.so.1.0.0
+1.4M	total
+
+Package: libosmsg
+Version: 1.0-1
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+12K	/usr/lib/libosmsg.so
+12K	total
+
+Package: libpcap
+Version: 1.1.1-2
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+0	/usr/lib/libpcap.so
+0	/usr/lib/libpcap.so.1.1
+172K	/usr/lib/libpcap.so.1.1.1
+172K	total
+
+Package: libpthread
+Version: -1
+Depends: libgcc
+Provides:
+Status: install hold installed
+Essential: yes
+Architecture: model_bcm_bcm675x
+
+Package: librt
+Version: -1
+Depends: libpthread
+Provides:
+Status: install hold installed
+Essential: yes
+Architecture: model_bcm_bcm675x
+
+Package: libsodium
+Version: 1.0.18-1
+Depends: libpthread
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+0	/usr/lib/libsodium.so
+0	/usr/lib/libsodium.so.23
+260K	/usr/lib/libsodium.so.23.3.0
+260K	total
+
+Package: libssh
+Version: 0.7.3-1
+Depends: libpthread, librt, zlib, libopenssl
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+0	/usr/lib/libssh.so
+0	/usr/lib/libssh.so.4
+292K	/usr/lib/libssh.so.4.4.1
+0	/usr/lib/libssh_threads.so
+0	/usr/lib/libssh_threads.so.4
+8.0K	/usr/lib/libssh_threads.so.4.4.1
+300K	total
+
+Package: libstdcpp
+Version: -1
+Provides:
+Status: install hold installed
+Essential: yes
+Architecture: model_bcm_bcm675x
+
+Package: libubox
+Version: 2015-11-08-10429bccd0dc5d204635e110a7a8fae7b80d16cb
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+36K	/lib/libubox.so
+36K	total
+
+Package: libubox-lua
+Version: 2015-11-08-10429bccd0dc5d204635e110a7a8fae7b80d16cb
+Depends: libubox, liblua
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+12K	/usr/lib/lua/uloop.so
+12K	total
+
+Package: libubsan
+Version: -1
+Depends: libgcc
+Provides:
+Status: install hold installed
+Essential: yes
+Architecture: model_bcm_bcm675x
+
+Package: libubus
+Version: 2015-05-25-f361bfa5fcb2daadf3b160583ce665024f8d108e
+Depends: libubox
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+20K	/lib/libubus.so
+20K	total
+
+Package: libubus-lua
+Version: 2015-05-25-f361bfa5fcb2daadf3b160583ce665024f8d108e
+Depends: libubus, liblua
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+16K	/usr/lib/lua/ubus.so
+16K	total
+
+Package: libuci
+Version: 2015-08-27.1-1
+Depends: libubox
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+36K	/lib/libuci.so
+36K	total
+
+Package: libuci-lua
+Version: 2015-08-27.1-1
+Depends: libuci, liblua
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+16K	/usr/lib/lua/uci.so
+16K	total
+
+Package: libustream-openssl
+Version: 2020-06-18-40b563b1ea89dabb2b6cd90644908134a0c8eff2
+Depends: libubox, libopenssl, libopenssl
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+12K	/lib/libustream-ssl.so
+12K	total
+
+Package: libuuid
+Version: 2.21.2-1
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+0	/usr/lib/libuuid.so.1
+16K	/usr/lib/libuuid.so.1.3.0
+16K	total
+
+Package: libuv
+Version: 1.9.1-1
+Depends: libpthread, librt
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+0	/usr/lib/libuv.so
+0	/usr/lib/libuv.so.1
+108K	/usr/lib/libuv.so.1.0.0
+108K	total
+
+Package: libwebsockets-mbedtls
+Version: 3.0.1-1
+Depends: zlib, libcap, libmbedtls
+Provides: libwebsockets
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+0	/usr/lib/libwebsockets.so
+172K	/usr/lib/libwebsockets.so.13
+172K	total
+
+Package: libxtables
+Version: 1.4.21-1
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+0	/usr/lib/libxtables.so
+0	/usr/lib/libxtables.so.10
+40K	/usr/lib/libxtables.so.10.0.0
+40K	total
+
+Package: lua
+Version: 5.1.5-1
+Depends: liblua
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+16K	/usr/bin/lua
+16K	total
+
+Package: luac
+Version: 5.1.5-1
+Depends: liblua
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+16K	/usr/bin/luac
+16K	total
+
+Package: luasocket
+Version: 2.0.2-3
+Depends: lua
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+8.0K	/usr/lib/lua/ltn12.lua
+4.0K	/usr/lib/lua/mime.lua
+16K	/usr/lib/lua/mime.so.1.0.2
+0	/usr/lib/lua/mime/core.so
+4.0K	/usr/lib/lua/socket.lua
+36K	/usr/lib/lua/socket.so.2.0.2
+0	/usr/lib/lua/socket/core.so
+12K	/usr/lib/lua/socket/ftp.lua
+12K	/usr/lib/lua/socket/http.lua
+12K	/usr/lib/lua/socket/smtp.lua
+4.0K	/usr/lib/lua/socket/tp.lua
+12K	/usr/lib/lua/socket/url.lua
+120K	total
+
+Package: luci-lib-core
+Version: unknown-1
+Depends: lua, libuci-lua, libubus-lua
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+4.0K	/etc/config/ucitrack
+4.0K	/sbin/luci-reload
+4.0K	/usr/lib/lua/luci/ccache.lua
+4.0K	/usr/lib/lua/luci/debug.lua
+12K	/usr/lib/lua/luci/fs.lua
+4.0K	/usr/lib/lua/luci/init.lua
+20K	/usr/lib/lua/luci/ip.lua
+12K	/usr/lib/lua/luci/ltn12.lua
+12K	/usr/lib/lua/luci/model/firewall.lua
+36K	/usr/lib/lua/luci/model/network.lua
+16K	/usr/lib/lua/luci/model/uci.lua
+4.0K	/usr/lib/lua/luci/store.lua
+24K	/usr/lib/lua/luci/util.lua
+4.0K	/usr/lib/lua/luci/version.lua
+160K	total
+
+Package: luci-lib-json
+Version: unknown-1
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+16K	/usr/lib/lua/luci/json.lua
+16K	total
+
+Package: luci-lib-nixio
+Version: unknown-1
+Depends: luci-lib-core
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+4.0K	/lib/upgrade/luci-add-conffiles.sh
+4.0K	/usr/lib/lua/bit.lua
+64K	/usr/lib/lua/nixio.so
+4.0K	/usr/lib/lua/nixio/fs.lua
+8.0K	/usr/lib/lua/nixio/util.lua
+84K	total
+
+Package: luci-lib-sys
+Version: unknown-1
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+32K	/usr/lib/lua/luci/sys.lua
+12K	/usr/lib/lua/luci/sys/iptparser.lua
+4.0K	/usr/lib/lua/luci/sys/zoneinfo.lua
+20K	/usr/lib/lua/luci/sys/zoneinfo/tzdata.lua
+4.0K	/usr/lib/lua/luci/sys/zoneinfo/tzoffset.lua
+72K	total
+
+Package: luci-lib-web
+Version: unknown-1
+Depends: luci-lib-core, luci-lib-sys, luci-lib-nixio, luci-lib-core, luci-sgi-cgi
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+Conffiles:
+ /etc/config/luci 9ad93451ad3c977ed4ca90da98bcc1ea
+
+4.0K	/etc/config/luci
+4.0K	/usr/lib/lua/luci/cacheloader.lua
+40K	/usr/lib/lua/luci/cbi.lua
+8.0K	/usr/lib/lua/luci/cbi/datatypes.lua
+4.0K	/usr/lib/lua/luci/config.lua
+28K	/usr/lib/lua/luci/dispatcher.lua
+12K	/usr/lib/lua/luci/http.lua
+28K	/usr/lib/lua/luci/http/protocol.lua
+8.0K	/usr/lib/lua/luci/http/protocol/conditionals.lua
+4.0K	/usr/lib/lua/luci/http/protocol/date.lua
+4.0K	/usr/lib/lua/luci/http/protocol/mime.lua
+4.0K	/usr/lib/lua/luci/i18n.lua
+8.0K	/usr/lib/lua/luci/sauth.lua
+16K	/usr/lib/lua/luci/service.lua
+4.0K	/usr/lib/lua/luci/template.lua
+20K	/usr/lib/lua/luci/template/parser.so
+28K	/www/luci-static/resources/cbi.js
+4.0K	/www/luci-static/resources/cbi/add.gif
+4.0K	/www/luci-static/resources/cbi/apply.gif
+4.0K	/www/luci-static/resources/cbi/arrow.gif
+4.0K	/www/luci-static/resources/cbi/down.gif
+4.0K	/www/luci-static/resources/cbi/download.gif
+4.0K	/www/luci-static/resources/cbi/edit.gif
+4.0K	/www/luci-static/resources/cbi/fieldadd.gif
+4.0K	/www/luci-static/resources/cbi/file.gif
+4.0K	/www/luci-static/resources/cbi/find.gif
+4.0K	/www/luci-static/resources/cbi/folder.gif
+4.0K	/www/luci-static/resources/cbi/help.gif
+4.0K	/www/luci-static/resources/cbi/key.gif
+4.0K	/www/luci-static/resources/cbi/link.gif
+4.0K	/www/luci-static/resources/cbi/reload.gif
+4.0K	/www/luci-static/resources/cbi/remove.gif
+4.0K	/www/luci-static/resources/cbi/reset.gif
+4.0K	/www/luci-static/resources/cbi/save.gif
+4.0K	/www/luci-static/resources/cbi/up.gif
+4.0K	/www/luci-static/resources/cbi/user.gif
+300K	total
+
+Package: luci-sgi-cgi
+Version: unknown-1
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+4.0K	/usr/lib/lua/luci/sgi/cgi.lua
+4.0K	/www/cgi-bin/luci
+8.0K	total
+
+Package: miniupnpd
+Version: 1.8.20130426-2
+Depends: iptables, libip4tc, libnfnetlink
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+Conffiles:
+ /etc/config/upnpd 7ac3ae02560f8ac866180b8a0b7b9d2b
+
+4.0K	/etc/config/upnpd
+4.0K	/etc/hotplug.d/iface/50-miniupnpd
+4.0K	/etc/hotplug.d/mode/50-miniupnpd
+8.0K	/etc/init.d/miniupnpd
+4.0K	/etc/uci-defaults/99-miniupnpd
+80K	/usr/sbin/miniupnpd
+4.0K	/usr/share/miniupnpd/firewall.include
+108K	total
+
+Package: mtd
+Version: 20
+Depends: libubox
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+24K	/sbin/mtd
+24K	total
+
+Package: ndppd
+Version: 0.2.6-1
+Depends: libstdcpp
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+Conffiles:
+ /etc/ndppd.conf 9dd94c36de5bd2e69edbbf32c5faeef7
+
+4.0K	/etc/init.d/ndppd
+4.0K	/etc/ndppd.conf
+84K	/usr/sbin/ndppd
+92K	total
+
+Package: netifd
+Version: 2013-05-13-bc4a4bb127622c76085ecec7fd20448aad7bafaf
+Depends: libuci, libnl-tiny, libubus, ubus, ubusd, jshn, kmod-bonding
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+4.0K	/etc/config/portspeed
+8.0K	/etc/hotplug.d/bridge/01-vlanstate
+4.0K	/etc/hotplug.d/bridge/02-alter-wanif
+4.0K	/etc/hotplug.d/iface/00-netstate
+8.0K	/etc/hotplug.d/iface/01-ipv6
+4.0K	/etc/hotplug.d/iface/05-stat
+4.0K	/etc/hotplug.d/iface/10-sysctl
+4.0K	/etc/hotplug.d/iface/80-tcpmss
+4.0K	/etc/hotplug.d/mode/00-network
+4.0K	/etc/hotplug.d/net/03-vlanset
+28K	/etc/init.d/network
+4.0K	/etc/init.d/networkx
+4.0K	/etc/vlan.d/vlan
+4.0K	/lib/netifd/dhcp.script
+8.0K	/lib/netifd/netifd-proto.sh
+4.0K	/lib/netifd/proto/dhcp.sh
+4.0K	/lib/network/config.sh
+4.0K	/sbin/devstatus
+0	/sbin/ifdown
+4.0K	/sbin/ifmac
+4.0K	/sbin/ifstatus
+4.0K	/sbin/ifup
+92K	/sbin/netifd
+4.0K	/sbin/portset
+4.0K	/sbin/portspeed
+4.0K	/usr/share/udhcpc/default.script
+224K	total
+
+Package: openssl-util
+Version: 1.0.2d-1
+Depends: libopenssl
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+Conffiles:
+ /etc/ssl/openssl.cnf 7df26c55291b33344dc15e3935dabaf3
+
+12K	/etc/ssl/openssl.cnf
+456K	/usr/bin/openssl
+468K	total
+
+Package: opkg
+Version: 618-5
+Depends: zlib
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+Conffiles:
+ /etc/opkg.conf 70a5b9103c44a6f8b31300594aa23301
+
+112K	/bin/opkg
+4.0K	/etc/opkg.conf
+116K	total
+
+Package: pppd
+Version: 2.4.3-8
+Depends: kmod-ppp, kmod-pptp, kmod-pppoe, resolveip
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+4.0K	/etc/ppp/chap-secrets
+4.0K	/etc/ppp/filter
+4.0K	/etc/ppp/options
+0	/etc/ppp/resolv.conf
+4.0K	/lib/netifd/ppp-dhcp6c.script
+4.0K	/lib/netifd/ppp-down
+4.0K	/lib/netifd/ppp-up
+8.0K	/lib/netifd/pppshare-dhcp6c.script
+8.0K	/lib/netifd/pppshare-up
+8.0K	/lib/netifd/pppv6-up
+8.0K	/lib/netifd/proto/ppp.sh
+4.0K	/lib/netifd/proto/pppshare.sh
+4.0K	/lib/netifd/proto/pppv6.sh
+268K	/usr/sbin/pppd
+332K	total
+
+Package: pppoe-discovery
+Version: 3.8p
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+16K	/usr/sbin/pppoe-discovery
+16K	total
+
+Package: procd
+Version: 2015-10-29.1-d5fddd91b966424bb63e943e789704d52382cc18
+Depends: ubusd, ubus, libjson-script, ubox, librt, libubox, libubus
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+4.0K	/etc/hotplug-preinit.json
+4.0K	/etc/hotplug.json
+12K	/lib/functions/procd.sh
+8.0K	/lib/libsetlbf.so
+8.0K	/sbin/askfirst
+16K	/sbin/init
+52K	/sbin/procd
+4.0K	/sbin/reload_config
+12K	/sbin/udevtrigger
+120K	total
+
+Package: radvd
+Version: 1.7-1
+Depends: kmod-ipv6, libdaemon
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+Conffiles:
+ /etc/config/radvd 60c3ad8ad87d5dd14799fe7a5db73f72
+
+4.0K	/etc/config/radvd
+4.0K	/etc/hotplug.d/mode/90-radvd
+12K	/etc/init.d/radvd
+384K	/usr/sbin/radvd
+404K	total
+
+Package: radvdump
+Version: 1.7-1
+Depends: kmod-ipv6, libdaemon
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+20K	/usr/sbin/radvdump
+20K	total
+
+Package: resolveip
+Version: 2
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+8.0K	/usr/bin/resolveip
+8.0K	total
+
+Package: sshpass
+Version: 1.0.6-1
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+12K	/usr/bin/sshpass
+12K	total
+
+Package: sysstat
+Version: 10.1.7-1
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+4.0K	/lib/upgrade/keep.d/sysstat
+32K	/usr/bin/iostat
+28K	/usr/bin/mpstat
+36K	/usr/bin/pidstat
+4.0K	/usr/bin/sa1
+4.0K	/usr/bin/sa2
+64K	/usr/bin/sadc
+144K	/usr/bin/sadf
+76K	/usr/bin/sar
+392K	total
+
+Package: tc
+Version: 3.3.0-1
+Depends: kmod-sched-core
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+4.0K	/etc/hotplug.d/iface/30-teql
+4.0K	/lib/debug/tc
+244K	/usr/sbin/tc
+252K	total
+
+Package: ubox
+Version: 2014-03-27-1d9d2e6ae99c9ba72d1bc40e554d5f422c9b9196
+Depends: libubox, ubusd, ubus, libuci
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+4.0K	/etc/init.d/log
+20K	/lib/libvalidate.so
+16K	/sbin/kmodloader
+12K	/sbin/logd
+16K	/sbin/logread
+12K	/sbin/validate_data
+0	/usr/sbin/insmod
+0	/usr/sbin/lsmod
+0	/usr/sbin/modinfo
+0	/usr/sbin/modprobe
+0	/usr/sbin/rmmod
+80K	total
+
+Package: ubus
+Version: 2015-05-25-f361bfa5fcb2daadf3b160583ce665024f8d108e
+Depends: libubus, libblobmsg-json, ubusd
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+12K	/bin/ubus
+12K	total
+
+Package: ubusd
+Version: 2015-05-25-f361bfa5fcb2daadf3b160583ce665024f8d108e
+Depends: libubox
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+20K	/sbin/ubusd
+20K	total
+
+Package: uci
+Version: 2015-08-27.1-1
+Depends: libuci
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+4.0K	/lib/config/uci.sh
+16K	/sbin/uci
+20K	total
+
+Package: uhttpd
+Version: 2015-11-08-fe01ef3f52adae9da38ef47926cd50974af5d6b7
+Depends: libubox, libblobmsg-json, libjson-script
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+Conffiles:
+ /etc/config/uhttpd cf7e57ef44d4931e5f77f378949666a9
+
+4.0K	/etc/config/uhttpd
+8.0K	/etc/init.d/uhttpd
+4.0K	/lib/upgrade/keep.d/uhttpd
+44K	/usr/sbin/uhttpd
+60K	total
+
+Package: uhttpd-mod-ubus
+Version: 2015-11-08-fe01ef3f52adae9da38ef47926cd50974af5d6b7
+Depends: uhttpd, libubus, libblobmsg-json
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+4.0K	/etc/uci-defaults/00_uhttpd_ubus
+16K	/usr/lib/uhttpd_ubus.so
+20K	total
+
+Package: uuidgen
+Version: 2.21.2-1
+Depends: libuuid
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+8.0K	/usr/bin/uuidgen
+8.0K	total
+
+Package: wide-dhcpv6-client
+Version: 20080615-11
+Depends: kmod-ipv6
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+4.0K	/lib/netifd/dhcp6c.script
+8.0K	/lib/netifd/proto/dhcp6c.sh
+4.0K	/lib/upgrade/keep.d/wide-dhcpv6-client
+128K	/usr/sbin/dhcp6c
+144K	total
+
+Package: wide-dhcpv6-server
+Version: 20080615-11
+Depends: kmod-ipv6
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+Conffiles:
+ /etc/config/dhcp6s 2b4045e19472ad6e5a51fb78a422d340
+
+4.0K	/etc/config/dhcp6s
+4.0K	/etc/dhcp6cctlkey
+4.0K	/etc/dhcp6s.conf
+4.0K	/etc/dhcp6sctlkey
+4.0K	/etc/init.d/dhcp6s
+116K	/usr/sbin/dhcp6s
+136K	total
+
+Package: xl2tpd
+Version: 1.1.12-1
+Depends: pppd, kmod-pppol2tp, kmod-ppp, ip, resolveip
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+8.0K	/lib/netifd/proto/l2tp.sh
+88K	/usr/sbin/xl2tpd
+96K	total
+
+Package: zlib
+Version: 1.2.8-1
+Provides:
+Status: install user installed
+Architecture: model_bcm_bcm675x
+
+0	/usr/lib/libz.so
+0	/usr/lib/libz.so.1
+72K	/usr/lib/libz.so.1.2.8
+72K	total
+

@@ -1,0 +1,110 @@
+diff --git orig_lxc-2.0.4/src/lxc/bdev/lxclvm.c lxc-2.0.4/src/lxc/bdev/lxclvm.c
+--- orig_lxc-2.0.4/src/lxc/bdev/lxclvm.c
++++ lxc-2.0.4/src/lxc/bdev/lxclvm.c
+@@ -32,10 +32,19 @@
+ #include <sys/wait.h>
+ 
+ #include "bdev.h"
++#include "config.h"
+ #include "log.h"
+ #include "lxclvm.h"
+ #include "utils.h"
+ 
++/* major()/minor() */
++#ifdef MAJOR_IN_MKDEV
++#    include <sys/mkdev.h>
++#endif
++#ifdef MAJOR_IN_SYSMACROS
++#    include <sys/sysmacros.h>
++#endif
++
+ lxc_log_define(lxclvm, lxc);
+ 
+ extern char *dir_new_path(char *src, const char *oldname, const char *name,
+diff --git orig_lxc-2.0.4/src/lxc/conf.c lxc-2.0.4/src/lxc/conf.c
+--- orig_lxc-2.0.4/src/lxc/conf.c
++++ lxc-2.0.4/src/lxc/conf.c
+@@ -39,6 +39,14 @@
+ #include <grp.h>
+ #include <time.h>
+ 
++/* makedev() */
++#ifdef MAJOR_IN_MKDEV
++#    include <sys/mkdev.h>
++#endif
++#ifdef MAJOR_IN_SYSMACROS
++#    include <sys/sysmacros.h>
++#endif
++
+ #ifdef HAVE_STATVFS
+ #include <sys/statvfs.h>
+ #endif
+diff --git orig_lxc-2.0.4/src/lxc/lxccontainer.c lxc-2.0.4/src/lxc/lxccontainer.c
+--- orig_lxc-2.0.4/src/lxc/lxccontainer.c
++++ lxc-2.0.4/src/lxc/lxccontainer.c
+@@ -61,6 +61,14 @@
+ #include "utils.h"
+ #include "version.h"
+ 
++/* major()/minor() */
++#ifdef MAJOR_IN_MKDEV
++#    include <sys/mkdev.h>
++#endif
++#ifdef MAJOR_IN_SYSMACROS
++#    include <sys/sysmacros.h>
++#endif
++
+ #if HAVE_IFADDRS_H
+ #include <ifaddrs.h>
+ #else
+
+diff -Naur orig_lxc-2.0.4/src/lxc/caps.c lxc-2.0.4/src/lxc/caps.c
+--- orig_lxc-2.0.4/src/lxc/caps.c       2016-08-16 10:37:55.000000000 +0800
++++ lxc-2.0.4/src/lxc/caps.c    2018-11-14 06:39:30.337873048 +0800
+@@ -34,7 +34,7 @@
+
+ lxc_log_define(lxc_caps, lxc);
+
+-#if HAVE_SYS_CAPABILITY_H
++#if HAVE_LIBCAP
+ #include <sys/capability.h>
+
+ #ifndef PR_CAPBSET_READ
+diff -Naur orig_lxc-2.0.4/src/lxc/caps.h lxc-2.0.4/src/lxc/caps.h
+--- orig_lxc-2.0.4/src/lxc/caps.h       2016-08-16 10:37:55.000000000 +0800
++++ lxc-2.0.4/src/lxc/caps.h    2018-11-14 06:40:05.538403316 +0800
+@@ -25,7 +25,7 @@
+ #ifndef __LXC_CAPS_H
+ #define __LXC_CAPS_H
+
+-#if HAVE_SYS_CAPABILITY_H
++#if HAVE_LIBCAP
+ extern int lxc_caps_down(void);
+ extern int lxc_caps_up(void);
+ extern int lxc_caps_init(void);
+
+diff -Naur orig_lxc-2.0.4/configure.ac lxc-2.0.4/configure.ac
+--- orig_lxc-2.0.4/configure.ac	2016-08-16 10:37:55.000000000 +0800
++++ lxc-2.0.4/configure.ac	2018-11-14 07:46:24.554956344 +0800
+@@ -334,7 +334,8 @@
+ AM_CONDITIONAL([ENABLE_CAP], [test "x$enable_capabilities" = "xyes"])
+ 
+ AM_COND_IF([ENABLE_CAP],
+-	[AC_CHECK_LIB(cap,cap_set_proc,[true],[AC_MSG_ERROR([You are missing libcap support.])])
++	[AC_CHECK_HEADER([sys/capability.h],[],[AC_MSG_ERROR([You must install the libcap development package in order to compile lxc])])
++	AC_CHECK_LIB(cap,cap_set_proc,[],[AC_MSG_ERROR([You must install the libcap development package in order to compile lxc])])
+ 	AC_SUBST([CAP_LIBS], [-lcap])])
+ 
+ # HAVE_SCMP_FILTER_CTX=1 will tell us we have libseccomp api >= 1.0.0
+@@ -590,7 +591,10 @@
+ AC_CHECK_DECLS([PR_CAPBSET_DROP], [], [], [#include <sys/prctl.h>])
+ 
+ # Check for some headers
+-AC_CHECK_HEADERS([sys/signalfd.h pty.h ifaddrs.h sys/capability.h sys/personality.h utmpx.h sys/timerfd.h])
++AC_CHECK_HEADERS([sys/signalfd.h pty.h ifaddrs.h sys/personality.h utmpx.h sys/timerfd.h])
++
++# lookup major()/minor()/makedev()
++AC_HEADER_MAJOR
+ 
+ # Check for some syscalls functions
+ AC_CHECK_FUNCS([setns pivot_root sethostname unshare rand_r confstr faccessat])

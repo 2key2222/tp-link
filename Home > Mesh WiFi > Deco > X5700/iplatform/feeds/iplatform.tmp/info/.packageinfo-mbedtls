@@ -1,0 +1,51 @@
+Source-Makefile: feeds/iplatform/mbedtls/Makefile
+Package: libmbedtls
+Submenu: SSL
+Version: 2.16.1-1
+Depends:  
+Menu-Depends: 
+Provides: 
+Section: libs
+Category: Libraries
+Title: Embedded SSL (library)
+Maintainer: OpenWrt Developers Team <openwrt-devel@openwrt.org>
+Source: mbedtls-2.16.1-gpl.tgz
+Type: ipkg
+Description: The aim of the mbedtls project is to provide a quality, open-source
+cryptographic library written in C and targeted at embedded systems.
+This package contains the mbedtls library.
+https://tls.mbed.org
+OpenWrt Developers Team <openwrt-devel@openwrt.org>
+@@
+Config:
+config LIBMBEDTLS_DEBUG_C
+	depends on PACKAGE_libmbedtls
+	bool "Enable debug functions"
+	default n
+	help
+	 This option enables mbedtls library's debug functions.
+	 It increases the uncompressed libmbedtls binary size
+	 by around 60 KiB (for an ARMv5 platform).
+	 Usually, you don't need this, so don't select this if you're unsure.
+@@
+
+Package: mbedtls-util
+Version: 2.16.1-1
+Depends:  +libmbedtls
+Menu-Depends: 
+Provides: 
+Section: utils
+Category: Utilities
+Title: Embedded SSL (utilities)
+Maintainer: OpenWrt Developers Team <openwrt-devel@openwrt.org>
+Source: mbedtls-2.16.1-gpl.tgz
+Type: ipkg
+Description: The aim of the mbedtls project is to provide a quality, open-source
+cryptographic library written in C and targeted at embedded systems.
+This package contains mbedtls helper programs for private key and
+CSR generation (gen_key, cert_req)
+https://tls.mbed.org
+OpenWrt Developers Team <openwrt-devel@openwrt.org>
+@@
+
+

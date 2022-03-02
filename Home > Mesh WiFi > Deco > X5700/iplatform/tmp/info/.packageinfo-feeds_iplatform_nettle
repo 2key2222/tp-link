@@ -1,0 +1,21 @@
+Source-Makefile: package/feeds/iplatform/nettle/Makefile
+Package: libnettle
+Version: 3.1.1-1
+Depends:  +!LIBNETTLE_MINI:libgmp
+Menu-Depends: 
+Provides: 
+Section: libs
+Category: Libraries
+Title: GNU crypto library
+Maintainer: OpenWrt Developers Team <openwrt-devel@openwrt.org>
+Source: nettle-3.1.1.tar.gz
+Type: ipkg
+Description: GNU crypto library
+http://www.lysator.liu.se/~nisse/nettle/
+OpenWrt Developers Team <openwrt-devel@openwrt.org>
+@@
+Config:
+	source "opensource/opensource/nettle/Config.in"
+@@
+
+

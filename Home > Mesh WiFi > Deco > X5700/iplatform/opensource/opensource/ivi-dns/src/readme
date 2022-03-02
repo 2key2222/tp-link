@@ -1,0 +1,47 @@
+README of IVI DNS is written by by zhaiyu
+
+*Usage: ividns <dns_address>
+	the program must be run under root privilege
+
+*Procedure:
+  -`the program bind to udp port 53(dns).  
+  -when a dns packet from a clinet comes, it simply forwards it to <dns_address>
+   and waits for  a response from <dns_address>  until time expires. 
+   Upon the arrival of the response, resource record whose type is A is 
+   converted to AAAA, and the rdata in the record is changed due to the mapping
+   method. The the rdatalength field is changed and the label pointers in the 
+   message must be recalculated. Two dynamic allocated linked list is generated
+   during the calculation, one for the offsets of the A records and one for 
+   label pointers. If the conversion succeeds, the new message is sent back to 
+   the client.
+
+*Limitation:
+  `the program should correctly work under type A, AAAA, CS, NS, PTR, as well 
+  as any type whose rdata doesn't contain a domain name or a IPv4 address. 
+  For record in the other types, the ipv4 addr in the rdata would remain 
+  unconverted and the domain name in the rdata may be misinterpreted if it 
+  contained a label pointer. However, wrongly-interpreted record won't affect 
+  the interpretion of others resource records.
+
+*Future work:
+  -work for more types
+
+------------------------------------------
+/*
+ * Copyright (C) 2008 CERNET Network Center
+ * IVI DNS Proxy
+ *
+ * Design and coding:
+ * Xing Li <xing@cernet.edu.cn>
+ * Congxiao Bao <congxiao@cernet.edu.cn>
+ * Maoke Chen  <cmk@ns.6test.edu.cn>
+ * Zhai Yu <jacky.zhai@gmail.com>
+ *
+ * Contributions:
+ *
+ * Permission to use, copy, modify, and distribute this software for any
+ * purpose with or without fee is hereby granted, provided that the above
+ * copyright notice and this permission notice appear in all copies.
+ */
+------------------------------------------
+

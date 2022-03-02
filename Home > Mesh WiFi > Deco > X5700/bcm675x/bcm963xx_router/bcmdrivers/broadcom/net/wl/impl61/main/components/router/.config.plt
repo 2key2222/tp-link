@@ -1,0 +1,2 @@
+PLT=arm
+LINUX_VERSION=4_1_0
